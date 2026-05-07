@@ -1,0 +1,234 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentChainEffectGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity trigger-chain response turn-response until-chain-end limit fixture", () => {
+  it("keeps until-chain-end limits after the allowed trigger player responds to an opponent selected-trigger response", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Trigger Until Turn Response Summon", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "200", name: "Trigger Until Turn Response Success Trigger", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "300", name: "Trigger Until Turn Response First Followup", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "350", name: "Trigger Until Turn Response Second Followup", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Trigger Until Turn Response Open Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "500", name: "Trigger Until Turn Response Opponent Limiter", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "600", name: "Trigger Until Turn Response Opponent Blocked", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "700", name: "Trigger Until Turn Response Opponent Open Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "900", name: "Trigger Until Turn Response Filler", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "trigger chain open fast chain response turn response until-chain-end limit fixture",
+      options: { seed: 616, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "200", "300", "350", "400"] },
+        1: { main: ["500", "600", "700", "900", "900"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "trigger-until-turn-response-success",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Trigger until turn response success resolved",
+          },
+          {
+            id: "trigger-until-turn-response-first-followup",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Trigger until turn response first followup resolved",
+          },
+          {
+            id: "trigger-until-turn-response-second-followup",
+            player: 0,
+            code: "350",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "chain",
+            logMessage: "Trigger until turn response second followup should not resolve",
+          },
+          {
+            id: "trigger-until-turn-response-open",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Trigger until turn response open quick should not resolve",
+          },
+          {
+            id: "trigger-until-turn-response-opponent-limiter",
+            player: 1,
+            code: "500",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            chainLimitOnTarget: { untilChainEnd: true, allowPlayer: 0 },
+            logMessage: "Trigger until turn response opponent limiter resolved",
+          },
+          {
+            id: "trigger-until-turn-response-opponent-blocked",
+            player: 1,
+            code: "600",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "chain",
+            logMessage: "Trigger until turn response opponent blocked should not resolve",
+          },
+          {
+            id: "trigger-until-turn-response-opponent-open",
+            player: 1,
+            code: "700",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Trigger until turn response opponent open quick should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "trigger-until-turn-response-success" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "trigger-until-turn-response-opponent-limiter" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "trigger-until-turn-response-first-followup" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro keeps SetChainLimitTillChainEnd restrictions after the allowed trigger player responds to an opponent selected-trigger response",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "trigger-until-turn-response-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 1, effectId: "trigger-until-turn-response-opponent-limiter", sourceUid: "p1-deck-500-0" },
+              { player: 0, effectId: "trigger-until-turn-response-first-followup", sourceUid: "p0-deck-300-2" },
+            ],
+            chainPasses: [],
+            chainLimits: [{ untilChainEnd: true }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "trigger-until-turn-response-second-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "trigger-until-turn-response-second-followup", 1, 4),
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "trigger-until-turn-response-first-followup" },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "trigger-until-turn-response-open" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "trigger-until-turn-response-opponent-limiter" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "trigger-until-turn-response-opponent-blocked" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "trigger-until-turn-response-opponent-open" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "trigger-until-turn-response-first-followup", 4),
+              absentChainEffectGroup(0, "trigger-until-turn-response-open", 4),
+              absentChainEffectGroup(1, "trigger-until-turn-response-opponent-limiter", 4),
+              absentChainEffectGroup(1, "trigger-until-turn-response-opponent-blocked", 4),
+              absentChainEffectGroup(1, "trigger-until-turn-response-opponent-open", 4),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 0), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the selected-trigger SetChainLimitTillChainEnd turn-response window restorable before the allowed trigger player passes",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            chain: [
+              { player: 0, effectId: "trigger-until-turn-response-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 1, effectId: "trigger-until-turn-response-opponent-limiter", sourceUid: "p1-deck-500-0" },
+              { player: 0, effectId: "trigger-until-turn-response-first-followup", sourceUid: "p0-deck-300-2" },
+            ],
+            chainLimits: [{ untilChainEnd: true }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "trigger-until-turn-response-second-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "trigger-until-turn-response-second-followup", 1, 4),
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "trigger-until-turn-response-opponent-blocked" }],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "trigger-until-turn-response-opponent-blocked", 4)],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro clears until-chain-end limits and returns selected trigger chains to turn-player open priority after the allowed trigger player passes",
+        windowId: 5,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        chainPasses: [],
+        chainLimits: [],
+        legalActionCounts: { 0: 3, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "trigger-until-turn-response-open", count: 1 },
+          { type: "changePhase", player: 0, windowId: 5, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 5, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 5,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "trigger-until-turn-response-open", count: 1 }],
+          },
+          turnGroup(5),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "trigger-until-turn-response-first-followup" },
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "trigger-until-turn-response-second-followup" },
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "trigger-until-turn-response-opponent-limiter" },
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "trigger-until-turn-response-opponent-blocked" },
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "trigger-until-turn-response-opponent-open" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "trigger-until-turn-response-first-followup", 5, "open"),
+          absentWindowEffectGroup(0, "trigger-until-turn-response-second-followup", 5, "open"),
+          absentWindowEffectGroup(1, "trigger-until-turn-response-opponent-limiter", 5, "open"),
+          absentWindowEffectGroup(1, "trigger-until-turn-response-opponent-blocked", 5, "open"),
+          absentWindowEffectGroup(1, "trigger-until-turn-response-opponent-open", 5, "open"),
+        ],
+        logIncludes: [
+          "Trigger until turn response first followup resolved",
+          "Trigger until turn response opponent limiter resolved",
+          "Trigger until turn response success resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
