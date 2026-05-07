@@ -157,6 +157,35 @@ describe("EDOPro parity chain-resolution cross-player later-payload first-declin
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-cross-payload-first-decline-opponent-trigger" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves the restored later-payload opponent optional bucket after the active turn-player payload is declined",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 1, effectId: "fixture-cross-payload-first-decline-opponent-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "opponentOptional", eventCardUid: "p1-deck-700-2" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-payload-first-decline-opponent-trigger", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-payload-first-decline-opponent-trigger", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-cross-payload-first-decline-opponent-trigger", "opponentOptional", 1, 2),
+              triggerDeclineGroup(1, "fixture-cross-payload-first-decline-opponent-trigger", "opponentOptional", 1, 2),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-payload-first-decline-turn-trigger", triggerBucket: "turnOptional" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-payload-first-decline-opponent-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-cross-payload-first-decline-turn-trigger", "turnOptional", 2, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-cross-payload-first-decline-opponent-quick", 2, "triggerBucket"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro opens opponent chain responses after the restored later-payload opponent trigger is selected",

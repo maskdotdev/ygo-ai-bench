@@ -184,6 +184,35 @@ describe("EDOPro parity chain-resolution cross-player later-payload decline rest
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "fixture-cross-payload-decline-opponent-trigger" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves the restored later-payload opponent optional bucket before the opponent trigger is declined",
+            windowId: 3,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 1, effectId: "fixture-cross-payload-decline-opponent-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "opponentOptional", eventCardUid: "p1-deck-700-2" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-cross-payload-decline-opponent-trigger", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-cross-payload-decline-opponent-trigger", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-cross-payload-decline-opponent-trigger", "opponentOptional", 1, 3),
+              triggerDeclineGroup(1, "fixture-cross-payload-decline-opponent-trigger", "opponentOptional", 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-cross-payload-decline-turn-trigger", triggerBucket: "turnOptional" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-cross-payload-decline-opponent-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-cross-payload-decline-turn-trigger", "turnOptional", 3, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-cross-payload-decline-opponent-quick", 3, "triggerBucket"),
+            ],
+          },
         }),
       ],
       expected: {
