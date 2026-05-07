@@ -59,6 +59,46 @@ describe("EDOPro parity open fast-effect chain-limit pass resolution fixture", (
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "open-pass-limit-turn-open-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps initial turn-player open priority restorable before applying the Main Phase one-chain SetChainLimit",
+            phase: "main1",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 9, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "open-pass-limit-turn-open-quick", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "110", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "130", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "140", location: "hand", count: 1 },
+            ],
+            legalActionGroups: [
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "110", location: "hand" },
+                { type: "normalSummon", player: 0, code: "130", location: "hand" },
+                { type: "normalSummon", player: 0, code: "140", location: "hand" },
+                { type: "setMonster", player: 0, code: "110", location: "hand" },
+                { type: "setMonster", player: 0, code: "130", location: "hand" },
+                { type: "setMonster", player: 0, code: "140", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "open-pass-limit-turn-blocked-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "open-pass-limit-opponent-allowed-chain-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "open-pass-limit-turn-blocked-chain-quick", 0, "open"),
+              absentWindowEffectGroup(1, "open-pass-limit-opponent-allowed-chain-quick", 0, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps Main Phase one-chain SetChainLimit restrictions while allowing only the opponent to respond",
