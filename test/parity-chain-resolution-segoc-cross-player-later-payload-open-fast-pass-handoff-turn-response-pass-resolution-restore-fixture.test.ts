@@ -3,8 +3,11 @@ import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
 import {
+  absentChainEffectGroup,
   absentTriggerActivationGroup,
   absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
   turnGroup,
 } from "./parity-legal-action-group-helpers.js";
 
@@ -133,12 +136,88 @@ describe("EDOPro parity chain-resolution cross-player later-payload open-fast pa
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-payload-open-fast-pass-resolution-turn-chain-quick" }), {
           snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro reopens opponent response priority after the turn player chains from a restored open-fast handoff",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [
+              { player: 0, effectId: "fixture-cross-payload-open-fast-pass-resolution-turn-open-quick" },
+              { player: 0, effectId: "fixture-cross-payload-open-fast-pass-resolution-turn-chain-quick" },
+            ],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-pass-resolution-opponent-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-cross-payload-open-fast-pass-resolution-opponent-chain-quick", 1, 6),
+              chainPassGroup(1, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-pass-resolution-turn-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-pass-resolution-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-pass-resolution-opponent-open-quick" },
+              { type: "activateTrigger", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-pass-resolution-turn-trigger", triggerBucket: "turnOptional" },
+              { type: "activateTrigger", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-pass-resolution-opponent-trigger", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-cross-payload-open-fast-pass-resolution-turn-open-quick", 6, "chainResponse"),
+              absentChainEffectGroup(0, "fixture-cross-payload-open-fast-pass-resolution-turn-chain-quick", 6),
+              absentWindowEffectGroup(1, "fixture-cross-payload-open-fast-pass-resolution-opponent-open-quick", 6, "chainResponse"),
+              absentTriggerActivationGroup(0, "fixture-cross-payload-open-fast-pass-resolution-turn-trigger", "turnOptional", 6, "chainResponse"),
+              absentTriggerActivationGroup(1, "fixture-cross-payload-open-fast-pass-resolution-opponent-trigger", "opponentOptional", 6, "chainResponse"),
+            ],
+          },
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves the restored final turn pass window before resolving the open-fast handoff chain",
+            windowId: 7,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            chain: [
+              { player: 0, effectId: "fixture-cross-payload-open-fast-pass-resolution-turn-open-quick" },
+              { player: 0, effectId: "fixture-cross-payload-open-fast-pass-resolution-turn-chain-quick" },
+            ],
+            chainPasses: [1],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-pass-resolution-turn-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 7, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-cross-payload-open-fast-pass-resolution-turn-chain-quick", 1, 7),
+              chainPassGroup(0, 1, 7),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-pass-resolution-turn-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-pass-resolution-opponent-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-pass-resolution-opponent-open-quick" },
+              { type: "activateTrigger", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-pass-resolution-turn-trigger", triggerBucket: "turnOptional" },
+              { type: "activateTrigger", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-pass-resolution-opponent-trigger", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-cross-payload-open-fast-pass-resolution-turn-open-quick", 7, "chainResponse"),
+              absentChainEffectGroup(1, "fixture-cross-payload-open-fast-pass-resolution-opponent-chain-quick", 7),
+              absentWindowEffectGroup(1, "fixture-cross-payload-open-fast-pass-resolution-opponent-open-quick", 7, "chainResponse"),
+              absentTriggerActivationGroup(0, "fixture-cross-payload-open-fast-pass-resolution-turn-trigger", "turnOptional", 7, "chainResponse"),
+              absentTriggerActivationGroup(1, "fixture-cross-payload-open-fast-pass-resolution-opponent-trigger", "opponentOptional", 7, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {
