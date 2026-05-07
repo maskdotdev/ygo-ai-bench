@@ -383,6 +383,54 @@ describe("EDOPro parity chainEnded open fast-effect handoff opponent response tu
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-ended-handoff-opponent-alternation-opponent-first" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent alternation priority before the first opponent response",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [
+              { player: 0, effectId: "fixture-chain-ended-handoff-opponent-alternation-open-fast", sourceUid: "p0-deck-400-3" },
+              { player: 0, effectId: "fixture-chain-ended-handoff-opponent-alternation-first-turn", sourceUid: "p0-deck-500-4" },
+            ],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            locations: { graveyard: ["200"], hand: ["100", "300", "400", "500", "700", "900", "600", "800"] },
+            legalActionCounts: { 0: 0, 1: 3 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-opponent-alternation-opponent-first", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-opponent-alternation-opponent-second", count: 1 },
+              { type: "passChain", player: 1, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 6,
+                windowKind: "chainResponse",
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-opponent-alternation-opponent-first", count: 1 },
+                  { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-opponent-alternation-opponent-second", count: 1 },
+                ],
+              },
+              chainPassGroup(1, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-opponent-alternation-open-fast" },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-opponent-alternation-first-turn" },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-opponent-alternation-second-turn" },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-opponent-alternation-third-turn" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-ended-handoff-opponent-alternation-open-fast", 6, "chainResponse"),
+              absentChainEffectGroup(0, "fixture-chain-ended-handoff-opponent-alternation-first-turn", 6),
+              absentChainEffectGroup(0, "fixture-chain-ended-handoff-opponent-alternation-second-turn", 6),
+              absentChainEffectGroup(0, "fixture-chain-ended-handoff-opponent-alternation-third-turn", 6),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro returns post-chainEnded alternation priority to the turn player after the first opponent response",
