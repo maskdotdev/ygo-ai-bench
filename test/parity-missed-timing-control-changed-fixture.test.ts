@@ -1,0 +1,166 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentTriggerActivationGroup, summonGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity control-changed missed timing fixtures", () => {
+  it("keeps optional if triggers while optional when control-changed triggers miss timing", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Control Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "400", name: "Control Optional When", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Control Optional If", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "600", name: "Controlled Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "700", name: "Followup Body", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "control-changed missed timing fixture",
+      options: { seed: 75, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "400", "500", "600", "700"] },
+        1: { main: ["600", "600", "600", "600", "600"] },
+      },
+      setup: {
+        moveCards: [
+          { player: 0, code: "600", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+          { player: 0, code: "700", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+        ],
+        effects: [
+          {
+            id: "control-multistep",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "600", from: "monsterZone", to: "monsterZone", controller: 1, collectEvent: "controlChanged", eventIsLast: false },
+              { player: 0, code: "700", from: "monsterZone", to: "graveyard" },
+            ],
+            logMessage: "Control multi step resolved",
+          },
+          {
+            id: "control-optional-when",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "controlChanged",
+            triggerTiming: "when",
+            range: ["hand"],
+            logMessage: "Control optional when should not resolve",
+          },
+          {
+            id: "control-optional-if",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "controlChanged",
+            triggerTiming: "if",
+            range: ["hand"],
+            logMessage: "Control optional if resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "control-multistep" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro drops optional when control-change triggers when that control change is followed by another event, while optional if remains available",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "control-optional-if", eventName: "controlChanged", eventCardUid: "p0-deck-600-3" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "control-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "control-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "control-optional-if", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "control-optional-if", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "control-optional-when" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(0, "control-optional-when", "turnOptional", 1, "triggerBucket")],
+            logIncludes: ["Control multi step resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "control-optional-if" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves the surviving optional if control-change trigger after restore without resurrecting missed optional when triggers",
+            windowId: 2,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "control-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "control-optional-if" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "control-optional-when", "turnOptional", 2, "open"),
+              absentTriggerActivationGroup(0, "control-optional-if", "turnOptional", 2, "open"),
+            ],
+            logIncludes: ["Control optional if resolved"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state resolves the optional if control-change trigger without resurrecting the missed optional when trigger",
+        windowId: 2,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        chain: [],
+        chainPasses: [],
+        locationCounts: { monsterZone: { "600": 1 }, graveyard: { "700": 1 }, hand: { "100": 1, "400": 1, "500": 1, "600": 5 } },
+        legalActionCounts: { 0: 9, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "control-multistep", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 2,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "control-multistep", count: 1 }],
+          },
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "100", location: "hand" },
+            { type: "normalSummon", player: 0, code: "400", location: "hand" },
+            { type: "normalSummon", player: 0, code: "500", location: "hand" },
+            { type: "setMonster", player: 0, code: "100", location: "hand" },
+            { type: "setMonster", player: 0, code: "400", location: "hand" },
+            { type: "setMonster", player: 0, code: "500", location: "hand" },
+          ], 1, 2),
+          turnGroup(2),
+        ],
+        absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "control-optional-when" }],
+        absentLegalActionGroups: [absentTriggerActivationGroup(0, "control-optional-when", "turnOptional", 2, "open")],
+        logIncludes: ["Control optional if resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
