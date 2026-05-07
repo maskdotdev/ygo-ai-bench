@@ -179,6 +179,29 @@ describe("EDOPro parity chain-resolution SEGOC later-payload first-decline resto
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored later-payload chain-response priority after the first payload optional trigger is declined",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-second-payload-first-decline-trigger", eventName: "customEvent", eventCode: secondEventCode, eventCardUid: "p0-deck-600-4" }],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-opponent-payload-first-decline-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-opponent-payload-first-decline-chain-quick", 1, 3),
+              chainPassGroup(1, 1, 3),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "fixture-second-payload-first-decline-trigger" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(0, "fixture-second-payload-first-decline-trigger", "turnOptional", 3, "chainResponse")],
+          },
         }),
       ],
       expected: {

@@ -180,6 +180,36 @@ describe("EDOPro parity chain-resolution SEGOC later-payload decline restore fix
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-second-payload-decline-trigger" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves the restored later-payload optional trigger before the selected payload is declined",
+            windowId: 3,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 0, effectId: "fixture-second-payload-decline-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-600-4" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            triggerOrderPrompt: null,
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-second-payload-decline-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-second-payload-decline-trigger", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-second-payload-decline-trigger", "turnOptional", 1, 3),
+              triggerDeclineGroup(0, "fixture-second-payload-decline-trigger", "turnOptional", 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-first-payload-decline-trigger", triggerBucket: "turnOptional" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-opponent-payload-decline-chain-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-first-payload-decline-trigger", "turnOptional", 3, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-opponent-payload-decline-chain-quick", 3, "triggerBucket"),
+            ],
+          },
         }),
       ],
       expected: {

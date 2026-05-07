@@ -206,6 +206,29 @@ describe("EDOPro parity chain-resolution SEGOC later-payload restore fixture", (
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored later-payload chain-response priority before resolving the selected payload trigger",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-second-payload-trigger", eventName: "customEvent", eventCode: secondEventCode, eventCardUid: "p0-deck-600-4" }],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-payload-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-opponent-payload-chain-quick", 1, 4),
+              chainPassGroup(1, 1, 4),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-second-payload-trigger" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(0, "fixture-second-payload-trigger", "turnOptional", 4, "chainResponse")],
+          },
         }),
       ],
       expected: {
