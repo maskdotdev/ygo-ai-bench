@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentSpellTrapSetGroup, absentWindowEffectGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentSpellTrapSetGroup, absentWindowEffectGroup, spellTrapSetGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity Spell/Trap Set open fast-effect no-response fixture", () => {
   it("auto-resolves a post-Spell/Trap-Set open fast-effect chain when the opponent has no legal response", () => {
@@ -50,6 +50,39 @@ describe("EDOPro parity Spell/Trap Set open fast-effect no-response fixture", ()
       responses: [
         makeScriptedStep(makeResponseSelector("setSpellTrap", 0, { code: "100", location: "hand" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro exposes Spell/Trap Set actions beside turn-player open fast effects before the Set is performed",
+            phase: "main1",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 4, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "spell-trap-set-no-response-turn-open-quick", count: 1 },
+              { type: "setSpellTrap", player: 0, windowId: 0, windowKind: "open", uid: "p0-deck-100-0", count: 1 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "spell-trap-set-no-response-turn-open-quick", count: 1 }],
+              },
+              spellTrapSetGroup("p0-deck-100-0", 1, 0),
+              turnGroup(0),
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "spell-trap-set-no-response-opponent-open-quick" }],
+            absentLegalActionGroups: [absentWindowEffectGroup(1, "spell-trap-set-no-response-opponent-open-quick", 0, "open")],
+          },
           after: {
             source: "edopro",
             note: "EDOPro returns Spell/Trap Sets to turn-player open priority before post-set fast effects",
@@ -91,6 +124,44 @@ describe("EDOPro parity Spell/Trap Set open fast-effect no-response fixture", ()
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "spell-trap-set-no-response-turn-open-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves the post-Spell/Trap-Set open fast-effect window before resolving the no-response chain",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            chain: [],
+            chainPasses: [],
+            cards: [{ uid: "p0-deck-100-0", code: "100", location: "spellTrapZone", position: "faceDown", faceUp: false }],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "spell-trap-set-no-response-turn-open-quick", count: 1 },
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 1,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "spell-trap-set-no-response-turn-open-quick", count: 1 }],
+              },
+              turnGroup(1),
+            ],
+            absentLegalActions: [
+              { type: "setSpellTrap", player: 0, windowId: 1, windowKind: "open", uid: "p0-deck-100-0" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "spell-trap-set-no-response-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentSpellTrapSetGroup("p0-deck-100-0", 1),
+              absentWindowEffectGroup(1, "spell-trap-set-no-response-opponent-open-quick", 1, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the post-Spell/Trap-Set open fast-effect chain immediately when the opponent has no legal response",
