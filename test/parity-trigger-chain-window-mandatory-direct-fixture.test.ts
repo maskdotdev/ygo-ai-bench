@@ -48,6 +48,56 @@ describe("EDOPro parity trigger chain-window mandatory direct fixture", () => {
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" })),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-direct-first-mandatory-chain-window-trigger" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps same-bucket mandatory trigger choices restorable before the first direct trigger is selected",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-direct-first-mandatory-chain-window-trigger", triggerBucket: "turnMandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-direct-second-mandatory-held-trigger", triggerBucket: "turnMandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+            ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
+            triggerOrderPrompt: { type: "orderTriggers", player: 0, triggerBucket: "turnMandatory" },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-direct-first-mandatory-chain-window-trigger", triggerBucket: "turnMandatory", count: 1 },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-direct-second-mandatory-held-trigger", triggerBucket: "turnMandatory", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                count: 1,
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-direct-first-mandatory-chain-window-trigger", triggerBucket: "turnMandatory", count: 1 },
+                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-direct-second-mandatory-held-trigger", triggerBucket: "turnMandatory", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-direct-first-mandatory-chain-window-trigger" },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-direct-second-mandatory-held-trigger" },
+            ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                actions: [
+                  { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-direct-first-mandatory-chain-window-trigger" },
+                  { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-direct-second-mandatory-held-trigger" },
+                ],
+              },
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro holds the first selected mandatory trigger chain open while same-bucket mandatory siblings remain selectable",
@@ -88,6 +138,43 @@ describe("EDOPro parity trigger chain-window mandatory direct fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-direct-second-mandatory-held-trigger" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the held mandatory sibling trigger restorable before direct chain resolution",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [{ player: 0, effectId: "fixture-direct-first-mandatory-chain-window-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggers: [{ player: 0, effectId: "fixture-direct-second-mandatory-held-trigger", triggerBucket: "turnMandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-direct-second-mandatory-held-trigger", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                count: 1,
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-direct-second-mandatory-held-trigger", triggerBucket: "turnMandatory", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [{ type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-direct-second-mandatory-held-trigger" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                actions: [{ type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-direct-second-mandatory-held-trigger" }],
+              },
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the selected mandatory trigger chain immediately once sibling selection completes and no fast response exists",
