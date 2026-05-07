@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentWindowEffectGroup, summonGroup } from "./parity-legal-action-group-helpers.js";
+import { absentChainEffectGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, summonGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity end turn open fast-effect chain-response pass handoff turn response chain resolution fixture", () => {
   it("resolves new-turn player responses to open priority after the previous turn player passes the reopened window", () => {
@@ -176,6 +176,49 @@ describe("EDOPro parity end turn open fast-effect chain-response pass handoff tu
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "end-turn-chain-handoff-turn-response-resolution-next-chain-quick" })),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored previous-turn priority before they pass the response window reopened by the new turn player",
+            windowId: 6,
+            windowKind: "chainResponse",
+            phase: "main1",
+            turnPlayer: 1,
+            turn: 2,
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 1, effectId: "end-turn-chain-handoff-turn-response-resolution-next-open-quick", sourceUid: "p1-deck-200-0" },
+              { player: 0, effectId: "end-turn-chain-handoff-turn-response-resolution-previous-first-quick", sourceUid: "p0-deck-400-1" },
+              { player: 0, effectId: "end-turn-chain-handoff-turn-response-resolution-previous-second-quick", sourceUid: "p0-deck-500-2" },
+              { player: 1, effectId: "end-turn-chain-handoff-turn-response-resolution-next-chain-quick", sourceUid: "p1-deck-300-1" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-turn-response-resolution-previous-third-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "end-turn-chain-handoff-turn-response-resolution-previous-third-quick", 1, 6),
+              chainPassGroup(0, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-turn-response-resolution-next-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-turn-response-resolution-next-chain-quick" },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-turn-response-resolution-previous-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-turn-response-resolution-previous-first-quick" },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-turn-response-resolution-previous-second-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(1, "end-turn-chain-handoff-turn-response-resolution-next-open-quick", 6, "chainResponse"),
+              absentChainEffectGroup(1, "end-turn-chain-handoff-turn-response-resolution-next-chain-quick", 6),
+              absentWindowEffectGroup(0, "end-turn-chain-handoff-turn-response-resolution-previous-open-quick", 6, "chainResponse"),
+              absentChainEffectGroup(0, "end-turn-chain-handoff-turn-response-resolution-previous-first-quick", 6),
+              absentChainEffectGroup(0, "end-turn-chain-handoff-turn-response-resolution-previous-second-quick", 6),
+            ],
+          },
         }),
       ],
       expected: {
