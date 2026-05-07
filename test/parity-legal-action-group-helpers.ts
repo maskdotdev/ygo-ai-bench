@@ -130,6 +130,15 @@ export const chainPassGroup = (player: 0 | 1, count = 1, windowId?: number) => (
   actions: [{ type: "passChain" as const, player, ...(windowId === undefined ? {} : { windowId }), windowKind: "chainResponse" as const, count }],
 });
 
+export const openEffectGroup = (player: 0 | 1, effectId: string, count = 1, windowId?: number) => ({
+  player,
+  label: "Effects",
+  ...(windowId === undefined ? {} : { windowId }),
+  windowKind: "open" as const,
+  count,
+  actions: [{ type: "activateEffect" as const, player, effectId, ...(windowId === undefined ? {} : { windowId }), windowKind: "open" as const, count }],
+});
+
 export const normalSummonGroup = (player: 0 | 1, code: string, location: "hand", count = 1, windowId?: number) => ({
   player,
   label: "Summons",

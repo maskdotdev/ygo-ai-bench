@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { openEffectGroup, summonGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity missed timing fixtures", () => {
   it("keeps mandatory when triggers while optional when triggers miss timing", () => {
@@ -98,6 +98,42 @@ describe("EDOPro parity missed timing fixtures", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-multistep-send" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the initial open priority restorable before the multi-step send creates missed-timing triggers",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            phase: "main1",
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 13, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [{ type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-multistep-send", count: 1 }],
+            legalActionGroups: [
+              openEffectGroup(0, "fixture-multistep-send", 1, 0),
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "300", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "normalSummon", player: 0, code: "600", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "300", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "600", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-mandatory-when" },
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-optional-when" },
+              { type: "activateTrigger", player: 1, windowId: 0, windowKind: "open", effectId: "fixture-opponent-optional-if" },
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps mandatory when and optional if triggers while optional when misses timing after a non-last event",
@@ -172,6 +208,33 @@ describe("EDOPro parity missed timing fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-mandatory-when" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the mandatory when bucket restorable while optional when triggers remain missed",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-mandatory-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4" },
+              { player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4" },
+              { player: 1, effectId: "fixture-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnMandatory" },
+              { player: 0, triggerBucket: "turnOptional" },
+              { player: 1, triggerBucket: "opponentOptional" },
+            ],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-mandatory-when", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(0, "fixture-mandatory-when", "turnMandatory", 1, 1)],
+            absentLegalActions: [
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-mandatory-when" },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-optional-if" },
+              { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-if" },
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro presents the remaining optional if trigger after the mandatory when trigger is placed on chain but before that chain resolves",
@@ -234,6 +297,36 @@ describe("EDOPro parity missed timing fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-optional-if" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the turn optional-if bucket restorable after mandatory when is placed on chain",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [{ player: 0, effectId: "fixture-mandatory-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4" }],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4" },
+              { player: 1, effectId: "fixture-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnOptional" },
+              { player: 1, triggerBucket: "opponentOptional" },
+            ],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-optional-if", "turnOptional", 1, 2),
+              triggerDeclineGroup(0, "fixture-optional-if", "turnOptional", 1, 2),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-optional-when" },
+              { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-if" },
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro presents opponent optional if triggers only after the turn player's optional bucket is consumed while opponent optional when remains missed",
@@ -287,6 +380,30 @@ describe("EDOPro parity missed timing fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-opponent-optional-if" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent optional-if bucket restorable before resolving the completed SEGOC chain",
+            windowId: 3,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [
+              { player: 0, effectId: "fixture-mandatory-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4" },
+              { player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4" },
+            ],
+            pendingTriggers: [{ player: 1, effectId: "fixture-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-if", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-if", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-opponent-optional-if", "opponentOptional", 1, 3),
+              triggerDeclineGroup(1, "fixture-opponent-optional-if", "opponentOptional", 1, 3),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-when" }],
+          },
         }),
       ],
       expected: {
@@ -477,6 +594,42 @@ describe("EDOPro parity missed timing fixtures", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "decline-multistep-send" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the decline fixture's initial open priority restorable before missed-timing trigger collection",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            phase: "main1",
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 13, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [{ type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "decline-multistep-send", count: 1 }],
+            legalActionGroups: [
+              openEffectGroup(0, "decline-multistep-send", 1, 0),
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "300", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "normalSummon", player: 0, code: "600", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "300", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "600", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "decline-mandatory-when" },
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "decline-optional-when" },
+              { type: "activateTrigger", player: 1, windowId: 0, windowKind: "open", effectId: "decline-opponent-optional-if" },
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps mandatory when and optional if triggers after restore while optional when triggers miss the non-last movement",
@@ -533,6 +686,32 @@ describe("EDOPro parity missed timing fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "decline-mandatory-when" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the decline mandatory bucket restorable before optional declines advance SEGOC",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [
+              { player: 0, effectId: "decline-mandatory-when" },
+              { player: 0, effectId: "decline-optional-if" },
+              { player: 1, effectId: "decline-opponent-optional-if" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnMandatory" },
+              { player: 0, triggerBucket: "turnOptional" },
+              { player: 1, triggerBucket: "opponentOptional" },
+            ],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "decline-mandatory-when", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(0, "decline-mandatory-when", "turnMandatory", 1, 1)],
+            absentLegalActions: [
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "decline-mandatory-when" },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "decline-optional-when" },
+              { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "decline-opponent-optional-when" },
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro restored mandatory trigger selection advances to turn optional if without exposing missed optional when",
@@ -589,6 +768,33 @@ describe("EDOPro parity missed timing fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "decline-optional-if" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the turn optional-if decline window restorable without reviving missed optional when",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [{ player: 0, effectId: "decline-mandatory-when" }],
+            pendingTriggers: [
+              { player: 0, effectId: "decline-optional-if" },
+              { player: 1, effectId: "decline-opponent-optional-if" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnOptional" },
+              { player: 1, triggerBucket: "opponentOptional" },
+            ],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "decline-optional-if", "turnOptional", 1, 2),
+              triggerDeclineGroup(0, "decline-optional-if", "turnOptional", 1, 2),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "decline-optional-when" }],
+          },
           after: {
             source: "edopro",
             note: "EDOPro declining restored turn optional if hands off to opponent optional if while opponent optional when remains missed",
@@ -639,6 +845,27 @@ describe("EDOPro parity missed timing fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "decline-opponent-optional-if" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent optional-if decline window restorable before resolving only the mandatory chain",
+            windowId: 3,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "decline-mandatory-when" }],
+            pendingTriggers: [{ player: 1, effectId: "decline-opponent-optional-if" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "decline-opponent-optional-if", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "decline-opponent-optional-if", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "decline-opponent-optional-if", "opponentOptional", 1, 3),
+              triggerDeclineGroup(1, "decline-opponent-optional-if", "opponentOptional", 1, 3),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "decline-opponent-optional-when" }],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the already-chosen mandatory trigger after restored optional declines without resurrecting missed optional when triggers",
