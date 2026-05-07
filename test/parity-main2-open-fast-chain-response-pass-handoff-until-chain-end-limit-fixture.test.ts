@@ -87,6 +87,45 @@ describe("EDOPro parity Main Phase 2 chain-response pass-handoff until-chain-end
         makeScriptedStep(makeResponseSelector("passChain", 0)),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "main2-response-handoff-until-opponent-limiter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps Main Phase 2 chain-response handoff priority restorable before the opponent applies an until-chain-end limit",
+            phase: "main2",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "main2-response-handoff-until-turn-open-quick", sourceUid: "p0-deck-110-0" },
+              { player: 1, effectId: "main2-response-handoff-until-opponent-first", sourceUid: "p1-deck-210-0" },
+            ],
+            chainPasses: [0],
+            chainLimits: [],
+            legalActionCounts: { 0: 0, 1: 3 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "main2-response-handoff-until-opponent-limiter", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "main2-response-handoff-until-opponent-followup", count: 1 },
+              { type: "passChain", player: 1, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 5,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "main2-response-handoff-until-opponent-limiter", count: 1 },
+                  { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "main2-response-handoff-until-opponent-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(1, 1, 5),
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "main2-response-handoff-until-turn-blocked" }],
+            absentLegalActionGroups: [absentChainEffectGroup(0, "main2-response-handoff-until-turn-blocked", 5)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps Main Phase 2 active and applies SetChainLimitTillChainEnd restrictions after the opponent chains from a chain-response pass handoff",
