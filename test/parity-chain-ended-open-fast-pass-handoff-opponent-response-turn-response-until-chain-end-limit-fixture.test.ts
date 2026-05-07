@@ -149,6 +149,55 @@ describe("EDOPro parity chainEnded open fast-effect handoff opponent response tu
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-ended-handoff-turn-until-opponent-first" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-handoff-turn-until-limiter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored turn-player priority before the until-chain-end limiter after a post-chainEnded opponent handoff response",
+            phase: "main1",
+            windowId: 7,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            chain: [
+              { player: 0, effectId: "fixture-chain-ended-handoff-turn-until-open-fast", sourceUid: "p0-deck-400-3" },
+              { player: 0, effectId: "fixture-chain-ended-handoff-turn-until-first-turn-chain", sourceUid: "p0-deck-500-4" },
+              { player: 1, effectId: "fixture-chain-ended-handoff-turn-until-opponent-first", sourceUid: "p1-deck-600-0" },
+            ],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            locations: { graveyard: ["200"], hand: ["100", "300", "400", "500", "700", "800", "600", "900"] },
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-turn-until-limiter", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-turn-until-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 7, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 7,
+                windowKind: "chainResponse",
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-turn-until-limiter", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-turn-until-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(0, 1, 7),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-turn-until-open-fast" },
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-turn-until-first-turn-chain" },
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-turn-until-opponent-first" },
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-turn-until-opponent-blocked" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-ended-handoff-turn-until-open-fast", 7, "chainResponse"),
+              absentChainEffectGroup(0, "fixture-chain-ended-handoff-turn-until-first-turn-chain", 7),
+              absentChainEffectGroup(1, "fixture-chain-ended-handoff-turn-until-opponent-first", 7),
+              absentChainEffectGroup(1, "fixture-chain-ended-handoff-turn-until-opponent-blocked", 7),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies SetChainLimitTillChainEnd restrictions after the turn player responds to a post-chainEnded opponent handoff response",
