@@ -134,6 +134,53 @@ describe("EDOPro parity chainEnded open fast-effect chain-response turn-response
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-ended-direct-limit-opponent-response-limiter" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-direct-limit-opponent-response-first-turn" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps one-chain SetChainLimit active before the restored allowed turn-player response",
+            phase: "main1",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            chain: [
+              { player: 0, effectId: "fixture-chain-ended-direct-limit-opponent-response-open-fast", sourceUid: "p0-deck-400-3" },
+              { player: 1, effectId: "fixture-chain-ended-direct-limit-opponent-response-limiter", sourceUid: "p1-deck-500-0" },
+            ],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chainLimits: [{ untilChainEnd: false, expiresAtChainLength: 2 }],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-response-first-turn", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-response-second-turn", count: 1 },
+              { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 5,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-response-first-turn", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-response-second-turn", count: 1 },
+                ],
+              },
+              chainPassGroup(0, 1, 5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-response-open-fast" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-response-limiter" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-response-opponent-followup" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-ended-direct-limit-opponent-response-open-fast", 5, "chainResponse"),
+              absentChainEffectGroup(1, "fixture-chain-ended-direct-limit-opponent-response-limiter", 5),
+              absentChainEffectGroup(1, "fixture-chain-ended-direct-limit-opponent-response-opponent-followup", 5),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro clears one-chain SetChainLimit restrictions after the allowed turn player answers a direct post-chainEnded response",

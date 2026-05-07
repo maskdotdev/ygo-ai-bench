@@ -134,6 +134,53 @@ describe("EDOPro parity chainEnded open fast-effect chain-response until-chain-e
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-ended-direct-until-followup-limiter" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-direct-until-followup-first-turn" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps SetChainLimitTillChainEnd active before the restored allowed first turn-player response",
+            phase: "main1",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            chain: [
+              { player: 0, effectId: "fixture-chain-ended-direct-until-followup-open-fast", sourceUid: "p0-deck-400-3" },
+              { player: 1, effectId: "fixture-chain-ended-direct-until-followup-limiter", sourceUid: "p1-deck-500-0" },
+            ],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chainLimits: [{ untilChainEnd: true }],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-until-followup-first-turn", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-until-followup-final-turn", count: 1 },
+              { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 5,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-until-followup-first-turn", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-until-followup-final-turn", count: 1 },
+                ],
+              },
+              chainPassGroup(0, 1, 5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-until-followup-open-fast" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-until-followup-limiter" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-until-followup-opponent-blocked" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-ended-direct-until-followup-open-fast", 5, "chainResponse"),
+              absentChainEffectGroup(1, "fixture-chain-ended-direct-until-followup-limiter", 5),
+              absentChainEffectGroup(1, "fixture-chain-ended-direct-until-followup-opponent-blocked", 5),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps SetChainLimitTillChainEnd active while the allowed turn player continues a direct post-chainEnded response chain",

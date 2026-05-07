@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentWindowEffectGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentChainEffectGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity chainEnded open fast-effect chain-response chain-limit opponent-response resolution fixture", () => {
   it("resolves after the turn player chains again following an opponent response to a cleared direct post-chainEnded one-chain limit", () => {
@@ -137,6 +137,46 @@ describe("EDOPro parity chainEnded open fast-effect chain-response chain-limit o
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-ended-direct-limit-opponent-resolution-opponent-followup" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-direct-limit-opponent-resolution-second-turn" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps restored turn-player priority after a post-chainEnded one-chain limit clears and the opponent responds",
+            phase: "main1",
+            windowId: 7,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            chain: [
+              { player: 0, effectId: "fixture-chain-ended-direct-limit-opponent-resolution-open-fast", sourceUid: "p0-deck-400-3" },
+              { player: 1, effectId: "fixture-chain-ended-direct-limit-opponent-resolution-limiter", sourceUid: "p1-deck-500-0" },
+              { player: 0, effectId: "fixture-chain-ended-direct-limit-opponent-resolution-first-turn", sourceUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-chain-ended-direct-limit-opponent-resolution-opponent-followup", sourceUid: "p1-deck-600-1" },
+            ],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-resolution-second-turn", count: 1 },
+              { type: "passChain", player: 0, windowId: 7, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-chain-ended-direct-limit-opponent-resolution-second-turn", 1, 7),
+              chainPassGroup(0, 1, 7),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-resolution-open-fast" },
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-resolution-first-turn" },
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-resolution-limiter" },
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-resolution-opponent-followup" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-ended-direct-limit-opponent-resolution-open-fast", 7, "chainResponse"),
+              absentChainEffectGroup(0, "fixture-chain-ended-direct-limit-opponent-resolution-first-turn", 7),
+              absentChainEffectGroup(1, "fixture-chain-ended-direct-limit-opponent-resolution-limiter", 7),
+              absentChainEffectGroup(1, "fixture-chain-ended-direct-limit-opponent-resolution-opponent-followup", 7),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves direct post-chainEnded one-chain-limit response chains after the turn player answers the window reopened by an opponent response",
