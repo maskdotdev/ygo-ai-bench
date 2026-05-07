@@ -1,0 +1,215 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import {
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  triggerActivationGroup,
+  triggerDeclineGroup,
+} from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain-resolution cross-player later-payload first-decline restore fixture", () => {
+  it("restores a cross-player later-payload trigger bucket after declining the active turn-player payload trigger", () => {
+    const firstEventCode = 0x10000039;
+    const secondEventCode = 0x1000003a;
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Cross Payload First Decline Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Cross Payload First Decline Turn Trigger", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Cross Payload First Decline Opponent Trigger", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Cross Payload First Decline Turn Body", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "600", name: "Cross Payload First Decline Opponent Quick", kind: "monster", attack: 1100, defense: 1100 },
+      { code: "700", name: "Cross Payload First Decline Opponent Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "800", name: "Cross Payload First Decline Filler", kind: "monster", attack: 800, defense: 800 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain resolution segoc cross-player later-payload first-decline restore fixture",
+      options: { seed: 394, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "300", "500", "800", "800"] },
+        1: { main: ["400", "600", "700", "800", "800"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-cross-payload-first-decline-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "500", from: "hand", to: "graveyard", collectEvent: "customEvent", eventCode: firstEventCode },
+              { player: 1, code: "700", from: "hand", to: "graveyard", collectEvent: "customEvent", eventCode: secondEventCode },
+              { player: 1, code: "600", from: "hand", to: "graveyard" },
+            ],
+            logMessage: "Cross payload first-decline starter resolved",
+          },
+          {
+            id: "fixture-cross-payload-first-decline-turn-trigger",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "customEvent",
+            triggerCode: firstEventCode,
+            range: ["hand"],
+            logMessage: "Cross payload first-decline turn trigger should not resolve",
+          },
+          {
+            id: "fixture-cross-payload-first-decline-opponent-trigger",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "customEvent",
+            triggerCode: secondEventCode,
+            range: ["hand"],
+            logMessage: "Cross payload first-decline opponent trigger resolved",
+          },
+          {
+            id: "fixture-cross-payload-first-decline-opponent-quick",
+            player: 1,
+            code: "600",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            activationChain: "chain",
+            logMessage: "Cross payload first-decline opponent quick should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-payload-first-decline-starter" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro restores the later-payload opponent optional bucket behind the active turn optional bucket",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-cross-payload-first-decline-turn-trigger", eventName: "customEvent", eventCode: firstEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-500-2" },
+              { player: 1, effectId: "fixture-cross-payload-first-decline-opponent-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "opponentOptional", eventCardUid: "p1-deck-700-2" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnOptional" },
+              { player: 1, triggerBucket: "opponentOptional" },
+            ],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-payload-first-decline-turn-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-payload-first-decline-turn-trigger", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-cross-payload-first-decline-turn-trigger", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "fixture-cross-payload-first-decline-turn-trigger", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-payload-first-decline-opponent-trigger", triggerBucket: "opponentOptional" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-payload-first-decline-opponent-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(1, "fixture-cross-payload-first-decline-opponent-trigger", "opponentOptional", 1, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-cross-payload-first-decline-opponent-quick", 1, "triggerBucket"),
+            ],
+            locations: { graveyard: ["500", "700", "600"], hand: ["100", "300", "800", "800", "400", "800", "800"] },
+            logIncludes: ["Cross payload first-decline starter resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-cross-payload-first-decline-turn-trigger" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro advances the restored later-payload opponent optional bucket after the active turn optional payload is declined",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 1, effectId: "fixture-cross-payload-first-decline-opponent-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "opponentOptional", eventCardUid: "p1-deck-700-2" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-payload-first-decline-opponent-trigger", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-payload-first-decline-opponent-trigger", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-cross-payload-first-decline-opponent-trigger", "opponentOptional", 1, 2),
+              triggerDeclineGroup(1, "fixture-cross-payload-first-decline-opponent-trigger", "opponentOptional", 1, 2),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-payload-first-decline-turn-trigger", triggerBucket: "turnOptional" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-payload-first-decline-opponent-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-cross-payload-first-decline-turn-trigger", "turnOptional", 2, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-cross-payload-first-decline-opponent-quick", 2, "triggerBucket"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-cross-payload-first-decline-opponent-trigger" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro opens opponent chain responses after the restored later-payload opponent trigger is selected",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [{ player: 1, effectId: "fixture-cross-payload-first-decline-opponent-trigger", eventName: "customEvent", eventCode: secondEventCode, eventCardUid: "p1-deck-700-2" }],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-cross-payload-first-decline-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-cross-payload-first-decline-opponent-quick", 1, 3),
+              chainPassGroup(1, 1, 3),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-cross-payload-first-decline-opponent-trigger" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(1, "fixture-cross-payload-first-decline-opponent-trigger", "opponentOptional", 3, "chainResponse")],
+            logIncludes: ["Cross payload first-decline starter resolved"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro keeps restored cross-player later-payload trigger chains in the response window after the first payload optional trigger is declined",
+        windowId: 3,
+        windowKind: "chainResponse",
+        waitingFor: 1,
+        chain: [{ player: 1, effectId: "fixture-cross-payload-first-decline-opponent-trigger", eventName: "customEvent", eventCode: secondEventCode, eventCardUid: "p1-deck-700-2" }],
+        chainPasses: [],
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        legalActionCounts: { 0: 0, 1: 2 },
+        legalActionGroupCounts: { 0: 0, 1: 2 },
+        legalActions: [
+          { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-cross-payload-first-decline-opponent-quick", count: 1 },
+          { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+        ],
+        legalActionGroups: [
+          chainEffectGroup(1, "fixture-cross-payload-first-decline-opponent-quick", 1, 3),
+          chainPassGroup(1, 1, 3),
+        ],
+        absentLegalActions: [{ type: "activateTrigger", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-cross-payload-first-decline-opponent-trigger" }],
+        absentLegalActionGroups: [absentTriggerActivationGroup(1, "fixture-cross-payload-first-decline-opponent-trigger", "opponentOptional", 3, "chainResponse")],
+        locations: { graveyard: ["500", "700", "600"], hand: ["100", "300", "800", "800", "400", "800", "800"] },
+        logIncludes: ["Cross payload first-decline starter resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
