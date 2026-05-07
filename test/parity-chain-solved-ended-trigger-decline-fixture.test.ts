@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentTriggerActivationGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentTriggerActivationGroup, summonGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity chain lifecycle trigger decline fixture", () => {
   it("queues chainEnded triggers after optional chainSolved triggers are declined", () => {
@@ -57,6 +57,58 @@ describe("EDOPro parity chain lifecycle trigger decline fixture", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-decline-starter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps initial open priority restorable before optional chainSolved triggers defer chainEnded buckets",
+            phase: "main1",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 9, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-decline-starter", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-decline-starter", count: 1 }],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "300", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "300", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-solved-optional-decline" },
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-ended-after-decline" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-chain-solved-optional-decline", "turnOptional", 0, "open"),
+              absentTriggerActivationGroup(0, "fixture-chain-ended-after-decline", "turnMandatory", 0, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro defers chainEnded triggers while an optional chainSolved trigger bucket is pending",
@@ -84,6 +136,30 @@ describe("EDOPro parity chain lifecycle trigger decline fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-chain-solved-optional-decline" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps optional chainSolved trigger priority restorable before deferred chainEnded buckets are collected",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 0, effectId: "fixture-chain-solved-optional-decline", eventName: "chainSolved", triggerBucket: "turnOptional" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-solved-optional-decline", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-solved-optional-decline", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-chain-solved-optional-decline", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "fixture-chain-solved-optional-decline", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-ended-after-decline", triggerBucket: "turnMandatory" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(0, "fixture-chain-ended-after-decline", "turnMandatory", 1, "triggerBucket")],
+            logIncludes: ["Chain decline starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro collects deferred chainEnded triggers after the optional chainSolved trigger bucket is declined",
@@ -118,6 +194,37 @@ describe("EDOPro parity chain lifecycle trigger decline fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-ended-after-decline" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps deferred chainEnded mandatory priority restorable after the optional chainSolved trigger is declined",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 0, effectId: "fixture-chain-ended-after-decline", eventName: "chainEnded", triggerBucket: "turnMandatory" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-ended-after-decline", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(0, "fixture-chain-ended-after-decline", "turnMandatory", 1, 2)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-solved-optional-decline", triggerBucket: "turnOptional" },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-ended-after-decline", triggerBucket: "turnMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-chain-solved-optional-decline", "turnOptional", 2, "triggerBucket"),
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                actions: [{ type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-ended-after-decline" }],
+              },
+            ],
+            logIncludes: ["fixture-chain-solved-optional-decline"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro can collect a new chainSolved bucket after the deferred chainEnded trigger's chain resolves",
@@ -145,6 +252,30 @@ describe("EDOPro parity chain lifecycle trigger decline fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-chain-solved-optional-decline" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps post-chainEnded optional chainSolved priority restorable before returning to open priority",
+            windowId: 3,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 0, effectId: "fixture-chain-solved-optional-decline", eventName: "chainSolved", triggerBucket: "turnOptional" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-solved-optional-decline", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-solved-optional-decline", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-chain-solved-optional-decline", "turnOptional", 1, 3),
+              triggerDeclineGroup(0, "fixture-chain-solved-optional-decline", "turnOptional", 1, 3),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-ended-after-decline", triggerBucket: "turnMandatory" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(0, "fixture-chain-ended-after-decline", "turnMandatory", 3, "triggerBucket")],
+            logIncludes: ["Chain ended after decline resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro returns to open priority after the post-chainEnded chainSolved bucket is declined and no chainEnded trigger remains",
