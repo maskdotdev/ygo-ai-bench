@@ -69,6 +69,45 @@ describe("EDOPro parity chainEnded open fast-effect no-response fixture", () => 
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "chain-ended-no-response-starter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the initial open window restorable before the starter creates deferred chainEnded work",
+            phase: "main1",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 12, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "chain-ended-no-response-starter", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "chain-ended-no-response-open-fast", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "chain-ended-no-response-starter", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "chain-ended-no-response-open-fast", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "chain-ended-no-response-solved-blocker" },
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "chain-ended-no-response-cleanup" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "chain-ended-no-response-solved-blocker", "turnOptional", 0, "open"),
+              absentTriggerActivationGroup(0, "chain-ended-no-response-cleanup", "turnMandatory", 0, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro defers chainEnded triggers while a chainSolved optional trigger bucket is pending",
@@ -100,6 +139,33 @@ describe("EDOPro parity chainEnded open fast-effect no-response fixture", () => 
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "chain-ended-no-response-solved-blocker" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the chainSolved optional trigger bucket restorable before it is declined",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "chain-ended-no-response-solved-blocker", eventName: "chainSolved", triggerBucket: "turnOptional" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "chain-ended-no-response-solved-blocker", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "chain-ended-no-response-solved-blocker", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "chain-ended-no-response-solved-blocker", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "chain-ended-no-response-solved-blocker", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "chain-ended-no-response-cleanup", triggerBucket: "turnMandatory" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "chain-ended-no-response-open-fast" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "chain-ended-no-response-cleanup", "turnMandatory", 1, "triggerBucket"),
+              absentWindowEffectGroup(0, "chain-ended-no-response-open-fast", 1, "triggerBucket"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro collects the deferred mandatory chainEnded bucket after the chainSolved optional bucket is declined",
@@ -125,6 +191,27 @@ describe("EDOPro parity chainEnded open fast-effect no-response fixture", () => 
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "chain-ended-no-response-cleanup" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the deferred mandatory chainEnded bucket restorable before cleanup resolves",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "chain-ended-no-response-cleanup", eventName: "chainEnded", triggerBucket: "turnMandatory" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "chain-ended-no-response-cleanup", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(0, "chain-ended-no-response-cleanup", "turnMandatory", 1, 2)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "chain-ended-no-response-solved-blocker", triggerBucket: "turnOptional" },
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "chain-ended-no-response-open-fast" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "chain-ended-no-response-solved-blocker", "turnOptional", 2, "triggerBucket"),
+              absentWindowEffectGroup(0, "chain-ended-no-response-open-fast", 2, "triggerBucket"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro opens post-chainEnded fast effects only after the deferred mandatory trigger resolves",
@@ -168,6 +255,45 @@ describe("EDOPro parity chainEnded open fast-effect no-response fixture", () => 
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "chain-ended-no-response-open-fast" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the post-chainEnded open fast window restorable before the no-response quick effect resolves",
+            windowId: 3,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            locations: { graveyard: ["200"] },
+            legalActionCounts: { 0: 10, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "chain-ended-no-response-starter", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "chain-ended-no-response-open-fast", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "chain-ended-no-response-starter", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "chain-ended-no-response-open-fast", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "chain-ended-no-response-solved-blocker" },
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "chain-ended-no-response-cleanup" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "chain-ended-no-response-solved-blocker", "turnOptional", 3, "open"),
+              absentTriggerActivationGroup(0, "chain-ended-no-response-cleanup", "turnMandatory", 3, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves a post-chainEnded open fast-effect chain immediately when the opponent has no legal response",
