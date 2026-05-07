@@ -138,6 +138,47 @@ describe("EDOPro parity chainEnded open fast-effect handoff opponent-response ch
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-opponent-limit-starter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the initial open window restorable before the post-chainEnded opponent-response chain-limit starter",
+            phase: "main1",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 12, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-ended-opponent-limit-starter", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-ended-opponent-limit-open-fast", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-ended-opponent-limit-starter", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-ended-opponent-limit-open-fast", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-ended-opponent-limit-solved-blocker" },
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-ended-opponent-limit-cleanup" },
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "fixture-chain-ended-opponent-limit-opponent-limiter" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-chain-ended-opponent-limit-solved-blocker", "turnOptional", 0, "open"),
+              absentTriggerActivationGroup(0, "fixture-chain-ended-opponent-limit-cleanup", "turnMandatory", 0, "open"),
+              absentWindowEffectGroup(1, "fixture-chain-ended-opponent-limit-opponent-limiter", 0, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro defers chainEnded triggers while an optional chainSolved trigger bucket is pending",
@@ -166,6 +207,30 @@ describe("EDOPro parity chainEnded open fast-effect handoff opponent-response ch
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-chain-ended-opponent-limit-solved-blocker" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent-response chain-limit chainSolved bucket restorable before it is declined",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 0, effectId: "fixture-chain-ended-opponent-limit-solved-blocker", eventName: "chainSolved", triggerBucket: "turnOptional" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-ended-opponent-limit-solved-blocker", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-ended-opponent-limit-solved-blocker", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-chain-ended-opponent-limit-solved-blocker", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "fixture-chain-ended-opponent-limit-solved-blocker", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-ended-opponent-limit-open-fast" }],
+            absentLegalActionGroups: [absentWindowEffectGroup(0, "fixture-chain-ended-opponent-limit-open-fast", 1, "triggerBucket")],
+          },
           after: {
             source: "edopro",
             note: "EDOPro collects deferred chainEnded buckets after the blocking chainSolved bucket is declined",
