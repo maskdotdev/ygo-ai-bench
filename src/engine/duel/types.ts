@@ -766,6 +766,17 @@ export interface ScriptedFixtureMove {
   eventUids?: string[];
 }
 
+export interface ScriptedFixtureDraw {
+  player: PlayerId;
+  count: number;
+  detail?: string;
+  eventIsLast?: boolean;
+  eventReason?: number;
+  eventReasonPlayer?: PlayerId;
+  eventReasonCardUid?: string;
+  eventReasonEffectId?: number;
+}
+
 export interface ScriptedFixtureCardSelector {
   player: PlayerId;
   code: string;
@@ -823,6 +834,7 @@ export interface ScriptedFixtureEffect {
   };
   targetCardsOnActivation?: ScriptedFixtureCardSelector[];
   collectEventsOnResolve?: ScriptedFixtureEvent[];
+  drawCardsOnResolve?: ScriptedFixtureDraw[];
   moveCardsOnResolve?: ScriptedFixtureMove[];
   occurrence?: number;
 }

@@ -571,7 +571,7 @@ function createReleasePredicate(state: DuelState, reason: number): DuelMaterialP
   return (uid) => !isReleasePrevented(state, uid, reason, createContinuousEffectContext(state));
 }
 
-export function drawDuelCards(state: DuelState, player: PlayerId, count: number, detail = "Effect draw", payload: Pick<DuelEventPayload, "eventReason" | "eventReasonPlayer" | "eventReasonCardUid" | "eventReasonEffectId"> = {}): number {
+export function drawDuelCards(state: DuelState, player: PlayerId, count: number, detail = "Effect draw", payload: Pick<DuelEventPayload, "eventIsLast" | "eventReason" | "eventReasonPlayer" | "eventReasonCardUid" | "eventReasonEffectId"> = {}): number {
   if (!canDuelPlayerDraw(state, player, count)) return 0;
   const eventUids = getCards(state, player, "deck")
     .sort((a, b) => a.sequence - b.sequence)

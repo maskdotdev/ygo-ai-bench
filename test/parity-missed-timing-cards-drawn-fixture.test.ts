@@ -1,0 +1,171 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentTriggerActivationGroup, summonGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity cards-drawn missed timing fixtures", () => {
+  it("keeps optional if triggers while optional when cards-drawn triggers miss timing", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Draw Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "400", name: "Draw Optional When", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Draw Optional If", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "600", name: "Boundary Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "700", name: "Drawn Body", kind: "monster", attack: 700, defense: 700 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "cards-drawn missed timing fixture",
+      options: { seed: 97, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "400", "500", "600", "700"] },
+        1: { main: ["600", "600", "600", "600", "600"] },
+      },
+      setup: {
+        moveCards: [
+          { player: 0, code: "600", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+          { player: 0, code: "700", from: "hand", to: "deck" },
+        ],
+        effects: [
+          {
+            id: "cards-drawn-multistep",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            drawCardsOnResolve: [{ player: 0, count: 1, eventIsLast: false, eventReason: 0x40, eventReasonPlayer: 0 }],
+            moveCardsOnResolve: [{ player: 0, code: "600", from: "monsterZone", to: "graveyard", collectEvent: "sentToGraveyard" }],
+            logMessage: "Cards-drawn multi step resolved",
+          },
+          {
+            id: "cards-drawn-optional-when",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "cardsDrawn",
+            triggerTiming: "when",
+            range: ["hand"],
+            logMessage: "Cards-drawn optional when should not resolve",
+          },
+          {
+            id: "cards-drawn-optional-if",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "cardsDrawn",
+            triggerTiming: "if",
+            range: ["hand"],
+            logMessage: "Cards-drawn optional if resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "cards-drawn-multistep" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro drops optional when draw triggers when that draw event is followed by another event, while optional if remains available",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [
+              { player: 0, effectId: "cards-drawn-optional-if", eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventValue: 1, eventUids: ["p0-deck-700-4"], eventReason: 0x40, eventReasonPlayer: 0 },
+            ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "cards-drawn-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "cards-drawn-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "cards-drawn-optional-if", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "cards-drawn-optional-if", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "cards-drawn-optional-when" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(0, "cards-drawn-optional-when", "turnOptional", 1, "triggerBucket")],
+            locations: { hand: ["100", "400", "500", "700"] },
+            logIncludes: ["Cards-drawn multi step resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "cards-drawn-optional-if" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves the surviving optional if draw trigger after restore without resurrecting missed optional when triggers",
+            windowId: 2,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "cards-drawn-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "cards-drawn-optional-if" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "cards-drawn-optional-when", "turnOptional", 2, "open"),
+              absentTriggerActivationGroup(0, "cards-drawn-optional-if", "turnOptional", 2, "open"),
+            ],
+            logIncludes: ["Cards-drawn optional if resolved"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state resolves the optional if draw trigger without resurrecting the missed optional when trigger",
+        windowId: 2,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        chain: [],
+        chainPasses: [],
+        locationCounts: { graveyard: { "600": 1 }, hand: { "100": 1, "400": 1, "500": 1, "600": 5, "700": 1 } },
+        legalActionCounts: { 0: 11, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "cards-drawn-multistep", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "700", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "700", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 2,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "cards-drawn-multistep", count: 1 }],
+          },
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "100", location: "hand" },
+            { type: "normalSummon", player: 0, code: "400", location: "hand" },
+            { type: "normalSummon", player: 0, code: "500", location: "hand" },
+            { type: "normalSummon", player: 0, code: "700", location: "hand" },
+            { type: "setMonster", player: 0, code: "100", location: "hand" },
+            { type: "setMonster", player: 0, code: "400", location: "hand" },
+            { type: "setMonster", player: 0, code: "500", location: "hand" },
+            { type: "setMonster", player: 0, code: "700", location: "hand" },
+          ], 1, 2),
+          turnGroup(2),
+        ],
+        absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "cards-drawn-optional-when" }],
+        absentLegalActionGroups: [absentTriggerActivationGroup(0, "cards-drawn-optional-when", "turnOptional", 2, "open")],
+        logIncludes: ["Cards-drawn optional if resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});

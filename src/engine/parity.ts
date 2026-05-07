@@ -3,6 +3,7 @@ import {
   applyResponse,
   collectDuelTriggerEffects,
   createDuel,
+  drawDuelCards,
   getGroupedDuelLegalActions,
   getLegalActions,
   loadDecks,
@@ -35,6 +36,7 @@ import type {
   ScriptedDuelFixture,
   ScriptedDuelStep,
   ScriptedDuelWindowExpectation,
+  ScriptedFixtureDraw,
   ScriptedFixtureEvent,
   ScriptedFixtureEffect,
   ScriptedFixtureMove,
@@ -663,6 +665,10 @@ function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid:
         collectDuelTriggerEffects(ctx.duel, event.collectEvent, eventCard, fixtureEventPayload(event));
         operationMoved = true;
       }
+      for (const draw of effect.drawCardsOnResolve ?? []) {
+        if (timingBoundaryStart !== undefined) markFixtureOperationTimingBoundary(ctx.duel, timingBoundaryStart, operationMoved);
+        operationMoved = drawDuelCards(ctx.duel, draw.player, draw.count, draw.detail ?? "Fixture draw", fixtureDrawEventPayload(draw)) > 0 || operationMoved;
+      }
       for (const move of effect.moveCardsOnResolve ?? []) {
         if (timingBoundaryStart !== undefined) markFixtureOperationTimingBoundary(ctx.duel, timingBoundaryStart, operationMoved);
         const candidates = ctx.duel.cards
@@ -778,6 +784,16 @@ function applyFixturePosition(card: Pick<DuelCardInstance, "position" | "faceUp"
 
 function fixtureMoveEventPayload(move: ScriptedFixtureMove) {
   return fixtureEventPayload(move);
+}
+
+function fixtureDrawEventPayload(draw: ScriptedFixtureDraw) {
+  return {
+    ...(draw.eventIsLast === undefined ? {} : { eventIsLast: draw.eventIsLast }),
+    ...(draw.eventReason === undefined ? {} : { eventReason: draw.eventReason }),
+    ...(draw.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: draw.eventReasonPlayer }),
+    ...(draw.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: draw.eventReasonCardUid }),
+    ...(draw.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: draw.eventReasonEffectId }),
+  };
 }
 
 function fixtureEventPayload(event: ScriptedFixtureMove | ScriptedFixtureEvent) {
