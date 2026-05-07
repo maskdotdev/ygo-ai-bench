@@ -109,6 +109,54 @@ describe("EDOPro parity trigger-chain response turn-response chain-limit opponen
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "trigger-limit-opponent-response-opponent-limiter" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "trigger-limit-opponent-response-first-followup" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored trigger-player priority while the selected-trigger one-chain limit allows that player to respond",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "trigger-limit-opponent-response-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 1, effectId: "trigger-limit-opponent-response-opponent-limiter", sourceUid: "p1-deck-500-0" },
+            ],
+            chainPasses: [],
+            chainLimits: [{ untilChainEnd: false, expiresAtChainLength: 2 }],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-first-followup", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-second-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-first-followup", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-second-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(0, 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-open" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-opponent-limiter" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-opponent-followup" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-opponent-open" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "trigger-limit-opponent-response-open", 3, "chainResponse"),
+              absentChainEffectGroup(1, "trigger-limit-opponent-response-opponent-limiter", 3),
+              absentChainEffectGroup(1, "trigger-limit-opponent-response-opponent-followup", 3),
+              absentWindowEffectGroup(1, "trigger-limit-opponent-response-opponent-open", 3, "chainResponse"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro clears one-chain SetChainLimit restrictions after the allowed trigger player responds to an opponent selected-trigger response",
@@ -148,6 +196,42 @@ describe("EDOPro parity trigger-chain response turn-response chain-limit opponen
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "trigger-limit-opponent-response-opponent-followup" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent priority after the one-chain limit clears",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "trigger-limit-opponent-response-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 1, effectId: "trigger-limit-opponent-response-opponent-limiter", sourceUid: "p1-deck-500-0" },
+              { player: 0, effectId: "trigger-limit-opponent-response-first-followup", sourceUid: "p0-deck-300-2" },
+            ],
+            chainPasses: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-opponent-followup", count: 1 },
+              { type: "passChain", player: 1, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "trigger-limit-opponent-response-opponent-followup", 1, 4),
+              chainPassGroup(1, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-second-followup" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-opponent-limiter" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-opponent-open" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "trigger-limit-opponent-response-second-followup", 4),
+              absentChainEffectGroup(1, "trigger-limit-opponent-response-opponent-limiter", 4),
+              absentWindowEffectGroup(1, "trigger-limit-opponent-response-opponent-open", 4, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {
