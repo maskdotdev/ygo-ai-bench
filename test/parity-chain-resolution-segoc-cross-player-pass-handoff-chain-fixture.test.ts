@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentChainEffectGroup, absentTriggerActivationGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, triggerActivationGroup } from "./parity-legal-action-group-helpers.js";
+import { absentChainEffectGroup, absentTriggerActivationGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, triggerActivationGroup, triggerDeclineGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity chain-resolution cross-player SEGOC pass handoff chain fixture", () => {
   it("opens turn-player responses after the opponent chains from cross-player SEGOC pass handoff", () => {
@@ -109,6 +109,37 @@ describe("EDOPro parity chain-resolution cross-player SEGOC pass handoff chain f
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-handoff-chain-starter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the initial open window restorable before creating cross-player SEGOC pass-handoff buckets",
+            phase: "main1",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 13, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-cross-handoff-chain-starter", count: 1 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-cross-handoff-chain-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "fixture-cross-handoff-chain-opponent-quick" },
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-cross-handoff-chain-turn-mandatory", triggerBucket: "turnMandatory" },
+              { type: "activateTrigger", player: 1, windowId: 0, windowKind: "open", effectId: "fixture-cross-handoff-chain-opponent-mandatory", triggerBucket: "opponentMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-cross-handoff-chain-turn-quick", 0, "open"),
+              absentWindowEffectGroup(1, "fixture-cross-handoff-chain-opponent-quick", 0, "open"),
+              absentTriggerActivationGroup(0, "fixture-cross-handoff-chain-turn-mandatory", "turnMandatory", 0, "open"),
+              absentTriggerActivationGroup(1, "fixture-cross-handoff-chain-opponent-mandatory", "opponentMandatory", 0, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro builds cross-player SEGOC buckets from trigger events created while an effect chain resolves before exposing chain responses",
@@ -155,6 +186,43 @@ describe("EDOPro parity chain-resolution cross-player SEGOC pass handoff chain f
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-cross-handoff-chain-turn-optional" })),
         makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-cross-handoff-chain-opponent-optional" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the final opponent optional SEGOC bucket restorable before opening pass-handoff responses",
+            windowId: 4,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            pendingTriggers: [{ player: 1, effectId: "fixture-cross-handoff-chain-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-4" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            chain: [
+              { player: 0, effectId: "fixture-cross-handoff-chain-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-handoff-chain-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-handoff-chain-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-handoff-chain-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-handoff-chain-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-cross-handoff-chain-opponent-optional", "opponentOptional", 1, 4),
+              triggerDeclineGroup(1, "fixture-cross-handoff-chain-opponent-optional", "opponentOptional", 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-handoff-chain-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-handoff-chain-opponent-quick" },
+              { type: "activateTrigger", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-handoff-chain-turn-optional", triggerBucket: "turnOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-cross-handoff-chain-turn-quick", 4, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-cross-handoff-chain-opponent-quick", 4, "triggerBucket"),
+              absentTriggerActivationGroup(0, "fixture-cross-handoff-chain-turn-optional", "turnOptional", 4, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "500", "400", "600", "800", "800"] },
+            logIncludes: ["Cross handoff chain starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro opens turn-player chain-response priority after cross-player chain-created SEGOC finishes with an opponent trigger",
@@ -189,6 +257,37 @@ describe("EDOPro parity chain-resolution cross-player SEGOC pass handoff chain f
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the turn-player pass-handoff chain-response window restorable before passing to the opponent trigger player",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-cross-handoff-chain-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-handoff-chain-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-handoff-chain-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-handoff-chain-opponent-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-cross-handoff-chain-turn-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(0, "fixture-cross-handoff-chain-turn-quick", 1, 5), chainPassGroup(0, 1, 5)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-cross-handoff-chain-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-cross-handoff-chain-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-cross-handoff-chain-opponent-quick", 5),
+              absentTriggerActivationGroup(1, "fixture-cross-handoff-chain-opponent-optional", "opponentOptional", 5, "triggerBucket"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro returns cross-player chain-created SEGOC response priority to the opponent trigger player after the turn player passes",
@@ -223,6 +322,38 @@ describe("EDOPro parity chain-resolution cross-player SEGOC pass handoff chain f
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-cross-handoff-chain-opponent-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent trigger player chain-response window restorable before the opponent chains from pass handoff",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-cross-handoff-chain-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-handoff-chain-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-handoff-chain-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-handoff-chain-opponent-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [0],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-handoff-chain-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-cross-handoff-chain-opponent-quick", 1, 6), chainPassGroup(1, 1, 6)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-handoff-chain-turn-quick" },
+              { type: "activateTrigger", player: 1, windowId: 6, windowKind: "triggerBucket", effectId: "fixture-cross-handoff-chain-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-cross-handoff-chain-turn-quick", 6),
+              absentTriggerActivationGroup(1, "fixture-cross-handoff-chain-opponent-optional", "opponentOptional", 6, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "500", "400", "600", "800", "800"] },
+          },
           after: {
             source: "edopro",
             note: "EDOPro gives the turn player another chain-response window after the opponent chains from cross-player chain-created SEGOC pass handoff",
