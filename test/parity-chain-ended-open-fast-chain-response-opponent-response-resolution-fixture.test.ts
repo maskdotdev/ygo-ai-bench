@@ -1,0 +1,215 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentChainEffectGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chainEnded open fast-effect chain-response opponent-response resolution fixture", () => {
+  it("resolves direct post-chainEnded opponent responses after the turn player passes", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Chain Ended Direct Response Resolution Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Chain Ended Direct Response Resolution Solved Blocker", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "300", name: "Chain Ended Direct Response Resolution Cleanup", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "400", name: "Chain Ended Direct Response Resolution Open Quick", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "500", name: "Chain Ended Direct Response Resolution Opponent Chain", kind: "monster", attack: 1100, defense: 1100 },
+      { code: "600", name: "Chain Ended Direct Response Resolution Turn Followup", kind: "monster", attack: 900, defense: 900 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "deferred chain ended open fast chain response opponent-response resolution fixture",
+      options: { seed: 642, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "200", "300", "400", "600"] },
+        1: { main: ["500"] },
+      },
+      setup: {
+        moveCards: [
+          { player: 0, code: "600", from: "hand", to: "graveyard" },
+          { player: 1, code: "500", from: "hand", to: "graveyard" },
+        ],
+        effects: [
+          {
+            id: "fixture-chain-ended-direct-response-resolution-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            logMessage: "Chain ended direct response resolution starter resolved",
+          },
+          {
+            id: "fixture-chain-ended-direct-response-resolution-solved-blocker",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "chainSolved",
+            range: ["hand"],
+            logMessage: "Chain ended direct response resolution solved blocker should not resolve",
+          },
+          {
+            id: "fixture-chain-ended-direct-response-resolution-cleanup",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "chainEnded",
+            optional: false,
+            range: ["hand"],
+            oncePerTurn: true,
+            moveCardsOnResolve: [
+              { player: 0, code: "200", from: "hand", to: "graveyard" },
+              { player: 0, code: "600", from: "graveyard", to: "hand" },
+              { player: 1, code: "500", from: "graveyard", to: "hand" },
+            ],
+            logMessage: "Chain ended direct response resolution cleanup resolved",
+          },
+          {
+            id: "fixture-chain-ended-direct-response-resolution-open-fast",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "open",
+            logMessage: "Chain ended direct response resolution open fast resolved",
+          },
+          {
+            id: "fixture-chain-ended-direct-response-resolution-turn-followup",
+            player: 0,
+            code: "600",
+            location: "graveyard",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Chain ended direct response resolution turn followup should not resolve",
+          },
+          {
+            id: "fixture-chain-ended-direct-response-resolution-opponent",
+            player: 1,
+            code: "500",
+            location: "graveyard",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Chain ended direct response resolution opponent resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-direct-response-resolution-starter" })),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-chain-ended-direct-response-resolution-solved-blocker" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-ended-direct-response-resolution-cleanup" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-direct-response-resolution-open-fast" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-ended-direct-response-resolution-opponent" })),
+        makeScriptedStep(makeResponseSelector("passChain", 0), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro restores turn-player response priority before resolving a direct post-chainEnded opponent response chain",
+            phase: "main1",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            chain: [
+              { player: 0, effectId: "fixture-chain-ended-direct-response-resolution-open-fast", sourceUid: "p0-deck-400-3" },
+              { player: 1, effectId: "fixture-chain-ended-direct-response-resolution-opponent", sourceUid: "p1-deck-500-0" },
+            ],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-response-resolution-turn-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-chain-ended-direct-response-resolution-turn-followup", 1, 5),
+              chainPassGroup(0, 1, 5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-response-resolution-open-fast" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-response-resolution-opponent" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-ended-direct-response-resolution-open-fast", 5, "chainResponse"),
+              absentChainEffectGroup(1, "fixture-chain-ended-direct-response-resolution-opponent", 5),
+            ],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro resolves direct post-chainEnded opponent response chains after the turn player passes",
+        phase: "main1",
+        windowId: 6,
+        windowKind: "open",
+        waitingFor: 0,
+        chain: [],
+        chainPasses: [],
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chainLimits: [],
+        locations: { graveyard: ["200"], hand: ["100", "300", "400", "600", "500"] },
+        legalActionCounts: { 0: 11, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 6, windowKind: "open", effectId: "fixture-chain-ended-direct-response-resolution-starter", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 6, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 6, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 6, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 6, windowKind: "open", code: "600", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 6, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 6, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 6, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 6, windowKind: "open", code: "600", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 6, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 6, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 6,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "activateEffect", player: 0, windowId: 6, windowKind: "open", effectId: "fixture-chain-ended-direct-response-resolution-starter", count: 1 }],
+          },
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "100", location: "hand" },
+            { type: "normalSummon", player: 0, code: "300", location: "hand" },
+            { type: "normalSummon", player: 0, code: "400", location: "hand" },
+            { type: "normalSummon", player: 0, code: "600", location: "hand" },
+            { type: "setMonster", player: 0, code: "100", location: "hand" },
+            { type: "setMonster", player: 0, code: "300", location: "hand" },
+            { type: "setMonster", player: 0, code: "400", location: "hand" },
+            { type: "setMonster", player: 0, code: "600", location: "hand" },
+          ], 1, 6),
+          turnGroup(6),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 6, windowKind: "open", effectId: "fixture-chain-ended-direct-response-resolution-open-fast" },
+          { type: "activateEffect", player: 0, windowId: 6, windowKind: "open", effectId: "fixture-chain-ended-direct-response-resolution-turn-followup" },
+          { type: "activateEffect", player: 1, windowId: 6, windowKind: "open", effectId: "fixture-chain-ended-direct-response-resolution-opponent" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "fixture-chain-ended-direct-response-resolution-open-fast", 6, "open"),
+          absentWindowEffectGroup(0, "fixture-chain-ended-direct-response-resolution-turn-followup", 6, "open"),
+          absentWindowEffectGroup(1, "fixture-chain-ended-direct-response-resolution-opponent", 6, "open"),
+        ],
+        logIncludes: [
+          "Chain ended direct response resolution opponent resolved",
+          "Chain ended direct response resolution open fast resolved",
+          "Chain ended direct response resolution cleanup resolved",
+          "Chain ended direct response resolution starter resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
