@@ -1,0 +1,232 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentTriggerActivationGroup, triggerActivationGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity cross-player chain lifecycle SEGOC fixture", () => {
+  it("queues cross-player chainEnded buckets only after cross-player chainSolved buckets resolve", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Cross Lifecycle Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Turn Chain Solved Watcher", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Opponent Chain Solved Watcher", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Turn Chain Ended Watcher", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "600", name: "Opponent Chain Ended Watcher", kind: "monster", attack: 1100, defense: 1100 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "cross-player chain solved before chain ended SEGOC fixture",
+      options: { seed: 611, startingHandSize: 3 },
+      decks: {
+        0: { main: ["100", "300", "500"] },
+        1: { main: ["400", "600"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-cross-lifecycle-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            logMessage: "Cross lifecycle starter resolved",
+          },
+          {
+            id: "fixture-cross-chain-solved-turn",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "chainSolved",
+            optional: false,
+            range: ["hand"],
+            oncePerTurn: true,
+            logMessage: "Cross chain solved turn resolved",
+          },
+          {
+            id: "fixture-cross-chain-solved-opponent",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "chainSolved",
+            optional: false,
+            range: ["hand"],
+            oncePerTurn: true,
+            logMessage: "Cross chain solved opponent resolved",
+          },
+          {
+            id: "fixture-cross-chain-ended-turn",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "chainEnded",
+            optional: false,
+            range: ["hand"],
+            oncePerTurn: true,
+            logMessage: "Cross chain ended turn resolved",
+          },
+          {
+            id: "fixture-cross-chain-ended-opponent",
+            player: 1,
+            code: "600",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "chainEnded",
+            optional: false,
+            range: ["hand"],
+            oncePerTurn: true,
+            logMessage: "Cross chain ended opponent resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-lifecycle-starter" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro opens cross-player chainSolved SEGOC buckets after the chain resolves and defers chainEnded triggers",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-cross-chain-solved-turn", eventName: "chainSolved", triggerBucket: "turnMandatory" },
+              { player: 1, effectId: "fixture-cross-chain-solved-opponent", eventName: "chainSolved", triggerBucket: "opponentMandatory" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnMandatory" },
+              { player: 1, triggerBucket: "opponentMandatory" },
+            ],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-chain-solved-turn", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(0, "fixture-cross-chain-solved-turn", "turnMandatory", 1, 1)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-chain-solved-opponent", triggerBucket: "opponentMandatory" },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-chain-ended-turn", triggerBucket: "turnMandatory" },
+              { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-chain-ended-opponent", triggerBucket: "opponentMandatory" },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-chain-solved-turn", triggerBucket: "turnMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(1, "fixture-cross-chain-solved-opponent", "opponentMandatory", 1, "triggerBucket"),
+              absentTriggerActivationGroup(0, "fixture-cross-chain-ended-turn", "turnMandatory", 1, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-cross-chain-ended-opponent", "opponentMandatory", 1, "triggerBucket"),
+            ],
+            logIncludes: ["Cross lifecycle starter resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-cross-chain-solved-turn" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro keeps opponent chainSolved mandatory triggers ahead of deferred chainEnded buckets",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-cross-chain-solved-turn", eventName: "chainSolved" }],
+            pendingTriggers: [{ player: 1, effectId: "fixture-cross-chain-solved-opponent", eventName: "chainSolved", triggerBucket: "opponentMandatory" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentMandatory" }],
+            legalActionCounts: { 0: 0, 1: 1 },
+            legalActionGroupCounts: { 0: 0, 1: 1 },
+            legalActions: [{ type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-chain-solved-opponent", triggerBucket: "opponentMandatory", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(1, "fixture-cross-chain-solved-opponent", "opponentMandatory", 1, 2)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-chain-ended-turn", triggerBucket: "turnMandatory" },
+              { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-chain-ended-opponent", triggerBucket: "opponentMandatory" },
+              { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-chain-solved-opponent", triggerBucket: "opponentMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-cross-chain-ended-turn", "turnMandatory", 2, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-cross-chain-ended-opponent", "opponentMandatory", 2, "triggerBucket"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-cross-chain-solved-opponent" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro collects deferred cross-player chainEnded buckets only after the chainSolved trigger chain resolves",
+            windowId: 3,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-cross-chain-ended-turn", eventName: "chainEnded", triggerBucket: "turnMandatory" },
+              { player: 1, effectId: "fixture-cross-chain-ended-opponent", eventName: "chainEnded", triggerBucket: "opponentMandatory" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnMandatory" },
+              { player: 1, triggerBucket: "opponentMandatory" },
+            ],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-cross-chain-ended-turn", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(0, "fixture-cross-chain-ended-turn", "turnMandatory", 1, 3)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-cross-chain-solved-turn", triggerBucket: "turnMandatory" },
+              { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-cross-chain-solved-opponent", triggerBucket: "opponentMandatory" },
+              { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-cross-chain-ended-opponent", triggerBucket: "opponentMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-cross-chain-solved-turn", "turnMandatory", 3, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-cross-chain-solved-opponent", "opponentMandatory", 3, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-cross-chain-ended-opponent", "opponentMandatory", 3, "triggerBucket"),
+            ],
+            logIncludes: ["Cross chain solved turn resolved", "Cross chain solved opponent resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-cross-chain-ended-turn" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro keeps opponent chainEnded mandatory triggers pending after the turn-player chainEnded trigger is selected",
+            windowId: 4,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-cross-chain-ended-turn", eventName: "chainEnded" }],
+            pendingTriggers: [{ player: 1, effectId: "fixture-cross-chain-ended-opponent", eventName: "chainEnded", triggerBucket: "opponentMandatory" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentMandatory" }],
+            legalActionCounts: { 0: 0, 1: 1 },
+            legalActionGroupCounts: { 0: 0, 1: 1 },
+            legalActions: [{ type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-chain-ended-opponent", triggerBucket: "opponentMandatory", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(1, "fixture-cross-chain-ended-opponent", "opponentMandatory", 1, 4)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-chain-ended-turn", triggerBucket: "turnMandatory" },
+              { type: "declineTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-chain-ended-opponent", triggerBucket: "opponentMandatory" },
+            ],
+            absentLegalActionGroups: [absentTriggerActivationGroup(0, "fixture-cross-chain-ended-turn", "turnMandatory", 4, "triggerBucket")],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-cross-chain-ended-opponent" }), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state resolves cross-player chainSolved buckets before deferred cross-player chainEnded buckets",
+        windowId: 5,
+        windowKind: "open",
+        waitingFor: 0,
+        chain: [],
+        chainPasses: [],
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        legalActionCounts: { 0: 9, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },
+        logIncludes: [
+          "Cross lifecycle starter resolved",
+          "Cross chain solved turn resolved",
+          "Cross chain solved opponent resolved",
+          "Cross chain ended turn resolved",
+          "Cross chain ended opponent resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
