@@ -42,6 +42,22 @@ describe("EDOPro parity battle result fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
           snapshotRestore: "after",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the targeted attack declaration window restorable before battle starts",
+            phase: "battle",
+            waitingFor: 0,
+            windowId: 1,
+            windowKind: "open",
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowId: 1, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [targetedAttackGroup(0, "p0-deck-100-0", "p1-deck-200-0", 1, 1), turnGroup(1)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro records the attacked target before attack-response windows can alter the battle",
@@ -71,6 +87,21 @@ describe("EDOPro parity battle result fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent end-damage-step pass restorable before passing priority back",
+            waitingFor: 1,
+            windowId: 12,
+            windowKind: "battle",
+            pendingBattle: true,
+            battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 1 },
+            damagePasses: [],
+            locations: { monsterZone: ["100", "200"] },
+            legalActionCounts: { 0: 0, 1: 1 },
+            legalActionGroupCounts: { 0: 0, 1: 1 },
+            legalActions: [{ type: "passDamage", player: 1, windowId: 12, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passDamage", 1, 12)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro passes end damage step priority back before battle resolution destroys the weaker monster",
@@ -88,6 +119,21 @@ describe("EDOPro parity battle result fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the final end-damage-step turn-player pass restorable before battle damage and destruction",
+            waitingFor: 0,
+            windowId: 13,
+            windowKind: "battle",
+            pendingBattle: true,
+            battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 0 },
+            damagePasses: [1],
+            locations: { monsterZone: ["100", "200"] },
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "passDamage", player: 0, windowId: 13, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(0, "passDamage", 1, 13)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies attack-position battle damage and destroys the lower-ATK battle target after end damage step passes",
