@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentWindowEffectGroup, chainEffectGroup, chainPassGroup, summonGroup } from "./parity-legal-action-group-helpers.js";
+import { absentChainEffectGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, summonGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity end turn open fast-effect chain-response pass handoff chain fixture", () => {
   it("returns response priority to the new turn player after the previous turn player chains from a handoff window", () => {
@@ -151,10 +151,131 @@ describe("EDOPro parity end turn open fast-effect chain-response pass handoff ch
           },
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "end-turn-chain-handoff-chain-next-open-quick" })),
-        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "end-turn-chain-handoff-chain-previous-first-quick" })),
-        makeScriptedStep(makeResponseSelector("passChain", 1)),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "end-turn-chain-handoff-chain-previous-first-quick" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro returns chain-response priority to the new turn player after the previous turn player chains",
+            windowId: 3,
+            windowKind: "chainResponse",
+            phase: "main1",
+            turnPlayer: 1,
+            turn: 2,
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 1, effectId: "end-turn-chain-handoff-chain-next-open-quick", sourceUid: "p1-deck-200-0" },
+              { player: 0, effectId: "end-turn-chain-handoff-chain-previous-first-quick", sourceUid: "p0-deck-400-1" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-chain-next-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "end-turn-chain-handoff-chain-next-chain-quick", 1, 3),
+              chainPassGroup(1, 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-chain-previous-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-chain-previous-first-quick" },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-chain-previous-second-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-chain-next-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "end-turn-chain-handoff-chain-previous-open-quick", 3, "chainResponse"),
+              absentChainEffectGroup(0, "end-turn-chain-handoff-chain-previous-first-quick", 3),
+              absentChainEffectGroup(0, "end-turn-chain-handoff-chain-previous-second-quick", 3),
+              absentWindowEffectGroup(1, "end-turn-chain-handoff-chain-next-open-quick", 3, "chainResponse"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 1), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro restores the end-turn chain-response pass handoff to the previous turn player before they chain again",
+            windowId: 4,
+            windowKind: "chainResponse",
+            phase: "main1",
+            turnPlayer: 1,
+            turn: 2,
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 1, effectId: "end-turn-chain-handoff-chain-next-open-quick", sourceUid: "p1-deck-200-0" },
+              { player: 0, effectId: "end-turn-chain-handoff-chain-previous-first-quick", sourceUid: "p0-deck-400-1" },
+            ],
+            chainPasses: [1],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-chain-previous-second-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "end-turn-chain-handoff-chain-previous-second-quick", 1, 4),
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-chain-previous-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-chain-previous-first-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-chain-next-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-chain-next-chain-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "end-turn-chain-handoff-chain-previous-open-quick", 4, "chainResponse"),
+              absentChainEffectGroup(0, "end-turn-chain-handoff-chain-previous-first-quick", 4),
+              absentWindowEffectGroup(1, "end-turn-chain-handoff-chain-next-open-quick", 4, "chainResponse"),
+              absentChainEffectGroup(1, "end-turn-chain-handoff-chain-next-chain-quick", 4),
+            ],
+          },
+        }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "end-turn-chain-handoff-chain-previous-second-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro allows the previous turn player to chain from the restored end-turn handoff window",
+            windowId: 4,
+            windowKind: "chainResponse",
+            phase: "main1",
+            turnPlayer: 1,
+            turn: 2,
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 1, effectId: "end-turn-chain-handoff-chain-next-open-quick", sourceUid: "p1-deck-200-0" },
+              { player: 0, effectId: "end-turn-chain-handoff-chain-previous-first-quick", sourceUid: "p0-deck-400-1" },
+            ],
+            chainPasses: [1],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-chain-previous-second-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "end-turn-chain-handoff-chain-previous-second-quick", 1, 4),
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-chain-previous-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-chain-previous-first-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-chain-next-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-chain-next-chain-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "end-turn-chain-handoff-chain-previous-open-quick", 4, "chainResponse"),
+              absentChainEffectGroup(0, "end-turn-chain-handoff-chain-previous-first-quick", 4),
+              absentWindowEffectGroup(1, "end-turn-chain-handoff-chain-next-open-quick", 4, "chainResponse"),
+              absentChainEffectGroup(1, "end-turn-chain-handoff-chain-next-chain-quick", 4),
+            ],
+          },
         }),
       ],
       expected: {
