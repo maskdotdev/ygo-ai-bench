@@ -79,6 +79,39 @@ describe("EDOPro parity after-damage-calculation opponent quick-effect pass hand
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-after-damage-calculation-handoff-resolution-open-quick" })),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the turn-player chain-response window restorable after an opponent after-damage-calculation quick effect",
+            waitingFor: 0,
+            windowId: 11,
+            windowKind: "chainResponse",
+            pendingBattle: true,
+            battleStep: "damage",
+            battleWindow: { kind: "afterDamageCalculation", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
+            chain: [{ player: 1, effectId: "fixture-opponent-after-damage-calculation-handoff-resolution-open-quick", sourceUid: "p1-deck-300-0" }],
+            chainPasses: [],
+            damagePasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 11, windowKind: "chainResponse", effectId: "fixture-turn-after-damage-calculation-handoff-resolution-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 11, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-turn-after-damage-calculation-handoff-resolution-chain-quick", 1, 11),
+              chainPassGroup(0, 1, 11),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 11, windowKind: "chainResponse", effectId: "fixture-opponent-after-damage-calculation-handoff-resolution-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 11, windowKind: "chainResponse", effectId: "fixture-opponent-after-damage-calculation-handoff-resolution-chain-quick" },
+              { type: "passDamage", player: 0, windowId: 11, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(1, "fixture-opponent-after-damage-calculation-handoff-resolution-open-quick", 11, "chainResponse"),
+              absentWindowEffectGroup(1, "fixture-opponent-after-damage-calculation-handoff-resolution-chain-quick", 11, "chainResponse"),
+              absentPassBattleGroup(0, "passDamage", 11),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro offers opponent chain-only after-damage-calculation responses after the turn player passes the opponent's quick chain",
@@ -113,6 +146,39 @@ describe("EDOPro parity after-damage-calculation opponent quick-effect pass hand
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-after-damage-calculation-handoff-resolution-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps opponent chain-only after-damage-calculation responses restorable after the turn player passes",
+            waitingFor: 1,
+            windowId: 12,
+            windowKind: "chainResponse",
+            pendingBattle: true,
+            battleStep: "damage",
+            battleWindow: { kind: "afterDamageCalculation", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
+            chain: [{ player: 1, effectId: "fixture-opponent-after-damage-calculation-handoff-resolution-open-quick", sourceUid: "p1-deck-300-0" }],
+            chainPasses: [0],
+            damagePasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 12, windowKind: "chainResponse", effectId: "fixture-opponent-after-damage-calculation-handoff-resolution-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 12, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-opponent-after-damage-calculation-handoff-resolution-chain-quick", 1, 12),
+              chainPassGroup(1, 1, 12),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 12, windowKind: "chainResponse", effectId: "fixture-turn-after-damage-calculation-handoff-resolution-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 12, windowKind: "chainResponse", effectId: "fixture-opponent-after-damage-calculation-handoff-resolution-open-quick" },
+              { type: "passDamage", player: 1, windowId: 12, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-turn-after-damage-calculation-handoff-resolution-chain-quick", 12, "chainResponse"),
+              absentWindowEffectGroup(1, "fixture-opponent-after-damage-calculation-handoff-resolution-open-quick", 12, "chainResponse"),
+              absentPassBattleGroup(1, "passDamage", 12),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro reopens turn-player responses after the opponent chains from an after-damage-calculation pass handoff",
@@ -152,6 +218,42 @@ describe("EDOPro parity after-damage-calculation opponent quick-effect pass hand
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the reopened turn-player response window restorable before resolving the opponent after-damage-calculation chain",
+            waitingFor: 0,
+            windowId: 13,
+            windowKind: "chainResponse",
+            pendingBattle: true,
+            battleStep: "damage",
+            battleWindow: { kind: "afterDamageCalculation", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
+            chain: [
+              { player: 1, effectId: "fixture-opponent-after-damage-calculation-handoff-resolution-open-quick", sourceUid: "p1-deck-300-0" },
+              { player: 1, effectId: "fixture-opponent-after-damage-calculation-handoff-resolution-chain-quick", sourceUid: "p1-deck-500-1" },
+            ],
+            chainPasses: [],
+            damagePasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 13, windowKind: "chainResponse", effectId: "fixture-turn-after-damage-calculation-handoff-resolution-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 13, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-turn-after-damage-calculation-handoff-resolution-chain-quick", 1, 13),
+              chainPassGroup(0, 1, 13),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 13, windowKind: "chainResponse", effectId: "fixture-opponent-after-damage-calculation-handoff-resolution-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 13, windowKind: "chainResponse", effectId: "fixture-opponent-after-damage-calculation-handoff-resolution-chain-quick" },
+              { type: "passDamage", player: 0, windowId: 13, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(1, "fixture-opponent-after-damage-calculation-handoff-resolution-open-quick", 13, "chainResponse"),
+              absentWindowEffectGroup(1, "fixture-opponent-after-damage-calculation-handoff-resolution-chain-quick", 13, "chainResponse"),
+              absentPassBattleGroup(0, "passDamage", 13),
+            ],
+          },
         }),
       ],
       expected: {
