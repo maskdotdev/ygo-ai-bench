@@ -110,6 +110,46 @@ describe("EDOPro parity Spell/Trap Set open fast-effect chain fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "spell-trap-set-turn-open-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves post-Set turn-player open priority before a fast effect starts a chain",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            chain: [],
+            chainPasses: [],
+            cards: [{ uid: "p0-deck-100-0", code: "100", location: "spellTrapZone", position: "faceDown", faceUp: false }],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "spell-trap-set-turn-open-chain-quick", count: 1 },
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 1,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "spell-trap-set-turn-open-chain-quick", count: 1 }],
+              },
+              turnGroup(1),
+            ],
+            absentLegalActions: [
+              { type: "setSpellTrap", player: 0, windowId: 1, windowKind: "open", uid: "p0-deck-100-0" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "spell-trap-set-opponent-chain-response-quick" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "spell-trap-set-opponent-open-chain-filtered" },
+            ],
+            absentLegalActionGroups: [
+              absentSpellTrapSetGroup("p0-deck-100-0", 1),
+              absentWindowEffectGroup(1, "spell-trap-set-opponent-chain-response-quick", 1, "open"),
+              absentWindowEffectGroup(1, "spell-trap-set-opponent-open-chain-filtered", 1, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro gives the opponent chain-response priority after a post-Set open fast effect starts a chain",
@@ -136,6 +176,30 @@ describe("EDOPro parity Spell/Trap Set open fast-effect chain fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent chain-response priority before passing the post-Set fast-effect chain",
+            phase: "main1",
+            windowId: 2,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            chain: [{ player: 0, effectId: "spell-trap-set-turn-open-chain-quick", sourceUid: "p0-deck-300-1" }],
+            chainPasses: [],
+            cards: [{ uid: "p0-deck-100-0", code: "100", location: "spellTrapZone", position: "faceDown", faceUp: false }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "spell-trap-set-opponent-chain-response-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 2, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "spell-trap-set-opponent-chain-response-quick", 1, 2),
+              chainPassGroup(1, 1, 2),
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "spell-trap-set-opponent-open-chain-filtered" }],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "spell-trap-set-opponent-open-chain-filtered", 2)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the post-Set open fast-effect chain and returns to turn-player open priority",
