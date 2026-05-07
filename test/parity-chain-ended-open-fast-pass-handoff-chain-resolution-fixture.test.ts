@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentWindowEffectGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentChainEffectGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity chainEnded open fast-effect pass-handoff chain resolution fixture", () => {
   it("resolves post-chainEnded open fast-effect pass-handoff chains after the opponent passes", () => {
@@ -105,7 +105,109 @@ describe("EDOPro parity chainEnded open fast-effect pass-handoff chain resolutio
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-handoff-resolution-open-fast-turn" })),
         makeScriptedStep(makeResponseSelector("passChain", 1)),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-handoff-resolution-turn-chain" })),
-        makeScriptedStep(makeResponseSelector("passChain", 1), { snapshotRestore: "both" }),
+        makeScriptedStep(makeResponseSelector("passChain", 1), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent priority before the pass that resolves the post-chainEnded handoff chain",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [
+              { player: 0, effectId: "fixture-chain-ended-handoff-resolution-open-fast-turn", sourceUid: "p0-deck-400-3" },
+              { player: 0, effectId: "fixture-chain-ended-handoff-resolution-turn-chain", sourceUid: "p0-deck-600-4" },
+            ],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            locations: { graveyard: ["200"], hand: ["100", "300", "400", "500", "600"] },
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-resolution-opponent-chain", count: 1 },
+              { type: "passChain", player: 1, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-chain-ended-handoff-resolution-opponent-chain", 1, 6),
+              chainPassGroup(1, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-resolution-open-fast-turn" },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-handoff-resolution-turn-chain" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-ended-handoff-resolution-open-fast-turn", 6, "chainResponse"),
+              absentChainEffectGroup(0, "fixture-chain-ended-handoff-resolution-turn-chain", 6),
+            ],
+          },
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves a post-chainEnded open fast-effect pass-handoff chain after the restored opponent pass",
+            phase: "main1",
+            windowId: 7,
+            windowKind: "open",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            locations: { graveyard: ["200"], hand: ["100", "300", "400", "500", "600"] },
+            legalActionCounts: { 0: 11, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "open", effectId: "fixture-chain-ended-handoff-resolution-starter", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 7, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 7, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 7, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 7, windowKind: "open", code: "600", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 7, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 7, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 7, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 7, windowKind: "open", code: "600", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 7, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 7, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 7,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 7, windowKind: "open", effectId: "fixture-chain-ended-handoff-resolution-starter", count: 1 }],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "300", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "normalSummon", player: 0, code: "600", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "300", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "600", location: "hand" },
+              ], 1, 7),
+              turnGroup(7),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "open", effectId: "fixture-chain-ended-handoff-resolution-open-fast-turn" },
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "open", effectId: "fixture-chain-ended-handoff-resolution-turn-chain" },
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "open", effectId: "fixture-chain-ended-handoff-resolution-opponent-chain" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-ended-handoff-resolution-open-fast-turn", 7, "open"),
+              absentWindowEffectGroup(0, "fixture-chain-ended-handoff-resolution-turn-chain", 7, "open"),
+              absentWindowEffectGroup(1, "fixture-chain-ended-handoff-resolution-opponent-chain", 7, "open"),
+            ],
+            logIncludes: [
+              "Chain ended handoff resolution starter resolved",
+              "fixture-chain-ended-handoff-resolution-solved-blocker",
+              "Chain ended handoff resolution cleanup resolved",
+              "Chain ended handoff resolution turn chain resolved",
+              "Chain ended handoff resolution open fast turn resolved",
+            ],
+          },
+        }),
       ],
       expected: {
         source: "edopro",
