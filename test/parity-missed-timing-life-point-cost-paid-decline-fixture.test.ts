@@ -1,0 +1,191 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentTriggerActivationGroup, absentWindowEffectGroup, triggerActivationGroup, triggerDeclineGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity life-point-cost-paid missed timing decline fixture", () => {
+  it("returns declined optional if life-point-cost-paid triggers to open fast priority while optional when remains missed", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Cost Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "400", name: "Cost Optional When", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Cost Optional If", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "800", name: "Open Quick After Cost", kind: "monster", attack: 500, defense: 500 },
+      { code: "600", name: "Boundary Body", kind: "monster", attack: 900, defense: 900 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "life-point-cost-paid missed timing decline open fast fixture",
+      options: { seed: 96, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "400", "500", "800", "600"] },
+        1: { main: ["600", "600", "600", "600", "600"] },
+      },
+      setup: {
+        moveCards: [{ player: 0, code: "600", from: "hand", to: "monsterZone", position: "faceUpAttack" }],
+        effects: [
+          {
+            id: "life-point-cost-paid-decline-multistep",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            collectEventsOnResolve: [{ collectEvent: "lifePointCostPaid", eventIsLast: false, eventPlayer: 0, eventValue: 600, eventReason: 0x80, eventReasonPlayer: 0 }],
+            moveCardsOnResolve: [{ player: 0, code: "600", from: "monsterZone", to: "graveyard", collectEvent: "sentToGraveyard" }],
+            logMessage: "Life-point-cost-paid decline multi step resolved",
+          },
+          {
+            id: "life-point-cost-paid-decline-optional-when",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "lifePointCostPaid",
+            triggerTiming: "when",
+            range: ["hand"],
+            logMessage: "Life-point-cost-paid decline optional when should not resolve",
+          },
+          {
+            id: "life-point-cost-paid-decline-optional-if",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "lifePointCostPaid",
+            triggerTiming: "if",
+            range: ["hand"],
+            logMessage: "Life-point-cost-paid decline optional if should not resolve",
+          },
+          {
+            id: "life-point-cost-paid-decline-open-fast",
+            player: 0,
+            code: "800",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Life-point-cost-paid decline open fast resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "life-point-cost-paid-decline-multistep" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro keeps optional if life-point-cost-paid triggers available while optional when life-point-cost-paid triggers miss timing",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [
+              { player: 0, effectId: "life-point-cost-paid-decline-optional-if", eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 0, eventValue: 600, eventReason: 0x80, eventReasonPlayer: 0 },
+            ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "life-point-cost-paid-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "life-point-cost-paid-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "life-point-cost-paid-decline-optional-if", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "life-point-cost-paid-decline-optional-if", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "life-point-cost-paid-decline-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "life-point-cost-paid-decline-open-fast" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "life-point-cost-paid-decline-optional-when", "turnOptional", 1, "triggerBucket"),
+              absentWindowEffectGroup(0, "life-point-cost-paid-decline-open-fast", 1, "triggerBucket"),
+            ],
+            logIncludes: ["Life-point-cost-paid decline multi step resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "life-point-cost-paid-decline-optional-if" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro exposes open fast effects after declining the surviving optional if life-point-cost-paid trigger without resurrecting missed optional when triggers",
+            windowId: 2,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 12, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "life-point-cost-paid-decline-open-fast", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 2,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "life-point-cost-paid-decline-open-fast", count: 1 }],
+              },
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "life-point-cost-paid-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "life-point-cost-paid-decline-optional-if" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "life-point-cost-paid-decline-optional-when", "turnOptional", 2, "open"),
+              absentTriggerActivationGroup(0, "life-point-cost-paid-decline-optional-if", "turnOptional", 2, "open"),
+            ],
+            logIncludes: ["Life-point-cost-paid decline multi step resolved", "life-point-cost-paid-decline-optional-if"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "life-point-cost-paid-decline-open-fast" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves the restored post-decline open fast effect without resurrecting missed optional when triggers",
+            windowId: 3,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "life-point-cost-paid-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "life-point-cost-paid-decline-optional-if" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "life-point-cost-paid-decline-optional-when", "turnOptional", 3, "open"),
+              absentTriggerActivationGroup(0, "life-point-cost-paid-decline-optional-if", "turnOptional", 3, "open"),
+            ],
+            logIncludes: ["Life-point-cost-paid decline open fast resolved"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state returns to open priority after the restored post-decline open fast effect while optional when remains missed",
+        windowId: 3,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        chainPasses: [],
+        legalActionCounts: { 0: 12, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "life-point-cost-paid-decline-optional-when" },
+          { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "life-point-cost-paid-decline-optional-if" },
+        ],
+        absentLegalActionGroups: [
+          absentTriggerActivationGroup(0, "life-point-cost-paid-decline-optional-when", "turnOptional", 3, "open"),
+          absentTriggerActivationGroup(0, "life-point-cost-paid-decline-optional-if", "turnOptional", 3, "open"),
+        ],
+        logIncludes: ["Life-point-cost-paid decline open fast resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
