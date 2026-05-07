@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentWindowEffectGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentChainEffectGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity open fast-effect chain-response pass handoff opponent response resolution fixture", () => {
   it("resolves opponent responses from reopened handoff windows after the turn player passes", () => {
@@ -113,6 +113,50 @@ describe("EDOPro parity open fast-effect chain-response pass handoff opponent re
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "open-fast-chain-handoff-opponent-response-resolution-opponent-third-chain-quick" })),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored turn-player priority before they pass the opponent-response handoff chain",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "open-fast-chain-handoff-opponent-response-resolution-open-quick", sourceUid: "p0-deck-100-0" },
+              { player: 1, effectId: "open-fast-chain-handoff-opponent-response-resolution-opponent-first-chain-quick", sourceUid: "p1-deck-300-0" },
+              { player: 1, effectId: "open-fast-chain-handoff-opponent-response-resolution-opponent-second-chain-quick", sourceUid: "p1-deck-500-1" },
+              { player: 0, effectId: "open-fast-chain-handoff-opponent-response-resolution-first-turn-chain-quick", sourceUid: "p0-deck-200-1" },
+              { player: 1, effectId: "open-fast-chain-handoff-opponent-response-resolution-opponent-third-chain-quick", sourceUid: "p1-deck-800-2" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-opponent-response-resolution-second-turn-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "open-fast-chain-handoff-opponent-response-resolution-second-turn-chain-quick", 1, 6),
+              chainPassGroup(0, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-opponent-response-resolution-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-opponent-response-resolution-first-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-opponent-response-resolution-opponent-first-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-opponent-response-resolution-opponent-second-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-opponent-response-resolution-opponent-third-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-opponent-response-resolution-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "open-fast-chain-handoff-opponent-response-resolution-open-quick", 6, "chainResponse"),
+              absentChainEffectGroup(0, "open-fast-chain-handoff-opponent-response-resolution-first-turn-chain-quick", 6),
+              absentChainEffectGroup(1, "open-fast-chain-handoff-opponent-response-resolution-opponent-first-chain-quick", 6),
+              absentChainEffectGroup(1, "open-fast-chain-handoff-opponent-response-resolution-opponent-second-chain-quick", 6),
+              absentChainEffectGroup(1, "open-fast-chain-handoff-opponent-response-resolution-opponent-third-chain-quick", 6),
+              absentWindowEffectGroup(1, "open-fast-chain-handoff-opponent-response-resolution-opponent-open-quick", 6, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {
