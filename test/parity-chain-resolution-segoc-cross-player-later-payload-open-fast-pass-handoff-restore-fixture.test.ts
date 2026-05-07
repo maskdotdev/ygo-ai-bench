@@ -278,6 +278,35 @@ describe("EDOPro parity chain-resolution cross-player later-payload open-fast pa
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent response priority before the open-fast pass handoff",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-cross-payload-open-fast-handoff-turn-open-quick" }],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-handoff-opponent-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-cross-payload-open-fast-handoff-opponent-chain-quick", 1, 4),
+              chainPassGroup(1, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-handoff-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-handoff-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-cross-payload-open-fast-handoff-turn-chain-quick", 4),
+              absentWindowEffectGroup(1, "fixture-cross-payload-open-fast-handoff-opponent-open-quick", 4, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {
