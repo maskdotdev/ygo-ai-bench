@@ -1,0 +1,215 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentChainEffectGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity open fast-effect chain-limit pass resolution fixture", () => {
+  it("resolves after the allowed opponent passes a Main Phase one-chain limit response window", () => {
+    const cards: DuelCardData[] = [
+      { code: "110", name: "Open Pass Limit Turn Open Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "130", name: "Open Pass Limit Turn Blocked Chain Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "140", name: "Open Pass Limit Turn Filler", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "210", name: "Open Pass Limit Opponent Allowed Chain Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "220", name: "Open Pass Limit Opponent Filler", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "open fast one-chain limit pass resolution fixture",
+      options: { seed: 519, startingHandSize: 3 },
+      decks: {
+        0: { main: ["110", "130", "140"] },
+        1: { main: ["210", "220", "220"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "open-pass-limit-turn-open-quick",
+            player: 0,
+            code: "110",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            oncePerTurn: true,
+            chainLimitOnTarget: { untilChainEnd: false, allowPlayer: 1 },
+            logMessage: "Open pass-limit turn open quick resolved",
+          },
+          {
+            id: "open-pass-limit-turn-blocked-chain-quick",
+            player: 0,
+            code: "130",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "chain",
+            logMessage: "Open pass-limit turn blocked chain quick should not resolve",
+          },
+          {
+            id: "open-pass-limit-opponent-allowed-chain-quick",
+            player: 1,
+            code: "210",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "chain",
+            logMessage: "Open pass-limit opponent allowed chain quick should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "open-pass-limit-turn-open-quick" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro keeps Main Phase one-chain SetChainLimit restrictions while allowing only the opponent to respond",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 0, effectId: "open-pass-limit-turn-open-quick", sourceUid: "p0-deck-110-0" }],
+            chainPasses: [],
+            chainLimits: [{ untilChainEnd: false, expiresAtChainLength: 1 }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "open-pass-limit-opponent-allowed-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 1, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "open-pass-limit-opponent-allowed-chain-quick", 1, 1),
+              chainPassGroup(1, 1, 1),
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "chainResponse", effectId: "open-pass-limit-turn-blocked-chain-quick" }],
+            absentLegalActionGroups: [absentChainEffectGroup(0, "open-pass-limit-turn-blocked-chain-quick", 1)],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 1), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the Main Phase one-chain SetChainLimit opponent response window restorable before the allowed opponent passes",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 0, effectId: "open-pass-limit-turn-open-quick", sourceUid: "p0-deck-110-0" }],
+            chainPasses: [],
+            chainLimits: [{ untilChainEnd: false, expiresAtChainLength: 1 }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "open-pass-limit-opponent-allowed-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 1, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "open-pass-limit-opponent-allowed-chain-quick", 1, 1),
+              chainPassGroup(1, 1, 1),
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "chainResponse", effectId: "open-pass-limit-turn-blocked-chain-quick" }],
+            absentLegalActionGroups: [absentChainEffectGroup(0, "open-pass-limit-turn-blocked-chain-quick", 1)],
+          },
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves a Main Phase one-chain limited response window after the allowed opponent passes instead of reopening blocked turn-player priority",
+            phase: "main1",
+            windowId: 2,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 8, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "110", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "130", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "140", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "110", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "130", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "140", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "110", location: "hand" },
+                { type: "normalSummon", player: 0, code: "130", location: "hand" },
+                { type: "normalSummon", player: 0, code: "140", location: "hand" },
+                { type: "setMonster", player: 0, code: "110", location: "hand" },
+                { type: "setMonster", player: 0, code: "130", location: "hand" },
+                { type: "setMonster", player: 0, code: "140", location: "hand" },
+              ], 1, 2),
+              turnGroup(2),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "open-pass-limit-turn-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "open-pass-limit-turn-blocked-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "open", effectId: "open-pass-limit-opponent-allowed-chain-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "open-pass-limit-turn-open-quick", 2, "open"),
+              absentWindowEffectGroup(0, "open-pass-limit-turn-blocked-chain-quick", 2, "open"),
+              absentWindowEffectGroup(1, "open-pass-limit-opponent-allowed-chain-quick", 2, "open"),
+            ],
+            logIncludes: ["Open pass-limit turn open quick resolved"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state keeps Main Phase open priority after one-chain limits clear from an allowed opponent pass",
+        phase: "main1",
+        windowId: 2,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        chainPasses: [],
+        chainLimits: [],
+        legalActionCounts: { 0: 8, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "110", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "130", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "140", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "110", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "130", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "140", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "110", location: "hand" },
+            { type: "normalSummon", player: 0, code: "130", location: "hand" },
+            { type: "normalSummon", player: 0, code: "140", location: "hand" },
+            { type: "setMonster", player: 0, code: "110", location: "hand" },
+            { type: "setMonster", player: 0, code: "130", location: "hand" },
+            { type: "setMonster", player: 0, code: "140", location: "hand" },
+          ], 1, 2),
+          turnGroup(2),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "open-pass-limit-turn-open-quick" },
+          { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "open-pass-limit-turn-blocked-chain-quick" },
+          { type: "activateEffect", player: 1, windowId: 2, windowKind: "open", effectId: "open-pass-limit-opponent-allowed-chain-quick" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "open-pass-limit-turn-open-quick", 2, "open"),
+          absentWindowEffectGroup(0, "open-pass-limit-turn-blocked-chain-quick", 2, "open"),
+          absentWindowEffectGroup(1, "open-pass-limit-opponent-allowed-chain-quick", 2, "open"),
+        ],
+        logIncludes: ["Open pass-limit turn open quick resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
