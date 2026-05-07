@@ -196,6 +196,45 @@ describe("EDOPro parity end turn open fast-effect chain-response pass handoff pa
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored previous-turn-player priority before the previous player passes the returned response window",
+            windowId: 4,
+            windowKind: "chainResponse",
+            phase: "main1",
+            turnPlayer: 1,
+            turn: 2,
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 1, effectId: "end-turn-chain-handoff-pass-resolution-next-open-quick", sourceUid: "p1-deck-200-0" },
+              { player: 0, effectId: "end-turn-chain-handoff-pass-resolution-previous-first-quick", sourceUid: "p0-deck-400-1" },
+            ],
+            chainPasses: [1],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-pass-resolution-previous-second-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "end-turn-chain-handoff-pass-resolution-previous-second-quick", 1, 4),
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-pass-resolution-previous-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-pass-resolution-previous-first-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-pass-resolution-next-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "end-turn-chain-handoff-pass-resolution-next-chain-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "end-turn-chain-handoff-pass-resolution-previous-open-quick", 4, "chainResponse"),
+              absentWindowEffectGroup(0, "end-turn-chain-handoff-pass-resolution-previous-first-quick", 4, "chainResponse"),
+              absentWindowEffectGroup(1, "end-turn-chain-handoff-pass-resolution-next-open-quick", 4, "chainResponse"),
+              absentWindowEffectGroup(1, "end-turn-chain-handoff-pass-resolution-next-chain-quick", 4, "chainResponse"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the restored End Turn handoff chain after the previous turn player passes the returned response window",
