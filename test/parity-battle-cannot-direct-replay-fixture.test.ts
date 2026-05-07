@@ -2,7 +2,16 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentOpenAttackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import {
+  absentAttackGroup,
+  absentOpenAttackGroup,
+  attackGroup,
+  effectGroup,
+  passBattleGroup,
+  passDamageGroup,
+  replayAttackGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle cannot-direct replay fixtures", () => {
   it("does not offer direct replay for cannot-direct attackers", () => {
@@ -49,7 +58,28 @@ describe("EDOPro parity battle cannot-direct replay fixtures", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the targeted attack choice restorable while CANNOT_DIRECT_ATTACK suppresses direct attack choices",
+            phase: "battle",
+            waitingFor: 0,
+            windowId: 1,
+            windowKind: "open",
+            pendingBattle: false,
+            currentAttack: false,
+            battleWindow: null,
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowId: 1, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }], 1, 1), turnGroup(1)],
+            absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 1, windowKind: "open" }],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", undefined, true, 1)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro allows cannot-direct monsters to declare legal targeted attacks",
@@ -65,6 +95,27 @@ describe("EDOPro parity battle cannot-direct replay fixtures", () => {
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-remove-cannot-direct-target" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps turn-player attack-response priority restorable before the target-removal quick effect",
+            waitingFor: 0,
+            windowId: 3,
+            windowKind: "battle",
+            pendingBattle: true,
+            currentAttack: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 0 },
+            attackPasses: [1],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-remove-cannot-direct-target", count: 1 },
+              { type: "passAttack", player: 0, windowId: 3, windowKind: "battle", count: 1 },
+            ],
+            legalActionGroups: [
+              effectGroup(0, "fixture-remove-cannot-direct-target", 1, 3),
+              passBattleGroup(0, "passAttack", 1, 3),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps the attack-response window active after the attack target leaves",
@@ -92,6 +143,22 @@ describe("EDOPro parity battle cannot-direct replay fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the final end-damage-step pass restorable before cannot-direct replay choices are filtered",
+            waitingFor: 0,
+            windowId: 15,
+            windowKind: "battle",
+            pendingBattle: true,
+            currentAttack: true,
+            battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 0 },
+            damagePasses: [1],
+            locations: { monsterZone: ["100"], graveyard: ["200"] },
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "passDamage", player: 0, windowId: 15, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(0, 1, 15)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro offers cancel only because CANNOT_DIRECT_ATTACK forbids direct replay",
@@ -129,6 +196,31 @@ describe("EDOPro parity battle cannot-direct replay fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("cancelAttack", 0, { attackerUid: "p0-deck-100-0" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps cannot-direct replay cancellation restorable without exposing direct replay",
+            waitingFor: 0,
+            windowId: 16,
+            windowKind: "battle",
+            pendingBattle: true,
+            currentAttack: true,
+            battleWindow: { kind: "replayDecision", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            locations: { monsterZone: ["100"], graveyard: ["200"] },
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "cancelAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 16, windowKind: "battle", count: 1 }],
+            legalActionGroups: [replayAttackGroup([{ attackerUid: "p0-deck-100-0", cancel: true }], 1, 16)],
+            absentLegalActions: [{ type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 16, windowKind: "battle" }],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Attacks",
+                windowId: 16,
+                windowKind: "battle",
+                actions: [{ type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 16, windowKind: "battle" }],
+              },
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro returns cannot-direct replay cancel to the Battle Phase open window",
