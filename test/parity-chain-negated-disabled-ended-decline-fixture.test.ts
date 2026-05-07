@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { chainEffectGroup, chainPassGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentTriggerActivationGroup, chainEffectGroup, chainPassGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity chain negated/disabled lifecycle decline fixture", () => {
   it("queues chainEnded triggers after optional chainNegated and chainDisabled triggers are declined", () => {
@@ -98,6 +98,21 @@ describe("EDOPro parity chain negated/disabled lifecycle decline fixture", () =>
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-lifecycle-negator" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent chain-response negation prompt restorable before optional negated and disabled buckets are collected",
+            windowId: 1,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-negated-lifecycle-starter" }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "fixture-lifecycle-negator", count: 1 },
+              { type: "passChain", player: 1, windowId: 1, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-lifecycle-negator", 1, 1), chainPassGroup(1, 1, 1)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro defers chainEnded triggers while optional chainNegated and chainDisabled trigger buckets are pending",
@@ -151,6 +166,58 @@ describe("EDOPro parity chain negated/disabled lifecycle decline fixture", () =>
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-chain-negated-optional-decline" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps both same-bucket optional negated and disabled triggers restorable before the first decline",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-chain-negated-optional-decline", eventName: "chainNegated", triggerBucket: "turnOptional" },
+              { player: 0, effectId: "fixture-chain-disabled-optional-decline", eventName: "chainDisabled", triggerBucket: "turnOptional" },
+            ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            triggerOrderPrompt: { type: "orderTriggers", player: 0, triggerBucket: "turnOptional" },
+            legalActionCounts: { 0: 4, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-negated-optional-decline", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-negated-optional-decline", triggerBucket: "turnOptional", count: 1 },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-disabled-optional-decline", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-disabled-optional-decline", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-negated-optional-decline", triggerBucket: "turnOptional", count: 1 },
+                  { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-disabled-optional-decline", triggerBucket: "turnOptional", count: 1 },
+                ],
+              },
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [
+                  { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-negated-optional-decline", triggerBucket: "turnOptional", count: 1 },
+                  { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-disabled-optional-decline", triggerBucket: "turnOptional", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-ended-after-negated-disabled-decline", triggerBucket: "turnMandatory" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(0, "fixture-chain-ended-after-negated-disabled-decline", "turnMandatory", 2, "triggerBucket")],
+            logIncludes: ["Negated chain true", "fixture-negated-lifecycle-starter"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps remaining optional chainDisabled triggers pending before collecting chainEnded triggers",
@@ -177,6 +244,37 @@ describe("EDOPro parity chain negated/disabled lifecycle decline fixture", () =>
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-chain-disabled-optional-decline" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the remaining optional chainDisabled trigger restorable before collecting deferred chainEnded triggers",
+            windowId: 3,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 0, effectId: "fixture-chain-disabled-optional-decline", eventName: "chainDisabled", triggerBucket: "turnOptional" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            triggerOrderPrompt: null,
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-disabled-optional-decline", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-disabled-optional-decline", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-chain-disabled-optional-decline", "turnOptional", 1, 3),
+              triggerDeclineGroup(0, "fixture-chain-disabled-optional-decline", "turnOptional", 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-negated-optional-decline", triggerBucket: "turnOptional" },
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-ended-after-negated-disabled-decline", triggerBucket: "turnMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-chain-negated-optional-decline", "turnOptional", 3, "triggerBucket"),
+              absentTriggerActivationGroup(0, "fixture-chain-ended-after-negated-disabled-decline", "turnMandatory", 3, "triggerBucket"),
+            ],
+            logIncludes: ["fixture-chain-negated-optional-decline"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro collects deferred chainEnded triggers after chainNegated and chainDisabled trigger buckets are declined",
@@ -197,6 +295,40 @@ describe("EDOPro parity chain negated/disabled lifecycle decline fixture", () =>
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-ended-after-negated-disabled-decline" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the deferred mandatory chainEnded bucket restorable after optional negated and disabled declines complete",
+            windowId: 4,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 0, effectId: "fixture-chain-ended-after-negated-disabled-decline", eventName: "chainEnded", triggerBucket: "turnMandatory" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
+            triggerOrderPrompt: null,
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-chain-ended-after-negated-disabled-decline", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(0, "fixture-chain-ended-after-negated-disabled-decline", "turnMandatory", 1, 4)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-chain-negated-optional-decline", triggerBucket: "turnOptional" },
+              { type: "activateTrigger", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-chain-disabled-optional-decline", triggerBucket: "turnOptional" },
+              { type: "declineTrigger", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-chain-ended-after-negated-disabled-decline", triggerBucket: "turnMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-chain-negated-optional-decline", "turnOptional", 4, "triggerBucket"),
+              absentTriggerActivationGroup(0, "fixture-chain-disabled-optional-decline", "turnOptional", 4, "triggerBucket"),
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 4,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                actions: [{ type: "declineTrigger", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-chain-ended-after-negated-disabled-decline" }],
+              },
+            ],
+            logIncludes: ["fixture-chain-disabled-optional-decline"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro returns to open priority after the deferred chainEnded trigger resolves",
