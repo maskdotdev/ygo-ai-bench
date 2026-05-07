@@ -3,8 +3,11 @@ import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
 import {
+  absentChainEffectGroup,
   absentTriggerActivationGroup,
   absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
   summonGroup,
   turnGroup,
 } from "./parity-legal-action-group-helpers.js";
@@ -116,11 +119,189 @@ describe("EDOPro parity chain-resolution cross-player SEGOC decline pass handoff
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-cross-decline-handoff-opponent-response-turn-mandatory" })),
         makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-cross-decline-handoff-opponent-response-opponent-mandatory" })),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-cross-decline-handoff-opponent-response-turn-optional" })),
-        makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "fixture-cross-decline-handoff-opponent-response-opponent-optional" })),
-        makeScriptedStep(makeResponseSelector("passChain", 1)),
-        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-decline-handoff-opponent-response-turn-quick" })),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "fixture-cross-decline-handoff-opponent-response-opponent-optional" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro opens opponent chain-response priority after the last cross-player SEGOC optional trigger is declined before opponent response",
+            phase: "main1",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-cross-decline-handoff-opponent-response-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-decline-handoff-opponent-response-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-decline-handoff-opponent-response-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-cross-decline-handoff-opponent-response-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-cross-decline-handoff-opponent-response-opponent-quick", 1, 5),
+              chainPassGroup(1, 1, 5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-cross-decline-handoff-opponent-response-turn-quick" },
+              { type: "activateTrigger", player: 1, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-cross-decline-handoff-opponent-response-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-cross-decline-handoff-opponent-response-turn-quick", 5),
+              absentTriggerActivationGroup(1, "fixture-cross-decline-handoff-opponent-response-opponent-optional", "opponentOptional", 5, "triggerBucket"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 1), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro restores the post-decline opponent-response handoff to the trigger player before they chain",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-cross-decline-handoff-opponent-response-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-decline-handoff-opponent-response-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-decline-handoff-opponent-response-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [1],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-decline-handoff-opponent-response-turn-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-cross-decline-handoff-opponent-response-turn-quick", 1, 6),
+              chainPassGroup(0, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-decline-handoff-opponent-response-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 6, windowKind: "triggerBucket", effectId: "fixture-cross-decline-handoff-opponent-response-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-cross-decline-handoff-opponent-response-opponent-quick", 6),
+              absentTriggerActivationGroup(1, "fixture-cross-decline-handoff-opponent-response-opponent-optional", "opponentOptional", 6, "triggerBucket"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-decline-handoff-opponent-response-turn-quick" }), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro allows the trigger player to chain from the restored post-decline opponent-response handoff window",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-cross-decline-handoff-opponent-response-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-decline-handoff-opponent-response-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-decline-handoff-opponent-response-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [1],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-decline-handoff-opponent-response-turn-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-cross-decline-handoff-opponent-response-turn-quick", 1, 6),
+              chainPassGroup(0, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-decline-handoff-opponent-response-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 6, windowKind: "triggerBucket", effectId: "fixture-cross-decline-handoff-opponent-response-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-cross-decline-handoff-opponent-response-opponent-quick", 6),
+              absentTriggerActivationGroup(1, "fixture-cross-decline-handoff-opponent-response-opponent-optional", "opponentOptional", 6, "triggerBucket"),
+            ],
+          },
+          after: {
+            source: "edopro",
+            note: "EDOPro returns response priority to the opponent after the trigger player chains from the post-decline handoff",
+            phase: "main1",
+            windowId: 7,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-cross-decline-handoff-opponent-response-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-decline-handoff-opponent-response-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-decline-handoff-opponent-response-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-decline-handoff-opponent-response-turn-quick", sourceUid: "p0-deck-200-1" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-decline-handoff-opponent-response-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 7, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-cross-decline-handoff-opponent-response-opponent-quick", 1, 7),
+              chainPassGroup(1, 1, 7),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-decline-handoff-opponent-response-turn-quick" },
+              { type: "activateTrigger", player: 1, windowId: 7, windowKind: "triggerBucket", effectId: "fixture-cross-decline-handoff-opponent-response-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-cross-decline-handoff-opponent-response-turn-quick", 7),
+              absentTriggerActivationGroup(1, "fixture-cross-decline-handoff-opponent-response-opponent-optional", "opponentOptional", 7, "triggerBucket"),
+            ],
+          },
+        }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-cross-decline-handoff-opponent-response-opponent-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro lets the opponent respond from the restored post-decline opponent-response window",
+            phase: "main1",
+            windowId: 7,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-cross-decline-handoff-opponent-response-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-decline-handoff-opponent-response-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-decline-handoff-opponent-response-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-decline-handoff-opponent-response-turn-quick", sourceUid: "p0-deck-200-1" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-decline-handoff-opponent-response-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 7, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-cross-decline-handoff-opponent-response-opponent-quick", 1, 7),
+              chainPassGroup(1, 1, 7),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-decline-handoff-opponent-response-turn-quick" },
+              { type: "activateTrigger", player: 1, windowId: 7, windowKind: "triggerBucket", effectId: "fixture-cross-decline-handoff-opponent-response-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-cross-decline-handoff-opponent-response-turn-quick", 7),
+              absentTriggerActivationGroup(1, "fixture-cross-decline-handoff-opponent-response-opponent-optional", "opponentOptional", 7, "triggerBucket"),
+            ],
+          },
         }),
       ],
       expected: {
