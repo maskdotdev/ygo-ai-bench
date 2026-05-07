@@ -109,6 +109,48 @@ describe("EDOPro parity open fast-effect pass handoff opponent response turn res
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "open-fast-handoff-opponent-turn-limit-opponent-first" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "open-fast-handoff-opponent-turn-limit-chain-limiter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the open fast-effect opponent-response turn-response window restorable before the turn player applies a one-chain limit",
+            phase: "main1",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "open-fast-handoff-opponent-turn-limit-open-quick", sourceUid: "p0-deck-100-0" },
+              { player: 0, effectId: "open-fast-handoff-opponent-turn-limit-first-turn-chain-quick", sourceUid: "p0-deck-200-1" },
+              { player: 1, effectId: "open-fast-handoff-opponent-turn-limit-opponent-first", sourceUid: "p1-deck-300-0" },
+            ],
+            chainPasses: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "open-fast-handoff-opponent-turn-limit-chain-limiter", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "open-fast-handoff-opponent-turn-limit-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 4,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "open-fast-handoff-opponent-turn-limit-chain-limiter", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "open-fast-handoff-opponent-turn-limit-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "open-fast-handoff-opponent-turn-limit-opponent-blocked" },
+            ],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "open-fast-handoff-opponent-turn-limit-opponent-blocked", 4)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies one-chain SetChainLimit restrictions after the turn player responds to an opponent open fast-effect pass-handoff response",
