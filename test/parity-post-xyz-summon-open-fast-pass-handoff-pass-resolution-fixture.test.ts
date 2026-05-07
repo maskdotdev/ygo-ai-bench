@@ -8,6 +8,7 @@ import {
   absentWindowEffectGroup,
   chainEffectGroup,
   chainPassGroup,
+  summonGroup,
   turnGroup,
 } from "./parity-legal-action-group-helpers.js";
 
@@ -87,6 +88,57 @@ describe("EDOPro parity post-Xyz-Summon open fast-effect pass handoff pass resol
       responses: [
         makeScriptedStep(makeResponseSelector("xyzSummon", 0, { code: "900", location: "extraDeck", materialUids: ["p0-deck-100-0", "p0-deck-200-1"] }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro exposes Xyz Summons beside turn-player open fast effects before the pass-resolution fixture begins",
+            phase: "main1",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            legalActionCounts: { 0: 6, 1: 0 },
+            legalActionGroupCounts: { 0: 4, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "post-xyz-summon-pass-resolution-turn-open-quick", count: 1 },
+              { type: "changePosition", player: 0, windowId: 0, windowKind: "open", code: "100", location: "monsterZone", position: "faceUpDefense", count: 1 },
+              { type: "changePosition", player: 0, windowId: 0, windowKind: "open", code: "200", location: "monsterZone", position: "faceUpDefense", count: 1 },
+              { type: "xyzSummon", player: 0, windowId: 0, windowKind: "open", code: "900", location: "extraDeck", materialUids: ["p0-deck-100-0", "p0-deck-200-1"], count: 1 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "post-xyz-summon-pass-resolution-turn-open-quick", count: 1 }],
+              },
+              {
+                player: 0,
+                label: "Actions",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "changePosition", player: 0, windowId: 0, windowKind: "open", code: "100", location: "monsterZone", position: "faceUpDefense", count: 1 },
+                  { type: "changePosition", player: 0, windowId: 0, windowKind: "open", code: "200", location: "monsterZone", position: "faceUpDefense", count: 1 },
+                ],
+              },
+              summonGroup([{ type: "xyzSummon", player: 0, code: "900", location: "extraDeck", materialUids: ["p0-deck-100-0", "p0-deck-200-1"] }], 1, 0),
+              turnGroup(0),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "post-xyz-summon-pass-resolution-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "post-xyz-summon-pass-resolution-opponent-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "post-xyz-summon-pass-resolution-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "post-xyz-summon-pass-resolution-turn-chain-quick", 0, "open"),
+              absentWindowEffectGroup(1, "post-xyz-summon-pass-resolution-opponent-chain-quick", 0, "open"),
+              absentWindowEffectGroup(1, "post-xyz-summon-pass-resolution-opponent-open-quick", 0, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro returns triggerless Xyz Summons to turn-player open fast-effect priority before post-Xyz-Summon handoff chains can begin",
@@ -139,6 +191,44 @@ describe("EDOPro parity post-Xyz-Summon open fast-effect pass handoff pass resol
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "post-xyz-summon-pass-resolution-turn-open-quick" })),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent priority before passing the post-Xyz-Summon pass-resolution response window",
+            phase: "main1",
+            windowId: 2,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 0, effectId: "post-xyz-summon-pass-resolution-turn-open-quick", sourceUid: "p0-deck-300-2" }],
+            chainPasses: [],
+            locations: { monsterZone: ["900"], overlay: ["100", "200"], graveyard: ["300", "600", "400", "500"] },
+            cards: [
+              { uid: "p0-extraDeck-900-0", code: "900", location: "monsterZone", position: "faceUpAttack", faceUp: true, overlayCount: 2 },
+              { uid: "p0-deck-100-0", code: "100", location: "overlay" },
+              { uid: "p0-deck-200-1", code: "200", location: "overlay" },
+            ],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "post-xyz-summon-pass-resolution-opponent-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 2, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "post-xyz-summon-pass-resolution-opponent-chain-quick", 1, 2),
+              chainPassGroup(1, 1, 2),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "post-xyz-summon-pass-resolution-turn-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "post-xyz-summon-pass-resolution-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "post-xyz-summon-pass-resolution-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "post-xyz-summon-pass-resolution-turn-open-quick", 2),
+              absentChainEffectGroup(0, "post-xyz-summon-pass-resolution-turn-chain-quick", 2),
+              absentWindowEffectGroup(1, "post-xyz-summon-pass-resolution-opponent-open-quick", 2, "chainResponse"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro reopens turn-player chain-only responses after the opponent passes a post-Xyz-Summon open fast-effect chain",
@@ -180,6 +270,44 @@ describe("EDOPro parity post-Xyz-Summon open fast-effect pass handoff pass resol
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored turn-player pass-handoff priority before resolving the post-Xyz-Summon pass-resolution chain",
+            phase: "main1",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 0, effectId: "post-xyz-summon-pass-resolution-turn-open-quick", sourceUid: "p0-deck-300-2" }],
+            chainPasses: [1],
+            locations: { monsterZone: ["900"], overlay: ["100", "200"], graveyard: ["300", "600", "400", "500"] },
+            cards: [
+              { uid: "p0-extraDeck-900-0", code: "900", location: "monsterZone", position: "faceUpAttack", faceUp: true, overlayCount: 2 },
+              { uid: "p0-deck-100-0", code: "100", location: "overlay" },
+              { uid: "p0-deck-200-1", code: "200", location: "overlay" },
+            ],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "post-xyz-summon-pass-resolution-turn-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "post-xyz-summon-pass-resolution-turn-chain-quick", 1, 3),
+              chainPassGroup(0, 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "post-xyz-summon-pass-resolution-turn-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "post-xyz-summon-pass-resolution-opponent-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "post-xyz-summon-pass-resolution-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "post-xyz-summon-pass-resolution-turn-open-quick", 3),
+              absentChainEffectGroup(1, "post-xyz-summon-pass-resolution-opponent-chain-quick", 3),
+              absentWindowEffectGroup(1, "post-xyz-summon-pass-resolution-opponent-open-quick", 3, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {
