@@ -1,0 +1,191 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentTriggerActivationGroup, absentWindowEffectGroup, triggerActivationGroup, triggerDeclineGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity damage-dealt missed timing decline fixture", () => {
+  it("returns declined optional if damage-dealt triggers to open fast priority while optional when remains missed", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Damage Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "400", name: "Damage Optional When", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Damage Optional If", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "800", name: "Open Quick After Damage", kind: "monster", attack: 500, defense: 500 },
+      { code: "600", name: "Boundary Body", kind: "monster", attack: 900, defense: 900 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "damage-dealt missed timing decline open fast fixture",
+      options: { seed: 92, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "400", "500", "800", "600"] },
+        1: { main: ["600", "600", "600", "600", "600"] },
+      },
+      setup: {
+        moveCards: [{ player: 0, code: "600", from: "hand", to: "monsterZone", position: "faceUpAttack" }],
+        effects: [
+          {
+            id: "damage-dealt-decline-multistep",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            collectEventsOnResolve: [{ collectEvent: "damageDealt", eventIsLast: false, eventPlayer: 1, eventValue: 700, eventReason: 0x40, eventReasonPlayer: 0 }],
+            moveCardsOnResolve: [{ player: 0, code: "600", from: "monsterZone", to: "graveyard", collectEvent: "sentToGraveyard" }],
+            logMessage: "Damage-dealt decline multi step resolved",
+          },
+          {
+            id: "damage-dealt-decline-optional-when",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "damageDealt",
+            triggerTiming: "when",
+            range: ["hand"],
+            logMessage: "Damage-dealt decline optional when should not resolve",
+          },
+          {
+            id: "damage-dealt-decline-optional-if",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "damageDealt",
+            triggerTiming: "if",
+            range: ["hand"],
+            logMessage: "Damage-dealt decline optional if should not resolve",
+          },
+          {
+            id: "damage-dealt-decline-open-fast",
+            player: 0,
+            code: "800",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Damage-dealt decline open fast resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "damage-dealt-decline-multistep" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro keeps optional if damage-dealt triggers available while optional when damage-dealt triggers miss timing",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [
+              { player: 0, effectId: "damage-dealt-decline-optional-if", eventName: "damageDealt", eventCode: 1111, eventPlayer: 1, eventValue: 700, eventReason: 0x40, eventReasonPlayer: 0 },
+            ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "damage-dealt-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "damage-dealt-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "damage-dealt-decline-optional-if", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "damage-dealt-decline-optional-if", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "damage-dealt-decline-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "damage-dealt-decline-open-fast" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "damage-dealt-decline-optional-when", "turnOptional", 1, "triggerBucket"),
+              absentWindowEffectGroup(0, "damage-dealt-decline-open-fast", 1, "triggerBucket"),
+            ],
+            logIncludes: ["Damage-dealt decline multi step resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "damage-dealt-decline-optional-if" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro exposes open fast effects after declining the surviving optional if damage-dealt trigger without resurrecting missed optional when triggers",
+            windowId: 2,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 12, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "damage-dealt-decline-open-fast", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 2,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "damage-dealt-decline-open-fast", count: 1 }],
+              },
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "damage-dealt-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "damage-dealt-decline-optional-if" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "damage-dealt-decline-optional-when", "turnOptional", 2, "open"),
+              absentTriggerActivationGroup(0, "damage-dealt-decline-optional-if", "turnOptional", 2, "open"),
+            ],
+            logIncludes: ["Damage-dealt decline multi step resolved", "damage-dealt-decline-optional-if"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "damage-dealt-decline-open-fast" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves the restored post-decline open fast effect without resurrecting missed optional when triggers",
+            windowId: 3,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "damage-dealt-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "damage-dealt-decline-optional-if" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "damage-dealt-decline-optional-when", "turnOptional", 3, "open"),
+              absentTriggerActivationGroup(0, "damage-dealt-decline-optional-if", "turnOptional", 3, "open"),
+            ],
+            logIncludes: ["Damage-dealt decline open fast resolved"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state returns to open priority after the restored post-decline open fast effect while optional when remains missed",
+        windowId: 3,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        chainPasses: [],
+        legalActionCounts: { 0: 12, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "damage-dealt-decline-optional-when" },
+          { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "damage-dealt-decline-optional-if" },
+        ],
+        absentLegalActionGroups: [
+          absentTriggerActivationGroup(0, "damage-dealt-decline-optional-when", "turnOptional", 3, "open"),
+          absentTriggerActivationGroup(0, "damage-dealt-decline-optional-if", "turnOptional", 3, "open"),
+        ],
+        logIncludes: ["Damage-dealt decline open fast resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
