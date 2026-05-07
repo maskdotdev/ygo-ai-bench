@@ -1,0 +1,245 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import {
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  summonGroup,
+  triggerActivationGroup,
+  triggerDeclineGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain-resolution SEGOC later-payload decline restore fixture", () => {
+  it("restores later-payload trigger buckets and returns to open priority after declining the restored trigger", () => {
+    const firstEventCode = 0x10000035;
+    const secondEventCode = 0x10000036;
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Payload Split Decline Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "First Payload Decline Trigger", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Second Payload Decline Trigger", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "First Payload Decline Body", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "600", name: "Second Payload Decline Body", kind: "monster", attack: 1100, defense: 1100 },
+      { code: "700", name: "Opponent Payload Decline Chain Quick", kind: "monster", attack: 900, defense: 900 },
+      { code: "800", name: "Opponent Payload Decline Filler", kind: "monster", attack: 800, defense: 800 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain resolution segoc later-payload decline restore fixture",
+      options: { seed: 392, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "300", "400", "500", "600"] },
+        1: { main: ["700", "800", "800", "800", "800"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-payload-decline-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "500", from: "hand", to: "graveyard", collectEvent: "customEvent", eventCode: firstEventCode },
+              { player: 0, code: "600", from: "hand", to: "graveyard", collectEvent: "customEvent", eventCode: secondEventCode },
+              { player: 1, code: "700", from: "hand", to: "graveyard" },
+            ],
+            logMessage: "Payload split decline starter resolved",
+          },
+          {
+            id: "fixture-first-payload-decline-trigger",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "customEvent",
+            triggerCode: firstEventCode,
+            range: ["hand"],
+            logMessage: "First payload decline trigger resolved",
+          },
+          {
+            id: "fixture-second-payload-decline-trigger",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "customEvent",
+            triggerCode: secondEventCode,
+            range: ["hand"],
+            logMessage: "Second payload decline trigger should not resolve",
+          },
+          {
+            id: "fixture-opponent-payload-decline-chain-quick",
+            player: 1,
+            code: "700",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            activationChain: "chain",
+            logMessage: "Opponent payload decline chain quick should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-payload-decline-starter" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro exposes same-bucket chain-created optional triggers before chain responses even when their event payloads differ",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-first-payload-decline-trigger", eventName: "customEvent", eventCode: firstEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-500-3" },
+              { player: 0, effectId: "fixture-second-payload-decline-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-600-4" },
+            ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            triggerOrderPrompt: { type: "orderTriggers", player: 0, triggerBucket: "turnOptional" },
+            legalActionCounts: { 0: 4, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-payload-decline-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-payload-decline-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-second-payload-decline-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-second-payload-decline-trigger", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-first-payload-decline-trigger", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "fixture-first-payload-decline-trigger", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-opponent-payload-decline-chain-quick" }],
+            absentLegalActionGroups: [absentWindowEffectGroup(1, "fixture-opponent-payload-decline-chain-quick", 1, "triggerBucket")],
+            locations: { graveyard: ["500", "600", "700"], hand: ["100", "300", "400", "800", "800", "800", "800"] },
+            logIncludes: ["Payload split decline starter resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-first-payload-decline-trigger" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro keeps different-payload trigger buckets pending but hidden once the active trigger chain carries the first payload",
+            windowId: 2,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-first-payload-decline-trigger", eventName: "customEvent", eventCode: firstEventCode, eventCardUid: "p0-deck-500-3" }],
+            chainPasses: [],
+            pendingTriggers: [{ player: 0, effectId: "fixture-second-payload-decline-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-600-4" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "fixture-opponent-payload-decline-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 2, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-opponent-payload-decline-chain-quick", 1, 2),
+              chainPassGroup(1, 1, 2),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "fixture-second-payload-decline-trigger" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(0, "fixture-second-payload-decline-trigger", "turnOptional", 2, "chainResponse")],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 1), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro advances the restored later-payload trigger bucket after the first payload trigger chain resolves",
+            windowId: 3,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 0, effectId: "fixture-second-payload-decline-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-600-4" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            triggerOrderPrompt: null,
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-second-payload-decline-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-second-payload-decline-trigger", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-second-payload-decline-trigger", "turnOptional", 1, 3),
+              triggerDeclineGroup(0, "fixture-second-payload-decline-trigger", "turnOptional", 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-first-payload-decline-trigger", triggerBucket: "turnOptional" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-opponent-payload-decline-chain-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-first-payload-decline-trigger", "turnOptional", 3, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-opponent-payload-decline-chain-quick", 3, "triggerBucket"),
+            ],
+            logIncludes: ["First payload decline trigger resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-second-payload-decline-trigger" }), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro returns restored later-payload optional declines to turn-player open priority",
+        phase: "main1",
+        windowId: 4,
+        windowKind: "open",
+        waitingFor: 0,
+        chain: [],
+        chainPasses: [],
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        legalActionCounts: { 0: 9, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-payload-decline-starter", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 4, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 4, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 4, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 4, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 4, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 4, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 4, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 4, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 4,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-payload-decline-starter", count: 1 }],
+          },
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "100", location: "hand" },
+            { type: "normalSummon", player: 0, code: "300", location: "hand" },
+            { type: "normalSummon", player: 0, code: "400", location: "hand" },
+            { type: "setMonster", player: 0, code: "100", location: "hand" },
+            { type: "setMonster", player: 0, code: "300", location: "hand" },
+            { type: "setMonster", player: 0, code: "400", location: "hand" },
+          ], 1, 4),
+          turnGroup(4),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 1, windowId: 4, windowKind: "open", effectId: "fixture-opponent-payload-decline-chain-quick" },
+          { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-first-payload-decline-trigger" },
+          { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-second-payload-decline-trigger" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(1, "fixture-opponent-payload-decline-chain-quick", 4, "open"),
+          absentTriggerActivationGroup(0, "fixture-first-payload-decline-trigger", "turnOptional", 4, "open"),
+          absentTriggerActivationGroup(0, "fixture-second-payload-decline-trigger", "turnOptional", 4, "open"),
+        ],
+        locations: { graveyard: ["500", "600", "700"], hand: ["100", "300", "400", "800", "800", "800", "800"] },
+        logIncludes: ["Payload split decline starter resolved", "First payload decline trigger resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
