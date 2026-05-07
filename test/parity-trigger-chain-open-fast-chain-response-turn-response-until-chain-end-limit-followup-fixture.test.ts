@@ -122,6 +122,57 @@ describe("EDOPro parity trigger-chain response turn-response until-chain-end fol
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "trigger-until-followup-first-response" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "trigger-until-followup-second-response" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored trigger-player priority while SetChainLimitTillChainEnd permits the next selected-trigger response",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "trigger-until-followup-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 1, effectId: "trigger-until-followup-opponent-limiter", sourceUid: "p1-deck-500-0" },
+              { player: 0, effectId: "trigger-until-followup-first-response", sourceUid: "p0-deck-300-2" },
+            ],
+            chainPasses: [],
+            chainLimits: [{ untilChainEnd: true }],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "trigger-until-followup-second-response", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "trigger-until-followup-third-response", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 4,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "trigger-until-followup-second-response", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "trigger-until-followup-third-response", count: 1 },
+                ],
+              },
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "trigger-until-followup-first-response" },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "trigger-until-followup-open" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "trigger-until-followup-opponent-limiter" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "trigger-until-followup-opponent-blocked" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "trigger-until-followup-opponent-open" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "trigger-until-followup-first-response", 4),
+              absentWindowEffectGroup(0, "trigger-until-followup-open", 4, "chainResponse"),
+              absentChainEffectGroup(1, "trigger-until-followup-opponent-limiter", 4),
+              absentChainEffectGroup(1, "trigger-until-followup-opponent-blocked", 4),
+              absentWindowEffectGroup(1, "trigger-until-followup-opponent-open", 4, "chainResponse"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps SetChainLimitTillChainEnd restrictions after the allowed trigger player adds another selected-trigger response",

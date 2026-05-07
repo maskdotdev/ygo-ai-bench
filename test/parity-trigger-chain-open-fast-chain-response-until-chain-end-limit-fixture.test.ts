@@ -94,6 +94,49 @@ describe("EDOPro parity trigger-chain response until-chain-end limit fixture", (
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "trigger-until-limit-success" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "trigger-until-limit-opponent-limiter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent priority before the opponent selects the until-chain-end SetChainLimit response",
+            windowId: 2,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 0, effectId: "trigger-until-limit-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            chainPasses: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 0, 1: 3 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "trigger-until-limit-opponent-limiter", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "trigger-until-limit-opponent-blocked", count: 1 },
+              { type: "passChain", player: 1, windowId: 2, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 2,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "trigger-until-limit-opponent-limiter", count: 1 },
+                  { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "trigger-until-limit-opponent-blocked", count: 1 },
+                ],
+              },
+              chainPassGroup(1, 1, 2),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "trigger-until-limit-turn-followup" },
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "trigger-until-limit-turn-open" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "trigger-until-limit-opponent-open" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "trigger-until-limit-turn-followup", 2),
+              absentWindowEffectGroup(0, "trigger-until-limit-turn-open", 2, "chainResponse"),
+              absentWindowEffectGroup(1, "trigger-until-limit-opponent-open", 2, "chainResponse"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies SetChainLimitTillChainEnd restrictions after the opponent responds to a selected trigger chain",
