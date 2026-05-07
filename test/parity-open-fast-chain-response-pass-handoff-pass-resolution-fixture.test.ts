@@ -1,0 +1,190 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import {
+  absentChainEffectGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  summonGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity open fast-effect chain-response pass handoff pass resolution fixture", () => {
+  it("resolves opponent chain-response handoff chains after the opponent passes the returned window", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Open Chain Handoff Pass Resolution Turn Open Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "200", name: "Open Chain Handoff Pass Resolution Turn Chain Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "300", name: "Open Chain Handoff Pass Resolution Opponent First Chain Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "500", name: "Open Chain Handoff Pass Resolution Opponent Second Chain Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "600", name: "Open Chain Handoff Pass Resolution Opponent Open Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "700", name: "Open Chain Handoff Pass Resolution Filler", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "open fast chain response pass handoff pass resolution fixture",
+      options: { seed: 399, startingHandSize: 3 },
+      decks: {
+        0: { main: ["100", "200", "700"] },
+        1: { main: ["300", "500", "600"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "open-fast-chain-handoff-pass-resolution-turn-open-quick",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "open",
+            logMessage: "Open fast chain handoff pass resolution turn open quick resolved",
+          },
+          {
+            id: "open-fast-chain-handoff-pass-resolution-turn-chain-quick",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Open fast chain handoff pass resolution turn chain quick should not resolve",
+          },
+          {
+            id: "open-fast-chain-handoff-pass-resolution-opponent-first-chain-quick",
+            player: 1,
+            code: "300",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Open fast chain handoff pass resolution opponent first chain quick resolved",
+          },
+          {
+            id: "open-fast-chain-handoff-pass-resolution-opponent-second-chain-quick",
+            player: 1,
+            code: "500",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Open fast chain handoff pass resolution opponent second chain quick should not resolve",
+          },
+          {
+            id: "open-fast-chain-handoff-pass-resolution-opponent-open-quick",
+            player: 1,
+            code: "600",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "open",
+            logMessage: "Open fast chain handoff pass resolution opponent open quick should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "open-fast-chain-handoff-pass-resolution-turn-open-quick" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "open-fast-chain-handoff-pass-resolution-opponent-first-chain-quick" })),
+        makeScriptedStep(makeResponseSelector("passChain", 0), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro returns response priority to the opponent after the turn player passes an opponent open fast-effect chain-response link",
+            phase: "main1",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "open-fast-chain-handoff-pass-resolution-turn-open-quick", sourceUid: "p0-deck-100-0" },
+              { player: 1, effectId: "open-fast-chain-handoff-pass-resolution-opponent-first-chain-quick", sourceUid: "p1-deck-300-0" },
+            ],
+            chainPasses: [0],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-pass-resolution-opponent-second-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "open-fast-chain-handoff-pass-resolution-opponent-second-chain-quick", 1, 3),
+              chainPassGroup(1, 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-pass-resolution-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-pass-resolution-opponent-first-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-pass-resolution-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "open-fast-chain-handoff-pass-resolution-turn-chain-quick", 3),
+              absentChainEffectGroup(1, "open-fast-chain-handoff-pass-resolution-opponent-first-chain-quick", 3),
+              absentWindowEffectGroup(1, "open-fast-chain-handoff-pass-resolution-opponent-open-quick", 3, "chainResponse"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 1), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro resolves an open fast-effect chain when the opponent passes the response window returned after the turn player's pass",
+        phase: "main1",
+        windowId: 4,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        chainPasses: [],
+        legalActionCounts: { 0: 8, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "normalSummon", player: 0, windowId: 4, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 4, windowKind: "open", code: "200", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 4, windowKind: "open", code: "700", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 4, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 4, windowKind: "open", code: "200", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 4, windowKind: "open", code: "700", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 4, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 4, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "100", location: "hand" },
+            { type: "normalSummon", player: 0, code: "200", location: "hand" },
+            { type: "normalSummon", player: 0, code: "700", location: "hand" },
+            { type: "setMonster", player: 0, code: "100", location: "hand" },
+            { type: "setMonster", player: 0, code: "200", location: "hand" },
+            { type: "setMonster", player: 0, code: "700", location: "hand" },
+          ], 1, 4),
+          turnGroup(4),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "open-fast-chain-handoff-pass-resolution-turn-open-quick" },
+          { type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "open-fast-chain-handoff-pass-resolution-turn-chain-quick" },
+          { type: "activateEffect", player: 1, windowId: 4, windowKind: "open", effectId: "open-fast-chain-handoff-pass-resolution-opponent-open-quick" },
+          { type: "activateEffect", player: 1, windowId: 4, windowKind: "open", effectId: "open-fast-chain-handoff-pass-resolution-opponent-second-chain-quick" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "open-fast-chain-handoff-pass-resolution-turn-open-quick", 4, "open"),
+          absentWindowEffectGroup(0, "open-fast-chain-handoff-pass-resolution-turn-chain-quick", 4, "open"),
+          absentWindowEffectGroup(1, "open-fast-chain-handoff-pass-resolution-opponent-open-quick", 4, "open"),
+          absentWindowEffectGroup(1, "open-fast-chain-handoff-pass-resolution-opponent-second-chain-quick", 4, "open"),
+        ],
+        logIncludes: [
+          "Open fast chain handoff pass resolution opponent first chain quick resolved",
+          "Open fast chain handoff pass resolution turn open quick resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
