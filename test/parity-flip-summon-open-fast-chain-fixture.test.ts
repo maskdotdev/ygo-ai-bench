@@ -112,6 +112,46 @@ describe("EDOPro parity Flip Summon open fast-effect chain fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "flip-summon-turn-open-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves post-Flip-Summon turn-player open priority before a fast effect starts a chain",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            chain: [],
+            chainPasses: [],
+            cards: [{ uid: "p0-deck-100-0", code: "100", location: "monsterZone", position: "faceUpAttack", faceUp: true }],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "flip-summon-turn-open-chain-quick", count: 1 },
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 1,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "flip-summon-turn-open-chain-quick", count: 1 }],
+              },
+              turnGroup(1),
+            ],
+            absentLegalActions: [
+              { type: "flipSummon", player: 0, windowId: 1, windowKind: "open", code: "100", location: "monsterZone" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "flip-summon-opponent-chain-response-quick" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "flip-summon-opponent-open-chain-filtered" },
+            ],
+            absentLegalActionGroups: [
+              absentSummonGroup({ type: "flipSummon", player: 0, code: "100", location: "monsterZone" }, 1),
+              absentWindowEffectGroup(1, "flip-summon-opponent-chain-response-quick", 1, "open"),
+              absentWindowEffectGroup(1, "flip-summon-opponent-open-chain-filtered", 1, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro gives the opponent chain-response priority after a post-Flip-Summon open fast effect starts a chain",
@@ -139,6 +179,30 @@ describe("EDOPro parity Flip Summon open fast-effect chain fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent chain-response priority before passing the post-Flip-Summon fast-effect chain",
+            phase: "main1",
+            windowId: 2,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            chain: [{ player: 0, effectId: "flip-summon-turn-open-chain-quick", sourceUid: "p0-deck-300-1" }],
+            chainPasses: [],
+            cards: [{ uid: "p0-deck-100-0", code: "100", location: "monsterZone", position: "faceUpAttack", faceUp: true }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "flip-summon-opponent-chain-response-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 2, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "flip-summon-opponent-chain-response-quick", 1, 2),
+              chainPassGroup(1, 1, 2),
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "flip-summon-opponent-open-chain-filtered" }],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "flip-summon-opponent-open-chain-filtered", 2)],
+          },
         }),
       ],
       expected: {

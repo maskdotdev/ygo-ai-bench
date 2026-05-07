@@ -172,6 +172,51 @@ describe("EDOPro parity Link Summon open fast-effect chain fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "link-summon-turn-open-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves post-Link-Summon turn-player open priority before a fast effect starts a chain",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            chain: [],
+            chainPasses: [],
+            locations: { monsterZone: ["900"], graveyard: ["100", "200", "300", "400", "500"] },
+            cards: [
+              { uid: "p0-extraDeck-900-0", code: "900", location: "monsterZone", position: "faceUpAttack", faceUp: true },
+              { uid: "p0-deck-100-0", code: "100", location: "graveyard" },
+              { uid: "p0-deck-200-1", code: "200", location: "graveyard" },
+            ],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "link-summon-turn-open-chain-quick", count: 1 },
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 1,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "link-summon-turn-open-chain-quick", count: 1 }],
+              },
+              turnGroup(1),
+            ],
+            absentLegalActions: [
+              { type: "linkSummon", player: 0, windowId: 1, windowKind: "open", code: "900", location: "extraDeck" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "link-summon-opponent-chain-response-quick" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "link-summon-opponent-open-chain-filtered" },
+            ],
+            absentLegalActionGroups: [
+              absentSummonGroup({ type: "linkSummon", player: 0, code: "900", location: "extraDeck" }, 1),
+              absentWindowEffectGroup(1, "link-summon-opponent-chain-response-quick", 1, "open"),
+              absentWindowEffectGroup(1, "link-summon-opponent-open-chain-filtered", 1, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro gives the opponent chain-response priority after a post-Link-Summon open fast effect starts a chain",
@@ -204,6 +249,35 @@ describe("EDOPro parity Link Summon open fast-effect chain fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent chain-response priority before passing the post-Link-Summon fast-effect chain",
+            phase: "main1",
+            windowId: 2,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            chain: [{ player: 0, effectId: "link-summon-turn-open-chain-quick", sourceUid: "p0-deck-300-2" }],
+            chainPasses: [],
+            locations: { monsterZone: ["900"], graveyard: ["100", "200", "300", "400", "500"] },
+            cards: [
+              { uid: "p0-extraDeck-900-0", code: "900", location: "monsterZone", position: "faceUpAttack", faceUp: true },
+              { uid: "p0-deck-100-0", code: "100", location: "graveyard" },
+              { uid: "p0-deck-200-1", code: "200", location: "graveyard" },
+            ],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "link-summon-opponent-chain-response-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 2, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "link-summon-opponent-chain-response-quick", 1, 2),
+              chainPassGroup(1, 1, 2),
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "link-summon-opponent-open-chain-filtered" }],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "link-summon-opponent-open-chain-filtered", 2)],
+          },
         }),
       ],
       expected: {
