@@ -236,6 +236,43 @@ describe("EDOPro parity chainEnded open fast-effect pass-handoff chain-limit fix
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the post-chainEnded pass-handoff SetChainLimit response window restorable before the allowed turn player passes",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            chain: [
+              { player: 0, effectId: "fixture-chain-ended-limit-open-fast", sourceUid: "p0-deck-400-3" },
+              { player: 0, effectId: "fixture-chain-ended-limit-turn-limiter", sourceUid: "p0-deck-500-4" },
+            ],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chainLimits: [{ untilChainEnd: false, expiresAtChainLength: 2 }],
+            locations: { graveyard: ["200"], hand: ["100", "300", "400", "500", "600", "700"] },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-limit-turn-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-chain-ended-limit-turn-followup", 1, 6),
+              chainPassGroup(0, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-limit-opponent-blocked" },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-limit-open-fast" },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-limit-turn-limiter" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-chain-ended-limit-opponent-blocked", 6),
+              absentWindowEffectGroup(0, "fixture-chain-ended-limit-open-fast", 6, "chainResponse"),
+              absentChainEffectGroup(0, "fixture-chain-ended-limit-turn-limiter", 6),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro clears one-chain limits and resolves post-chainEnded open fast-effect pass-handoff chains after the allowed turn player passes",
