@@ -109,6 +109,46 @@ describe("EDOPro parity post-Spell/Trap-Set open fast-effect pass handoff oppone
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "post-spell-trap-set-handoff-opponent-turn-response-chain-opponent-second-chain-quick" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "post-spell-trap-set-handoff-opponent-turn-response-chain-turn-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored turn-player priority before chaining from the post-Spell-Trap-Set handoff response window",
+            phase: "main1",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "post-spell-trap-set-handoff-opponent-turn-response-chain-turn-open-quick", sourceUid: "p0-deck-300-1" },
+              { player: 1, effectId: "post-spell-trap-set-handoff-opponent-turn-response-chain-opponent-first-chain-quick", sourceUid: "p1-deck-400-0" },
+              { player: 1, effectId: "post-spell-trap-set-handoff-opponent-turn-response-chain-opponent-second-chain-quick", sourceUid: "p1-deck-500-1" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "post-spell-trap-set-handoff-opponent-turn-response-chain-turn-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "post-spell-trap-set-handoff-opponent-turn-response-chain-turn-chain-quick", 1, 5),
+              chainPassGroup(0, 1, 5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "post-spell-trap-set-handoff-opponent-turn-response-chain-turn-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "post-spell-trap-set-handoff-opponent-turn-response-chain-opponent-first-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "post-spell-trap-set-handoff-opponent-turn-response-chain-opponent-second-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "post-spell-trap-set-handoff-opponent-turn-response-chain-opponent-third-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "post-spell-trap-set-handoff-opponent-turn-response-chain-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "post-spell-trap-set-handoff-opponent-turn-response-chain-turn-open-quick", 5, "chainResponse"),
+              absentChainEffectGroup(1, "post-spell-trap-set-handoff-opponent-turn-response-chain-opponent-first-chain-quick", 5),
+              absentChainEffectGroup(1, "post-spell-trap-set-handoff-opponent-turn-response-chain-opponent-second-chain-quick", 5),
+              absentChainEffectGroup(1, "post-spell-trap-set-handoff-opponent-turn-response-chain-opponent-third-chain-quick", 5),
+              absentWindowEffectGroup(1, "post-spell-trap-set-handoff-opponent-turn-response-chain-opponent-open-quick", 5, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {
