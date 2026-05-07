@@ -109,6 +109,39 @@ describe("EDOPro parity Main Phase 2 open fast-effect chain response fixture", (
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "main2-chain-response-turn-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored Main Phase 2 turn-player chain-response priority before the final response resolves",
+            phase: "main2",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "main2-chain-response-turn-open-quick", sourceUid: "p0-deck-110-0" },
+              { player: 1, effectId: "main2-chain-response-opponent-chain-quick", sourceUid: "p1-deck-210-0" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "main2-chain-response-turn-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "main2-chain-response-turn-chain-quick", 1, 4),
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "main2-chain-response-turn-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "main2-chain-response-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "main2-chain-response-turn-open-quick", 4, "chainResponse"),
+              absentWindowEffectGroup(1, "main2-chain-response-opponent-open-quick", 4, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {

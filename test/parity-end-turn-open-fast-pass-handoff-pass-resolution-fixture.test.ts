@@ -171,6 +171,40 @@ describe("EDOPro parity end turn open fast-effect pass handoff pass resolution f
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored next-turn-player priority before the final turn-handoff chain pass",
+            windowId: 3,
+            windowKind: "chainResponse",
+            phase: "main1",
+            turnPlayer: 1,
+            turn: 2,
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 1, effectId: "end-turn-handoff-pass-next-open-quick", sourceUid: "p1-deck-200-0" }],
+            chainPasses: [0],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "end-turn-handoff-pass-next-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "end-turn-handoff-pass-next-chain-quick", 1, 3),
+              chainPassGroup(1, 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "end-turn-handoff-pass-previous-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "end-turn-handoff-pass-previous-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "end-turn-handoff-pass-next-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "end-turn-handoff-pass-previous-open-quick", 3, "chainResponse"),
+              absentWindowEffectGroup(0, "end-turn-handoff-pass-previous-chain-quick", 3, "chainResponse"),
+              absentWindowEffectGroup(1, "end-turn-handoff-pass-next-open-quick", 3, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {
