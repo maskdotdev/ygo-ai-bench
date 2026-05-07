@@ -92,6 +92,43 @@ describe("EDOPro parity open fast-effect chain-response pass handoff pass resolu
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "open-fast-chain-handoff-pass-resolution-opponent-first-chain-quick" })),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the restored turn-player response priority restorable before passing an opponent open fast-effect chain-response link",
+            phase: "main1",
+            windowId: 2,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "open-fast-chain-handoff-pass-resolution-turn-open-quick", sourceUid: "p0-deck-100-0" },
+              { player: 1, effectId: "open-fast-chain-handoff-pass-resolution-opponent-first-chain-quick", sourceUid: "p1-deck-300-0" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-pass-resolution-turn-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 2, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "open-fast-chain-handoff-pass-resolution-turn-chain-quick", 1, 2),
+              chainPassGroup(0, 1, 2),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-pass-resolution-turn-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-pass-resolution-opponent-first-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-pass-resolution-opponent-second-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-pass-resolution-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "open-fast-chain-handoff-pass-resolution-turn-open-quick", 2, "chainResponse"),
+              absentChainEffectGroup(1, "open-fast-chain-handoff-pass-resolution-opponent-first-chain-quick", 2),
+              absentChainEffectGroup(1, "open-fast-chain-handoff-pass-resolution-opponent-second-chain-quick", 2),
+              absentWindowEffectGroup(1, "open-fast-chain-handoff-pass-resolution-opponent-open-quick", 2, "chainResponse"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro returns response priority to the opponent after the turn player passes an opponent open fast-effect chain-response link",
