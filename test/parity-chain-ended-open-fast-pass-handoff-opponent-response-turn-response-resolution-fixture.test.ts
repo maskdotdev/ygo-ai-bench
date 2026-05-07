@@ -118,6 +118,43 @@ describe("EDOPro parity chainEnded open fast-effect handoff opponent response tu
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-ended-handoff-turn-resolution-cleanup" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-handoff-turn-resolution-open-fast" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the post-chainEnded handoff open fast window restorable before the turn-resolution chain starts",
+            phase: "main1",
+            windowId: 3,
+            windowKind: "open",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            locations: { graveyard: ["200"], hand: ["100", "300", "400", "500", "700", "600"] },
+            legalActionCounts: { 0: 14, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-resolution-starter", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-resolution-open-fast", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-resolution-starter", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-resolution-open-fast", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-resolution-first-turn-chain" },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-resolution-second-turn-chain" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-resolution-opponent-chain" },
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro opens restored opponent responses after a post-chainEnded open fast effect before turn-response resolution",

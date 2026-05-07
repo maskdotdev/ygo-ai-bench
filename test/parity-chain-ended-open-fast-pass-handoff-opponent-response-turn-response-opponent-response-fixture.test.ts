@@ -146,6 +146,45 @@ describe("EDOPro parity chainEnded open fast-effect handoff opponent response tu
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-ended-handoff-opponent-alternation-cleanup" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-handoff-opponent-alternation-open-fast" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the post-chainEnded handoff open fast window restorable before the alternation chain starts",
+            phase: "main1",
+            windowId: 3,
+            windowKind: "open",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            locations: { graveyard: ["200"], hand: ["100", "300", "400", "500", "700", "900", "600", "800"] },
+            legalActionCounts: { 0: 16, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-opponent-alternation-starter", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-opponent-alternation-open-fast", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-opponent-alternation-starter", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-opponent-alternation-open-fast", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-opponent-alternation-first-turn" },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-opponent-alternation-second-turn" },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-opponent-alternation-third-turn" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-opponent-alternation-opponent-first" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-opponent-alternation-opponent-second" },
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro opens opponent responses after a post-chainEnded open fast effect before alternation",
