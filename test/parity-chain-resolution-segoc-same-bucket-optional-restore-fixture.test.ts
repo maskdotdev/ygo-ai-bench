@@ -204,6 +204,28 @@ describe("EDOPro parity chain-resolution same-bucket optional restore fixture", 
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "fixture-chain-resolution-later-opponent-optional" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves the restored later opponent optional bucket after the turn optional bucket is consumed",
+            windowId: 3,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-chain-resolution-second-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" }],
+            pendingTriggers: [{ player: 1, effectId: "fixture-chain-resolution-later-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-later-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-later-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-chain-resolution-later-opponent-optional", "opponentOptional", 1, 3),
+              triggerDeclineGroup(1, "fixture-chain-resolution-later-opponent-optional", "opponentOptional", 1, 3),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-turn-optional", triggerBucket: "turnOptional" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(0, "fixture-chain-resolution-first-turn-optional", "turnOptional", 3, "triggerBucket")],
+          },
         }),
       ],
       expected: {

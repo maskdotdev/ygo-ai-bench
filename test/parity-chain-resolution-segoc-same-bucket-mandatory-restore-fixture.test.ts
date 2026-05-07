@@ -221,6 +221,38 @@ describe("EDOPro parity chain-resolution same-bucket mandatory restore fixture",
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-chain-resolution-later-opponent-mandatory" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves the restored later opponent mandatory bucket after the turn mandatory bucket is consumed",
+            windowId: 3,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [
+              { player: 0, effectId: "fixture-chain-resolution-second-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 0, effectId: "fixture-chain-resolution-first-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+            ],
+            pendingTriggers: [{ player: 1, effectId: "fixture-chain-resolution-later-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentMandatory" }],
+            legalActionCounts: { 0: 0, 1: 1 },
+            legalActionGroupCounts: { 0: 0, 1: 1 },
+            legalActions: [{ type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-later-opponent-mandatory", triggerBucket: "opponentMandatory", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(1, "fixture-chain-resolution-later-opponent-mandatory", "opponentMandatory", 1, 3)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-turn-mandatory", triggerBucket: "turnMandatory" },
+              { type: "declineTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-later-opponent-mandatory", triggerBucket: "opponentMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-chain-resolution-first-turn-mandatory", "turnMandatory", 3, "triggerBucket"),
+              {
+                player: 1,
+                label: "Trigger Declines",
+                windowId: 3,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 1, triggerBucket: "opponentMandatory" },
+                actions: [{ type: "declineTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-later-opponent-mandatory" }],
+              },
+            ],
+          },
         }),
       ],
       expected: {

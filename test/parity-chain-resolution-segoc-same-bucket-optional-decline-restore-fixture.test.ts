@@ -218,6 +218,41 @@ describe("EDOPro parity chain-resolution same-bucket optional decline restore fi
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "fixture-chain-resolution-later-opponent-optional-decline" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves the restored later opponent optional bucket after the restored same-bucket optional bucket is consumed",
+            windowId: 3,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-chain-resolution-first-turn-optional-decline", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" }],
+            pendingTriggers: [{ player: 1, effectId: "fixture-chain-resolution-later-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-later-opponent-optional-decline", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-later-opponent-optional-decline", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-chain-resolution-later-opponent-optional-decline", "opponentOptional", 1, 3),
+              triggerDeclineGroup(1, "fixture-chain-resolution-later-opponent-optional-decline", "opponentOptional", 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-second-turn-optional-decline", triggerBucket: "turnOptional" },
+              { type: "declineTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-turn-optional-decline", triggerBucket: "turnOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-chain-resolution-second-turn-optional-decline", "turnOptional", 3, "triggerBucket"),
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 3,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                actions: [{ type: "declineTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-turn-optional-decline" }],
+              },
+            ],
+          },
         }),
       ],
       expected: {
