@@ -8,6 +8,7 @@ import {
   absentWindowEffectGroup,
   chainEffectGroup,
   chainPassGroup,
+  triggerActivationGroup,
 } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity restored follow-up chainEnded response until-chain-end opponent-response fixture", () => {
@@ -214,6 +215,33 @@ describe("EDOPro parity restored follow-up chainEnded response until-chain-end o
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro opens a restored chainEnded trigger bucket before preserving until-chain-end limits for the opponent response",
+            phase: "main1",
+            windowId: 9,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 0, effectId: "fixture-cross-payload-follow-up-ended-until-response-chain-ended-watcher", eventName: "chainEnded", triggerBucket: "turnMandatory" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 9, windowKind: "triggerBucket", effectId: "fixture-cross-payload-follow-up-ended-until-response-chain-ended-watcher", triggerBucket: "turnMandatory", count: 1 },
+            ],
+            legalActionGroups: [triggerActivationGroup(0, "fixture-cross-payload-follow-up-ended-until-response-chain-ended-watcher", "turnMandatory", 1, 9)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 9, windowKind: "triggerBucket", effectId: "fixture-cross-payload-follow-up-ended-until-response-turn-chain-ended-limiter" },
+              { type: "activateEffect", player: 1, windowId: 9, windowKind: "triggerBucket", effectId: "fixture-cross-payload-follow-up-ended-until-response-opponent-second-chain-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-cross-payload-follow-up-ended-until-response-turn-chain-ended-limiter", 9, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-cross-payload-follow-up-ended-until-response-opponent-second-chain-quick", 9, "triggerBucket"),
+            ],
+            locations: { graveyard: ["500", "700", "600", "620", "625", "950", "970", "975", "980"] },
+          },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-cross-payload-follow-up-ended-until-response-chain-ended-watcher" }), {
           snapshotRestore: "both",
