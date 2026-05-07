@@ -126,6 +126,48 @@ describe("EDOPro parity Main Phase 2 open fast-effect pass handoff fixture", () 
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves the restored Main Phase 2 open fast-effect chain after both players pass and returns to turn-player Main Phase 2 open priority",
+            phase: "main2",
+            windowId: 5,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 6, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "normalSummon", player: 0, windowId: 5, windowKind: "open", code: "110", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 5, windowKind: "open", code: "130", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 5, windowKind: "open", code: "110", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 5, windowKind: "open", code: "130", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 5, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 5, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "110", location: "hand" },
+                { type: "normalSummon", player: 0, code: "130", location: "hand" },
+                { type: "setMonster", player: 0, code: "110", location: "hand" },
+                { type: "setMonster", player: 0, code: "130", location: "hand" },
+              ], 1, 5),
+              turnGroup(5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "main2-handoff-turn-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "main2-handoff-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "open", effectId: "main2-handoff-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "main2-handoff-turn-open-quick", 5, "open"),
+              absentWindowEffectGroup(0, "main2-handoff-turn-chain-quick", 5, "open"),
+              absentWindowEffectGroup(1, "main2-handoff-opponent-open-quick", 5, "open"),
+            ],
+            logIncludes: ["Main2 handoff turn open quick resolved"],
+          },
         }),
       ],
       expected: {
