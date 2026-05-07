@@ -97,6 +97,30 @@ describe("EDOPro parity open fast-effect pass handoff chain fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent response priority before the open fast-effect pass handoff",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 0, effectId: "open-fast-handoff-chain-turn-open-quick", sourceUid: "p0-deck-100-0" }],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "open-fast-handoff-chain-opponent-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 1, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "open-fast-handoff-chain-opponent-chain-quick", 1, 1),
+              chainPassGroup(1, 1, 1),
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "open-fast-handoff-chain-opponent-open-quick" }],
+            absentLegalActionGroups: [absentWindowEffectGroup(1, "open-fast-handoff-chain-opponent-open-quick", 1, "chainResponse")],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps restored open fast-effect pass handoff priority on the turn player before they chain",
