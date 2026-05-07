@@ -153,6 +153,46 @@ describe("EDOPro parity chain-resolution cross-player later-payload open-fast pa
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-cross-payload-open-fast-opponent-response-opponent-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent response priority after the turn player chains from the open-fast handoff",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [
+              { player: 0, effectId: "fixture-cross-payload-open-fast-opponent-response-turn-open-quick" },
+              { player: 0, effectId: "fixture-cross-payload-open-fast-opponent-response-turn-chain-quick" },
+            ],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-opponent-response-opponent-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-cross-payload-open-fast-opponent-response-opponent-chain-quick", 1, 6),
+              chainPassGroup(1, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-opponent-response-turn-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-opponent-response-turn-chain-quick" },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-opponent-response-turn-follow-up-quick" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-opponent-response-opponent-open-quick" },
+              { type: "activateTrigger", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-opponent-response-turn-trigger", triggerBucket: "turnOptional" },
+              { type: "activateTrigger", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-opponent-response-opponent-trigger", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-cross-payload-open-fast-opponent-response-turn-open-quick", 6, "chainResponse"),
+              absentChainEffectGroup(0, "fixture-cross-payload-open-fast-opponent-response-turn-chain-quick", 6),
+              absentChainEffectGroup(0, "fixture-cross-payload-open-fast-opponent-response-turn-follow-up-quick", 6),
+              absentWindowEffectGroup(1, "fixture-cross-payload-open-fast-opponent-response-opponent-open-quick", 6, "chainResponse"),
+              absentTriggerActivationGroup(0, "fixture-cross-payload-open-fast-opponent-response-turn-trigger", "turnOptional", 6, "chainResponse"),
+              absentTriggerActivationGroup(1, "fixture-cross-payload-open-fast-opponent-response-opponent-trigger", "opponentOptional", 6, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {
