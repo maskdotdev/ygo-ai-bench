@@ -1,0 +1,209 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import {
+  absentChainEffectGroup,
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+} from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain-resolution cross-player later-payload open-fast pass-handoff opponent-response restore fixture", () => {
+  it("reopens turn-player response priority after the opponent responds to a restored open-fast handoff chain", () => {
+    const firstEventCode = 0x10000043;
+    const secondEventCode = 0x10000044;
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Cross Payload Open Fast Opponent Response Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Cross Payload Open Fast Opponent Response Turn Trigger", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Cross Payload Open Fast Opponent Response Opponent Trigger", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Cross Payload Open Fast Opponent Response Turn Body", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "600", name: "Cross Payload Open Fast Opponent Response Opponent Chain Quick", kind: "monster", attack: 1100, defense: 1100 },
+      { code: "700", name: "Cross Payload Open Fast Opponent Response Opponent Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "800", name: "Cross Payload Open Fast Opponent Response Filler", kind: "monster", attack: 800, defense: 800 },
+      { code: "900", name: "Cross Payload Open Fast Opponent Response Turn Open Quick", kind: "monster", attack: 1300, defense: 1300 },
+      { code: "950", name: "Cross Payload Open Fast Opponent Response Turn Chain Quick", kind: "monster", attack: 1400, defense: 1400 },
+      { code: "970", name: "Cross Payload Open Fast Opponent Response Turn Follow-Up Quick", kind: "monster", attack: 1450, defense: 1450 },
+      { code: "990", name: "Cross Payload Open Fast Opponent Response Opponent Open Quick", kind: "monster", attack: 700, defense: 700 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain resolution segoc cross-player later-payload open-fast pass-handoff opponent-response restore fixture",
+      options: { seed: 401, startingHandSize: 7 },
+      decks: {
+        0: { main: ["100", "300", "500", "900", "950", "970", "800"] },
+        1: { main: ["400", "600", "700", "990", "800", "800", "800"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-cross-payload-open-fast-opponent-response-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "500", from: "hand", to: "graveyard", collectEvent: "customEvent", eventCode: firstEventCode },
+              { player: 1, code: "700", from: "hand", to: "graveyard", collectEvent: "customEvent", eventCode: secondEventCode },
+            ],
+            logMessage: "Cross payload open-fast opponent-response starter resolved",
+          },
+          {
+            id: "fixture-cross-payload-open-fast-opponent-response-turn-trigger",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "customEvent",
+            triggerCode: firstEventCode,
+            range: ["hand"],
+            logMessage: "Cross payload open-fast opponent-response turn trigger should not resolve",
+          },
+          {
+            id: "fixture-cross-payload-open-fast-opponent-response-opponent-trigger",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "customEvent",
+            triggerCode: secondEventCode,
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 1, code: "600", from: "hand", to: "graveyard" },
+              { player: 0, code: "950", from: "hand", to: "graveyard" },
+              { player: 0, code: "970", from: "hand", to: "graveyard" },
+            ],
+            logMessage: "Cross payload open-fast opponent-response opponent trigger resolved",
+          },
+          {
+            id: "fixture-cross-payload-open-fast-opponent-response-turn-open-quick",
+            player: 0,
+            code: "900",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "open",
+            logMessage: "Cross payload open-fast opponent-response turn open quick should not resolve yet",
+          },
+          {
+            id: "fixture-cross-payload-open-fast-opponent-response-turn-chain-quick",
+            player: 0,
+            code: "950",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Cross payload open-fast opponent-response turn chain quick should not resolve yet",
+          },
+          {
+            id: "fixture-cross-payload-open-fast-opponent-response-turn-follow-up-quick",
+            player: 0,
+            code: "970",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Cross payload open-fast opponent-response turn follow-up quick should not resolve yet",
+          },
+          {
+            id: "fixture-cross-payload-open-fast-opponent-response-opponent-chain-quick",
+            player: 1,
+            code: "600",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Cross payload open-fast opponent-response opponent chain quick should not resolve yet",
+          },
+          {
+            id: "fixture-cross-payload-open-fast-opponent-response-opponent-open-quick",
+            player: 1,
+            code: "990",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Cross payload open-fast opponent-response opponent open quick should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-payload-open-fast-opponent-response-starter" }), {
+          snapshotRestore: "both",
+        }),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-cross-payload-open-fast-opponent-response-turn-trigger" }), {
+          snapshotRestore: "both",
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-cross-payload-open-fast-opponent-response-opponent-trigger" }), {
+          snapshotRestore: "both",
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-payload-open-fast-opponent-response-turn-open-quick" }), {
+          snapshotRestore: "both",
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 1), {
+          snapshotRestore: "both",
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-payload-open-fast-opponent-response-turn-chain-quick" }), {
+          snapshotRestore: "both",
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-cross-payload-open-fast-opponent-response-opponent-chain-quick" }), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro reopens turn-player response priority after the opponent chains to a restored SEGOC open-fast handoff response",
+        phase: "main1",
+        windowId: 7,
+        windowKind: "chainResponse",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [
+          { player: 0, effectId: "fixture-cross-payload-open-fast-opponent-response-turn-open-quick", sourceUid: "p0-deck-900-3" },
+          { player: 0, effectId: "fixture-cross-payload-open-fast-opponent-response-turn-chain-quick", sourceUid: "p0-deck-950-4" },
+          { player: 1, effectId: "fixture-cross-payload-open-fast-opponent-response-opponent-chain-quick", sourceUid: "p1-deck-600-1" },
+        ],
+        chainPasses: [],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-opponent-response-turn-follow-up-quick", count: 1 },
+          { type: "passChain", player: 0, windowId: 7, windowKind: "chainResponse", count: 1 },
+        ],
+        legalActionGroups: [
+          chainEffectGroup(0, "fixture-cross-payload-open-fast-opponent-response-turn-follow-up-quick", 1, 7),
+          chainPassGroup(0, 1, 7),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-opponent-response-turn-open-quick" },
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-opponent-response-turn-chain-quick" },
+          { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-opponent-response-opponent-chain-quick" },
+          { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-opponent-response-opponent-open-quick" },
+          { type: "activateTrigger", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-opponent-response-turn-trigger", triggerBucket: "turnOptional" },
+          { type: "activateTrigger", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-opponent-response-opponent-trigger", triggerBucket: "opponentOptional" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "fixture-cross-payload-open-fast-opponent-response-turn-open-quick", 7, "chainResponse"),
+          absentChainEffectGroup(0, "fixture-cross-payload-open-fast-opponent-response-turn-chain-quick", 7),
+          absentChainEffectGroup(1, "fixture-cross-payload-open-fast-opponent-response-opponent-chain-quick", 7),
+          absentWindowEffectGroup(1, "fixture-cross-payload-open-fast-opponent-response-opponent-open-quick", 7, "chainResponse"),
+          absentTriggerActivationGroup(0, "fixture-cross-payload-open-fast-opponent-response-turn-trigger", "turnOptional", 7, "chainResponse"),
+          absentTriggerActivationGroup(1, "fixture-cross-payload-open-fast-opponent-response-opponent-trigger", "opponentOptional", 7, "chainResponse"),
+        ],
+        locations: { graveyard: ["500", "700", "600", "950", "970"], hand: ["100", "300", "900", "800", "400", "990", "800", "800"] },
+        logIncludes: [
+          "Cross payload open-fast opponent-response starter resolved",
+          "Cross payload open-fast opponent-response opponent trigger resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
