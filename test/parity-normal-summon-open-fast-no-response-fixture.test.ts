@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentWindowEffectGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentWindowEffectGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity Normal Summon open fast-effect no-response fixture", () => {
   it("auto-resolves a post-summon open fast-effect chain when the opponent has no legal response", () => {
@@ -47,6 +47,51 @@ describe("EDOPro parity Normal Summon open fast-effect no-response fixture", () 
       responses: [
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro exposes Normal Summons beside turn-player open fast effects before the Summon is performed",
+            phase: "main1",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 9, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "normal-summon-no-response-turn-open-quick", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "200", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "200", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "normal-summon-no-response-turn-open-quick", count: 1 }],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "200", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "200", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "normal-summon-no-response-opponent-open-quick" }],
+            absentLegalActionGroups: [absentWindowEffectGroup(1, "normal-summon-no-response-opponent-open-quick", 0, "open")],
+          },
           after: {
             source: "edopro",
             note: "EDOPro returns a triggerless Normal Summon to turn-player open priority before post-summon fast effects",
@@ -92,6 +137,48 @@ describe("EDOPro parity Normal Summon open fast-effect no-response fixture", () 
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "normal-summon-no-response-turn-open-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves the post-summon open fast-effect window before resolving the no-response chain",
+            windowId: 1,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "normal-summon-no-response-turn-open-quick", count: 1 },
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 1,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "normal-summon-no-response-turn-open-quick", count: 1 }],
+              },
+              turnGroup(1),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "open", effectId: "normal-summon-no-response-opponent-open-quick" },
+              { type: "normalSummon", player: 0, windowId: 1, windowKind: "open", code: "200", location: "hand" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(1, "normal-summon-no-response-opponent-open-quick", 1, "open"),
+              {
+                player: 0,
+                label: "Summons",
+                windowId: 1,
+                windowKind: "open",
+                actions: [{ type: "normalSummon", player: 0, windowId: 1, windowKind: "open", code: "200", location: "hand" }],
+              },
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the post-summon open fast-effect chain immediately when the opponent has no legal response",
