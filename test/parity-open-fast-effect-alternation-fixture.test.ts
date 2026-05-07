@@ -96,6 +96,22 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "alternation-opponent-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent response priority after an open fast effect starts a chain",
+            windowId: 1,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "alternation-turn-open-quick", sourceUid: "p0-deck-100-0" }],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "alternation-opponent-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 1, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "alternation-opponent-chain-quick", 1, 1), chainPassGroup(1, 1, 1)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro alternates chain response priority back to the turn player after the opponent adds a fast effect",
@@ -119,6 +135,27 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "alternation-turn-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored turn-player response priority after the opponent chains to an open fast effect",
+            windowId: 2,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            chain: [
+              { player: 0, effectId: "alternation-turn-open-quick", sourceUid: "p0-deck-100-0" },
+              { player: 1, effectId: "alternation-opponent-chain-quick", sourceUid: "p1-deck-200-0" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "alternation-turn-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 2, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(0, "alternation-turn-chain-quick", 1, 2), chainPassGroup(0, 1, 2)],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "alternation-opponent-chain-quick" }],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "alternation-opponent-chain-quick", 2)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the fast-effect chain when no legal opponent response remains",

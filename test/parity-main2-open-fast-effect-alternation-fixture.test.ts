@@ -139,6 +139,28 @@ describe("EDOPro parity Main Phase 2 open fast-effect alternation fixture", () =
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "main2-alternation-opponent-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored Main Phase 2 opponent response priority after an open fast effect starts a chain",
+            phase: "main2",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 0, effectId: "main2-alternation-turn-open-quick", sourceUid: "p0-deck-110-0" }],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "main2-alternation-opponent-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "main2-alternation-opponent-chain-quick", 1, 3),
+              chainPassGroup(1, 1, 3),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps Main Phase 2 active and alternates chain-response priority back to the turn player after the opponent adds a fast effect",

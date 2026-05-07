@@ -101,6 +101,24 @@ describe("EDOPro parity open fast-effect priority fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent response priority after an open fast effect starts a chain",
+            windowId: 1,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-turn-open-quick", sourceUid: "p0-deck-100-0" }],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "fixture-opponent-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 1, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-opponent-chain-quick", 1, 1), chainPassGroup(1, 1, 1)],
+            absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "chainResponse", effectId: "fixture-turn-open-quick" }],
+            absentLegalActionGroups: [chainEffectGroup(0, "fixture-turn-open-quick", 1, 1)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the open fast-effect chain after the opponent chains the only response",
