@@ -1,0 +1,323 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import {
+  absentChainEffectGroup,
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  triggerActivationGroup,
+  triggerDeclineGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chain-resolution cross-player later-payload open-fast pass-handoff restore fixture", () => {
+  it("restores open-fast pass handoff after a restored opponent trigger chain resolves", () => {
+    const firstEventCode = 0x10000041;
+    const secondEventCode = 0x10000042;
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Cross Payload Open Fast Handoff Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "300", name: "Cross Payload Open Fast Handoff Turn Trigger", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Cross Payload Open Fast Handoff Opponent Trigger", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Cross Payload Open Fast Handoff Turn Body", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "600", name: "Cross Payload Open Fast Handoff Opponent Chain Quick", kind: "monster", attack: 1100, defense: 1100 },
+      { code: "700", name: "Cross Payload Open Fast Handoff Opponent Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "800", name: "Cross Payload Open Fast Handoff Filler", kind: "monster", attack: 800, defense: 800 },
+      { code: "900", name: "Cross Payload Open Fast Handoff Turn Open Quick", kind: "monster", attack: 1300, defense: 1300 },
+      { code: "950", name: "Cross Payload Open Fast Handoff Turn Chain Quick", kind: "monster", attack: 1400, defense: 1400 },
+      { code: "990", name: "Cross Payload Open Fast Handoff Opponent Open Quick", kind: "monster", attack: 700, defense: 700 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "chain resolution segoc cross-player later-payload open-fast pass-handoff restore fixture",
+      options: { seed: 398, startingHandSize: 7 },
+      decks: {
+        0: { main: ["100", "300", "500", "900", "950", "800", "800"] },
+        1: { main: ["400", "600", "700", "990", "800", "800", "800"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "fixture-cross-payload-open-fast-handoff-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "500", from: "hand", to: "graveyard", collectEvent: "customEvent", eventCode: firstEventCode },
+              { player: 1, code: "700", from: "hand", to: "graveyard", collectEvent: "customEvent", eventCode: secondEventCode },
+            ],
+            logMessage: "Cross payload open-fast handoff starter resolved",
+          },
+          {
+            id: "fixture-cross-payload-open-fast-handoff-turn-trigger",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "customEvent",
+            triggerCode: firstEventCode,
+            range: ["hand"],
+            logMessage: "Cross payload open-fast handoff turn trigger should not resolve",
+          },
+          {
+            id: "fixture-cross-payload-open-fast-handoff-opponent-trigger",
+            player: 1,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "customEvent",
+            triggerCode: secondEventCode,
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 1, code: "600", from: "hand", to: "graveyard" },
+              { player: 0, code: "950", from: "hand", to: "graveyard" },
+            ],
+            logMessage: "Cross payload open-fast handoff opponent trigger resolved",
+          },
+          {
+            id: "fixture-cross-payload-open-fast-handoff-turn-open-quick",
+            player: 0,
+            code: "900",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "open",
+            logMessage: "Cross payload open-fast handoff turn open quick should not resolve yet",
+          },
+          {
+            id: "fixture-cross-payload-open-fast-handoff-turn-chain-quick",
+            player: 0,
+            code: "950",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            activationChain: "chain",
+            logMessage: "Cross payload open-fast handoff turn chain quick should not resolve yet",
+          },
+          {
+            id: "fixture-cross-payload-open-fast-handoff-opponent-chain-quick",
+            player: 1,
+            code: "600",
+            location: "hand",
+            event: "quick",
+            range: ["graveyard"],
+            activationChain: "chain",
+            logMessage: "Cross payload open-fast handoff opponent chain quick should not resolve",
+          },
+          {
+            id: "fixture-cross-payload-open-fast-handoff-opponent-open-quick",
+            player: 1,
+            code: "990",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Cross payload open-fast handoff opponent open quick should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-payload-open-fast-handoff-starter" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro restores the later-payload opponent optional bucket behind the active turn optional bucket",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-cross-payload-open-fast-handoff-turn-trigger", eventName: "customEvent", eventCode: firstEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-500-2" },
+              { player: 1, effectId: "fixture-cross-payload-open-fast-handoff-opponent-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "opponentOptional", eventCardUid: "p1-deck-700-2" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnOptional" },
+              { player: 1, triggerBucket: "opponentOptional" },
+            ],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-payload-open-fast-handoff-turn-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-payload-open-fast-handoff-turn-trigger", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-cross-payload-open-fast-handoff-turn-trigger", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "fixture-cross-payload-open-fast-handoff-turn-trigger", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-payload-open-fast-handoff-opponent-trigger", triggerBucket: "opponentOptional" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-payload-open-fast-handoff-turn-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-payload-open-fast-handoff-turn-chain-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(1, "fixture-cross-payload-open-fast-handoff-opponent-trigger", "opponentOptional", 1, "triggerBucket"),
+              absentWindowEffectGroup(0, "fixture-cross-payload-open-fast-handoff-turn-open-quick", 1, "triggerBucket"),
+              absentWindowEffectGroup(0, "fixture-cross-payload-open-fast-handoff-turn-chain-quick", 1, "triggerBucket"),
+            ],
+            locations: { graveyard: ["500", "700"], hand: ["100", "300", "900", "950", "800", "800", "400", "600", "990", "800", "800", "800"] },
+            logIncludes: ["Cross payload open-fast handoff starter resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-cross-payload-open-fast-handoff-turn-trigger" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro advances the restored later-payload opponent optional bucket after the active turn optional payload is declined",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 1, effectId: "fixture-cross-payload-open-fast-handoff-opponent-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "opponentOptional", eventCardUid: "p1-deck-700-2" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-payload-open-fast-handoff-opponent-trigger", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-payload-open-fast-handoff-opponent-trigger", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-cross-payload-open-fast-handoff-opponent-trigger", "opponentOptional", 1, 2),
+              triggerDeclineGroup(1, "fixture-cross-payload-open-fast-handoff-opponent-trigger", "opponentOptional", 1, 2),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-payload-open-fast-handoff-turn-trigger", triggerBucket: "turnOptional" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-payload-open-fast-handoff-opponent-chain-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-cross-payload-open-fast-handoff-turn-trigger", "turnOptional", 2, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-cross-payload-open-fast-handoff-opponent-chain-quick", 2, "triggerBucket"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-cross-payload-open-fast-handoff-opponent-trigger" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro opens turn-player open-fast priority after the restored opponent trigger resolves with no chain responses",
+            phase: "main1",
+            windowId: 3,
+            windowKind: "open",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 14, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-cross-payload-open-fast-handoff-starter", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-cross-payload-open-fast-handoff-turn-open-quick", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-cross-payload-open-fast-handoff-starter", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-cross-payload-open-fast-handoff-turn-open-quick", count: 1 },
+                ],
+              },
+              turnGroup(3),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-cross-payload-open-fast-handoff-turn-trigger", triggerBucket: "turnOptional" },
+              { type: "activateTrigger", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-cross-payload-open-fast-handoff-opponent-trigger", triggerBucket: "opponentOptional" },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-cross-payload-open-fast-handoff-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-cross-payload-open-fast-handoff-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-cross-payload-open-fast-handoff-turn-trigger", "turnOptional", 3, "open"),
+              absentTriggerActivationGroup(1, "fixture-cross-payload-open-fast-handoff-opponent-trigger", "opponentOptional", 3, "open"),
+              absentWindowEffectGroup(0, "fixture-cross-payload-open-fast-handoff-turn-chain-quick", 3, "open"),
+              absentWindowEffectGroup(1, "fixture-cross-payload-open-fast-handoff-opponent-open-quick", 3, "open"),
+            ],
+            logIncludes: ["Cross payload open-fast handoff starter resolved", "Cross payload open-fast handoff opponent trigger resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-payload-open-fast-handoff-turn-open-quick" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro opens opponent response priority after the restored-trigger open fast effect starts a chain",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-cross-payload-open-fast-handoff-turn-open-quick" }],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-handoff-opponent-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-cross-payload-open-fast-handoff-opponent-chain-quick", 1, 4),
+              chainPassGroup(1, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-handoff-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-handoff-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-cross-payload-open-fast-handoff-turn-chain-quick", 4),
+              absentWindowEffectGroup(1, "fixture-cross-payload-open-fast-handoff-opponent-open-quick", 4, "chainResponse"),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 1), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro restores open-fast pass handoff after a restored SEGOC trigger chain resolves",
+        windowId: 5,
+        windowKind: "chainResponse",
+        waitingFor: 0,
+        chain: [{ player: 0, effectId: "fixture-cross-payload-open-fast-handoff-turn-open-quick" }],
+        chainPasses: [1],
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-handoff-turn-chain-quick", count: 1 },
+          { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+        ],
+        legalActionGroups: [
+          chainEffectGroup(0, "fixture-cross-payload-open-fast-handoff-turn-chain-quick", 1, 5),
+          chainPassGroup(0, 1, 5),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-handoff-turn-open-quick" },
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-handoff-opponent-chain-quick" },
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-handoff-opponent-open-quick" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "fixture-cross-payload-open-fast-handoff-turn-open-quick", 5, "chainResponse"),
+          absentChainEffectGroup(1, "fixture-cross-payload-open-fast-handoff-opponent-chain-quick", 5),
+          absentWindowEffectGroup(1, "fixture-cross-payload-open-fast-handoff-opponent-open-quick", 5, "chainResponse"),
+        ],
+        locations: { graveyard: ["500", "700", "600", "950"], hand: ["100", "300", "900", "800", "800", "400", "990", "800", "800"] },
+        logIncludes: [
+          "Cross payload open-fast handoff starter resolved",
+          "Cross payload open-fast handoff opponent trigger resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
