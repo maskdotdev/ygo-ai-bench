@@ -1,0 +1,226 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentChainEffectGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity trigger-chain pass handoff opponent response turn response chain-limit fixture", () => {
+  it("applies one-chain limits after the trigger player responds to an opponent trigger-chain handoff response", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Trigger Handoff Opponent Turn Limit Summon", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "200", name: "Trigger Handoff Opponent Turn Limit Success Trigger", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "300", name: "Trigger Handoff Opponent Turn Limit First Turn Chain Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "500", name: "Trigger Handoff Opponent Turn Limit Chain Limiter", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "700", name: "Trigger Handoff Opponent Turn Limit Followup", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "900", name: "Trigger Handoff Opponent Turn Limit Filler", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "1100", name: "Trigger Handoff Opponent Turn Limit Opponent First Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "1200", name: "Trigger Handoff Opponent Turn Limit Opponent Blocked Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "1300", name: "Trigger Handoff Opponent Turn Limit Opponent Open Quick", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "trigger chain open fast pass handoff opponent response turn response chain limit fixture",
+      options: { seed: 352, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "200", "300", "500", "700"] },
+        1: { main: ["1100", "1200", "1300", "900", "900"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "trigger-handoff-opponent-turn-limit-success",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Trigger handoff opponent turn limit success resolved",
+          },
+          {
+            id: "trigger-handoff-opponent-turn-limit-first-turn-chain-quick",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Trigger handoff opponent turn limit first turn chain quick resolved",
+          },
+          {
+            id: "trigger-handoff-opponent-turn-limit-chain-limiter",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            chainLimitOnTarget: { untilChainEnd: false, allowPlayer: 0 },
+            logMessage: "Trigger handoff opponent turn limit chain limiter resolved",
+          },
+          {
+            id: "trigger-handoff-opponent-turn-limit-followup",
+            player: 0,
+            code: "700",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "chain",
+            logMessage: "Trigger handoff opponent turn limit followup should not resolve",
+          },
+          {
+            id: "trigger-handoff-opponent-turn-limit-opponent-first",
+            player: 1,
+            code: "1100",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Trigger handoff opponent turn limit opponent first quick resolved",
+          },
+          {
+            id: "trigger-handoff-opponent-turn-limit-opponent-blocked",
+            player: 1,
+            code: "1200",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "chain",
+            logMessage: "Trigger handoff opponent turn limit opponent blocked quick should not resolve",
+          },
+          {
+            id: "trigger-handoff-opponent-turn-limit-opponent-open",
+            player: 1,
+            code: "1300",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Trigger handoff opponent turn limit opponent open quick should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "trigger-handoff-opponent-turn-limit-success" })),
+        makeScriptedStep(makeResponseSelector("passChain", 1)),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "trigger-handoff-opponent-turn-limit-first-turn-chain-quick" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "trigger-handoff-opponent-turn-limit-opponent-first" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "trigger-handoff-opponent-turn-limit-chain-limiter" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro applies one-chain SetChainLimit restrictions after the trigger player responds to an opponent trigger-chain pass-handoff response",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "trigger-handoff-opponent-turn-limit-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-handoff-opponent-turn-limit-first-turn-chain-quick", sourceUid: "p0-deck-300-2" },
+              { player: 1, effectId: "trigger-handoff-opponent-turn-limit-opponent-first", sourceUid: "p1-deck-1100-0" },
+              { player: 0, effectId: "trigger-handoff-opponent-turn-limit-chain-limiter", sourceUid: "p0-deck-500-3" },
+            ],
+            chainPasses: [],
+            chainLimits: [{ untilChainEnd: false, expiresAtChainLength: 4 }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "trigger-handoff-opponent-turn-limit-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "trigger-handoff-opponent-turn-limit-followup", 1, 6),
+              chainPassGroup(0, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "trigger-handoff-opponent-turn-limit-opponent-blocked" },
+            ],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "trigger-handoff-opponent-turn-limit-opponent-blocked", 6)],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("passChain", 0), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the trigger-chain SetChainLimit response window restorable before the allowed trigger player passes",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "trigger-handoff-opponent-turn-limit-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-handoff-opponent-turn-limit-first-turn-chain-quick", sourceUid: "p0-deck-300-2" },
+              { player: 1, effectId: "trigger-handoff-opponent-turn-limit-opponent-first", sourceUid: "p1-deck-1100-0" },
+              { player: 0, effectId: "trigger-handoff-opponent-turn-limit-chain-limiter", sourceUid: "p0-deck-500-3" },
+            ],
+            chainPasses: [],
+            chainLimits: [{ untilChainEnd: false, expiresAtChainLength: 4 }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "trigger-handoff-opponent-turn-limit-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "trigger-handoff-opponent-turn-limit-followup", 1, 6),
+              chainPassGroup(0, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "trigger-handoff-opponent-turn-limit-opponent-blocked" },
+            ],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "trigger-handoff-opponent-turn-limit-opponent-blocked", 6)],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro clears one-chain limits and returns trigger-chain handoff chains to turn-player open priority after the allowed trigger player passes",
+        windowId: 7,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        chainPasses: [],
+        chainLimits: [],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 7, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 7, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(7)],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "open", effectId: "trigger-handoff-opponent-turn-limit-first-turn-chain-quick" },
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "open", effectId: "trigger-handoff-opponent-turn-limit-chain-limiter" },
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "open", effectId: "trigger-handoff-opponent-turn-limit-followup" },
+          { type: "activateEffect", player: 1, windowId: 7, windowKind: "open", effectId: "trigger-handoff-opponent-turn-limit-opponent-first" },
+          { type: "activateEffect", player: 1, windowId: 7, windowKind: "open", effectId: "trigger-handoff-opponent-turn-limit-opponent-blocked" },
+          { type: "activateEffect", player: 1, windowId: 7, windowKind: "open", effectId: "trigger-handoff-opponent-turn-limit-opponent-open" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "trigger-handoff-opponent-turn-limit-first-turn-chain-quick", 7, "open"),
+          absentWindowEffectGroup(0, "trigger-handoff-opponent-turn-limit-chain-limiter", 7, "open"),
+          absentWindowEffectGroup(0, "trigger-handoff-opponent-turn-limit-followup", 7, "open"),
+          absentWindowEffectGroup(1, "trigger-handoff-opponent-turn-limit-opponent-first", 7, "open"),
+          absentWindowEffectGroup(1, "trigger-handoff-opponent-turn-limit-opponent-blocked", 7, "open"),
+          absentWindowEffectGroup(1, "trigger-handoff-opponent-turn-limit-opponent-open", 7, "open"),
+        ],
+        logIncludes: [
+          "Trigger handoff opponent turn limit chain limiter resolved",
+          "Trigger handoff opponent turn limit opponent first quick resolved",
+          "Trigger handoff opponent turn limit first turn chain quick resolved",
+          "Trigger handoff opponent turn limit success resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
