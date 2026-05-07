@@ -1,0 +1,250 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentTriggerActivationGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, triggerActivationGroup, triggerDeclineGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chainEnded open fast-effect chain-response fixture", () => {
+  it("returns deferred chainEnded resolution to open fast-effect priority with opponent chain responses", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Chain Ended Fast Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Optional Chain Solved Blocker", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "300", name: "Deferred Chain Ended Cleanup", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "400", name: "Post Chain Ended Open Quick", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "500", name: "Post Chain Ended Opponent Chain Quick", kind: "monster", attack: 1100, defense: 1100 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "deferred chain ended open fast chain response fixture",
+      options: { seed: 616, startingHandSize: 4 },
+      decks: {
+        0: { main: ["100", "200", "300", "400"] },
+        1: { main: ["500"] },
+      },
+      setup: {
+        moveCards: [{ player: 1, code: "500", from: "hand", to: "graveyard" }],
+        effects: [
+          {
+            id: "fixture-chain-ended-fast-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            logMessage: "Chain ended fast starter resolved",
+          },
+          {
+            id: "fixture-chain-ended-fast-solved-blocker",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "chainSolved",
+            range: ["hand"],
+            logMessage: "Chain ended fast solved blocker should not resolve",
+          },
+          {
+            id: "fixture-chain-ended-fast-cleanup",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "chainEnded",
+            optional: false,
+            range: ["hand"],
+            oncePerTurn: true,
+            moveCardsOnResolve: [
+              { player: 0, code: "200", from: "hand", to: "graveyard" },
+              { player: 1, code: "500", from: "graveyard", to: "hand" },
+            ],
+            logMessage: "Chain ended fast cleanup resolved",
+          },
+          {
+            id: "fixture-chain-ended-open-fast-turn",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "open",
+            logMessage: "Chain ended open fast turn resolved",
+          },
+          {
+            id: "fixture-chain-ended-open-fast-opponent",
+            player: 1,
+            code: "500",
+            location: "graveyard",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Chain ended open fast opponent resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-fast-starter" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro defers chainEnded triggers while an optional chainSolved trigger bucket is pending",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 0, effectId: "fixture-chain-ended-fast-solved-blocker", eventName: "chainSolved", triggerBucket: "turnOptional" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-ended-fast-solved-blocker", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-ended-fast-solved-blocker", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-chain-ended-fast-solved-blocker", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "fixture-chain-ended-fast-solved-blocker", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-ended-fast-cleanup", triggerBucket: "turnMandatory" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-ended-open-fast-turn" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-chain-ended-fast-cleanup", "turnMandatory", 1, "triggerBucket"),
+              absentWindowEffectGroup(0, "fixture-chain-ended-open-fast-turn", 1, "triggerBucket"),
+            ],
+            logIncludes: ["Chain ended fast starter resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-chain-ended-fast-solved-blocker" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro collects deferred chainEnded buckets after the blocking chainSolved bucket is declined",
+            phase: "main1",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 0, effectId: "fixture-chain-ended-fast-cleanup", eventName: "chainEnded", triggerBucket: "turnMandatory" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-ended-fast-cleanup", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(0, "fixture-chain-ended-fast-cleanup", "turnMandatory", 1, 2)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-ended-fast-solved-blocker", triggerBucket: "turnOptional" },
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-ended-open-fast-turn" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-chain-ended-fast-solved-blocker", "turnOptional", 2, "triggerBucket"),
+              absentWindowEffectGroup(0, "fixture-chain-ended-open-fast-turn", 2, "triggerBucket"),
+            ],
+            logIncludes: ["fixture-chain-ended-fast-solved-blocker"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-ended-fast-cleanup" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro returns to open priority after the deferred chainEnded trigger resolves and no blocking trigger remains",
+            phase: "main1",
+            windowId: 3,
+            windowKind: "open",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            locations: { graveyard: ["200"] },
+            legalActionCounts: { 0: 10, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [{ type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-open-fast-turn", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-open-fast-turn", count: 1 }],
+              },
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-fast-solved-blocker" },
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-fast-cleanup" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-open-fast-opponent" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-chain-ended-fast-solved-blocker", "turnOptional", 3, "open"),
+              absentTriggerActivationGroup(0, "fixture-chain-ended-fast-cleanup", "turnMandatory", 3, "open"),
+              absentWindowEffectGroup(1, "fixture-chain-ended-open-fast-opponent", 3, "open"),
+            ],
+            logIncludes: ["Chain ended fast cleanup resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-open-fast-turn" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro gives the opponent chain-response priority after a post-chainEnded open fast effect starts a chain",
+            phase: "main1",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-chain-ended-open-fast-turn", sourceUid: "p0-deck-400-3" }],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-ended-open-fast-opponent", count: 1 },
+              { type: "passChain", player: 1, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-chain-ended-open-fast-opponent", 1, 4),
+              chainPassGroup(1, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-ended-open-fast-turn" },
+              { type: "activateTrigger", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-ended-fast-cleanup" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-ended-open-fast-turn", 4, "chainResponse"),
+              absentTriggerActivationGroup(0, "fixture-chain-ended-fast-cleanup", "turnMandatory", 4, "chainResponse"),
+            ],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state preserves post-chainEnded open fast-effect opponent response priority",
+        phase: "main1",
+        windowId: 4,
+        windowKind: "chainResponse",
+        waitingFor: 1,
+        chain: [{ player: 0, effectId: "fixture-chain-ended-open-fast-turn", sourceUid: "p0-deck-400-3" }],
+        chainPasses: [],
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        locations: { graveyard: ["200"] },
+        legalActionCounts: { 0: 0, 1: 2 },
+        legalActionGroupCounts: { 0: 0, 1: 2 },
+        legalActions: [
+          { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-ended-open-fast-opponent", count: 1 },
+          { type: "passChain", player: 1, windowId: 4, windowKind: "chainResponse", count: 1 },
+        ],
+        legalActionGroups: [
+          chainEffectGroup(1, "fixture-chain-ended-open-fast-opponent", 1, 4),
+          chainPassGroup(1, 1, 4),
+        ],
+        logIncludes: ["Chain ended fast starter resolved", "fixture-chain-ended-fast-solved-blocker", "Chain ended fast cleanup resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
