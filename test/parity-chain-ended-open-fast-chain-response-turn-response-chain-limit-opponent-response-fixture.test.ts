@@ -1,0 +1,227 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentChainEffectGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chainEnded open fast-effect chain-response turn-response chain-limit opponent-response fixture", () => {
+  it("returns opponent priority after the allowed turn player answers a direct post-chainEnded one-chain limit", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Chain Ended Direct Limit Opponent Response Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Chain Ended Direct Limit Opponent Response Solved Blocker", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "300", name: "Chain Ended Direct Limit Opponent Response Cleanup", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "400", name: "Chain Ended Direct Limit Opponent Response Open Quick", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "500", name: "Chain Ended Direct Limit Opponent Response Limiter", kind: "monster", attack: 1100, defense: 1100 },
+      { code: "600", name: "Chain Ended Direct Limit Opponent Response Opponent Followup", kind: "monster", attack: 900, defense: 900 },
+      { code: "700", name: "Chain Ended Direct Limit Opponent Response First Turn Chain", kind: "monster", attack: 800, defense: 800 },
+      { code: "800", name: "Chain Ended Direct Limit Opponent Response Second Turn Chain", kind: "monster", attack: 700, defense: 700 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "deferred chain ended open fast chain response turn response chain limit opponent-response fixture",
+      options: { seed: 641, startingHandSize: 6 },
+      decks: {
+        0: { main: ["100", "200", "300", "400", "700", "800"] },
+        1: { main: ["500", "600"] },
+      },
+      setup: {
+        moveCards: [
+          { player: 0, code: "700", from: "hand", to: "graveyard" },
+          { player: 0, code: "800", from: "hand", to: "graveyard" },
+          { player: 1, code: "500", from: "hand", to: "graveyard" },
+          { player: 1, code: "600", from: "hand", to: "graveyard" },
+        ],
+        effects: [
+          {
+            id: "fixture-chain-ended-direct-limit-opponent-response-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            logMessage: "Chain ended direct limit opponent response starter resolved",
+          },
+          {
+            id: "fixture-chain-ended-direct-limit-opponent-response-solved-blocker",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "chainSolved",
+            range: ["hand"],
+            logMessage: "Chain ended direct limit opponent response solved blocker should not resolve",
+          },
+          {
+            id: "fixture-chain-ended-direct-limit-opponent-response-cleanup",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "chainEnded",
+            optional: false,
+            range: ["hand"],
+            oncePerTurn: true,
+            moveCardsOnResolve: [
+              { player: 0, code: "200", from: "hand", to: "graveyard" },
+              { player: 0, code: "700", from: "graveyard", to: "hand" },
+              { player: 0, code: "800", from: "graveyard", to: "hand" },
+              { player: 1, code: "500", from: "graveyard", to: "hand" },
+              { player: 1, code: "600", from: "graveyard", to: "hand" },
+            ],
+            logMessage: "Chain ended direct limit opponent response cleanup resolved",
+          },
+          {
+            id: "fixture-chain-ended-direct-limit-opponent-response-open-fast",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "open",
+            logMessage: "Chain ended direct limit opponent response open fast should not resolve yet",
+          },
+          {
+            id: "fixture-chain-ended-direct-limit-opponent-response-first-turn",
+            player: 0,
+            code: "700",
+            location: "graveyard",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Chain ended direct limit opponent response first turn chain should not resolve yet",
+          },
+          {
+            id: "fixture-chain-ended-direct-limit-opponent-response-second-turn",
+            player: 0,
+            code: "800",
+            location: "graveyard",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "chain",
+            logMessage: "Chain ended direct limit opponent response second turn chain should not resolve yet",
+          },
+          {
+            id: "fixture-chain-ended-direct-limit-opponent-response-limiter",
+            player: 1,
+            code: "500",
+            location: "graveyard",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            chainLimitOnTarget: { untilChainEnd: false, allowPlayer: 0 },
+            logMessage: "Chain ended direct limit opponent response limiter should not resolve yet",
+          },
+          {
+            id: "fixture-chain-ended-direct-limit-opponent-response-opponent-followup",
+            player: 1,
+            code: "600",
+            location: "graveyard",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Chain ended direct limit opponent response opponent followup should not resolve yet",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-direct-limit-opponent-response-starter" })),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-chain-ended-direct-limit-opponent-response-solved-blocker" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-ended-direct-limit-opponent-response-cleanup" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-direct-limit-opponent-response-open-fast" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-ended-direct-limit-opponent-response-limiter" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-direct-limit-opponent-response-first-turn" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro clears one-chain SetChainLimit restrictions after the allowed turn player answers a direct post-chainEnded response",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [
+              { player: 0, effectId: "fixture-chain-ended-direct-limit-opponent-response-open-fast", sourceUid: "p0-deck-400-3" },
+              { player: 1, effectId: "fixture-chain-ended-direct-limit-opponent-response-limiter", sourceUid: "p1-deck-500-0" },
+              { player: 0, effectId: "fixture-chain-ended-direct-limit-opponent-response-first-turn", sourceUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-response-opponent-followup", count: 1 },
+              { type: "passChain", player: 1, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-chain-ended-direct-limit-opponent-response-opponent-followup", 1, 6),
+              chainPassGroup(1, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-response-open-fast" },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-response-second-turn" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-response-limiter" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-ended-direct-limit-opponent-response-open-fast", 6, "chainResponse"),
+              absentChainEffectGroup(0, "fixture-chain-ended-direct-limit-opponent-response-second-turn", 6),
+              absentChainEffectGroup(1, "fixture-chain-ended-direct-limit-opponent-response-limiter", 6),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-ended-direct-limit-opponent-response-opponent-followup" }), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro returns post-chainEnded direct response priority to the turn player after the opponent chains once a one-chain limit has cleared",
+        phase: "main1",
+        windowId: 7,
+        windowKind: "chainResponse",
+        waitingFor: 0,
+        chain: [
+          { player: 0, effectId: "fixture-chain-ended-direct-limit-opponent-response-open-fast", sourceUid: "p0-deck-400-3" },
+          { player: 1, effectId: "fixture-chain-ended-direct-limit-opponent-response-limiter", sourceUid: "p1-deck-500-0" },
+          { player: 0, effectId: "fixture-chain-ended-direct-limit-opponent-response-first-turn", sourceUid: "p0-deck-700-4" },
+          { player: 1, effectId: "fixture-chain-ended-direct-limit-opponent-response-opponent-followup", sourceUid: "p1-deck-600-1" },
+        ],
+        chainPasses: [],
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chainLimits: [],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-response-second-turn", count: 1 },
+          { type: "passChain", player: 0, windowId: 7, windowKind: "chainResponse", count: 1 },
+        ],
+        legalActionGroups: [
+          chainEffectGroup(0, "fixture-chain-ended-direct-limit-opponent-response-second-turn", 1, 7),
+          chainPassGroup(0, 1, 7),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-response-open-fast" },
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-response-first-turn" },
+          { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-response-limiter" },
+          { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-limit-opponent-response-opponent-followup" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "fixture-chain-ended-direct-limit-opponent-response-open-fast", 7, "chainResponse"),
+          absentChainEffectGroup(0, "fixture-chain-ended-direct-limit-opponent-response-first-turn", 7),
+          absentChainEffectGroup(1, "fixture-chain-ended-direct-limit-opponent-response-limiter", 7),
+          absentChainEffectGroup(1, "fixture-chain-ended-direct-limit-opponent-response-opponent-followup", 7),
+        ],
+        logIncludes: [
+          "Chain ended direct limit opponent response cleanup resolved",
+          "Chain ended direct limit opponent response starter resolved",
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
