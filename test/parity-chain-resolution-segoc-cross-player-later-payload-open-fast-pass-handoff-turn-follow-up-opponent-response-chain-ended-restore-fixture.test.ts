@@ -272,6 +272,42 @@ describe("EDOPro parity restored follow-up chainEnded opponent-response fixture"
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-cross-payload-follow-up-ended-response-opponent-second-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent response priority before the opponent chains to the chainEnded trigger",
+            phase: "main1",
+            windowId: 10,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 0, effectId: "fixture-cross-payload-follow-up-ended-response-chain-ended-watcher", sourceUid: "p0-deck-980-6" }],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 10, windowKind: "chainResponse", effectId: "fixture-cross-payload-follow-up-ended-response-opponent-second-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 10, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-cross-payload-follow-up-ended-response-opponent-second-chain-quick", 1, 10),
+              chainPassGroup(1, 1, 10),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 10, windowKind: "chainResponse", effectId: "fixture-cross-payload-follow-up-ended-response-turn-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 10, windowKind: "chainResponse", effectId: "fixture-cross-payload-follow-up-ended-response-turn-chain-quick" },
+              { type: "activateEffect", player: 0, windowId: 10, windowKind: "chainResponse", effectId: "fixture-cross-payload-follow-up-ended-response-turn-follow-up-quick" },
+              { type: "activateEffect", player: 1, windowId: 10, windowKind: "chainResponse", effectId: "fixture-cross-payload-follow-up-ended-response-opponent-first-chain-quick" },
+              { type: "activateTrigger", player: 0, windowId: 10, windowKind: "chainResponse", effectId: "fixture-cross-payload-follow-up-ended-response-chain-ended-watcher", triggerBucket: "turnMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-cross-payload-follow-up-ended-response-turn-open-quick", 10, "chainResponse"),
+              absentWindowEffectGroup(0, "fixture-cross-payload-follow-up-ended-response-turn-chain-quick", 10, "chainResponse"),
+              absentWindowEffectGroup(0, "fixture-cross-payload-follow-up-ended-response-turn-follow-up-quick", 10, "chainResponse"),
+              absentWindowEffectGroup(1, "fixture-cross-payload-follow-up-ended-response-opponent-first-chain-quick", 10, "chainResponse"),
+              absentTriggerActivationGroup(0, "fixture-cross-payload-follow-up-ended-response-chain-ended-watcher", "turnMandatory", 10, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {
