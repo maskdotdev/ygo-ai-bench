@@ -10,6 +10,7 @@ import {
   chainPassGroup,
   summonGroup,
   triggerActivationGroup,
+  triggerDeclineGroup,
   turnGroup,
 } from "./parity-legal-action-group-helpers.js";
 
@@ -118,6 +119,37 @@ describe("EDOPro parity chain-resolution cross-player SEGOC pass resolution fixt
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-resolution-starter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the initial open window restorable before creating cross-player SEGOC pass-resolution buckets",
+            phase: "main1",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 13, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-cross-resolution-starter", count: 1 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-cross-resolution-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "fixture-cross-resolution-opponent-quick" },
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-cross-resolution-turn-mandatory", triggerBucket: "turnMandatory" },
+              { type: "activateTrigger", player: 1, windowId: 0, windowKind: "open", effectId: "fixture-cross-resolution-opponent-mandatory", triggerBucket: "opponentMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-cross-resolution-turn-quick", 0, "open"),
+              absentWindowEffectGroup(1, "fixture-cross-resolution-opponent-quick", 0, "open"),
+              absentTriggerActivationGroup(0, "fixture-cross-resolution-turn-mandatory", "turnMandatory", 0, "open"),
+              absentTriggerActivationGroup(1, "fixture-cross-resolution-opponent-mandatory", "opponentMandatory", 0, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro builds cross-player SEGOC buckets from trigger events created while an effect chain resolves before exposing chain responses",
@@ -164,6 +196,43 @@ describe("EDOPro parity chain-resolution cross-player SEGOC pass resolution fixt
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-cross-resolution-turn-optional" })),
         makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-cross-resolution-opponent-optional" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the final opponent optional SEGOC bucket restorable before opening pass-resolution responses",
+            windowId: 4,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            pendingTriggers: [{ player: 1, effectId: "fixture-cross-resolution-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-4" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            chain: [
+              { player: 0, effectId: "fixture-cross-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-resolution-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-resolution-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-resolution-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-resolution-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-cross-resolution-opponent-optional", "opponentOptional", 1, 4),
+              triggerDeclineGroup(1, "fixture-cross-resolution-opponent-optional", "opponentOptional", 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-resolution-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-resolution-opponent-quick" },
+              { type: "activateTrigger", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-cross-resolution-turn-optional", triggerBucket: "turnOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-cross-resolution-turn-quick", 4, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-cross-resolution-opponent-quick", 4, "triggerBucket"),
+              absentTriggerActivationGroup(0, "fixture-cross-resolution-turn-optional", "turnOptional", 4, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "500", "400", "600", "800", "800"] },
+            logIncludes: ["Cross resolution starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro opens turn-player chain-response priority after cross-player chain-created SEGOC finishes with an opponent trigger",
@@ -198,6 +267,37 @@ describe("EDOPro parity chain-resolution cross-player SEGOC pass resolution fixt
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the turn-player pass-resolution chain-response window restorable before passing to the opponent trigger player",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-cross-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-resolution-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-resolution-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-resolution-opponent-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-cross-resolution-turn-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(0, "fixture-cross-resolution-turn-quick", 1, 5), chainPassGroup(0, 1, 5)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-cross-resolution-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-cross-resolution-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-cross-resolution-opponent-quick", 5),
+              absentTriggerActivationGroup(1, "fixture-cross-resolution-opponent-optional", "opponentOptional", 5, "triggerBucket"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro returns cross-player chain-created SEGOC response priority to the opponent trigger player after the turn player passes",
@@ -232,6 +332,39 @@ describe("EDOPro parity chain-resolution cross-player SEGOC pass resolution fixt
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent trigger player chain-response window restorable before both passes resolve the trigger chain",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-cross-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-resolution-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-resolution-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-resolution-opponent-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [0],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-resolution-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-cross-resolution-opponent-quick", 1, 6), chainPassGroup(1, 1, 6)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-resolution-turn-quick" },
+              { type: "activateTrigger", player: 1, windowId: 6, windowKind: "triggerBucket", effectId: "fixture-cross-resolution-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-cross-resolution-turn-quick", 6),
+              absentTriggerActivationGroup(1, "fixture-cross-resolution-opponent-optional", "opponentOptional", 6, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "500", "400", "600", "800", "800"] },
+            logIncludes: ["Cross resolution starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the cross-player chain-created SEGOC trigger chain after both response players pass",
