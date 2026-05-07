@@ -259,6 +259,43 @@ describe("EDOPro parity restored follow-up chainEnded response chain-limit oppon
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-cross-payload-follow-up-ended-limit-response-opponent-allowed-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves the restored one-chain limit before the allowed opponent response clears it",
+            phase: "main1",
+            windowId: 12,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [
+              { player: 0, effectId: "fixture-cross-payload-follow-up-ended-limit-response-chain-ended-watcher" },
+              { player: 1, effectId: "fixture-cross-payload-follow-up-ended-limit-response-opponent-second-chain-quick" },
+              { player: 0, effectId: "fixture-cross-payload-follow-up-ended-limit-response-turn-chain-ended-limiter" },
+            ],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chainLimits: [{ untilChainEnd: false, expiresAtChainLength: 3 }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 12, windowKind: "chainResponse", effectId: "fixture-cross-payload-follow-up-ended-limit-response-opponent-allowed-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 12, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-cross-payload-follow-up-ended-limit-response-opponent-allowed-chain-quick", 1, 12),
+              chainPassGroup(1, 1, 12),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 12, windowKind: "chainResponse", effectId: "fixture-cross-payload-follow-up-ended-limit-response-turn-chain-ended-limiter" },
+              { type: "activateEffect", player: 1, windowId: 12, windowKind: "chainResponse", effectId: "fixture-cross-payload-follow-up-ended-limit-response-opponent-second-chain-quick" },
+              { type: "activateTrigger", player: 0, windowId: 12, windowKind: "chainResponse", effectId: "fixture-cross-payload-follow-up-ended-limit-response-chain-ended-watcher", triggerBucket: "turnMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-cross-payload-follow-up-ended-limit-response-turn-chain-ended-limiter", 12),
+              absentChainEffectGroup(1, "fixture-cross-payload-follow-up-ended-limit-response-opponent-second-chain-quick", 12),
+              absentTriggerActivationGroup(0, "fixture-cross-payload-follow-up-ended-limit-response-chain-ended-watcher", "turnMandatory", 12, "chainResponse"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro clears the restored one-chain limit and resolves when no turn-player response remains after the allowed opponent response",
