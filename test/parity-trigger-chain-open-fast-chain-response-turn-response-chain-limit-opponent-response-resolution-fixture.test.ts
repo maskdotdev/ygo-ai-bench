@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentWindowEffectGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import {
+  absentChainEffectGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity trigger-chain response turn-response chain-limit opponent-response resolution fixture", () => {
   it("resolves selected-trigger chains after one-chain limits clear and both players finish responding", () => {
@@ -112,6 +118,47 @@ describe("EDOPro parity trigger-chain response turn-response chain-limit opponen
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "trigger-limit-opponent-resolution-opponent-followup" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "trigger-limit-opponent-resolution-second-followup" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored trigger-player priority after one-chain SetChainLimit restrictions clear before the final response",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "trigger-limit-opponent-resolution-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 1, effectId: "trigger-limit-opponent-resolution-opponent-limiter", sourceUid: "p1-deck-500-0" },
+              { player: 0, effectId: "trigger-limit-opponent-resolution-first-followup", sourceUid: "p0-deck-300-2" },
+              { player: 1, effectId: "trigger-limit-opponent-resolution-opponent-followup", sourceUid: "p1-deck-600-1" },
+            ],
+            chainPasses: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "trigger-limit-opponent-resolution-second-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "trigger-limit-opponent-resolution-second-followup", 1, 5),
+              chainPassGroup(0, 1, 5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "trigger-limit-opponent-resolution-first-followup" },
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "trigger-limit-opponent-resolution-open" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "trigger-limit-opponent-resolution-opponent-limiter" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "trigger-limit-opponent-resolution-opponent-followup" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "trigger-limit-opponent-resolution-opponent-open" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "trigger-limit-opponent-resolution-first-followup", 5),
+              absentWindowEffectGroup(0, "trigger-limit-opponent-resolution-open", 5, "chainResponse"),
+              absentChainEffectGroup(1, "trigger-limit-opponent-resolution-opponent-limiter", 5),
+              absentChainEffectGroup(1, "trigger-limit-opponent-resolution-opponent-followup", 5),
+              absentWindowEffectGroup(1, "trigger-limit-opponent-resolution-opponent-open", 5, "chainResponse"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves selected-trigger chains after one-chain SetChainLimit restrictions clear and both players finish responding",

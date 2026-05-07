@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentWindowEffectGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import {
+  absentChainEffectGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity trigger-chain response turn-response until-chain-end followup resolution fixture", () => {
   it("resolves after the allowed trigger player keeps chaining under an until-chain-end limit", () => {
@@ -123,6 +129,49 @@ describe("EDOPro parity trigger-chain response turn-response until-chain-end fol
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "trigger-until-followup-resolution-second-response" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "trigger-until-followup-resolution-third-response" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored trigger-player priority while SetChainLimitTillChainEnd restricts responses to the allowed player",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "trigger-until-followup-resolution-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 1, effectId: "trigger-until-followup-resolution-opponent-limiter", sourceUid: "p1-deck-500-0" },
+              { player: 0, effectId: "trigger-until-followup-resolution-first-response", sourceUid: "p0-deck-300-2" },
+              { player: 0, effectId: "trigger-until-followup-resolution-second-response", sourceUid: "p0-deck-350-3" },
+            ],
+            chainPasses: [],
+            chainLimits: [{ untilChainEnd: true }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "trigger-until-followup-resolution-third-response", count: 1 },
+              { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "trigger-until-followup-resolution-third-response", 1, 5),
+              chainPassGroup(0, 1, 5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "trigger-until-followup-resolution-first-response" },
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "trigger-until-followup-resolution-second-response" },
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "trigger-until-followup-resolution-open" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "trigger-until-followup-resolution-opponent-limiter" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "trigger-until-followup-resolution-opponent-blocked" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "trigger-until-followup-resolution-opponent-open" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "trigger-until-followup-resolution-first-response", 5),
+              absentChainEffectGroup(0, "trigger-until-followup-resolution-second-response", 5),
+              absentWindowEffectGroup(0, "trigger-until-followup-resolution-open", 5, "chainResponse"),
+              absentChainEffectGroup(1, "trigger-until-followup-resolution-opponent-limiter", 5),
+              absentChainEffectGroup(1, "trigger-until-followup-resolution-opponent-blocked", 5),
+              absentWindowEffectGroup(1, "trigger-until-followup-resolution-opponent-open", 5, "chainResponse"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves selected-trigger chains after the allowed trigger player keeps chaining under SetChainLimitTillChainEnd",
