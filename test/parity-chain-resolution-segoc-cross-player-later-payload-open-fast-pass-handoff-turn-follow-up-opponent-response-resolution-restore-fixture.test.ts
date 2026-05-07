@@ -3,8 +3,11 @@ import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
 import {
+  absentChainEffectGroup,
   absentTriggerActivationGroup,
   absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
   turnGroup,
 } from "./parity-legal-action-group-helpers.js";
 
@@ -170,6 +173,50 @@ describe("EDOPro parity chain-resolution cross-player later-payload open-fast pa
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-cross-payload-open-fast-follow-up-resolution-opponent-second-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent follow-up priority before the final response resolves the SEGOC open-fast handoff chain",
+            windowId: 8,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [
+              { player: 0, effectId: "fixture-cross-payload-open-fast-follow-up-resolution-turn-open-quick" },
+              { player: 0, effectId: "fixture-cross-payload-open-fast-follow-up-resolution-turn-chain-quick" },
+              { player: 1, effectId: "fixture-cross-payload-open-fast-follow-up-resolution-opponent-first-chain-quick" },
+              { player: 0, effectId: "fixture-cross-payload-open-fast-follow-up-resolution-turn-follow-up-quick" },
+            ],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 8, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-follow-up-resolution-opponent-second-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 8, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-cross-payload-open-fast-follow-up-resolution-opponent-second-chain-quick", 1, 8),
+              chainPassGroup(1, 1, 8),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 8, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-follow-up-resolution-turn-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 8, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-follow-up-resolution-turn-chain-quick" },
+              { type: "activateEffect", player: 0, windowId: 8, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-follow-up-resolution-turn-follow-up-quick" },
+              { type: "activateEffect", player: 1, windowId: 8, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-follow-up-resolution-opponent-first-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 8, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-follow-up-resolution-opponent-open-quick" },
+              { type: "activateTrigger", player: 0, windowId: 8, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-follow-up-resolution-turn-trigger", triggerBucket: "turnOptional" },
+              { type: "activateTrigger", player: 1, windowId: 8, windowKind: "chainResponse", effectId: "fixture-cross-payload-open-fast-follow-up-resolution-opponent-trigger", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-cross-payload-open-fast-follow-up-resolution-turn-open-quick", 8, "chainResponse"),
+              absentChainEffectGroup(0, "fixture-cross-payload-open-fast-follow-up-resolution-turn-chain-quick", 8),
+              absentChainEffectGroup(0, "fixture-cross-payload-open-fast-follow-up-resolution-turn-follow-up-quick", 8),
+              absentChainEffectGroup(1, "fixture-cross-payload-open-fast-follow-up-resolution-opponent-first-chain-quick", 8),
+              absentWindowEffectGroup(1, "fixture-cross-payload-open-fast-follow-up-resolution-opponent-open-quick", 8, "chainResponse"),
+              absentTriggerActivationGroup(0, "fixture-cross-payload-open-fast-follow-up-resolution-turn-trigger", "turnOptional", 8, "chainResponse"),
+              absentTriggerActivationGroup(1, "fixture-cross-payload-open-fast-follow-up-resolution-opponent-trigger", "opponentOptional", 8, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {
