@@ -7,6 +7,7 @@ import {
   absentWindowEffectGroup,
   chainEffectGroup,
   chainPassGroup,
+  summonGroup,
   turnGroup,
 } from "./parity-legal-action-group-helpers.js";
 
@@ -90,6 +91,56 @@ describe("EDOPro parity post-Special-Summon open fast-effect pass handoff turn r
       responses: [
         makeScriptedStep(makeResponseSelector("specialSummonProcedure", 0, { code: "100", location: "hand", effectId: "post-special-summon-handoff-procedure" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro exposes inherent Special Summon procedures beside turn-player open fast effects before the Summon is performed",
+            phase: "main1",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            chain: [],
+            chainPasses: [],
+            locations: { hand: ["100"], graveyard: ["300", "600", "400", "500"] },
+            legalActionCounts: { 0: 6, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "specialSummonProcedure", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", effectId: "post-special-summon-handoff-procedure", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "post-special-summon-handoff-turn-open-quick", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "specialSummonProcedure", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", effectId: "post-special-summon-handoff-procedure", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "post-special-summon-handoff-turn-open-quick", count: 1 },
+                ],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "post-special-summon-handoff-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "post-special-summon-handoff-opponent-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "post-special-summon-handoff-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "post-special-summon-handoff-turn-chain-quick", 0, "open"),
+              absentWindowEffectGroup(1, "post-special-summon-handoff-opponent-chain-quick", 0, "open"),
+              absentWindowEffectGroup(1, "post-special-summon-handoff-opponent-open-quick", 0, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro returns triggerless inherent Special Summons to turn-player open priority with that player's open fast effects available",
@@ -143,6 +194,38 @@ describe("EDOPro parity post-Special-Summon open fast-effect pass handoff turn r
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "post-special-summon-handoff-turn-open-quick" })),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent priority before passing the post-Special-Summon handoff response window",
+            phase: "main1",
+            windowId: 2,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 0, effectId: "post-special-summon-handoff-turn-open-quick", sourceUid: "p0-deck-300-1" }],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "post-special-summon-handoff-opponent-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 2, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "post-special-summon-handoff-opponent-chain-quick", 1, 2),
+              chainPassGroup(1, 1, 2),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "post-special-summon-handoff-turn-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "post-special-summon-handoff-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "post-special-summon-handoff-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "post-special-summon-handoff-turn-open-quick", 2),
+              absentChainEffectGroup(0, "post-special-summon-handoff-turn-chain-quick", 2),
+              absentWindowEffectGroup(1, "post-special-summon-handoff-opponent-open-quick", 2, "chainResponse"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro reopens turn-player chain-only responses after the opponent passes a post-Special-Summon open fast-effect chain",
@@ -180,6 +263,41 @@ describe("EDOPro parity post-Special-Summon open fast-effect pass handoff turn r
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "post-special-summon-handoff-turn-chain-quick" })),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent priority before resolving the post-Special-Summon handoff chain",
+            phase: "main1",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "post-special-summon-handoff-turn-open-quick", sourceUid: "p0-deck-300-1" },
+              { player: 0, effectId: "post-special-summon-handoff-turn-chain-quick", sourceUid: "p0-deck-600-2" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "post-special-summon-handoff-opponent-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "post-special-summon-handoff-opponent-chain-quick", 1, 4),
+              chainPassGroup(1, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "post-special-summon-handoff-turn-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "post-special-summon-handoff-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "post-special-summon-handoff-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "post-special-summon-handoff-turn-open-quick", 4),
+              absentChainEffectGroup(0, "post-special-summon-handoff-turn-chain-quick", 4),
+              absentWindowEffectGroup(1, "post-special-summon-handoff-opponent-open-quick", 4, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {
