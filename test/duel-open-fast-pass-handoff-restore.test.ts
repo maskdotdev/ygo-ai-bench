@@ -95,6 +95,13 @@ describe("open fast pass handoff restore", () => {
 
     const turnPass = getDuelLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(turnPass).toBeDefined();
+    const wrongTokenPass = applyResponse(restored, { ...turnPass!, windowToken: `${turnPass!.windowToken}-stale` });
+    expect(wrongTokenPass.ok).toBe(false);
+    expect(wrongTokenPass.error).toContain("Response is not currently legal");
+    expect(wrongTokenPass.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+    expect(wrongTokenPass.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(wrongTokenPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+
     const resolved = applyAndAssert(restored, turnPass!);
     expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [] });
     expect(restored.state.chainPasses).toEqual([]);
