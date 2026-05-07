@@ -198,6 +198,52 @@ describe("EDOPro parity chainEnded open fast-effect handoff opponent-response ch
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-opponent-limit-turn-chain" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-ended-opponent-limit-opponent-limiter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent priority before the one-chain limiter after a post-chainEnded turn-player handoff chain",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [
+              { player: 0, effectId: "fixture-chain-ended-opponent-limit-open-fast", sourceUid: "p0-deck-400-3" },
+              { player: 0, effectId: "fixture-chain-ended-opponent-limit-turn-chain", sourceUid: "p0-deck-500-4" },
+            ],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            locations: { graveyard: ["200"], hand: ["100", "300", "400", "500", "800", "600", "700"] },
+            legalActionCounts: { 0: 0, 1: 3 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-opponent-limit-opponent-limiter", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-opponent-limit-opponent-followup", count: 1 },
+              { type: "passChain", player: 1, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 6,
+                windowKind: "chainResponse",
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-opponent-limit-opponent-limiter", count: 1 },
+                  { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-opponent-limit-opponent-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(1, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-opponent-limit-open-fast" },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-opponent-limit-turn-chain" },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-ended-opponent-limit-turn-blocked" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-ended-opponent-limit-open-fast", 6, "chainResponse"),
+              absentChainEffectGroup(0, "fixture-chain-ended-opponent-limit-turn-chain", 6),
+              absentChainEffectGroup(0, "fixture-chain-ended-opponent-limit-turn-blocked", 6),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies one-chain SetChainLimit restrictions after the opponent responds to a post-chainEnded turn-player handoff chain",
