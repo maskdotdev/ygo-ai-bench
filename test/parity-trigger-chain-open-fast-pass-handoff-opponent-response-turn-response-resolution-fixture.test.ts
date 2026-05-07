@@ -113,6 +113,54 @@ describe("EDOPro parity trigger-chain pass handoff opponent response turn respon
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "trigger-pass-handoff-opponent-response-resolution-opponent-first-chain-quick" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "trigger-pass-handoff-opponent-response-resolution-second-turn-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored trigger-player priority before chaining from the opponent-reopened pass-handoff window",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "trigger-pass-handoff-opponent-response-resolution-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-pass-handoff-opponent-response-resolution-first-turn-chain-quick", sourceUid: "p0-deck-300-2" },
+              { player: 1, effectId: "trigger-pass-handoff-opponent-response-resolution-opponent-first-chain-quick", sourceUid: "p1-deck-500-0" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "trigger-pass-handoff-opponent-response-resolution-second-turn-chain-quick", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "trigger-pass-handoff-opponent-response-resolution-third-turn-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 5,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "trigger-pass-handoff-opponent-response-resolution-second-turn-chain-quick", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "trigger-pass-handoff-opponent-response-resolution-third-turn-chain-quick", count: 1 },
+                ],
+              },
+              chainPassGroup(0, 1, 5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "trigger-pass-handoff-opponent-response-resolution-first-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "trigger-pass-handoff-opponent-response-resolution-opponent-first-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "trigger-pass-handoff-opponent-response-resolution-opponent-second-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "trigger-pass-handoff-opponent-response-resolution-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "trigger-pass-handoff-opponent-response-resolution-first-turn-chain-quick", 5),
+              absentChainEffectGroup(1, "trigger-pass-handoff-opponent-response-resolution-opponent-first-chain-quick", 5),
+              absentChainEffectGroup(1, "trigger-pass-handoff-opponent-response-resolution-opponent-second-chain-quick", 5),
+              absentWindowEffectGroup(1, "trigger-pass-handoff-opponent-response-resolution-opponent-open-quick", 5, "chainResponse"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro gives the opponent another response window after the trigger player chains from the reopened pass-handoff window",
@@ -155,6 +203,47 @@ describe("EDOPro parity trigger-chain pass handoff opponent response turn respon
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "trigger-pass-handoff-opponent-response-resolution-opponent-second-chain-quick" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "trigger-pass-handoff-opponent-response-resolution-third-turn-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored trigger-player priority before the final response resolves the opponent-reopened chain",
+            windowId: 7,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "trigger-pass-handoff-opponent-response-resolution-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-pass-handoff-opponent-response-resolution-first-turn-chain-quick", sourceUid: "p0-deck-300-2" },
+              { player: 1, effectId: "trigger-pass-handoff-opponent-response-resolution-opponent-first-chain-quick", sourceUid: "p1-deck-500-0" },
+              { player: 0, effectId: "trigger-pass-handoff-opponent-response-resolution-second-turn-chain-quick", sourceUid: "p0-deck-900-3" },
+              { player: 1, effectId: "trigger-pass-handoff-opponent-response-resolution-opponent-second-chain-quick", sourceUid: "p1-deck-800-1" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "trigger-pass-handoff-opponent-response-resolution-third-turn-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 7, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "trigger-pass-handoff-opponent-response-resolution-third-turn-chain-quick", 1, 7),
+              chainPassGroup(0, 1, 7),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "trigger-pass-handoff-opponent-response-resolution-first-turn-chain-quick" },
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "trigger-pass-handoff-opponent-response-resolution-second-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "trigger-pass-handoff-opponent-response-resolution-opponent-first-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "trigger-pass-handoff-opponent-response-resolution-opponent-second-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "trigger-pass-handoff-opponent-response-resolution-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "trigger-pass-handoff-opponent-response-resolution-first-turn-chain-quick", 7),
+              absentChainEffectGroup(0, "trigger-pass-handoff-opponent-response-resolution-second-turn-chain-quick", 7),
+              absentChainEffectGroup(1, "trigger-pass-handoff-opponent-response-resolution-opponent-first-chain-quick", 7),
+              absentChainEffectGroup(1, "trigger-pass-handoff-opponent-response-resolution-opponent-second-chain-quick", 7),
+              absentWindowEffectGroup(1, "trigger-pass-handoff-opponent-response-resolution-opponent-open-quick", 7, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {
