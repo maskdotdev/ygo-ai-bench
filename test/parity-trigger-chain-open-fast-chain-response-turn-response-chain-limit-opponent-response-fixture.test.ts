@@ -1,0 +1,198 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentChainEffectGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity trigger-chain response turn-response chain-limit opponent-response fixture", () => {
+  it("returns trigger-player priority after the opponent chains once a selected-trigger one-chain limit clears", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Trigger Limit Opponent Response Summon", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "200", name: "Trigger Limit Opponent Response Success Trigger", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "300", name: "Trigger Limit Opponent Response First Followup", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "350", name: "Trigger Limit Opponent Response Second Followup", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "400", name: "Trigger Limit Opponent Response Open Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "500", name: "Trigger Limit Opponent Response Opponent Limiter", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "600", name: "Trigger Limit Opponent Response Opponent Followup", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "700", name: "Trigger Limit Opponent Response Opponent Open Quick", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "900", name: "Trigger Limit Opponent Response Filler", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "trigger chain open fast chain response turn response chain limit opponent-response fixture",
+      options: { seed: 618, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "200", "300", "350", "400"] },
+        1: { main: ["500", "600", "700", "900", "900"] },
+      },
+      setup: {
+        effects: [
+          {
+            id: "trigger-limit-opponent-response-success",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "normalSummoned",
+            optional: false,
+            range: ["hand"],
+            logMessage: "Trigger limit opponent response success should not resolve yet",
+          },
+          {
+            id: "trigger-limit-opponent-response-first-followup",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Trigger limit opponent response first followup should not resolve yet",
+          },
+          {
+            id: "trigger-limit-opponent-response-second-followup",
+            player: 0,
+            code: "350",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "chain",
+            logMessage: "Trigger limit opponent response second followup should not resolve yet",
+          },
+          {
+            id: "trigger-limit-opponent-response-open",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Trigger limit opponent response open quick should not resolve",
+          },
+          {
+            id: "trigger-limit-opponent-response-opponent-limiter",
+            player: 1,
+            code: "500",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            chainLimitOnTarget: { untilChainEnd: false, allowPlayer: 0 },
+            logMessage: "Trigger limit opponent response opponent limiter should not resolve yet",
+          },
+          {
+            id: "trigger-limit-opponent-response-opponent-followup",
+            player: 1,
+            code: "600",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Trigger limit opponent response opponent followup should not resolve yet",
+          },
+          {
+            id: "trigger-limit-opponent-response-opponent-open",
+            player: 1,
+            code: "700",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Trigger limit opponent response opponent open quick should not resolve",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "trigger-limit-opponent-response-success" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "trigger-limit-opponent-response-opponent-limiter" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "trigger-limit-opponent-response-first-followup" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro clears one-chain SetChainLimit restrictions after the allowed trigger player responds to an opponent selected-trigger response",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "trigger-limit-opponent-response-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 1, effectId: "trigger-limit-opponent-response-opponent-limiter", sourceUid: "p1-deck-500-0" },
+              { player: 0, effectId: "trigger-limit-opponent-response-first-followup", sourceUid: "p0-deck-300-2" },
+            ],
+            chainPasses: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-opponent-followup", count: 1 },
+              { type: "passChain", player: 1, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "trigger-limit-opponent-response-opponent-followup", 1, 4),
+              chainPassGroup(1, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-second-followup" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-opponent-limiter" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-opponent-open" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "trigger-limit-opponent-response-second-followup", 4),
+              absentChainEffectGroup(1, "trigger-limit-opponent-response-opponent-limiter", 4),
+              absentChainEffectGroup(1, "trigger-limit-opponent-response-opponent-open", 4),
+            ],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "trigger-limit-opponent-response-opponent-followup" }), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro returns selected-trigger response priority to the trigger player after the opponent chains once a one-chain limit has cleared",
+        windowId: 5,
+        windowKind: "chainResponse",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [
+          { player: 0, effectId: "trigger-limit-opponent-response-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+          { player: 1, effectId: "trigger-limit-opponent-response-opponent-limiter", sourceUid: "p1-deck-500-0" },
+          { player: 0, effectId: "trigger-limit-opponent-response-first-followup", sourceUid: "p0-deck-300-2" },
+          { player: 1, effectId: "trigger-limit-opponent-response-opponent-followup", sourceUid: "p1-deck-600-1" },
+        ],
+        chainPasses: [],
+        chainLimits: [],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-second-followup", count: 1 },
+          { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+        ],
+        legalActionGroups: [
+          chainEffectGroup(0, "trigger-limit-opponent-response-second-followup", 1, 5),
+          chainPassGroup(0, 1, 5),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-first-followup" },
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-open" },
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-opponent-limiter" },
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-opponent-followup" },
+          { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "trigger-limit-opponent-response-opponent-open" },
+        ],
+        absentLegalActionGroups: [
+          absentChainEffectGroup(0, "trigger-limit-opponent-response-first-followup", 5),
+          absentWindowEffectGroup(0, "trigger-limit-opponent-response-open", 5, "chainResponse"),
+          absentChainEffectGroup(1, "trigger-limit-opponent-response-opponent-limiter", 5),
+          absentChainEffectGroup(1, "trigger-limit-opponent-response-opponent-followup", 5),
+          absentWindowEffectGroup(1, "trigger-limit-opponent-response-opponent-open", 5, "chainResponse"),
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
