@@ -7,8 +7,10 @@ import {
   absentWindowEffectGroup,
   chainEffectGroup,
   chainPassGroup,
+  directAttackGroup,
   effectGroup,
   passBattleGroup,
+  turnGroup,
 } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle window attack-response quick chain fixture", () => {
@@ -66,6 +68,25 @@ describe("EDOPro parity battle window attack-response quick chain fixture", () =
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the direct attack declaration prompt restorable before attack-response quick effects can open",
+            phase: "battle",
+            waitingFor: 0,
+            windowId: 1,
+            windowKind: "open",
+            pendingBattle: false,
+            currentAttack: false,
+            battleWindow: null,
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 1, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [directAttackGroup(0, "p0-deck-100-0", 1, 1), turnGroup(1)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro exposes opponent attack-response quick effects after attack declaration",
@@ -87,6 +108,28 @@ describe("EDOPro parity battle window attack-response quick chain fixture", () =
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-attack-open-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent attack-response quick-effect prompt restorable before building a chain",
+            waitingFor: 1,
+            windowId: 2,
+            windowKind: "battle",
+            pendingBattle: true,
+            currentAttack: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
+            chain: [],
+            chainPasses: [],
+            attackPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "battle", effectId: "fixture-opponent-attack-open-quick", count: 1 },
+              { type: "passAttack", player: 1, windowId: 2, windowKind: "battle", count: 1 },
+            ],
+            legalActionGroups: [effectGroup(1, "fixture-opponent-attack-open-quick", 1, 2), passBattleGroup(1, "passAttack", 1, 2)],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "battle", effectId: "fixture-opponent-attack-chain-only-quick" }],
+            absentLegalActionGroups: [absentWindowEffectGroup(1, "fixture-opponent-attack-chain-only-quick", 2, "battle")],
+          },
           after: {
             source: "edopro",
             note: "EDOPro opens a chain-response window inside attack-response timing when the turn player can respond",
@@ -108,6 +151,25 @@ describe("EDOPro parity battle window attack-response quick chain fixture", () =
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the turn-player chain response restorable before handing priority back to the opponent",
+            waitingFor: 0,
+            windowId: 3,
+            windowKind: "chainResponse",
+            pendingBattle: true,
+            currentAttack: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
+            chain: [{ player: 1, effectId: "fixture-opponent-attack-open-quick", sourceUid: "p1-deck-300-0" }],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "fixture-turn-attack-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(0, "fixture-turn-attack-chain-quick", 1, 3), chainPassGroup(0, 1, 3)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro offers the opponent chain-only responses after the turn player passes the attack-response quick chain",
@@ -138,6 +200,34 @@ describe("EDOPro parity battle window attack-response quick chain fixture", () =
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent chain-response pass restorable before resolving the attack-response quick chain",
+            waitingFor: 1,
+            windowId: 4,
+            windowKind: "chainResponse",
+            pendingBattle: true,
+            currentAttack: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
+            chain: [{ player: 1, effectId: "fixture-opponent-attack-open-quick", sourceUid: "p1-deck-300-0" }],
+            chainPasses: [0],
+            attackPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-attack-chain-only-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-opponent-attack-chain-only-quick", 1, 4), chainPassGroup(1, 1, 4)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-attack-open-quick" },
+              { type: "passAttack", player: 1, windowId: 4, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(1, "fixture-opponent-attack-open-quick", 4, "chainResponse"),
+              absentPassBattleGroup(1, "passAttack", 4),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resumes attack-response timing after both players pass the attack-response quick chain",
