@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentWindowEffectGroup, chainEffectGroup, chainPassGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity trigger chain-window mandatory held fixture", () => {
   it("holds mandatory sibling triggers behind the active trigger chain window", () => {
@@ -57,6 +57,42 @@ describe("EDOPro parity trigger chain-window mandatory held fixture", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps initial open priority restorable before creating same-bucket mandatory trigger choices",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 8, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "300", location: "hand" },
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "300", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 1, effectId: "fixture-opponent-mandatory-chain-window-quick", windowId: 0, windowKind: "open" }],
+            absentLegalActionGroups: [absentWindowEffectGroup(1, "fixture-opponent-mandatory-chain-window-quick", 0, "open")],
+          },
           after: {
             source: "edopro",
             note: "EDOPro exposes same-bucket mandatory trigger choices without decline actions before fast responses",
@@ -118,6 +154,58 @@ describe("EDOPro parity trigger chain-window mandatory held fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-first-mandatory-chain-window-trigger" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps same-bucket mandatory trigger choices restorable before the first held-window trigger is selected",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-first-mandatory-chain-window-trigger", triggerBucket: "turnMandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-second-mandatory-held-trigger", triggerBucket: "turnMandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+            ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
+            triggerOrderPrompt: { type: "orderTriggers", player: 0, triggerBucket: "turnMandatory" },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-mandatory-chain-window-trigger", triggerBucket: "turnMandatory", count: 1 },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-second-mandatory-held-trigger", triggerBucket: "turnMandatory", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                count: 1,
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-mandatory-chain-window-trigger", triggerBucket: "turnMandatory", count: 1 },
+                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-second-mandatory-held-trigger", triggerBucket: "turnMandatory", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [
+              { type: "declineTrigger", player: 0, effectId: "fixture-first-mandatory-chain-window-trigger" },
+              { type: "declineTrigger", player: 0, effectId: "fixture-second-mandatory-held-trigger" },
+              { type: "activateEffect", player: 1, effectId: "fixture-opponent-mandatory-chain-window-quick", windowId: 1, windowKind: "triggerBucket" },
+            ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                actions: [
+                  { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-mandatory-chain-window-trigger" },
+                  { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-second-mandatory-held-trigger" },
+                ],
+              },
+              absentWindowEffectGroup(1, "fixture-opponent-mandatory-chain-window-quick", 1, "triggerBucket"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps the remaining mandatory sibling trigger before exposing chain-response quick effects",
@@ -166,6 +254,45 @@ describe("EDOPro parity trigger chain-window mandatory held fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-second-mandatory-held-trigger" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the remaining mandatory sibling trigger restorable before opening fast responses",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [{ player: 0, effectId: "fixture-first-mandatory-chain-window-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggers: [{ player: 0, effectId: "fixture-second-mandatory-held-trigger", triggerBucket: "turnMandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-second-mandatory-held-trigger", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                count: 1,
+                actions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-second-mandatory-held-trigger", triggerBucket: "turnMandatory", count: 1 }],
+              },
+            ],
+            absentLegalActions: [
+              { type: "declineTrigger", player: 0, effectId: "fixture-second-mandatory-held-trigger" },
+              { type: "activateEffect", player: 1, effectId: "fixture-opponent-mandatory-chain-window-quick", windowId: 2, windowKind: "triggerBucket" },
+            ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                actions: [{ type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-second-mandatory-held-trigger" }],
+              },
+              absentWindowEffectGroup(1, "fixture-opponent-mandatory-chain-window-quick", 2, "triggerBucket"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro opens fast responses after all mandatory SEGOC trigger choices are made",
@@ -205,6 +332,29 @@ describe("EDOPro parity trigger chain-window mandatory held fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the mandatory held-trigger chain-response window restorable before the response player passes",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [
+              { player: 0, effectId: "fixture-first-mandatory-chain-window-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-second-mandatory-held-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+            ],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-opponent-mandatory-chain-window-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-opponent-mandatory-chain-window-quick", 1, 3),
+              chainPassGroup(1, 1, 3),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves selected mandatory sibling trigger chains after the fast-response player passes",

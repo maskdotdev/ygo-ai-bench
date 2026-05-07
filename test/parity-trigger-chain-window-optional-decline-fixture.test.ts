@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { chainEffectGroup, chainPassGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentWindowEffectGroup, chainEffectGroup, chainPassGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity trigger chain-window optional decline fixture", () => {
   it("opens fast responses after declining a held optional sibling trigger", () => {
@@ -56,6 +56,55 @@ describe("EDOPro parity trigger chain-window optional decline fixture", () => {
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" })),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-decline-first-chain-window-trigger" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps same-bucket optional trigger choices restorable before selecting the first trigger",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-decline-first-chain-window-trigger", triggerBucket: "turnOptional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-decline-held-trigger", triggerBucket: "turnOptional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+            ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            triggerOrderPrompt: { type: "orderTriggers", player: 0, triggerBucket: "turnOptional" },
+            legalActionCounts: { 0: 4, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-decline-first-chain-window-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-decline-first-chain-window-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-decline-held-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-decline-held-trigger", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-decline-first-chain-window-trigger", triggerBucket: "turnOptional", count: 1 },
+                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-decline-held-trigger", triggerBucket: "turnOptional", count: 1 },
+                ],
+              },
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [
+                  { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-decline-first-chain-window-trigger", triggerBucket: "turnOptional", count: 1 },
+                  { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-decline-held-trigger", triggerBucket: "turnOptional", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-decline-opponent-chain-window-quick" }],
+            absentLegalActionGroups: [absentWindowEffectGroup(1, "fixture-decline-opponent-chain-window-quick", 1, "triggerBucket")],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps a selected optional trigger chain waiting while same-bucket siblings remain selectable or declinable",
@@ -105,6 +154,44 @@ describe("EDOPro parity trigger chain-window optional decline fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-decline-held-trigger" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps a held optional sibling trigger restorable before declining it into the fast-response window",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [{ player: 0, effectId: "fixture-decline-first-chain-window-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggers: [{ player: 0, effectId: "fixture-decline-held-trigger", triggerBucket: "turnOptional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-decline-held-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-decline-held-trigger", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-decline-held-trigger", triggerBucket: "turnOptional", count: 1 }],
+              },
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [{ type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-decline-held-trigger", triggerBucket: "turnOptional", count: 1 }],
+              },
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-decline-opponent-chain-window-quick" }],
+            absentLegalActionGroups: [absentWindowEffectGroup(1, "fixture-decline-opponent-chain-window-quick", 2, "triggerBucket")],
+          },
           after: {
             source: "edopro",
             note: "EDOPro opens fast responses only after the held optional sibling is declined and SEGOC trigger selection is complete",
@@ -125,6 +212,23 @@ describe("EDOPro parity trigger chain-window optional decline fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the post-decline trigger chain-response window restorable before the response player passes",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-decline-first-chain-window-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-decline-opponent-chain-window-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-decline-opponent-chain-window-quick", 1, 3), chainPassGroup(1, 1, 3)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves only the selected trigger after the declined sibling leaves the trigger bucket",
