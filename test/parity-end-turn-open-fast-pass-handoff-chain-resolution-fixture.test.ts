@@ -69,6 +69,67 @@ describe("EDOPro parity end turn open fast-effect pass handoff chain resolution 
       responses: [
         makeScriptedStep(makeResponseSelector("endTurn", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the previous turn player's final open fast-effect window restorable before End Turn hands priority to the next turn player",
+            windowId: 0,
+            windowKind: "open",
+            phase: "main1",
+            turnPlayer: 0,
+            turn: 1,
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 7, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "end-turn-handoff-chain-resolution-previous-open-quick", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "end-turn-handoff-chain-resolution-previous-open-quick", count: 1 }],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+              ], 1, 0),
+              {
+                player: 0,
+                label: "Turn",
+                windowId: 0,
+                windowKind: "open",
+                actions: [
+                  { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+                  { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "end-turn-handoff-chain-resolution-previous-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "end-turn-handoff-chain-resolution-next-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "end-turn-handoff-chain-resolution-next-chain-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "end-turn-handoff-chain-resolution-previous-chain-quick", 0, "open"),
+              absentWindowEffectGroup(1, "end-turn-handoff-chain-resolution-next-open-quick", 0, "open"),
+              absentWindowEffectGroup(1, "end-turn-handoff-chain-resolution-next-chain-quick", 0, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro opens the next turn player's open fast-effect window after End Turn",
