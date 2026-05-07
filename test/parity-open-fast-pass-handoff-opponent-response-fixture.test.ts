@@ -70,6 +70,44 @@ describe("EDOPro parity open fast-effect pass handoff opponent response fixture"
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "open-fast-handoff-opponent-response-turn-open-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps initial turn-player open priority restorable before starting the opponent-response handoff chain",
+            phase: "main1",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 7, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "open-fast-handoff-opponent-response-turn-open-quick", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "200", location: "hand", count: 1 },
+            ],
+            legalActionGroups: [
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "200", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "200", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "open-fast-handoff-opponent-response-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "open-fast-handoff-opponent-response-opponent-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "open-fast-handoff-opponent-response-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "open-fast-handoff-opponent-response-turn-chain-quick", 0, "open"),
+              absentWindowEffectGroup(1, "open-fast-handoff-opponent-response-opponent-chain-quick", 0, "open"),
+              absentWindowEffectGroup(1, "open-fast-handoff-opponent-response-opponent-open-quick", 0, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro gives the opponent first response priority after an open fast-effect starts a chain",
