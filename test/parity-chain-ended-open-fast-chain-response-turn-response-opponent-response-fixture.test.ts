@@ -1,0 +1,198 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentChainEffectGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity chainEnded open fast-effect chain-response turn-response opponent-response fixture", () => {
+  it("returns turn-player priority after the opponent chains again to a direct post-chainEnded turn response", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Chain Ended Direct Opponent Response Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Chain Ended Direct Opponent Response Solved Blocker", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "300", name: "Chain Ended Direct Opponent Response Cleanup", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "400", name: "Chain Ended Direct Opponent Response Open Quick", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "500", name: "Chain Ended Direct Opponent Response Opponent First Chain", kind: "monster", attack: 1100, defense: 1100 },
+      { code: "600", name: "Chain Ended Direct Opponent Response First Turn Chain", kind: "monster", attack: 900, defense: 900 },
+      { code: "700", name: "Chain Ended Direct Opponent Response Opponent Open Quick", kind: "monster", attack: 800, defense: 800 },
+      { code: "800", name: "Chain Ended Direct Opponent Response Opponent Second Chain", kind: "monster", attack: 700, defense: 700 },
+      { code: "900", name: "Chain Ended Direct Opponent Response Second Turn Chain", kind: "monster", attack: 650, defense: 650 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "deferred chain ended open fast chain response turn response opponent-response fixture",
+      options: { seed: 645, startingHandSize: 6 },
+      decks: {
+        0: { main: ["100", "200", "300", "400", "600", "900"] },
+        1: { main: ["500", "800", "700"] },
+      },
+      setup: {
+        moveCards: [
+          { player: 0, code: "600", from: "hand", to: "graveyard" },
+          { player: 0, code: "900", from: "hand", to: "graveyard" },
+          { player: 1, code: "500", from: "hand", to: "graveyard" },
+          { player: 1, code: "800", from: "hand", to: "graveyard" },
+        ],
+        effects: [
+          {
+            id: "fixture-chain-ended-direct-opponent-response-starter",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            logMessage: "Chain ended direct opponent response starter resolved",
+          },
+          {
+            id: "fixture-chain-ended-direct-opponent-response-solved-blocker",
+            player: 0,
+            code: "200",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "chainSolved",
+            range: ["hand"],
+            logMessage: "Chain ended direct opponent response solved blocker should not resolve",
+          },
+          {
+            id: "fixture-chain-ended-direct-opponent-response-cleanup",
+            player: 0,
+            code: "300",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "chainEnded",
+            optional: false,
+            range: ["hand"],
+            oncePerTurn: true,
+            moveCardsOnResolve: [
+              { player: 0, code: "200", from: "hand", to: "graveyard" },
+              { player: 0, code: "600", from: "graveyard", to: "hand" },
+              { player: 0, code: "900", from: "graveyard", to: "hand" },
+              { player: 1, code: "500", from: "graveyard", to: "hand" },
+              { player: 1, code: "800", from: "graveyard", to: "hand" },
+            ],
+            logMessage: "Chain ended direct opponent response cleanup resolved",
+          },
+          {
+            id: "fixture-chain-ended-direct-opponent-response-open-fast",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "open",
+            logMessage: "Chain ended direct opponent response open fast should not resolve yet",
+          },
+          {
+            id: "fixture-chain-ended-direct-opponent-response-first-turn",
+            player: 0,
+            code: "600",
+            location: "graveyard",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Chain ended direct opponent response first turn chain should not resolve yet",
+          },
+          {
+            id: "fixture-chain-ended-direct-opponent-response-second-turn",
+            player: 0,
+            code: "900",
+            location: "graveyard",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Chain ended direct opponent response second turn chain should not resolve yet",
+          },
+          {
+            id: "fixture-chain-ended-direct-opponent-response-opponent-first",
+            player: 1,
+            code: "500",
+            location: "graveyard",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Chain ended direct opponent response opponent first should not resolve yet",
+          },
+          {
+            id: "fixture-chain-ended-direct-opponent-response-opponent-open",
+            player: 1,
+            code: "700",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "open",
+            logMessage: "Chain ended direct opponent response opponent open should not resolve",
+          },
+          {
+            id: "fixture-chain-ended-direct-opponent-response-opponent-second",
+            player: 1,
+            code: "800",
+            location: "graveyard",
+            event: "quick",
+            range: ["hand"],
+            oncePerTurn: true,
+            activationChain: "chain",
+            logMessage: "Chain ended direct opponent response opponent second should not resolve yet",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-direct-opponent-response-starter" })),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-chain-ended-direct-opponent-response-solved-blocker" })),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-ended-direct-opponent-response-cleanup" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-direct-opponent-response-open-fast" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-ended-direct-opponent-response-opponent-first" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-ended-direct-opponent-response-first-turn" })),
+        makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-ended-direct-opponent-response-opponent-second" }), {
+          snapshotRestore: "both",
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro returns direct post-chainEnded response priority to the turn player after the opponent chains again to a turn response",
+        phase: "main1",
+        windowId: 7,
+        windowKind: "chainResponse",
+        waitingFor: 0,
+        chain: [
+          { player: 0, effectId: "fixture-chain-ended-direct-opponent-response-open-fast", sourceUid: "p0-deck-400-3" },
+          { player: 1, effectId: "fixture-chain-ended-direct-opponent-response-opponent-first", sourceUid: "p1-deck-500-0" },
+          { player: 0, effectId: "fixture-chain-ended-direct-opponent-response-first-turn", sourceUid: "p0-deck-600-4" },
+          { player: 1, effectId: "fixture-chain-ended-direct-opponent-response-opponent-second", sourceUid: "p1-deck-800-1" },
+        ],
+        chainPasses: [],
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chainLimits: [],
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-opponent-response-second-turn", count: 1 },
+          { type: "passChain", player: 0, windowId: 7, windowKind: "chainResponse", count: 1 },
+        ],
+        legalActionGroups: [
+          chainEffectGroup(0, "fixture-chain-ended-direct-opponent-response-second-turn", 1, 7),
+          chainPassGroup(0, 1, 7),
+        ],
+        absentLegalActions: [
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-opponent-response-open-fast" },
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-opponent-response-first-turn" },
+          { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-opponent-response-opponent-first" },
+          { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-opponent-response-opponent-second" },
+          { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-chain-ended-direct-opponent-response-opponent-open" },
+        ],
+        absentLegalActionGroups: [
+          absentWindowEffectGroup(0, "fixture-chain-ended-direct-opponent-response-open-fast", 7, "chainResponse"),
+          absentChainEffectGroup(0, "fixture-chain-ended-direct-opponent-response-first-turn", 7),
+          absentChainEffectGroup(1, "fixture-chain-ended-direct-opponent-response-opponent-first", 7),
+          absentChainEffectGroup(1, "fixture-chain-ended-direct-opponent-response-opponent-second", 7),
+          absentWindowEffectGroup(1, "fixture-chain-ended-direct-opponent-response-opponent-open", 7, "chainResponse"),
+        ],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
