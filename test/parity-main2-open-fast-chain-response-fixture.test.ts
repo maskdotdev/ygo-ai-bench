@@ -73,6 +73,36 @@ describe("EDOPro parity Main Phase 2 open fast-effect chain response fixture", (
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "main2-chain-response-turn-open-quick" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "main2-chain-response-opponent-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the Main Phase 2 opponent chain-response window restorable before the opponent chains to an open fast effect",
+            phase: "main2",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 0, effectId: "main2-chain-response-turn-open-quick", sourceUid: "p0-deck-110-0" }],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "main2-chain-response-opponent-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "main2-chain-response-opponent-chain-quick", 1, 3),
+              chainPassGroup(1, 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "main2-chain-response-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "main2-chain-response-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "main2-chain-response-turn-chain-quick", 3, "chainResponse"),
+              absentWindowEffectGroup(1, "main2-chain-response-opponent-open-quick", 3, "chainResponse"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps Main Phase 2 active and gives the turn player chain-response priority after the opponent chains to an open fast effect",

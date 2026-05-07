@@ -86,6 +86,47 @@ describe("EDOPro parity Main Phase 2 open fast-effect chain-response pass handof
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "main2-chain-handoff-chain-turn-open-quick" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "main2-chain-handoff-chain-opponent-first-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the Main Phase 2 opponent chain-response window restorable before the opponent chains from it",
+            phase: "main2",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 0, effectId: "main2-chain-handoff-chain-turn-open-quick", sourceUid: "p0-deck-110-0" }],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 3 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "main2-chain-handoff-chain-opponent-first-chain-quick", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "main2-chain-handoff-chain-opponent-second-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "main2-chain-handoff-chain-opponent-first-chain-quick", count: 1 },
+                  { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "main2-chain-handoff-chain-opponent-second-chain-quick", count: 1 },
+                ],
+              },
+              chainPassGroup(1, 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "main2-chain-handoff-chain-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "main2-chain-handoff-chain-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "main2-chain-handoff-chain-turn-chain-quick", 3),
+              absentWindowEffectGroup(1, "main2-chain-handoff-chain-opponent-open-quick", 3, "chainResponse"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro returns Main Phase 2 response priority to the turn player after the opponent chains to an open fast effect",
@@ -126,6 +167,43 @@ describe("EDOPro parity Main Phase 2 open fast-effect chain-response pass handof
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps restored Main Phase 2 turn-player priority restorable before the turn player passes",
+            phase: "main2",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "main2-chain-handoff-chain-turn-open-quick", sourceUid: "p0-deck-110-0" },
+              { player: 1, effectId: "main2-chain-handoff-chain-opponent-first-chain-quick", sourceUid: "p1-deck-210-0" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "main2-chain-handoff-chain-turn-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "main2-chain-handoff-chain-turn-chain-quick", 1, 4),
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "main2-chain-handoff-chain-turn-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "main2-chain-handoff-chain-opponent-first-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "main2-chain-handoff-chain-opponent-second-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "main2-chain-handoff-chain-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "main2-chain-handoff-chain-turn-open-quick", 4, "chainResponse"),
+              absentChainEffectGroup(1, "main2-chain-handoff-chain-opponent-first-chain-quick", 4),
+              absentChainEffectGroup(1, "main2-chain-handoff-chain-opponent-second-chain-quick", 4),
+              absentWindowEffectGroup(1, "main2-chain-handoff-chain-opponent-open-quick", 4, "chainResponse"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps restored Main Phase 2 chain-response pass handoff priority on the opponent before they chain again",
