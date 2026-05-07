@@ -86,6 +86,40 @@ describe("EDOPro parity trigger-chain open fast-effect chain response turn respo
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "trigger-chain-turn-response-opponent-first-chain-quick" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "trigger-chain-turn-response-turn-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored trigger-player priority before answering the opponent's trigger-chain response",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "trigger-chain-turn-response-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 1, effectId: "trigger-chain-turn-response-opponent-first-chain-quick", sourceUid: "p1-deck-500-0" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "trigger-chain-turn-response-turn-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "trigger-chain-turn-response-turn-chain-quick", 1, 3),
+              chainPassGroup(0, 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "trigger-chain-turn-response-opponent-first-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "trigger-chain-turn-response-opponent-second-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "trigger-chain-turn-response-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "trigger-chain-turn-response-opponent-first-chain-quick", 3),
+              absentChainEffectGroup(1, "trigger-chain-turn-response-opponent-second-chain-quick", 3),
+              absentWindowEffectGroup(1, "trigger-chain-turn-response-opponent-open-quick", 3, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {
