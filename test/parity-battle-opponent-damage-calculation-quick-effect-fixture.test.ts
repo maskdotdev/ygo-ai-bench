@@ -4,6 +4,8 @@ import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
 import {
   absentAttackGroup,
+  absentPassBattleGroup,
+  absentWindowEffectGroup,
   effectGroup,
   passDamageGroup,
   turnGroup,
@@ -48,6 +50,29 @@ describe("EDOPro parity opponent battle damage-calculation quick-effect fixtures
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the turn-player before-damage-calculation pass restorable before entering opponent damage-calculation priority",
+            waitingFor: 0,
+            windowId: 7,
+            windowKind: "battle",
+            pendingBattle: true,
+            battleStep: "damage",
+            battleWindow: { kind: "beforeDamageCalculation", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            damagePasses: [1],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "passDamage", player: 0, windowId: 7, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(0, 1, 7)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "battle", effectId: "fixture-opponent-damage-calculation-quick" },
+              { type: "passDamage", player: 1, windowId: 7, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(1, "fixture-opponent-damage-calculation-quick", 7, "battle"),
+              absentPassBattleGroup(1, "passDamage", 7),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro gives the non-turn player first response during damage calculation and exposes their damage-calculation fast effects",
@@ -69,6 +94,28 @@ describe("EDOPro parity opponent battle damage-calculation quick-effect fixtures
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-damage-calculation-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent damage-calculation quick-effect window restorable before activation",
+            waitingFor: 1,
+            windowId: 8,
+            windowKind: "battle",
+            pendingBattle: true,
+            battleStep: "damageCalculation",
+            battleWindow: { kind: "duringDamageCalculation", step: "damageCalculation", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
+            chain: [],
+            chainPasses: [],
+            damagePasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 8, windowKind: "battle", effectId: "fixture-opponent-damage-calculation-quick", count: 1 },
+              { type: "passDamage", player: 1, windowId: 8, windowKind: "battle", count: 1 },
+            ],
+            legalActionGroups: [effectGroup(1, "fixture-opponent-damage-calculation-quick", 1, 8), passDamageGroup(1, 1, 8)],
+            absentLegalActions: [{ type: "passDamage", player: 0, windowId: 8, windowKind: "battle" }],
+            absentLegalActionGroups: [absentPassBattleGroup(0, "passDamage", 8)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resumes damage calculation timing after the opponent's damage-calculation fast effect resolves",
@@ -97,6 +144,29 @@ describe("EDOPro parity opponent battle damage-calculation quick-effect fixtures
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps end-damage-step turn-player priority restorable before applying battle damage after the opponent's quick effect",
+            waitingFor: 0,
+            windowId: 14,
+            windowKind: "battle",
+            pendingBattle: true,
+            battleStep: "damage",
+            battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            damagePasses: [1],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "passDamage", player: 0, windowId: 14, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(0, 1, 14)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 14, windowKind: "battle", effectId: "fixture-opponent-damage-calculation-quick" },
+              { type: "passDamage", player: 1, windowId: 14, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(1, "fixture-opponent-damage-calculation-quick", 14, "battle"),
+              absentPassBattleGroup(1, "passDamage", 14),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves battle normally after the opponent's damage-calculation fast effect resolves",
