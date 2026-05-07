@@ -83,6 +83,33 @@ describe("EDOPro parity open fast-effect chain-response pass handoff fixture", (
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "open-fast-chain-pass-handoff-turn-open-quick" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "open-fast-chain-pass-handoff-opponent-first-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent chain-response priority before the first opponent chain link in the pass handoff",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 0, effectId: "open-fast-chain-pass-handoff-turn-open-quick", sourceUid: "p0-deck-100-0" }],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 3 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "open-fast-chain-pass-handoff-opponent-first-chain-quick", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "open-fast-chain-pass-handoff-opponent-second-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 1, windowKind: "chainResponse", count: 1 },
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "chainResponse", effectId: "open-fast-chain-pass-handoff-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "open-fast-chain-pass-handoff-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "open-fast-chain-pass-handoff-turn-chain-quick", 1),
+              absentWindowEffectGroup(1, "open-fast-chain-pass-handoff-opponent-open-quick", 1, "chainResponse"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro returns response priority to the turn player after the opponent chains to an open fast effect",
