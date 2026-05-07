@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentChainEffectGroup, chainEffectGroup, chainPassGroup } from "./parity-legal-action-group-helpers.js";
+import { absentChainEffectGroup, chainEffectGroup, chainPassGroup, triggerActivationGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity trigger-chain open fast-effect pass handoff fixture", () => {
   it("returns trigger-chain response priority to the trigger player after the opponent passes", () => {
@@ -58,6 +58,23 @@ describe("EDOPro parity trigger-chain open fast-effect pass handoff fixture", ()
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" })),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "trigger-pass-handoff-success" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves the restored summon-success trigger bucket before activation",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [{ player: 0, effectId: "trigger-pass-handoff-success", eventName: "normalSummoned", triggerBucket: "turnMandatory" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "trigger-pass-handoff-success", triggerBucket: "turnMandatory", count: 1 },
+            ],
+            legalActionGroups: [triggerActivationGroup(0, "trigger-pass-handoff-success", "turnMandatory", 1, 1)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro gives the opponent first response priority after the summon-success trigger is selected",
@@ -77,6 +94,24 @@ describe("EDOPro parity trigger-chain open fast-effect pass handoff fixture", ()
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent priority before the opponent passes the trigger-chain response window",
+            windowId: 2,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 0, effectId: "trigger-pass-handoff-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "trigger-pass-handoff-opponent-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 2, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "trigger-pass-handoff-opponent-chain-quick", 1, 2), chainPassGroup(1, 1, 2)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro returns trigger-chain response priority to the trigger player after the opponent passes with a response available",

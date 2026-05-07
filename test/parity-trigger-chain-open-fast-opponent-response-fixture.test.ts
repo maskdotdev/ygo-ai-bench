@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { chainEffectGroup, chainPassGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentChainEffectGroup, chainEffectGroup, chainPassGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity trigger-chain open fast-effect opponent response fixture", () => {
   it("resolves opponent chain responses after trigger-player pass handoff chains", () => {
@@ -62,6 +62,31 @@ describe("EDOPro parity trigger-chain open fast-effect opponent response fixture
         makeScriptedStep(makeResponseSelector("passChain", 1)),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "trigger-pass-opponent-response-turn-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored trigger-player priority before chaining from the opponent-passed response window",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 0, effectId: "trigger-pass-opponent-response-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            chainPasses: [1],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "trigger-pass-opponent-response-turn-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "trigger-pass-opponent-response-turn-chain-quick", 1, 3),
+              chainPassGroup(0, 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "trigger-pass-opponent-response-opponent-chain-quick" },
+            ],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "trigger-pass-opponent-response-opponent-chain-quick", 3)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro gives the opponent another chain-response window after the trigger player chains from pass handoff",
@@ -85,6 +110,34 @@ describe("EDOPro parity trigger-chain open fast-effect opponent response fixture
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "trigger-pass-opponent-response-opponent-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored opponent priority before the opponent responds to the trigger player's handoff chain",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "trigger-pass-opponent-response-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-pass-opponent-response-turn-chain-quick", sourceUid: "p0-deck-300-2" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "trigger-pass-opponent-response-opponent-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "trigger-pass-opponent-response-opponent-chain-quick", 1, 4),
+              chainPassGroup(1, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "trigger-pass-opponent-response-turn-chain-quick" },
+            ],
+            absentLegalActionGroups: [absentChainEffectGroup(0, "trigger-pass-opponent-response-turn-chain-quick", 4)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the trigger pass-handoff chain after the opponent adds the only remaining response",
