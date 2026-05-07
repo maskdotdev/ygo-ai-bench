@@ -25,11 +25,13 @@ import type {
   DuelCardInstance,
   DuelCardReader,
   DuelEffectDefinition,
+  DuelEffectContext,
   DuelLocation,
   PendingTriggerBucketState,
   DuelResponse,
   DuelSession,
   PlayerId,
+  ScriptedFixtureCardSelector,
   ScriptedDuelFixture,
   ScriptedDuelStep,
   ScriptedDuelWindowExpectation,
@@ -40,6 +42,7 @@ import type {
   ScriptedResponseSelector,
   SerializedDuelEffect,
 } from "#duel/types.js";
+import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 
 type ScriptedStepResponse = DuelResponse | ScriptedResponseSelector;
 
@@ -617,6 +620,7 @@ function applyFixtureEffects(
 }
 
 function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid: string, registryKey: string, chainLimitRegistryKey?: string): DuelEffectDefinition {
+  const hasTargetHandler = effect.chainLimitOnTarget !== undefined || effect.targetCardsOnActivation !== undefined;
   return {
     id: effect.id,
     sourceUid,
@@ -637,16 +641,22 @@ function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid:
     ...(effect.activationChain === undefined
       ? {}
       : { canActivate: (ctx) => effect.activationChain === "chain" ? ctx.duel.chain.length > 0 : ctx.duel.chain.length === 0 }),
-    ...(effect.chainLimitOnTarget === undefined
-      ? {}
-      : {
+    ...(hasTargetHandler
+      ? {
           target(ctx) {
-            if (!ctx.checkOnly) addDuelChainLimit(ctx.duel, createFixtureChainLimit(effect, chainLimitRegistryKey ?? "", undefined));
+            const targets = targetFixtureCards(ctx.duel, effect.targetCardsOnActivation);
+            if (targets === undefined) return false;
+            if (targets.length > 0) ctx.setTargets(targets.map((card) => card.uid));
+            if (!ctx.checkOnly && effect.chainLimitOnTarget) addDuelChainLimit(ctx.duel, createFixtureChainLimit(effect, chainLimitRegistryKey ?? "", undefined));
             return true;
           },
-        }),
+        }
+      : {}),
     operation(ctx) {
+      const timingBoundaryStart = effect.targetCardsOnActivation === undefined ? undefined : fixtureOperationTriggerStart(ctx);
+      let operationMoved = timingBoundaryStart !== undefined && timingBoundaryStart < ctx.duel.pendingTriggers.length;
       for (const move of effect.moveCardsOnResolve ?? []) {
+        if (timingBoundaryStart !== undefined) markFixtureOperationTimingBoundary(ctx.duel, timingBoundaryStart, operationMoved);
         const candidates = ctx.duel.cards
           .filter((card) => {
             if (card.controller !== move.player || card.code !== move.code) return false;
@@ -662,6 +672,7 @@ function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid:
         if (move.collectEvent) {
           collectDuelTriggerEffects(ctx.duel, move.collectEvent, moved, fixtureMoveEventPayload(move));
         }
+        operationMoved = true;
       }
       if (effect.negateChainEffectOnResolve) {
         const target = ctx.duel.chain.find((link) => link.effectId === effect.negateChainEffectOnResolve);
@@ -672,6 +683,44 @@ function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid:
       if (effect.logMessage) ctx.log(effect.logMessage);
     },
   };
+}
+
+function targetFixtureCards(state: DuelSession["state"], selectors: ScriptedFixtureCardSelector[] | undefined): DuelCardInstance[] | undefined {
+  if (selectors === undefined) return [];
+  const targets: DuelCardInstance[] = [];
+  for (const selector of selectors) {
+    const card = findFixtureCard(state, selector);
+    if (!card) return undefined;
+    targets.push(card);
+  }
+  return targets;
+}
+
+function findFixtureCard(state: DuelSession["state"], selector: ScriptedFixtureCardSelector): DuelCardInstance | undefined {
+  const candidates = state.cards
+    .filter((card) => {
+      if (card.controller !== selector.player || card.code !== selector.code) return false;
+      return selector.location === undefined || card.location === selector.location;
+    })
+    .sort((a, b) => a.controller - b.controller || a.location.localeCompare(b.location) || a.sequence - b.sequence);
+  return candidates[selector.occurrence ?? 0];
+}
+
+function fixtureOperationTriggerStart(ctx: DuelEffectContext): number {
+  if (ctx.chainLink?.id === undefined) return ctx.duel.pendingTriggers.length;
+  const index = ctx.duel.pendingTriggers.findIndex((trigger) => trigger.eventName === "becameTarget" && trigger.eventChainLinkId === ctx.chainLink?.id);
+  return index < 0 ? ctx.duel.pendingTriggers.length : index;
+}
+
+function markFixtureOperationTimingBoundary(state: DuelSession["state"], start: number, operationMoved: boolean): void {
+  if (!operationMoved) return;
+  const before = state.pendingTriggers.length;
+  state.pendingTriggers = state.pendingTriggers.filter((trigger, index) => {
+    if (index < start) return true;
+    const effect = state.effects.find((candidate) => candidate.id === trigger.effectId && candidate.sourceUid === trigger.sourceUid);
+    return effect?.optional === false || effect?.triggerTiming !== "when";
+  });
+  if (state.pendingTriggers.length !== before) setWaitingForPendingTriggerBucket(state);
 }
 
 function negateFixtureSummon(state: DuelSession["state"], target: NonNullable<ScriptedFixtureEffect["negateSummonOnResolve"]>) {

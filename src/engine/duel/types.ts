@@ -766,6 +766,13 @@ export interface ScriptedFixtureMove {
   eventUids?: string[];
 }
 
+export interface ScriptedFixtureCardSelector {
+  player: PlayerId;
+  code: string;
+  location?: DuelLocation;
+  occurrence?: number;
+}
+
 export interface ScriptedFixtureEffect {
   id: string;
   player: PlayerId;
@@ -797,6 +804,7 @@ export interface ScriptedFixtureEffect {
     untilChainEnd: boolean;
     allowPlayer?: PlayerId;
   };
+  targetCardsOnActivation?: ScriptedFixtureCardSelector[];
   moveCardsOnResolve?: ScriptedFixtureMove[];
   occurrence?: number;
 }
