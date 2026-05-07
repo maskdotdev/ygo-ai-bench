@@ -7,6 +7,7 @@ import {
   absentWindowEffectGroup,
   chainEffectGroup,
   chainPassGroup,
+  effectGroup,
   passDamageGroup,
 } from "./parity-legal-action-group-helpers.js";
 
@@ -72,6 +73,34 @@ describe("EDOPro parity battle quick-effect chain response fixture", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-damage-step-open-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro gives the turn player the next start damage step response before they start a quick chain",
+            waitingFor: 0,
+            windowId: 5,
+            windowKind: "battle",
+            pendingBattle: true,
+            battleWindow: { kind: "startDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            damagePasses: [1],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "battle", effectId: "fixture-damage-step-open-quick", count: 1 },
+              { type: "passDamage", player: 0, windowId: 5, windowKind: "battle", count: 1 },
+            ],
+            legalActionGroups: [
+              effectGroup(0, "fixture-damage-step-open-quick", 1, 5),
+              passDamageGroup(0, 1, 5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "battle", effectId: "fixture-turn-damage-step-chain-only-quick" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "battle", effectId: "fixture-opponent-damage-step-chain-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-turn-damage-step-chain-only-quick", 5, "battle"),
+              absentWindowEffectGroup(1, "fixture-opponent-damage-step-chain-quick", 5, "battle"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro opens a chain-response window inside the damage step when the opponent has a legal damage-step quick response",
@@ -95,6 +124,38 @@ describe("EDOPro parity battle quick-effect chain response fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps opponent chain-response priority restorable after a turn-player damage-step quick effect",
+            waitingFor: 1,
+            windowId: 6,
+            windowKind: "chainResponse",
+            pendingBattle: true,
+            battleWindow: { kind: "startDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            chain: [{ player: 0, effectId: "fixture-damage-step-open-quick", sourceUid: "p0-deck-300-1" }],
+            chainPasses: [],
+            damagePasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-opponent-damage-step-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-opponent-damage-step-chain-quick", 1, 6),
+              chainPassGroup(1, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-damage-step-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-turn-damage-step-chain-only-quick" },
+              { type: "passDamage", player: 1, windowId: 6, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-damage-step-open-quick", 6, "chainResponse"),
+              absentWindowEffectGroup(0, "fixture-turn-damage-step-chain-only-quick", 6, "chainResponse"),
+              absentPassBattleGroup(1, "passDamage", 6),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro offers turn-player chain-only damage-step responses after the opponent passes the damage-step quick chain",
@@ -125,6 +186,38 @@ describe("EDOPro parity battle quick-effect chain response fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps turn-player chain-only damage-step responses restorable after the opponent passes",
+            waitingFor: 0,
+            windowId: 7,
+            windowKind: "chainResponse",
+            pendingBattle: true,
+            battleWindow: { kind: "startDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            chain: [{ player: 0, effectId: "fixture-damage-step-open-quick", sourceUid: "p0-deck-300-1" }],
+            chainPasses: [1],
+            damagePasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-turn-damage-step-chain-only-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 7, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-turn-damage-step-chain-only-quick", 1, 7),
+              chainPassGroup(0, 1, 7),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-damage-step-open-quick" },
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-opponent-damage-step-chain-quick" },
+              { type: "passDamage", player: 0, windowId: 7, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-damage-step-open-quick", 7, "chainResponse"),
+              absentWindowEffectGroup(1, "fixture-opponent-damage-step-chain-quick", 7, "chainResponse"),
+              absentPassBattleGroup(0, "passDamage", 7),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resumes start damage step timing after both players pass the damage-step quick chain",
