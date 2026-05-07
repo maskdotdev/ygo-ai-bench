@@ -1,0 +1,162 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentTriggerActivationGroup, summonGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity damage-dealt missed timing fixtures", () => {
+  it("keeps optional if triggers while optional when damage-dealt triggers miss timing", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Damage Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "400", name: "Damage Optional When", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Damage Optional If", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "600", name: "Boundary Body", kind: "monster", attack: 900, defense: 900 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "damage-dealt missed timing fixture",
+      options: { seed: 91, startingHandSize: 4 },
+      decks: {
+        0: { main: ["100", "400", "500", "600"] },
+        1: { main: ["600", "600", "600", "600"] },
+      },
+      setup: {
+        moveCards: [{ player: 0, code: "600", from: "hand", to: "monsterZone", position: "faceUpAttack" }],
+        effects: [
+          {
+            id: "damage-dealt-multistep",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            collectEventsOnResolve: [{ collectEvent: "damageDealt", eventIsLast: false, eventPlayer: 1, eventValue: 700, eventReason: 0x40, eventReasonPlayer: 0 }],
+            moveCardsOnResolve: [{ player: 0, code: "600", from: "monsterZone", to: "graveyard", collectEvent: "sentToGraveyard" }],
+            logMessage: "Damage-dealt multi step resolved",
+          },
+          {
+            id: "damage-dealt-optional-when",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "damageDealt",
+            triggerTiming: "when",
+            range: ["hand"],
+            logMessage: "Damage-dealt optional when should not resolve",
+          },
+          {
+            id: "damage-dealt-optional-if",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "damageDealt",
+            triggerTiming: "if",
+            range: ["hand"],
+            logMessage: "Damage-dealt optional if resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "damage-dealt-multistep" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro drops optional when damage-dealt triggers when that damage event is followed by another event, while optional if remains available",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [
+              { player: 0, effectId: "damage-dealt-optional-if", eventName: "damageDealt", eventCode: 1111, eventPlayer: 1, eventValue: 700, eventReason: 0x40, eventReasonPlayer: 0 },
+            ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "damage-dealt-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "damage-dealt-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "damage-dealt-optional-if", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "damage-dealt-optional-if", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "damage-dealt-optional-when" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(0, "damage-dealt-optional-when", "turnOptional", 1, "triggerBucket")],
+            logIncludes: ["Damage-dealt multi step resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "damage-dealt-optional-if" }), {
+          snapshotRestore: "both",
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves the surviving optional if damage-dealt trigger after restore without resurrecting missed optional when triggers",
+            windowId: 2,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "damage-dealt-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "damage-dealt-optional-if" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "damage-dealt-optional-when", "turnOptional", 2, "open"),
+              absentTriggerActivationGroup(0, "damage-dealt-optional-if", "turnOptional", 2, "open"),
+            ],
+            logIncludes: ["Damage-dealt optional if resolved"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state resolves the optional if damage-dealt trigger without resurrecting the missed optional when trigger",
+        windowId: 2,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        chain: [],
+        chainPasses: [],
+        locationCounts: { graveyard: { "600": 1 }, hand: { "100": 1, "400": 1, "500": 1, "600": 4 } },
+        legalActionCounts: { 0: 9, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "damage-dealt-multistep", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 2,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "damage-dealt-multistep", count: 1 }],
+          },
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "100", location: "hand" },
+            { type: "normalSummon", player: 0, code: "400", location: "hand" },
+            { type: "normalSummon", player: 0, code: "500", location: "hand" },
+            { type: "setMonster", player: 0, code: "100", location: "hand" },
+            { type: "setMonster", player: 0, code: "400", location: "hand" },
+            { type: "setMonster", player: 0, code: "500", location: "hand" },
+          ], 1, 2),
+          turnGroup(2),
+        ],
+        absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "damage-dealt-optional-when" }],
+        absentLegalActionGroups: [absentTriggerActivationGroup(0, "damage-dealt-optional-when", "turnOptional", 2, "open")],
+        logIncludes: ["Damage-dealt optional if resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});

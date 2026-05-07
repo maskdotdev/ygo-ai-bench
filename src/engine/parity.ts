@@ -35,6 +35,7 @@ import type {
   ScriptedDuelFixture,
   ScriptedDuelStep,
   ScriptedDuelWindowExpectation,
+  ScriptedFixtureEvent,
   ScriptedFixtureEffect,
   ScriptedFixtureMove,
   ScriptedLegalActionGroupExpectation,
@@ -655,6 +656,13 @@ function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid:
     operation(ctx) {
       const timingBoundaryStart = effect.targetCardsOnActivation === undefined ? undefined : fixtureOperationTriggerStart(ctx);
       let operationMoved = timingBoundaryStart !== undefined && timingBoundaryStart < ctx.duel.pendingTriggers.length;
+      for (const event of effect.collectEventsOnResolve ?? []) {
+        if (timingBoundaryStart !== undefined) markFixtureOperationTimingBoundary(ctx.duel, timingBoundaryStart, operationMoved);
+        const eventCard = event.eventCard === undefined ? undefined : findFixtureCard(ctx.duel, event.eventCard);
+        if (event.eventCard !== undefined && !eventCard) throw new Error(`Fixture effect could not find event card ${event.eventCard.code} for player ${event.eventCard.player}`);
+        collectDuelTriggerEffects(ctx.duel, event.collectEvent, eventCard, fixtureEventPayload(event));
+        operationMoved = true;
+      }
       for (const move of effect.moveCardsOnResolve ?? []) {
         if (timingBoundaryStart !== undefined) markFixtureOperationTimingBoundary(ctx.duel, timingBoundaryStart, operationMoved);
         const candidates = ctx.duel.cards
@@ -769,19 +777,23 @@ function applyFixturePosition(card: Pick<DuelCardInstance, "position" | "faceUp"
 }
 
 function fixtureMoveEventPayload(move: ScriptedFixtureMove) {
+  return fixtureEventPayload(move);
+}
+
+function fixtureEventPayload(event: ScriptedFixtureMove | ScriptedFixtureEvent) {
   return {
-    ...(move.eventCode === undefined ? {} : { eventCode: move.eventCode }),
-    ...(move.eventIsLast === undefined ? {} : { eventIsLast: move.eventIsLast }),
-    ...(move.eventPlayer === undefined ? {} : { eventPlayer: move.eventPlayer }),
-    ...(move.eventValue === undefined ? {} : { eventValue: move.eventValue }),
-    ...(move.eventReason === undefined ? {} : { eventReason: move.eventReason }),
-    ...(move.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: move.eventReasonPlayer }),
-    ...(move.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: move.eventReasonCardUid }),
-    ...(move.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: move.eventReasonEffectId }),
-    ...(move.relatedEffectId === undefined ? {} : { relatedEffectId: move.relatedEffectId }),
-    ...(move.eventChainDepth === undefined ? {} : { eventChainDepth: move.eventChainDepth }),
-    ...(move.eventChainLinkId === undefined ? {} : { eventChainLinkId: move.eventChainLinkId }),
-    ...(move.eventUids === undefined || move.eventUids.length === 0 ? {} : { eventUids: [...move.eventUids] }),
+    ...(event.eventCode === undefined ? {} : { eventCode: event.eventCode }),
+    ...(event.eventIsLast === undefined ? {} : { eventIsLast: event.eventIsLast }),
+    ...(event.eventPlayer === undefined ? {} : { eventPlayer: event.eventPlayer }),
+    ...(event.eventValue === undefined ? {} : { eventValue: event.eventValue }),
+    ...(event.eventReason === undefined ? {} : { eventReason: event.eventReason }),
+    ...(event.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: event.eventReasonPlayer }),
+    ...(event.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: event.eventReasonCardUid }),
+    ...(event.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: event.eventReasonEffectId }),
+    ...(event.relatedEffectId === undefined ? {} : { relatedEffectId: event.relatedEffectId }),
+    ...(event.eventChainDepth === undefined ? {} : { eventChainDepth: event.eventChainDepth }),
+    ...(event.eventChainLinkId === undefined ? {} : { eventChainLinkId: event.eventChainLinkId }),
+    ...(event.eventUids === undefined || event.eventUids.length === 0 ? {} : { eventUids: [...event.eventUids] }),
   };
 }
 
