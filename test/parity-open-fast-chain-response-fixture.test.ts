@@ -69,6 +69,44 @@ describe("EDOPro parity open fast-effect chain response fixture", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "open-fast-chain-turn-open-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps initial turn-player open priority restorable before starting an open fast-effect chain",
+            phase: "main1",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 7, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "open-fast-chain-turn-open-quick", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "200", location: "hand", count: 1 },
+            ],
+            legalActionGroups: [
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "200", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "200", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "open-fast-chain-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "open-fast-chain-opponent-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "open-fast-chain-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "open-fast-chain-turn-chain-quick", 0, "open"),
+              absentWindowEffectGroup(1, "open-fast-chain-opponent-chain-quick", 0, "open"),
+              absentWindowEffectGroup(1, "open-fast-chain-opponent-open-quick", 0, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro gives the opponent first chain-response priority after the turn player starts an open fast-effect chain",
@@ -91,6 +129,25 @@ describe("EDOPro parity open fast-effect chain response fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "open-fast-chain-opponent-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps restored opponent chain-response priority before chaining to an open fast effect",
+            windowId: 1,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            chain: [{ player: 0, effectId: "open-fast-chain-turn-open-quick", sourceUid: "p0-deck-100-0" }],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "open-fast-chain-opponent-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 1, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "open-fast-chain-opponent-chain-quick", 1, 1), chainPassGroup(1, 1, 1)],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "open-fast-chain-opponent-open-quick" }],
+            absentLegalActionGroups: [absentWindowEffectGroup(1, "open-fast-chain-opponent-open-quick", 1, "chainResponse")],
+          },
           after: {
             source: "edopro",
             note: "EDOPro gives the turn player chain-response priority after the opponent chains to an open fast effect",
@@ -116,6 +173,28 @@ describe("EDOPro parity open fast-effect chain response fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "open-fast-chain-turn-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps restored turn-player chain-response priority before chaining back after the opponent response",
+            windowId: 2,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            chain: [
+              { player: 0, effectId: "open-fast-chain-turn-open-quick", sourceUid: "p0-deck-100-0" },
+              { player: 1, effectId: "open-fast-chain-opponent-chain-quick", sourceUid: "p1-deck-300-0" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "open-fast-chain-turn-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 2, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(0, "open-fast-chain-turn-chain-quick", 1, 2), chainPassGroup(0, 1, 2)],
+            absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "open-fast-chain-turn-open-quick" }],
+            absentLegalActionGroups: [absentWindowEffectGroup(0, "open-fast-chain-turn-open-quick", 2, "chainResponse")],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the chained open fast effects and returns to turn-player open priority",
