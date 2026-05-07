@@ -104,6 +104,37 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional fast-resp
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-resolution-opponent-optional-fast-starter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps initial open priority restorable before opponent same-bucket optional fast-response selection begins",
+            phase: "main1",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 13, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-resolution-opponent-optional-fast-starter", count: 1 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-resolution-opponent-optional-fast-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "fixture-chain-resolution-opponent-optional-fast-opponent-quick" },
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-resolution-turn-optional-fast-handoff", triggerBucket: "turnOptional" },
+              { type: "activateTrigger", player: 1, windowId: 0, windowKind: "open", effectId: "fixture-chain-resolution-first-opponent-optional-fast", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-resolution-opponent-optional-fast-turn-quick", 0, "open"),
+              absentWindowEffectGroup(1, "fixture-chain-resolution-opponent-optional-fast-opponent-quick", 0, "open"),
+              absentTriggerActivationGroup(0, "fixture-chain-resolution-turn-optional-fast-handoff", "turnOptional", 0, "open"),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-optional-fast", "opponentOptional", 0, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps chain-created opponent same-bucket optional triggers behind the active turn optional bucket before fast responses",
@@ -148,6 +179,47 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional fast-resp
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-chain-resolution-turn-optional-fast-handoff" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the active turn optional bucket restorable before a decline hands to the opponent optional order prompt",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-chain-resolution-turn-optional-fast-handoff", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-optional-fast", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-fast", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnOptional" },
+              { player: 1, triggerBucket: "opponentOptional" },
+            ],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-turn-optional-fast-handoff", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-turn-optional-fast-handoff", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-chain-resolution-turn-optional-fast-handoff", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "fixture-chain-resolution-turn-optional-fast-handoff", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-opponent-optional-fast-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-opponent-optional-fast-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional-fast", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-resolution-opponent-optional-fast-turn-quick", 1, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-chain-resolution-opponent-optional-fast-opponent-quick", 1, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-optional-fast", "opponentOptional", 1, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "800", "400", "500", "800", "800"] },
+            logIncludes: ["Chain resolution opponent optional fast starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro restores opponent same-bucket optional trigger ordering before exposing chain responses",
@@ -187,6 +259,65 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional fast-resp
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-chain-resolution-second-opponent-optional-fast" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent same-bucket optional order prompt restorable before either opponent trigger is selected",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-optional-fast", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-fast", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
+            ],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            triggerOrderPrompt: { type: "orderTriggers", player: 1, triggerBucket: "opponentOptional" },
+            legalActionCounts: { 0: 0, 1: 4 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional-fast", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional-fast", triggerBucket: "opponentOptional", count: 1 },
+              { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-second-opponent-optional-fast", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-second-opponent-optional-fast", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 1, triggerBucket: "opponentOptional" },
+                count: 1,
+                actions: [
+                  { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional-fast", triggerBucket: "opponentOptional", count: 1 },
+                  { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-second-opponent-optional-fast", triggerBucket: "opponentOptional", count: 1 },
+                ],
+              },
+              {
+                player: 1,
+                label: "Trigger Declines",
+                windowId: 2,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 1, triggerBucket: "opponentOptional" },
+                count: 1,
+                actions: [
+                  { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional-fast", triggerBucket: "opponentOptional", count: 1 },
+                  { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-second-opponent-optional-fast", triggerBucket: "opponentOptional", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-opponent-optional-fast-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-opponent-optional-fast-opponent-quick" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-turn-optional-fast-handoff", triggerBucket: "turnOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-resolution-opponent-optional-fast-turn-quick", 2, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-chain-resolution-opponent-optional-fast-opponent-quick", 2, "triggerBucket"),
+              absentTriggerActivationGroup(0, "fixture-chain-resolution-turn-optional-fast-handoff", "turnOptional", 2, "triggerBucket"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps the remaining restored opponent optional trigger ahead of fast responses",
@@ -219,6 +350,36 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional fast-resp
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "fixture-chain-resolution-first-opponent-optional-fast" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the remaining opponent optional trigger restorable before the bucket exhausts into fast responses",
+            windowId: 3,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [{ player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-fast", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" }],
+            chainPasses: [],
+            pendingTriggers: [{ player: 1, effectId: "fixture-chain-resolution-first-opponent-optional-fast", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            triggerOrderPrompt: null,
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional-fast", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional-fast", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-chain-resolution-first-opponent-optional-fast", "opponentOptional", 1, 3),
+              triggerDeclineGroup(1, "fixture-chain-resolution-first-opponent-optional-fast", "opponentOptional", 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-opponent-optional-fast-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-opponent-optional-fast-opponent-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-resolution-opponent-optional-fast-turn-quick", 3, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-chain-resolution-opponent-optional-fast-opponent-quick", 3, "triggerBucket"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro opens turn-player chain-response priority after the restored opponent optional bucket is exhausted",
