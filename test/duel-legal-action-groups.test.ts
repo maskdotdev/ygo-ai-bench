@@ -25,15 +25,18 @@ describe("duel legal action groups", () => {
   });
 
   it("keeps flip summons with summon actions before manual position changes", () => {
-    const session = createDuel({ seed: 101, startingHandSize: 2 });
+    const session = createDuel({ seed: 101, startingHandSize: 3 });
     loadDecks(session, {
-      0: { main: ["100", "200"] },
+      0: { main: ["100", "200", "500"] },
       1: { main: ["300", "400"] },
     });
     startDuel(session);
     const setMonster = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const positionMonster = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
     expect(setMonster).toBeDefined();
+    expect(positionMonster).toBeDefined();
     moveDuelCard(session.state, setMonster!.uid, "monsterZone", 0).position = "faceDownDefense";
+    moveDuelCard(session.state, positionMonster!.uid, "monsterZone", 0).position = "faceUpAttack";
 
     const actions = getDuelLegalActions(session, 0);
     const relevantActions = actions.filter((action) => action.type === "normalSummon" || action.type === "setMonster" || action.type === "flipSummon" || action.type === "changePosition");

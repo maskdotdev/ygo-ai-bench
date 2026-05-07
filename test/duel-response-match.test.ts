@@ -4,32 +4,33 @@ import { sameAction } from "#duel/response-match.js";
 import type { DuelAction } from "#duel/types.js";
 
 describe("duel response matching", () => {
+  const windowToken = (windowId: number) => `window-${windowId}`;
   const stampedActionExamples: DuelAction[] = [
-    { type: "normalSummon", player: 0, uid: "normal", label: "Normal", windowId: 20, windowKind: "open" },
-    { type: "tributeSummon", player: 0, uid: "tribute", tributeUids: ["mat-a"], label: "Tribute", windowId: 20, windowKind: "open" },
-    { type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["mat-a", "mat-b"], label: "Fusion", windowId: 20, windowKind: "open" },
-    { type: "synchroSummon", player: 0, uid: "synchro", materialUids: ["mat-a", "mat-b"], label: "Synchro", windowId: 20, windowKind: "open" },
-    { type: "xyzSummon", player: 0, uid: "xyz", materialUids: ["mat-a", "mat-b"], label: "Xyz", windowId: 20, windowKind: "open" },
-    { type: "linkSummon", player: 0, uid: "link", materialUids: ["mat-a", "mat-b"], label: "Link", windowId: 20, windowKind: "open" },
-    { type: "ritualSummon", player: 0, uid: "ritual", materialUids: ["mat-a", "mat-b"], label: "Ritual", windowId: 20, windowKind: "open" },
-    { type: "setMonster", player: 0, uid: "monster", label: "Set monster", windowId: 20, windowKind: "open" },
-    { type: "setSpellTrap", player: 0, uid: "spell", label: "Set spell", windowId: 20, windowKind: "open" },
-    { type: "activateEffect", player: 0, uid: "effect-source", effectId: "effect", label: "Effect", windowId: 20, windowKind: "chainResponse" },
-    { type: "specialSummonProcedure", player: 0, uid: "procedure", effectId: "procedure-effect", label: "Procedure", windowId: 20, windowKind: "open" },
-    { type: "passChain", player: 0, label: "Pass chain", windowId: 20, windowKind: "chainResponse" },
-    { type: "passAttack", player: 0, label: "Pass attack", windowId: 20, windowKind: "battle" },
-    { type: "passDamage", player: 0, label: "Pass damage", windowId: 20, windowKind: "battle" },
-    { type: "replayAttack", player: 0, attackerUid: "attacker", targetUid: "target", label: "Replay", windowId: 20, windowKind: "battle" },
-    { type: "cancelAttack", player: 0, attackerUid: "attacker", label: "Cancel", windowId: 20, windowKind: "battle" },
-    { type: "selectOption", player: 0, promptId: "prompt", option: 1, label: "One", windowId: 20, windowKind: "prompt" },
-    { type: "selectYesNo", player: 0, promptId: "prompt", yes: true, label: "Yes", windowId: 20, windowKind: "prompt" },
-    { type: "activateTrigger", player: 0, triggerId: "trigger", triggerBucket: "turnOptional", uid: "trigger-source", effectId: "trigger-effect", label: "Activate", windowId: 20, windowKind: "triggerBucket" },
-    { type: "declineTrigger", player: 0, triggerId: "trigger", triggerBucket: "turnOptional", uid: "trigger-source", effectId: "trigger-effect", label: "Decline", windowId: 20, windowKind: "triggerBucket" },
-    { type: "flipSummon", player: 0, uid: "flip", label: "Flip", windowId: 20, windowKind: "open" },
-    { type: "changePosition", player: 0, uid: "position", position: "faceUpDefense", label: "Defense", windowId: 20, windowKind: "open" },
-    { type: "declareAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct", windowId: 20, windowKind: "open" },
-    { type: "changePhase", player: 0, phase: "battle", label: "Battle Phase", windowId: 20, windowKind: "open" },
-    { type: "endTurn", player: 0, label: "End Turn", windowId: 20, windowKind: "open" },
+    { type: "normalSummon", player: 0, uid: "normal", label: "Normal", windowId: 20, windowKind: "open", windowToken: windowToken(20) },
+    { type: "tributeSummon", player: 0, uid: "tribute", tributeUids: ["mat-a"], label: "Tribute", windowId: 20, windowKind: "open", windowToken: windowToken(20) },
+    { type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["mat-a", "mat-b"], label: "Fusion", windowId: 20, windowKind: "open", windowToken: windowToken(20) },
+    { type: "synchroSummon", player: 0, uid: "synchro", materialUids: ["mat-a", "mat-b"], label: "Synchro", windowId: 20, windowKind: "open", windowToken: windowToken(20) },
+    { type: "xyzSummon", player: 0, uid: "xyz", materialUids: ["mat-a", "mat-b"], label: "Xyz", windowId: 20, windowKind: "open", windowToken: windowToken(20) },
+    { type: "linkSummon", player: 0, uid: "link", materialUids: ["mat-a", "mat-b"], label: "Link", windowId: 20, windowKind: "open", windowToken: windowToken(20) },
+    { type: "ritualSummon", player: 0, uid: "ritual", materialUids: ["mat-a", "mat-b"], label: "Ritual", windowId: 20, windowKind: "open", windowToken: windowToken(20) },
+    { type: "setMonster", player: 0, uid: "monster", label: "Set monster", windowId: 20, windowKind: "open", windowToken: windowToken(20) },
+    { type: "setSpellTrap", player: 0, uid: "spell", label: "Set spell", windowId: 20, windowKind: "open", windowToken: windowToken(20) },
+    { type: "activateEffect", player: 0, uid: "effect-source", effectId: "effect", label: "Effect", windowId: 20, windowKind: "chainResponse", windowToken: windowToken(20) },
+    { type: "specialSummonProcedure", player: 0, uid: "procedure", effectId: "procedure-effect", label: "Procedure", windowId: 20, windowKind: "open", windowToken: windowToken(20) },
+    { type: "passChain", player: 0, label: "Pass chain", windowId: 20, windowKind: "chainResponse", windowToken: windowToken(20) },
+    { type: "passAttack", player: 0, label: "Pass attack", windowId: 20, windowKind: "battle", windowToken: windowToken(20) },
+    { type: "passDamage", player: 0, label: "Pass damage", windowId: 20, windowKind: "battle", windowToken: windowToken(20) },
+    { type: "replayAttack", player: 0, attackerUid: "attacker", targetUid: "target", label: "Replay", windowId: 20, windowKind: "battle", windowToken: windowToken(20) },
+    { type: "cancelAttack", player: 0, attackerUid: "attacker", label: "Cancel", windowId: 20, windowKind: "battle", windowToken: windowToken(20) },
+    { type: "selectOption", player: 0, promptId: "prompt", option: 1, label: "One", windowId: 20, windowKind: "prompt", windowToken: windowToken(20) },
+    { type: "selectYesNo", player: 0, promptId: "prompt", yes: true, label: "Yes", windowId: 20, windowKind: "prompt", windowToken: windowToken(20) },
+    { type: "activateTrigger", player: 0, triggerId: "trigger", triggerBucket: "turnOptional", uid: "trigger-source", effectId: "trigger-effect", label: "Activate", windowId: 20, windowKind: "triggerBucket", windowToken: windowToken(20) },
+    { type: "declineTrigger", player: 0, triggerId: "trigger", triggerBucket: "turnOptional", uid: "trigger-source", effectId: "trigger-effect", label: "Decline", windowId: 20, windowKind: "triggerBucket", windowToken: windowToken(20) },
+    { type: "flipSummon", player: 0, uid: "flip", label: "Flip", windowId: 20, windowKind: "open", windowToken: windowToken(20) },
+    { type: "changePosition", player: 0, uid: "position", position: "faceUpDefense", label: "Defense", windowId: 20, windowKind: "open", windowToken: windowToken(20) },
+    { type: "declareAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct", windowId: 20, windowKind: "open", windowToken: windowToken(20) },
+    { type: "changePhase", player: 0, phase: "battle", label: "Battle Phase", windowId: 20, windowKind: "open", windowToken: windowToken(20) },
+    { type: "endTurn", player: 0, label: "End Turn", windowId: 20, windowKind: "open", windowToken: windowToken(20) },
   ];
 
   it("requires every stamped legal action type to echo its window stamp", () => {
@@ -61,10 +62,20 @@ describe("duel response matching", () => {
       "endTurn",
     ]);
     for (const action of stampedActionExamples) {
-      const { windowId: _windowId, windowKind: _windowKind, ...unstamped } = action;
+      const { windowId: _windowId, windowKind: _windowKind, windowToken: _windowToken, ...unstamped } = action;
       expect(sameAction(action, unstamped)).toBe(false);
       expect(sameAction(action, { ...action })).toBe(true);
     }
+  });
+
+  it("rejects partial tokenized window stamps", () => {
+    const action: DuelAction = { type: "passChain", player: 0, label: "Pass chain", windowId: 21, windowKind: "chainResponse", windowToken: windowToken(21) };
+    const { windowToken: _windowToken, ...missingToken } = action;
+    const { windowId: _windowId, windowKind: _windowKind, ...tokenOnly } = action;
+
+    expect(sameAction(action, missingToken)).toBe(false);
+    expect(sameAction(action, tokenOnly)).toBe(false);
+    expect(sameAction({ type: "passChain", player: 0, label: "Pass chain" }, tokenOnly)).toBe(false);
   });
 
   it("matches unordered summon material responses without accepting duplicates", () => {
@@ -76,6 +87,7 @@ describe("duel response matching", () => {
       label: "Fusion",
       windowId: 1,
       windowKind: "open",
+      windowToken: windowToken(1),
     };
 
     expect(sameAction(action, { ...action, materialUids: ["mat-b", "mat-a"] })).toBe(true);
@@ -98,8 +110,8 @@ describe("duel response matching", () => {
   });
 
   it("matches direct attack selectors by explicit direct attack marker", () => {
-    const direct: DuelAction = { type: "declareAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct", windowId: 3, windowKind: "open" };
-    const unstamped: DuelAction = { type: "declareAttack", player: 0, attackerUid: "attacker", label: "Legacy untargeted", windowId: 3, windowKind: "open" };
+    const direct: DuelAction = { type: "declareAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct", windowId: 3, windowKind: "open", windowToken: windowToken(3) };
+    const unstamped: DuelAction = { type: "declareAttack", player: 0, attackerUid: "attacker", label: "Legacy untargeted", windowId: 3, windowKind: "open", windowToken: windowToken(3) };
 
     expect(duelActionMatchesSelector(direct, { type: "declareAttack", player: 0, directAttack: true }, [])).toBe(true);
     expect(duelActionMatchesSelector(unstamped, { type: "declareAttack", player: 0, directAttack: true }, [])).toBe(false);
@@ -111,28 +123,28 @@ describe("duel response matching", () => {
   });
 
   it("matches explicit direct attack responses only to direct attack actions", () => {
-    const direct: DuelAction = { type: "declareAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct", windowId: 3, windowKind: "open" };
-    const targeted: DuelAction = { type: "declareAttack", player: 0, attackerUid: "attacker", targetUid: "target", label: "Target", windowId: 3, windowKind: "open" };
+    const direct: DuelAction = { type: "declareAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct", windowId: 3, windowKind: "open", windowToken: windowToken(3) };
+    const targeted: DuelAction = { type: "declareAttack", player: 0, attackerUid: "attacker", targetUid: "target", label: "Target", windowId: 3, windowKind: "open", windowToken: windowToken(3) };
 
     expect(sameAction(direct, { ...direct, directAttack: true })).toBe(true);
-    expect(sameAction(direct, { type: "declareAttack", player: 0, attackerUid: "attacker", label: "Direct", windowId: 3, windowKind: "open", directAttack: true })).toBe(true);
-    expect(sameAction(direct, { type: "declareAttack", player: 0, attackerUid: "attacker", label: "Direct", windowId: 3, windowKind: "open" })).toBe(false);
+    expect(sameAction(direct, { type: "declareAttack", player: 0, attackerUid: "attacker", label: "Direct", windowId: 3, windowKind: "open", windowToken: windowToken(3), directAttack: true })).toBe(true);
+    expect(sameAction(direct, { type: "declareAttack", player: 0, attackerUid: "attacker", label: "Direct", windowId: 3, windowKind: "open", windowToken: windowToken(3) })).toBe(false);
     expect(sameAction(direct, { type: "declareAttack", player: 0, attackerUid: "attacker", label: "Direct", directAttack: true })).toBe(false);
-    expect(sameAction(targeted, { type: "declareAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct", windowId: 3, windowKind: "open" })).toBe(false);
+    expect(sameAction(targeted, { type: "declareAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct", windowId: 3, windowKind: "open", windowToken: windowToken(3) })).toBe(false);
   });
 
   it("matches explicit direct replay responses only to direct replay actions", () => {
-    const direct: DuelAction = { type: "replayAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct replay", windowId: 4, windowKind: "battle" };
-    const targeted: DuelAction = { type: "replayAttack", player: 0, attackerUid: "attacker", targetUid: "target", label: "Replay target", windowId: 4, windowKind: "battle" };
+    const direct: DuelAction = { type: "replayAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct replay", windowId: 4, windowKind: "battle", windowToken: windowToken(4) };
+    const targeted: DuelAction = { type: "replayAttack", player: 0, attackerUid: "attacker", targetUid: "target", label: "Replay target", windowId: 4, windowKind: "battle", windowToken: windowToken(4) };
 
     expect(sameAction(direct, { ...direct, directAttack: true })).toBe(true);
     expect(sameAction(direct, { type: "replayAttack", player: 0, attackerUid: "attacker", label: "Direct replay", windowId: 4, windowKind: "battle" })).toBe(false);
-    expect(sameAction(targeted, { type: "replayAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct replay", windowId: 4, windowKind: "battle" })).toBe(false);
+    expect(sameAction(targeted, { type: "replayAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct replay", windowId: 4, windowKind: "battle", windowToken: windowToken(4) })).toBe(false);
   });
 
   it("requires replay decision responses to echo their battle window stamp", () => {
-    const replay: DuelAction = { type: "replayAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Replay", windowId: 5, windowKind: "battle" };
-    const cancel: DuelAction = { type: "cancelAttack", player: 0, attackerUid: "attacker", label: "Cancel", windowId: 5, windowKind: "battle" };
+    const replay: DuelAction = { type: "replayAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Replay", windowId: 5, windowKind: "battle", windowToken: windowToken(5) };
+    const cancel: DuelAction = { type: "cancelAttack", player: 0, attackerUid: "attacker", label: "Cancel", windowId: 5, windowKind: "battle", windowToken: windowToken(5) };
 
     expect(sameAction(replay, { type: "replayAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Replay" })).toBe(false);
     expect(sameAction(cancel, { type: "cancelAttack", player: 0, attackerUid: "attacker", label: "Cancel" })).toBe(false);
@@ -141,8 +153,8 @@ describe("duel response matching", () => {
   });
 
   it("requires prompt responses to echo their prompt window stamp", () => {
-    const option: DuelAction = { type: "selectOption", player: 0, promptId: "prompt", option: 2, label: "Two", windowId: 6, windowKind: "prompt" };
-    const yesNo: DuelAction = { type: "selectYesNo", player: 0, promptId: "prompt", yes: false, label: "No", windowId: 6, windowKind: "prompt" };
+    const option: DuelAction = { type: "selectOption", player: 0, promptId: "prompt", option: 2, label: "Two", windowId: 6, windowKind: "prompt", windowToken: windowToken(6) };
+    const yesNo: DuelAction = { type: "selectYesNo", player: 0, promptId: "prompt", yes: false, label: "No", windowId: 6, windowKind: "prompt", windowToken: windowToken(6) };
 
     expect(sameAction(option, { type: "selectOption", player: 0, promptId: "prompt", option: 2, label: "Two" })).toBe(false);
     expect(sameAction(yesNo, { type: "selectYesNo", player: 0, promptId: "prompt", yes: false, label: "No" })).toBe(false);
@@ -151,8 +163,8 @@ describe("duel response matching", () => {
   });
 
   it("requires trigger bucket responses to echo their trigger window stamp", () => {
-    const activate: DuelAction = { type: "activateTrigger", player: 0, triggerId: "trigger", triggerBucket: "turnOptional", uid: "card", effectId: "effect", label: "Activate", windowId: 7, windowKind: "triggerBucket" };
-    const decline: DuelAction = { type: "declineTrigger", player: 0, triggerId: "trigger", triggerBucket: "turnOptional", uid: "card", effectId: "effect", label: "Decline", windowId: 7, windowKind: "triggerBucket" };
+    const activate: DuelAction = { type: "activateTrigger", player: 0, triggerId: "trigger", triggerBucket: "turnOptional", uid: "card", effectId: "effect", label: "Activate", windowId: 7, windowKind: "triggerBucket", windowToken: windowToken(7) };
+    const decline: DuelAction = { type: "declineTrigger", player: 0, triggerId: "trigger", triggerBucket: "turnOptional", uid: "card", effectId: "effect", label: "Decline", windowId: 7, windowKind: "triggerBucket", windowToken: windowToken(7) };
 
     expect(sameAction(activate, { type: "activateTrigger", player: 0, triggerId: "trigger", triggerBucket: "turnOptional", uid: "card", effectId: "effect", label: "Activate" })).toBe(false);
     expect(sameAction(decline, { type: "declineTrigger", player: 0, triggerId: "trigger", triggerBucket: "turnOptional", uid: "card", effectId: "effect", label: "Decline" })).toBe(false);
@@ -161,8 +173,8 @@ describe("duel response matching", () => {
   });
 
   it("requires battle pass responses to echo their battle window stamp", () => {
-    const attackPass: DuelAction = { type: "passAttack", player: 1, label: "Pass attack", windowId: 8, windowKind: "battle" };
-    const damagePass: DuelAction = { type: "passDamage", player: 0, label: "Pass damage", windowId: 9, windowKind: "battle" };
+    const attackPass: DuelAction = { type: "passAttack", player: 1, label: "Pass attack", windowId: 8, windowKind: "battle", windowToken: windowToken(8) };
+    const damagePass: DuelAction = { type: "passDamage", player: 0, label: "Pass damage", windowId: 9, windowKind: "battle", windowToken: windowToken(9) };
 
     expect(sameAction(attackPass, { type: "passAttack", player: 1, label: "Pass attack" })).toBe(false);
     expect(sameAction(damagePass, { type: "passDamage", player: 0, label: "Pass damage" })).toBe(false);
@@ -171,30 +183,30 @@ describe("duel response matching", () => {
   });
 
   it("requires chain pass responses to echo their chain window stamp", () => {
-    const pass: DuelAction = { type: "passChain", player: 1, label: "Pass chain", windowId: 10, windowKind: "chainResponse" };
+    const pass: DuelAction = { type: "passChain", player: 1, label: "Pass chain", windowId: 10, windowKind: "chainResponse", windowToken: windowToken(10) };
 
     expect(sameAction(pass, { type: "passChain", player: 1, label: "Pass chain" })).toBe(false);
     expect(sameAction(pass, { ...pass })).toBe(true);
   });
 
   it("requires effect activation responses to echo their action window stamp", () => {
-    const effect: DuelAction = { type: "activateEffect", player: 0, uid: "card", effectId: "effect", label: "Effect", windowId: 11, windowKind: "chainResponse" };
+    const effect: DuelAction = { type: "activateEffect", player: 0, uid: "card", effectId: "effect", label: "Effect", windowId: 11, windowKind: "chainResponse", windowToken: windowToken(11) };
 
     expect(sameAction(effect, { type: "activateEffect", player: 0, uid: "card", effectId: "effect", label: "Effect" })).toBe(false);
     expect(sameAction(effect, { ...effect })).toBe(true);
   });
 
   it("requires special summon procedure responses to echo their action window stamp", () => {
-    const procedure: DuelAction = { type: "specialSummonProcedure", player: 0, uid: "card", effectId: "procedure", label: "Procedure", windowId: 12, windowKind: "open" };
+    const procedure: DuelAction = { type: "specialSummonProcedure", player: 0, uid: "card", effectId: "procedure", label: "Procedure", windowId: 12, windowKind: "open", windowToken: windowToken(12) };
 
     expect(sameAction(procedure, { type: "specialSummonProcedure", player: 0, uid: "card", effectId: "procedure", label: "Procedure" })).toBe(false);
     expect(sameAction(procedure, { ...procedure })).toBe(true);
   });
 
   it("requires summon responses to echo their open window stamp", () => {
-    const normal: DuelAction = { type: "normalSummon", player: 0, uid: "monster", label: "Normal", windowId: 13, windowKind: "open" };
-    const tribute: DuelAction = { type: "tributeSummon", player: 0, uid: "monster", tributeUids: ["tribute"], label: "Tribute", windowId: 13, windowKind: "open" };
-    const fusion: DuelAction = { type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["mat-a", "mat-b"], label: "Fusion", windowId: 13, windowKind: "open" };
+    const normal: DuelAction = { type: "normalSummon", player: 0, uid: "monster", label: "Normal", windowId: 13, windowKind: "open", windowToken: windowToken(13) };
+    const tribute: DuelAction = { type: "tributeSummon", player: 0, uid: "monster", tributeUids: ["tribute"], label: "Tribute", windowId: 13, windowKind: "open", windowToken: windowToken(13) };
+    const fusion: DuelAction = { type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["mat-a", "mat-b"], label: "Fusion", windowId: 13, windowKind: "open", windowToken: windowToken(13) };
 
     expect(sameAction(normal, { type: "normalSummon", player: 0, uid: "monster", label: "Normal" })).toBe(false);
     expect(sameAction(tribute, { type: "tributeSummon", player: 0, uid: "monster", tributeUids: ["tribute"], label: "Tribute" })).toBe(false);
@@ -205,10 +217,10 @@ describe("duel response matching", () => {
   });
 
   it("requires manual board action responses to echo their open window stamp", () => {
-    const setMonster: DuelAction = { type: "setMonster", player: 0, uid: "monster", label: "Set monster", windowId: 14, windowKind: "open" };
-    const setSpellTrap: DuelAction = { type: "setSpellTrap", player: 0, uid: "spell", label: "Set spell", windowId: 14, windowKind: "open" };
-    const flip: DuelAction = { type: "flipSummon", player: 0, uid: "monster", label: "Flip", windowId: 14, windowKind: "open" };
-    const position: DuelAction = { type: "changePosition", player: 0, uid: "monster", position: "faceUpDefense", label: "Defense", windowId: 14, windowKind: "open" };
+    const setMonster: DuelAction = { type: "setMonster", player: 0, uid: "monster", label: "Set monster", windowId: 14, windowKind: "open", windowToken: windowToken(14) };
+    const setSpellTrap: DuelAction = { type: "setSpellTrap", player: 0, uid: "spell", label: "Set spell", windowId: 14, windowKind: "open", windowToken: windowToken(14) };
+    const flip: DuelAction = { type: "flipSummon", player: 0, uid: "monster", label: "Flip", windowId: 14, windowKind: "open", windowToken: windowToken(14) };
+    const position: DuelAction = { type: "changePosition", player: 0, uid: "monster", position: "faceUpDefense", label: "Defense", windowId: 14, windowKind: "open", windowToken: windowToken(14) };
 
     expect(sameAction(setMonster, { type: "setMonster", player: 0, uid: "monster", label: "Set monster" })).toBe(false);
     expect(sameAction(setSpellTrap, { type: "setSpellTrap", player: 0, uid: "spell", label: "Set spell" })).toBe(false);
@@ -221,8 +233,8 @@ describe("duel response matching", () => {
   });
 
   it("requires turn-flow responses to echo their open window stamp", () => {
-    const phase: DuelAction = { type: "changePhase", player: 0, phase: "battle", label: "Battle Phase", windowId: 15, windowKind: "open" };
-    const endTurn: DuelAction = { type: "endTurn", player: 0, label: "End Turn", windowId: 15, windowKind: "open" };
+    const phase: DuelAction = { type: "changePhase", player: 0, phase: "battle", label: "Battle Phase", windowId: 15, windowKind: "open", windowToken: windowToken(15) };
+    const endTurn: DuelAction = { type: "endTurn", player: 0, label: "End Turn", windowId: 15, windowKind: "open", windowToken: windowToken(15) };
 
     expect(sameAction(phase, { type: "changePhase", player: 0, phase: "battle", label: "Battle Phase" })).toBe(false);
     expect(sameAction(endTurn, { type: "endTurn", player: 0, label: "End Turn" })).toBe(false);

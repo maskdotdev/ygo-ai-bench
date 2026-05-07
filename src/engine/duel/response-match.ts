@@ -67,7 +67,11 @@ function hasWindowToken(value: unknown): value is { windowToken: string } {
 }
 
 function hasPartialWindowStamp(value: unknown): boolean {
-  return hasWindowIdKey(value) !== hasWindowKindKey(value);
+  const hasWindowId = hasWindowIdKey(value);
+  const hasWindowKind = hasWindowKindKey(value);
+  const hasWindowToken = hasWindowTokenKey(value);
+  const hasAnyWindowStamp = hasWindowId || hasWindowKind || hasWindowToken;
+  return hasAnyWindowStamp && !(hasWindowId && hasWindowKind && hasWindowToken);
 }
 
 function hasWindowStamp(value: unknown): boolean {
