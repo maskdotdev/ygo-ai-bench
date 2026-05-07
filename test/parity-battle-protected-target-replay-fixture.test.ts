@@ -39,6 +39,25 @@ describe("EDOPro parity battle protected-target replay fixtures", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
           snapshotRestore: "after",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps Main Phase open priority restorable before protected-target battle choices are exposed",
+            phase: "main1",
+            waitingFor: 0,
+            windowId: 0,
+            windowKind: "open",
+            pendingBattle: false,
+            currentAttack: false,
+            battleWindow: null,
+            attacksDeclared: [],
+            legalActions: [
+              { type: "changePhase", player: 0, phase: "battle", windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [turnGroup(0)],
+            absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 0, windowKind: "open" }],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", undefined, undefined, 0)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro excludes CANNOT_BE_BATTLE_TARGET monsters from attack choices before replay tracking starts",
@@ -61,6 +80,25 @@ describe("EDOPro parity battle protected-target replay fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1" }), {
           snapshotRestore: "after",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the unprotected target attack choice restorable while protected raw targets stay absent",
+            phase: "battle",
+            waitingFor: 0,
+            windowId: 1,
+            windowKind: "open",
+            battleWindow: null,
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", windowId: 1, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [targetedAttackGroup(0, "p0-deck-100-0", "p1-deck-300-1", 1, 1), turnGroup(1)],
+            absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowId: 1, windowKind: "open" }],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", "p1-deck-200-0", undefined, 1)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro stores the legal attack target count without protected raw targets",
@@ -91,6 +129,23 @@ describe("EDOPro parity battle protected-target replay fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the final end-damage-step pass restorable before resolving without replay",
+            waitingFor: 0,
+            windowId: 13,
+            windowKind: "battle",
+            pendingBattle: true,
+            currentAttack: true,
+            battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1", responsePlayer: 0 },
+            damagePasses: [1],
+            locations: { monsterZone: ["100", "200", "300"] },
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "passDamage", player: 0, windowId: 13, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(0, "passDamage", 1, 13)],
+            absentLegalActions: [{ type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 13, windowKind: "battle" }],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves battle without replay when the legal target set never changes",
