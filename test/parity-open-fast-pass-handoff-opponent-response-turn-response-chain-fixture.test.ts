@@ -98,6 +98,44 @@ describe("EDOPro parity open fast-effect pass handoff opponent response turn res
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "open-fast-handoff-opponent-turn-response-chain-opponent-first-chain-quick" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "open-fast-handoff-opponent-turn-response-chain-second-turn-chain-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro preserves restored turn-player priority before their second pass-handoff response",
+            phase: "main1",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "open-fast-handoff-opponent-turn-response-chain-open-quick", sourceUid: "p0-deck-100-0" },
+              { player: 0, effectId: "open-fast-handoff-opponent-turn-response-chain-first-turn-chain-quick", sourceUid: "p0-deck-200-1" },
+              { player: 1, effectId: "open-fast-handoff-opponent-turn-response-chain-opponent-first-chain-quick", sourceUid: "p1-deck-300-0" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "open-fast-handoff-opponent-turn-response-chain-second-turn-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "open-fast-handoff-opponent-turn-response-chain-second-turn-chain-quick", 1, 4),
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "open-fast-handoff-opponent-turn-response-chain-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "open-fast-handoff-opponent-turn-response-chain-first-turn-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "open-fast-handoff-opponent-turn-response-chain-opponent-first-chain-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "open-fast-handoff-opponent-turn-response-chain-opponent-open-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "open-fast-handoff-opponent-turn-response-chain-open-quick", 4, "chainResponse"),
+              absentChainEffectGroup(0, "open-fast-handoff-opponent-turn-response-chain-first-turn-chain-quick", 4),
+              absentChainEffectGroup(1, "open-fast-handoff-opponent-turn-response-chain-opponent-first-chain-quick", 4),
+              absentWindowEffectGroup(1, "open-fast-handoff-opponent-turn-response-chain-opponent-open-quick", 4, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {
