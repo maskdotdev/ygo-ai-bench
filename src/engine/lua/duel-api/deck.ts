@@ -13,7 +13,7 @@ import { pushCardTable } from "#lua/card-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
-import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
+import { markLuaOperationTimingBoundary, regroupLuaOperationEvent, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import { shuffle } from "#engine/rng.js";
 import type { DuelSession, PlayerId } from "#duel/types.js";
 
@@ -257,15 +257,20 @@ function pushSortDeckSegment(L: unknown, session: DuelSession, hostState: LuaDue
 function discardDeckCards(session: DuelSession, hostState: LuaDuelDeckApiHostState, player: PlayerId, count: number, reason: number): string[] {
   if (!canDuelPlayerDiscardDeck(session.state, player, 0)) return [];
   const discarded: string[] = [];
+  let triggerStart = session.state.pendingTriggers.length;
   for (const uid of topDeckUids(session, player, count)) {
     try {
-      if (discarded.length === 0) markLuaOperationTimingBoundary(session, hostState);
+      if (discarded.length === 0) {
+        markLuaOperationTimingBoundary(session, hostState);
+        triggerStart = session.state.pendingTriggers.length;
+      }
       sendDuelCardToGraveyard(session.state, uid, player, reason);
       discarded.push(uid);
     } catch {
       // EDOPro-style helpers report moved cards; illegal moves simply fail.
     }
   }
+  finishDiscardOperation(session, hostState, triggerStart, discarded);
   return discarded;
 }
 
@@ -283,16 +288,28 @@ function discardHandCards(session: DuelSession, hostState: LuaDuelDeckApiHostSta
   releaseOptionalFunctionRef(L, filterRef);
   if (selected.length < min) return [];
   const discarded: string[] = [];
+  let triggerStart = session.state.pendingTriggers.length;
   for (const uid of selected) {
     try {
-      if (discarded.length === 0) markLuaOperationTimingBoundary(session, hostState);
+      if (discarded.length === 0) {
+        markLuaOperationTimingBoundary(session, hostState);
+        triggerStart = session.state.pendingTriggers.length;
+      }
       sendDuelCardToGraveyard(session.state, uid, player, reason);
       discarded.push(uid);
     } catch {
       // EDOPro-style helpers report moved cards; illegal moves simply fail.
     }
   }
+  finishDiscardOperation(session, hostState, triggerStart, discarded);
   return discarded;
+}
+
+function finishDiscardOperation(session: DuelSession, hostState: LuaDuelDeckApiHostState, triggerStart: number, discarded: string[]): void {
+  if (discarded.length === 0) return;
+  if (hostState.activeContext) hostState.activeOperationMoved = true;
+  regroupLuaOperationEvent(session, triggerStart, "sentToGraveyard", discarded, "graveyard");
+  regroupLuaOperationEvent(session, triggerStart, "discarded", discarded, "graveyard");
 }
 
 function swapDeckAndGrave(session: DuelSession, player: PlayerId): string[] {
