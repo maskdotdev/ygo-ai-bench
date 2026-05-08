@@ -178,11 +178,30 @@ describe("duel battle timing", () => {
     });
     expect(restored.state.battleWindow).toEqual(session.state.battleWindow);
     const action = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "restore-attack-negator");
+    const passAction = getDuelLegalActions(restored, 0).find((candidate) => candidate.type === "passAttack");
     expect(action).toBeTruthy();
+    expect(passAction).toBeTruthy();
+    expect(passAction!.windowToken).toBeDefined();
     expect(groupedActionSummary(restored, 0)).toEqual([
       { label: "Effects", windowId: queryPublicState(restored).actionWindowId, windowKind: "battle", actionTypes: ["activateEffect"] },
       { label: "Pass", windowId: queryPublicState(restored).actionWindowId, windowKind: "battle", actionTypes: ["passAttack"] },
     ]);
+    const forgedDamagePass = applyResponse(restored, {
+      type: "passDamage",
+      player: 0,
+      label: "Forge damage response into restored attack window",
+      windowId: passAction!.windowId!,
+      windowKind: passAction!.windowKind!,
+      windowToken: passAction!.windowToken!,
+    });
+    expect(forgedDamagePass.ok).toBe(false);
+    expect(forgedDamagePass.error).toContain("Response is not currently legal");
+    expect(forgedDamagePass.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(forgedDamagePass.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(forgedDamagePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(restored.state.battleWindow).toEqual(session.state.battleWindow);
+    expect(restored.state.pendingBattle).toEqual(session.state.pendingBattle);
+    expect(restored.state.log.some((entry) => entry.detail === "restore negate true")).toBe(false);
     applyAndAssert(restored, action!);
     expect(passCurrentChainIfPending(restored)).toBe(true);
     expect(restored.state.pendingBattle).toBeUndefined();
