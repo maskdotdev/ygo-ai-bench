@@ -63,6 +63,7 @@ describe("chainSolved before chainEnded trigger bucket restore", () => {
 
     const chainSolvedTrigger = getDuelLegalActions(restoredChainSolvedBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-solved-ended-chain-solved");
     expect(chainSolvedTrigger).toBeDefined();
+    const chainSolvedBucketSnapshot = serializeDuel(restoredChainSolvedBucket);
     applyAndAssert(restoredChainSolvedBucket, chainSolvedTrigger!);
 
     const restoredChainSolvedResponse = restoreDuel(serializeDuel(restoredChainSolvedBucket), createCardReader(cards), restoreRegistry());
@@ -89,6 +90,21 @@ describe("chainSolved before chainEnded trigger bucket restore", () => {
 
     const chainEndedTrigger = getDuelLegalActions(restoredChainEndedBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-solved-ended-chain-ended");
     expect(chainEndedTrigger).toBeDefined();
+
+    const earlyChainSolvedBucket = restoreDuel(chainSolvedBucketSnapshot, createCardReader(cards), restoreRegistry());
+    const forgedEarlyChainEnded = {
+      ...chainEndedTrigger!,
+      windowId: chainSolvedTrigger!.windowId!,
+      windowKind: chainSolvedTrigger!.windowKind!,
+      windowToken: chainSolvedTrigger!.windowToken!,
+    };
+    const earlyChainEnded = applyResponse(earlyChainSolvedBucket, forgedEarlyChainEnded);
+    expect(earlyChainEnded.ok).toBe(false);
+    expect(earlyChainEnded.error).toContain("Response is not currently legal");
+    expect(earlyChainEnded.legalActions).toEqual(getDuelLegalActions(earlyChainSolvedBucket, 0));
+    expect(earlyChainEnded.legalActionGroups).toEqual(getGroupedDuelLegalActions(earlyChainSolvedBucket, 0));
+    expect(earlyChainSolvedBucket.state.pendingTriggers.some((trigger) => trigger.effectId === "restore-solved-ended-chain-ended")).toBe(false);
+
     applyAndAssert(restoredChainEndedBucket, chainEndedTrigger!);
 
     const restoredChainEndedResponse = restoreDuel(serializeDuel(restoredChainEndedBucket), createCardReader(cards), restoreRegistry());
