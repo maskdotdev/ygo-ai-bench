@@ -79,6 +79,37 @@ describe("EDOPro compatibility harness response matching", () => {
     ]);
   });
 
+  it("rejects otherwise matching concrete responses without full action window stamps", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture({
+      name: "unstamped concrete response fixture",
+      options: { seed: 13, startingHandSize: 1 },
+      decks: {
+        0: { main: ["100"] },
+        1: { main: ["200"] },
+      },
+      responses: [
+        makeScriptedStep({
+          type: "changePhase",
+          player: 0,
+          phase: "battle",
+          label: "Battle Phase",
+        }),
+      ],
+      expected: { source: "edopro" },
+    }, {
+      cardReader: createCardReader(cards),
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      {
+        fixture: "unstamped concrete response fixture",
+        message: "No legal response matched type=changePhase player=0 phase=battle",
+      },
+    ]);
+  });
+
   it("rejects partial concrete action window stamps", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const result = runScriptedDuelFixture({
