@@ -8,6 +8,7 @@ import { installCardControlApi } from "#lua/card-control-api.js";
 import { installCardCounterApi } from "#lua/card-counter-api.js";
 import { installCardEffectRegistrationApi } from "#lua/card-effect-registration-api.js";
 import { installCardEffectQueryApi } from "#lua/card-effect-query-api.js";
+import { installCardEffectCopyApi } from "#lua/card-effect-copy-api.js";
 import { installCardEffectResetApi } from "#lua/card-effect-reset-api.js";
 import { installCardEquipApi } from "#lua/card-equip-api.js";
 import { installCardFlagApi } from "#lua/card-flag-api.js";
@@ -44,6 +45,7 @@ export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
 ): void {
   lua.lua_newtable(L);
   installCardEffectRegistrationApi(L, session, hostState, toDuelEffect);
+  installCardEffectCopyApi(L, session, hostState);
   installCardEffectResetApi(L, session);
   installCardTableApi(L);
   installCardCodeApi(L, session);

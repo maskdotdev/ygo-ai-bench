@@ -43,6 +43,7 @@ export interface LuaEffectRecord {
   description?: number;
   category?: number;
   property?: number;
+  copyId?: number;
   targetRange?: [number, number?];
   hintTiming?: [number, number?];
   countLimitCode?: number;
@@ -65,6 +66,7 @@ export interface LuaEffectRecord {
 export interface LuaHostState {
   session: DuelSession;
   nextEffectId: number;
+  nextCopyId: number;
   effects: Map<number, LuaEffectRecord>;
   usedEffectCounts: Map<string, number>;
   messages: string[];

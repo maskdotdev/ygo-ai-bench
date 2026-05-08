@@ -1,4 +1,5 @@
 import type { DuelEffectContext, PlayerId } from "#duel/types.js";
+import type { LuaScriptLoadResult } from "#lua/host-types.js";
 
 export interface LuaCardApiEffectRecord {
   id: number;
@@ -7,6 +8,7 @@ export interface LuaCardApiEffectRecord {
   ownerPlayer?: PlayerId;
   code?: number;
   property?: number;
+  copyId?: number;
   value?: number;
   valueRef?: number;
   targetRef?: number;
@@ -24,4 +26,6 @@ export interface LuaCardApiState<EffectRecord extends LuaCardApiEffectRecord> {
   activeOperationTriggerStart?: number | undefined;
   activeOperationMoved?: boolean;
   pushEffectTable: (state: unknown, id: number) => void;
+  loadScriptFile?: (name: string, forced?: boolean) => LuaScriptLoadResult;
+  nextCopyId?: number;
 }

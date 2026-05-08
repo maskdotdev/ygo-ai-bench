@@ -23,6 +23,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
   const hostState: LuaHostState = {
     session,
     nextEffectId: 1,
+    nextCopyId: 1,
     effects: new Map(),
     usedEffectCounts: new Map(),
     messages: [],

@@ -259,6 +259,7 @@ export interface DuelEffectDefinition {
   description?: number;
   category?: number;
   property?: number;
+  copyId?: number;
   targetRange?: [number, number?];
   hintTiming?: [number, number?];
   battleDamageValue?: (ctx: DuelEffectContext, player: PlayerId) => number | undefined;

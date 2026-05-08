@@ -1,6 +1,7 @@
 export const cardFieldNames = [
   "RegisterEffect",
   "ResetEffect",
+  "CopyEffect",
   "SetSPSummonOnce",
   "AddCannotBeSpecialSummoned",
   "AddMustBeSpecialSummoned",

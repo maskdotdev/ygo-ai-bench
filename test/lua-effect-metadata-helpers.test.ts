@@ -154,6 +154,82 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("reset effect after code false/false");
   });
 
+  it("copies card effects and resets them by RESET_COPY copy id", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "CopyEffect Receiver", kind: "monster" }];
+    const session = createDuel({ seed: 98, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_UPDATE_ATTACK)
+        e:SetValue(700)
+        c:RegisterEffect(e)
+      end
+      local receiver=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local copy_id=receiver:CopyEffect(200, RESET_EVENT|RESETS_STANDARD, 1)
+      local copied=receiver:GetCardEffect(EFFECT_UPDATE_ATTACK)
+      Debug.Message("copy effect id " .. tostring(copy_id>0))
+      Debug.Message("copy effect found " .. tostring(copied~=nil) .. "/" .. copied:GetHandler():GetCode() .. "/" .. copied:GetReset())
+      receiver:ResetEffect(copy_id, RESET_COPY)
+      Debug.Message("copy effect reset " .. tostring(receiver:IsHasEffect(EFFECT_UPDATE_ATTACK)~=nil))
+      `,
+      "card-copy-effect.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("copy effect id true");
+    expect(host.messages).toContain("copy effect found true/100/33427456");
+    expect(host.messages).toContain("copy effect reset false");
+    expect(session.state.effects.every((effect) => effect.copyId === undefined)).toBe(true);
+  });
+
+  it("loads copied card scripts through Card.CopyEffect", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "CopyEffect Source Load Receiver", kind: "monster" }];
+    const session = createDuel({ seed: 99, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session, {
+      readScript(name) {
+        if (name !== "c201.lua") return undefined;
+        return `
+          c201={}
+          function c201.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_SINGLE)
+            e:SetCode(EFFECT_UPDATE_DEFENSE)
+            e:SetValue(800)
+            c:RegisterEffect(e)
+          end
+        `;
+      },
+    });
+    const result = host.loadScript(
+      `
+      local receiver=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local copy_id=receiver:CopyEffect(201, RESET_EVENT|RESETS_STANDARD, 1)
+      local copied=receiver:GetCardEffect(EFFECT_UPDATE_DEFENSE)
+      Debug.Message("loaded copy effect " .. tostring(copy_id>0) .. "/" .. tostring(copied~=nil) .. "/" .. copied:GetValue())
+      `,
+      "card-copy-effect-load.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("loaded copy effect true/true/800");
+  });
+
   it("creates and registers Lua global effects", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Global Anchor", kind: "monster" }];
     const session = createDuel({ seed: 94, startingHandSize: 1, cardReader: createCardReader(cards) });

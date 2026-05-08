@@ -7,6 +7,7 @@ const { lua, to_luastring } = fengari;
 
 const resetEvent = 0x1000;
 const resetCode = 0x4000;
+const resetCopy = 0x8000;
 
 export function installCardEffectResetApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => pushResetEffect(state, session));
@@ -27,5 +28,6 @@ function pushResetEffect(L: unknown, session: DuelSession): number {
 function matchesCardResetEffect(effect: DuelEffectDefinition, resetValue: number, resetType: number): boolean {
   if (resetType === resetEvent) return ((effect.reset?.flags ?? 0) & resetValue) !== 0;
   if (resetType === resetCode) return effect.code === resetValue;
+  if (resetType === resetCopy) return effect.copyId === resetValue;
   return false;
 }
