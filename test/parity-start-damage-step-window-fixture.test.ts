@@ -40,6 +40,18 @@ describe("EDOPro parity start damage step window fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the first start damage step response window restorable before the non-turn player passes",
+            waitingFor: 1,
+            windowId: 4,
+            windowKind: "battle",
+            battleWindow: { kind: "startDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
+            legalActionCounts: { 0: 0, 1: 1 },
+            legalActionGroupCounts: { 0: 0, 1: 1 },
+            legalActions: [{ type: "passDamage", player: 1, windowId: 4, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passDamage", 1, 4)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro passes start damage step priority back to the turn player after the opponent passes",
@@ -58,6 +70,21 @@ describe("EDOPro parity start damage step window fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the turn player's start damage step response window restorable before advancing to before damage calculation",
+            waitingFor: 0,
+            windowId: 5,
+            pendingBattle: true,
+            battleStep: "damage",
+            windowKind: "battle",
+            battleWindow: { kind: "startDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            damagePasses: [1],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "passDamage", player: 0, windowId: 5, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(0, "passDamage", 1, 5)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro advances to before damage calculation after both players pass start damage step responses",
