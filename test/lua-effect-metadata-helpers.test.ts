@@ -115,6 +115,45 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("card effect reset true");
   });
 
+  it("resets card effects by reset flag and effect code through Card.ResetEffect", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Card ResetEffect Source", kind: "monster" }];
+    const session = createDuel({ seed: 97, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_SINGLE)
+      e1:SetCode(EFFECT_UPDATE_ATTACK)
+      e1:SetValue(500)
+      e1:SetReset(RESET_EVENT|RESET_DISABLE)
+      c:RegisterEffect(e1)
+      local e2=Effect.CreateEffect(c)
+      e2:SetType(EFFECT_TYPE_SINGLE)
+      e2:SetCode(EFFECT_UPDATE_DEFENSE)
+      e2:SetValue(600)
+      c:RegisterEffect(e2)
+      Debug.Message("reset effect before " .. tostring(c:IsHasEffect(EFFECT_UPDATE_ATTACK)~=nil) .. "/" .. tostring(c:IsHasEffect(EFFECT_UPDATE_DEFENSE)~=nil))
+      c:ResetEffect(RESET_DISABLE, RESET_EVENT)
+      Debug.Message("reset effect after flag " .. tostring(c:IsHasEffect(EFFECT_UPDATE_ATTACK)~=nil) .. "/" .. tostring(c:IsHasEffect(EFFECT_UPDATE_DEFENSE)~=nil))
+      c:ResetEffect(EFFECT_UPDATE_DEFENSE, RESET_CODE)
+      Debug.Message("reset effect after code " .. tostring(c:IsHasEffect(EFFECT_UPDATE_ATTACK)~=nil) .. "/" .. tostring(c:IsHasEffect(EFFECT_UPDATE_DEFENSE)~=nil))
+      `,
+      "card-reset-effect.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("reset effect before true/true");
+    expect(host.messages).toContain("reset effect after flag false/true");
+    expect(host.messages).toContain("reset effect after code false/false");
+  });
+
   it("creates and registers Lua global effects", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Global Anchor", kind: "monster" }];
     const session = createDuel({ seed: 94, startingHandSize: 1, cardReader: createCardReader(cards) });

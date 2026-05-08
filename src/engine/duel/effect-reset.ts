@@ -48,6 +48,16 @@ export function pruneResetEffectsAfterDisable(state: DuelState, card: DuelCardIn
   });
 }
 
+export function resetDuelCardEffects(state: DuelState, card: DuelCardInstance, predicate: (effect: DuelEffectDefinition) => boolean): number {
+  let removed = 0;
+  state.effects = state.effects.filter((effect) => {
+    if (effect.sourceUid !== card.uid || !predicate(effect)) return true;
+    removed += 1;
+    return removeResetEffect(state, effect);
+  });
+  return removed;
+}
+
 export function pruneResetEffectsAfterPhase(state: DuelState, phase: DuelPhase): void {
   pruneResetEffectsAfterPhaseFlag(state, phaseResetFlag(phase));
 }
