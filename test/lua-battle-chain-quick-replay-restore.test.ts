@@ -73,6 +73,8 @@ function assertBattleReplayRestore(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT
     expect.objectContaining({ type: "passDamage", player: 1, windowKind: "battle" }),
   ]));
   expect(resolved.legalActionGroups.some((group) => group.actions.some((action) => action.type === "activateEffect" && action.player === 1 && action.windowKind === "battle" && action.uid.includes("500")))).toBe(true);
+  expect(resolved.legalActions.some((action) => action.type === "activateEffect" && action.uid.includes("600"))).toBe(false);
+  expect(resolved.legalActionGroups.some((group) => group.actions.some((action) => action.type === "activateEffect" && action.uid.includes("600")))).toBe(false);
   expect(restoredOpponentResponse.host.messages).toEqual(["restored chain-only battle quick resolved", "restored battle quick resolved"]);
 
   const stalePass = applyLuaRestoreResponse(restoredOpponentResponse, pass!);
@@ -88,17 +90,20 @@ function setupBattleQuickFixture(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT_F
     { code: "300", name: "Replay Battle Quick", kind: "monster" },
     { code: "400", name: "Replay Chain Battle Quick", kind: "monster" },
     { code: "500", name: "Replay Opponent Battle Quick", kind: "monster" },
+    { code: "600", name: "Replay Opposite Timing Quick", kind: "monster" },
+    { code: "700", name: "Replay Filler", kind: "monster" },
   ];
   const source = {
     readScript(name: string) {
       if (name === "c300.lua") return battleQuickScript(300, property, "Duel.GetCurrentChain()==0", "restored battle quick resolved");
       if (name === "c400.lua") return battleQuickScript(400, property, "Duel.GetCurrentChain()>0", "restored chain-only battle quick resolved");
       if (name === "c500.lua") return battleQuickScript(500, property, "Duel.GetCurrentChain()==0", "restored opponent battle quick resolved");
+      if (name === "c600.lua") return battleQuickScript(600, oppositeBattleProperty(property), "Duel.GetCurrentChain()==0", "opposite timing quick should not resolve");
       return undefined;
     },
   };
-  const session = createDuel({ seed: property === "EFFECT_FLAG_DAMAGE_STEP" ? 58 : 59, startingHandSize: 2, cardReader: createCardReader(cards) });
-  loadDecks(session, { 0: { main: ["100", "300"] }, 1: { main: ["400", "500"] } });
+  const session = createDuel({ seed: property === "EFFECT_FLAG_DAMAGE_STEP" ? 58 : 59, startingHandSize: 3, cardReader: createCardReader(cards) });
+  loadDecks(session, { 0: { main: ["100", "300", "700"] }, 1: { main: ["400", "500", "600"] } });
   startDuel(session);
   const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
   expect(attacker).toBeDefined();
@@ -108,7 +113,8 @@ function setupBattleQuickFixture(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT_F
   expect(host.loadCardScript(300, source).ok).toBe(true);
   expect(host.loadCardScript(400, source).ok).toBe(true);
   expect(host.loadCardScript(500, source).ok).toBe(true);
-  expect(host.registerInitialEffects()).toBe(3);
+  expect(host.loadCardScript(600, source).ok).toBe(true);
+  expect(host.registerInitialEffects()).toBe(4);
 
   applyNamedAction(session, 0, (action) => action.type === "changePhase" && action.phase === "battle");
   applyNamedAction(session, 0, (action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && action.targetUid === undefined);
@@ -131,6 +137,10 @@ function battleQuickScript(code: number, property: "EFFECT_FLAG_DAMAGE_STEP" | "
     c:RegisterEffect(e)
   end
   `;
+}
+
+function oppositeBattleProperty(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT_FLAG_DAMAGE_CAL"): "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT_FLAG_DAMAGE_CAL" {
+  return property === "EFFECT_FLAG_DAMAGE_STEP" ? "EFFECT_FLAG_DAMAGE_CAL" : "EFFECT_FLAG_DAMAGE_STEP";
 }
 
 function activateTurnQuick(session: ReturnType<typeof createDuel>): void {
