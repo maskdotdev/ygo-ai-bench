@@ -476,6 +476,23 @@ describe("chain-ended open fast handoff chain-limit restore", () => {
 
         const opponentFollowupAction = findEffectAction(restored, 1, `${testCase.prefix}-opponent-followup`);
         expect(opponentFollowupAction).toBeDefined();
+
+        const forgedFinalTurn = applyResponse(restored, {
+          type: "activateEffect",
+          player: 0,
+          uid: finalTurn!.uid,
+          effectId: `${testCase.prefix}-final-turn`,
+          label: "Forge turn-player follow-up into expired one-chain opponent window",
+          windowId: opponentFollowupAction!.windowId,
+          windowKind: opponentFollowupAction!.windowKind,
+          windowToken: opponentFollowupAction!.windowToken,
+        });
+        expect(forgedFinalTurn.ok).toBe(false);
+        expect(forgedFinalTurn.error).toContain("Response is not currently legal");
+        expect(forgedFinalTurn.legalActions).toEqual(getDuelLegalActions(restored, 1));
+        expect(forgedFinalTurn.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+        expect(restored.state.log.map((entry) => entry.detail)).not.toContain(`${testCase.prefix}-final-turn resolved`);
+
         applyAndAssert(restored, opponentFollowupAction!);
         const restoredTurnReturn = restoreDuel(serializeDuel(restored), createCardReader(cards), restoreRegistry(testCase.prefix, testCase.untilChainEnd), restoreChainLimitRegistry());
         expect(queryPublicState(restoredTurnReturn)).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
