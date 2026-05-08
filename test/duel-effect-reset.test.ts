@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, changeDuelCardPosition, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, sendDuelCardToGraveyard, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import { restoreDuel, serializeDuel } from "#duel/snapshot.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
@@ -67,6 +68,62 @@ describe("duel effect reset", () => {
 
     expect(session.state.effects).toHaveLength(1);
     expect(session.state.effects[0]).toMatchObject({ id: "reset-only-to-grave" });
+  });
+
+  it("treats temporary banish as RESET_TEMP_REMOVE instead of ordinary leave or remove", () => {
+    const session = createDuel({ seed: 119, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeDefined();
+    const common = {
+      sourceUid: source!.uid,
+      controller: 0 as const,
+      event: "ignition" as const,
+      range: ["hand" as const],
+      operation() {
+        throw new Error("reset test effects should not resolve");
+      },
+    };
+    registerEffect(session, { ...common, id: "reset-on-temp-remove", reset: { flags: 0x1000 + 0x100000 } });
+    registerEffect(session, { ...common, id: "reset-on-ordinary-remove", reset: { flags: 0x1000 + 0x80000 } });
+    registerEffect(session, { ...common, id: "reset-on-leave", reset: { flags: 0x1000 + 0x800000 } });
+
+    moveDuelCard(session.state, source!.uid, "banished", 0, duelReason.effect | duelReason.temporary);
+
+    expect(session.state.effects.map((effect) => effect.id).sort()).toEqual(["reset-on-leave", "reset-on-ordinary-remove"]);
+  });
+
+  it("treats ordinary banish as RESET_REMOVE and RESET_LEAVE instead of RESET_TEMP_REMOVE", () => {
+    const session = createDuel({ seed: 121, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeDefined();
+    const common = {
+      sourceUid: source!.uid,
+      controller: 0 as const,
+      event: "ignition" as const,
+      range: ["hand" as const],
+      operation() {
+        throw new Error("reset test effects should not resolve");
+      },
+    };
+    registerEffect(session, { ...common, id: "reset-on-temp-remove", reset: { flags: 0x1000 + 0x100000 } });
+    registerEffect(session, { ...common, id: "reset-on-ordinary-remove", reset: { flags: 0x1000 + 0x80000 } });
+    registerEffect(session, { ...common, id: "reset-on-leave", reset: { flags: 0x1000 + 0x800000 } });
+
+    moveDuelCard(session.state, source!.uid, "banished", 0, duelReason.effect);
+
+    expect(session.state.effects.map((effect) => effect.id)).toEqual(["reset-on-temp-remove"]);
   });
 
   it("removes reset-leave effects when their source changes location", () => {

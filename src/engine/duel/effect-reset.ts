@@ -2,14 +2,15 @@ import { clearEffectCountUsage } from "#duel/effect-counts.js";
 import {
   destinationResetFlags,
   matchesDestinationReset,
+  matchesLeaveReset,
   matchesMovementReset,
+  matchesTemporaryRemove,
   matchesTurnSetReset,
   matchesTurnReset,
   normalizeResetFlags,
   phaseResetFlag,
   resetChain,
   resetEvent,
-  resetLeave,
   resetPhase,
 } from "#duel/reset-flags.js";
 import type { DuelCardInstance, DuelEffectDefinition, DuelPhase, DuelState } from "#duel/types.js";
@@ -19,9 +20,10 @@ export function pruneResetEffectsAfterMove(state: DuelState, card: DuelCardInsta
     if (effect.sourceUid !== card.uid) return true;
     const flags = normalizeResetFlags(effect.reset?.flags ?? 0);
     if ((flags & resetEvent) === 0) return true;
-    if ((flags & resetLeave) !== 0 && card.previousLocation !== card.location) return decrementOrRemoveResetEffect(state, effect);
+    if (matchesLeaveReset(flags, card)) return decrementOrRemoveResetEffect(state, effect);
     if (matchesMovementReset(flags, card)) return decrementOrRemoveResetEffect(state, effect);
     if ((flags & destinationResetFlags) !== 0) return matchesDestinationReset(flags, card) ? decrementOrRemoveResetEffect(state, effect) : true;
+    if (matchesTemporaryRemove(card)) return true;
     const previousLocation = card.previousLocation ?? card.location;
     return !effect.range.includes(previousLocation) || effect.range.includes(card.location) || decrementOrRemoveResetEffect(state, effect);
   });

@@ -1,4 +1,5 @@
 import { phaseMask } from "#duel/phase-mask.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelCardInstance, DuelPhase } from "#duel/types.js";
 
 export const resetEvent = 0x1000;
@@ -11,6 +12,7 @@ export const resetOppoTurn = 0x20000000;
 
 const resetToGrave = 0x40000;
 const resetRemove = 0x80000;
+const resetTempRemove = 0x100000;
 const resetToHand = 0x200000;
 const resetToDeck = 0x400000;
 const resetToField = 0x1000000;
@@ -18,7 +20,7 @@ const resetControl = 0x2000000;
 const resetOverlay = 0x4000000;
 const resetMonsterSpellChange = 0x8000000;
 
-export const destinationResetFlags = resetToGrave | resetRemove | resetToHand | resetToDeck;
+export const destinationResetFlags = resetToGrave | resetRemove | resetTempRemove | resetToHand | resetToDeck;
 
 export function normalizeResetFlags(flags: number): number {
   return flags >>> 0;
@@ -37,16 +39,25 @@ export function matchesMovementReset(flags: number, card: DuelCardInstance): boo
   return false;
 }
 
+export function matchesLeaveReset(flags: number, card: DuelCardInstance): boolean {
+  return (flags & resetLeave) !== 0 && card.previousLocation !== card.location && !isTemporaryRemove(card);
+}
+
 export function matchesTurnSetReset(flags: number, card: DuelCardInstance): boolean {
   return (flags & resetTurnSet) !== 0 && card.previousFaceUp === true && !card.faceUp && card.position === "faceDownDefense";
 }
 
 export function matchesDestinationReset(flags: number, card: DuelCardInstance): boolean {
   if ((flags & resetToGrave) !== 0 && card.location === "graveyard") return true;
-  if ((flags & resetRemove) !== 0 && card.location === "banished") return true;
+  if ((flags & resetRemove) !== 0 && card.location === "banished" && !isTemporaryRemove(card)) return true;
+  if ((flags & resetTempRemove) !== 0 && isTemporaryRemove(card)) return true;
   if ((flags & resetToHand) !== 0 && card.location === "hand") return true;
   if ((flags & resetToDeck) !== 0 && (card.location === "deck" || card.location === "extraDeck")) return true;
   return false;
+}
+
+export function matchesTemporaryRemove(card: DuelCardInstance): boolean {
+  return isTemporaryRemove(card);
 }
 
 export function matchesTurnReset(flags: number, owner: 0 | 1, turnPlayer: 0 | 1): boolean {
@@ -62,4 +73,8 @@ function isFieldLocation(location: DuelCardInstance["location"] | undefined): bo
 
 function isMonsterSpellZoneChange(previous: DuelCardInstance["location"] | undefined, current: DuelCardInstance["location"]): boolean {
   return (previous === "monsterZone" && current === "spellTrapZone") || (previous === "spellTrapZone" && current === "monsterZone");
+}
+
+function isTemporaryRemove(card: DuelCardInstance): boolean {
+  return card.location === "banished" && ((card.reason ?? 0) & duelReason.temporary) !== 0;
 }
