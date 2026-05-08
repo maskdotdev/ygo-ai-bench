@@ -14,7 +14,7 @@ export interface BattleContinuationHandlers {
   battleDamagePlayer(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): PlayerId;
   battleDamageReason(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): number;
   canAttackTarget?(state: DuelState, attacker: DuelCardInstance, target: DuelCardInstance): boolean;
-  collectEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance, payload?: BattleEventPayload): void;
+  collectEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance | DuelCardInstance[], payload?: BattleEventPayload): void;
   changeBattleDamage(state: DuelState, player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
   damagePlayer(state: DuelState, player: PlayerId, amount: number, reason?: number): number;
   destroyCard(state: DuelState, uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;

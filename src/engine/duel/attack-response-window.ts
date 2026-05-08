@@ -4,7 +4,7 @@ import { pruneResetEffectsAfterPhaseFlag } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterPhaseFlag } from "#duel/flags.js";
 import { resolvePendingBattle, type BattleContinuationHandlers } from "#duel/battle-continuation.js";
 import { otherPlayer } from "#duel/player-id.js";
-import type { BattleWindowKind, DuelState, PlayerId } from "#duel/types.js";
+import type { BattleWindowKind, DuelCardInstance, DuelState, PlayerId } from "#duel/types.js";
 
 type DamageBattleWindowKind = Extract<BattleWindowKind, "startDamageStep" | "beforeDamageCalculation" | "duringDamageCalculation" | "afterDamageCalculation" | "endDamageStep">;
 
@@ -120,6 +120,15 @@ function collectBattleTimingEvent(
 ): void {
   const pendingCount = state.pendingTriggers.length;
   const responsePlayer = state.battleWindow?.responsePlayer;
-  handlers.collectEvent(state, eventName);
+  const eventCards = currentBattleEventCards(state);
+  handlers.collectEvent(state, eventName, eventCards.length > 0 ? eventCards : undefined);
   if (pendingCount === 0 && state.pendingTriggers.length === 0 && responsePlayer !== undefined) state.waitingFor = responsePlayer;
+}
+
+function currentBattleEventCards(state: DuelState): DuelCardInstance[] {
+  const attack = state.currentAttack ?? state.pendingBattle;
+  if (!attack) return [];
+  const attacker = findCard(state, attack.attackerUid);
+  const target = attack.targetUid === undefined ? undefined : findCard(state, attack.targetUid);
+  return [attacker, target].filter((card): card is DuelCardInstance => card !== undefined);
 }

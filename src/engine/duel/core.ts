@@ -180,7 +180,7 @@ const battleContinuationHandlers: BattleContinuationHandlers = {
   battleDamagePlayer: (state, player, battleCards) => reflectedDuelBattleDamagePlayerRule(state, player, createContinuousEffectContext(state), battleCards),
   battleDamageReason: (state, player, battleCards) => getCoreBattleDamageReason(state, player, battleCards, coreBattleHandlers),
   canAttackTarget: (state, attacker, target) => canCoreAttackTarget(state, attacker, target, coreBattleHandlers),
-  collectEvent: (state, eventName, eventCard, payload) => collectDuelTriggerEffects(state, eventName, eventCard, payload),
+  collectEvent: collectBattleEvent,
   changeBattleDamage: (state, player, amount, battleCards) => changeDuelBattleDamageWithPreventionRule(state, player, amount, createContinuousEffectContext(state), battleCards),
   damagePlayer: damageDuelPlayer,
   destroyCard: destroyDuelCard,
@@ -193,7 +193,7 @@ const coreBattleHandlers: CoreBattleHandlers = {
   additionalBattleDamagePlayers: (state, player, battleCards) => getCoreAdditionalBattleDamagePlayers(state, player, battleCards, coreBattleHandlers),
   battleDamagePlayer: (state, player, battleCards) => reflectedDuelBattleDamagePlayerRule(state, player, createContinuousEffectContext(state), battleCards),
   battleDamageReason: (state, player, battleCards) => getCoreBattleDamageReason(state, player, battleCards, coreBattleHandlers),
-  collectEvent: (state, eventName, eventCard, payload) => collectDuelTriggerEffects(state, eventName, eventCard, payload),
+  collectEvent: collectBattleEvent,
   changeBattleDamage: (state, player, amount, battleCards) => changeDuelBattleDamageWithPreventionRule(state, player, amount, createContinuousEffectContext(state), battleCards),
   createContinuousContext: createContinuousEffectContext,
   damagePlayer: damageDuelPlayer,
@@ -690,6 +690,9 @@ export function collectDuelGroupedTriggerEffects(state: DuelState, eventName: Du
     options,
     (duel, effect, source, triggerEventName, triggerEventCard, payload) => canChooseEffect(duel, effect, source, effect.controller, triggerEventName, triggerEventCard, payload),
   );
+}
+function collectBattleEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance | DuelCardInstance[], payload: DuelEventPayload = {}): void {
+  Array.isArray(eventCard) ? collectDuelGroupedTriggerEffects(state, eventName, eventCard, payload) : collectDuelTriggerEffects(state, eventName, eventCard, payload);
 }
 function collectTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
   collectDuelTriggerEffects(state, eventName, eventCard);

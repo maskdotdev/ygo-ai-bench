@@ -615,9 +615,13 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
       triggerEvent === "attackDisabled" ||
       triggerEvent === "banished" ||
       triggerEvent === "battleDamageDealt" ||
+      triggerEvent === "battleEnded" ||
+      triggerEvent === "battleStarted" ||
       triggerEvent === "becameTarget" ||
+      triggerEvent === "beforeDamageCalculation" ||
       triggerEvent === "beforeBattleDamage" ||
       triggerEvent === "battleTargeted" ||
+      triggerEvent === "battleConfirmed" ||
       (triggerEvent === "battleDestroyed" && triggerCode === 1140) ||
       triggerEvent === "cardsDrawn" ||
       triggerEvent === "confirmed" ||
@@ -626,6 +630,8 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
       triggerEvent === "counterRemoved" ||
       triggerEvent === "destroyed" ||
       triggerEvent === "destroying" ||
+      triggerEvent === "damageCalculating" ||
+      triggerEvent === "damageStepEnded" ||
       triggerEvent === "detachedMaterial" ||
       triggerEvent === "discarded" ||
       triggerEvent === "equipped" ||
@@ -639,6 +645,7 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
       triggerEvent === "normalSummoning" ||
       triggerEvent === "normalSummonNegated" ||
       triggerEvent === "positionChanged" ||
+      triggerEvent === "afterDamageCalculation" ||
       triggerEvent === "preUsedAsMaterial" ||
       triggerEvent === "released" ||
       triggerEvent === "returnedToGraveyard" ||
