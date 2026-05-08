@@ -62,4 +62,36 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ch
     expect(restored.session.state.cards.find((card) => card.uid === ghostBelle!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.cards.find((card) => card.uid === diabellstar!.uid)).toMatchObject({ location: "deck" });
   });
+
+  it("resolves WANTED graveyard recycling through cost, target, bottom-deck, and draw", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const wantedCode = "80845034";
+    const deceptionCode = "66328392";
+    const drawCode = "73642296";
+    const cards = workspace.readDatabaseCards("cards.cdb").filter((card) => [wantedCode, deceptionCode, drawCode].includes(card.code));
+    const session = createDuel({ seed: 290, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: [drawCode, wantedCode, deceptionCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const wanted = session.state.cards.find((card) => card.code === wantedCode && card.location === "deck");
+    const deception = session.state.cards.find((card) => card.code === deceptionCode && card.location === "deck");
+    const draw = session.state.cards.find((card) => card.code === drawCode && card.location === "deck");
+    expect(wanted).toBeDefined();
+    expect(deception).toBeDefined();
+    expect(draw).toBeDefined();
+    moveDuelCard(session.state, wanted!.uid, "graveyard", 0);
+    moveDuelCard(session.state, deception!.uid, "graveyard", 0);
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(wantedCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const recycle = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === wanted!.uid);
+    expect(recycle).toBeDefined();
+    const resolved = applyResponse(session, recycle!);
+    expect(resolved.ok, resolved.error).toBe(true);
+    expect(session.state.cards.find((card) => card.uid === wanted!.uid)).toMatchObject({ location: "banished" });
+    expect(session.state.cards.find((card) => card.uid === deception!.uid)).toMatchObject({ location: "deck" });
+    expect(session.state.cards.find((card) => card.uid === draw!.uid)).toMatchObject({ location: "hand" });
+  });
 });
