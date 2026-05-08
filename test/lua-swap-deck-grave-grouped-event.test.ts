@@ -90,6 +90,24 @@ describe("Lua deck and graveyard swap grouped events", () => {
       end)
       watcher:RegisterEffect(to_deck_generic)
 
+      local move_generic=Effect.CreateEffect(watcher)
+      move_generic:SetType(EFFECT_TYPE_TRIGGER_O)
+      move_generic:SetCode(EVENT_MOVE)
+      move_generic:SetRange(LOCATION_HAND)
+      move_generic:SetOperation(function(e,tp,eg)
+        Debug.Message("move generic group " .. eg:GetCount() .. "/" .. Duel.GetOperatedGroup():GetCount())
+      end)
+      watcher:RegisterEffect(move_generic)
+
+      local leave_grave_generic=Effect.CreateEffect(watcher)
+      leave_grave_generic:SetType(EFFECT_TYPE_TRIGGER_O)
+      leave_grave_generic:SetCode(EVENT_LEAVE_GRAVE)
+      leave_grave_generic:SetRange(LOCATION_HAND)
+      leave_grave_generic:SetOperation(function(e,tp,eg)
+        Debug.Message("leave grave generic group " .. eg:GetCount() .. "/" .. Duel.GetOperatedGroup():GetCount())
+      end)
+      watcher:RegisterEffect(leave_grave_generic)
+
       Duel.SwapDeckAndGrave(0)
       Debug.Message("swap operated " .. Duel.GetOperatedGroup():GetCount())
       `,
@@ -102,9 +120,13 @@ describe("Lua deck and graveyard swap grouped events", () => {
     expect(host.messages).toContain("swap operated 4");
     expect(toGrave.every((card) => card.location === "graveyard")).toBe(true);
     expect(toDeck.every((card) => card.location === "deck")).toBe(true);
-    expect(session.state.pendingTriggers).toHaveLength(6);
+    expect(session.state.pendingTriggers).toHaveLength(8);
+    expect(session.state.pendingTriggers.filter((trigger) => trigger.eventName === "moved")).toHaveLength(1);
+    expect(session.state.pendingTriggers.filter((trigger) => trigger.eventName === "leftGraveyard")).toHaveLength(1);
     expect(session.state.pendingTriggers.filter((trigger) => trigger.eventName === "sentToGraveyard")).toHaveLength(3);
     expect(session.state.pendingTriggers.filter((trigger) => trigger.eventName === "sentToDeck")).toHaveLength(3);
+    for (const trigger of session.state.pendingTriggers.filter((candidate) => candidate.eventName === "moved")) expect(trigger.eventUids).toEqual([...toGrave, ...toDeck].map((card) => card.uid));
+    for (const trigger of session.state.pendingTriggers.filter((candidate) => candidate.eventName === "leftGraveyard")) expect(trigger.eventUids).toEqual(toDeck.map((card) => card.uid));
     for (const trigger of session.state.pendingTriggers.filter((candidate) => candidate.eventName === "sentToGraveyard")) expect(trigger.eventUids).toEqual(toGrave.map((card) => card.uid));
     for (const trigger of session.state.pendingTriggers.filter((candidate) => candidate.eventName === "sentToDeck")) expect(trigger.eventUids).toEqual(toDeck.map((card) => card.uid));
 
@@ -122,6 +144,8 @@ describe("Lua deck and graveyard swap grouped events", () => {
         "to deck first group 2",
         "to deck second group 2",
         "to deck generic group 2/2",
+        "move generic group 4/4",
+        "leave grave generic group 2/2",
       ]),
     );
   });

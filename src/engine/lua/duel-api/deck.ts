@@ -339,6 +339,9 @@ function swapDeckAndGrave(session: DuelSession, hostState: LuaDuelDeckApiHostSta
 }
 
 function collectSwapDeckAndGraveEvents(session: DuelSession, toGraveyard: DuelCardInstance[], toDeck: DuelCardInstance[]): void {
+  const moved = [...toGraveyard, ...toDeck];
+  if (moved.length > 0) collectDuelGroupedTriggerEffects(session.state, "moved", moved, { eventUids: moved.map((card) => card.uid) });
+  if (toDeck.length > 0) collectDuelGroupedTriggerEffects(session.state, "leftGraveyard", toDeck, { eventUids: toDeck.map((card) => card.uid) });
   if (toGraveyard.length > 0) collectDuelGroupedTriggerEffects(session.state, "sentToGraveyard", toGraveyard, { eventUids: toGraveyard.map((card) => card.uid) });
   if (toDeck.length > 0) collectDuelGroupedTriggerEffects(session.state, "sentToDeck", toDeck, { eventUids: toDeck.map((card) => card.uid) });
 }
