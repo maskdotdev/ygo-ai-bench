@@ -15,6 +15,7 @@ export type DuelOverlayMaterialMover = (uid: string, controller: PlayerId, reaso
 export type DuelMaterialPredicate = (uid: string) => boolean;
 export type DuelNormalSummonPredicate = (card: DuelCardInstance) => boolean;
 type ExtraDeckSummonType = "fusion" | "synchro" | "Xyz" | "Link";
+type SynchroMaterialCodes = { tuner: string; nonTuners: string[] };
 
 export function normalSummon(state: DuelState, player: PlayerId, uid: string, collectEvent: DuelEventCollector, canSummonWithoutTribute: DuelNormalSummonPredicate = () => false): void {
   const card = requireControlledCard(state, player, uid, "hand");
@@ -589,9 +590,8 @@ function requireSynchroSummonMaterials(state: DuelState, player: PlayerId, uid: 
   if (new Set(materialUids).size !== materialUids.length) throw new Error(`${card.name} synchro materials must be unique`);
   const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
   if (!materials.length) throw new Error(`${card.name} synchro materials are not legal`);
-  const requiredCodes = synchroMaterialCodes(card);
-  if (requiredCodes?.length) {
-    if (!materialCodesMatch(materials, requiredCodes)) throw new Error(`${card.name} synchro materials are not legal`);
+  if (card.data.synchroMaterials) {
+    if (!synchroMaterialRolesMatch(materials, card.data.synchroMaterials)) throw new Error(`${card.name} synchro materials are not legal`);
   } else if (!canGenericSynchroMaterialsMatch(card, materials)) {
     throw new Error(`${card.name} synchro materials are not legal`);
   }
@@ -668,8 +668,7 @@ function findLinkMaterialUidSets(materialPool: DuelCardInstance[], card: DuelCar
 }
 
 function findSynchroMaterialUidSets(materialPool: DuelCardInstance[], card: DuelCardInstance): string[][] {
-  const requiredCodes = synchroMaterialCodes(card);
-  if (requiredCodes?.length) return findMaterialUidSets(materialPool, requiredCodes);
+  if (card.data.synchroMaterials) return findSynchroMaterialRoleUidSets(materialPool, card.data.synchroMaterials);
   const results: string[][] = [];
   for (let count = 2; count <= materialPool.length; count += 1) {
     for (const materials of cardCombinations(materialPool, count)) {
@@ -682,6 +681,24 @@ function findSynchroMaterialUidSets(materialPool: DuelCardInstance[], card: Duel
 function findXyzMaterialUidSets(materialPool: DuelCardInstance[], card: DuelCardInstance): string[][] {
   if (card.data.xyzMaterials?.length) return findMaterialUidSets(materialPool, card.data.xyzMaterials);
   return cardCombinations(materialPool, 2).filter((materials) => canGenericXyzMaterialsMatch(card, materials)).map((materials) => materials.map((material) => material.uid));
+}
+
+function findSynchroMaterialRoleUidSets(cards: DuelCardInstance[], required: SynchroMaterialCodes): string[][] {
+  const results: string[][] = [];
+  const seen = new Set<string>();
+  for (const tuner of cards) {
+    if (!isTuner(tuner) || !cardMatchesCode(tuner, required.tuner)) continue;
+    const nonTunerPool = cards.filter((card) => card.uid !== tuner.uid && !isTuner(card));
+    for (const nonTunerUids of findMaterialUidSets(nonTunerPool, required.nonTuners)) {
+      appendMaterialUidSet(results, seen, [tuner.uid, ...nonTunerUids]);
+    }
+  }
+  return results;
+}
+
+function synchroMaterialRolesMatch(materials: DuelCardInstance[], required: SynchroMaterialCodes): boolean {
+  const selectedKey = materialUidSetKey(materials.map((material) => material.uid));
+  return findSynchroMaterialRoleUidSets(materials, required).some((materialUids) => materialUidSetKey(materialUids) === selectedKey);
 }
 
 function canGenericSynchroMaterialsMatch(card: DuelCardInstance, materials: DuelCardInstance[]): boolean {

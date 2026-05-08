@@ -53,7 +53,10 @@ function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCa
   if (kind === "ritual") return !target.data.ritualMaterials?.length || target.data.ritualMaterials.some((code) => codes.includes(code));
   if (kind === "synchro") {
     const materials = target.data.synchroMaterials;
-    if (materials) return [materials.tuner, ...materials.nonTuners].some((code) => codes.includes(code));
+    if (materials) {
+      if (isTuner(card)) return codes.includes(materials.tuner);
+      return materials.nonTuners.some((code) => codes.includes(code));
+    }
     const targetLevel = cardTypeFlags(target) & 0x2000 ? target.data.level ?? 0 : 0;
     const materialLevel = card.data.level ?? 0;
     return targetLevel > 0 && materialLevel > 0 && materialLevel < targetLevel;
@@ -75,6 +78,10 @@ function isPendulumCard(card: DuelCardInstance): boolean {
 
 function linkMaterialRating(card: DuelCardInstance): number {
   return cardLink(card) || 1;
+}
+
+function isTuner(card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card) & 0x1000) !== 0;
 }
 
 function cardCodes(card: DuelCardInstance): string[] {

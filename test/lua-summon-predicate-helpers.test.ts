@@ -106,6 +106,43 @@ describe("Lua summon predicate helpers", () => {
     expect(host.messages).toContain("specific link summonable true/false");
   });
 
+  it("requires the explicit Lua Synchro tuner material to be a Tuner", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Non-Tuner With Tuner Code", kind: "monster", typeFlags: 0x1 },
+      { code: "300", name: "Explicit Non-Tuner", kind: "monster", typeFlags: 0x1 },
+      { code: "910", name: "Role-Specific Synchro", kind: "extra", synchroMaterials: { tuner: "100", nonTuners: ["300"] } },
+    ];
+    const session = createDuel({ seed: 59, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["910"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const nonTunerWithTunerCode = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const explicitNonTuner = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(nonTunerWithTunerCode).toBeDefined();
+    expect(explicitNonTuner).toBeDefined();
+    moveDuelCard(session.state, nonTunerWithTunerCode!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, explicitNonTuner!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c100 = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      local c300 = Duel.GetFieldCard(0, LOCATION_MZONE, 1)
+      local synchro = Duel.GetFieldCard(0, LOCATION_EXTRA, 0)
+      Debug.Message("role synchro target material " .. tostring(c100:IsCanBeSynchroMaterial(synchro)) .. "/" .. tostring(c300:IsCanBeSynchroMaterial(synchro)))
+      Debug.Message("role synchro summonable " .. tostring(synchro:IsSynchroSummonable()) .. "/" .. tostring(synchro:IsSynchroSummonable(c100)) .. "/" .. tostring(synchro:IsSynchroSummonable(c300)))
+      `,
+      "role-specific-synchro-predicates.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("role synchro target material false/true");
+    expect(host.messages).toContain("role synchro summonable false/false/false");
+  });
+
   it("checks Lua reincarnation ritual material filters", () => {
     const cards: DuelCardData[] = [
       { code: "940", name: "Reincarnation Material", kind: "monster" },

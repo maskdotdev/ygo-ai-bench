@@ -10,7 +10,7 @@ import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 
 export const cards: DuelCardData[] = [
-  { code: "100", name: "Normal Test Monster", kind: "monster", attack: 1800, defense: 1200 },
+  { code: "100", name: "Normal Test Monster", kind: "monster", typeFlags: 0x1001, attack: 1800, defense: 1200 },
   { code: "110", name: "Level Three Tuner", kind: "monster", typeFlags: 0x1001, level: 3, attack: 1200, defense: 800 },
   { code: "200", name: "Test Spell", kind: "spell" },
   { code: "300", name: "Second Monster", kind: "monster", attack: 1000, defense: 1000 },

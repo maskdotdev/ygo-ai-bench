@@ -6,7 +6,7 @@ import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
 describe("EDOPro compatibility harness extra deck responses", () => {
   it("selects extra deck scripted fixture responses by material uids", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "Material A", kind: "monster" },
+      { code: "100", name: "Material A", kind: "monster", typeFlags: 0x1001 },
       { code: "300", name: "Material B", kind: "monster" },
       { code: "900", name: "Fixture Fusion", kind: "extra", fusionMaterials: ["100", "300"] },
       { code: "910", name: "Fixture Synchro", kind: "extra", synchroMaterials: { tuner: "100", nonTuners: ["300"] } },

@@ -2,16 +2,18 @@ import { hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
 import { isMaterialUsePrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
+type SynchroMaterialCodes = { tuner: string; nonTuners: string[] };
+
 export function canLuaSynchroSummonCard(session: DuelSession, card: DuelCardInstance, suppliedUids: string[]): boolean {
   if (card.location !== "extraDeck" || !isMonsterLike(card)) return false;
   const supplied = new Set(suppliedUids);
   const materialPool = session.state.cards.filter((candidate) => candidate.controller === card.controller && candidate.location === "monsterZone" && canBeSynchroMaterial(session, candidate, card));
   if ([...supplied].some((uid) => !materialPool.some((candidate) => candidate.uid === uid))) return false;
-  const requiredCodes = synchroMaterialCodes(card);
+  const explicitMaterials = card.data.synchroMaterials;
   for (let count = Math.max(2, supplied.size); count <= materialPool.length; count += 1) {
     for (const materials of cardCombinations(materialPool, count)) {
       if ([...supplied].some((uid) => !materials.some((material) => material.uid === uid))) continue;
-      if ((requiredCodes?.length ? materialCodesMatch(materials, requiredCodes) : canGenericSynchroMaterialsMatch(card, materials)) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return true;
+      if ((explicitMaterials ? synchroMaterialRolesMatch(materials, explicitMaterials) : canGenericSynchroMaterialsMatch(card, materials)) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return true;
     }
   }
   return false;
@@ -28,7 +30,10 @@ function canBeSynchroMaterial(session: DuelSession, card: DuelCardInstance, targ
 
 function targetAllowsMaterial(target: DuelCardInstance, card: DuelCardInstance): boolean {
   const materials = target.data.synchroMaterials;
-  if (materials) return [materials.tuner, ...materials.nonTuners].some((code) => cardCodes(card).includes(code));
+  if (materials) {
+    if (isTuner(card)) return cardCodes(card).includes(materials.tuner);
+    return materials.nonTuners.some((code) => cardCodes(card).includes(code));
+  }
   const targetLevel = (cardTypeFlags(target) & 0x2000) !== 0 ? target.data.level ?? 0 : 0;
   const materialLevel = card.data.level ?? 0;
   return targetLevel > 0 && materialLevel > 0 && materialLevel < targetLevel;
@@ -37,13 +42,15 @@ function targetAllowsMaterial(target: DuelCardInstance, card: DuelCardInstance):
 function canGenericSynchroMaterialsMatch(card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
   const targetLevel = (cardTypeFlags(card) & 0x2000) !== 0 ? card.data.level ?? 0 : 0;
   if (targetLevel <= 0 || materials.length < 2) return false;
-  if (materials.filter((material) => (cardTypeFlags(material) & 0x1000) !== 0).length !== 1) return false;
+  if (materials.filter((material) => isTuner(material)).length !== 1) return false;
   return materials.reduce((total, material) => total + (material.data.level ?? 0), 0) === targetLevel;
 }
 
-function synchroMaterialCodes(card: DuelCardInstance): string[] | undefined {
-  const materials = card.data.synchroMaterials;
-  return materials ? [materials.tuner, ...materials.nonTuners] : undefined;
+function synchroMaterialRolesMatch(materials: DuelCardInstance[], required: SynchroMaterialCodes): boolean {
+  const tuner = materials.find((material) => isTuner(material) && cardCodes(material).includes(required.tuner));
+  if (!tuner) return false;
+  const nonTuners = materials.filter((material) => material.uid !== tuner.uid && !isTuner(material));
+  return nonTuners.length === materials.length - 1 && materialCodesMatch(nonTuners, required.nonTuners);
 }
 
 function materialCodesMatch(materials: DuelCardInstance[], requiredCodes: string[]): boolean {
@@ -75,6 +82,10 @@ function cardCodes(card: DuelCardInstance): string[] {
 
 function cardTypeFlags(card: DuelCardInstance): number {
   return card.data.typeFlags ?? (card.kind === "spell" ? 0x2 : card.kind === "trap" ? 0x4 : 0x1);
+}
+
+function isTuner(card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card) & 0x1000) !== 0;
 }
 
 function isMonsterLike(card: DuelCardInstance): boolean {

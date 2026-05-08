@@ -63,7 +63,7 @@ describe("Lua summon and release helpers", () => {
 
   it("lets Lua scripts invoke summon helper APIs", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "Material A", kind: "monster" },
+      { code: "100", name: "Material A", kind: "monster", typeFlags: 0x1001 },
       { code: "300", name: "Material B", kind: "monster" },
       { code: "900", name: "Lua Fusion", kind: "extra", fusionMaterials: ["100", "300"] },
       { code: "910", name: "Lua Synchro", kind: "extra", synchroMaterials: { tuner: "100", nonTuners: ["300"] } },
