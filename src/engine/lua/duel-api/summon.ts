@@ -10,6 +10,7 @@ import {
 import {
   applyResponse,
   canMoveDuelCardToLocation,
+  canPlayerSpecialSummon,
   canSpecialSummonDuelCard,
   collectDuelTriggerEffects,
   fusionSummonDuelCard,
@@ -262,7 +263,11 @@ function canBeXyzMaterial(card: DuelCardInstance, target: DuelCardInstance): boo
 function ritualSummonSelectedMaterials(session: DuelSession, hostState: LuaDuelSummonApiHostState, target: DuelCardInstance, materialUids: string[]): void {
   if (target.kind !== "monster" || target.location !== "hand") throw new Error(`${target.name} is not a ritual monster in hand`);
   if (new Set(materialUids).size !== materialUids.length || materialUids.length === 0) throw new Error(`${target.name} ritual materials are not legal`);
-  if (availableMonsterZoneCount(session, target.controller, []) <= 0 || !canSpecialSummonDuelCard(session.state, target.uid, target.controller)) {
+  if (
+    availableMonsterZoneCount(session, target.controller, materialUids) <= 0 ||
+    !canPlayerSpecialSummon(session.state, target.controller, target) ||
+    !canMoveDuelCardToLocation(session.state, target.uid, "monsterZone", duelReason.summon | duelReason.specialSummon | duelReason.ritual)
+  ) {
     throw new Error(`${target.name} cannot be Ritual Summoned`);
   }
   for (const uid of materialUids) {

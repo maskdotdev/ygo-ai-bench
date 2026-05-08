@@ -108,6 +108,43 @@ describe("Lua summon and release helpers", () => {
     }
   });
 
+  it("counts selected field materials as freeing zone space for Lua ritual summon helpers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Field Ritual Material A", kind: "monster" },
+      { code: "200", name: "Field Ritual Material B", kind: "monster" },
+      { code: "300", name: "Field Zone Filler A", kind: "monster" },
+      { code: "400", name: "Field Zone Filler B", kind: "monster" },
+      { code: "500", name: "Field Zone Filler C", kind: "monster" },
+      { code: "940", name: "Lua Full Zone Ritual", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 77, startingHandSize: 6, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["940", "100", "200", "300", "400", "500"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0 && candidate.location === "hand" && candidate.code !== "940")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local ritual = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 940), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local mat_a = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      local mat_b = Duel.GetFieldCard(0, LOCATION_MZONE, 1)
+      Debug.Message("full zone ritual " .. Duel.RitualSummon(ritual, Group.FromCards(mat_a, mat_b)))
+      `,
+      "full-zone-selected-ritual-summon.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("full zone ritual 1");
+    expect(session.state.cards.find((card) => card.code === "940")).toMatchObject({ location: "monsterZone", summonType: "ritual" });
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "graveyard" });
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "graveyard" });
+  });
+
   it("queues Lua material triggers when summon materials are consumed", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Lua Material Trigger", kind: "monster" },
