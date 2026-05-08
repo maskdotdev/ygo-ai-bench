@@ -67,6 +67,38 @@ describe("EDOPro parity level-changed missed timing fixtures", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "level-multistep" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the open ignition effect restorable before the multi-step level-change event checks missed timing",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            phase: "main1",
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 11, 1: 0 },
+            legalActionGroupCounts: { 0: 4, 1: 0 },
+            legalActions: [{ type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "level-multistep", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "level-multistep", count: 1 }],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro drops optional when level-change triggers when that change is followed by another event, while optional if remains available",
@@ -92,6 +124,29 @@ describe("EDOPro parity level-changed missed timing fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "level-optional-if" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the surviving optional if level-change trigger restorable without resurrecting the missed optional when trigger",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "level-optional-if", eventName: "levelChanged", eventCardUid: "p0-deck-600-3" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            locationCounts: { graveyard: { "600": 1, "700": 1 }, hand: { "100": 1, "400": 1, "500": 1, "700": 5 } },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "level-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "level-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "level-optional-if", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "level-optional-if", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "level-optional-when" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(0, "level-optional-when", "turnOptional", 1, "triggerBucket")],
+            logIncludes: ["Level multi step resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the surviving optional if level-change trigger after restore without resurrecting missed optional when triggers",
