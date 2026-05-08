@@ -162,7 +162,7 @@ describe("chain-ended open fast handoff chain-limit restore", () => {
       const session = createDuel({ seed: testCase.seed, startingHandSize: 6, cardReader: createCardReader(cards) });
       loadDecks(session, {
         0: { main: ["100", "300", "400", "500", "700", "900"] },
-        1: { main: ["600", "700"] },
+        1: { main: ["600", "700", "400"] },
       });
       startDuel(session);
 
@@ -174,6 +174,7 @@ describe("chain-ended open fast handoff chain-limit restore", () => {
       const turnFollowup = findHandCard(session, 0, "900");
       const opponentFirst = findHandCard(session, 1, "600");
       const opponentLimiter = findHandCard(session, 1, "700");
+      const opponentFollowup = findHandCard(session, 1, "400");
       expect(starter).toBeDefined();
       expect(cleanup).toBeDefined();
       expect(openQuick).toBeDefined();
@@ -182,11 +183,13 @@ describe("chain-ended open fast handoff chain-limit restore", () => {
       expect(turnFollowup).toBeDefined();
       expect(opponentFirst).toBeDefined();
       expect(opponentLimiter).toBeDefined();
+      expect(opponentFollowup).toBeDefined();
       moveDuelCard(session.state, firstTurnChain!.uid, "graveyard", 0);
       moveDuelCard(session.state, secondTurnChain!.uid, "graveyard", 0);
       moveDuelCard(session.state, turnFollowup!.uid, "graveyard", 0);
       moveDuelCard(session.state, opponentFirst!.uid, "graveyard", 1);
       moveDuelCard(session.state, opponentLimiter!.uid, "graveyard", 1);
+      moveDuelCard(session.state, opponentFollowup!.uid, "graveyard", 1);
 
       registerEffect(session, loggedEffect(`${testCase.prefix}-starter`, starter!.uid, 0, "ignition"));
       registerEffect(session, cleanupTrigger(`${testCase.prefix}-cleanup`, cleanup!.uid));
@@ -196,6 +199,7 @@ describe("chain-ended open fast handoff chain-limit restore", () => {
       registerEffect(session, chainOnlyQuick(`${testCase.prefix}-turn-followup`, turnFollowup!.uid, 0));
       registerEffect(session, chainOnlyQuick(`${testCase.prefix}-opponent-first`, opponentFirst!.uid, 1, true));
       registerEffect(session, chainOnlyQuickWithTurnLimit(`${testCase.prefix}-opponent-turn-limiter`, opponentLimiter!.uid, testCase.untilChainEnd, 1, true));
+      registerEffect(session, chainOnlyQuick(`${testCase.prefix}-opponent-followup`, opponentFollowup!.uid, 1));
 
       const starterAction = findEffectAction(session, 0, `${testCase.prefix}-starter`);
       expect(starterAction).toBeDefined();
@@ -295,6 +299,137 @@ describe("chain-ended open fast handoff chain-limit restore", () => {
       expect(restoredOpen.state.chainLimits).toEqual([]);
       expect(getGroupedDuelLegalActions(restoredOpen, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredOpen, 0));
     });
+
+    it(`restores post-chainEnded continued ${testCase.name} follow-up windows`, () => {
+      const session = createDuel({ seed: testCase.seed + 20, startingHandSize: 7, cardReader: createCardReader(cards) });
+      loadDecks(session, {
+        0: { main: ["100", "300", "400", "500", "700", "900", "950"] },
+        1: { main: ["600", "700", "400"] },
+      });
+      startDuel(session);
+
+      const starter = findHandCard(session, 0, "100");
+      const cleanup = findHandCard(session, 0, "300");
+      const openQuick = findHandCard(session, 0, "400");
+      const firstTurnChain = findHandCard(session, 0, "500");
+      const secondTurnChain = findHandCard(session, 0, "700");
+      const turnFollowup = findHandCard(session, 0, "900");
+      const finalTurn = findHandCard(session, 0, "950");
+      const opponentFirst = findHandCard(session, 1, "600");
+      const opponentLimiter = findHandCard(session, 1, "700");
+      const opponentFollowup = findHandCard(session, 1, "400");
+      expect(starter).toBeDefined();
+      expect(cleanup).toBeDefined();
+      expect(openQuick).toBeDefined();
+      expect(firstTurnChain).toBeDefined();
+      expect(secondTurnChain).toBeDefined();
+      expect(turnFollowup).toBeDefined();
+      expect(finalTurn).toBeDefined();
+      expect(opponentFirst).toBeDefined();
+      expect(opponentLimiter).toBeDefined();
+      expect(opponentFollowup).toBeDefined();
+      moveDuelCard(session.state, firstTurnChain!.uid, "graveyard", 0);
+      moveDuelCard(session.state, secondTurnChain!.uid, "graveyard", 0);
+      moveDuelCard(session.state, turnFollowup!.uid, "graveyard", 0);
+      moveDuelCard(session.state, finalTurn!.uid, "graveyard", 0);
+      moveDuelCard(session.state, opponentFirst!.uid, "graveyard", 1);
+      moveDuelCard(session.state, opponentLimiter!.uid, "graveyard", 1);
+      moveDuelCard(session.state, opponentFollowup!.uid, "graveyard", 1);
+
+      registerEffect(session, loggedEffect(`${testCase.prefix}-starter`, starter!.uid, 0, "ignition"));
+      registerEffect(session, cleanupTrigger(`${testCase.prefix}-cleanup`, cleanup!.uid));
+      registerEffect(session, openOnlyQuick(`${testCase.prefix}-open`, openQuick!.uid, 0, true));
+      registerEffect(session, chainOnlyQuick(`${testCase.prefix}-first-turn`, firstTurnChain!.uid, 0, true));
+      registerEffect(session, chainOnlyQuick(`${testCase.prefix}-second-turn`, secondTurnChain!.uid, 0, true));
+      registerEffect(session, chainOnlyQuick(`${testCase.prefix}-turn-followup`, turnFollowup!.uid, 0, true));
+      registerEffect(session, chainOnlyQuick(`${testCase.prefix}-final-turn`, finalTurn!.uid, 0));
+      registerEffect(session, chainOnlyQuick(`${testCase.prefix}-opponent-first`, opponentFirst!.uid, 1, true));
+      registerEffect(session, chainOnlyQuickWithTurnLimit(`${testCase.prefix}-opponent-turn-limiter`, opponentLimiter!.uid, testCase.untilChainEnd, 1, true));
+      registerEffect(session, chainOnlyQuick(`${testCase.prefix}-opponent-followup`, opponentFollowup!.uid, 1, true));
+
+      applyAndAssert(session, findEffectAction(session, 0, `${testCase.prefix}-starter`)!);
+      applyAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === `${testCase.prefix}-cleanup`)!);
+      applyAndAssert(session, findEffectAction(session, 0, `${testCase.prefix}-open`)!);
+      applyAndAssert(session, getDuelLegalActions(session, 1).find((action) => action.type === "passChain")!);
+      applyAndAssert(session, findEffectAction(session, 0, `${testCase.prefix}-first-turn`)!);
+      applyAndAssert(session, findEffectAction(session, 1, `${testCase.prefix}-opponent-first`)!);
+      applyAndAssert(session, findEffectAction(session, 0, `${testCase.prefix}-second-turn`)!);
+      const staleOpponentFollowup = findEffectAction(session, 1, `${testCase.prefix}-opponent-followup`);
+      expect(staleOpponentFollowup).toBeDefined();
+      applyAndAssert(session, findEffectAction(session, 1, `${testCase.prefix}-opponent-turn-limiter`)!);
+
+      const turnFollowupAction = findEffectAction(session, 0, `${testCase.prefix}-turn-followup`);
+      expect(turnFollowupAction).toBeDefined();
+      const continuedWindow = applyAndAssert(session, turnFollowupAction!);
+      expect(continuedWindow.state.chain.map((link) => link.effectId)).toEqual([
+        `${testCase.prefix}-open`,
+        `${testCase.prefix}-first-turn`,
+        `${testCase.prefix}-opponent-first`,
+        `${testCase.prefix}-second-turn`,
+        `${testCase.prefix}-opponent-turn-limiter`,
+        `${testCase.prefix}-turn-followup`,
+      ]);
+
+      const restored = restoreDuel(serializeDuel(session), createCardReader(cards), restoreRegistry(testCase.prefix, testCase.untilChainEnd), restoreChainLimitRegistry());
+      expect(restored.state.chain.map((link) => link.effectId)).toEqual(continuedWindow.state.chain.map((link) => link.effectId));
+
+      if (testCase.untilChainEnd) {
+        expect(queryPublicState(restored)).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+        expect(restored.state.chainLimits.map(serializeChainLimitForAssert)).toEqual([testCase.expectedLimit]);
+        expect(getDuelLegalActions(restored, 1)).toEqual([]);
+        expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
+        expect(hasGroupedEffect(getGroupedDuelLegalActions(restored, 0), 0, `${testCase.prefix}-final-turn`)).toBe(true);
+
+        const staleOpponent = applyResponse(restored, staleOpponentFollowup!);
+        expect(staleOpponent.ok).toBe(false);
+        expect(staleOpponent.error).toContain("Response is not currently legal");
+        expect(staleOpponent.legalActions).toEqual(getDuelLegalActions(restored, 0));
+
+        const restoredTurnPass = getDuelLegalActions(restored, 0).find((action) => action.type === "passChain");
+        expect(restoredTurnPass).toBeDefined();
+        const resolved = applyAndAssert(restored, restoredTurnPass!);
+        expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [] });
+        expect(restored.state.chainLimits).toEqual([]);
+        expect(restored.state.log.map((entry) => entry.detail)).toEqual(expect.arrayContaining([
+          `${testCase.prefix}-turn-followup resolved`,
+          `${testCase.prefix}-opponent-turn-limiter resolved`,
+          `${testCase.prefix}-second-turn resolved`,
+        ]));
+        expect(restored.state.log.map((entry) => entry.detail)).not.toContain(`${testCase.prefix}-final-turn resolved`);
+        expect(restored.state.log.map((entry) => entry.detail)).not.toContain(`${testCase.prefix}-opponent-followup resolved`);
+      } else {
+        expect(queryPublicState(restored)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+        expect(restored.state.chainLimits).toEqual([]);
+        expect(getDuelLegalActions(restored, 0)).toEqual([]);
+        expect(getDuelLegalActions(restored, 1)).toEqual(getDuelLegalActions(session, 1));
+        expect(hasGroupedEffect(getGroupedDuelLegalActions(restored, 1), 1, `${testCase.prefix}-opponent-followup`)).toBe(true);
+
+        const staleTurnFollowup = applyResponse(restored, turnFollowupAction!);
+        expect(staleTurnFollowup.ok).toBe(false);
+        expect(staleTurnFollowup.error).toContain("Response is not currently legal");
+        expect(staleTurnFollowup.legalActions).toEqual(getDuelLegalActions(restored, 1));
+
+        const opponentFollowupAction = findEffectAction(restored, 1, `${testCase.prefix}-opponent-followup`);
+        expect(opponentFollowupAction).toBeDefined();
+        applyAndAssert(restored, opponentFollowupAction!);
+        const restoredTurnReturn = restoreDuel(serializeDuel(restored), createCardReader(cards), restoreRegistry(testCase.prefix, testCase.untilChainEnd), restoreChainLimitRegistry());
+        expect(queryPublicState(restoredTurnReturn)).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+        expect(restoredTurnReturn.state.chainLimits).toEqual([]);
+        expect(getDuelLegalActions(restoredTurnReturn, 1)).toEqual([]);
+        expect(hasGroupedEffect(getGroupedDuelLegalActions(restoredTurnReturn, 0), 0, `${testCase.prefix}-final-turn`)).toBe(true);
+
+        const restoredTurnPass = getDuelLegalActions(restoredTurnReturn, 0).find((action) => action.type === "passChain");
+        expect(restoredTurnPass).toBeDefined();
+        const resolved = applyAndAssert(restoredTurnReturn, restoredTurnPass!);
+        expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [] });
+        expect(restoredTurnReturn.state.log.map((entry) => entry.detail)).toEqual(expect.arrayContaining([
+          `${testCase.prefix}-opponent-followup resolved`,
+          `${testCase.prefix}-turn-followup resolved`,
+          `${testCase.prefix}-opponent-turn-limiter resolved`,
+        ]));
+        expect(restoredTurnReturn.state.log.map((entry) => entry.detail)).not.toContain(`${testCase.prefix}-final-turn resolved`);
+      }
+    });
   }
 });
 
@@ -339,6 +474,8 @@ function cleanupTrigger(id: string, sourceUid: string): DuelEffectDefinition {
       moveFirstCard(ctx.duel, 0, "500", "graveyard", "hand");
       moveFirstCard(ctx.duel, 0, "700", "graveyard", "hand");
       moveFirstCard(ctx.duel, 0, "900", "graveyard", "hand");
+      moveFirstCard(ctx.duel, 0, "950", "graveyard", "hand");
+      moveFirstCard(ctx.duel, 1, "400", "graveyard", "hand");
       moveFirstCard(ctx.duel, 1, "600", "graveyard", "hand");
       moveFirstCard(ctx.duel, 1, "700", "graveyard", "hand");
       ctx.log(`${id} resolved`);
@@ -393,6 +530,7 @@ function restoreRegistry(prefix: string, untilChainEnd: boolean): Record<string,
     [`${prefix}-open`]: restoreOpenOnlyQuick,
     [`${prefix}-first-turn`]: restoreChainOnlyQuick,
     [`${prefix}-second-turn`]: restoreChainOnlyQuick,
+    [`${prefix}-final-turn`]: restoreChainOnlyQuick,
     [`${prefix}-turn-chain`]: restoreChainOnlyQuick,
     [`${prefix}-turn-blocked`]: restoreChainOnlyQuick,
     [`${prefix}-turn-followup`]: restoreChainOnlyQuick,
@@ -419,6 +557,8 @@ function restoreCleanupTrigger(effect: Omit<DuelEffectDefinition, "operation">):
       moveFirstCard(ctx.duel, 0, "500", "graveyard", "hand");
       moveFirstCard(ctx.duel, 0, "700", "graveyard", "hand");
       moveFirstCard(ctx.duel, 0, "900", "graveyard", "hand");
+      moveFirstCard(ctx.duel, 0, "950", "graveyard", "hand");
+      moveFirstCard(ctx.duel, 1, "400", "graveyard", "hand");
       moveFirstCard(ctx.duel, 1, "600", "graveyard", "hand");
       moveFirstCard(ctx.duel, 1, "700", "graveyard", "hand");
       ctx.log(`${effect.id} resolved`);
