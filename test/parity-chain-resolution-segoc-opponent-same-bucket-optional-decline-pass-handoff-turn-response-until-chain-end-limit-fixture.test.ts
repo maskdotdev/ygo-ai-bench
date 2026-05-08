@@ -130,6 +130,52 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional decline p
         makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-opponent-optional-decline-turn-until-first-opponent" })),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps decline-first restored opponent optional trigger-chain turn-response priority restorable before the turn player passes",
+            phase: "main1",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 1, effectId: "fixture-opponent-optional-decline-turn-until-first-opponent", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" }],
+            chainPasses: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-optional-decline-turn-until-chain-limiter", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-optional-decline-turn-until-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 4,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-optional-decline-turn-until-chain-limiter", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-optional-decline-turn-until-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-optional-decline-turn-until-first-opponent-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-optional-decline-turn-until-blocked-opponent" },
+              { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-decline-turn-until-second-opponent", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-opponent-optional-decline-turn-until-first-opponent-quick", 4),
+              absentChainEffectGroup(1, "fixture-opponent-optional-decline-turn-until-blocked-opponent", 4),
+              absentTriggerActivationGroup(1, "fixture-opponent-optional-decline-turn-until-second-opponent", "opponentOptional", 4, "chainResponse"),
+            ],
+            locations: { graveyard: ["700", "200", "970", "900", "950"], hand: ["100", "300", "800", "400", "500", "800", "800"] },
+            logIncludes: ["Opponent optional decline turn until starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro hands decline-first restored opponent optional trigger-chain responses to the opponent before the turn player's SetChainLimitTillChainEnd response",
@@ -180,6 +226,54 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional decline p
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-optional-decline-turn-until-first-opponent-quick" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-opponent-optional-decline-turn-until-chain-limiter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps turn-player priority restorable before the decline-first restored opponent optional SetChainLimitTillChainEnd response is chosen",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 1, effectId: "fixture-opponent-optional-decline-turn-until-first-opponent", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-opponent-optional-decline-turn-until-first-opponent-quick", sourceUid: "p1-deck-900-2" },
+            ],
+            chainPasses: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-opponent-optional-decline-turn-until-chain-limiter", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-opponent-optional-decline-turn-until-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 6,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-opponent-optional-decline-turn-until-chain-limiter", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-opponent-optional-decline-turn-until-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(0, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-opponent-optional-decline-turn-until-first-opponent-quick" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-opponent-optional-decline-turn-until-blocked-opponent" },
+              { type: "activateTrigger", player: 1, windowId: 6, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-decline-turn-until-second-opponent", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-opponent-optional-decline-turn-until-first-opponent-quick", 6),
+              absentChainEffectGroup(1, "fixture-opponent-optional-decline-turn-until-blocked-opponent", 6),
+              absentTriggerActivationGroup(1, "fixture-opponent-optional-decline-turn-until-second-opponent", "opponentOptional", 6, "chainResponse"),
+            ],
+            locations: { graveyard: ["700", "200", "970", "900", "950"], hand: ["100", "300", "800", "400", "500", "800", "800"] },
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies SetChainLimitTillChainEnd restrictions after the turn player responds to a decline-first restored opponent optional handoff chain",
