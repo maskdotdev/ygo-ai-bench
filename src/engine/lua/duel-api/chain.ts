@@ -197,6 +197,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (literalHandlerCode !== undefined) return `closure:handler-code:${literalHandlerCode}`;
   const literalCapturedHandlerCode = literalCapturedHandlerCodePredicate(L, index, hostState);
   if (literalCapturedHandlerCode !== undefined) return `closure:handler-code:${literalCapturedHandlerCode}`;
+  const literalHandlerCodes = literalHandlerCodesPredicate(L, index, hostState);
+  if (literalHandlerCodes !== undefined) return handlerCodePredicateDescriptor(literalHandlerCodes);
   const blockedActiveTypeForOpponent = literalResponseMatchesChainPlayerOrNotActiveTypePredicate(L, index, hostState);
   if (blockedActiveTypeForOpponent !== undefined) return `closure:not-active-type-response-player:${blockedActiveTypeForOpponent}`;
   if (literalResponseMatchesChainPlayerPredicate(L, index, hostState)) return "closure:response-matches-chain-player";
@@ -373,6 +375,32 @@ function literalCapturedHandlerCodePredicate(L: unknown, index: number, hostStat
   const capturedName = rightIsCode?.[1] ?? rightGetCode?.[1] ?? leftGetCode?.[1];
   const code = capturedName ? upvalues.get(capturedName) : undefined;
   return code !== undefined && Number.isSafeInteger(code) && code > 0 ? code : undefined;
+}
+
+function literalHandlerCodesPredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number[] | undefined {
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
+  const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
+  const effectParam = params?.[0];
+  if (!effectParam) return undefined;
+  const upvalues = capturedNumberUpvalues(L, index);
+  if (upvalues === undefined) return undefined;
+  const handler = `${escapeRegExp(effectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`;
+  const match = snippet.match(new RegExp(`return\\s+${handler}\\s*:\\s*IsCode\\s*\\(\\s*([^)]*?,[^)]*?)\\s*\\)`));
+  const codes = match?.[1]?.split(",").map((part) => numberTokenValue(part.trim(), upvalues));
+  if (!codes || codes.some((code) => code === undefined)) return undefined;
+  const uniqueCodes = [...new Set(codes)].filter((code): code is number => code !== undefined).sort((a, b) => a - b);
+  return uniqueCodes.length > 0 && uniqueCodes.every((code) => Number.isSafeInteger(code) && code > 0) ? uniqueCodes : undefined;
+}
+
+function numberTokenValue(token: string, upvalues: Map<string, number>): number | undefined {
+  if (/^\d+$/.test(token)) return Number(token);
+  if (/^[A-Za-z_]\w*$/.test(token)) return upvalues.get(token);
+  return undefined;
+}
+
+function handlerCodePredicateDescriptor(codes: number[]): string {
+  return codes.length === 1 ? `closure:handler-code:${codes[0]}` : `closure:handler-codes:${codes.join(",")}`;
 }
 
 function literalResponseMatchesChainPlayerPredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): boolean {
