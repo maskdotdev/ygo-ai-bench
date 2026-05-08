@@ -420,6 +420,33 @@ describe("duel effect reset", () => {
     expect(session.state.effects).toHaveLength(0);
   });
 
+  it("removes reset-mschange effects when their source changes between monster and spell/trap zones", () => {
+    const session = createDuel({ seed: 137, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    registerEffect(session, {
+      id: "reset-mschange",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "continuous",
+      range: ["monsterZone", "spellTrapZone"],
+      reset: { flags: 0x1000 + 0x8000000 },
+      operation() {},
+    });
+
+    moveDuelCard(session.state, source!.uid, "spellTrapZone", 0);
+
+    expect(session.state.cards.find((card) => card.uid === source!.uid)?.location).toBe("spellTrapZone");
+    expect(session.state.effects).toHaveLength(0);
+  });
+
   it("removes reset-turn-set effects when their source is turned face-down", () => {
     const session = createDuel({ seed: 136, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

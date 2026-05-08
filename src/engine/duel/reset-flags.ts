@@ -16,6 +16,7 @@ const resetToDeck = 0x400000;
 const resetToField = 0x1000000;
 const resetControl = 0x2000000;
 const resetOverlay = 0x4000000;
+const resetMonsterSpellChange = 0x8000000;
 
 export const destinationResetFlags = resetToGrave | resetRemove | resetToHand | resetToDeck;
 
@@ -32,6 +33,7 @@ export function matchesMovementReset(flags: number, card: DuelCardInstance): boo
   if ((flags & resetToField) !== 0 && !isFieldLocation(card.previousLocation) && isFieldLocation(card.location)) return true;
   if ((flags & resetControl) !== 0 && card.previousController !== undefined && card.previousController !== card.controller) return true;
   if ((flags & resetOverlay) !== 0 && card.location === "overlay") return true;
+  if ((flags & resetMonsterSpellChange) !== 0 && isMonsterSpellZoneChange(card.previousLocation, card.location)) return true;
   return false;
 }
 
@@ -56,4 +58,8 @@ export function matchesTurnReset(flags: number, owner: 0 | 1, turnPlayer: 0 | 1)
 
 function isFieldLocation(location: DuelCardInstance["location"] | undefined): boolean {
   return location === "monsterZone" || location === "spellTrapZone";
+}
+
+function isMonsterSpellZoneChange(previous: DuelCardInstance["location"] | undefined, current: DuelCardInstance["location"]): boolean {
+  return (previous === "monsterZone" && current === "spellTrapZone") || (previous === "spellTrapZone" && current === "monsterZone");
 }

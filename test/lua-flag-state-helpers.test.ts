@@ -411,6 +411,35 @@ describe("Lua flag state helpers", () => {
     expect(session.state.flagEffects).toEqual([expect.objectContaining({ code: 925, resetCount: 1, value: 42 })]);
   });
 
+  it("expires Lua card flag effects at monster/spell zone reset boundaries", () => {
+    const cards: DuelCardData[] = [{ code: "102", name: "Flag Monster Spell Source", kind: "monster" }];
+    const session = createDuel({ seed: 143, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["102"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "102");
+    expect(source).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      Debug.Message("card flag mschange " .. c:RegisterFlagEffect(926, RESET_EVENT + RESET_MSCHANGE, 0, 1))
+      Debug.Message("card flag counted mschange " .. c:RegisterFlagEffect(927, RESET_EVENT + RESET_MSCHANGE, 0, 2, 43))
+      `,
+      "flag-mschange-reset.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    moveDuelCard(session.state, source!.uid, "spellTrapZone", 0);
+
+    expect(session.state.flagEffects).toEqual([expect.objectContaining({ code: 927, resetCount: 1, value: 43 })]);
+    expect(host.messages).toEqual(["card flag mschange 1", "card flag counted mschange 1"]);
+  });
+
   it("counts Lua flag phase resets and reads sixth-argument labels", () => {
     const cards: DuelCardData[] = [{ code: "109", name: "Flag Count Source", kind: "monster" }];
     const session = createDuel({ seed: 146, startingHandSize: 1, cardReader: createCardReader(cards) });
