@@ -110,6 +110,37 @@ describe("EDOPro parity Pendulum Summon turn reset fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("endTurn", 0), {
           snapshotRestore: "after",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps Pendulum Summon consumed and unavailable before ending the summoning player's turn",
+            windowId: 1,
+            windowKind: "open",
+            waitingFor: 0,
+            turn: 1,
+            turnPlayer: 0,
+            phase: "main1",
+            legalActionCounts: { 0: 6, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "normalSummon", player: 0, code: "500", location: "hand", windowId: 1, windowKind: "open", count: 1 },
+              { type: "setMonster", player: 0, code: "500", location: "hand", windowId: 1, windowKind: "open", count: 1 },
+              { type: "tributeSummon", player: 0, code: "400", location: "hand", tributeUids: ["p0-deck-300-2"], windowId: 1, windowKind: "open", count: 1 },
+              { type: "tributeSet", player: 0, code: "400", location: "hand", tributeUids: ["p0-deck-300-2"], windowId: 1, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+                { type: "tributeSummon", player: 0, code: "400", location: "hand", tributeUids: ["p0-deck-300-2"] },
+                { type: "tributeSet", player: 0, code: "400", location: "hand", tributeUids: ["p0-deck-300-2"] },
+              ], 1, 1),
+              turnGroup(1),
+            ],
+            absentLegalActions: [{ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-400-3"], windowId: 1, windowKind: "open" }],
+            locations: { monsterZone: ["300"], spellTrapZone: ["100", "200"], hand: ["400", "500"] },
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps the original player's Pendulum Summon unavailable while the opponent's turn begins",
@@ -133,6 +164,35 @@ describe("EDOPro parity Pendulum Summon turn reset fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("endTurn", 1), {
           snapshotRestore: "after",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the original player's Pendulum Summon unavailable through the opponent's open turn window",
+            windowId: 2,
+            windowKind: "open",
+            waitingFor: 1,
+            turn: 2,
+            turnPlayer: 1,
+            phase: "main1",
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 1 },
+            legalActions: [
+              { type: "changePhase", player: 1, windowId: 2, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 1, windowId: 2, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Turn",
+                windowId: 2,
+                windowKind: "open",
+                actions: [
+                  { type: "changePhase", player: 1, windowId: 2, windowKind: "open", count: 1 },
+                  { type: "endTurn", player: 1, windowId: 2, windowKind: "open", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [{ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-400-3"], windowId: 2, windowKind: "open" }],
+          },
           after: {
             source: "edopro",
             note: "EDOPro restores Pendulum Summon availability when the original player's next turn starts",
