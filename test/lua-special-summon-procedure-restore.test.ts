@@ -91,11 +91,14 @@ describe("Lua special summon procedure restore", () => {
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "specialSummonProcedure" && candidate.uid === source!.uid);
-    expect(action).toBeDefined();
+    if (!action || action.type !== "specialSummonProcedure") {
+      throw new Error("Expected restored special summon procedure action");
+    }
     expect(action).toMatchObject({ windowKind: "open" });
+    expect(action.windowToken).toBeDefined();
     expect(hasGroupedProcedure(restored, source!.uid)).toBe(true);
 
-    const staleAction = { ...action!, windowId: action!.windowId! - 1 };
+    const staleAction = { ...action, windowId: action.windowId! - 1 };
     const staleResult = applyLuaRestoreResponse(restored, staleAction);
     expect(staleResult.ok).toBe(false);
     expect(staleResult.error).toContain("Response is not currently legal");
@@ -105,8 +108,19 @@ describe("Lua special summon procedure restore", () => {
     expect(restored.session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "monsterZone" });
     expect(restored.session.state.cards.find((card) => card.uid === replacement!.uid)).toMatchObject({ location: "hand" });
     expect(restored.host.messages).toEqual([]);
+    const forgedProcedure = applyLuaRestoreResponse(restored, {
+      ...action,
+      effectId: `${action.effectId}-forged`,
+    });
+    expect(forgedProcedure.ok).toBe(false);
+    expect(forgedProcedure.error).toContain("Response is not currently legal");
+    assertFailedRestoreSurface(restored, forgedProcedure);
+    expect(restored.session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "monsterZone" });
+    expect(restored.session.state.cards.find((card) => card.uid === replacement!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.host.messages).toEqual([]);
 
-    const result = applyLuaRestoreResponse(restored, action!);
+    const result = applyLuaRestoreResponse(restored, action);
     expect(result.ok).toBe(false);
     assertFailedRestoreSurface(restored, result);
     expect(restored.host.messages).toContain("restored rollback release cost 0/1");
