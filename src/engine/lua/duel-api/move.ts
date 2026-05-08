@@ -132,7 +132,9 @@ function pushSendToGenericLocation(L: unknown, session: DuelSession, hostState: 
 
 function pushMoveHelper(L: unknown, fieldName: string, session: DuelSession, hostState: LuaDuelMoveApiHostState, mover: LuaCardMover, extraReason = 0): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
-    const moved = moveCardOrGroup(session, state, hostState, mover, extraReason, fieldName === "SendtoGrave" ? "sentToGraveyard" : undefined);
+    const groupedEventName = fieldName === "SendtoGrave" ? "sentToGraveyard" : fieldName === "Release" ? "released" : undefined;
+    const groupedLocation = fieldName === "SendtoGrave" ? "graveyard" : undefined;
+    const moved = moveCardOrGroup(session, state, hostState, mover, extraReason, groupedEventName, groupedLocation);
     setOperatedUids(hostState, moved);
     lua.lua_pushinteger(state, moved.length);
     return 1;
@@ -748,7 +750,7 @@ function shuffleCards(session: DuelSession, cards: DuelCardInstance[]): DuelCard
   return shuffled;
 }
 
-function moveCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDuelMoveApiHostState, mover: LuaCardMover, extraReason = 0, groupedEventName?: DuelEventName): string[] {
+function moveCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDuelMoveApiHostState, mover: LuaCardMover, extraReason = 0, groupedEventName?: DuelEventName, groupedLocation?: DuelLocation): string[] {
   if (session.state.status === "ended") return [];
   const reason = readMoveReason(L, 2, extraReason);
   const reasonPlayer = readOptionalPlayer(L, 4) ?? hostState.activeContext?.player ?? session.state.turnPlayer;
@@ -768,7 +770,7 @@ function moveCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDuelMov
     }
   }
   finishLuaOperationMoveStep(hostState, moved.length > 0);
-  if (groupedEventName) regroupLuaOperationEvent(session, triggerStart, groupedEventName, moved);
+  if (groupedEventName) regroupLuaOperationEvent(session, triggerStart, groupedEventName, moved, groupedLocation);
   return moved;
 }
 
@@ -842,10 +844,10 @@ function collectLuaMoveEvent(session: DuelSession, eventName: DuelEventName, eve
   collectDuelTriggerEffects(session.state, eventName, eventCard, payload);
 }
 
-function regroupLuaOperationEvent(session: DuelSession, triggerStart: number, eventName: DuelEventName, eventUids: string[]): void {
+function regroupLuaOperationEvent(session: DuelSession, triggerStart: number, eventName: DuelEventName, eventUids: string[], eventLocation?: DuelLocation): void {
   const uniqueEventUids = [...new Set(eventUids)];
   if (uniqueEventUids.length <= 1) return;
-  const eventCards = uniqueEventUids.map((uid) => session.state.cards.find((card) => card.uid === uid && card.location === "graveyard")).filter((card): card is DuelCardInstance => Boolean(card));
+  const eventCards = uniqueEventUids.map((uid) => session.state.cards.find((card) => card.uid === uid && (eventLocation === undefined || card.location === eventLocation))).filter((card): card is DuelCardInstance => Boolean(card));
   if (eventCards.length <= 1) return;
   const uidSet = new Set(eventCards.map((card) => card.uid));
   session.state.pendingTriggers = session.state.pendingTriggers.filter((trigger, index) => index < triggerStart || trigger.eventName !== eventName || !trigger.eventCardUid || !uidSet.has(trigger.eventCardUid));
