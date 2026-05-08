@@ -178,6 +178,9 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
   if (blockedActiveTypeForOpponent?.[1]) {
     return { ...limit, allows: (effect, player, chainPlayer) => player === chainPlayer || (sourceTypeFlags(hostState, effect.sourceUid) & Number(blockedActiveTypeForOpponent[1])) === 0 };
   }
+  if (predicate === "closure:spell-trap-non-activate-response-player") {
+    return { ...limit, allows: (effect, player, chainPlayer) => player === chainPlayer || ((sourceTypeFlags(hostState, effect.sourceUid) & 0x6) !== 0 && (effectTypeFlags(hostState, effect.id) & 0x10) === 0) };
+  }
   const blockedActiveType = predicate?.match(/^closure:not-active-type:(\d+)$/);
   if (blockedActiveType?.[1]) return { ...limit, allows: (effect) => (sourceTypeFlags(hostState, effect.sourceUid) & Number(blockedActiveType[1])) === 0 };
   const responsePlayer = predicate?.match(/^closure:response-player:([01])$/);
@@ -220,7 +223,9 @@ function sourceCode(hostState: LuaHostState, sourceUid: string): string | undefi
 
 function effectTypeFlags(hostState: LuaHostState, effectId: string): number {
   const id = Number(effectId.match(/^lua-(\d+)/)?.[1]);
-  return Number.isFinite(id) ? hostState.effects.get(id)?.typeFlags ?? 0 : 0;
+  return (Number.isFinite(id) ? hostState.effects.get(id)?.typeFlags : undefined)
+    ?? hostState.session.state.effects.find((effect) => effect.id === effectId)?.luaTypeFlags
+    ?? 0;
 }
 
 function pushLuaChainLimitEffect(L: unknown, hostState: LuaHostState, effectId: string): void {

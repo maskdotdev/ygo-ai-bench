@@ -36,6 +36,40 @@ export function literalCapturedPlayerComparisonPredicate(L: unknown, index: numb
   return undefined;
 }
 
+export function literalResponseMatchesChainPlayerOrSpellTrapNonActivatePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): boolean {
+  if (hasNonEnvironmentUpvalues(L, index)) return false;
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return false;
+  const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
+  const effectParam = params?.[0];
+  const responsePlayerParam = params?.[1];
+  const chainPlayerParam = params?.[2];
+  if (!effectParam || !responsePlayerParam || !chainPlayerParam) return false;
+  const returnExpression = lastReturnExpression(snippet);
+  if (!returnExpression) return false;
+  const terms = returnExpression.split(/\s+or\s+/).map((term) => trimOuterParens(term.trim())).filter(Boolean);
+  if (terms.length !== 2) return false;
+  const equality = terms.find((term) => simpleEqualityCompares(term, responsePlayerParam, chainPlayerParam));
+  const spellTrapTerm = terms.find((term) => term !== equality);
+  if (!equality || !spellTrapTerm) return false;
+  const effect = escapeRegExp(effectParam);
+  const spellTrapEffect = `${effect}\\s*:\\s*IsSpellTrapEffect\\s*\\(\\s*\\)`;
+  const nonActivation = `not\\s+${effect}\\s*:\\s*IsHasType\\s*\\(\\s*(?:EFFECT_TYPE_ACTIVATE|16)\\s*\\)`;
+  return new RegExp(`^${spellTrapEffect}\\s+and\\s+${nonActivation}$`).test(spellTrapTerm)
+    || new RegExp(`^${nonActivation}\\s+and\\s+${spellTrapEffect}$`).test(spellTrapTerm);
+}
+
+function hasNonEnvironmentUpvalues(L: unknown, index: number): boolean {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  for (let upvalueIndex = 1;; upvalueIndex += 1) {
+    const nameBytes = lua.lua_getupvalue(L, absoluteIndex, upvalueIndex);
+    if (nameBytes === null) return false;
+    const name = typeof nameBytes === "string" ? nameBytes : to_jsstring(nameBytes);
+    lua.lua_pop(L, 1);
+    if (name !== "_ENV") return true;
+  }
+}
+
 function lastReturnExpression(snippet: string): string | undefined {
   const index = snippet.lastIndexOf("return ");
   if (index < 0) return undefined;
