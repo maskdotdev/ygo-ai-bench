@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentTriggerActivationGroup, absentWindowEffectGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import {
+  absentChainEffectGroup,
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity mandatory before optional activation opponent-response turn-response opponent-response resolution fixture", () => {
   it("resolves same-player mandatory and optional triggers after the trigger player passes the reopened response window", () => {
@@ -111,6 +118,45 @@ describe("EDOPro parity mandatory before optional activation opponent-response t
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-turn-opponent-resolution-opponent-second" })),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro restores trigger-player response priority before they pass the reopened chain-response window",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-opponent-turn-opponent-resolution-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-opponent-turn-opponent-resolution-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 1, effectId: "fixture-opponent-turn-opponent-resolution-opponent-first", sourceUid: "p1-deck-500-0" },
+              { player: 0, effectId: "fixture-opponent-turn-opponent-resolution-turn-first", sourceUid: "p0-deck-600-3" },
+              { player: 1, effectId: "fixture-opponent-turn-opponent-resolution-opponent-second", sourceUid: "p1-deck-800-1" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-opponent-turn-opponent-resolution-turn-second", count: 1 },
+              { type: "passChain", player: 0, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-opponent-turn-opponent-resolution-turn-second", 1, 6),
+              chainPassGroup(0, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-opponent-turn-opponent-resolution-turn-first" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-opponent-turn-opponent-resolution-opponent-first" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-opponent-turn-opponent-resolution-opponent-second" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-opponent-turn-opponent-resolution-opponent-open-filtered" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-opponent-turn-opponent-resolution-turn-first", 6),
+              absentChainEffectGroup(1, "fixture-opponent-turn-opponent-resolution-opponent-first", 6),
+              absentChainEffectGroup(1, "fixture-opponent-turn-opponent-resolution-opponent-second", 6),
+              absentWindowEffectGroup(1, "fixture-opponent-turn-opponent-resolution-opponent-open-filtered", 6, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {

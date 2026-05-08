@@ -110,6 +110,44 @@ describe("EDOPro parity mandatory before optional activation opponent-response t
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-opponent-turn-opponent-turn-first" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-turn-opponent-opponent-second" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro restores opponent response priority after the trigger player responds to an opponent chain on selected same-player triggers",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-opponent-turn-opponent-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-opponent-turn-opponent-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 1, effectId: "fixture-opponent-turn-opponent-opponent-first", sourceUid: "p1-deck-500-0" },
+              { player: 0, effectId: "fixture-opponent-turn-opponent-turn-first", sourceUid: "p0-deck-600-3" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-opponent-turn-opponent-opponent-second", count: 1 },
+              { type: "passChain", player: 1, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-opponent-turn-opponent-opponent-second", 1, 5),
+              chainPassGroup(1, 1, 5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-opponent-turn-opponent-turn-first" },
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-opponent-turn-opponent-turn-second" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-opponent-turn-opponent-opponent-first" },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-opponent-turn-opponent-opponent-open-filtered" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-opponent-turn-opponent-turn-first", 5),
+              absentChainEffectGroup(0, "fixture-opponent-turn-opponent-turn-second", 5),
+              absentChainEffectGroup(1, "fixture-opponent-turn-opponent-opponent-first", 5),
+              absentWindowEffectGroup(1, "fixture-opponent-turn-opponent-opponent-open-filtered", 5, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {
