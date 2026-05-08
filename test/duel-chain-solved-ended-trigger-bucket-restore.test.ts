@@ -222,6 +222,114 @@ describe("chainSolved before chainEnded trigger bucket restore", () => {
     expect(effectIds(restoredOpen, 0)).toEqual(["restore-solved-decline-open-quick"]);
     expect(getDuelLegalActions(restoredOpen, 1)).toEqual([]);
   });
+
+  it("keeps chainEnded buckets deferred after a restored chainSolved activation and declined sibling until that trigger chain resolves", () => {
+    const session = createDuel({ seed: 468, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500", "600"] },
+      1: { main: ["400", "500", "400", "400"] },
+    });
+    startDuel(session);
+
+    const starter = findPublicCard(session, 0, "hand", "100");
+    const chainSolvedSource = findPublicCard(session, 0, "hand", "300");
+    const chainEndedSource = findPublicCard(session, 0, "hand", "500");
+    const openQuickSource = findPublicCard(session, 0, "hand", "600");
+    const opponentChainSolvedSource = findPublicCard(session, 1, "hand", "400");
+    const opponentChainQuickSource = findPublicCard(session, 1, "hand", "500");
+    expect(starter).toBeDefined();
+    expect(chainSolvedSource).toBeDefined();
+    expect(chainEndedSource).toBeDefined();
+    expect(openQuickSource).toBeDefined();
+    expect(opponentChainSolvedSource).toBeDefined();
+    expect(opponentChainQuickSource).toBeDefined();
+
+    registerEffect(session, { ...loggedEffect("restore-solved-mixed-starter", starter!.uid, "ignition", "restore-solved-mixed-starter resolved"), oncePerTurn: true });
+    registerEffect(session, {
+      ...loggedEffect("restore-solved-mixed-turn-optional", chainSolvedSource!.uid, "trigger", "restore-solved-mixed-turn-optional resolved", "chainSolved"),
+      canActivate: firstChainSolvedEvent,
+      oncePerTurn: true,
+    });
+    registerEffect(session, {
+      ...loggedEffect("restore-solved-mixed-opponent-optional", opponentChainSolvedSource!.uid, "trigger", "restore-solved-mixed-opponent-optional should not resolve", "chainSolved"),
+      controller: 1,
+      canActivate: firstChainSolvedEvent,
+    });
+    registerEffect(session, {
+      ...loggedEffect("restore-solved-mixed-chain-ended", chainEndedSource!.uid, "trigger", "restore-solved-mixed-chain-ended resolved", "chainEnded"),
+      optional: false,
+      oncePerTurn: true,
+    });
+    registerEffect(session, openOnlyQuick("restore-solved-mixed-open-quick", openQuickSource!.uid));
+    registerEffect(session, chainOnlyQuickAfterEffect("restore-solved-mixed-opponent-chain-quick", opponentChainQuickSource!.uid, 1, "restore-solved-mixed-turn-optional"));
+
+    const starterAction = findEffectAction(session, 0, "restore-solved-mixed-starter");
+    expect(starterAction).toBeDefined();
+    applyAndAssert(session, starterAction!);
+
+    const restoredChainSolvedBucket = restoreDuel(serializeDuel(session), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredChainSolvedBucket)).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket" });
+    expect(restoredChainSolvedBucket.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual([
+      "restore-solved-mixed-turn-optional",
+      "restore-solved-mixed-opponent-optional",
+    ]);
+    expect(queryPublicState(restoredChainSolvedBucket).pendingTriggerBuckets.map((bucket) => bucket.triggerBucket)).toEqual(["turnOptional", "opponentOptional"]);
+    expect(hasGroupedEffect(restoredChainSolvedBucket, 0, "restore-solved-mixed-open-quick", "triggerBucket")).toBe(false);
+
+    const turnTrigger = getDuelLegalActions(restoredChainSolvedBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-solved-mixed-turn-optional");
+    expect(turnTrigger).toBeDefined();
+    applyAndAssert(restoredChainSolvedBucket, turnTrigger!);
+
+    const restoredOpponentBucket = restoreDuel(serializeDuel(restoredChainSolvedBucket), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredOpponentBucket)).toMatchObject({ waitingFor: 1, windowKind: "triggerBucket" });
+    expect(restoredOpponentBucket.state.chain.map((link) => link.effectId)).toEqual(["restore-solved-mixed-turn-optional"]);
+    expect(restoredOpponentBucket.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-solved-mixed-opponent-optional"]);
+    expect(restoredOpponentBucket.state.pendingTriggers.some((trigger) => trigger.effectId === "restore-solved-mixed-chain-ended")).toBe(false);
+    const opponentDecline = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "declineTrigger" && action.effectId === "restore-solved-mixed-opponent-optional");
+    expect(opponentDecline).toBeDefined();
+    const declined = applyAndAssert(restoredOpponentBucket, opponentDecline!);
+    expect(declined.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredOpponentBucket.state.chain.map((link) => link.effectId)).toEqual(["restore-solved-mixed-turn-optional"]);
+    expect(restoredOpponentBucket.state.pendingTriggers.some((trigger) => trigger.effectId === "restore-solved-mixed-chain-ended")).toBe(false);
+    expect(hasGroupedEffect(restoredOpponentBucket, 1, "restore-solved-mixed-opponent-chain-quick", "chainResponse")).toBe(true);
+    expect(hasGroupedEffect(restoredOpponentBucket, 0, "restore-solved-mixed-open-quick", "chainResponse")).toBe(false);
+
+    const restoredChainResponse = restoreDuel(serializeDuel(restoredOpponentBucket), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredChainResponse)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(getDuelLegalActions(restoredChainResponse, 0)).toEqual([]);
+    expect(getDuelLegalActions(restoredChainResponse, 1)).toEqual(getDuelLegalActions(restoredOpponentBucket, 1));
+    expect(getGroupedDuelLegalActions(restoredChainResponse, 1)).toEqual(getGroupedDuelLegalActions(restoredOpponentBucket, 1));
+    const pass = getDuelLegalActions(restoredChainResponse, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    applyAndAssert(restoredChainResponse, pass!);
+
+    const restoredChainEndedBucket = restoreDuel(serializeDuel(restoredChainResponse), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredChainEndedBucket)).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", chain: [], pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }] });
+    expect(restoredChainEndedBucket.state.pendingTriggers).toEqual([
+      expect.objectContaining({ player: 0, effectId: "restore-solved-mixed-chain-ended", eventName: "chainEnded", triggerBucket: "turnMandatory" }),
+    ]);
+    expect(restoredChainEndedBucket.state.log.map((entry) => entry.detail)).toContain("restore-solved-mixed-turn-optional resolved");
+    expect(restoredChainEndedBucket.state.log.map((entry) => entry.detail)).not.toContain("restore-solved-mixed-chain-ended resolved");
+    expect(restoredChainEndedBucket.state.log.map((entry) => entry.detail)).not.toContain("restore-solved-mixed-opponent-optional should not resolve");
+    expect(hasGroupedTrigger(restoredChainEndedBucket, 0, "restore-solved-mixed-chain-ended", "triggerBucket")).toBe(true);
+    expect(hasGroupedEffect(restoredChainEndedBucket, 0, "restore-solved-mixed-open-quick", "triggerBucket")).toBe(false);
+
+    const chainEndedTrigger = getDuelLegalActions(restoredChainEndedBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-solved-mixed-chain-ended");
+    expect(chainEndedTrigger).toBeDefined();
+    applyAndAssert(restoredChainEndedBucket, chainEndedTrigger!);
+
+    const restoredOpen = restoreDuel(serializeDuel(restoredChainEndedBucket), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredOpen)).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredOpen.state.chainPasses).toEqual([]);
+    expect(restoredOpen.state.log.map((entry) => entry.detail)).toEqual(expect.arrayContaining([
+      "restore-solved-mixed-starter resolved",
+      "restore-solved-mixed-turn-optional resolved",
+      "restore-solved-mixed-chain-ended resolved",
+    ]));
+    expect(restoredOpen.state.log.map((entry) => entry.detail)).not.toContain("restore-solved-mixed-opponent-optional should not resolve");
+    expect(effectIds(restoredOpen, 0)).toEqual(["restore-solved-mixed-open-quick"]);
+    expect(getDuelLegalActions(restoredOpen, 1)).toEqual([]);
+  });
 });
 
 function loggedEffect(id: string, sourceUid: string, event: "ignition" | "trigger", detail: string, triggerEvent?: DuelEffectDefinition["triggerEvent"]): DuelEffectDefinition {
@@ -245,6 +353,15 @@ function openOnlyQuick(id: string, sourceUid: string): DuelEffectDefinition {
 
 function chainOnlyQuick(id: string, sourceUid: string, controller: 0 | 1): DuelEffectDefinition {
   return quickEffect(id, sourceUid, controller, 1);
+}
+
+function chainOnlyQuickAfterEffect(id: string, sourceUid: string, controller: 0 | 1, requiredEffectId: string): DuelEffectDefinition {
+  return {
+    ...chainOnlyQuick(id, sourceUid, controller),
+    canActivate(ctx) {
+      return ctx.duel.chain.some((link) => link.effectId === requiredEffectId);
+    },
+  };
 }
 
 function quickEffect(id: string, sourceUid: string, controller: 0 | 1, minimumChainLength: number): DuelEffectDefinition {
@@ -276,7 +393,22 @@ function restoreRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "
     "restore-solved-decline-chain-ended": restoreLoggedEffect,
     "restore-solved-decline-open-quick": restoreOpenOnlyQuick,
     "restore-solved-decline-opponent-chain-quick": restoreChainOnlyQuick,
+    "restore-solved-mixed-starter": restoreLoggedEffect,
+    "restore-solved-mixed-turn-optional": (effect) => ({ ...restoreLoggedEffect(effect), canActivate: firstChainSolvedEvent, oncePerTurn: true }),
+    "restore-solved-mixed-opponent-optional": (effect) => ({ ...restoreLoggedEffect(effect), canActivate: firstChainSolvedEvent }),
+    "restore-solved-mixed-chain-ended": (effect) => ({ ...restoreLoggedEffect(effect), optional: false, oncePerTurn: true }),
+    "restore-solved-mixed-open-quick": restoreOpenOnlyQuick,
+    "restore-solved-mixed-opponent-chain-quick": (effect) => ({
+      ...restoreLoggedEffect(effect),
+      canActivate(ctx) {
+        return ctx.duel.chain.some((link) => link.effectId === "restore-solved-mixed-turn-optional");
+      },
+    }),
   };
+}
+
+function firstChainSolvedEvent(ctx: Parameters<NonNullable<DuelEffectDefinition["canActivate"]>>[0]): boolean {
+  return ctx.duel.eventHistory.filter((event) => event.eventName === "chainSolved").length === 1;
 }
 
 function restoreOpenOnlyQuick(effect: Omit<DuelEffectDefinition, "operation">): DuelEffectDefinition {
@@ -331,7 +463,7 @@ function hasGroupedTrigger(session: ReturnType<typeof createDuel>, player: 0 | 1
   );
 }
 
-function hasGroupedEffect(session: ReturnType<typeof createDuel>, player: 0 | 1, effectId: string, windowKind: "triggerBucket" | "open"): boolean {
+function hasGroupedEffect(session: ReturnType<typeof createDuel>, player: 0 | 1, effectId: string, windowKind: "triggerBucket" | "chainResponse" | "open"): boolean {
   return getGroupedDuelLegalActions(session, player).some((group) =>
     group.windowKind === windowKind && group.actions.some((action) => action.type === "activateEffect" && action.player === player && action.effectId === effectId && action.windowKind === windowKind),
   );
