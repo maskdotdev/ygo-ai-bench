@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { addDuelChainLimit, canNegateDuelChainLinkObject, negateDuelChainLinkObject } from "#duel/core.js";
 import { pushCardTable } from "#lua/card-api.js";
-import { literalActionTypeChainPlayerLimitPredicate, literalCapturedPlayerComparisonPredicate, literalResponseMatchesChainPlayerOrSpellTrapNonActivatePredicate } from "#lua/chain-limit-predicate-descriptors.js";
+import { literalActionTypeChainPlayerLimitPredicate, literalCapturedPlayerComparisonPredicate, literalResponseMatchesChainPlayerOrActiveTypePredicate, literalResponseMatchesChainPlayerOrSpellTrapNonActivatePredicate } from "#lua/chain-limit-predicate-descriptors.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid, readOptionalFunctionRef, releaseOptionalFunctionRef, symbolicLocationMask } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelSession, DuelState, PlayerId } from "#duel/types.js";
@@ -183,6 +183,8 @@ function knownLuaChainLimitRegistryKey(L: unknown, hostState: LuaDuelChainApiHos
 function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string | undefined {
   if (isGlobalTableFunction(L, index, "aux", "FALSE")) return "aux.FALSE";
   if (isGlobalTableFunction(L, index, "aux", "TRUE")) return "aux.TRUE";
+  const allowedActiveTypeForOpponent = literalResponseMatchesChainPlayerOrActiveTypePredicate(L, index, hostState);
+  if (allowedActiveTypeForOpponent !== undefined) return `closure:active-type-response-player:${allowedActiveTypeForOpponent}`;
   const cardTableField = matchingGlobalCardTableFunctionField(L, index);
   if (cardTableField) return cardTableField;
   const handlerOnlyUid = literalCapturedHandlerOnlyCardUid(L, index, hostState);

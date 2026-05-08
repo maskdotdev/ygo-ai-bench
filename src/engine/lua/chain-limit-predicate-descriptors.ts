@@ -8,7 +8,7 @@ const TYPE_ACTION = 0x10000000;
 export function literalActionTypeChainPlayerLimitPredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string | undefined {
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
-  const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
+  const params = luaFunctionParams(snippet);
   const effectParam = params?.[0];
   const chainPlayerParam = params?.[2];
   const captured = capturedSinglePlayerUpvalue(L, index);
@@ -25,7 +25,7 @@ export function literalActionTypeChainPlayerLimitPredicate(L: unknown, index: nu
 export function literalCapturedPlayerComparisonPredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string | undefined {
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
-  const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
+  const params = luaFunctionParams(snippet);
   const responsePlayerParam = params?.[1];
   const chainPlayerParam = params?.[2];
   const captured = capturedSinglePlayerUpvalue(L, index);
@@ -40,7 +40,7 @@ export function literalResponseMatchesChainPlayerOrSpellTrapNonActivatePredicate
   if (hasNonEnvironmentUpvalues(L, index)) return false;
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return false;
-  const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
+  const params = luaFunctionParams(snippet);
   const effectParam = params?.[0];
   const responsePlayerParam = params?.[1];
   const chainPlayerParam = params?.[2];
@@ -57,6 +57,63 @@ export function literalResponseMatchesChainPlayerOrSpellTrapNonActivatePredicate
   const nonActivation = `not\\s+${effect}\\s*:\\s*IsHasType\\s*\\(\\s*(?:EFFECT_TYPE_ACTIVATE|16)\\s*\\)`;
   return new RegExp(`^${spellTrapEffect}\\s+and\\s+${nonActivation}$`).test(spellTrapTerm)
     || new RegExp(`^${nonActivation}\\s+and\\s+${spellTrapEffect}$`).test(spellTrapTerm);
+}
+
+export function literalResponseMatchesChainPlayerOrActiveTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
+  if (hasNonEnvironmentUpvalues(L, index)) return undefined;
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
+  const params = luaFunctionParams(snippet);
+  const effectParam = params?.[0];
+  const responsePlayerParam = params?.[1];
+  const chainPlayerParam = params?.[2];
+  if (!effectParam || !responsePlayerParam || !chainPlayerParam) return undefined;
+  const returnExpression = lastReturnExpression(snippet);
+  if (!returnExpression) return undefined;
+  const terms = returnExpression.split(/\s+or\s+/).map((term) => trimOuterParens(term.trim())).filter(Boolean);
+  if (terms.length !== 2) return undefined;
+  const equality = terms.find((term) => simpleEqualityCompares(term, responsePlayerParam, chainPlayerParam));
+  const activeTypeTerm = terms.find((term) => term !== equality);
+  if (!equality || !activeTypeTerm) return undefined;
+  const effect = escapeRegExp(effectParam);
+  const compatibilityMatch = activeTypeTerm.match(new RegExp(`^${effect}\\s*:\\s*(IsMonsterEffect|IsSpellEffect|IsTrapEffect)\\s*\\(\\s*\\)$`));
+  if (compatibilityMatch?.[1]) return activeTypeMethodMask(compatibilityMatch[1]);
+  const directMatch = activeTypeTerm.match(new RegExp(`^${effect}\\s*:\\s*IsActiveType\\s*\\(\\s*(${activeTypeMaskExpressionPattern})\\s*\\)$`));
+  const mask = directMatch?.[1] ? activeTypeMaskTokenValue(directMatch[1]) : undefined;
+  return mask !== undefined && Number.isSafeInteger(mask) && mask > 0 ? mask : undefined;
+}
+
+function activeTypeMethodMask(method: string): number | undefined {
+  if (method === "IsMonsterEffect") return 0x1;
+  if (method === "IsSpellEffect") return 0x2;
+  if (method === "IsTrapEffect") return 0x4;
+  return undefined;
+}
+
+const activeTypeMaskExpressionPattern = String.raw`(?:TYPE_MONSTER|TYPE_SPELL|TYPE_TRAP|\d+)(?:\s*(?:\+|\|)\s*(?:TYPE_MONSTER|TYPE_SPELL|TYPE_TRAP|\d+))*`;
+const activeTypeMasks: Record<string, number> = {
+  TYPE_MONSTER: 0x1,
+  TYPE_SPELL: 0x2,
+  TYPE_TRAP: 0x4,
+};
+
+function activeTypeMaskTokenValue(token: string): number | undefined {
+  const parts = token.split(/\s*(?:\+|\|)\s*/).filter(Boolean);
+  if (parts.length === 0) return undefined;
+  let mask = 0;
+  for (const part of parts) {
+    const value = activeTypeMasks[part] ?? (/^\d+$/.test(part) ? Number(part) : undefined);
+    if (value === undefined || !Number.isSafeInteger(value) || value <= 0) return undefined;
+    mask |= value;
+  }
+  return mask;
+}
+
+function luaFunctionParams(snippet: string): string[] | undefined {
+  const match = snippet.match(/function\s+(?:[A-Za-z_]\w*(?:[.:][A-Za-z_]\w*)*)\s*\(([^)]*)\)/)
+    ?? snippet.match(/function\s*\(([^)]*)\)/);
+  const params = match?.[1];
+  return params?.split(",").map((param) => param.trim()).filter(Boolean);
 }
 
 function hasNonEnvironmentUpvalues(L: unknown, index: number): boolean {
