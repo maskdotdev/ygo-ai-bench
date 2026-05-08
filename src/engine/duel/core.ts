@@ -96,7 +96,6 @@ import {
   isNormalSummonPrevented,
   isPhaseEntryPrevented,
   isReleasePrevented,
-  isSummonNegationPrevented,
   isSpellTrapSetPrevented,
   isSpecialSummonPrevented,
   type ContinuousEffectContextFactory,
@@ -135,6 +134,7 @@ import { hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } 
 import { applyDuelResponse, type DuelResponseHandlers } from "#duel/response-dispatch.js";
 import { runScriptedDuelResponses as runScriptedDuelResponsesWithHandlers } from "#duel/scripted-runner.js";
 import { setSpellTrap } from "#duel/spell-trap.js";
+import { negateCoreDuelSummon } from "#duel/summon-negation.js";
 import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
 import { changeDuelPhase, drawDuelCardsFromDeck, endDuelTurn, nextAvailableDuelPhase } from "#duel/turn-flow.js";
 export { createDuel, loadDecks, startDuel, type CreateDuelOptions } from "#duel/setup.js";
@@ -398,34 +398,10 @@ export function specialSummonDuelCard(state: DuelState, uid: string, controller?
 }
 
 export function negateDuelSummon(state: DuelState, uid: string): DuelCardInstance | undefined {
-  const card = findCard(state, uid);
-  if (!card || card.location !== "monsterZone" || card.summonType === undefined) return undefined;
-  if (isSummonNegationPrevented(state, card, card.summonType, createContinuousEffectContext(state))) return undefined;
-  const eventName = summonNegatedEventName(card);
-  scrubSummonSuccessForNegatedCard(state, card);
-  moveDuelCard(state, card.uid, "graveyard", card.controller, duelReason.disSummon, state.turnPlayer);
-  delete card.summonType;
-  delete card.summonPlayer;
-  collectDuelTriggerEffects(state, eventName, card);
-  return card;
-}
-
-function scrubSummonSuccessForNegatedCard(state: DuelState, card: DuelCardInstance): void {
-  const successEvent = summonSuccessEventName(card);
-  state.pendingTriggers = state.pendingTriggers.filter((trigger) => trigger.eventName !== successEvent || trigger.eventCardUid !== card.uid);
-  state.eventHistory = state.eventHistory.filter((event) => event.eventName !== successEvent || event.eventCardUid !== card.uid);
-}
-
-function summonSuccessEventName(card: DuelCardInstance): "normalSummoned" | "flipSummoned" | "specialSummoned" {
-  if (card.summonType === "normal" || card.summonType === "tribute") return "normalSummoned";
-  if (card.summonType === "flip") return "flipSummoned";
-  return "specialSummoned";
-}
-
-function summonNegatedEventName(card: DuelCardInstance): "normalSummonNegated" | "flipSummonNegated" | "specialSummonNegated" {
-  if (card.summonType === "normal" || card.summonType === "tribute") return "normalSummonNegated";
-  if (card.summonType === "flip") return "flipSummonNegated";
-  return "specialSummonNegated";
+  return negateCoreDuelSummon(state, uid, {
+    createContinuousContext: createContinuousEffectContext,
+    collectEvent: collectDuelTriggerEffects,
+  });
 }
 
 export function canSpecialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId): boolean {
