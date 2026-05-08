@@ -133,6 +133,43 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-turn-chain-limiter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the turn-player attack-response quick-effect window restorable before applying the chain limit",
+            waitingFor: 0,
+            windowId: 3,
+            windowKind: "battle",
+            pendingBattle: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-turn-chain-limiter", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-turn-followup-quick", count: 1 },
+              { type: "passAttack", player: 0, windowId: 3, windowKind: "battle", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "battle",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-turn-chain-limiter", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-turn-followup-quick", count: 1 },
+                ],
+              },
+              {
+                player: 0,
+                label: "Pass",
+                windowId: 3,
+                windowKind: "battle",
+                count: 1,
+                actions: [{ type: "passAttack", player: 0, windowId: 3, windowKind: "battle", count: 1 }],
+              },
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies Duel.SetChainLimit-style restrictions immediately after the attack-response quick effect is placed on chain",
