@@ -2,6 +2,7 @@ import {
   destinationResetFlags,
   matchesDestinationReset,
   matchesMovementReset,
+  matchesTurnSetReset,
   matchesTurnReset,
   normalizeResetFlags,
   phaseResetFlag,
@@ -60,6 +61,15 @@ export function pruneDuelFlagEffectsAfterMove(state: DuelState, card: DuelCardIn
     if ((flags & destinationResetFlags) !== 0) return matchesDestinationReset(flags, card) ? decrementFlagResetCount(flag) : true;
     const previousLocation = card.previousLocation ?? card.location;
     return previousLocation === card.location || decrementFlagResetCount(flag);
+  });
+}
+
+export function pruneDuelFlagEffectsAfterPositionChange(state: DuelState, card: DuelCardInstance): void {
+  state.flagEffects = state.flagEffects.filter((flag) => {
+    if (flag.ownerType !== "card" || flag.ownerId !== card.uid) return true;
+    const flags = normalizeResetFlags(flag.reset);
+    if ((flags & resetEvent) === 0) return true;
+    return matchesTurnSetReset(flags, card) ? decrementFlagResetCount(flag) : true;
   });
 }
 

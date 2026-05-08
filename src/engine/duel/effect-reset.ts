@@ -3,6 +3,7 @@ import {
   destinationResetFlags,
   matchesDestinationReset,
   matchesMovementReset,
+  matchesTurnSetReset,
   matchesTurnReset,
   normalizeResetFlags,
   phaseResetFlag,
@@ -23,6 +24,15 @@ export function pruneResetEffectsAfterMove(state: DuelState, card: DuelCardInsta
     if ((flags & destinationResetFlags) !== 0) return matchesDestinationReset(flags, card) ? decrementOrRemoveResetEffect(state, effect) : true;
     const previousLocation = card.previousLocation ?? card.location;
     return !effect.range.includes(previousLocation) || effect.range.includes(card.location) || decrementOrRemoveResetEffect(state, effect);
+  });
+}
+
+export function pruneResetEffectsAfterPositionChange(state: DuelState, card: DuelCardInstance): void {
+  state.effects = state.effects.filter((effect) => {
+    if (effect.sourceUid !== card.uid) return true;
+    const flags = normalizeResetFlags(effect.reset?.flags ?? 0);
+    if ((flags & resetEvent) === 0) return true;
+    return matchesTurnSetReset(flags, card) ? decrementOrRemoveResetEffect(state, effect) : true;
   });
 }
 

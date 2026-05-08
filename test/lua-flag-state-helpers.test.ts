@@ -380,6 +380,37 @@ describe("Lua flag state helpers", () => {
     expect(session.state.flagEffects).toHaveLength(0);
   });
 
+  it("expires Lua card flag effects at turn-set reset boundaries", () => {
+    const cards: DuelCardData[] = [{ code: "102", name: "Flag Turn Set Source", kind: "monster" }];
+    const session = createDuel({ seed: 142, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["102"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "102");
+    expect(source).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    source!.position = "faceUpAttack";
+    source!.faceUp = true;
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      Debug.Message("card flag turn set " .. c:RegisterFlagEffect(924, RESET_EVENT + RESET_TURN_SET, 0, 1))
+      Debug.Message("card flag counted turn set " .. c:RegisterFlagEffect(925, RESET_EVENT + RESET_TURN_SET, 0, 2, 42))
+      Debug.Message("change turn set " .. Duel.ChangePosition(c, POS_FACEDOWN_DEFENSE))
+      Debug.Message("card flag after " .. c:GetFlagEffect(924) .. "/" .. c:GetFlagEffect(925) .. "/" .. c:GetFlagEffectLabel(925))
+      `,
+      "flag-turn-set-reset.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["card flag turn set 1", "card flag counted turn set 1", "change turn set 1", "card flag after 0/1/42"]);
+    expect(session.state.flagEffects).toEqual([expect.objectContaining({ code: 925, resetCount: 1, value: 42 })]);
+  });
+
   it("counts Lua flag phase resets and reads sixth-argument labels", () => {
     const cards: DuelCardData[] = [{ code: "109", name: "Flag Count Source", kind: "monster" }];
     const session = createDuel({ seed: 146, startingHandSize: 1, cardReader: createCardReader(cards) });

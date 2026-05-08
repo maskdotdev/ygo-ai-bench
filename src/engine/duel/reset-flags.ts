@@ -2,6 +2,7 @@ import { phaseMask } from "#duel/phase-mask.js";
 import type { DuelCardInstance, DuelPhase } from "#duel/types.js";
 
 export const resetEvent = 0x1000;
+export const resetTurnSet = 0x20000;
 export const resetLeave = 0x800000;
 export const resetPhase = 0x40000000;
 export const resetChain = 0x80000000;
@@ -32,6 +33,10 @@ export function matchesMovementReset(flags: number, card: DuelCardInstance): boo
   if ((flags & resetControl) !== 0 && card.previousController !== undefined && card.previousController !== card.controller) return true;
   if ((flags & resetOverlay) !== 0 && card.location === "overlay") return true;
   return false;
+}
+
+export function matchesTurnSetReset(flags: number, card: DuelCardInstance): boolean {
+  return (flags & resetTurnSet) !== 0 && card.previousFaceUp === true && !card.faceUp && card.position === "faceDownDefense";
 }
 
 export function matchesDestinationReset(flags: number, card: DuelCardInstance): boolean {

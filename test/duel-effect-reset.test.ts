@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, sendDuelCardToGraveyard, startDuel } from "#duel/core.js";
+import { applyResponse, changeDuelCardPosition, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, sendDuelCardToGraveyard, startDuel } from "#duel/core.js";
 import { restoreDuel, serializeDuel } from "#duel/snapshot.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
@@ -417,6 +417,35 @@ describe("duel effect reset", () => {
 
     moveDuelCard(session.state, source!.uid, "overlay", 0);
 
+    expect(session.state.effects).toHaveLength(0);
+  });
+
+  it("removes reset-turn-set effects when their source is turned face-down", () => {
+    const session = createDuel({ seed: 136, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    source!.position = "faceUpAttack";
+    source!.faceUp = true;
+    registerEffect(session, {
+      id: "reset-turn-set",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "continuous",
+      range: ["monsterZone"],
+      reset: { flags: 0x1000 + 0x20000 },
+      operation() {},
+    });
+
+    changeDuelCardPosition(session.state, 0, source!.uid, "faceDownDefense");
+
+    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ position: "faceDownDefense", faceUp: false });
     expect(session.state.effects).toHaveLength(0);
   });
 });
