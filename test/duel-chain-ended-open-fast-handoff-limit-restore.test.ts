@@ -342,7 +342,7 @@ describe("chain-ended open fast handoff chain-limit restore", () => {
       registerEffect(session, chainOnlyQuick(`${testCase.prefix}-first-turn`, firstTurnChain!.uid, 0, true));
       registerEffect(session, chainOnlyQuick(`${testCase.prefix}-second-turn`, secondTurnChain!.uid, 0, true));
       registerEffect(session, chainOnlyQuick(`${testCase.prefix}-turn-followup`, turnFollowup!.uid, 0, true));
-      registerEffect(session, chainOnlyQuick(`${testCase.prefix}-final-turn`, finalTurn!.uid, 0));
+      registerEffect(session, chainOnlyQuick(`${testCase.prefix}-final-turn`, finalTurn!.uid, 0, true));
       registerEffect(session, chainOnlyQuick(`${testCase.prefix}-opponent-first`, opponentFirst!.uid, 1, true));
       registerEffect(session, chainOnlyQuickWithTurnLimit(`${testCase.prefix}-opponent-turn-limiter`, opponentLimiter!.uid, testCase.untilChainEnd, 1, true));
       registerEffect(session, chainOnlyQuick(`${testCase.prefix}-opponent-followup`, opponentFollowup!.uid, 1, true));
@@ -379,6 +379,19 @@ describe("chain-ended open fast handoff chain-limit restore", () => {
         expect(getDuelLegalActions(restored, 1)).toEqual([]);
         expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
         expect(hasGroupedEffect(getGroupedDuelLegalActions(restored, 0), 0, `${testCase.prefix}-final-turn`)).toBe(true);
+
+        const finalTurnAction = findEffectAction(restored, 0, `${testCase.prefix}-final-turn`);
+        expect(finalTurnAction).toBeDefined();
+        const finalResolution = restoreDuel(serializeDuel(restored), createCardReader(cards), restoreRegistry(testCase.prefix, testCase.untilChainEnd), restoreChainLimitRegistry());
+        const finalResolved = applyAndAssert(finalResolution, finalTurnAction!);
+        expect(finalResolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [] });
+        expect(finalResolution.state.chainLimits).toEqual([]);
+        expect(finalResolution.state.log.map((entry) => entry.detail)).toEqual(expect.arrayContaining([
+          `${testCase.prefix}-final-turn resolved`,
+          `${testCase.prefix}-turn-followup resolved`,
+          `${testCase.prefix}-opponent-turn-limiter resolved`,
+        ]));
+        expect(finalResolution.state.log.map((entry) => entry.detail)).not.toContain(`${testCase.prefix}-opponent-followup resolved`);
 
         const staleOpponent = applyResponse(restored, staleOpponentFollowup!);
         expect(staleOpponent.ok).toBe(false);
@@ -417,6 +430,18 @@ describe("chain-ended open fast handoff chain-limit restore", () => {
         expect(restoredTurnReturn.state.chainLimits).toEqual([]);
         expect(getDuelLegalActions(restoredTurnReturn, 1)).toEqual([]);
         expect(hasGroupedEffect(getGroupedDuelLegalActions(restoredTurnReturn, 0), 0, `${testCase.prefix}-final-turn`)).toBe(true);
+
+        const finalTurnAction = findEffectAction(restoredTurnReturn, 0, `${testCase.prefix}-final-turn`);
+        expect(finalTurnAction).toBeDefined();
+        const finalResolution = restoreDuel(serializeDuel(restoredTurnReturn), createCardReader(cards), restoreRegistry(testCase.prefix, testCase.untilChainEnd), restoreChainLimitRegistry());
+        const finalResolved = applyAndAssert(finalResolution, finalTurnAction!);
+        expect(finalResolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [] });
+        expect(finalResolution.state.chainLimits).toEqual([]);
+        expect(finalResolution.state.log.map((entry) => entry.detail)).toEqual(expect.arrayContaining([
+          `${testCase.prefix}-final-turn resolved`,
+          `${testCase.prefix}-opponent-followup resolved`,
+          `${testCase.prefix}-turn-followup resolved`,
+        ]));
 
         const restoredTurnPass = getDuelLegalActions(restoredTurnReturn, 0).find((action) => action.type === "passChain");
         expect(restoredTurnPass).toBeDefined();
