@@ -14,10 +14,7 @@ import type { DuelCardInstance, DuelFlagEffect, DuelPhase, DuelState, PlayerId }
 
 export type DuelFlagOwner = { ownerType: "player"; ownerId: PlayerId } | { ownerType: "card"; ownerId: string };
 
-const effectFlagRepeat = 0x200000;
-
 export function registerDuelFlagEffect(state: DuelState, owner: DuelFlagOwner, code: number, reset: number, property: number, value: number, resetCount?: number): DuelFlagEffect {
-  if ((property & effectFlagRepeat) === 0) resetDuelFlagEffect(state, owner, code);
   const flag: DuelFlagEffect = {
     ownerType: owner.ownerType,
     ownerId: String(owner.ownerId),

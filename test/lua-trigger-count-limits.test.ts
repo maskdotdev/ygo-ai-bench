@@ -190,6 +190,64 @@ describe("Lua trigger count limits", () => {
     expect(fixture.host.messages).not.toContain(fixture.messages[1]);
   });
 
+  it("parses table count codes as shared per-card variants", () => {
+    const fixture = setupLuaSharedCountTriggerFixture({
+      seed: 96,
+      codes: { summon: "16100", first: "16200", second: "16300" },
+      triggerType: "EFFECT_TYPE_TRIGGER_O",
+      countCode: "{16200, 1}",
+      messages: ["first table shared count trigger", "second table shared count trigger"],
+    });
+
+    const codes = fixture.session.state.effects.map((effect) => effect.countLimitCode);
+    expect(codes).toEqual([16200 * 0x1000 + 0x10, 16200 * 0x1000 + 0x10]);
+
+    specialSummonDuelCard(fixture.session.state, fixture.summon.uid);
+    expect(fixture.session.state.pendingTriggers).toHaveLength(2);
+    const firstTrigger = getDuelLegalActions(fixture.session, 0).find((action) => action.type === "activateTrigger" && action.effectId === fixture.session.state.pendingTriggers[0]?.effectId);
+    expect(firstTrigger).toBeDefined();
+    applyAndAssert(fixture.session, firstTrigger!);
+
+    expect(fixture.session.state.usedCountKeys).toEqual([`turn-1:0:code-${16200 * 0x1000 + 0x10}`]);
+    expect(getDuelLegalActions(fixture.session, 0).filter((action) => action.type === "activateTrigger")).toHaveLength(0);
+  });
+
+  it("keeps table count-code variants distinct", () => {
+    const cards: DuelCardData[] = [
+      { code: "17100", name: "Lua Table Count Summon", kind: "monster" },
+      { code: "17200", name: "Lua Table Count Trigger", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 97, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["17100", "17200"] },
+      1: { main: ["17100"] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c17200={}
+      function c17200.initial_effect(c)
+        local e1=Effect.CreateEffect(c)
+        e1:SetType(EFFECT_TYPE_TRIGGER_O)
+        e1:SetCode(EVENT_SPSUMMON_SUCCESS)
+        e1:SetRange(LOCATION_HAND)
+        e1:SetCountLimit(1,{17200,1})
+        c:RegisterEffect(e1)
+        local e2=e1:Clone()
+        e2:SetCountLimit(1,{17200,2})
+        c:RegisterEffect(e2)
+      end
+      `,
+      "lua-table-count-limit-variants.lua",
+    );
+
+    expect(result.ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    expect(session.state.effects.map((effect) => effect.countLimitCode)).toEqual([17200 * 0x1000 + 0x10, 17200 * 0x1000 + 0x20]);
+  });
+
   it("prunes mandatory Lua shared-count triggers after a sibling spends the count", () => {
     const fixture = setupLuaSharedCountTriggerFixture({
       seed: 95,

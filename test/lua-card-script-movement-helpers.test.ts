@@ -17,6 +17,8 @@ import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
+const setThePhantomKnights = 0x10db;
+
 describe("Lua card script movement helpers", () => {
   it("lets Corrupted Ritual Records set itself from the GY after a listed monster leaves by effect", () => {
     const cards: DuelCardData[] = [
@@ -368,8 +370,8 @@ describe("Lua card script movement helpers", () => {
 
   it("loads Phantom Knights Doomed Solleret and sets a Phantom Knights Spell/Trap from Deck", () => {
     const cards: DuelCardData[] = [
-      { code: "101305019", name: "The Phantom Knights of Doomed Solleret", kind: "monster", setcodes: [0xdb] },
-      { code: "100", name: "Phantom Knights Trap", kind: "trap", setcodes: [0xdb] },
+      { code: "101305019", name: "The Phantom Knights of Doomed Solleret", kind: "monster", setcodes: [setThePhantomKnights] },
+      { code: "100", name: "Phantom Knights Trap", kind: "trap", setcodes: [setThePhantomKnights] },
     ];
     const session = createDuel({ seed: 107, startingHandSize: 0, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -406,7 +408,7 @@ describe("Lua card script movement helpers", () => {
 
   it("loads Phantom Knights Doomed Solleret and raises targeted Level and Rank from the GY", () => {
     const cards: DuelCardData[] = [
-      { code: "101305019", name: "The Phantom Knights of Doomed Solleret", kind: "monster", setcodes: [0xdb] },
+      { code: "101305019", name: "The Phantom Knights of Doomed Solleret", kind: "monster", setcodes: [setThePhantomKnights] },
       { code: "100", name: "Dark Level Target", kind: "monster", level: 3, attribute: 0x20 },
       { code: "200", name: "Dark Rank Target", kind: "extra", typeFlags: 0x800001, level: 3, attribute: 0x20 },
     ];
@@ -454,8 +456,8 @@ describe("Lua card script movement helpers", () => {
 
   it("loads Phantom Knights Decayed Cloak and searches a Phantom Knights monster from Deck", () => {
     const cards: DuelCardData[] = [
-      { code: "101305018", name: "The Phantom Knights of Decayed Cloak", kind: "monster", setcodes: [0xdb] },
-      { code: "100", name: "Phantom Knights Monster", kind: "monster", setcodes: [0xdb] },
+      { code: "101305018", name: "The Phantom Knights of Decayed Cloak", kind: "monster", setcodes: [setThePhantomKnights] },
+      { code: "100", name: "Phantom Knights Monster", kind: "monster", setcodes: [setThePhantomKnights] },
     ];
     const session = createDuel({ seed: 108, startingHandSize: 0, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -491,8 +493,8 @@ describe("Lua card script movement helpers", () => {
 
   it("loads Phantom Knights Decayed Cloak and special summons itself by revealing another Phantom Knights card", () => {
     const cards: DuelCardData[] = [
-      { code: "101305018", name: "The Phantom Knights of Decayed Cloak", kind: "monster", setcodes: [0xdb] },
-      { code: "100", name: "Phantom Knights Reveal", kind: "trap", setcodes: [0xdb] },
+      { code: "101305018", name: "The Phantom Knights of Decayed Cloak", kind: "monster", setcodes: [setThePhantomKnights] },
+      { code: "100", name: "Phantom Knights Reveal", kind: "trap", setcodes: [setThePhantomKnights] },
     ];
     const session = createDuel({ seed: 109, startingHandSize: 0, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -530,8 +532,8 @@ describe("Lua card script movement helpers", () => {
 
   it("loads Phantom Knights Malevolent Scythe and detaches material to summon from Deck", () => {
     const cards: DuelCardData[] = [
-      { code: "101305037", name: "The Phantom Knights of Malevolent Scythe", kind: "extra", setcodes: [0xdb] },
-      { code: "100", name: "Phantom Knights Summon", kind: "monster", setcodes: [0xdb] },
+      { code: "101305037", name: "The Phantom Knights of Malevolent Scythe", kind: "extra", setcodes: [setThePhantomKnights] },
+      { code: "100", name: "Phantom Knights Summon", kind: "monster", setcodes: [setThePhantomKnights] },
       { code: "200", name: "Overlay Material", kind: "monster" },
     ];
     const session = createDuel({ seed: 110, startingHandSize: 0, cardReader: createCardReader(cards) });
@@ -575,8 +577,8 @@ describe("Lua card script movement helpers", () => {
 
   it("loads Phantom Knights Malevolent Scythe and recovers a banished Phantom Knights card when destroyed", () => {
     const cards: DuelCardData[] = [
-      { code: "101305037", name: "The Phantom Knights of Malevolent Scythe", kind: "extra", setcodes: [0xdb] },
-      { code: "100", name: "Phantom Knights Banished", kind: "trap", setcodes: [0xdb] },
+      { code: "101305037", name: "The Phantom Knights of Malevolent Scythe", kind: "extra", setcodes: [setThePhantomKnights] },
+      { code: "100", name: "Phantom Knights Banished", kind: "trap", setcodes: [setThePhantomKnights] },
     ];
     const session = createDuel({ seed: 111, startingHandSize: 0, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -611,8 +613,8 @@ describe("Lua card script movement helpers", () => {
 
   it("loads Phantom Knights Umbrage Veil and summons itself as a trap monster", () => {
     const cards: DuelCardData[] = [
-      { code: "101305073", name: "The Phantom Knights of Umbrage Veil", kind: "trap", setcodes: [0xdb] },
-      { code: "100", name: "Phantom Knights Anchor", kind: "monster", setcodes: [0xdb] },
+      { code: "101305073", name: "The Phantom Knights of Umbrage Veil", kind: "trap", setcodes: [setThePhantomKnights] },
+      { code: "100", name: "Phantom Knights Anchor", kind: "monster", setcodes: [setThePhantomKnights] },
       { code: "200", name: "Opponent Attack", kind: "monster" },
     ];
     const session = createDuel({ seed: 113, startingHandSize: 0, cardReader: createCardReader(cards) });
@@ -659,7 +661,7 @@ describe("Lua card script movement helpers", () => {
 
   it("loads Phantom Knights Umbrage Veil and Xyz Summons from the GY", () => {
     const cards: DuelCardData[] = [
-      { code: "101305073", name: "The Phantom Knights of Umbrage Veil", kind: "trap", setcodes: [0xdb] },
+      { code: "101305073", name: "The Phantom Knights of Umbrage Veil", kind: "trap", setcodes: [setThePhantomKnights] },
       { code: "980", name: "Dark Rank 3 Xyz", kind: "extra", typeFlags: 0x800001, level: 3, attribute: 0x20 },
       { code: "100", name: "Level 3 Material A", kind: "monster", level: 3 },
       { code: "200", name: "Level 3 Material B", kind: "monster", level: 3 },
@@ -704,9 +706,9 @@ describe("Lua card script movement helpers", () => {
   it("loads Phantom Knights Rank-Up-Magic Requiem and ranks up a revived Xyz monster", () => {
     const cards: DuelCardData[] = [
       { code: "101305057", name: "The Phantom Knights' Rank-Up-Magic Requiem", kind: "spell", setcodes: [0x95] },
-      { code: "100", name: "Phantom Knights Revive", kind: "monster", setcodes: [0xdb] },
-      { code: "200", name: "Dark Rank 3 Xyz", kind: "extra", typeFlags: 0x800001, level: 3, attribute: 0x20, setcodes: [0xdb] },
-      { code: "300", name: "Dark Rank 4 Xyz", kind: "extra", typeFlags: 0x800001, level: 4, attribute: 0x20, setcodes: [0xdb] },
+      { code: "100", name: "Phantom Knights Revive", kind: "monster", setcodes: [setThePhantomKnights] },
+      { code: "200", name: "Dark Rank 3 Xyz", kind: "extra", typeFlags: 0x800001, level: 3, attribute: 0x20, setcodes: [setThePhantomKnights] },
+      { code: "300", name: "Dark Rank 4 Xyz", kind: "extra", typeFlags: 0x800001, level: 4, attribute: 0x20, setcodes: [setThePhantomKnights] },
       { code: "400", name: "Rank-Up Overlay", kind: "monster" },
     ];
     const session = createDuel({ seed: 115, startingHandSize: 0, cardReader: createCardReader(cards) });

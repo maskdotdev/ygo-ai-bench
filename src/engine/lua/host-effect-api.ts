@@ -217,7 +217,8 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
   });
   pushEffectMethod(L, effects, "SetCountLimit", (state, effect) => {
     effect.countLimit = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 1;
-    if (lua.lua_isnumber(state, 3)) effect.countLimitCode = lua.lua_tointeger(state, 3);
+    const countCode = readLuaCountLimitCode(state, 3, 4);
+    if (countCode !== undefined) effect.countLimitCode = countCode;
     return 0;
   });
   pushEffectMethod(L, effects, "GetCountLimit", (state, effect) => {
@@ -360,6 +361,24 @@ function setEffectNumberField(field: "typeFlags" | "code" | "description" | "cat
     if (lua.lua_isnumber(state, 2)) effect[field] = lua.lua_tointeger(state, 2);
     return 0;
   };
+}
+
+function readLuaCountLimitCode(L: unknown, codeIndex: number, flagsIndex: number): number | undefined {
+  if (lua.lua_isnumber(L, codeIndex)) return lua.lua_tointeger(L, codeIndex);
+  if (!lua.lua_istable(L, codeIndex)) return undefined;
+  const absoluteIndex = lua.lua_absindex(L, codeIndex);
+  const base = readLuaIntegerArrayField(L, absoluteIndex, 1);
+  if (base === undefined) return undefined;
+  const variant = readLuaIntegerArrayField(L, absoluteIndex, 2) ?? 0;
+  const flags = lua.lua_isnumber(L, flagsIndex) ? lua.lua_tointeger(L, flagsIndex) : 0;
+  return base * 0x1000 + variant * 0x10 + flags;
+}
+
+function readLuaIntegerArrayField(L: unknown, tableIndex: number, fieldIndex: number): number | undefined {
+  lua.lua_rawgeti(L, tableIndex, fieldIndex);
+  const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
+  lua.lua_pop(L, 1);
+  return value;
 }
 
 function getEffectNumberField(field: "typeFlags" | "code" | "description" | "category" | "property") {
