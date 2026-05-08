@@ -108,13 +108,34 @@ describe("duel battle timing", () => {
     expect(restored.state.battleWindow).toEqual(session.state.battleWindow);
     expect(restored.state.pendingBattle).toEqual(session.state.pendingBattle);
     const replayActions = getDuelLegalActions(restored, 0);
-    expect(replayActions.some((action) => action.type === "cancelAttack" && action.attackerUid === attacker!.uid)).toBe(true);
-    expect(replayActions.some((action) => action.type === "replayAttack" && action.attackerUid === attacker!.uid && action.targetUid === undefined)).toBe(true);
+    const cancelAction = replayActions.find((action) => action.type === "cancelAttack" && action.attackerUid === attacker!.uid);
+    const directReplay = replayActions.find((action) => action.type === "replayAttack" && action.attackerUid === attacker!.uid && action.targetUid === undefined);
+    expect(cancelAction).toBeTruthy();
+    expect(directReplay).toBeTruthy();
+    expect(directReplay!.windowToken).toBeDefined();
     expect(groupedActionSummary(restored, 0)).toEqual([
       { label: "Attacks", windowId: queryPublicState(restored).actionWindowId, windowKind: "battle", actionTypes: ["cancelAttack", "replayAttack"] },
     ]);
 
-    applyAndAssert(restored, replayActions.find((action) => action.type === "cancelAttack")!);
+    const forgedRemovedTargetReplay = applyResponse(restored, {
+      type: "replayAttack",
+      player: 0,
+      attackerUid: attacker!.uid,
+      targetUid: target!.uid,
+      label: "Forge removed target replay into restored replay window",
+      windowId: directReplay!.windowId!,
+      windowKind: directReplay!.windowKind!,
+      windowToken: directReplay!.windowToken!,
+    });
+    expect(forgedRemovedTargetReplay.ok).toBe(false);
+    expect(forgedRemovedTargetReplay.error).toContain("Response is not currently legal");
+    expect(forgedRemovedTargetReplay.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(forgedRemovedTargetReplay.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(forgedRemovedTargetReplay.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(restored.state.battleWindow).toEqual(session.state.battleWindow);
+    expect(restored.state.pendingBattle).toEqual(session.state.pendingBattle);
+
+    applyAndAssert(restored, cancelAction!);
     expect(restored.state.pendingBattle).toBeUndefined();
     expect(restored.state.battleWindow).toBeUndefined();
   });
