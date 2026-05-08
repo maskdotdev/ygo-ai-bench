@@ -6,6 +6,86 @@ import { createLuaScriptHost } from "#lua/host.js";
 import type { DuelCardData, DuelSession } from "#duel/types.js";
 
 describe("Lua overlay detach grouped events", () => {
+  it("binds grouped EVENT_DETACH_MATERIAL single triggers only to detached materials", () => {
+    const fixture = createOverlayDetachFixture();
+    const loaded = fixture.host.loadScript(
+      `
+      local xyz=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 920), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local overlays=xyz:GetOverlayGroup()
+      local first=overlays:Filter(aux.FilterBoolFunction(Card.IsCode, 100), nil):GetFirst()
+      local second=overlays:Filter(aux.FilterBoolFunction(Card.IsCode, 101), nil):GetFirst()
+      local generic_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local single_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 301), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local first_trigger=Effect.CreateEffect(first)
+      first_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+      first_trigger:SetCode(EVENT_DETACH_MATERIAL)
+      first_trigger:SetRange(LOCATION_GRAVE)
+      first_trigger:SetOperation(function(e,tp,eg)
+        Debug.Message("first detach single " .. eg:GetCount() .. "/" .. Duel.GetOperatedGroup():GetCount())
+      end)
+      first:RegisterEffect(first_trigger)
+
+      local second_trigger=Effect.CreateEffect(second)
+      second_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+      second_trigger:SetCode(EVENT_DETACH_MATERIAL)
+      second_trigger:SetRange(LOCATION_GRAVE)
+      second_trigger:SetOperation(function(e,tp,eg)
+        Debug.Message("second detach single " .. eg:GetCount() .. "/" .. Duel.GetOperatedGroup():GetCount())
+      end)
+      second:RegisterEffect(second_trigger)
+
+      local generic_trigger=Effect.CreateEffect(generic_watcher)
+      generic_trigger:SetType(EFFECT_TYPE_TRIGGER_O)
+      generic_trigger:SetCode(EVENT_DETACH_MATERIAL)
+      generic_trigger:SetRange(LOCATION_HAND)
+      generic_trigger:SetOperation(function(e,tp,eg)
+        Debug.Message("generic detach group " .. eg:GetCount() .. "/" .. Duel.GetOperatedGroup():GetCount())
+      end)
+      generic_watcher:RegisterEffect(generic_trigger)
+
+      local wrong_single=Effect.CreateEffect(single_watcher)
+      wrong_single:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+      wrong_single:SetCode(EVENT_DETACH_MATERIAL)
+      wrong_single:SetRange(LOCATION_HAND)
+      wrong_single:SetOperation(function(e,tp,eg)
+        Debug.Message("wrong detach single " .. eg:GetCount())
+      end)
+      single_watcher:RegisterEffect(wrong_single)
+
+      Debug.Message("detach source-only grouped " .. xyz:RemoveOverlayCard(0, 2, 2, REASON_EFFECT))
+      `,
+      "overlay-detach-source-only-grouped-event.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+
+    const first = fixture.session.state.cards.find((card) => card.code === "100");
+    const second = fixture.session.state.cards.find((card) => card.code === "101");
+    const genericWatcher = fixture.session.state.cards.find((card) => card.code === "300");
+    const singleWatcher = fixture.session.state.cards.find((card) => card.code === "301");
+    expect(fixture.host.messages).toContain("detach source-only grouped 2");
+    const detachTriggers = fixture.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "detachedMaterial");
+    expect(detachTriggers).toHaveLength(3);
+    for (const trigger of detachTriggers) expect(trigger.eventUids).toEqual([first!.uid, second!.uid]);
+    expect(detachTriggers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceUid: first!.uid, eventCardUid: first!.uid }),
+        expect.objectContaining({ sourceUid: second!.uid, eventCardUid: second!.uid }),
+        expect.objectContaining({ sourceUid: genericWatcher!.uid, eventCardUid: first!.uid }),
+      ]),
+    );
+    expect(detachTriggers.some((trigger) => trigger.sourceUid === singleWatcher!.uid)).toBe(false);
+
+    for (;;) {
+      const player = fixture.session.state.waitingFor ?? 0;
+      const trigger = getDuelLegalActions(fixture.session, player).find((candidate) => candidate.type === "activateTrigger");
+      if (!trigger) break;
+      applyAndAssert(fixture.session, trigger);
+    }
+    expect(fixture.host.messages).toEqual(expect.arrayContaining(["first detach single 2/2", "second detach single 2/2", "generic detach group 2/2"]));
+    expect(fixture.host.messages).not.toContain("wrong detach single 2");
+  });
+
   it("collects one grouped detach and grave event for Card.RemoveOverlayCard", () => {
     const fixture = createOverlayDetachFixture();
     const loaded = fixture.host.loadScript(
