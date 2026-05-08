@@ -192,6 +192,50 @@ describe("duel fusion summons", () => {
     expect(session.state.cards.find((card) => card.uid === otherMaterial!.uid)?.location).toBe("graveyard");
   });
 
+  it("exposes each explicit Fusion material combination when multiple matching copies are legal", () => {
+    const session = createDuel({
+      seed: 1,
+      startingHandSize: 3,
+      cardReader: createCardReader([
+        { code: "100", name: "First Fusion Material Copy", kind: "monster" },
+        { code: "300", name: "Second Fusion Material", kind: "monster" },
+        { code: "900", name: "Two-Copy Fusion", kind: "extra", fusionMaterials: ["100", "300"] },
+      ]),
+    });
+    loadDecks(session, {
+      0: { main: ["100", "100", "300"], extra: ["900"] },
+      1: { main: ["300", "300", "300"] },
+    });
+    startDuel(session);
+
+    const fusion = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    const codeAMaterials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const codeB = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(fusion).toBeTruthy();
+    expect(codeAMaterials).toHaveLength(2);
+    expect(codeB).toBeTruthy();
+    const fieldCodeA = codeAMaterials[0]!;
+    const handCodeA = codeAMaterials[1]!;
+    moveDuelCard(session.state, fieldCodeA.uid, "monsterZone", 0);
+
+    const actions = getDuelLegalActions(session, 0).filter((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid);
+    expect(actions).toHaveLength(2);
+    const materialUidSets = actions.map((action) => {
+      if (action.type !== "fusionSummon") throw new Error("Expected Fusion Summon action");
+      return action.materialUids;
+    });
+    expect(materialUidSets).toEqual(expect.arrayContaining([[handCodeA.uid, codeB!.uid], [fieldCodeA.uid, codeB!.uid]]));
+
+    const fieldMaterialAction = actions.find((action) => action.type === "fusionSummon" && action.materialUids.includes(fieldCodeA.uid));
+    expect(fieldMaterialAction).toBeTruthy();
+    const result = applyAndAssert(session, fieldMaterialAction!);
+
+    expect(result.state.cards.find((card) => card.uid === fusion!.uid)?.location).toBe("monsterZone");
+    expect(result.state.cards.find((card) => card.uid === fieldCodeA.uid)?.location).toBe("graveyard");
+    expect(result.state.cards.find((card) => card.uid === handCodeA.uid)?.location).toBe("hand");
+    expect(result.state.cards.find((card) => card.uid === codeB!.uid)?.location).toBe("graveyard");
+  });
+
   it("applies graveyard redirects to fusion materials", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
