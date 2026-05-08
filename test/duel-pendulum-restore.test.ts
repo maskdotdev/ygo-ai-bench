@@ -101,6 +101,17 @@ describe("pendulum restore", () => {
     expect(restored.state.cards.find((card) => card.uid === candidate!.uid)).toMatchObject({ location: "extraDeck", faceUp: true });
     expect(restored.state.players[0].pendulumSummonAvailable).toBe(true);
 
+    for (const summonUids of [[candidate!.uid, candidate!.uid], [], [watcher!.uid]]) {
+      const forgedSelection = applyResponse(restored, { ...action, summonUids });
+      expect(forgedSelection.ok).toBe(false);
+      expect(forgedSelection.error).toContain("Response is not currently legal");
+      assertRestoreLegalWindow(restored, forgedSelection, 0);
+      expect(restored.state.cards.find((card) => card.uid === candidate!.uid)).toMatchObject({ location: "extraDeck", faceUp: true });
+      expect(restored.state.cards.find((card) => card.uid === handCandidate!.uid)).toMatchObject({ location: "hand" });
+      expect(restored.state.players[0].pendulumSummonAvailable).toBe(true);
+      expect(restored.state.pendingTriggers).toEqual([]);
+    }
+
     const result = applyResponse(restored, { ...action, summonUids: [candidate!.uid] });
     expect(result.ok).toBe(true);
     expect(restored.state.cards.find((card) => card.uid === candidate!.uid)).toMatchObject({ location: "monsterZone", summonType: "pendulum", faceUp: true });
