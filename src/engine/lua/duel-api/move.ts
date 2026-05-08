@@ -19,6 +19,7 @@ import {
   specialSummonDuelCard,
 } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
+import { duelSummonTypeFromCode } from "#duel/summon-type-codes.js";
 import { locationsFromMask, positionFromMask, readCardUid } from "#lua/api-utils.js";
 import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
 import { moveDeckCardToBottom, moveDeckCardToTop } from "#lua/duel-api/deck-order.js";
@@ -42,6 +43,7 @@ export interface LuaOperationTimingBoundaryHostState {
 
 export interface LuaDuelMoveApiHostState {
   operatedUids: string[];
+  activeLuaEffectId?: number | undefined;
   activeContext?: DuelEffectContext | undefined;
   activeOperationTriggerStart?: number | undefined;
   activeOperationMoved?: boolean;
@@ -203,7 +205,7 @@ function pushSpecialSummon(L: unknown, session: DuelSession, hostState: LuaDuelM
     if (!hasOpenMonsterZone(session, player, zoneMask)) continue;
     try {
       const reasonPlayer = hostState.activeContext?.player ?? player;
-      const summoned = specialSummonDuelCard(session.state, uid, player, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer));
+      const summoned = specialSummonDuelCard(session.state, uid, player, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer), summonType);
       if (requestedPosition) applyLuaMovePosition(summoned, requestedPosition);
       applyMonsterZoneMask(session, summoned, player, zoneMask);
       moved.push(uid);
@@ -835,12 +837,13 @@ function specialSummonExplicitExtraDeckCard(
   zoneMask: number | undefined,
   hostState: LuaDuelMoveApiHostState,
 ): boolean {
-  if (card.location !== "extraDeck" || summonType === 0 || !hasOpenMonsterZone(session, player, zoneMask) || !canPlayerSpecialSummon(session.state, player, card)) return false;
+  if (card.location !== "extraDeck" || summonType === 0 || !hasOpenMonsterZone(session, player, zoneMask) || !canPlayerSpecialSummon(session.state, player, card, summonType, hostState.activeLuaEffectId)) return false;
   try {
     moveDuelCard(session.state, card.uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon, hostState.activeContext?.player ?? player);
     applyLuaMovePosition(card, requestedPosition ?? "faceUpAttack");
     applyMonsterZoneMask(session, card, player, zoneMask);
-    card.summonType = "special";
+    card.summonType = duelSummonTypeFromCode(summonType);
+    card.summonTypeCode = summonType;
     card.summonPlayer = player;
     card.summonPhase = session.state.phase;
     card.summonMaterialUids = card.summonMaterialUids ?? [];

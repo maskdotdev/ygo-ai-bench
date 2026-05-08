@@ -137,6 +137,7 @@ import { runScriptedDuelResponses as runScriptedDuelResponsesWithHandlers } from
 import { setSpellTrap } from "#duel/spell-trap.js";
 import { canActivateSpellTrapCardEffect, shouldSendActivatedSpellTrapToGraveyard } from "#duel/spell-trap-activation.js";
 import { negateCoreDuelSummon } from "#duel/summon-negation.js";
+import { duelSummonTypeFromCode, luaSummonTypeFusion, luaSummonTypeLink, luaSummonTypePendulum, luaSummonTypeRitual, luaSummonTypeSynchro, luaSummonTypeXyz } from "#duel/summon-type-codes.js";
 import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
 import { changeDuelPhase, drawDuelCardsFromDeck, endDuelTurn, nextAvailableDuelPhase } from "#duel/turn-flow.js";
 export { createDuel, loadDecks, startDuel, type CreateDuelOptions } from "#duel/setup.js";
@@ -344,12 +345,12 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
       const card = findCard(state, action.uid);
       return Boolean(card && !isMonsterSetPrevented(state, player, card, createContinuousEffectContext(state)));
     }));
-    actions.push(...fusionSummonActions(state, player, createMaterialUsePredicate(state, "fusion")));
-    actions.push(...synchroSummonActions(state, player, createMaterialUsePredicate(state, "synchro")));
-    actions.push(...xyzSummonActions(state, player, (uid) => !isMaterialUsePrevented(state, uid, "xyz", createContinuousEffectContext(state))));
-    actions.push(...linkSummonActions(state, player, createMaterialUsePredicate(state, "link")));
-    actions.push(...ritualSummonActions(state, player, hand, createMaterialUsePredicate(state, "ritual")));
-    actions.push(...pendulumSummonActions(state, player, (uid) => canSpecialSummonDuelCard(state, uid, player)));
+    actions.push(...fusionSummonActions(state, player, createMaterialUsePredicate(state, "fusion")).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeFusion)));
+    actions.push(...synchroSummonActions(state, player, createMaterialUsePredicate(state, "synchro")).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeSynchro)));
+    actions.push(...xyzSummonActions(state, player, (uid) => !isMaterialUsePrevented(state, uid, "xyz", createContinuousEffectContext(state))).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeXyz)));
+    actions.push(...linkSummonActions(state, player, createMaterialUsePredicate(state, "link")).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeLink)));
+    actions.push(...ritualSummonActions(state, player, hand, createMaterialUsePredicate(state, "ritual")).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeRitual)));
+    actions.push(...pendulumSummonActions(state, player, (uid) => canSpecialSummonDuelCard(state, uid, player, luaSummonTypePendulum)));
     actions.push(...specialSummonProcedureActions(state, player));
     if (hasZoneSpace(state, player, "spellTrapZone")) {
       for (const card of hand.filter((candidate) => candidate.kind === "spell" || candidate.kind === "trap")) {
@@ -393,19 +394,21 @@ export function runScriptedDuelResponses(session: DuelSession, steps: ScriptedRe
   return runScriptedDuelResponsesWithHandlers(session, steps, { getLegalActions, applyResponse });
 }
 
-export function specialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance {
+export function specialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}, summonTypeCode?: number): DuelCardInstance {
   const card = findCard(state, uid);
   if (!card) throw new Error(`Card ${uid} is not in the duel`);
   const summonController = controller ?? card.controller;
   requireZoneSpace(state, summonController, "monsterZone");
-  if (!canSpecialSummonDuelCard(state, uid, summonController)) throw new Error(`${card.name} cannot be Special Summoned`);
+  if (!canSpecialSummonDuelCard(state, uid, summonController, summonTypeCode, payload.eventReasonEffectId)) throw new Error(`${card.name} cannot be Special Summoned`);
   collectTriggerEffects(state, "specialSummoning", card);
   moveDuelCard(state, uid, "monsterZone", summonController, duelReason.summon | duelReason.specialSummon, reasonPlayer);
   if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
   if (payload.eventReasonEffectId !== undefined) card.reasonEffectId = payload.eventReasonEffectId;
   card.position = "faceUpAttack";
   card.faceUp = true;
-  card.summonType = "special";
+  card.summonType = duelSummonTypeFromCode(summonTypeCode);
+  if (summonTypeCode && summonTypeCode !== 0) card.summonTypeCode = summonTypeCode;
+  else delete card.summonTypeCode;
   card.summonPlayer = summonController;
   card.summonPhase = state.phase;
   card.summonMaterialUids = [];
@@ -422,11 +425,11 @@ export function negateDuelSummon(state: DuelState, uid: string): DuelCardInstanc
   });
 }
 
-export function canSpecialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId): boolean {
+export function canSpecialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId, summonTypeCode?: number, relatedEffectId?: number): boolean {
   const card = findCard(state, uid);
   if (!card || !isDuelMonsterLike(card)) return false;
   const summonController = controller ?? card.controller;
-  if (isSpecialSummonPrevented(state, summonController, createContinuousEffectContext(state), card)) return false;
+  if (isSpecialSummonPrevented(state, summonController, createContinuousEffectContext(state), card, summonTypeCode, relatedEffectId)) return false;
   if (!hasZoneSpace(state, summonController, "monsterZone")) return false;
   if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card)) return false;
   return canMoveDuelCardToLocation(state, uid, "monsterZone");
@@ -440,8 +443,8 @@ function canAttemptSpecialSummonProcedure(state: DuelState, uid: string): boolea
   return canMoveDuelCardToLocation(state, uid, "monsterZone");
 }
 
-export function canPlayerSpecialSummon(state: DuelState, player: PlayerId, card?: DuelCardInstance): boolean {
-  return !isSpecialSummonPrevented(state, player, createContinuousEffectContext(state), card);
+export function canPlayerSpecialSummon(state: DuelState, player: PlayerId, card?: DuelCardInstance, summonTypeCode?: number, relatedEffectId?: number): boolean {
+  return !isSpecialSummonPrevented(state, player, createContinuousEffectContext(state), card, summonTypeCode, relatedEffectId);
 }
 
 export function canMoveDuelCardToLocation(state: DuelState, uid: string, to: DuelLocation, reason: number = duelReason.effect): boolean {
@@ -521,27 +524,47 @@ export function flipSummonDuelCard(state: DuelState, player: PlayerId, uid: stri
 }
 
 export function fusionSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
+  requireTypedSpecialSummonAllowed(state, player, uid, luaSummonTypeFusion, "Fusion Summoned");
   return fusionSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state), createMaterialUsePredicate(state, "fusion"));
 }
 
 export function synchroSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
+  requireTypedSpecialSummonAllowed(state, player, uid, luaSummonTypeSynchro, "Synchro Summoned");
   return synchroSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state), createMaterialUsePredicate(state, "synchro"));
 }
 
 export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
+  requireTypedSpecialSummonAllowed(state, player, uid, luaSummonTypeXyz, "Xyz Summoned");
   return xyzSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createOverlayMaterialMover(state));
 }
 
 export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
+  requireTypedSpecialSummonAllowed(state, player, uid, luaSummonTypeLink, "Link Summoned");
   return linkSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state), createMaterialUsePredicate(state, "link"));
 }
 
 export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
+  requireTypedSpecialSummonAllowed(state, player, uid, luaSummonTypeRitual, "Ritual Summoned");
   return ritualSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state), createMaterialUsePredicate(state, "ritual"));
 }
 
 export function pendulumSummonDuelCards(state: DuelState, player: PlayerId, summonUids: string[]): DuelCardInstance[] {
-  return pendulumSummonDuelCardsWithHooks(state, player, summonUids, (uid) => canSpecialSummonDuelCard(state, uid, player), (uid, controller) => specialSummonDuelCard(state, uid, controller));
+  return pendulumSummonDuelCardsWithHooks(state, player, summonUids, (uid) => canSpecialSummonDuelCard(state, uid, player, luaSummonTypePendulum), (uid, controller) => specialSummonDuelCard(state, uid, controller, undefined, {}, luaSummonTypePendulum));
+}
+
+function canPerformTypedSpecialSummon(state: DuelState, player: PlayerId, uid: string, summonTypeCode: number): boolean {
+  const card = findCard(state, uid);
+  return Boolean(card && !isSpecialSummonPrevented(state, player, createContinuousEffectContext(state), card, summonTypeCode));
+}
+
+function canPerformTypedSpecialSummonAction(state: DuelState, player: PlayerId, action: DuelAction, summonTypeCode: number): boolean {
+  return "uid" in action && canPerformTypedSpecialSummon(state, player, action.uid, summonTypeCode);
+}
+
+function requireTypedSpecialSummonAllowed(state: DuelState, player: PlayerId, uid: string, summonTypeCode: number, detail: string): void {
+  if (canPerformTypedSpecialSummon(state, player, uid, summonTypeCode)) return;
+  const card = findCard(state, uid);
+  throw new Error(`${card?.name ?? uid} cannot be ${detail}`);
 }
 
 function createMaterialMover(state: DuelState): DuelMaterialMover {

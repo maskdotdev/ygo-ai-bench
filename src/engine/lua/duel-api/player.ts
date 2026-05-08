@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuelCard, collectDuelTriggerEffects } from "#duel/core.js";
 import { findCard, hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
+import { luaSummonTypePendulum } from "#duel/summon-type-codes.js";
 import {
   isCounterPlacementPrevented,
   isMonsterSetPrevented,
@@ -328,7 +329,7 @@ function canPendulumSummonCard(session: DuelSession, player: PlayerId, card: Due
   if (card.location !== "hand" && !(card.location === "extraDeck" && card.faceUp)) return false;
   const level = card.data.level ?? 0;
   if (level <= lowScale || level >= highScale) return false;
-  return canSpecialSummonDuelCard(session.state, card.uid, player);
+  return canSpecialSummonDuelCard(session.state, card.uid, player, luaSummonTypePendulum);
 }
 
 function pendulumScales(session: DuelSession, player: PlayerId): [number, number] | undefined {

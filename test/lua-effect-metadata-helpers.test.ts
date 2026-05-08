@@ -707,4 +707,82 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("active type checks true/true/true/false");
   });
 
+  it("enforces Lua special summon condition helpers during summon legality", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Fusion-Locked Hand Monster", kind: "monster" },
+      { code: "200", name: "First Fusion Material", kind: "monster" },
+      { code: "900", name: "Fusion-Locked Extra Monster", kind: "extra", fusionMaterials: ["100", "200"] },
+    ];
+    const session = createDuel({ seed: 168, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"], extra: ["900"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local hand_monster=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local material=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local fusion=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_EXTRA, 0, 1, 1, nil):GetFirst()
+      hand_monster:AddMustBeFusionSummoned()
+      fusion:AddMustBeFusionSummoned()
+      Debug.Message("fusion condition generic " .. tostring(hand_monster:IsSpecialSummonable()))
+      Debug.Message("fusion condition generic result " .. Duel.SpecialSummon(hand_monster,0,0,0,false,false,POS_FACEUP_ATTACK))
+      Debug.Message("fusion condition hand location " .. tostring(hand_monster:IsLocation(LOCATION_HAND)))
+      local materials=Group.FromCards(hand_monster,material)
+      Debug.Message("fusion condition fusion result " .. Duel.FusionSummon(fusion,materials))
+      Debug.Message("fusion condition fusion state " .. tostring(fusion:IsLocation(LOCATION_MZONE)) .. "/" .. tostring(fusion:IsFusionSummoned()))
+      `,
+      "special-summon-condition-legality.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("fusion condition generic false");
+    expect(host.messages).toContain("fusion condition generic result 0");
+    expect(host.messages).toContain("fusion condition hand location true");
+    expect(host.messages).toContain("fusion condition fusion result 1");
+    expect(host.messages).toContain("fusion condition fusion state true/true");
+  });
+
+  it("allows Lua card-effect-only special summon conditions from activating effects", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Card Effect Only Monster", kind: "monster" },
+      { code: "200", name: "Summon Effect Source", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 169, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local locked=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      locked:AddMustBeSpecialSummonedByCardEffect()
+      Debug.Message("card effect condition generic " .. tostring(locked:IsSpecialSummonable()))
+      local e=Effect.CreateEffect(source)
+      e:SetType(EFFECT_TYPE_IGNITION)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+        Debug.Message("card effect condition operation " .. Duel.SpecialSummon(locked,0,tp,tp,false,false,POS_FACEUP_ATTACK))
+      end)
+      source:RegisterEffect(e)
+      Debug.Message("card effect condition activate " .. tostring(Duel.Activate(e)))
+      Debug.Message("card effect condition state " .. tostring(locked:IsLocation(LOCATION_MZONE)) .. "/" .. tostring(locked:IsSpecialSummoned()))
+      `,
+      "card-effect-special-summon-condition.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("card effect condition generic false");
+    expect(host.messages).toContain("card effect condition operation 1");
+    expect(host.messages).toContain("card effect condition activate true");
+    expect(host.messages).toContain("card effect condition state true/true");
+  });
+
 });

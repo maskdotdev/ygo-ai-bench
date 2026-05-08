@@ -24,6 +24,7 @@ import {
   negateDuelSummon,
   xyzSummonDuelCard,
 } from "#duel/core.js";
+import { luaSummonTypePendulum, luaSummonTypeRitual } from "#duel/summon-type-codes.js";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelReason } from "#duel/reasons.js";
@@ -265,7 +266,7 @@ function ritualSummonSelectedMaterials(session: DuelSession, hostState: LuaDuelS
   if (new Set(materialUids).size !== materialUids.length || materialUids.length === 0) throw new Error(`${target.name} ritual materials are not legal`);
   if (
     availableMonsterZoneCount(session, target.controller, materialUids) <= 0 ||
-    !canPlayerSpecialSummon(session.state, target.controller, target) ||
+    !canPlayerSpecialSummon(session.state, target.controller, target, luaSummonTypeRitual) ||
     !canMoveDuelCardToLocation(session.state, target.uid, "monsterZone", duelReason.summon | duelReason.specialSummon | duelReason.ritual)
   ) {
     throw new Error(`${target.name} cannot be Ritual Summoned`);
@@ -349,7 +350,7 @@ function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuel
   for (const card of pendulumSummonCandidates(session, player, lowScale, highScale).slice(0, zoneCount)) {
     try {
       const reasonPlayer = hostState.activeContext?.player ?? player;
-      const summoned = specialSummonDuelCard(session.state, card.uid, player, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer));
+      const summoned = specialSummonDuelCard(session.state, card.uid, player, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer), luaSummonTypePendulum);
       applySummonPosition(summoned, "faceUpAttack");
       summoned.summonType = "pendulum";
       summonedUids.push(card.uid);
@@ -366,6 +367,7 @@ function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuel
 function pushSpecialSummonStep(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
   if (session.state.status === "ended") return pushEmptyBooleanResult(L, hostState);
   const uid = readCardUid(L, 1);
+  const summonType = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   const target = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
   const targetPlayer = readOptionalPlayer(L, 4) ?? target?.controller;
   const requestedPosition = lua.lua_isnumber(L, 7) ? positionFromMask(lua.lua_tointeger(L, 7)) : undefined;
@@ -377,7 +379,7 @@ function pushSpecialSummonStep(L: unknown, session: DuelSession, hostState: LuaD
   try {
     markLuaOperationTimingBoundary(session, hostState);
     const reasonPlayer = hostState.activeContext?.player ?? targetPlayer;
-    const summoned = specialSummonDuelCard(session.state, uid, targetPlayer, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer));
+    const summoned = specialSummonDuelCard(session.state, uid, targetPlayer, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer), summonType);
     if (requestedPosition) applySummonPosition(summoned, requestedPosition);
     applyMonsterZoneMask(session, summoned, targetPlayer, zoneMask);
     if (hostState.activeContext) hostState.activeOperationMoved = true;
@@ -462,7 +464,7 @@ function canPendulumSummonCard(session: DuelSession, player: PlayerId, card: Due
   if (card.location !== "hand" && !(card.location === "extraDeck" && card.faceUp)) return false;
   const level = card.data.level ?? 0;
   if (level <= lowScale || level >= highScale) return false;
-  return canSpecialSummonDuelCard(session.state, card.uid, player);
+  return canSpecialSummonDuelCard(session.state, card.uid, player, luaSummonTypePendulum);
 }
 
 function pendulumScales(session: DuelSession, player: PlayerId): [number, number] | undefined {

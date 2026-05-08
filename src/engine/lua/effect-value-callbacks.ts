@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { pushCardTable } from "#lua/card-api.js";
+import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import type { DuelCardInstance, DuelEffectContext, PlayerId } from "#duel/types.js";
 import type { LuaEffectRecord, LuaHostState } from "#lua/host-types.js";
 
@@ -20,7 +21,9 @@ export function callLuaEffectValuePredicate(
     hostState.pushEffectTable(L, luaEffect.id);
     pushRelatedEffectTable(L, hostState, ctx);
     lua.lua_pushinteger(L, reasonPlayer ?? ctx.player ?? card.controller);
-    const status = lua.lua_pcall(L, 3, 1, 0);
+    const isSpecialSummonCondition = luaEffect.code === 30;
+    if (isSpecialSummonCondition) lua.lua_pushinteger(L, effectiveSpecialSummonTypeCode(ctx.summonTypeCode));
+    const status = lua.lua_pcall(L, isSpecialSummonCondition ? 4 : 3, 1, 0);
     if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
     const result = lua.lua_isnil(L, -1) ? true : Boolean(lua.lua_toboolean(L, -1));
     lua.lua_pop(L, 1);

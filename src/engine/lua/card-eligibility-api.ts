@@ -23,8 +23,8 @@ export function canMoveCardToDeckOrExtraAsCost(state: DuelState, card: DuelCardI
 
 export function canSpecialSummonFromLua(session: DuelSession, card: DuelCardInstance, player: PlayerId, summonType: number, zoneMask?: number): boolean {
   if (!hasAvailableMonsterZone(session, player, zoneMask)) return false;
-  if (canSpecialSummonDuelCard(session.state, card.uid, player)) return true;
-  return card.location === "extraDeck" && summonType !== 0 && hasZoneSpace(session.state, player, "monsterZone") && canPlayerSpecialSummon(session.state, player, card);
+  if (canSpecialSummonDuelCard(session.state, card.uid, player, summonType)) return true;
+  return card.location === "extraDeck" && summonType !== 0 && hasZoneSpace(session.state, player, "monsterZone") && canPlayerSpecialSummon(session.state, player, card, summonType);
 }
 
 export function isMonsterLike(card: DuelCardInstance): boolean {

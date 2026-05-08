@@ -1,6 +1,7 @@
 import { findCard } from "#duel/card-state.js";
 import { otherPlayer } from "#duel/player-id.js";
 import { duelReason } from "#duel/reasons.js";
+import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import type {
   DuelCardInstance,
   DuelEffectContext,
@@ -105,7 +106,14 @@ export function isControlChangePrevented(state: DuelState, card: DuelCardInstanc
   return false;
 }
 
-export function isSpecialSummonPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory, card?: DuelCardInstance): boolean {
+export function isSpecialSummonPrevented(
+  state: DuelState,
+  player: PlayerId,
+  createContext: ContinuousEffectContextFactory,
+  card?: DuelCardInstance,
+  summonTypeCode?: number,
+  relatedEffectId?: number,
+): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 22) continue;
     const source = findCard(state, effect.sourceUid);
@@ -113,6 +121,29 @@ export function isSpecialSummonPrevented(state: DuelState, player: PlayerId, cre
     if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
     const ctx = createContext(effect, source, card);
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  if (card && isSpecialSummonConditionPrevented(state, player, createContext, card, summonTypeCode, relatedEffectId)) return true;
+  return false;
+}
+
+function isSpecialSummonConditionPrevented(
+  state: DuelState,
+  player: PlayerId,
+  createContext: ContinuousEffectContextFactory,
+  card: DuelCardInstance,
+  summonTypeCode?: number,
+  relatedEffectId?: number,
+): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 30 || effect.sourceUid !== card.uid) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source) continue;
+    const ctx = createContext(effect, source, card);
+    ctx.summonTypeCode = effectiveSpecialSummonTypeCode(summonTypeCode);
+    if (relatedEffectId !== undefined) ctx.relatedEffectId = relatedEffectId;
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    if (!effect.valuePredicate) return true;
+    if (!effect.valuePredicate(ctx, player)) return true;
   }
   return false;
 }

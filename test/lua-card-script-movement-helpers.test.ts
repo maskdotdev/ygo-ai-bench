@@ -13,6 +13,7 @@ import {
   xyzSummonDuelCard,
 } from "#duel/core.js";
 import { getCards, moveDuelCard } from "#duel/card-state.js";
+import { luaSummonTypeRitual } from "#duel/summon-type-codes.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -356,7 +357,7 @@ describe("Lua card script movement helpers", () => {
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
-    specialSummonDuelCard(session.state, source!.uid, 0);
+    specialSummonDuelCard(session.state, source!.uid, 0, undefined, {}, luaSummonTypeRitual);
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === source!.uid);
     expect(trigger).toBeDefined();
     applyAndAssert(session, trigger!);
@@ -749,7 +750,7 @@ describe("Lua card script movement helpers", () => {
     });
     expect(session.state.cards.find((card) => card.uid === rankFour!.uid)).toMatchObject({
       location: "monsterZone",
-      summonType: "special",
+      summonType: "xyz",
       overlayUids: expect.arrayContaining([rankThree!.uid]),
     });
     expect(session.state.cards.find((card) => card.uid === rankThree!.uid)).toMatchObject({
