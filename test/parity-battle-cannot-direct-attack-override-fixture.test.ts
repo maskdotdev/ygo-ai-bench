@@ -45,7 +45,37 @@ describe("EDOPro parity battle cannot-direct-attack override fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the Main Phase open window restorable before resolving direct-attack permission conflicts",
+            phase: "main1",
+            waitingFor: 0,
+            pendingBattle: false,
+            currentAttack: false,
+            windowId: 0,
+            windowKind: "open",
+            battleWindow: null,
+            attacksDeclared: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "changePosition", player: 0, code: "100", location: "monsterZone", position: "faceUpDefense", windowId: 0, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Actions",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "changePosition", player: 0, code: "100", location: "monsterZone", position: "faceUpDefense", windowId: 0, windowKind: "open", count: 1 }],
+              },
+              turnGroup(0),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps targeted attacks legal but suppresses direct declarations when CANNOT_DIRECT_ATTACK conflicts with DIRECT_ATTACK",

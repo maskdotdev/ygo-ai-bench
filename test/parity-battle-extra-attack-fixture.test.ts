@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { attackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { attackGroup, passBattleGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 const resolveBattleStepsBeforeFinalPass = [
   makeScriptedStep(makeResponseSelector("passAttack", 1)),
@@ -54,7 +54,25 @@ describe("EDOPro parity battle extra attack fixtures", () => {
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" })),
         ...resolveBattleStepsBeforeFinalPass,
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the final end-damage-step pass restorable before opening the extra direct attack",
+            phase: "battle",
+            waitingFor: 0,
+            windowId: 13,
+            windowKind: "battle",
+            pendingBattle: true,
+            currentAttack: true,
+            battleStep: "damage",
+            battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 0 },
+            damagePasses: [1],
+            locations: { monsterZone: ["100", "200"] },
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "passDamage", player: 0, windowId: 13, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(0, "passDamage", 1, 13)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro lets general EXTRA_ATTACK attackers use their remaining attack directly when the opponent controls no monsters",
