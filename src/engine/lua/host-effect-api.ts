@@ -597,7 +597,8 @@ function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffect
 function luaEffectDefaultRange(card: DuelCardInstance, luaEffect: LuaEffectRecord, event: DuelEffectDefinition["event"]): DuelLocation[] {
   if (event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEventFromCode(luaEffect.code))) return ["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"];
   if (event === "continuous" || event === "summonProcedure" || event === "trigger") return [card.location];
-  if ((luaEffect.typeFlags & 0x10) !== 0 && (card.kind === "spell" || card.kind === "trap")) return ["hand", "spellTrapZone"];
+  if ((luaEffect.typeFlags & 0x10) !== 0 && card.kind === "spell") return ["hand", "spellTrapZone"];
+  if ((luaEffect.typeFlags & 0x10) !== 0 && card.kind === "trap") return ["spellTrapZone"];
   if (card.kind === "spell" || card.kind === "trap") return ["spellTrapZone"];
   return ["monsterZone"];
 }
