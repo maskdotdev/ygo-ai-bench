@@ -633,6 +633,7 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
       triggerEvent === "sentToGraveyard" ||
       triggerEvent === "sentToHand" ||
       triggerEvent === "sentToHandConfirmed" ||
+      triggerEvent === "usedAsMaterial" ||
       triggerEvent === "normalSummoned" ||
       triggerEvent === "specialSummoned")
   );
