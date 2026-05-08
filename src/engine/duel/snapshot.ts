@@ -417,7 +417,7 @@ function assertSnapshotChain(chain: unknown, cardUids: ReadonlySet<string>): voi
     if (!cardUids.has(link.sourceUid as string)) throw new Error(`Malformed duel snapshot: ${path}.sourceUid must reference a card`);
     assertSnapshotPlayerId(link.player, `${path}.player`);
     if (link.activationLocation !== undefined && !duelSnapshotLocations.has(link.activationLocation)) throw new Error(`Malformed duel snapshot: ${path}.activationLocation must be a card location`);
-    for (const field of ["activationSequence", "targetParam", "disableReason"] as const) {
+    for (const field of ["chainIndex", "activationSequence", "targetParam", "disableReason"] as const) {
       if (link[field] !== undefined && typeof link[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
     }
     if (link.targetUids !== undefined) {
@@ -425,10 +425,23 @@ function assertSnapshotChain(chain: unknown, cardUids: ReadonlySet<string>): voi
       assertSnapshotUniqueStringArray(link.targetUids, `${path}.targetUids`);
       for (const [targetIndex, uid] of (link.targetUids as string[]).entries()) if (!cardUids.has(uid)) throw new Error(`Malformed duel snapshot: ${path}.targetUids.${targetIndex} must reference a card`);
     }
+    if (link.operationInfos !== undefined) assertSnapshotOperationInfos(link.operationInfos, `${path}.operationInfos`, cardUids); if (link.possibleOperationInfos !== undefined) assertSnapshotOperationInfos(link.possibleOperationInfos, `${path}.possibleOperationInfos`, cardUids);
     if (link.targetPlayer !== undefined) assertSnapshotPlayerId(link.targetPlayer, `${path}.targetPlayer`);
     if (link.disablePlayer !== undefined) assertSnapshotPlayerId(link.disablePlayer, `${path}.disablePlayer`);
     if (link.negated !== undefined && typeof link.negated !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.negated must be a boolean`);
     assertSnapshotEventPayload(link, path, cardUids);
+  }
+}
+
+function assertSnapshotOperationInfos(value: unknown, path: string, cardUids: ReadonlySet<string>): void {
+  if (!Array.isArray(value)) throw new Error(`Malformed duel snapshot: ${path} must be an array`);
+  for (const [index, info] of value.entries()) {
+    const infoPath = `${path}.${index}`;
+    if (!isRecord(info)) throw new Error(`Malformed duel snapshot: ${infoPath} must be an object`);
+    for (const field of ["category", "count", "parameter"] as const) if (typeof info[field] !== "number") throw new Error(`Malformed duel snapshot: ${infoPath}.${field} must be a number`);
+    assertSnapshotPlayerId(info.player, `${infoPath}.player`);
+    assertSnapshotStringArray(info.targetUids, `${infoPath}.targetUids`); assertSnapshotUniqueStringArray(info.targetUids, `${infoPath}.targetUids`);
+    for (const [targetIndex, uid] of (info.targetUids as string[]).entries()) if (!cardUids.has(uid)) throw new Error(`Malformed duel snapshot: ${infoPath}.targetUids.${targetIndex} must reference a card`);
   }
 }
 
@@ -902,6 +915,8 @@ function copyChainLink(link: DuelState["chain"][number]): DuelState["chain"][num
   return {
     ...copyEventPayload(link),
     ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }),
+    ...(link.operationInfos === undefined ? {} : { operationInfos: copyOperationInfos(link.operationInfos) }),
+    ...(link.possibleOperationInfos === undefined ? {} : { possibleOperationInfos: copyOperationInfos(link.possibleOperationInfos) }),
   };
 }
 
@@ -910,7 +925,13 @@ function copyPublicChainLink(link: DuelState["chain"][number]): PublicChainLink 
   return {
     ...copyEventPayload(publicLink),
     ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }),
+    ...(link.operationInfos === undefined ? {} : { operationInfos: copyOperationInfos(link.operationInfos) }),
+    ...(link.possibleOperationInfos === undefined ? {} : { possibleOperationInfos: copyOperationInfos(link.possibleOperationInfos) }),
   };
+}
+
+function copyOperationInfos(infos: NonNullable<DuelState["chain"][number]["operationInfos"]>): NonNullable<DuelState["chain"][number]["operationInfos"]> {
+  return infos.map((info) => ({ ...info, targetUids: [...info.targetUids] }));
 }
 
 function copyPendingTrigger(trigger: DuelState["pendingTriggers"][number]): DuelState["pendingTriggers"][number] {

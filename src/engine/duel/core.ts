@@ -629,6 +629,8 @@ function createEffectContext(
   eventChainDepth?: number,
   eventChainLinkId?: string,
   eventUids?: string[],
+  operationInfos: NonNullable<DuelEffectContext["operationInfos"]> = [],
+  possibleOperationInfos: NonNullable<DuelEffectContext["possibleOperationInfos"]> = [],
 ): DuelEffectContext {
   const ctx: DuelEffectContext = {
     duel: state,
@@ -651,6 +653,8 @@ function createEffectContext(
     ...(eventCard === undefined ? {} : { eventCard }),
     ...(checkOnly ? { checkOnly } : {}),
     targetUids,
+    operationInfos,
+    possibleOperationInfos,
     ...(targetPlayer === undefined ? {} : { targetPlayer }),
     ...(targetParam === undefined ? {} : { targetParam }),
     ...(chainLink === undefined ? {} : { chainLink }),
@@ -829,11 +833,14 @@ function pushChainLink(
   eventPreviousState?: DuelEventCardState,
   eventCurrentState?: DuelEventCardState,
   eventTriggerTiming?: ChainLink["eventTriggerTiming"],
+  operationInfos: ChainLink["operationInfos"] = [],
+  possibleOperationInfos: ChainLink["possibleOperationInfos"] = [],
 ): void {
   const source = findCard(state, sourceUid);
   const chainLinkId = `chain-${state.log.length + 1}`;
   state.chain.push({
     id: chainLinkId,
+    chainIndex: state.chain.length + 1,
     player,
     sourceUid,
     effectId,
@@ -856,6 +863,8 @@ function pushChainLink(
     ...(eventTriggerTiming === undefined ? {} : { eventTriggerTiming }),
     ...(eventCard === undefined ? {} : { eventCardUid: eventCard.uid }),
     ...(targetUids.length === 0 ? {} : { targetUids: [...targetUids] }),
+    ...(operationInfos.length === 0 ? {} : { operationInfos: copyDuelOperationInfos(operationInfos) }),
+    ...(possibleOperationInfos.length === 0 ? {} : { possibleOperationInfos: copyDuelOperationInfos(possibleOperationInfos) }),
     ...(targetPlayer === undefined ? {} : { targetPlayer }),
     ...(targetParam === undefined ? {} : { targetParam }),
   });
@@ -881,6 +890,10 @@ function pushChainLink(
   state.chainPasses = [];
   markBattleWindowChainStarted(state);
   clearStaleChainLimits(state);
+}
+
+function copyDuelOperationInfos(infos: NonNullable<ChainLink["operationInfos"]>): NonNullable<ChainLink["operationInfos"]> {
+  return infos.map((info) => ({ ...info, targetUids: [...info.targetUids] }));
 }
 
 function passChain(state: DuelState, player: PlayerId): void {
@@ -944,6 +957,8 @@ function resolveChain(state: DuelState): void {
         link.eventChainDepth,
         link.eventChainLinkId,
         link.eventUids,
+        link.operationInfos ? copyDuelOperationInfos(link.operationInfos) : [],
+        link.possibleOperationInfos ? copyDuelOperationInfos(link.possibleOperationInfos) : [],
       );
       (link.operationOverride ?? effect.operation)(ctx);
       collectDuelTriggerEffects(state, "chainSolved", undefined, chainPayload);

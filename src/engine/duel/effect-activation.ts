@@ -67,6 +67,8 @@ export interface DuelActivationHandlers {
     eventPreviousState?: DuelEventCardState,
     eventCurrentState?: DuelEventCardState,
     eventTriggerTiming?: ChainLink["eventTriggerTiming"],
+    operationInfos?: ChainLink["operationInfos"],
+    possibleOperationInfos?: ChainLink["possibleOperationInfos"],
   ): void;
   hasChainResponses(state: DuelState, player: PlayerId): boolean;
   resolveChain(state: DuelState): void;
@@ -85,7 +87,33 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
   try {
     if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);
     if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effectId} are not legal`);
-    handlers.pushChainLink(session.state, player, uid, effectId, undefined, undefined, targetUids, ctx.targetPlayer, ctx.targetParam);
+    handlers.pushChainLink(
+      session.state,
+      player,
+      uid,
+      effectId,
+      undefined,
+      undefined,
+      targetUids,
+      ctx.targetPlayer,
+      ctx.targetParam,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      ctx.operationInfos ?? [],
+      ctx.possibleOperationInfos ?? [],
+    );
     pushDuelLog(session.state, "activate", player, source.name, effect.id);
     markEffectUsed(session.state, effect);
     const responsePlayer = otherPlayer(player);
@@ -187,6 +215,8 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
       trigger.eventPreviousState,
       trigger.eventCurrentState,
       trigger.eventTriggerTiming,
+      ctx.operationInfos ?? [],
+      ctx.possibleOperationInfos ?? [],
     );
     pushDuelLog(session.state, "trigger", trigger.player, source.name, effect.id);
     markEffectUsed(session.state, effect);

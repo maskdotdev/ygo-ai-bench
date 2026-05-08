@@ -72,10 +72,16 @@ function copyPublicChainLink(link: DuelState["chain"][number]): PublicChainLink 
   return {
     ...publicLink,
     ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }),
+    ...(link.operationInfos === undefined ? {} : { operationInfos: copyOperationInfos(link.operationInfos) }),
+    ...(link.possibleOperationInfos === undefined ? {} : { possibleOperationInfos: copyOperationInfos(link.possibleOperationInfos) }),
     ...(link.eventUids === undefined ? {} : { eventUids: [...link.eventUids] }),
     ...(link.eventPreviousState === undefined ? {} : { eventPreviousState: { ...link.eventPreviousState } }),
     ...(link.eventCurrentState === undefined ? {} : { eventCurrentState: { ...link.eventCurrentState } }),
   };
+}
+
+function copyOperationInfos(infos: NonNullable<DuelState["chain"][number]["operationInfos"]>): NonNullable<DuelState["chain"][number]["operationInfos"]> {
+  return infos.map((info) => ({ ...info, targetUids: [...info.targetUids] }));
 }
 
 function copyPendingTrigger(trigger: DuelState["pendingTriggers"][number]): DuelState["pendingTriggers"][number] {

@@ -304,6 +304,8 @@ export interface DuelEffectContext {
   eventUids?: string[];
   checkOnly?: boolean;
   targetUids: string[];
+  operationInfos?: DuelOperationInfo[];
+  possibleOperationInfos?: DuelOperationInfo[];
   targetPlayer?: PlayerId;
   targetParam?: number;
   chainLink?: ChainLink;
@@ -316,8 +318,17 @@ export interface DuelEffectContext {
   setTargetParam(parameter: number): void;
 }
 
+export interface DuelOperationInfo {
+  category: number;
+  targetUids: string[];
+  count: number;
+  player: PlayerId;
+  parameter: number;
+}
+
 export interface ChainLink {
   id: string;
+  chainIndex?: number;
   player: PlayerId;
   sourceUid: string;
   effectId: string;
@@ -340,6 +351,8 @@ export interface ChainLink {
   eventCurrentState?: DuelEventCardState;
   eventTriggerTiming?: TriggerTiming;
   targetUids?: string[];
+  operationInfos?: DuelOperationInfo[];
+  possibleOperationInfos?: DuelOperationInfo[];
   targetPlayer?: PlayerId;
   targetParam?: number;
   negated?: boolean;

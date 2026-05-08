@@ -203,7 +203,13 @@ function copyChainLink(link: ChainLink): ChainLink {
   return {
     ...copyEventPayload(link),
     ...(link.targetUids ? { targetUids: [...link.targetUids] } : {}),
+    ...(link.operationInfos ? { operationInfos: copyOperationInfos(link.operationInfos) } : {}),
+    ...(link.possibleOperationInfos ? { possibleOperationInfos: copyOperationInfos(link.possibleOperationInfos) } : {}),
   };
+}
+
+function copyOperationInfos(infos: NonNullable<ChainLink["operationInfos"]>): NonNullable<ChainLink["operationInfos"]> {
+  return infos.map((info) => ({ ...info, targetUids: [...info.targetUids] }));
 }
 
 function copyPendingTrigger(trigger: PendingTrigger): PendingTrigger {

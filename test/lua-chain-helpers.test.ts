@@ -35,6 +35,8 @@ describe("Lua chain helpers", () => {
           return true
         end)
         e:SetOperation(function(e,c)
+          local ok,g,count=Duel.GetOperationInfo(0, CATEGORY_TOHAND)
+          Debug.Message("source current operation info " .. tostring(ok) .. "/" .. g:GetFirst():GetCode() .. "/" .. count)
           Debug.Message("source resolved")
         end)
         c:RegisterEffect(e)
@@ -61,12 +63,21 @@ describe("Lua chain helpers", () => {
           Debug.Message("chain id disable " .. tostring(chain_id>0) .. "/" .. disable_reason .. "/" .. disable_player)
           local mat=Duel.GetChainMaterial(1)
           Debug.Message("chain material " .. mat:GetCount() .. "/" .. mat:GetFirst():GetCode())
+          local opok,opg,opcount,opp,opparam=Duel.GetOperationInfo(1, CATEGORY_TOHAND)
+          Debug.Message("chain operation info " .. tostring(opok) .. "/" .. opg:GetFirst():GetCode() .. "/" .. opcount .. "/" .. opp .. "/" .. opparam)
           Debug.Message("chain target fallback " .. Duel.GetTargetCards():GetCount() .. "/" .. Duel.GetFirstTarget():GetCode())
           Debug.Message("chain target checks " .. tostring(Duel.CheckChainTarget(1,tg:GetFirst())) .. "/" .. tostring(Duel.CheckChainTarget(1,e:GetHandler())))
           Debug.Message("chain unique " .. tostring(Duel.CheckChainUniqueness()))
-          return tp==0 and tc:IsCode(100) and tg:GetCount()==1 and handler:IsCode(100)
+          return tp==0 and tc:IsCode(100) and tg:GetCount()==1 and handler:IsCode(100) and opok and opg:GetFirst():IsCode(200)
+        end)
+        e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return true end
+          Duel.SetOperationInfo(0, CATEGORY_TOHAND, e:GetHandler(), 1, tp, 0)
+          return true
         end)
         e:SetOperation(function(e,c)
+          local ok,g,count=Duel.GetOperationInfo(0, CATEGORY_TOHAND)
+          Debug.Message("quick current operation info " .. tostring(ok) .. "/" .. g:GetFirst():GetCode() .. "/" .. count)
           Debug.Message("quick resolved")
         end)
         c:RegisterEffect(e)
@@ -95,9 +106,12 @@ describe("Lua chain helpers", () => {
     expect(host.messages).toContain("chain type 64/1");
     expect(host.messages).toContain("chain id disable true/0/0");
     expect(host.messages).toContain("chain material 1/200");
+    expect(host.messages).toContain("chain operation info true/200/1/0/0");
     expect(host.messages).toContain("chain target fallback 1/200");
     expect(host.messages).toContain("chain target checks true/false");
     expect(host.messages).toContain("chain unique true");
+    expect(host.messages).toContain("quick current operation info true/400/1");
+    expect(host.messages).toContain("source current operation info true/200/1");
     expect(host.messages).toContain("quick resolved");
     expect(host.messages).toContain("source resolved");
   });

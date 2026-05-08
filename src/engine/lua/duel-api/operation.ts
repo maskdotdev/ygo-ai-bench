@@ -8,7 +8,7 @@ import { readCardUid } from "#lua/api-utils.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary } from "#lua/duel-api/move.js";
 import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
-import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelEventRecord, DuelSession, PlayerId } from "#duel/types.js";
+import type { ChainLink, DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelEventRecord, DuelOperationInfo, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -30,18 +30,20 @@ export interface LuaDuelOperationInfo {
   parameter: number;
 }
 
+type OperationInfoField = "operationInfos" | "possibleOperationInfos";
+
 export function installDuelOperationApi(L: unknown, session: DuelSession, hostState: LuaDuelOperationApiHostState): void {
-  lua.lua_pushcfunction(L, (state: unknown) => pushSetOperationInfo(state, hostState.operationInfos));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSetOperationInfo(state, session, hostState, hostState.operationInfos));
   lua.lua_setfield(L, -2, to_luastring("SetOperationInfo"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushGetOperationInfo(state, hostState.operationInfos));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetOperationInfo(state, session, hostState, hostState.operationInfos));
   lua.lua_setfield(L, -2, to_luastring("GetOperationInfo"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushGetOperationCount(state, hostState.operationInfos));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetOperationCount(state, session, hostState, hostState.operationInfos));
   lua.lua_setfield(L, -2, to_luastring("GetOperationCount"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushClearOperationInfo(state, hostState.operationInfos));
+  lua.lua_pushcfunction(L, (state: unknown) => pushClearOperationInfo(state, session, hostState, hostState.operationInfos));
   lua.lua_setfield(L, -2, to_luastring("ClearOperationInfo"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushSetOperationInfo(state, hostState.possibleOperationInfos));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSetOperationInfo(state, session, hostState, hostState.possibleOperationInfos));
   lua.lua_setfield(L, -2, to_luastring("SetPossibleOperationInfo"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushGetOperationInfo(state, hostState.possibleOperationInfos));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetOperationInfo(state, session, hostState, hostState.possibleOperationInfos));
   lua.lua_setfield(L, -2, to_luastring("GetPossibleOperationInfo"));
   lua.lua_pushcfunction(L, (state: unknown) => pushRaiseEvent(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("RaiseEvent"));
@@ -201,9 +203,10 @@ function raiseOperationEvent(session: DuelSession, eventName: DuelEventName, car
   else raiseDuelEvent(session.state, eventName, card);
 }
 
-function pushSetOperationInfo(L: unknown, operationInfos: LuaDuelOperationInfo[]): number {
+function pushSetOperationInfo(L: unknown, session: DuelSession, hostState: LuaDuelOperationApiHostState, operationInfos: LuaDuelOperationInfo[]): number {
+  const field = operationInfoField(hostState, operationInfos);
   const info: LuaDuelOperationInfo = {
-    chainIndex: lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : 0,
+    chainIndex: operationInfoChainIndex(session, hostState, lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : 0, "set"),
     category: lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0,
     targetUids: readCardOrGroupUids(L, 3),
     count: lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 0,
@@ -213,13 +216,15 @@ function pushSetOperationInfo(L: unknown, operationInfos: LuaDuelOperationInfo[]
   const existingIndex = operationInfos.findIndex((candidate) => candidate.chainIndex === info.chainIndex && candidate.category === info.category);
   if (existingIndex >= 0) operationInfos[existingIndex] = info;
   else operationInfos.push(info);
+  syncContextOperationInfo(hostState, field, info);
   return 0;
 }
 
-function pushGetOperationInfo(L: unknown, operationInfos: LuaDuelOperationInfo[]): number {
-  const chainIndex = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : 0;
+function pushGetOperationInfo(L: unknown, session: DuelSession, hostState: LuaDuelOperationApiHostState, operationInfos: LuaDuelOperationInfo[]): number {
+  const field = operationInfoField(hostState, operationInfos);
+  const chainIndex = operationInfoChainIndex(session, hostState, lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : 0, "get");
   const category = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
-  const info = findOperationInfo(operationInfos, chainIndex, category);
+  const info = findOperationInfo(operationInfosForChain(session, hostState, operationInfos, field, chainIndex), category);
   if (!info) {
     lua.lua_pushboolean(L, false);
     return 1;
@@ -232,28 +237,126 @@ function pushGetOperationInfo(L: unknown, operationInfos: LuaDuelOperationInfo[]
   return 5;
 }
 
-function pushGetOperationCount(L: unknown, operationInfos: LuaDuelOperationInfo[]): number {
-  const chainIndex = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : 0;
-  lua.lua_pushinteger(L, operationInfos.filter((info) => info.chainIndex === chainIndex).length);
+function pushGetOperationCount(L: unknown, session: DuelSession, hostState: LuaDuelOperationApiHostState, operationInfos: LuaDuelOperationInfo[]): number {
+  const field = operationInfoField(hostState, operationInfos);
+  const chainIndex = operationInfoChainIndex(session, hostState, lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : 0, "get");
+  lua.lua_pushinteger(L, operationInfosForChain(session, hostState, operationInfos, field, chainIndex).length);
   return 1;
 }
 
-function pushClearOperationInfo(L: unknown, operationInfos: LuaDuelOperationInfo[]): number {
-  const chainIndex = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : 0;
+function pushClearOperationInfo(L: unknown, session: DuelSession, hostState: LuaDuelOperationApiHostState, operationInfos: LuaDuelOperationInfo[]): number {
+  const field = operationInfoField(hostState, operationInfos);
+  const chainIndex = operationInfoChainIndex(session, hostState, lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : 0, "get");
   const category = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
   for (let index = operationInfos.length - 1; index >= 0; index -= 1) {
     const candidate = operationInfos[index];
     if (!candidate || candidate.chainIndex !== chainIndex) continue;
     if (category === undefined || candidate.category === category) operationInfos.splice(index, 1);
   }
+  clearContextOperationInfo(session, hostState, field, chainIndex, category);
   return 0;
 }
 
-function findOperationInfo(operationInfos: LuaDuelOperationInfo[], chainIndex: number, category: number): LuaDuelOperationInfo | undefined {
+function findOperationInfo(operationInfos: LuaDuelOperationInfo[], category: number): LuaDuelOperationInfo | undefined {
   for (let index = operationInfos.length - 1; index >= 0; index -= 1) {
     const candidate = operationInfos[index];
     if (!candidate) continue;
-    if (candidate.chainIndex === chainIndex && candidate.category === category) return candidate;
+    if (candidate.category === category) return candidate;
   }
+  return undefined;
+}
+
+function operationInfoChainIndex(session: DuelSession, hostState: LuaDuelOperationApiHostState, requestedIndex: number, mode: "get" | "set"): number {
+  if (requestedIndex !== 0) return requestedIndex;
+  const contextChainIndex = hostState.activeContext ? contextOperationInfoChainIndex(session, hostState.activeContext) : undefined;
+  if (contextChainIndex !== undefined) return contextChainIndex;
+  if (mode === "get" && session.state.chain.length > 0) return session.state.chain.length;
+  return 0;
+}
+
+function operationInfoField(hostState: LuaDuelOperationApiHostState, operationInfos: LuaDuelOperationInfo[]): OperationInfoField {
+  return operationInfos === hostState.possibleOperationInfos ? "possibleOperationInfos" : "operationInfos";
+}
+
+function operationInfosForChain(
+  session: DuelSession,
+  hostState: LuaDuelOperationApiHostState,
+  operationInfos: LuaDuelOperationInfo[],
+  field: OperationInfoField,
+  chainIndex: number,
+): LuaDuelOperationInfo[] {
+  const exact = operationInfos.filter((info) => info.chainIndex === chainIndex);
+  if (exact.length > 0) return exact;
+  const link = chainLinkForOperationInfo(session, hostState, chainIndex);
+  return (link?.[field] ?? []).map((info) => ({ chainIndex, ...info }));
+}
+
+function syncContextOperationInfo(hostState: LuaDuelOperationApiHostState, field: OperationInfoField, info: LuaDuelOperationInfo): void {
+  const ctx = hostState.activeContext;
+  if (!ctx || ctx.checkOnly) return;
+  upsertDuelOperationInfo(ensureContextOperationInfoList(ctx, field), info);
+  if (ctx.chainLink) upsertDuelOperationInfo(ensureChainOperationInfoList(ctx.chainLink, field), info);
+}
+
+function clearContextOperationInfo(session: DuelSession, hostState: LuaDuelOperationApiHostState, field: OperationInfoField, chainIndex: number, category: number | undefined): void {
+  const ctx = hostState.activeContext;
+  if (ctx && contextOperationInfoChainIndex(session, ctx) === chainIndex) clearDuelOperationInfo(ctx[field], category);
+  const link = chainLinkForOperationInfo(session, hostState, chainIndex);
+  clearDuelOperationInfo(link?.[field], category);
+}
+
+function upsertDuelOperationInfo(infos: DuelOperationInfo[], info: LuaDuelOperationInfo): void {
+  const next = duelOperationInfo(info);
+  const existingIndex = infos.findIndex((candidate) => candidate.category === next.category);
+  if (existingIndex >= 0) infos[existingIndex] = next;
+  else infos.push(next);
+}
+
+function clearDuelOperationInfo(infos: DuelOperationInfo[] | undefined, category: number | undefined): void {
+  if (!infos) return;
+  if (category === undefined) {
+    infos.splice(0, infos.length);
+    return;
+  }
+  for (let index = infos.length - 1; index >= 0; index -= 1) if (infos[index]?.category === category) infos.splice(index, 1);
+}
+
+function duelOperationInfo(info: LuaDuelOperationInfo): DuelOperationInfo {
+  return {
+    category: info.category,
+    targetUids: [...info.targetUids],
+    count: info.count,
+    player: info.player,
+    parameter: info.parameter,
+  };
+}
+
+function ensureChainOperationInfoList(link: ChainLink, field: OperationInfoField): DuelOperationInfo[] {
+  if (field === "operationInfos") {
+    link.operationInfos ??= [];
+    return link.operationInfos;
+  }
+  link.possibleOperationInfos ??= [];
+  return link.possibleOperationInfos;
+}
+
+function ensureContextOperationInfoList(ctx: DuelEffectContext, field: OperationInfoField): DuelOperationInfo[] {
+  if (field === "operationInfos") {
+    ctx.operationInfos ??= [];
+    return ctx.operationInfos;
+  }
+  ctx.possibleOperationInfos ??= [];
+  return ctx.possibleOperationInfos;
+}
+
+function chainLinkForOperationInfo(session: DuelSession, hostState: LuaDuelOperationApiHostState, chainIndex: number): ChainLink | undefined {
+  const active = hostState.activeContext?.chainLink;
+  if (active && (active.chainIndex ?? 0) === chainIndex) return active;
+  return session.state.chain.find((link, index) => (link.chainIndex ?? index + 1) === chainIndex);
+}
+
+function contextOperationInfoChainIndex(session: DuelSession, ctx: DuelEffectContext): number | undefined {
+  if (ctx.chainLink?.chainIndex !== undefined) return ctx.chainLink.chainIndex;
+  if (!ctx.checkOnly) return session.state.chain.length + 1;
   return undefined;
 }
