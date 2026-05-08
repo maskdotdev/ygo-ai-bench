@@ -27,7 +27,7 @@ describe("EDOPro parity Pendulum Summon turn reset fixtures", () => {
         ],
       },
       responses: [
-        makeScriptedStep({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"], label: "Pendulum Summon selected first candidate", windowId: 0, windowKind: "open" }, {
+        makeScriptedStep({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"], label: "Pendulum Summon selected first candidate", windowId: 0, windowKind: "open", windowToken: "window-1" }, {
           snapshotRestore: "both",
           before: {
             source: "edopro",

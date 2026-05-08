@@ -86,7 +86,7 @@ describe("EDOPro parity post-Pendulum-Summon open fast-effect pass handoff pass 
         ],
       },
       responses: [
-        makeScriptedStep({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"], label: "Pendulum Summon selected handoff candidate", windowId: 0, windowKind: "open" }, {
+        makeScriptedStep({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"], label: "Pendulum Summon selected handoff candidate", windowId: 0, windowKind: "open", windowToken: "window-1" }, {
           snapshotRestore: "both",
           before: {
             source: "edopro",

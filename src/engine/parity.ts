@@ -821,6 +821,7 @@ function applyFixturePrompt(session: DuelSession, prompt: DuelSession["state"]["
 
 function sameAction(action: DuelAction, response: DuelAction): boolean {
   if (action.type !== response.type || action.player !== response.player) return false;
+  if (hasPartialWindowStamp(response)) return false;
   if (action.windowId !== undefined && response.windowId !== undefined && action.windowId !== response.windowId) return false;
   if (action.windowKind !== undefined && response.windowKind !== undefined && action.windowKind !== response.windowKind) return false;
   if (action.windowToken !== undefined && response.windowToken !== undefined && action.windowToken !== response.windowToken) return false;
@@ -849,6 +850,13 @@ function sameAction(action: DuelAction, response: DuelAction): boolean {
   if (action.type === "cancelAttack" && response.type === "cancelAttack" && action.attackerUid !== response.attackerUid) return false;
   if (action.type === "changePhase" && response.type === "changePhase" && action.phase !== response.phase) return false;
   return true;
+}
+
+function hasPartialWindowStamp(response: DuelAction): boolean {
+  const hasWindowId = response.windowId !== undefined;
+  const hasWindowKind = response.windowKind !== undefined;
+  const hasWindowToken = response.windowToken !== undefined;
+  return (hasWindowId || hasWindowKind || hasWindowToken) && !(hasWindowId && hasWindowKind && hasWindowToken);
 }
 
 function sameDirectAttackIntent(action: Extract<DuelAction, { type: "declareAttack" | "replayAttack" }>, response: Extract<DuelAction, { type: "declareAttack" | "replayAttack" }>): boolean {
