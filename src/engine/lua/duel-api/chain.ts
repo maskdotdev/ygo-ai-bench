@@ -597,11 +597,12 @@ function literalNotActiveTypePredicate(L: unknown, index: number, hostState: Lua
   if (!snippet) return undefined;
   const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
   const effectParam = params?.[0];
-  const match = snippet.match(/return\s+not\s+([A-Za-z_]\w*)\s*:\s*(IsMonsterEffect|IsSpellEffect|IsTrapEffect)\s*\(\s*\)/);
-  if (!effectParam || match?.[1] !== effectParam || !match[2]) return undefined;
-  if (match[2] === "IsMonsterEffect") return 0x1;
-  if (match[2] === "IsSpellEffect") return 0x2;
-  if (match[2] === "IsTrapEffect") return 0x4;
+  if (!effectParam) return undefined;
+  const compatibilityMatch = snippet.match(/return\s+not\s+([A-Za-z_]\w*)\s*:\s*(IsMonsterEffect|IsSpellEffect|IsTrapEffect)\s*\(\s*\)/);
+  if (compatibilityMatch?.[1] === effectParam && compatibilityMatch[2]) return activeTypeMethodMask(compatibilityMatch[2]);
+  const directMatch = snippet.match(new RegExp(`return\\s+not\\s+${escapeRegExp(effectParam)}\\s*:\\s*IsActiveType\\s*\\(\\s*(${activeTypeMaskExpressionPattern})\\s*\\)`));
+  const mask = directMatch?.[1] ? activeTypeMaskTokenValue(directMatch[1]) : undefined;
+  if (mask !== undefined && Number.isSafeInteger(mask) && mask > 0) return mask;
   return undefined;
 }
 
@@ -629,10 +630,41 @@ function literalResponseMatchesChainPlayerOrNotActiveTypePredicate(L: unknown, i
   const match = snippet.match(new RegExp(`return\\s+(?:${equalityPattern})\\s+or\\s+${activeTypePattern}`))
     ?? snippet.match(new RegExp(`return\\s+${activeTypePattern}\\s+or\\s+(?:${equalityPattern})`));
   const method = match?.[1] ?? match?.[2];
+  const compatibilityMask = method ? activeTypeMethodMask(method) : undefined;
+  if (compatibilityMask !== undefined) return compatibilityMask;
+
+  const directActiveTypePattern = `not\\s+${effectParam}\\s*:\\s*IsActiveType\\s*\\(\\s*(${activeTypeMaskExpressionPattern})\\s*\\)`;
+  const directMatch = snippet.match(new RegExp(`return\\s+(?:${equalityPattern})\\s+or\\s+${directActiveTypePattern}`))
+    ?? snippet.match(new RegExp(`return\\s+${directActiveTypePattern}\\s+or\\s+(?:${equalityPattern})`));
+  const token = directMatch?.[1] ?? directMatch?.[2];
+  const mask = token ? activeTypeMaskTokenValue(token) : undefined;
+  return mask !== undefined && Number.isSafeInteger(mask) && mask > 0 ? mask : undefined;
+}
+
+function activeTypeMethodMask(method: string): number | undefined {
   if (method === "IsMonsterEffect") return 0x1;
   if (method === "IsSpellEffect") return 0x2;
   if (method === "IsTrapEffect") return 0x4;
   return undefined;
+}
+
+const activeTypeMaskExpressionPattern = String.raw`(?:TYPE_MONSTER|TYPE_SPELL|TYPE_TRAP|\d+)(?:\s*(?:\+|\|)\s*(?:TYPE_MONSTER|TYPE_SPELL|TYPE_TRAP|\d+))*`;
+const activeTypeMasks: Record<string, number> = {
+  TYPE_MONSTER: 0x1,
+  TYPE_SPELL: 0x2,
+  TYPE_TRAP: 0x4,
+};
+
+function activeTypeMaskTokenValue(token: string): number | undefined {
+  const parts = token.split(/\s*(?:\+|\|)\s*/).filter(Boolean);
+  if (parts.length === 0) return undefined;
+  let mask = 0;
+  for (const part of parts) {
+    const value = activeTypeMasks[part] ?? (/^\d+$/.test(part) ? Number(part) : undefined);
+    if (value === undefined || !Number.isSafeInteger(value) || value <= 0) return undefined;
+    mask |= value;
+  }
+  return mask;
 }
 
 function luaFunctionSourceSnippet(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string | undefined {
