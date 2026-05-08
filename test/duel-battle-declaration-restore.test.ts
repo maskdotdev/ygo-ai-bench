@@ -249,11 +249,27 @@ describe("battle declaration restore", () => {
     expect(restored.state.battleWindow).toMatchObject({ kind: "attackNegationResponse", responsePlayer: 0 });
     const turnPass = getDuelLegalActions(restored, 0).find((action) => action.type === "passAttack");
     expect(turnPass).toBeDefined();
+    expect(turnPass!.windowToken).toBeDefined();
 
     const stalePass = applyResponse(restored, { ...turnPass!, windowId: turnPass!.windowId! - 1 });
     expect(stalePass.ok).toBe(false);
     expect(stalePass.error).toContain("Response is not currently legal");
     assertLegalWindow(restored, stalePass, 0);
+    const forgedDamagePass = applyResponse(restored, {
+      type: "passDamage",
+      player: 0,
+      label: "Forge damage pass into restored turn attack response",
+      windowId: turnPass!.windowId!,
+      windowKind: turnPass!.windowKind!,
+      windowToken: turnPass!.windowToken!,
+    });
+    expect(forgedDamagePass.ok).toBe(false);
+    expect(forgedDamagePass.error).toContain("Response is not currently legal");
+    assertLegalWindow(restored, forgedDamagePass, 0);
+    expect(restored.state.attackPasses).toEqual([1]);
+    expect(restored.state.currentAttack).toMatchObject({ attackerUid: attacker!.uid, targetUid: target!.uid });
+    expect(restored.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid, targetUid: target!.uid });
+    expect(restored.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpAttack" });
 
     const passResult = applyResponse(restored, turnPass!);
     expect(passResult.ok, passResult.error).toBe(true);
