@@ -117,6 +117,51 @@ describe("EDOPro parity Tribute Summon success fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-tribute-success-watcher" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro releases Tribute Summon material, places the summoned monster face-up, and queues Normal Summon success triggers",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "fixture-tribute-success-watcher", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-tribute-success-watcher", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-tribute-success-watcher", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-tribute-success-watcher", triggerBucket: "turnOptional", count: 1 },
+                ],
+              },
+              {
+                player: 0,
+                label: "Trigger Declines",
+                windowId: 1,
+                windowKind: "triggerBucket",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                count: 1,
+                actions: [
+                  { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-tribute-success-watcher", triggerBucket: "turnOptional", count: 1 },
+                ],
+              },
+            ],
+            locations: { monsterZone: ["100"], graveyard: ["200"], hand: ["300"] },
+            cards: [
+              { uid: "p0-deck-100-0", code: "100", location: "monsterZone", position: "faceUpAttack", faceUp: true },
+              { uid: "p0-deck-200-1", code: "200", location: "graveyard" },
+            ],
+            logIncludes: ["Tributed for One Tribute Summon Candidate", "Tribute Summoned with 1 tribute(s)"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the Normal Summon success trigger after a Tribute Summon completes",

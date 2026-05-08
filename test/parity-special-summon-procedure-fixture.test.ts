@@ -106,6 +106,17 @@ describe("EDOPro parity special summon procedure fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-special-success-watcher" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro queues Special Summon success triggers after an inherent Special Summon completes without negation",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "fixture-special-success-watcher", eventName: "specialSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            locations: { monsterZone: ["100"], hand: ["200"] },
+            cards: [{ uid: "p0-deck-100-0", code: "100", location: "monsterZone", faceUp: true }],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the Special Summon success trigger after the procedure summon reaches the field",
