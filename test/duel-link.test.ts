@@ -145,6 +145,48 @@ describe("duel link summons", () => {
     expect(session.state.cards.find((card) => card.uid === secondMaterial!.uid)?.location).toBe("graveyard");
   });
 
+  it("finds later explicit Link material copies when their rating makes the summon legal", () => {
+    const session = createDuel({
+      seed: 1,
+      startingHandSize: 3,
+      cardReader: createCardReader([
+        { code: "100", name: "First Code A Material", kind: "monster" },
+        { code: "200", name: "Code B Material", kind: "monster" },
+        { code: "300", alias: "100", name: "Link-2 Code A Material", kind: "extra", typeFlags: 0x4000001, level: 2 },
+        { code: "930", name: "Explicit Link-3", kind: "extra", typeFlags: 0x4000001, level: 3, linkMaterials: ["100", "200"] },
+      ]),
+    });
+    loadDecks(session, {
+      0: { main: ["100", "300", "200"], extra: ["930"] },
+      1: { main: ["200", "200", "200"] },
+    });
+    startDuel(session);
+
+    const link = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "930");
+    const firstCodeA = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const ratedCodeA = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const codeB = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    expect(link).toBeTruthy();
+    expect(firstCodeA).toBeTruthy();
+    expect(ratedCodeA).toBeTruthy();
+    expect(codeB).toBeTruthy();
+    moveDuelCard(session.state, firstCodeA!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, ratedCodeA!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, codeB!.uid, "monsterZone", 0);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "linkSummon" && candidate.uid === link!.uid);
+    expect(action).toBeTruthy();
+    expect(action).toMatchObject({ materialUids: [ratedCodeA!.uid, codeB!.uid] });
+
+    const result = applyResponse(session, action!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === link!.uid)?.location).toBe("monsterZone");
+    expect(result.state.cards.find((card) => card.uid === firstCodeA!.uid)?.location).toBe("monsterZone");
+    expect(result.state.cards.find((card) => card.uid === ratedCodeA!.uid)?.location).toBe("graveyard");
+    expect(result.state.cards.find((card) => card.uid === codeB!.uid)?.location).toBe("graveyard");
+  });
+
   it("rejects non-monsters as Link summon targets", () => {
     const session = createDuel({
       seed: 1,

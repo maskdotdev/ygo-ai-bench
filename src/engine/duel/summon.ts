@@ -630,10 +630,12 @@ function findLinkMaterialUids(materialPool: DuelCardInstance[], card: DuelCardIn
   const targetRating = linkRating(card);
   if (targetRating <= 0) return undefined;
   if (card.data.linkMaterials?.length) {
-    const materialUids = findMaterialUids(materialPool, card.data.linkMaterials);
-    if (!materialUids) return undefined;
-    const materials = materialUids.map((materialUid) => materialPool.find((material) => material.uid === materialUid)).filter((material): material is DuelCardInstance => Boolean(material));
-    return canLinkMaterialsMatchRating(materials, targetRating) ? materialUids : undefined;
+    for (const materials of cardCombinations(materialPool, card.data.linkMaterials.length)) {
+      if (materialCodesMatch(materials, card.data.linkMaterials) && canLinkMaterialsMatchRating(materials, targetRating)) {
+        return materials.map((material) => material.uid);
+      }
+    }
+    return undefined;
   }
   for (let count = 1; count <= materialPool.length; count += 1) {
     for (const materials of cardCombinations(materialPool, count)) {
