@@ -269,6 +269,7 @@ export function shouldContinueTriggerSelection(state: DuelState): boolean {
 }
 
 function triggerEventPayloadMatchesLink(trigger: DuelState["pendingTriggers"][number], link: ChainLink): boolean {
+  const sameEventGroup = sameOptionalStringList(trigger.eventUids, link.eventUids) && trigger.eventUids !== undefined && link.eventUids !== undefined;
   return (
     trigger.eventName === link.eventName &&
     trigger.eventCode === link.eventCode &&
@@ -281,10 +282,10 @@ function triggerEventPayloadMatchesLink(trigger: DuelState["pendingTriggers"][nu
     trigger.relatedEffectId === link.relatedEffectId &&
     trigger.eventChainDepth === link.eventChainDepth &&
     trigger.eventChainLinkId === link.eventChainLinkId &&
-    trigger.eventCardUid === link.eventCardUid &&
+    (sameEventGroup || trigger.eventCardUid === link.eventCardUid) &&
     sameOptionalStringList(trigger.eventUids, link.eventUids) &&
-    sameEventCardState(trigger.eventPreviousState, link.eventPreviousState) &&
-    sameEventCardState(trigger.eventCurrentState, link.eventCurrentState)
+    (sameEventGroup || sameEventCardState(trigger.eventPreviousState, link.eventPreviousState)) &&
+    (sameEventGroup || sameEventCardState(trigger.eventCurrentState, link.eventCurrentState))
   );
 }
 

@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { pushDuelLog } from "#duel/card-state.js";
-import { collectDuelTriggerEffects, raiseDuelEvent, raiseDuelEventWithCode } from "#duel/core.js";
+import { collectDuelGroupedTriggerEffects, collectDuelTriggerEffects, raiseDuelEvent, raiseDuelEventWithCode } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { triggerEventFromCode } from "#lua/event-code.js";
 import { pushGroupTable } from "#lua/group-api.js";
@@ -103,11 +103,11 @@ function pushRaiseEvent(L: unknown, session: DuelSession, hostState: LuaDuelOper
   if (!eventName) return 0;
   markLuaOperationTimingBoundary(session, hostState);
   const eventUids = readCardOrGroupUids(L, 1);
-  for (const uid of eventUids) {
-    const card = session.state.cards.find((candidate) => candidate.uid === uid);
-    if (card) raiseOperationEvent(session, eventName, card, eventCode, { ...payload, eventUids });
+  const eventCards = eventUids.map((uid) => session.state.cards.find((candidate) => candidate.uid === uid)).filter((card): card is DuelCardInstance => Boolean(card));
+  if (eventCards.length > 0) {
+    raiseOperationGroupEvent(session, eventName, eventCards, eventCode, { ...payload, eventUids });
+    if (hostState.activeContext) hostState.activeOperationMoved = true;
   }
-  if (eventUids.length > 0 && hostState.activeContext) hostState.activeOperationMoved = true;
   return 0;
 }
 
@@ -201,6 +201,10 @@ function raiseOperationEvent(session: DuelSession, eventName: DuelEventName, car
   if (eventCode !== undefined) raiseDuelEventWithCode(session.state, eventName, eventCode, card, payload);
   else if (Object.keys(payload).length > 0) collectDuelTriggerEffects(session.state, eventName, card, payload);
   else raiseDuelEvent(session.state, eventName, card);
+}
+
+function raiseOperationGroupEvent(session: DuelSession, eventName: DuelEventName, cards: DuelCardInstance[], eventCode: number | undefined, payload: LuaRaiseEventPayload): void {
+  collectDuelGroupedTriggerEffects(session.state, eventName, cards, eventCode === undefined ? payload : { ...payload, eventCode });
 }
 
 function pushSetOperationInfo(L: unknown, session: DuelSession, hostState: LuaDuelOperationApiHostState, operationInfos: LuaDuelOperationInfo[]): number {

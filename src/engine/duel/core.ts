@@ -116,11 +116,11 @@ import {
   type CoreMovementHandlers,
 } from "#duel/core-movement.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
-import { duelEventCode } from "#duel/event-codes.js";
 import { createEffectContext } from "#duel/effect-context.js";
-import { eventCardReasonPayload, eventCardStatePayload, recordDuelEvent, relatedEffectPayload, type DuelEventPayload } from "#duel/event-history.js";
+import { eventCardStatePayload, relatedEffectPayload, type DuelEventPayload } from "#duel/event-history.js";
 import { pruneResetEffectsAfterChain, pruneResetEffectsAfterDisable } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterChain, pruneDuelFlagEffectsAfterDisable } from "#duel/flags.js";
+import { collectDuelGroupedTriggerEffectsWithChooser } from "#duel/grouped-trigger-events.js";
 import type { ReplacementEffectHandlers } from "#duel/replacement-effects.js";
 import { getPendingTriggerActions } from "#duel/pending-trigger-actions.js";
 import { groupDuelLegalActions } from "#duel/legal-action-groups.js";
@@ -138,7 +138,6 @@ import { setSpellTrap } from "#duel/spell-trap.js";
 import { canActivateSpellTrapCardEffect, shouldSendActivatedSpellTrapToGraveyard } from "#duel/spell-trap-activation.js";
 import { negateCoreDuelSummon } from "#duel/summon-negation.js";
 import { duelSummonTypeFromCode, luaSummonTypeFusion, luaSummonTypeLink, luaSummonTypePendulum, luaSummonTypeRitual, luaSummonTypeSynchro, luaSummonTypeXyz } from "#duel/summon-type-codes.js";
-import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
 import { changeDuelPhase, drawDuelCardsFromDeck, endDuelTurn, nextAvailableDuelPhase } from "#duel/turn-flow.js";
 export { createDuel, loadDecks, startDuel, type CreateDuelOptions } from "#duel/setup.js";
 import type {
@@ -668,34 +667,27 @@ function createReplacementEffectHandlers(state: DuelState): ReplacementEffectHan
 }
 
 export function collectDuelTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance, options: DuelEventPayload = {}): void {
-  const eventCode = options.eventCode ?? duelEventCode(eventName);
-  const triggerOptions = eventCode === undefined ? options : { ...options, eventCode };
-  recordDuelEvent(state, eventName, eventCard, eventCode, {
-    ...eventCardReasonPayload(eventCard),
-    ...(options.eventPlayer === undefined ? {} : { eventPlayer: options.eventPlayer }),
-    ...(options.eventValue === undefined ? {} : { eventValue: options.eventValue }),
-    ...(options.eventReason === undefined ? {} : { eventReason: options.eventReason }),
-    ...(options.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: options.eventReasonPlayer }),
-    ...(options.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: options.eventReasonCardUid }),
-    ...(options.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: options.eventReasonEffectId }),
-    ...(options.relatedEffectId === undefined ? {} : { relatedEffectId: options.relatedEffectId }),
-    ...(options.eventChainDepth === undefined ? {} : { eventChainDepth: options.eventChainDepth }),
-    ...(options.eventChainLinkId === undefined ? {} : { eventChainLinkId: options.eventChainLinkId }),
-    ...(options.eventUids === undefined || options.eventUids.length === 0 ? {} : { eventUids: [...options.eventUids] }),
-  });
-  collectTriggerEffectsRule(
+  collectDuelGroupedTriggerEffectsWithChooser(
     state,
     eventName,
-    (duel, effect, source, triggerEventName, triggerEventCard) => canChooseEffect(duel, effect, source, effect.controller, triggerEventName, triggerEventCard, options),
-    eventCard,
-    triggerOptions,
+    eventCard ? [eventCard] : [],
+    options,
+    (duel, effect, source, triggerEventName, triggerEventCard, payload) => canChooseEffect(duel, effect, source, effect.controller, triggerEventName, triggerEventCard, payload),
   );
 }
 
+export function collectDuelGroupedTriggerEffects(state: DuelState, eventName: DuelEventName, eventCards: DuelCardInstance[], options: DuelEventPayload = {}): void {
+  collectDuelGroupedTriggerEffectsWithChooser(
+    state,
+    eventName,
+    eventCards,
+    options,
+    (duel, effect, source, triggerEventName, triggerEventCard, payload) => canChooseEffect(duel, effect, source, effect.controller, triggerEventName, triggerEventCard, payload),
+  );
+}
 function collectTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
   collectDuelTriggerEffects(state, eventName, eventCard);
 }
-
 function executeContinuousPhaseEffects(state: DuelState, phase: DuelPhase): void {
   const code = 0x1000 | phaseMask(phase);
   for (const effect of [...state.effects]) {

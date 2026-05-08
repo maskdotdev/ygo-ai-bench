@@ -1,0 +1,60 @@
+import { duelEventCode } from "#duel/event-codes.js";
+import { eventCardReasonPayload, recordDuelEvent, type DuelEventPayload } from "#duel/event-history.js";
+import { collectGroupedTriggerEffects, collectTriggerEffects } from "#duel/triggers.js";
+import type { DuelCardInstance, DuelEffectDefinition, DuelEventName, DuelState } from "#duel/types.js";
+
+type GroupedTriggerChooser = (
+  state: DuelState,
+  effect: DuelEffectDefinition,
+  source: DuelCardInstance,
+  eventName: DuelEventName,
+  eventCard: DuelCardInstance | undefined,
+  payload: DuelEventPayload,
+) => boolean;
+
+export function collectDuelGroupedTriggerEffectsWithChooser(
+  state: DuelState,
+  eventName: DuelEventName,
+  eventCards: DuelCardInstance[],
+  options: DuelEventPayload,
+  canChooseEffect: GroupedTriggerChooser,
+): void {
+  const uniqueEventCards = uniqueCards(eventCards);
+  const eventCard = uniqueEventCards[0];
+  const eventUids = uniqueEventCards.length > 1 ? uniqueEventCards.map((card) => card.uid) : options.eventUids;
+  const groupedOptions = eventUids && eventUids.length > 0 ? { ...options, eventUids } : options;
+  const eventCode = groupedOptions.eventCode ?? duelEventCode(eventName);
+  const triggerOptions = eventCode === undefined ? groupedOptions : { ...groupedOptions, eventCode };
+  recordDuelEvent(state, eventName, eventCard, eventCode, eventRecordPayload(eventCard, groupedOptions));
+  const chooser = (duel: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, triggerEventName: DuelEventName, triggerEventCard?: DuelCardInstance) =>
+    canChooseEffect(duel, effect, source, triggerEventName, triggerEventCard, triggerOptions);
+  if (uniqueEventCards.length <= 1) collectTriggerEffects(state, eventName, chooser, eventCard, triggerOptions);
+  else collectGroupedTriggerEffects(state, eventName, chooser, uniqueEventCards, triggerOptions);
+}
+
+function uniqueCards(cards: DuelCardInstance[]): DuelCardInstance[] {
+  const seen = new Set<string>();
+  const result: DuelCardInstance[] = [];
+  for (const card of cards) {
+    if (seen.has(card.uid)) continue;
+    seen.add(card.uid);
+    result.push(card);
+  }
+  return result;
+}
+
+function eventRecordPayload(eventCard: DuelCardInstance | undefined, options: DuelEventPayload): Parameters<typeof recordDuelEvent>[4] {
+  return {
+    ...eventCardReasonPayload(eventCard),
+    ...(options.eventPlayer === undefined ? {} : { eventPlayer: options.eventPlayer }),
+    ...(options.eventValue === undefined ? {} : { eventValue: options.eventValue }),
+    ...(options.eventReason === undefined ? {} : { eventReason: options.eventReason }),
+    ...(options.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: options.eventReasonPlayer }),
+    ...(options.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: options.eventReasonCardUid }),
+    ...(options.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: options.eventReasonEffectId }),
+    ...(options.relatedEffectId === undefined ? {} : { relatedEffectId: options.relatedEffectId }),
+    ...(options.eventChainDepth === undefined ? {} : { eventChainDepth: options.eventChainDepth }),
+    ...(options.eventChainLinkId === undefined ? {} : { eventChainLinkId: options.eventChainLinkId }),
+    ...(options.eventUids === undefined || options.eventUids.length === 0 ? {} : { eventUids: [...options.eventUids] }),
+  };
+}

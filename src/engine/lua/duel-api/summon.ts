@@ -12,6 +12,7 @@ import {
   canMoveDuelCardToLocation,
   canPlayerSpecialSummon,
   canSpecialSummonDuelCard,
+  collectDuelGroupedTriggerEffects,
   collectDuelTriggerEffects,
   fusionSummonDuelCard,
   linkSummonDuelCard,
@@ -434,10 +435,8 @@ function pushSpecialSummonComplete(L: unknown, session: DuelSession, hostState: 
     return pushEmptyIntegerResult(L, hostState);
   }
   const completed = hostState.pendingSpecialSummonUids ?? [];
-  for (const uid of completed) {
-    const card = session.state.cards.find((candidate) => candidate.uid === uid);
-    if (card) collectDuelTriggerEffects(session.state, "specialSummoned", card, { eventUids: completed });
-  }
+  const completedCards = completed.map((uid) => session.state.cards.find((candidate) => candidate.uid === uid)).filter((card): card is DuelCardInstance => Boolean(card));
+  if (completedCards.length > 0) collectDuelGroupedTriggerEffects(session.state, "specialSummoned", completedCards, { eventUids: completed });
   setOperatedUids(hostState, completed);
   hostState.pendingSpecialSummonUids = [];
   lua.lua_pushinteger(L, completed.length);

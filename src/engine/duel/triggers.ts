@@ -44,6 +44,57 @@ export function collectTriggerEffects(state: DuelState, eventName: DuelEventName
   setWaitingForPendingTriggerBucket(state);
 }
 
+export function collectGroupedTriggerEffects(state: DuelState, eventName: DuelEventName, canChooseEffect: DuelTriggerChooser, eventCards: DuelCardInstance[], options: DuelTriggerCollectOptions = {}): void {
+  const uniqueEventCards = uniqueCards(eventCards);
+  if (uniqueEventCards.length <= 1) {
+    collectTriggerEffects(state, eventName, canChooseEffect, uniqueEventCards[0], options);
+    return;
+  }
+  const eventUids = options.eventUids && options.eventUids.length > 0 ? options.eventUids : uniqueEventCards.map((card) => card.uid);
+  const groupedOptions = { ...options, eventUids };
+  const collected: Array<{ effect: DuelEffectDefinition; source: DuelCardInstance; index: number; eventCard?: DuelCardInstance }> = [];
+  const eventIsLast = groupedOptions.eventIsLast ?? true;
+  for (const [index, effect] of state.effects.entries()) {
+    if (effect.event !== "trigger" || effect.triggerEvent !== eventName) continue;
+    if (effect.triggerCode !== undefined && groupedOptions.eventCode !== undefined && !triggerCodeMatchesEvent(eventName, effect.triggerCode, groupedOptions.eventCode)) continue;
+    if (eventName === "customEvent" && effect.triggerCode !== groupedOptions.eventCode) continue;
+    if (effect.optional !== false && effect.triggerTiming === "when" && !eventIsLast) continue;
+    if (!canUseEffectCount(state, effect)) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (isTriggerPrevented(state, source)) continue;
+    const eventCard = effect.triggerSourceOnly ? uniqueEventCards.find((card) => card.uid === source.uid) : firstChoosableEventCard(state, effect, source, eventName, uniqueEventCards, canChooseEffect);
+    if (!eventCard) continue;
+    if (effect.triggerSourceOnly && !canChooseEffect(state, effect, source, eventName, eventCard)) continue;
+    collected.push({ effect, source, index, eventCard });
+  }
+  collected.sort((a, b) => triggerPriority(state, a.effect) - triggerPriority(state, b.effect) || a.index - b.index);
+  for (const trigger of collected) state.pendingTriggers.push(createPendingTrigger(state, trigger.effect, trigger.source, eventName, trigger.eventCard, groupedOptions));
+  setWaitingForPendingTriggerBucket(state);
+}
+
+function uniqueCards(cards: DuelCardInstance[]): DuelCardInstance[] {
+  const seen = new Set<string>();
+  const result: DuelCardInstance[] = [];
+  for (const card of cards) {
+    if (seen.has(card.uid)) continue;
+    seen.add(card.uid);
+    result.push(card);
+  }
+  return result;
+}
+
+function firstChoosableEventCard(
+  state: DuelState,
+  effect: DuelEffectDefinition,
+  source: DuelCardInstance,
+  eventName: DuelEventName,
+  eventCards: DuelCardInstance[],
+  canChooseEffect: DuelTriggerChooser,
+): DuelCardInstance | undefined {
+  return eventCards.find((card) => canChooseEffect(state, effect, source, eventName, card));
+}
+
 function triggerPriority(state: DuelState, effect: DuelEffectDefinition): number {
   return triggerBucketPriority(triggerBucket(state, effect));
 }
