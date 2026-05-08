@@ -601,6 +601,7 @@ function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffec
     pushCardTable(L, card.uid);
     return 2;
   }
+  const appendSummonProcedureCard = luaEffect.code === 34;
   lua.lua_pushinteger(L, ctx?.player ?? card.controller);
   pushGroupTable(L, ctx?.eventUids ?? (ctx?.eventCard ? [ctx.eventCard.uid] : []));
   lua.lua_pushinteger(L, chainLink?.eventPlayer ?? chainLink?.player ?? ctx?.eventPlayer ?? ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);
@@ -610,6 +611,14 @@ function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffec
   lua.lua_pushinteger(L, chainLink?.eventReasonPlayer ?? chainLink?.player ?? ctx?.eventReasonPlayer ?? ctx?.eventCard?.reasonPlayer ?? ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);
   if (kind === "cost" || kind === "target") {
     lua.lua_pushinteger(L, ctx?.checkOnly ? 0 : 1);
+    if (kind === "target" && appendSummonProcedureCard) {
+      pushCardTable(L, card.uid);
+      return 10;
+    }
+    return 9;
+  }
+  if (kind === "operation" && appendSummonProcedureCard) {
+    pushCardTable(L, card.uid);
     return 9;
   }
   return 8;
