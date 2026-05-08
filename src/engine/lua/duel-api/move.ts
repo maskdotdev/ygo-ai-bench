@@ -174,6 +174,7 @@ function pushRemove(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiH
   const reason = readMoveReason(L, 3, 0);
   const moved: string[] = [];
   beginLuaOperationMoveStep(session, hostState);
+  const triggerStart = session.state.pendingTriggers.length;
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
@@ -188,6 +189,7 @@ function pushRemove(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiH
     }
   }
   finishLuaOperationMoveStep(hostState, moved.length > 0);
+  regroupLuaOperationEvent(session, triggerStart, "banished", moved, "banished");
   setOperatedUids(hostState, moved);
   lua.lua_pushinteger(L, moved.length);
   return 1;

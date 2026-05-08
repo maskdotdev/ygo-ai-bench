@@ -611,7 +611,7 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
   return (
     (typeFlags & 0x1) !== 0 &&
     ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) &&
-    (triggerEvent === "destroyed" || triggerEvent === "released" || triggerEvent === "sentToGraveyard" || triggerEvent === "normalSummoned" || triggerEvent === "specialSummoned")
+    (triggerEvent === "banished" || triggerEvent === "destroyed" || triggerEvent === "released" || triggerEvent === "sentToGraveyard" || triggerEvent === "normalSummoned" || triggerEvent === "specialSummoned")
   );
 }
 
