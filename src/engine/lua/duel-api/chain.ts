@@ -189,6 +189,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   const handlerExclusionUids = literalCapturedHandlerExclusionCardUids(L, index, hostState);
   if (handlerExclusionUids?.length === 1) return `closure:card-not-handler:${handlerExclusionUids[0]}`;
   if (handlerExclusionUids && handlerExclusionUids.length > 1) return `closure:cards-not-handler:${handlerExclusionUids.map(encodeURIComponent).join(",")}`;
+  const targetHandlerExclusionUids = literalTargetCardsHandlerExclusionUids(L, index, hostState);
+  if (targetHandlerExclusionUids) return `closure:target-cards-not-handler:${targetHandlerExclusionUids.map(encodeURIComponent).join(",")}`;
   const typeMask = capturedTypeMask(L, index);
   if (typeMask !== undefined) return `closure:type-mask-response-player:${typeMask}`;
   const handlerCode = capturedHandlerCode(L, index);
@@ -323,6 +325,25 @@ function capturedCardOrNilUpvalues(L: unknown, index: number): Map<string, strin
   return upvalues;
 }
 
+function literalTargetCardsHandlerExclusionUids(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string[] | undefined {
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
+  const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
+  const effectParam = params?.[0];
+  const capturedNames = nonEnvironmentUpvalueNames(L, index);
+  const targetEffectParam = capturedNames.length === 1 ? capturedNames[0] : undefined;
+  const targetUids = [...new Set(hostState.activeContext?.targetUids ?? [])].sort();
+  if (!effectParam || !targetEffectParam || targetUids.length === 0) return undefined;
+  const targetGroupContainsHandler = [
+    String.raw`Duel\s*\.\s*GetTargetCards\s*\(\s*`,
+    escapeRegExp(targetEffectParam),
+    String.raw`\s*\)\s*:\s*IsContains\s*\(\s*`,
+    escapeRegExp(effectParam),
+    String.raw`\s*:\s*GetHandler\s*\(\s*\)\s*\)`,
+  ].join("");
+  return new RegExp(String.raw`\breturn\s+not\s+${targetGroupContainsHandler}(?:\s+end\b|$)`).test(snippet) ? targetUids : undefined;
+}
+
 function capturedTypeMask(L: unknown, index: number): number | undefined {
   const absoluteIndex = lua.lua_absindex(L, index);
   const numbers: Array<{ name: string; value: number }> = [];
@@ -426,6 +447,18 @@ function hasNonEnvironmentUpvalues(L: unknown, index: number): boolean {
     const name = typeof nameBytes === "string" ? nameBytes : to_jsstring(nameBytes);
     lua.lua_pop(L, 1);
     if (name !== "_ENV") return true;
+  }
+}
+
+function nonEnvironmentUpvalueNames(L: unknown, index: number): string[] {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  const names: string[] = [];
+  for (let upvalueIndex = 1;; upvalueIndex += 1) {
+    const nameBytes = lua.lua_getupvalue(L, absoluteIndex, upvalueIndex);
+    if (nameBytes === null) return names;
+    const name = typeof nameBytes === "string" ? nameBytes : to_jsstring(nameBytes);
+    lua.lua_pop(L, 1);
+    if (name !== "_ENV") names.push(name);
   }
 }
 
