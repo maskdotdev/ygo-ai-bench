@@ -320,9 +320,97 @@ describe("trigger bucket open fast restore", () => {
     expect(staleOpponentChain.legalActions).toEqual(getDuelLegalActions(restoredOpponentResponse, 0));
     expect(staleOpponentChain.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredOpponentResponse, 0));
   });
+
+  it("restores trigger-chain response priority after the opponent passes", () => {
+    const session = createDuel({ seed: 237, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["500", "400", "400"] },
+    });
+    startDuel(session);
+
+    const summoned = findHandCard(session, 0, "100");
+    const turnTrigger = findHandCard(session, 0, "300");
+    const turnQuick = findHandCard(session, 0, "500");
+    const opponentQuick = findHandCard(session, 1, "500");
+    expect(summoned).toBeDefined();
+    expect(turnTrigger).toBeDefined();
+    expect(turnQuick).toBeDefined();
+    expect(opponentQuick).toBeDefined();
+
+    registerEffect(session, normalSummonTrigger("restore-trigger-pass-handoff-success", turnTrigger!.uid, 0, false));
+    registerEffect(session, chainOnlyQuick("restore-trigger-pass-handoff-turn-chain", turnQuick!.uid, 0, true));
+    registerEffect(session, openOnlyQuick("restore-trigger-pass-handoff-turn-open", turnQuick!.uid, 0));
+    registerEffect(session, chainOnlyQuick("restore-trigger-pass-handoff-opponent-chain", opponentQuick!.uid, 1, true));
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeDefined();
+    applyAndAssert(session, summon!);
+
+    const restoredBucket = restoreDuel(serializeDuel(session), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredBucket)).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket" });
+    expect(queryPublicState(restoredBucket).pendingTriggerBuckets.map((bucket) => bucket.triggerBucket)).toEqual(["turnMandatory"]);
+    const triggerAction = getDuelLegalActions(restoredBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-trigger-pass-handoff-success");
+    expect(triggerAction).toBeDefined();
+    const opponentWindow = applyAndAssert(restoredBucket, triggerAction!);
+    expect(opponentWindow.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(opponentWindow.state.chain.map((link) => link.effectId)).toEqual(["restore-trigger-pass-handoff-success"]);
+
+    const restoredOpponentWindow = restoreDuel(serializeDuel(restoredBucket), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredOpponentWindow)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    const opponentChain = getDuelLegalActions(restoredOpponentWindow, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-trigger-pass-handoff-opponent-chain");
+    const opponentPass = getDuelLegalActions(restoredOpponentWindow, 1).find((action) => action.type === "passChain");
+    expect(opponentChain).toBeDefined();
+    expect(opponentPass).toBeDefined();
+    expect(getDuelLegalActions(restoredOpponentWindow, 0)).toEqual([]);
+    expect(hasGroupedEffect(restoredOpponentWindow, 1, "restore-trigger-pass-handoff-opponent-chain", "chainResponse")).toBe(true);
+
+    const handoff = applyAndAssert(restoredOpponentWindow, opponentPass!);
+    expect(handoff.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+    expect(handoff.state.chain.map((link) => link.effectId)).toEqual(["restore-trigger-pass-handoff-success"]);
+    expect(restoredOpponentWindow.state.chainPasses).toEqual([1]);
+    expect(getDuelLegalActions(restoredOpponentWindow, 1)).toEqual([]);
+    expect(hasGroupedEffect(restoredOpponentWindow, 0, "restore-trigger-pass-handoff-turn-chain", "chainResponse")).toBe(true);
+    expect(hasGroupedEffect(restoredOpponentWindow, 0, "restore-trigger-pass-handoff-turn-open", "chainResponse")).toBe(false);
+
+    const restoredHandoff = restoreDuel(serializeDuel(restoredOpponentWindow), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredHandoff)).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+    expect(restoredHandoff.state.chainPasses).toEqual([1]);
+    expect(getDuelLegalActions(restoredHandoff, 1)).toEqual([]);
+    expect(getDuelLegalActions(restoredHandoff, 0)).toEqual(getDuelLegalActions(restoredOpponentWindow, 0));
+    expect(getGroupedDuelLegalActions(restoredHandoff, 0)).toEqual(getGroupedDuelLegalActions(restoredOpponentWindow, 0));
+
+    const staleOpponentChain = applyResponse(restoredHandoff, opponentChain!);
+    expect(staleOpponentChain.ok).toBe(false);
+    expect(staleOpponentChain.error).toContain("Response is not currently legal");
+    expect(staleOpponentChain.legalActions).toEqual(getDuelLegalActions(restoredHandoff, 0));
+    expect(staleOpponentChain.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredHandoff, 0));
+
+    const turnChain = getDuelLegalActions(restoredHandoff, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-trigger-pass-handoff-turn-chain");
+    expect(turnChain).toBeDefined();
+    const opponentReturn = applyAndAssert(restoredHandoff, turnChain!);
+    expect(opponentReturn.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(opponentReturn.state.chain.map((link) => link.effectId)).toEqual(["restore-trigger-pass-handoff-success", "restore-trigger-pass-handoff-turn-chain"]);
+    expect(restoredHandoff.state.chainPasses).toEqual([]);
+
+    const restoredOpponentReturn = restoreDuel(serializeDuel(restoredHandoff), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredOpponentReturn)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(hasGroupedEffect(restoredOpponentReturn, 1, "restore-trigger-pass-handoff-opponent-chain", "chainResponse")).toBe(true);
+    const finalOpponentPass = getDuelLegalActions(restoredOpponentReturn, 1).find((action) => action.type === "passChain");
+    expect(finalOpponentPass).toBeDefined();
+    const resolved = applyAndAssert(restoredOpponentReturn, finalOpponentPass!);
+    expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredOpponentReturn.state.chainPasses).toEqual([]);
+    expect(restoredOpponentReturn.state.log.map((entry) => entry.detail)).toEqual(expect.arrayContaining([
+      "restore-trigger-pass-handoff-turn-chain resolved",
+      "restore-trigger-pass-handoff-success resolved",
+    ]));
+    expect(restoredOpponentReturn.state.log.map((entry) => entry.detail)).not.toContain("restore-trigger-pass-handoff-opponent-chain resolved");
+    expect(getDuelLegalActions(restoredOpponentReturn, 0).filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual(["restore-trigger-pass-handoff-turn-open"]);
+  });
 });
 
-function normalSummonTrigger(id: string, sourceUid: string, controller: 0 | 1): DuelEffectDefinition {
+function normalSummonTrigger(id: string, sourceUid: string, controller: 0 | 1, optional = true): DuelEffectDefinition {
   return {
     id,
     registryKey: id,
@@ -330,6 +418,7 @@ function normalSummonTrigger(id: string, sourceUid: string, controller: 0 | 1): 
     controller,
     event: "trigger",
     triggerEvent: "normalSummoned",
+    ...(optional ? {} : { optional: false }),
     range: ["hand"],
     operation(ctx) {
       ctx.log(`${id} resolved`);
@@ -385,6 +474,10 @@ function restoreRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "
     "restore-fast-resolve-turn-open-quick": (effect) => ({ ...restoreLoggedEffect(effect), canActivate: (ctx) => ctx.duel.chain.length === 0 }),
     "restore-fast-resolve-opponent-chain-quick": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
     "restore-fast-resolve-opponent-open-quick": (effect) => ({ ...restoreLoggedEffect(effect), canActivate: (ctx) => ctx.duel.chain.length === 0 }),
+    "restore-trigger-pass-handoff-success": restoreLoggedEffect,
+    "restore-trigger-pass-handoff-turn-chain": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
+    "restore-trigger-pass-handoff-turn-open": (effect) => ({ ...restoreLoggedEffect(effect), canActivate: (ctx) => ctx.duel.chain.length === 0 }),
+    "restore-trigger-pass-handoff-opponent-chain": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
   };
 }
 
