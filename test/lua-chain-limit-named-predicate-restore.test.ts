@@ -6,25 +6,29 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 describe("Lua named chain-limit predicate restore", () => {
   it("restores named card-table predicates from snapshots", () => {
-    expectNamedPredicateRestore(false);
+    expectNamedPredicateRestore(false, "chlimit");
   });
 
   it("restores named card-table until-chain-end predicates from snapshots", () => {
-    expectNamedPredicateRestore(true);
+    expectNamedPredicateRestore(true, "chlimit");
+  });
+
+  it("restores Project Ignis chainlm named predicates from snapshots", () => {
+    expectNamedPredicateRestore(false, "chainlm");
   });
 });
 
-function expectNamedPredicateRestore(untilChainEnd: boolean): void {
+function expectNamedPredicateRestore(untilChainEnd: boolean, predicateName: "chlimit" | "chainlm"): void {
   const source = {
     readScript(name: string) {
-      if (name === "c100.lua") return sourceScript(untilChainEnd);
+      if (name === "c100.lua") return sourceScript(untilChainEnd, predicateName);
       if (name === "c200.lua") return quickScript(200, "same-player response resolved");
       if (name === "c300.lua") return quickScript(300, "blocked opponent response resolved");
       return undefined;
     },
   };
   const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }, { id: 300, type: 1 }], []);
-  const session = createDuel({ seed: untilChainEnd ? 288 : 287, startingHandSize: 2, cardReader: createCardReader(cards) });
+  const session = createDuel({ seed: untilChainEnd ? 288 : predicateName === "chainlm" ? 289 : 287, startingHandSize: 2, cardReader: createCardReader(cards) });
   loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: ["300"] } });
   startDuel(session);
 
@@ -39,7 +43,7 @@ function expectNamedPredicateRestore(untilChainEnd: boolean): void {
   const sourceResult = applyResponse(session, sourceAction!);
   expect(sourceResult.ok, sourceResult.error).toBe(true);
 
-  const registryKey = `lua-chain-limit:100:0:${untilChainEnd ? "chain" : "link"}:known:c100.chlimit`;
+  const registryKey = `lua-chain-limit:100:0:${untilChainEnd ? "chain" : "link"}:known:c100.${predicateName}`;
   expect(serializeDuel(session).state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd });
   expect(hasLuaEffect(getLegalActions(session, 1), 1, "lua-3")).toBe(false);
   expect(hasLuaEffect(getLegalActions(session, 0), 0, "lua-2")).toBe(true);
@@ -54,7 +58,7 @@ function expectNamedPredicateRestore(untilChainEnd: boolean): void {
   expect(restoredResponse.ok, restoredResponse.error).toBe(true);
 }
 
-function sourceScript(untilChainEnd: boolean): string {
+function sourceScript(untilChainEnd: boolean, predicateName: "chlimit" | "chainlm"): string {
   return `
     local s,id=GetID()
     function s.initial_effect(c)
@@ -63,12 +67,12 @@ function sourceScript(untilChainEnd: boolean): string {
       e:SetRange(LOCATION_HAND)
       e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
         if chk==0 then return true end
-        Duel.${untilChainEnd ? "SetChainLimitTillChainEnd" : "SetChainLimit"}(s.chlimit)
+        Duel.${untilChainEnd ? "SetChainLimitTillChainEnd" : "SetChainLimit"}(s.${predicateName})
       end)
       e:SetOperation(function(e,tp) Debug.Message("named limit source resolved") end)
       c:RegisterEffect(e)
     end
-    function s.chlimit(e,ep,tp)
+    function s.${predicateName}(e,ep,tp)
       return tp==ep
     end
   `;
