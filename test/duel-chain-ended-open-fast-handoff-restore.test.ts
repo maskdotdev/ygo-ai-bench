@@ -18,11 +18,13 @@ describe("chain-ended open fast handoff restore", () => {
     const cleanup = findHandCard(session, 0, "300");
     const openQuick = findHandCard(session, 0, "400");
     const turnChain = findHandCard(session, 0, "600");
+    const extraOpenQuick = findHandCard(session, 0, "700");
     const opponentChain = findHandCard(session, 1, "500");
     expect(starter).toBeDefined();
     expect(cleanup).toBeDefined();
     expect(openQuick).toBeDefined();
     expect(turnChain).toBeDefined();
+    expect(extraOpenQuick).toBeDefined();
     expect(opponentChain).toBeDefined();
     moveDuelCard(session.state, turnChain!.uid, "graveyard", 0);
     moveDuelCard(session.state, opponentChain!.uid, "graveyard", 1);
@@ -30,6 +32,7 @@ describe("chain-ended open fast handoff restore", () => {
     registerEffect(session, loggedEffect("restore-chain-ended-handoff-starter", starter!.uid, 0, "ignition"));
     registerEffect(session, cleanupTrigger("restore-chain-ended-handoff-cleanup", cleanup!.uid));
     registerEffect(session, openOnlyQuick("restore-chain-ended-handoff-open", openQuick!.uid, 0, true));
+    registerEffect(session, openOnlyQuick("restore-chain-ended-handoff-extra-open", extraOpenQuick!.uid, 0));
     registerEffect(session, chainOnlyQuick("restore-chain-ended-handoff-turn-chain", turnChain!.uid, 0, true));
     registerEffect(session, chainOnlyQuick("restore-chain-ended-handoff-opponent-chain", opponentChain!.uid, 1, true));
 
@@ -90,6 +93,23 @@ describe("chain-ended open fast handoff restore", () => {
 
     const turnChainAction = findEffectAction(restoredTurnWindow, 0, "restore-chain-ended-handoff-turn-chain");
     expect(turnChainAction).toBeDefined();
+
+    const forgedReturnedOpenOnly = applyResponse(restoredTurnWindow, {
+      type: "activateEffect",
+      player: 0,
+      uid: extraOpenQuick!.uid,
+      effectId: "restore-chain-ended-handoff-extra-open",
+      label: "Forge post-chainEnded open-only quick into returned chain response",
+      windowId: turnChainAction!.windowId,
+      windowKind: turnChainAction!.windowKind,
+      windowToken: turnChainAction!.windowToken,
+    });
+    expect(forgedReturnedOpenOnly.ok).toBe(false);
+    expect(forgedReturnedOpenOnly.error).toContain("Response is not currently legal");
+    expect(forgedReturnedOpenOnly.legalActions).toEqual(getDuelLegalActions(restoredTurnWindow, 0));
+    expect(forgedReturnedOpenOnly.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTurnWindow, 0));
+    expect(restoredTurnWindow.state.log.map((entry) => entry.detail)).not.toContain("restore-chain-ended-handoff-extra-open resolved");
+
     const opponentFollowupWindow = applyAndAssert(restoredTurnWindow, turnChainAction!);
     expect(opponentFollowupWindow.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
     expect(opponentFollowupWindow.state.chain.map((link) => link.effectId)).toEqual([
@@ -361,6 +381,7 @@ function restoreRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "
     "restore-chain-ended-handoff-starter": restoreLoggedEffect(),
     "restore-chain-ended-handoff-cleanup": restoreCleanupTrigger,
     "restore-chain-ended-handoff-open": restoreOpenOnlyQuick,
+    "restore-chain-ended-handoff-extra-open": restoreOpenOnlyQuick,
     "restore-chain-ended-handoff-turn-chain": restoreChainOnlyQuick,
     "restore-chain-ended-handoff-opponent-chain": restoreChainOnlyQuick,
     "restore-chain-ended-pass-resolve-starter": restoreLoggedEffect(),
