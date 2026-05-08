@@ -109,6 +109,48 @@ describe("duel xyz summons", () => {
     expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.overlayUids).toEqual([firstMaterial!.uid, secondMaterial!.uid]);
   });
 
+  it("exposes each explicit Xyz material combination when multiple matching copies are legal", () => {
+    const session = createDuel({
+      seed: 1,
+      startingHandSize: 3,
+      cardReader: createCardReader([
+        { code: "100", name: "First Xyz Material Copy", kind: "monster", level: 4 },
+        { code: "300", name: "Second Xyz Material", kind: "monster", level: 4 },
+        { code: "920", name: "Two-Copy Xyz", kind: "extra", xyzMaterials: ["100", "300"] },
+      ]),
+    });
+    loadDecks(session, {
+      0: { main: ["100", "100", "300"], extra: ["920"] },
+      1: { main: ["300", "300", "300"] },
+    });
+    startDuel(session);
+
+    const xyz = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "920");
+    const codeAMaterials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const codeB = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(xyz).toBeTruthy();
+    expect(codeAMaterials).toHaveLength(2);
+    expect(codeB).toBeTruthy();
+    for (const material of [...codeAMaterials, codeB!]) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+
+    const actions = getDuelLegalActions(session, 0).filter((candidate) => candidate.type === "xyzSummon" && candidate.uid === xyz!.uid);
+    expect(actions).toHaveLength(2);
+    const materialUidSets = actions.map((action) => {
+      if (action.type !== "xyzSummon") throw new Error("Expected Xyz Summon action");
+      return action.materialUids;
+    });
+    expect(materialUidSets).toEqual(expect.arrayContaining([[codeAMaterials[0]!.uid, codeB!.uid], [codeAMaterials[1]!.uid, codeB!.uid]]));
+
+    const secondCopyAction = actions.find((action) => action.type === "xyzSummon" && action.materialUids.includes(codeAMaterials[1]!.uid));
+    expect(secondCopyAction).toBeTruthy();
+    const result = applyResponse(session, secondCopyAction!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === xyz!.uid)?.location).toBe("monsterZone");
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.overlayUids).toEqual([codeAMaterials[1]!.uid, codeB!.uid]);
+    expect(result.state.cards.find((card) => card.uid === codeAMaterials[0]!.uid)?.location).toBe("monsterZone");
+  });
+
   it("rejects non-monsters as Xyz summon targets", () => {
     const session = createDuel({
       seed: 1,

@@ -107,6 +107,49 @@ describe("duel synchro summons", () => {
     expect(session.state.cards.find((card) => card.uid === aliasNonTuner!.uid)?.location).toBe("graveyard");
   });
 
+  it("exposes each explicit Synchro material combination when multiple matching copies are legal", () => {
+    const session = createDuel({
+      seed: 1,
+      startingHandSize: 3,
+      cardReader: createCardReader([
+        { code: "100", name: "First Synchro Tuner Copy", kind: "monster", typeFlags: 0x1001 },
+        { code: "300", name: "Synchro Non-Tuner", kind: "monster" },
+        { code: "910", name: "Two-Copy Synchro", kind: "extra", synchroMaterials: { tuner: "100", nonTuners: ["300"] } },
+      ]),
+    });
+    loadDecks(session, {
+      0: { main: ["100", "100", "300"], extra: ["910"] },
+      1: { main: ["300", "300", "300"] },
+    });
+    startDuel(session);
+
+    const synchro = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "910");
+    const tunerCopies = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const nonTuner = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(synchro).toBeTruthy();
+    expect(tunerCopies).toHaveLength(2);
+    expect(nonTuner).toBeTruthy();
+    for (const material of [...tunerCopies, nonTuner!]) moveDuelCard(session.state, material.uid, "monsterZone", 0);
+
+    const actions = getDuelLegalActions(session, 0).filter((candidate) => candidate.type === "synchroSummon" && candidate.uid === synchro!.uid);
+    expect(actions).toHaveLength(2);
+    const materialUidSets = actions.map((action) => {
+      if (action.type !== "synchroSummon") throw new Error("Expected Synchro Summon action");
+      return action.materialUids;
+    });
+    expect(materialUidSets).toEqual(expect.arrayContaining([[tunerCopies[0]!.uid, nonTuner!.uid], [tunerCopies[1]!.uid, nonTuner!.uid]]));
+
+    const secondTunerAction = actions.find((action) => action.type === "synchroSummon" && action.materialUids.includes(tunerCopies[1]!.uid));
+    expect(secondTunerAction).toBeTruthy();
+    const result = applyResponse(session, secondTunerAction!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === synchro!.uid)?.location).toBe("monsterZone");
+    expect(result.state.cards.find((card) => card.uid === tunerCopies[0]!.uid)?.location).toBe("monsterZone");
+    expect(result.state.cards.find((card) => card.uid === tunerCopies[1]!.uid)?.location).toBe("graveyard");
+    expect(result.state.cards.find((card) => card.uid === nonTuner!.uid)?.location).toBe("graveyard");
+  });
+
   it("rejects non-monsters as synchro summon targets", () => {
     const session = createDuel({
       seed: 1,

@@ -117,6 +117,51 @@ describe("duel ritual summons", () => {
     expect(session.state.cards.find((card) => card.uid === otherMaterial!.uid)?.location).toBe("graveyard");
   });
 
+  it("exposes each explicit Ritual material combination when multiple matching copies are legal", () => {
+    const session = createDuel({
+      seed: 1,
+      startingHandSize: 4,
+      cardReader: createCardReader([
+        { code: "100", name: "First Ritual Material Copy", kind: "monster" },
+        { code: "300", name: "Second Ritual Material", kind: "monster" },
+        { code: "940", name: "Two-Copy Ritual", kind: "monster", ritualMaterials: ["100", "300"] },
+      ]),
+    });
+    loadDecks(session, {
+      0: { main: ["940", "100", "100", "300"] },
+      1: { main: ["300", "300", "300", "300"] },
+    });
+    startDuel(session);
+
+    const ritual = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "940");
+    const codeAMaterials = queryPublicState(session).cards.filter((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const codeB = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(ritual).toBeTruthy();
+    expect(codeAMaterials).toHaveLength(2);
+    expect(codeB).toBeTruthy();
+    const fieldCodeA = codeAMaterials[0]!;
+    const handCodeA = codeAMaterials[1]!;
+    moveDuelCard(session.state, fieldCodeA.uid, "monsterZone", 0);
+
+    const actions = getDuelLegalActions(session, 0).filter((candidate) => candidate.type === "ritualSummon" && candidate.uid === ritual!.uid);
+    expect(actions).toHaveLength(2);
+    const materialUidSets = actions.map((action) => {
+      if (action.type !== "ritualSummon") throw new Error("Expected Ritual Summon action");
+      return action.materialUids;
+    });
+    expect(materialUidSets).toEqual(expect.arrayContaining([[handCodeA.uid, codeB!.uid], [fieldCodeA.uid, codeB!.uid]]));
+
+    const fieldMaterialAction = actions.find((action) => action.type === "ritualSummon" && action.materialUids.includes(fieldCodeA.uid));
+    expect(fieldMaterialAction).toBeTruthy();
+    const result = applyResponse(session, fieldMaterialAction!);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === ritual!.uid)?.location).toBe("monsterZone");
+    expect(result.state.cards.find((card) => card.uid === fieldCodeA.uid)?.location).toBe("graveyard");
+    expect(result.state.cards.find((card) => card.uid === handCodeA.uid)?.location).toBe("hand");
+    expect(result.state.cards.find((card) => card.uid === codeB!.uid)?.location).toBe("graveyard");
+  });
+
   it("blocks ritual summons when material cannot be sent to the graveyard", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
