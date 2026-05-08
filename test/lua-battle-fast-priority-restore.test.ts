@@ -114,7 +114,32 @@ describe("Lua battle fast priority restore", () => {
     expect(restoredBattleWindow.restoreComplete, restoredBattleWindow.incompleteReasons.join("; ")).toBe(true);
     expect(queryPublicState(restoredBattleWindow.session)).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "startDamageStep", responsePlayer: 1 } });
     expect(getLuaRestoreLegalActions(restoredBattleWindow, 0)).toEqual([]);
+    expect(getLuaRestoreLegalActions(restoredBattleWindow, 1)).toEqual(getDuelLegalActions(restoredBattleWindow.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredBattleWindow, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredBattleWindow, 1));
+    const restoredBattleAction = getLuaRestoreLegalActions(restoredBattleWindow, 1)[0];
+    expect(restoredBattleAction).toBeDefined();
+    expect(restoredBattleAction!.windowId).toBeDefined();
+    expect(restoredBattleAction!.windowKind).toBeDefined();
+    expect(restoredBattleAction!.windowToken).toBeDefined();
+    const restoredOpponentChainQuick = restoredBattleWindow.session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(restoredOpponentChainQuick).toBeDefined();
+    const restoredOpponentChainQuickEffect = restoredBattleWindow.session.state.effects.find((effect) => effect.sourceUid === restoredOpponentChainQuick!.uid);
+    expect(restoredOpponentChainQuickEffect).toBeDefined();
+    const forgedRestoredBattleChainOnly = applyLuaRestoreResponse(restoredBattleWindow, {
+      type: "activateEffect",
+      player: 1,
+      uid: restoredOpponentChainQuick!.uid,
+      effectId: restoredOpponentChainQuickEffect!.id,
+      label: "Forge chain-only quick into restored battle window",
+      windowId: restoredBattleAction!.windowId!,
+      windowKind: restoredBattleAction!.windowKind!,
+      windowToken: restoredBattleAction!.windowToken!,
+    });
+    expect(forgedRestoredBattleChainOnly.ok).toBe(false);
+    expect(forgedRestoredBattleChainOnly.error).toContain("Response is not currently legal");
+    expect(forgedRestoredBattleChainOnly.legalActions).toEqual(getDuelLegalActions(restoredBattleWindow.session, 1));
+    expect(forgedRestoredBattleChainOnly.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredBattleWindow.session, 1));
+    expect(restoredBattleWindow.host.messages).toEqual([]);
     const stalePass = applyLuaRestoreResponse(restored, pass!);
     expect(stalePass.ok).toBe(false);
     expect(stalePass.error).toContain("Response is not currently legal");
