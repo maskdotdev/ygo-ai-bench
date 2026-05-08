@@ -199,6 +199,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (literalCapturedHandlerCode !== undefined) return `closure:handler-code:${literalCapturedHandlerCode}`;
   const literalHandlerCodes = literalHandlerCodesPredicate(L, index, hostState);
   if (literalHandlerCodes !== undefined) return handlerCodePredicateDescriptor(literalHandlerCodes);
+  const blockedEffectTypeForOpponent = literalResponseMatchesChainPlayerOrNotEffectTypePredicate(L, index, hostState);
+  if (blockedEffectTypeForOpponent !== undefined) return `closure:not-effect-type-response-player:${blockedEffectTypeForOpponent}`;
   const blockedActiveTypeForOpponent = literalResponseMatchesChainPlayerOrNotActiveTypePredicate(L, index, hostState);
   if (blockedActiveTypeForOpponent !== undefined) return `closure:not-active-type-response-player:${blockedActiveTypeForOpponent}`;
   if (literalResponseMatchesChainPlayerPredicate(L, index, hostState)) return "closure:response-matches-chain-player";
@@ -435,8 +437,43 @@ function literalNotEffectTypePredicate(L: unknown, index: number, hostState: Lua
   const effectParam = params?.[0];
   const match = snippet.match(/return\s+not\s+([A-Za-z_]\w*)\s*:\s*IsHasType\s*\(\s*([A-Za-z_]\w*|\d+)\s*\)/);
   if (!effectParam || match?.[1] !== effectParam || !match[2]) return undefined;
-  const mask = match[2] === "EFFECT_TYPE_ACTIVATE" ? 0x10 : Number(match[2]);
-  return Number.isSafeInteger(mask) && mask > 0 ? mask : undefined;
+  const mask = effectTypeMaskTokenValue(match[2]);
+  return mask !== undefined && Number.isSafeInteger(mask) && mask > 0 ? mask : undefined;
+}
+
+function literalResponseMatchesChainPlayerOrNotEffectTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
+  if (hasNonEnvironmentUpvalues(L, index)) return undefined;
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
+  const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
+  const effectParam = params?.[0];
+  const responsePlayerParam = params?.[1];
+  const chainPlayerParam = params?.[2];
+  if (!effectParam || !responsePlayerParam || !chainPlayerParam) return undefined;
+  const effectTypePattern = `not\\s+${effectParam}\\s*:\\s*IsHasType\\s*\\(\\s*([A-Za-z_]\\w*|\\d+)\\s*\\)`;
+  const equalityPattern = `(?:${responsePlayerParam}\\s*==\\s*${chainPlayerParam}|${chainPlayerParam}\\s*==\\s*${responsePlayerParam})`;
+  const match = snippet.match(new RegExp(`return\\s+(?:${equalityPattern})\\s+or\\s+${effectTypePattern}`))
+    ?? snippet.match(new RegExp(`return\\s+${effectTypePattern}\\s+or\\s+(?:${equalityPattern})`));
+  const token = match?.[1] ?? match?.[2];
+  if (!token) return undefined;
+  const mask = effectTypeMaskTokenValue(token);
+  return mask !== undefined && Number.isSafeInteger(mask) && mask > 0 ? mask : undefined;
+}
+
+function effectTypeMaskTokenValue(token: string): number | undefined {
+  const named: Record<string, number> = {
+    EFFECT_TYPE_SINGLE: 0x1,
+    EFFECT_TYPE_FIELD: 0x2,
+    EFFECT_TYPE_EQUIP: 0x4,
+    EFFECT_TYPE_ACTIVATE: 0x10,
+    EFFECT_TYPE_IGNITION: 0x40,
+    EFFECT_TYPE_TRIGGER_O: 0x80,
+    EFFECT_TYPE_QUICK_O: 0x100,
+    EFFECT_TYPE_TRIGGER_F: 0x200,
+    EFFECT_TYPE_QUICK_F: 0x400,
+    EFFECT_TYPE_CONTINUOUS: 0x800,
+  };
+  return named[token] ?? Number(token);
 }
 
 function literalNotActiveTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
