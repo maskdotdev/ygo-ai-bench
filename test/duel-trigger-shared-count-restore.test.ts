@@ -60,6 +60,56 @@ describe("trigger shared count restore", () => {
     expect(restoredDeclineOnly.state.log.some((entry) => entry.detail === "Restored shared count first resolved")).toBe(true);
     expect(restoredDeclineOnly.state.log.some((entry) => entry.detail === "Restored shared count second should not resolve")).toBe(false);
   });
+
+  it("restores same-bucket shared-count mandatory triggers as pruned after a sibling spends the count", () => {
+    const cards: DuelCardData[] = [
+      { code: "110", name: "Mandatory Shared Count Restore Summon", kind: "monster" },
+      { code: "310", name: "Mandatory Shared Count Restore First Trigger", kind: "monster" },
+      { code: "410", name: "Mandatory Shared Count Restore Second Trigger", kind: "monster" },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 502, startingHandSize: 3, cardReader: reader });
+    loadDecks(session, { 0: { main: ["110", "310", "410"] }, 1: { main: ["110", "110", "110"] } });
+    startDuel(session);
+
+    const summoned = handCard(session, 0, "110");
+    const firstSource = handCard(session, 0, "310");
+    const secondSource = handCard(session, 0, "410");
+    registerEffect(session, sharedCountTrigger("restore-mandatory-shared-count-first", firstSource.uid, "Restored mandatory shared count first resolved", false));
+    registerEffect(session, sharedCountTrigger("restore-mandatory-shared-count-second", secondSource.uid, "Restored mandatory shared count second should not resolve", false));
+
+    specialSummonDuelCard(session.state, summoned.uid);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-mandatory-shared-count-first", "restore-mandatory-shared-count-second"]);
+    expect(queryPublicState(session).pendingTriggerBuckets).toEqual([
+      { player: 0, triggerBucket: "turnMandatory", triggerIds: session.state.pendingTriggers.map((trigger) => trigger.id) },
+    ]);
+    expect(queryPublicState(session).triggerOrderPrompt).toMatchObject({ player: 0, triggerBucket: "turnMandatory" });
+
+    const restoredBucket = restoreDuel(serializeDuel(session), reader, restoreRegistry());
+    expect(queryPublicState(restoredBucket).triggerOrderPrompt).toMatchObject({ player: 0, triggerBucket: "turnMandatory" });
+    expect(getLegalActions(restoredBucket, 0).some((action) => action.type === "declineTrigger")).toBe(false);
+    const firstActivation = getLegalActions(restoredBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-mandatory-shared-count-first");
+    const staleSecondActivation = getLegalActions(restoredBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-mandatory-shared-count-second");
+    expect(firstActivation).toBeDefined();
+    expect(staleSecondActivation).toBeDefined();
+    applyAndAssert(restoredBucket, firstActivation!);
+
+    expect(restoredBucket.state.usedCountKeys).toEqual(["turn-1:0:code-1092"]);
+    expect(restoredBucket.state.chain).toEqual([]);
+    expect(restoredBucket.state.pendingTriggers).toEqual([]);
+    expect(restoredBucket.state.log.some((entry) => entry.detail === "Restored mandatory shared count first resolved")).toBe(true);
+    expect(restoredBucket.state.log.some((entry) => entry.detail === "Restored mandatory shared count second should not resolve")).toBe(false);
+
+    const restoredOpen = restoreDuel(serializeDuel(restoredBucket), reader, restoreRegistry());
+    expect(queryPublicState(restoredOpen)).toMatchObject({ waitingFor: 0, windowKind: "open", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredOpen.state.usedCountKeys).toEqual(["turn-1:0:code-1092"]);
+    expect(getLegalActions(restoredOpen, 0).some((action) => action.type === "activateTrigger" || action.type === "declineTrigger")).toBe(false);
+    const staleResult = applyResponse(restoredOpen, staleSecondActivation!);
+    expect(staleResult.ok).toBe(false);
+    expect(staleResult.error).toContain("Response is not currently legal");
+    expect(staleResult.legalActions).toEqual(getLegalActions(restoredOpen, 0));
+    expect(staleResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredOpen, 0));
+  });
 });
 
 function handCard(session: DuelSession, player: 0 | 1, code: string) {
@@ -68,7 +118,7 @@ function handCard(session: DuelSession, player: 0 | 1, code: string) {
   return card!;
 }
 
-function sharedCountTrigger(id: string, sourceUid: string, detail: string): DuelEffectDefinition {
+function sharedCountTrigger(id: string, sourceUid: string, detail: string, optional = true): DuelEffectDefinition {
   return {
     id,
     registryKey: id,
@@ -76,6 +126,7 @@ function sharedCountTrigger(id: string, sourceUid: string, detail: string): Duel
     controller: 0,
     event: "trigger",
     triggerEvent: "specialSummoned",
+    optional,
     countLimit: 1,
     countLimitCode: 0x444,
     range: ["hand"],
@@ -89,6 +140,8 @@ function restoreRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "
   return {
     "restore-shared-count-first": restoreLoggedEffect("Restored shared count first resolved"),
     "restore-shared-count-second": restoreLoggedEffect("Restored shared count second should not resolve"),
+    "restore-mandatory-shared-count-first": restoreLoggedEffect("Restored mandatory shared count first resolved"),
+    "restore-mandatory-shared-count-second": restoreLoggedEffect("Restored mandatory shared count second should not resolve"),
   };
 }
 
