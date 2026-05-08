@@ -612,6 +612,7 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
     (typeFlags & 0x1) !== 0 &&
     ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) &&
     (triggerEvent === "banished" ||
+      triggerEvent === "cardsDrawn" ||
       triggerEvent === "controlChanged" ||
       triggerEvent === "destroyed" ||
       triggerEvent === "discarded" ||

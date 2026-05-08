@@ -598,7 +598,11 @@ export function drawDuelCards(state: DuelState, player: PlayerId, count: number,
     .slice(0, Math.max(0, count))
     .map((card) => card.uid);
   const drawn = drawDuelCardsFromDeck(state, player, Math.max(0, count), detail);
-  if (drawn > 0) collectDuelTriggerEffects(state, "cardsDrawn", undefined, { eventPlayer: player, eventValue: drawn, eventUids: eventUids.slice(0, drawn), ...payload });
+  if (drawn > 0) {
+    const drawnUids = eventUids.slice(0, drawn);
+    const drawnCards = drawnUids.map((uid) => findCard(state, uid)).filter((card): card is DuelCardInstance => Boolean(card));
+    collectDuelGroupedTriggerEffects(state, "cardsDrawn", drawnCards, { eventPlayer: player, eventValue: drawn, eventUids: drawnUids, ...payload });
+  }
   return drawn;
 }
 
