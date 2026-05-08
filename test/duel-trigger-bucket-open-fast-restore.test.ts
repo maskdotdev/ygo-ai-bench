@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
+import { addDuelChainLimit, applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, registerEffect, restoreDuel, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
-import type { DuelEffectDefinition } from "#duel/types.js";
+import type { ChainLimit, DuelEffectDefinition } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
+
+const TRIGGER_HANDOFF_TURN_ONLY_CHAIN_LIMIT_KEY = "restore-trigger-pass-handoff-turn-only-chain-limit";
 
 describe("trigger bucket open fast restore", () => {
   it("returns restored trigger chains to open-only fast-effect priority after chain resolution", () => {
@@ -517,6 +519,121 @@ describe("trigger bucket open fast restore", () => {
     expect(restoredFinalTurnHandoff.state.log.map((entry) => entry.detail)).not.toContain("restore-trigger-pass-handoff-second-turn-chain resolved");
     expect(getDuelLegalActions(restoredFinalTurnHandoff, 0).filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual(["restore-trigger-pass-handoff-turn-open"]);
   });
+
+  it("restores trigger-chain one-chain limits after an opponent handoff response", () => {
+    const session = createDuel({ seed: 238, startingHandSize: 5, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500", "700", "600"] },
+      1: { main: ["500", "700", "600", "400", "400"] },
+    });
+    startDuel(session);
+
+    const summoned = findHandCard(session, 0, "100");
+    const turnTrigger = findHandCard(session, 0, "300");
+    const firstTurnQuick = findHandCard(session, 0, "500");
+    const limiter = findHandCard(session, 0, "700");
+    const followup = findHandCard(session, 0, "600");
+    const firstOpponentQuick = findHandCard(session, 1, "500");
+    const blockedOpponentQuick = findHandCard(session, 1, "700");
+    const opponentOpenQuick = findHandCard(session, 1, "600");
+    expect(summoned).toBeDefined();
+    expect(turnTrigger).toBeDefined();
+    expect(firstTurnQuick).toBeDefined();
+    expect(limiter).toBeDefined();
+    expect(followup).toBeDefined();
+    expect(firstOpponentQuick).toBeDefined();
+    expect(blockedOpponentQuick).toBeDefined();
+    expect(opponentOpenQuick).toBeDefined();
+
+    registerEffect(session, normalSummonTrigger("restore-trigger-pass-limit-success", turnTrigger!.uid, 0, false));
+    registerEffect(session, chainOnlyQuick("restore-trigger-pass-limit-first-turn-chain", firstTurnQuick!.uid, 0, true));
+    registerEffect(session, chainOnlyQuickWithTurnLimit("restore-trigger-pass-limit-limiter", limiter!.uid, 0, true));
+    registerEffect(session, chainOnlyQuick("restore-trigger-pass-limit-followup", followup!.uid, 0));
+    registerEffect(session, chainOnlyQuick("restore-trigger-pass-limit-opponent-chain", firstOpponentQuick!.uid, 1, true));
+    registerEffect(session, chainOnlyQuick("restore-trigger-pass-limit-opponent-blocked", blockedOpponentQuick!.uid, 1));
+    registerEffect(session, openOnlyQuick("restore-trigger-pass-limit-opponent-open", opponentOpenQuick!.uid, 1));
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeDefined();
+    applyAndAssert(session, summon!);
+
+    const restoredBucket = restoreDuel(serializeDuel(session), createCardReader(cards), restoreRegistry());
+    const triggerAction = getDuelLegalActions(restoredBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-trigger-pass-limit-success");
+    expect(triggerAction).toBeDefined();
+    applyAndAssert(restoredBucket, triggerAction!);
+
+    const opponentPass = getDuelLegalActions(restoredBucket, 1).find((action) => action.type === "passChain");
+    expect(opponentPass).toBeDefined();
+    applyAndAssert(restoredBucket, opponentPass!);
+
+    const firstTurnChain = getDuelLegalActions(restoredBucket, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-trigger-pass-limit-first-turn-chain");
+    expect(firstTurnChain).toBeDefined();
+    applyAndAssert(restoredBucket, firstTurnChain!);
+
+    const opponentChain = getDuelLegalActions(restoredBucket, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-trigger-pass-limit-opponent-chain");
+    expect(opponentChain).toBeDefined();
+    applyAndAssert(restoredBucket, opponentChain!);
+
+    const restoredTurnWindow = restoreDuel(serializeDuel(restoredBucket), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredTurnWindow)).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+    expect(restoredTurnWindow.state.chainLimits).toEqual([]);
+    expect(hasGroupedEffect(restoredTurnWindow, 0, "restore-trigger-pass-limit-limiter", "chainResponse")).toBe(true);
+    expect(hasGroupedEffect(restoredTurnWindow, 0, "restore-trigger-pass-limit-followup", "chainResponse")).toBe(true);
+    expect(hasGroupedEffect(restoredTurnWindow, 1, "restore-trigger-pass-limit-opponent-blocked", "chainResponse")).toBe(false);
+    expect(hasGroupedEffect(restoredTurnWindow, 1, "restore-trigger-pass-limit-opponent-open", "chainResponse")).toBe(false);
+
+    const limitAction = getDuelLegalActions(restoredTurnWindow, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-trigger-pass-limit-limiter");
+    expect(limitAction).toBeDefined();
+    const limitedWindow = applyAndAssert(restoredTurnWindow, limitAction!);
+    expect(limitedWindow.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+    expect(limitedWindow.state.chain.map((link) => link.effectId)).toEqual([
+      "restore-trigger-pass-limit-success",
+      "restore-trigger-pass-limit-first-turn-chain",
+      "restore-trigger-pass-limit-opponent-chain",
+      "restore-trigger-pass-limit-limiter",
+    ]);
+    expect(restoredTurnWindow.state.chainLimits).toHaveLength(1);
+    expect(restoredTurnWindow.state.chainLimits[0]).toMatchObject({
+      registryKey: TRIGGER_HANDOFF_TURN_ONLY_CHAIN_LIMIT_KEY,
+      untilChainEnd: false,
+      expiresAtChainLength: 4,
+    });
+    expect(serializeDuel(restoredTurnWindow).state.chainLimits).toEqual([
+      {
+        registryKey: TRIGGER_HANDOFF_TURN_ONLY_CHAIN_LIMIT_KEY,
+        untilChainEnd: false,
+        expiresAtChainLength: 4,
+      },
+    ]);
+    expect(limitedWindow.legalActions.filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual(["restore-trigger-pass-limit-followup"]);
+    expect(getDuelLegalActions(restoredTurnWindow, 1)).toEqual([]);
+
+    const restoredLimitedWindow = restoreDuel(serializeDuel(restoredTurnWindow), createCardReader(cards), restoreRegistry(), restoreChainLimitRegistry());
+    expect(queryPublicState(restoredLimitedWindow)).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+    expect(restoredLimitedWindow.state.chainLimits).toHaveLength(1);
+    expect(restoredLimitedWindow.state.chainLimits[0]).toMatchObject({
+      registryKey: TRIGGER_HANDOFF_TURN_ONLY_CHAIN_LIMIT_KEY,
+      untilChainEnd: false,
+      expiresAtChainLength: 4,
+    });
+    expect(getDuelLegalActions(restoredLimitedWindow, 0)).toEqual(getDuelLegalActions(restoredTurnWindow, 0));
+    expect(getGroupedDuelLegalActions(restoredLimitedWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredTurnWindow, 0));
+    expect(getDuelLegalActions(restoredLimitedWindow, 1)).toEqual([]);
+
+    const limitedPass = getDuelLegalActions(restoredLimitedWindow, 0).find((action) => action.type === "passChain");
+    expect(limitedPass).toBeDefined();
+    const resolved = applyAndAssert(restoredLimitedWindow, limitedPass!);
+    expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredLimitedWindow.state.chainLimits).toEqual([]);
+    expect(restoredLimitedWindow.state.log.map((entry) => entry.detail)).toEqual(expect.arrayContaining([
+      "restore-trigger-pass-limit-limiter resolved",
+      "restore-trigger-pass-limit-opponent-chain resolved",
+      "restore-trigger-pass-limit-first-turn-chain resolved",
+      "restore-trigger-pass-limit-success resolved",
+    ]));
+    expect(restoredLimitedWindow.state.log.map((entry) => entry.detail)).not.toContain("restore-trigger-pass-limit-followup resolved");
+    expect(restoredLimitedWindow.state.log.map((entry) => entry.detail)).not.toContain("restore-trigger-pass-limit-opponent-blocked resolved");
+  });
 });
 
 function normalSummonTrigger(id: string, sourceUid: string, controller: 0 | 1, optional = true): DuelEffectDefinition {
@@ -541,6 +658,16 @@ function openOnlyQuick(id: string, sourceUid: string, controller: 0 | 1): DuelEf
 
 function chainOnlyQuick(id: string, sourceUid: string, controller: 0 | 1, oncePerTurn = false): DuelEffectDefinition {
   return quickEffect(id, sourceUid, controller, 1, oncePerTurn);
+}
+
+function chainOnlyQuickWithTurnLimit(id: string, sourceUid: string, controller: 0 | 1, oncePerTurn = false): DuelEffectDefinition {
+  return {
+    ...chainOnlyQuick(id, sourceUid, controller, oncePerTurn),
+    target(ctx) {
+      if (!ctx.checkOnly) addDuelChainLimit(ctx.duel, triggerHandoffTurnOnlyChainLimit());
+      return true;
+    },
+  };
 }
 
 function quickEffect(id: string, sourceUid: string, controller: 0 | 1, minimumChainLength: number, oncePerTurn = false): DuelEffectDefinition {
@@ -591,6 +718,46 @@ function restoreRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "
     "restore-trigger-pass-handoff-opponent-chain": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
     "restore-trigger-pass-handoff-second-opponent-chain": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
     "restore-trigger-pass-handoff-third-opponent-chain": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
+    "restore-trigger-pass-limit-success": restoreLoggedEffect,
+    "restore-trigger-pass-limit-first-turn-chain": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
+    "restore-trigger-pass-limit-limiter": (effect) => ({
+      ...restoreLoggedEffect(effect),
+      oncePerTurn: true,
+      canActivate: (ctx) => ctx.duel.chain.length > 0,
+      target(ctx) {
+        if (!ctx.checkOnly) addDuelChainLimit(ctx.duel, triggerHandoffTurnOnlyChainLimit());
+        return true;
+      },
+    }),
+    "restore-trigger-pass-limit-followup": (effect) => ({ ...restoreLoggedEffect(effect), canActivate: (ctx) => ctx.duel.chain.length > 0 }),
+    "restore-trigger-pass-limit-opponent-chain": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
+    "restore-trigger-pass-limit-opponent-blocked": (effect) => ({ ...restoreLoggedEffect(effect), canActivate: (ctx) => ctx.duel.chain.length > 0 }),
+    "restore-trigger-pass-limit-opponent-open": (effect) => ({ ...restoreLoggedEffect(effect), canActivate: (ctx) => ctx.duel.chain.length === 0 }),
+  };
+}
+
+function restoreChainLimitRegistry(): Record<string, (limit: ChainLimit) => ChainLimit> {
+  return {
+    [TRIGGER_HANDOFF_TURN_ONLY_CHAIN_LIMIT_KEY]: restoreTurnOnlyChainLimit,
+  };
+}
+
+function restoreTurnOnlyChainLimit(limit: ChainLimit): ChainLimit {
+  return {
+    ...limit,
+    allows(_effect, player) {
+      return player === 0;
+    },
+  };
+}
+
+function triggerHandoffTurnOnlyChainLimit(): Omit<ChainLimit, "expiresAtChainLength"> {
+  return {
+    registryKey: TRIGGER_HANDOFF_TURN_ONLY_CHAIN_LIMIT_KEY,
+    untilChainEnd: false,
+    allows(_effect, player) {
+      return player === 0;
+    },
   };
 }
 
