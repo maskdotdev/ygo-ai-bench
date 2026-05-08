@@ -114,6 +114,40 @@ describe("EDOPro parity chain-resolution SEGOC turn optional decline pass handof
         makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "fixture-double-optional-handoff-response-opponent-optional" })),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the double-declined SEGOC turn-player response window restorable before pass handoff",
+            phase: "main1",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-double-optional-handoff-response-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-double-optional-handoff-response-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-double-optional-handoff-response-turn-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(0, "fixture-double-optional-handoff-response-turn-quick", 1, 5), chainPassGroup(0, 1, 5)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-double-optional-handoff-response-opponent-quick" },
+              { type: "activateTrigger", player: 0, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-double-optional-handoff-response-turn-optional", triggerBucket: "turnOptional" },
+              { type: "activateTrigger", player: 1, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-double-optional-handoff-response-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-double-optional-handoff-response-opponent-quick", 5),
+              absentTriggerActivationGroup(0, "fixture-double-optional-handoff-response-turn-optional", "turnOptional", 5, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-double-optional-handoff-response-opponent-optional", "opponentOptional", 5, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "500", "400", "600", "800", "800"] },
+            logIncludes: ["Double optional handoff response starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro hands chain-response priority to the opponent after the turn player passes a double-declined chain-created SEGOC response window",
