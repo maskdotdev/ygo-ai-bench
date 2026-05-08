@@ -132,7 +132,7 @@ function pushSendToGenericLocation(L: unknown, session: DuelSession, hostState: 
 
 function pushMoveHelper(L: unknown, fieldName: string, session: DuelSession, hostState: LuaDuelMoveApiHostState, mover: LuaCardMover, extraReason = 0): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
-    const groupedEventName = fieldName === "SendtoGrave" ? "sentToGraveyard" : fieldName === "Release" ? "released" : undefined;
+    const groupedEventName = fieldName === "Destroy" ? "destroyed" : fieldName === "SendtoGrave" ? "sentToGraveyard" : fieldName === "Release" ? "released" : undefined;
     const groupedLocation = fieldName === "SendtoGrave" ? "graveyard" : undefined;
     const moved = moveCardOrGroup(session, state, hostState, mover, extraReason, groupedEventName, groupedLocation);
     setOperatedUids(hostState, moved);
