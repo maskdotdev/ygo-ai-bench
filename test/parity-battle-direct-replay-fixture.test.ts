@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentOpenAttackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import {
+  absentOpenAttackGroup,
+  effectGroup,
+  passBattleGroup,
+  passDamageGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle direct replay fixtures", () => {
   it("replays directly when the original target leaves and no targets remain", () => {
@@ -43,6 +49,27 @@ describe("EDOPro parity battle direct replay fixtures", () => {
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-remove-target-before-direct-replay" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps turn-player attack-response priority restorable before the target-removal quick effect",
+            waitingFor: 0,
+            windowId: 3,
+            windowKind: "battle",
+            pendingBattle: true,
+            currentAttack: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-1", responsePlayer: 0 },
+            attackPasses: [1],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-remove-target-before-direct-replay", count: 1 },
+              { type: "passAttack", player: 0, windowId: 3, windowKind: "battle", count: 1 },
+            ],
+            legalActionGroups: [
+              effectGroup(0, "fixture-remove-target-before-direct-replay", 1, 3),
+              passBattleGroup(0, "passAttack", 1, 3),
+            ],
+          },
         }),
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("passAttack", 0)),
@@ -57,6 +84,22 @@ describe("EDOPro parity battle direct replay fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the final end-damage-step pass restorable before opening direct replay choices",
+            waitingFor: 0,
+            windowId: 15,
+            windowKind: "battle",
+            pendingBattle: true,
+            currentAttack: true,
+            battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-1", responsePlayer: 0 },
+            damagePasses: [1],
+            locations: { monsterZone: ["100"], graveyard: ["200"] },
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "passDamage", player: 0, windowId: 15, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(0, 1, 15)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro offers direct replay when the original attack target leaves and no opponent monsters remain",
@@ -167,6 +210,22 @@ describe("EDOPro parity battle direct replay fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the replayed direct attack's final end-damage-step pass restorable before applying damage",
+            waitingFor: 0,
+            windowId: 28,
+            windowKind: "battle",
+            pendingBattle: true,
+            currentAttack: true,
+            battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            damagePasses: [1],
+            locations: { monsterZone: ["100"], graveyard: ["200"] },
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "passDamage", player: 0, windowId: 28, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(0, 1, 28)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the direct replay as direct battle damage after both players pass battle windows",
