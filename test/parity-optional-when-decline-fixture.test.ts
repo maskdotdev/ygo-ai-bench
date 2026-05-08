@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { triggerActivationGroup, triggerDeclineGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity optional when decline fixture", () => {
   it("returns declined optional when triggers to open fast-effect priority when their event is last", () => {
@@ -57,6 +57,46 @@ describe("EDOPro parity optional when decline fixture", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-single-step-send-decline" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the initial optional-when single-step send window restorable before exposing last-event triggers",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            phase: "main1",
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 12, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-open-fast-after-optional-when-decline", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-single-step-send-decline", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-open-fast-after-optional-when-decline", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-single-step-send-decline", count: 1 },
+                ],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "normalSummon", player: 0, code: "600", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "600", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro exposes optional when triggers when their triggering event is last, before open fast effects",
@@ -105,6 +145,26 @@ describe("EDOPro parity optional when decline fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-optional-when-decline" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the last-event optional when trigger bucket restorable before decline returns to open priority",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "fixture-optional-when-decline", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-3" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-optional-when-decline", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-optional-when-decline", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-optional-when-decline", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "fixture-optional-when-decline", "turnOptional", 1, 1),
+            ],
+            logIncludes: ["Single step send decline resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro clears the last-event optional when trigger bucket after decline and exposes open fast effects",
