@@ -210,6 +210,24 @@ describe("open fast pass handoff restore", () => {
     expect(staleOpponentBlocked.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleOpponentBlocked.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
 
+    const turnFollowupAction = getDuelLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-open-limit-turn-followup");
+    expect(turnFollowupAction).toBeDefined();
+    const forgedOpponentBlocked = applyResponse(restored, {
+      type: "activateEffect",
+      player: 1,
+      uid: opponentBlocked!.uid,
+      effectId: "restore-open-limit-opponent-blocked",
+      label: "Forge opponent response into restored turn-only open handoff limit",
+      windowId: turnFollowupAction!.windowId,
+      windowKind: turnFollowupAction!.windowKind,
+      windowToken: turnFollowupAction!.windowToken,
+    });
+    expect(forgedOpponentBlocked.ok).toBe(false);
+    expect(forgedOpponentBlocked.error).toContain("Response is not currently legal");
+    expect(forgedOpponentBlocked.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(forgedOpponentBlocked.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(restored.state.log.map((entry) => entry.detail)).not.toContain("restore-open-limit-opponent-blocked resolved");
+
     const turnPass = getDuelLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(turnPass).toBeDefined();
     const resolved = applyAndAssert(restored, turnPass!);
@@ -308,6 +326,24 @@ describe("open fast pass handoff restore", () => {
     expect(staleOpponentBlocked.error).toContain("Response is not currently legal");
     expect(staleOpponentBlocked.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleOpponentBlocked.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+
+    const turnFollowupAction = getDuelLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-open-until-turn-followup");
+    expect(turnFollowupAction).toBeDefined();
+    const forgedOpponentBlocked = applyResponse(restored, {
+      type: "activateEffect",
+      player: 1,
+      uid: opponentBlocked!.uid,
+      effectId: "restore-open-until-opponent-blocked",
+      label: "Forge opponent response into restored turn-only until-chain-end open handoff limit",
+      windowId: turnFollowupAction!.windowId,
+      windowKind: turnFollowupAction!.windowKind,
+      windowToken: turnFollowupAction!.windowToken,
+    });
+    expect(forgedOpponentBlocked.ok).toBe(false);
+    expect(forgedOpponentBlocked.error).toContain("Response is not currently legal");
+    expect(forgedOpponentBlocked.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(forgedOpponentBlocked.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(restored.state.log.map((entry) => entry.detail)).not.toContain("restore-open-until-opponent-blocked resolved");
 
     const turnPass = getDuelLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(turnPass).toBeDefined();
@@ -431,6 +467,24 @@ describe("open fast pass handoff restore", () => {
     expect(staleTurnBlocked.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(staleTurnBlocked.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
 
+    const opponentFollowupAction = getDuelLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-open-opponent-limit-opponent-followup");
+    expect(opponentFollowupAction).toBeDefined();
+    const forgedTurnBlocked = applyResponse(restored, {
+      type: "activateEffect",
+      player: 0,
+      uid: turnBlocked!.uid,
+      effectId: "restore-open-opponent-limit-turn-blocked",
+      label: "Forge turn response into restored opponent-only open handoff limit",
+      windowId: opponentFollowupAction!.windowId,
+      windowKind: opponentFollowupAction!.windowKind,
+      windowToken: opponentFollowupAction!.windowToken,
+    });
+    expect(forgedTurnBlocked.ok).toBe(false);
+    expect(forgedTurnBlocked.error).toContain("Response is not currently legal");
+    expect(forgedTurnBlocked.legalActions).toEqual(getDuelLegalActions(restored, 1));
+    expect(forgedTurnBlocked.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+    expect(restored.state.log.map((entry) => entry.detail)).not.toContain("restore-open-opponent-limit-turn-blocked resolved");
+
     const opponentPassAfterLimit = getDuelLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(opponentPassAfterLimit).toBeDefined();
     const resolved = applyAndAssert(restored, opponentPassAfterLimit!);
@@ -536,6 +590,24 @@ describe("open fast pass handoff restore", () => {
     expect(staleTurnBlocked.error).toContain("Response is not currently legal");
     expect(staleTurnBlocked.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(staleTurnBlocked.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+
+    const opponentFollowupAction = getDuelLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-open-opponent-until-opponent-followup");
+    expect(opponentFollowupAction).toBeDefined();
+    const forgedTurnBlocked = applyResponse(restored, {
+      type: "activateEffect",
+      player: 0,
+      uid: turnBlocked!.uid,
+      effectId: "restore-open-opponent-until-turn-blocked",
+      label: "Forge turn response into restored opponent-only until-chain-end open handoff limit",
+      windowId: opponentFollowupAction!.windowId,
+      windowKind: opponentFollowupAction!.windowKind,
+      windowToken: opponentFollowupAction!.windowToken,
+    });
+    expect(forgedTurnBlocked.ok).toBe(false);
+    expect(forgedTurnBlocked.error).toContain("Response is not currently legal");
+    expect(forgedTurnBlocked.legalActions).toEqual(getDuelLegalActions(restored, 1));
+    expect(forgedTurnBlocked.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+    expect(restored.state.log.map((entry) => entry.detail)).not.toContain("restore-open-opponent-until-turn-blocked resolved");
 
     const opponentPassAfterLimit = getDuelLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(opponentPassAfterLimit).toBeDefined();
