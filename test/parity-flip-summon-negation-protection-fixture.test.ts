@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { summonGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity flip summon negation protection fixtures", () => {
   it("keeps protected flip-summon-success triggers when flip summon negation is prevented", () => {
@@ -56,6 +56,31 @@ describe("EDOPro parity flip summon negation protection fixtures", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("flipSummon", 0, { code: "100", location: "monsterZone" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the protected Main Phase Flip Summon action restorable before committing the summon attempt",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            phase: "main1",
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            locations: { monsterZone: ["100"], hand: ["200", "300"] },
+            cards: [{ uid: "p0-deck-100-0", code: "100", location: "monsterZone", position: "faceDownDefense" }],
+            legalActionCounts: { 0: 7, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [{ type: "flipSummon", player: 0, code: "100", location: "monsterZone", windowId: 0, windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "200", location: "hand" },
+                { type: "normalSummon", player: 0, code: "300", location: "hand" },
+                { type: "setMonster", player: 0, code: "200", location: "hand" },
+                { type: "setMonster", player: 0, code: "300", location: "hand" },
+                { type: "flipSummon", player: 0, code: "100", location: "monsterZone" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro still opens flip-summon-negation response timing for Flip Summons protected by EFFECT_CANNOT_DISABLE_FLIP_SUMMON",
@@ -72,6 +97,29 @@ describe("EDOPro parity flip summon negation protection fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-blocked-flip-summon-negator" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the protected Flip Summon negation trigger bucket restorable before selecting the blocked negation response",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-blocked-flip-summon-negator", eventName: "flipSummoning", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-protected-flip-success-watcher", eventName: "flipSummoned", eventCardUid: "p0-deck-100-0" },
+            ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            triggerOrderPrompt: { type: "orderTriggers", player: 0, triggerBucket: "turnOptional" },
+            legalActionCounts: { 0: 4, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-blocked-flip-summon-negator", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-blocked-flip-summon-negator", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-blocked-flip-summon-negator", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "fixture-blocked-flip-summon-negator", "turnOptional", 1, 1),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps the Flip Summon success trigger when EFFECT_CANNOT_DISABLE_FLIP_SUMMON prevents summon negation",
