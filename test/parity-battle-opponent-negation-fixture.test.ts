@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentAttackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentAttackGroup, directAttackGroup, effectGroup, passBattleGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle opponent negation fixtures", () => {
   it("lets the non-turn player negate from the first attack-response window", () => {
@@ -37,6 +37,28 @@ describe("EDOPro parity battle opponent negation fixtures", () => {
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" }), {
           snapshotRestore: "after",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps Battle Phase open priority restorable before the defender's attack-negation response opens",
+            phase: "battle",
+            waitingFor: 0,
+            windowId: 1,
+            windowKind: "open",
+            pendingBattle: false,
+            currentAttack: false,
+            battleWindow: null,
+            chain: [],
+            chainPasses: [],
+            attackPasses: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 1, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [directAttackGroup(0, "p0-deck-100-0", 1, 1), turnGroup(1)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro gives the non-turn player first chance to respond to an attack declaration",
@@ -74,6 +96,23 @@ describe("EDOPro parity battle opponent negation fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-attack-negator" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the defender's attack-negation response window restorable before the attack is negated",
+            waitingFor: 1,
+            windowId: 2,
+            windowKind: "battle",
+            pendingBattle: true,
+            currentAttack: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 1 },
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "battle", effectId: "fixture-opponent-attack-negator", count: 1 },
+              { type: "passAttack", player: 1, windowId: 2, windowKind: "battle", count: 1 },
+            ],
+            legalActionGroups: [effectGroup(1, "fixture-opponent-attack-negator", 1, 2), passBattleGroup(1, "passAttack", 1, 2)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro clears the attack immediately when the defending player's attack-negating response resolves",
