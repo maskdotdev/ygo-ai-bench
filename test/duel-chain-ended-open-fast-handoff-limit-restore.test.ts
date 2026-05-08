@@ -7,6 +7,8 @@ import { cards } from "./full-duel-engine-fixtures.js";
 
 const OPPONENT_ONLY_CHAIN_LIMIT_KEY = "restore-chain-ended-opponent-only";
 const OPPONENT_ONLY_UNTIL_CHAIN_END_LIMIT_KEY = "restore-chain-ended-opponent-until-only";
+const TURN_ONLY_CHAIN_LIMIT_KEY = "restore-chain-ended-turn-only";
+const TURN_ONLY_UNTIL_CHAIN_END_LIMIT_KEY = "restore-chain-ended-turn-until-only";
 
 const limitCases = [
   {
@@ -22,6 +24,23 @@ const limitCases = [
     seed: 246,
     untilChainEnd: true,
     expectedLimit: { registryKey: OPPONENT_ONLY_UNTIL_CHAIN_END_LIMIT_KEY, untilChainEnd: true, expiresAtChainLength: undefined },
+  },
+] as const;
+
+const deepLimitCases = [
+  {
+    name: "one-chain",
+    prefix: "restore-chain-ended-deep-limit",
+    seed: 249,
+    untilChainEnd: false,
+    expectedLimit: { registryKey: TURN_ONLY_CHAIN_LIMIT_KEY, untilChainEnd: false, expiresAtChainLength: 5 },
+  },
+  {
+    name: "until-chain-end",
+    prefix: "restore-chain-ended-deep-until",
+    seed: 248,
+    untilChainEnd: true,
+    expectedLimit: { registryKey: TURN_ONLY_UNTIL_CHAIN_END_LIMIT_KEY, untilChainEnd: true, expiresAtChainLength: undefined },
   },
 ] as const;
 
@@ -137,6 +156,146 @@ describe("chain-ended open fast handoff chain-limit restore", () => {
       expect(getGroupedDuelLegalActions(restoredOpen, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredOpen, 0));
     });
   }
+
+  for (const testCase of deepLimitCases) {
+    it(`restores post-chainEnded returned turn-player ${testCase.name} response limits`, () => {
+      const session = createDuel({ seed: testCase.seed, startingHandSize: 6, cardReader: createCardReader(cards) });
+      loadDecks(session, {
+        0: { main: ["100", "300", "400", "500", "700", "900"] },
+        1: { main: ["600", "700"] },
+      });
+      startDuel(session);
+
+      const starter = findHandCard(session, 0, "100");
+      const cleanup = findHandCard(session, 0, "300");
+      const openQuick = findHandCard(session, 0, "400");
+      const firstTurnChain = findHandCard(session, 0, "500");
+      const secondTurnChain = findHandCard(session, 0, "700");
+      const turnFollowup = findHandCard(session, 0, "900");
+      const opponentFirst = findHandCard(session, 1, "600");
+      const opponentLimiter = findHandCard(session, 1, "700");
+      expect(starter).toBeDefined();
+      expect(cleanup).toBeDefined();
+      expect(openQuick).toBeDefined();
+      expect(firstTurnChain).toBeDefined();
+      expect(secondTurnChain).toBeDefined();
+      expect(turnFollowup).toBeDefined();
+      expect(opponentFirst).toBeDefined();
+      expect(opponentLimiter).toBeDefined();
+      moveDuelCard(session.state, firstTurnChain!.uid, "graveyard", 0);
+      moveDuelCard(session.state, secondTurnChain!.uid, "graveyard", 0);
+      moveDuelCard(session.state, turnFollowup!.uid, "graveyard", 0);
+      moveDuelCard(session.state, opponentFirst!.uid, "graveyard", 1);
+      moveDuelCard(session.state, opponentLimiter!.uid, "graveyard", 1);
+
+      registerEffect(session, loggedEffect(`${testCase.prefix}-starter`, starter!.uid, 0, "ignition"));
+      registerEffect(session, cleanupTrigger(`${testCase.prefix}-cleanup`, cleanup!.uid));
+      registerEffect(session, openOnlyQuick(`${testCase.prefix}-open`, openQuick!.uid, 0, true));
+      registerEffect(session, chainOnlyQuick(`${testCase.prefix}-first-turn`, firstTurnChain!.uid, 0, true));
+      registerEffect(session, chainOnlyQuick(`${testCase.prefix}-second-turn`, secondTurnChain!.uid, 0, true));
+      registerEffect(session, chainOnlyQuick(`${testCase.prefix}-turn-followup`, turnFollowup!.uid, 0));
+      registerEffect(session, chainOnlyQuick(`${testCase.prefix}-opponent-first`, opponentFirst!.uid, 1, true));
+      registerEffect(session, chainOnlyQuickWithTurnLimit(`${testCase.prefix}-opponent-turn-limiter`, opponentLimiter!.uid, testCase.untilChainEnd, 1, true));
+
+      const starterAction = findEffectAction(session, 0, `${testCase.prefix}-starter`);
+      expect(starterAction).toBeDefined();
+      applyAndAssert(session, starterAction!);
+
+      const cleanupAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === `${testCase.prefix}-cleanup`);
+      expect(cleanupAction).toBeDefined();
+      applyAndAssert(session, cleanupAction!);
+
+      const openAction = findEffectAction(session, 0, `${testCase.prefix}-open`);
+      expect(openAction).toBeDefined();
+      applyAndAssert(session, openAction!);
+
+      const opponentPass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+      expect(opponentPass).toBeDefined();
+      applyAndAssert(session, opponentPass!);
+
+      const firstTurnAction = findEffectAction(session, 0, `${testCase.prefix}-first-turn`);
+      expect(firstTurnAction).toBeDefined();
+      applyAndAssert(session, firstTurnAction!);
+
+      const opponentFirstAction = findEffectAction(session, 1, `${testCase.prefix}-opponent-first`);
+      expect(opponentFirstAction).toBeDefined();
+      const returnedTurnWindow = applyAndAssert(session, opponentFirstAction!);
+      expect(returnedTurnWindow.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+      expect(returnedTurnWindow.state.chain.map((link) => link.effectId)).toEqual([
+        `${testCase.prefix}-open`,
+        `${testCase.prefix}-first-turn`,
+        `${testCase.prefix}-opponent-first`,
+      ]);
+      expect(hasGroupedEffect(returnedTurnWindow.legalActionGroups, 0, `${testCase.prefix}-second-turn`)).toBe(true);
+      expect(hasGroupedEffect(returnedTurnWindow.legalActionGroups, 0, `${testCase.prefix}-turn-followup`)).toBe(true);
+      expect(getDuelLegalActions(session, 1)).toEqual([]);
+
+      const secondTurnAction = findEffectAction(session, 0, `${testCase.prefix}-second-turn`);
+      expect(secondTurnAction).toBeDefined();
+      const opponentReturnWindow = applyAndAssert(session, secondTurnAction!);
+      expect(opponentReturnWindow.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+      expect(opponentReturnWindow.state.chain.map((link) => link.effectId)).toEqual([
+        `${testCase.prefix}-open`,
+        `${testCase.prefix}-first-turn`,
+        `${testCase.prefix}-opponent-first`,
+        `${testCase.prefix}-second-turn`,
+      ]);
+      expect(hasGroupedEffect(opponentReturnWindow.legalActionGroups, 1, `${testCase.prefix}-opponent-turn-limiter`)).toBe(true);
+      expect(getDuelLegalActions(session, 0)).toEqual([]);
+
+      const opponentLimiterAction = findEffectAction(session, 1, `${testCase.prefix}-opponent-turn-limiter`);
+      expect(opponentLimiterAction).toBeDefined();
+      const limitedWindow = applyAndAssert(session, opponentLimiterAction!);
+      expect(limitedWindow.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+      expect(limitedWindow.state.chain.map((link) => link.effectId)).toEqual([
+        `${testCase.prefix}-open`,
+        `${testCase.prefix}-first-turn`,
+        `${testCase.prefix}-opponent-first`,
+        `${testCase.prefix}-second-turn`,
+        `${testCase.prefix}-opponent-turn-limiter`,
+      ]);
+      expect(session.state.chainPasses).toEqual([]);
+      expect(session.state.chainLimits.map(serializeChainLimitForAssert)).toEqual([testCase.expectedLimit]);
+      expect(getDuelLegalActions(session, 1)).toEqual([]);
+      expect(hasGroupedEffect(limitedWindow.legalActionGroups, 0, `${testCase.prefix}-turn-followup`)).toBe(true);
+      expect(hasGroupedPass(limitedWindow.legalActionGroups, 0)).toBe(true);
+
+      const restored = restoreDuel(serializeDuel(session), createCardReader(cards), restoreRegistry(testCase.prefix, testCase.untilChainEnd), restoreChainLimitRegistry());
+      expect(queryPublicState(restored)).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+      expect(restored.state.chainLimits.map(serializeChainLimitForAssert)).toEqual([testCase.expectedLimit]);
+      expect(getDuelLegalActions(restored, 1)).toEqual([]);
+      expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
+      expect(getGroupedDuelLegalActions(restored, 0)).toEqual(getGroupedDuelLegalActions(session, 0));
+
+      const staleOpponentLimiter = applyResponse(restored, opponentLimiterAction!);
+      expect(staleOpponentLimiter.ok).toBe(false);
+      expect(staleOpponentLimiter.error).toContain("Response is not currently legal");
+      expect(staleOpponentLimiter.legalActions).toEqual(getDuelLegalActions(restored, 0));
+      expect(staleOpponentLimiter.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+
+      const restoredTurnPass = getDuelLegalActions(restored, 0).find((action) => action.type === "passChain");
+      expect(restoredTurnPass).toBeDefined();
+      const resolved = applyAndAssert(restored, restoredTurnPass!);
+      expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [] });
+      expect(restored.state.chainPasses).toEqual([]);
+      expect(restored.state.chainLimits).toEqual([]);
+      expect(restored.state.log.map((entry) => entry.detail)).toEqual(expect.arrayContaining([
+        `${testCase.prefix}-opponent-turn-limiter resolved`,
+        `${testCase.prefix}-second-turn resolved`,
+        `${testCase.prefix}-opponent-first resolved`,
+        `${testCase.prefix}-first-turn resolved`,
+        `${testCase.prefix}-open resolved`,
+        `${testCase.prefix}-cleanup resolved`,
+        `${testCase.prefix}-starter resolved`,
+      ]));
+      expect(restored.state.log.map((entry) => entry.detail)).not.toContain(`${testCase.prefix}-turn-followup resolved`);
+
+      const restoredOpen = restoreDuel(serializeDuel(restored), createCardReader(cards), restoreRegistry(testCase.prefix, testCase.untilChainEnd), restoreChainLimitRegistry());
+      expect(queryPublicState(restoredOpen)).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
+      expect(restoredOpen.state.chainLimits).toEqual([]);
+      expect(getGroupedDuelLegalActions(restoredOpen, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredOpen, 0));
+    });
+  }
 });
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
@@ -179,6 +338,7 @@ function cleanupTrigger(id: string, sourceUid: string): DuelEffectDefinition {
     operation(ctx) {
       moveFirstCard(ctx.duel, 0, "500", "graveyard", "hand");
       moveFirstCard(ctx.duel, 0, "700", "graveyard", "hand");
+      moveFirstCard(ctx.duel, 0, "900", "graveyard", "hand");
       moveFirstCard(ctx.duel, 1, "600", "graveyard", "hand");
       moveFirstCard(ctx.duel, 1, "700", "graveyard", "hand");
       ctx.log(`${id} resolved`);
@@ -216,14 +376,29 @@ function chainOnlyQuickWithOpponentLimit(id: string, sourceUid: string, untilCha
   };
 }
 
+function chainOnlyQuickWithTurnLimit(id: string, sourceUid: string, untilChainEnd: boolean, controller: 0 | 1, oncePerTurn = false): DuelEffectDefinition {
+  return {
+    ...chainOnlyQuick(id, sourceUid, controller, oncePerTurn),
+    target(ctx) {
+      if (!ctx.checkOnly) addDuelChainLimit(ctx.duel, turnOnlyChainLimit(untilChainEnd));
+      return true;
+    },
+  };
+}
+
 function restoreRegistry(prefix: string, untilChainEnd: boolean): Record<string, (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition> {
   return {
     [`${prefix}-starter`]: restoreLoggedEffect(),
     [`${prefix}-cleanup`]: restoreCleanupTrigger,
     [`${prefix}-open`]: restoreOpenOnlyQuick,
+    [`${prefix}-first-turn`]: restoreChainOnlyQuick,
+    [`${prefix}-second-turn`]: restoreChainOnlyQuick,
     [`${prefix}-turn-chain`]: restoreChainOnlyQuick,
     [`${prefix}-turn-blocked`]: restoreChainOnlyQuick,
+    [`${prefix}-turn-followup`]: restoreChainOnlyQuick,
+    [`${prefix}-opponent-first`]: restoreChainOnlyQuick,
     [`${prefix}-opponent-limiter`]: restoreChainOnlyQuickWithOpponentLimit(untilChainEnd),
+    [`${prefix}-opponent-turn-limiter`]: restoreChainOnlyQuickWithTurnLimit(untilChainEnd),
     [`${prefix}-opponent-followup`]: restoreChainOnlyQuick,
   };
 }
@@ -243,6 +418,7 @@ function restoreCleanupTrigger(effect: Omit<DuelEffectDefinition, "operation">):
     operation(ctx) {
       moveFirstCard(ctx.duel, 0, "500", "graveyard", "hand");
       moveFirstCard(ctx.duel, 0, "700", "graveyard", "hand");
+      moveFirstCard(ctx.duel, 0, "900", "graveyard", "hand");
       moveFirstCard(ctx.duel, 1, "600", "graveyard", "hand");
       moveFirstCard(ctx.duel, 1, "700", "graveyard", "hand");
       ctx.log(`${effect.id} resolved`);
@@ -278,10 +454,22 @@ function restoreChainOnlyQuickWithOpponentLimit(untilChainEnd: boolean): (effect
   });
 }
 
+function restoreChainOnlyQuickWithTurnLimit(untilChainEnd: boolean): (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition {
+  return (effect) => ({
+    ...restoreChainOnlyQuick(effect),
+    target(ctx) {
+      if (!ctx.checkOnly) addDuelChainLimit(ctx.duel, turnOnlyChainLimit(untilChainEnd));
+      return true;
+    },
+  });
+}
+
 function restoreChainLimitRegistry(): Record<string, (limit: ChainLimit) => ChainLimit> {
   return {
     [OPPONENT_ONLY_CHAIN_LIMIT_KEY]: restoreOpponentOnlyChainLimit,
     [OPPONENT_ONLY_UNTIL_CHAIN_END_LIMIT_KEY]: restoreOpponentOnlyChainLimit,
+    [TURN_ONLY_CHAIN_LIMIT_KEY]: restoreTurnOnlyChainLimit,
+    [TURN_ONLY_UNTIL_CHAIN_END_LIMIT_KEY]: restoreTurnOnlyChainLimit,
   };
 }
 
@@ -300,6 +488,25 @@ function opponentOnlyChainLimit(untilChainEnd: boolean): Omit<ChainLimit, "expir
     untilChainEnd,
     allows(_effect, player) {
       return player === 1;
+    },
+  };
+}
+
+function restoreTurnOnlyChainLimit(limit: ChainLimit): ChainLimit {
+  return {
+    ...limit,
+    allows(_effect, player) {
+      return player === 0;
+    },
+  };
+}
+
+function turnOnlyChainLimit(untilChainEnd: boolean): Omit<ChainLimit, "expiresAtChainLength"> {
+  return {
+    registryKey: untilChainEnd ? TURN_ONLY_UNTIL_CHAIN_END_LIMIT_KEY : TURN_ONLY_CHAIN_LIMIT_KEY,
+    untilChainEnd,
+    allows(_effect, player) {
+      return player === 0;
     },
   };
 }
