@@ -1,0 +1,76 @@
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { moveDuelCard } from "#duel/card-state.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
+import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
+import type { DuelCardData } from "#duel/types.js";
+import { createLuaScriptHost } from "#lua/host.js";
+
+const upstreamRoot = path.resolve(".upstream/ignis");
+const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
+const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Called by the Grave", () => {
+  it("banishes a GY monster and negates same-code monster effects while solving", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const calledByCode = "24224830";
+    const sameCodeMonster = "10000020";
+    const calledBy = workspace.readDatabaseCards("cards.cdb").find((card) => card.code === calledByCode);
+    expect(calledBy).toBeDefined();
+    const cards: DuelCardData[] = [calledBy!, { code: sameCodeMonster, name: "Same-Code Monster", kind: "monster", typeFlags: 0x21 }];
+    const session = createDuel({ seed: 294, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: [calledByCode, sameCodeMonster] }, 1: { main: [sameCodeMonster] } });
+    startDuel(session);
+
+    const calledByCard = session.state.cards.find((card) => card.code === calledByCode);
+    const activeMonster = session.state.cards.find((card) => card.code === sameCodeMonster && card.controller === 0);
+    const graveyardMonster = session.state.cards.find((card) => card.code === sameCodeMonster && card.controller === 1);
+    expect(calledByCard).toBeDefined();
+    expect(activeMonster).toBeDefined();
+    expect(graveyardMonster).toBeDefined();
+    moveDuelCard(session.state, calledByCard!.uid, "hand", 0);
+    moveDuelCard(session.state, activeMonster!.uid, "hand", 0);
+    moveDuelCard(session.state, graveyardMonster!.uid, "graveyard", 1);
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(calledByCode), workspace).ok).toBe(true);
+    expect(host.loadCardScript(Number(sameCodeMonster), {
+      readScript(name: string) {
+        return name === `c${sameCodeMonster}.lua` ? sameCodeMonsterScript(sameCodeMonster) : workspace.readScript(name);
+      },
+    }).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+
+    const calledByAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === calledByCard!.uid);
+    expect(calledByAction).toBeDefined();
+    const calledByResolved = applyResponse(session, calledByAction!);
+    expect(calledByResolved.ok, calledByResolved.error).toBe(true);
+    expect(session.state.cards.find((card) => card.uid === graveyardMonster!.uid)).toMatchObject({ location: "banished" });
+    expect(session.state.cards.find((card) => card.uid === calledByCard!.uid)).toMatchObject({ location: "graveyard" });
+
+    const sameCodeAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === activeMonster!.uid);
+    expect(sameCodeAction).toBeDefined();
+    const sameCodeResolved = applyResponse(session, sameCodeAction!);
+    expect(sameCodeResolved.ok, sameCodeResolved.error).toBe(true);
+    expect(host.messages).not.toContain("same-code monster resolved");
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "chainDisabled" })]));
+  });
+});
+
+function sameCodeMonsterScript(code: string): string {
+  return `
+  local s,id=GetID()
+  function s.initial_effect(c)
+    local e=Effect.CreateEffect(c)
+    e:SetDescription(${Number(code)})
+    e:SetType(EFFECT_TYPE_IGNITION)
+    e:SetRange(LOCATION_HAND)
+    e:SetOperation(function(e,tp)
+      Debug.Message("same-code monster resolved")
+    end)
+    c:RegisterEffect(e)
+  end
+  `;
+}

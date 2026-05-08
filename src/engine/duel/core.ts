@@ -100,8 +100,7 @@ import {
   isSpecialSummonPrevented,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
-import { canNegateDuelChainLink, negateDuelChainLink } from "#duel/chain-negation.js";
-export { canNegateDuelChainLink, negateDuelChainLink } from "#duel/chain-negation.js";
+export { canNegateDuelChainLink, canNegateDuelChainLinkObject, negateDuelChainLink, negateDuelChainLinkObject } from "#duel/chain-negation.js";
 import { chainLinksResolvable } from "#duel/chain-state.js";
 import {
   changeDuelBattleDamageWithPrevention as changeDuelBattleDamageWithPreventionRule,
@@ -117,6 +116,7 @@ import {
 } from "#duel/core-movement.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { duelEventCode } from "#duel/event-codes.js";
+import { createEffectContext } from "#duel/effect-context.js";
 import { eventCardReasonPayload, eventCardStatePayload, recordDuelEvent, relatedEffectPayload, type DuelEventPayload } from "#duel/event-history.js";
 import { pruneResetEffectsAfterChain } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterChain } from "#duel/flags.js";
@@ -145,7 +145,6 @@ import type {
   ChainLink,
   DuelAction,
   DuelCardInstance,
-  DuelEffectContext,
   DuelEffectDefinition,
   DuelEventCardState,
   DuelEventName,
@@ -607,84 +606,6 @@ export function changeDuelCardPosition(state: DuelState, player: PlayerId, uid: 
   return changeCoreDuelCardPosition(state, player, uid, position, coreBattleHandlers, source);
 }
 
-function createEffectContext(
-  state: DuelState,
-  source: DuelCardInstance,
-  player: PlayerId,
-  eventName?: DuelEventName,
-  eventCard?: DuelCardInstance,
-  targetUids: string[] = [],
-  checkOnly = false,
-  activationLocation: DuelLocation = source.location,
-  activationSequence: number = source.sequence,
-  targetPlayer?: PlayerId,
-  targetParam?: number,
-  chainLink?: ChainLink,
-  eventCode?: number,
-  eventPlayer?: PlayerId,
-  eventValue?: number,
-  eventReason?: number,
-  eventReasonPlayer?: PlayerId,
-  eventReasonCardUid?: string,
-  eventReasonEffectId?: number,
-  relatedEffectId?: number,
-  eventChainDepth?: number,
-  eventChainLinkId?: string,
-  eventUids?: string[],
-  operationInfos: NonNullable<DuelEffectContext["operationInfos"]> = [],
-  possibleOperationInfos: NonNullable<DuelEffectContext["possibleOperationInfos"]> = [],
-): DuelEffectContext {
-  const ctx: DuelEffectContext = {
-    duel: state,
-    source,
-    player,
-    activationLocation,
-    activationSequence,
-    ...(eventName === undefined ? {} : { eventName }),
-    ...(eventCode === undefined ? {} : { eventCode }),
-    ...(eventPlayer === undefined ? {} : { eventPlayer }),
-    ...(eventValue === undefined ? {} : { eventValue }),
-    ...(eventReason === undefined ? {} : { eventReason }),
-    ...(eventReasonPlayer === undefined ? {} : { eventReasonPlayer }),
-    ...(eventReasonCardUid === undefined ? {} : { eventReasonCardUid }),
-    ...(eventReasonEffectId === undefined ? {} : { eventReasonEffectId }),
-    ...(relatedEffectId === undefined ? {} : { relatedEffectId }),
-    ...(eventChainDepth === undefined ? {} : { eventChainDepth }),
-    ...(eventChainLinkId === undefined ? {} : { eventChainLinkId }),
-    ...(eventUids === undefined || eventUids.length === 0 ? {} : { eventUids: [...eventUids] }),
-    ...(eventCard === undefined ? {} : { eventCard }),
-    ...(checkOnly ? { checkOnly } : {}),
-    targetUids,
-    operationInfos,
-    possibleOperationInfos,
-    ...(targetPlayer === undefined ? {} : { targetPlayer }),
-    ...(targetParam === undefined ? {} : { targetParam }),
-    ...(chainLink === undefined ? {} : { chainLink }),
-    log(detail) {
-      pushDuelLog(state, "effect", player, source.name, detail);
-    },
-    moveCard(uid, to, controller) {
-      return moveDuelCard(state, uid, to, controller, duelReason.effect);
-    },
-    negateChainLink(chainLinkId) {
-      return negateDuelChainLink(state, chainLinkId, player, source.name);
-    },
-    setTargets(uids) {
-      targetUids.splice(0, targetUids.length, ...uids);
-    },
-    getTargets() {
-      return targetUids.map((uid) => findCard(state, uid)).filter((card): card is DuelCardInstance => Boolean(card));
-    },
-    setTargetPlayer(target) {
-      ctx.targetPlayer = target;
-    },
-    setTargetParam(parameter) {
-      ctx.targetParam = parameter;
-    },
-  };
-  return ctx;
-}
-
 function createContinuousEffectContext(state: DuelState): ContinuousEffectContextFactory {
   return (effect, source, card) => createEffectContext(state, source, effect.controller, undefined, card, [], true);
 }
@@ -742,6 +663,42 @@ function executeContinuousPhaseEffects(state: DuelState, phase: DuelPhase): void
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     const ctx = createEffectContext(state, source, effect.controller, "phaseChanged");
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    effect.operation(ctx);
+    markEffectUsed(state, effect);
+  }
+}
+
+function executeContinuousEventEffects(state: DuelState, eventName: DuelEventName, eventCode: number, eventCard: DuelCardInstance | undefined, payload: DuelEventPayload, chainLink?: ChainLink): void {
+  for (const effect of [...state.effects]) {
+    if (effect.event !== "continuous" || effect.code !== eventCode || !canUseEffectCount(state, effect)) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    const ctx = createEffectContext(
+      state,
+      source,
+      effect.controller,
+      eventName,
+      eventCard,
+      [],
+      false,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      chainLink,
+      eventCode,
+      payload.eventPlayer,
+      payload.eventValue,
+      payload.eventReason,
+      payload.eventReasonPlayer,
+      payload.eventReasonCardUid,
+      payload.eventReasonEffectId,
+      payload.relatedEffectId,
+      payload.eventChainDepth,
+      payload.eventChainLinkId,
+      payload.eventUids,
+    );
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
     effect.operation(ctx);
     markEffectUsed(state, effect);
@@ -924,10 +881,7 @@ function resolveChain(state: DuelState): void {
       const link = state.chain.pop();
       if (!link) continue;
       if (link.negated) {
-        pushDuelLog(state, "chainNegated", link.player, undefined, link.effectId);
-        const payload = { eventPlayer: link.player, eventValue: state.chain.length + 1, eventChainDepth: state.chain.length + 1, eventChainLinkId: link.id, eventReasonPlayer: link.player, ...relatedEffectPayload(link.effectId) };
-        collectDuelTriggerEffects(state, "chainNegated", undefined, payload);
-        collectDuelTriggerEffects(state, "chainDisabled", undefined, payload);
+        collectNegatedChainLinkEvents(state, link);
         continue;
       }
       const effect = state.effects.find((candidate) => candidate.id === link.effectId && candidate.sourceUid === link.sourceUid);
@@ -936,6 +890,11 @@ function resolveChain(state: DuelState): void {
       const eventCard = link.eventCardUid === undefined ? undefined : findCard(state, link.eventCardUid);
       const chainPayload = { eventPlayer: link.player, eventValue: state.chain.length + 1, eventChainDepth: state.chain.length + 1, eventChainLinkId: link.id, eventReasonPlayer: link.player, ...relatedEffectPayload(link.effectId) };
       collectDuelTriggerEffects(state, "chainSolving", source, chainPayload);
+      executeContinuousEventEffects(state, "chainSolving", 1020, source, chainPayload, link);
+      if (link.negated) {
+        collectNegatedChainLinkEvents(state, link);
+        continue;
+      }
       const ctx = createEffectContext(
         state,
         source,
@@ -982,4 +941,11 @@ function resolveChain(state: DuelState): void {
   if (state.pendingTriggers.length === 0) collectTriggerEffects(state, "chainEnded");
   setWaitingForPendingTriggerBucket(state);
   continueAttackResponseWindow(state, battleContinuationHandlers);
+}
+
+function collectNegatedChainLinkEvents(state: DuelState, link: ChainLink): void {
+  pushDuelLog(state, "chainNegated", link.player, undefined, link.effectId);
+  const payload = { eventPlayer: link.player, eventValue: state.chain.length + 1, eventChainDepth: state.chain.length + 1, eventChainLinkId: link.id, eventReasonPlayer: link.player, ...relatedEffectPayload(link.effectId) };
+  collectDuelTriggerEffects(state, "chainNegated", undefined, payload);
+  collectDuelTriggerEffects(state, "chainDisabled", undefined, payload);
 }

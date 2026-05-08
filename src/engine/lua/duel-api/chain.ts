@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { addDuelChainLimit, canNegateDuelChainLink, negateDuelChainLink } from "#duel/core.js";
+import { addDuelChainLimit, canNegateDuelChainLinkObject, negateDuelChainLinkObject } from "#duel/core.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { literalActionTypeChainPlayerLimitPredicate } from "#lua/chain-limit-predicate-descriptors.js";
 import { pushGroupTable } from "#lua/group-api.js";
@@ -44,9 +44,9 @@ export function installDuelChainApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("SetChainLimit"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSetChainLimit(state, session, hostState, true));
   lua.lua_setfield(L, -2, to_luastring("SetChainLimitTillChainEnd"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushIsChainNegatable(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsChainNegatable(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsChainNegatable"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushIsChainNegatable(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsChainNegatable(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsChainDisablable"));
   lua.lua_pushcfunction(L, (state: unknown) => pushNegateChainLink(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("NegateActivation"));
@@ -801,23 +801,23 @@ function pushEffectByDuelId(L: unknown, hostState: LuaDuelChainApiHostState, eff
   else lua.lua_pushnil(L);
 }
 
-function pushIsChainNegatable(L: unknown, session: DuelSession): number {
-  const target = chainLinkByLuaArg(L, session);
-  lua.lua_pushboolean(L, Boolean(target && canNegateDuelChainLink(session.state, target.id)));
+function pushIsChainNegatable(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState): number {
+  const target = chainLinkByLuaArg(L, session, hostState);
+  lua.lua_pushboolean(L, Boolean(target && canNegateDuelChainLinkObject(session.state, target)));
   return 1;
 }
 
 function pushNegateChainLink(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState): number {
-  const target = chainLinkByLuaArg(L, session);
+  const target = chainLinkByLuaArg(L, session, hostState);
   if (!target || target.negated) {
     lua.lua_pushboolean(L, false);
     return 1;
   }
   const source = session.state.cards.find((candidate) => candidate.uid === target.sourceUid);
   const activeSource = hostState.activeContext?.source;
-  lua.lua_pushboolean(L, negateDuelChainLink(
+  lua.lua_pushboolean(L, negateDuelChainLinkObject(
     session.state,
-    target.id,
+    target,
     hostState.activeContext?.player ?? activeSource?.controller ?? source?.controller ?? session.state.turnPlayer,
     activeSource?.name ?? source?.name ?? "Lua effect",
   ));
@@ -832,7 +832,7 @@ function pushNegateRelatedChain(L: unknown, session: DuelSession, hostState: Lua
   const player = hostState.activeContext?.player ?? activeSource?.controller ?? source?.controller ?? session.state.turnPlayer;
   const cardName = activeSource?.name ?? source?.name ?? "Lua effect";
   for (const link of session.state.chain.filter((candidate) => candidate.sourceUid === cardUid)) {
-    negateDuelChainLink(session.state, link.id, player, cardName);
+    negateDuelChainLinkObject(session.state, link, player, cardName);
   }
   return 0;
 }
@@ -896,14 +896,16 @@ function currentChainLinks(session: DuelSession, hostState: LuaDuelChainApiHostS
   return [...session.state.chain, activeLink];
 }
 
-function chainLinkByLuaArg(L: unknown, session: DuelSession): DuelState["chain"][number] | undefined {
+function chainLinkByLuaArg(L: unknown, session: DuelSession, hostState?: LuaDuelChainApiHostState): DuelState["chain"][number] | undefined {
   const requestedIndex = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.chain.length;
-  return chainLinkByLuaIndex(session, requestedIndex);
+  return chainLinkByLuaIndex(session, requestedIndex, hostState);
 }
 
 function chainLinkByLuaIndex(session: DuelSession, requestedIndex: number, hostState?: LuaDuelChainApiHostState): DuelState["chain"][number] | undefined {
-  if (requestedIndex <= 0) return hostState?.activeContext?.chainLink ?? session.state.chain[session.state.chain.length - 1];
-  return session.state.chain[requestedIndex - 1];
+  const activeLink = hostState?.activeContext?.chainLink;
+  if (requestedIndex <= 0) return activeLink ?? session.state.chain[session.state.chain.length - 1];
+  if (activeLink?.chainIndex === requestedIndex) return activeLink;
+  return session.state.chain.find((link) => link.chainIndex === requestedIndex) ?? session.state.chain[requestedIndex - 1];
 }
 
 function readOptionalPlayer(L: unknown, index: number): PlayerId | undefined {

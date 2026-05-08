@@ -5,7 +5,12 @@ import type { DuelCardInstance, DuelEffectContext, DuelState, PlayerId } from "#
 
 export function negateDuelChainLink(state: DuelState, chainLinkId: string, player: PlayerId, cardName: string): boolean {
   const link = state.chain.find((candidate) => candidate.id === chainLinkId);
-  if (!link || !canNegateDuelChainLink(state, chainLinkId)) return false;
+  if (!link) return false;
+  return negateDuelChainLinkObject(state, link, player, cardName);
+}
+
+export function negateDuelChainLinkObject(state: DuelState, link: DuelState["chain"][number], player: PlayerId, cardName: string): boolean {
+  if (!canNegateDuelChainLinkObject(state, link)) return false;
   link.negated = true;
   link.disableReason = duelReason.effect;
   link.disablePlayer = player;
@@ -15,7 +20,11 @@ export function negateDuelChainLink(state: DuelState, chainLinkId: string, playe
 
 export function canNegateDuelChainLink(state: DuelState, chainLinkId: string): boolean {
   const link = state.chain.find((candidate) => candidate.id === chainLinkId);
-  if (!link || link.negated) return false;
+  return Boolean(link && canNegateDuelChainLinkObject(state, link));
+}
+
+export function canNegateDuelChainLinkObject(state: DuelState, link: DuelState["chain"][number]): boolean {
+  if (link.negated) return false;
   const source = findCard(state, link.sourceUid);
   return !source || !isChainLinkNegationPrevented(state, source, createChainNegationContext(state));
 }

@@ -12,6 +12,7 @@ import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEve
 import type { LuaEffectRecord, LuaHostState } from "#lua/host-types.js";
 
 const { lua, lauxlib, to_luastring } = fengari;
+const allDuelLocations: DuelLocation[] = ["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"];
 
 export function installEffectApi(L: unknown, hostState: LuaHostState, readLuaError: (state: unknown) => string): void {
   lua.lua_newtable(L);
@@ -348,7 +349,9 @@ export function registerLuaEffect(L: unknown, hostState: LuaHostState, id: numbe
       : hostState.session.state.cards.find((card) => card.uid === luaEffect.sourceUid);
   if (!luaEffect || !source) return false;
   luaEffect.ownerPlayer = player;
-  registerEffect(hostState.session, toDuelEffect(source, luaEffect, L, hostState));
+  const effect = toDuelEffect(source, luaEffect, L, hostState);
+  if (luaEffect.range === undefined) effect.range = [...allDuelLocations];
+  registerEffect(hostState.session, effect);
   return true;
 }
 
