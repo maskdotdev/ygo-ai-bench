@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { hasZoneSpace } from "#duel/card-state.js";
 import { canChangeDuelCardPosition } from "#duel/core.js";
 import type { MaterialUseKind } from "#duel/continuous-effects.js";
+import { markProcedureComplete } from "#duel/procedure-status.js";
 import { canBeMaterial } from "#lua/card-eligibility-api.js";
 import { cardTypeFlags } from "#lua/card-stat-api.js";
 import { canLuaLinkSummonCard, readLinkMaterialArguments } from "#lua/link-summonable.js";
@@ -47,7 +48,12 @@ export function installCardMaterialApi(L: unknown, session: DuelSession): void {
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("SetMaterial"));
-  lua.lua_pushcfunction(L, () => 0);
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    if (session.state.status === "ended") return 0;
+    const card = readCard(state, session);
+    if (card) markProcedureComplete(card);
+    return 0;
+  });
   lua.lua_setfield(L, -2, to_luastring("CompleteProcedure"));
 }
 

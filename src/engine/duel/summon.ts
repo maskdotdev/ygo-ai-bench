@@ -1,5 +1,6 @@
 import { findCard, getCards, hasZoneSpace, moveDuelCard, pushDuelLog, requireControlledCard, requireZoneSpace } from "#duel/card-state.js";
 import { duelActivity, recordFlipSummonActivity, recordNormalSetActivity, recordNormalSummonActivity, recordSpecialSummonActivity } from "#duel/activity.js";
+import { markProcedureComplete } from "#duel/procedure-status.js";
 import { duelReason } from "#duel/reasons.js";
 import { tributeUnitCount } from "#duel/double-tribute.js";
 import { cardCombinations, cardMatchesCode, isMonsterLike, materialCodesMatch } from "#duel/summon-materials.js";
@@ -30,6 +31,7 @@ export function normalSummon(state: DuelState, player: PlayerId, uid: string, co
   card.summonPlayer = player;
   card.summonPhase = state.phase;
   card.summonMaterialUids = [];
+  markProcedureComplete(card);
   state.players[player].normalSummonAvailable = false;
   recordNormalSummonActivity(state, player, card);
   pushDuelLog(state, "normalSummon", player, card.name, "Normal Summoned from hand");
@@ -72,6 +74,7 @@ export function tributeSetDuelCard(
   card.summonPlayer = player;
   card.summonPhase = state.phase;
   card.summonMaterialUids = uniqueTributes;
+  markProcedureComplete(card);
   state.players[player].normalSummonAvailable = false;
   recordNormalSetActivity(state, player, card);
   pushDuelLog(state, "setMonster", player, card.name, `Tribute Set with ${tributeUnits} tribute(s)`);
@@ -101,6 +104,7 @@ export function tributeSummonDuelCard(
   card.summonPlayer = player;
   card.summonPhase = state.phase;
   card.summonMaterialUids = uniqueTributes;
+  markProcedureComplete(card);
   state.players[player].normalSummonAvailable = false;
   recordNormalSummonActivity(state, player, card);
   pushDuelLog(state, "tributeSummon", player, card.name, `Tribute Summoned with ${tributeUnits} tribute(s)`);
@@ -154,6 +158,7 @@ export function flipSummonDuelCard(state: DuelState, player: PlayerId, uid: stri
   card.summonPlayer = player;
   card.summonPhase = state.phase;
   card.summonMaterialUids = [];
+  markProcedureComplete(card);
   recordFlipSummonActivity(state, player, card);
   pushDuelLog(state, "flipSummon", player, card.name, "Flip Summoned");
   collectEvent("flipSummoned", card);
@@ -186,6 +191,7 @@ export function fusionSummonDuelCard(
   card.summonPlayer = player;
   card.summonPhase = state.phase;
   card.summonMaterialUids = [...materialUids];
+  markProcedureComplete(card);
   recordSpecialSummonActivity(state, player, card);
   pushDuelLog(state, "fusionSummon", player, card.name, `Fusion Summoned with ${materialUids.length} material(s)`);
   collectEvent("specialSummoned", card);
@@ -218,6 +224,7 @@ export function synchroSummonDuelCard(
   card.summonPlayer = player;
   card.summonPhase = state.phase;
   card.summonMaterialUids = [...materialUids];
+  markProcedureComplete(card);
   recordSpecialSummonActivity(state, player, card);
   pushDuelLog(state, "synchroSummon", player, card.name, `Synchro Summoned with ${materialUids.length} material(s)`);
   collectEvent("specialSummoned", card);
@@ -243,6 +250,7 @@ export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: strin
   card.summonPlayer = player;
   card.summonPhase = state.phase;
   card.summonMaterialUids = [...materialUids];
+  markProcedureComplete(card);
   recordSpecialSummonActivity(state, player, card);
   pushDuelLog(state, "xyzSummon", player, card.name, `Xyz Summoned with ${materialUids.length} material(s)`);
   collectEvent("specialSummoned", card);
@@ -275,6 +283,7 @@ export function linkSummonDuelCard(
   card.summonPlayer = player;
   card.summonPhase = state.phase;
   card.summonMaterialUids = [...materialUids];
+  markProcedureComplete(card);
   recordSpecialSummonActivity(state, player, card);
   pushDuelLog(state, "linkSummon", player, card.name, `Link Summoned with ${materialUids.length} material(s)`);
   collectEvent("specialSummoned", card);
@@ -320,6 +329,7 @@ export function ritualSummonDuelCard(
   card.summonPlayer = player;
   card.summonPhase = state.phase;
   card.summonMaterialUids = [...materialUids];
+  markProcedureComplete(card);
   recordSpecialSummonActivity(state, player, card);
   pushDuelLog(state, "ritualSummon", player, card.name, `Ritual Summoned with ${materialUids.length} material(s)`);
   collectEvent("specialSummoned", card);

@@ -26,6 +26,7 @@ import {
 } from "#duel/core.js";
 import { luaSummonTypePendulum, luaSummonTypeRitual } from "#duel/summon-type-codes.js";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
+import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelReason } from "#duel/reasons.js";
 import { tributeSetDuelCard } from "#duel/summon.js";
@@ -353,6 +354,7 @@ function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuel
       const summoned = specialSummonDuelCard(session.state, card.uid, player, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer), luaSummonTypePendulum);
       applySummonPosition(summoned, "faceUpAttack");
       summoned.summonType = "pendulum";
+      markProcedureComplete(summoned);
       summonedUids.push(card.uid);
     } catch {
       // EDOPro-style helpers report successful summons only.

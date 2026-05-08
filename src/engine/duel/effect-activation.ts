@@ -2,6 +2,7 @@ import { findCard, pushDuelLog, requireControlledCard } from "#duel/card-state.j
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { pruneSpentMandatoryPendingTriggers } from "#duel/pending-trigger-actions.js";
 import { otherPlayer } from "#duel/player-id.js";
+import { markProcedureComplete } from "#duel/procedure-status.js";
 import { placeActivatedSpellTrapCard } from "#duel/spell-trap-activation.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import { pendingTriggerBucketsForState, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
@@ -148,7 +149,7 @@ export function specialSummonDuelByProcedure(session: DuelSession, player: Playe
     if (!effect.range.includes(currentSource.location)) throw new Error(`${source.name} summon procedure is no longer in range`);
     if (!handlers.canSpecialSummonCard(session.state, uid, player)) throw new Error(`${source.name} cannot be Special Summoned`);
     markEffectUsed(session.state, effect);
-    handlers.specialSummonCard(session.state, uid, player);
+    markProcedureComplete(handlers.specialSummonCard(session.state, uid, player));
   } catch (error) {
     restoreDuelState(session.state, rollback);
     throw error;

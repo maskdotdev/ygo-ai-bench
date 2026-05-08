@@ -1,5 +1,6 @@
 import { findCard } from "#duel/card-state.js";
 import { otherPlayer } from "#duel/player-id.js";
+import { hasReviveLimitProcedureComplete } from "#duel/procedure-status.js";
 import { duelReason } from "#duel/reasons.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import type {
@@ -129,7 +130,7 @@ export function isSpecialSummonPrevented(
 
 function isReviveLimitSpecialSummonPrevented(state: DuelState, card: DuelCardInstance): boolean {
   if (card.location !== "graveyard" && card.location !== "banished") return false;
-  if (card.summonType) return false;
+  if (hasReviveLimitProcedureComplete(card)) return false;
   for (const effect of state.effects) {
     if (effect.event === "continuous" && effect.code === 31 && effect.sourceUid === card.uid && findCard(state, effect.sourceUid)) return true;
   }

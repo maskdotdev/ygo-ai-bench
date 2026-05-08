@@ -1,5 +1,6 @@
 import { isDuelMonsterLike } from "#duel/card-predicates.js";
 import { findCard, getCards, pushDuelLog } from "#duel/card-state.js";
+import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelAction, DuelCardInstance, DuelState, PlayerId } from "#duel/types.js";
 
 type PendulumSummonAction = Extract<DuelAction, { type: "pendulumSummon" }>;
@@ -29,6 +30,7 @@ export function pendulumSummonDuelCards(
   for (const uid of summonUids) {
     const card = specialSummon(uid, player);
     card.summonType = "pendulum";
+    markProcedureComplete(card);
     summoned.push(card);
   }
   state.players[player].pendulumSummonAvailable = false;

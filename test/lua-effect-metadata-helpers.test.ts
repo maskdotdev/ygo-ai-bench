@@ -827,4 +827,51 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("revive limit proper result 1");
   });
 
+  it("requires CompleteProcedure for Lua effect Special Summons to satisfy revive limits", () => {
+    const cards: DuelCardData[] = [
+      { code: "900", name: "No Complete Procedure Fusion", kind: "extra", fusionMaterials: ["100", "200"] },
+      { code: "901", name: "Complete Procedure Fusion", kind: "extra", fusionMaterials: ["100", "200"] },
+    ];
+    const session = createDuel({ seed: 171, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: [], extra: ["900", "901"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local no_complete=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_EXTRA, 0, 1, 1, nil):GetFirst()
+      local complete=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 901), 0, LOCATION_EXTRA, 0, 1, 1, nil):GetFirst()
+      no_complete:EnableReviveLimit()
+      complete:EnableReviveLimit()
+      Debug.Message("no complete summon " .. Duel.SpecialSummon(no_complete,SUMMON_TYPE_FUSION,0,0,false,false,POS_FACEUP_ATTACK))
+      Debug.Message("no complete status " .. tostring(no_complete:IsStatus(STATUS_PROC_COMPLETE)))
+      Duel.SendtoGrave(no_complete,REASON_EFFECT)
+      Debug.Message("no complete revive can " .. tostring(no_complete:IsCanBeSpecialSummoned(nil,0,0,false,false,POS_FACEUP_ATTACK)))
+      Debug.Message("no complete revive result " .. Duel.SpecialSummon(no_complete,0,0,0,false,false,POS_FACEUP_ATTACK))
+      Debug.Message("complete summon " .. Duel.SpecialSummon(complete,SUMMON_TYPE_FUSION,0,0,false,false,POS_FACEUP_ATTACK))
+      Debug.Message("complete status before " .. tostring(complete:IsStatus(STATUS_PROC_COMPLETE)))
+      complete:CompleteProcedure()
+      Debug.Message("complete status after " .. tostring(complete:IsStatus(STATUS_PROC_COMPLETE)))
+      Duel.SendtoGrave(complete,REASON_EFFECT)
+      Debug.Message("complete revive can " .. tostring(complete:IsCanBeSpecialSummoned(nil,0,0,false,false,POS_FACEUP_ATTACK)))
+      Debug.Message("complete revive result " .. Duel.SpecialSummon(complete,0,0,0,false,false,POS_FACEUP_ATTACK))
+      `,
+      "complete-procedure-revive-limit.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("no complete summon 1");
+    expect(host.messages).toContain("no complete status false");
+    expect(host.messages).toContain("no complete revive can false");
+    expect(host.messages).toContain("no complete revive result 0");
+    expect(host.messages).toContain("complete summon 1");
+    expect(host.messages).toContain("complete status before false");
+    expect(host.messages).toContain("complete status after true");
+    expect(host.messages).toContain("complete revive can true");
+    expect(host.messages).toContain("complete revive result 1");
+  });
+
 });

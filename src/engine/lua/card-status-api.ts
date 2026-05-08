@@ -106,7 +106,6 @@ function cardStatusMask(state: DuelState, card: DuelCardInstance): number {
   if (card.summonType === "normal" || card.summonType === "tribute") mask |= 0x800;
   if (card.summonType === "flip") mask |= 0x20000000;
   if (card.summonType && card.summonType !== "normal" && card.summonType !== "tribute" && card.summonType !== "flip") mask |= 0x40000000;
-  if (card.summonType) mask |= 0x8;
   if ((card.reason ?? 0) & duelReason.battle) mask |= 0x4000;
   if (state.attackCanceledUids.includes(card.uid)) mask |= 0x200000;
   if (isOpposingMonsterBattle(state, card.uid)) mask |= 0x10000000;
