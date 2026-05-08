@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentOpenAttackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentOpenAttackGroup, passBattleGroup, targetedAttackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity defense-position reflected damage fixtures", () => {
   it("reflects battle damage when attacking a stronger defense-position monster", () => {
@@ -26,7 +26,26 @@ describe("EDOPro parity defense-position reflected damage fixtures", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the Battle Phase attack declaration window restorable before a stronger defense-position target is selected",
+            phase: "battle",
+            waitingFor: 0,
+            windowId: 1,
+            windowKind: "open",
+            pendingBattle: false,
+            battleWindow: null,
+            locations: { monsterZone: ["100", "200"] },
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", windowId: 1, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [targetedAttackGroup(0, "p0-deck-100-0", "p1-deck-200-0", 1, 1), turnGroup(1)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro records attacks into defense-position targets before attack-response windows",
@@ -50,6 +69,19 @@ describe("EDOPro parity defense-position reflected damage fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps both monsters on field before the final reflected-damage end damage step response pass resolves the battle",
+            waitingFor: 0,
+            windowId: 13,
+            pendingBattle: true,
+            battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 0 },
+            locations: { monsterZone: ["100", "200"] },
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "passDamage", player: 0, windowId: 13, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(0, "passDamage", 1, 13)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies reflected battle damage without destroying either monster when ATK is below DEF",
