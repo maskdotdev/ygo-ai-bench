@@ -75,6 +75,26 @@ function assertBattleReplayRestore(property: "EFFECT_FLAG_DAMAGE_STEP" | "EFFECT
   expect(resolved.legalActionGroups.some((group) => group.actions.some((action) => action.type === "activateEffect" && action.player === 1 && action.windowKind === "battle" && action.uid.includes("500")))).toBe(true);
   expect(resolved.legalActions.some((action) => action.type === "activateEffect" && action.uid.includes("600"))).toBe(false);
   expect(resolved.legalActionGroups.some((group) => group.actions.some((action) => action.type === "activateEffect" && action.uid.includes("600")))).toBe(false);
+  const battleAction = resolved.legalActions[0];
+  expect(battleAction).toBeDefined();
+  const oppositeQuick = restoredOpponentResponse.session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "600");
+  expect(oppositeQuick).toBeDefined();
+  const oppositeQuickEffect = restoredOpponentResponse.session.state.effects.find((effect) => effect.sourceUid === oppositeQuick!.uid);
+  expect(oppositeQuickEffect).toBeDefined();
+  const forgedOppositeTimingQuick = applyLuaRestoreResponse(restoredOpponentResponse, {
+    type: "activateEffect",
+    player: 1,
+    uid: oppositeQuick!.uid,
+    effectId: oppositeQuickEffect!.id,
+    label: "Forge opposite timing quick into restored battle window",
+    windowId: battleAction!.windowId!,
+    windowKind: battleAction!.windowKind!,
+    windowToken: battleAction!.windowToken!,
+  });
+  expect(forgedOppositeTimingQuick.ok).toBe(false);
+  expect(forgedOppositeTimingQuick.error).toContain("Response is not currently legal");
+  expect(forgedOppositeTimingQuick.legalActions).toEqual(getDuelLegalActions(restoredOpponentResponse.session, 1));
+  expect(forgedOppositeTimingQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredOpponentResponse.session, 1));
   expect(restoredOpponentResponse.host.messages).toEqual(["restored chain-only battle quick resolved", "restored battle quick resolved"]);
 
   const stalePass = applyLuaRestoreResponse(restoredOpponentResponse, pass!);
