@@ -628,6 +628,7 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
       triggerEvent === "flipSummoned" ||
       triggerEvent === "leftField" ||
       triggerEvent === "leftGraveyard" ||
+      triggerEvent === "monsterSet" ||
       triggerEvent === "moved" ||
       triggerEvent === "normalSummonNegated" ||
       triggerEvent === "positionChanged" ||
@@ -638,6 +639,7 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
       triggerEvent === "sentToGraveyard" ||
       triggerEvent === "sentToHand" ||
       triggerEvent === "sentToHandConfirmed" ||
+      triggerEvent === "spellTrapSet" ||
       triggerEvent === "specialSummonNegated" ||
       triggerEvent === "usedAsMaterial" ||
       triggerEvent === "normalSummoned" ||
