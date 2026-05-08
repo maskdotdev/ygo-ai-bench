@@ -74,6 +74,7 @@ describe("Lua field operation helpers", () => {
       e:SetOperation(function(e,tp)
         Duel.SendtoGrave(target, REASON_EFFECT)
         Duel.SpecialSummonStep(summon_target, 0, 0, 0, false, false, POS_FACEUP_ATTACK)
+        Duel.SpecialSummonComplete()
       end)
       source:RegisterEffect(e)
 
