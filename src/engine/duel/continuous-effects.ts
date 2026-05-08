@@ -122,7 +122,17 @@ export function isSpecialSummonPrevented(
     const ctx = createContext(effect, source, card);
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
+  if (card && isReviveLimitSpecialSummonPrevented(state, card)) return true;
   if (card && isSpecialSummonConditionPrevented(state, player, createContext, card, summonTypeCode, relatedEffectId)) return true;
+  return false;
+}
+
+function isReviveLimitSpecialSummonPrevented(state: DuelState, card: DuelCardInstance): boolean {
+  if (card.location !== "graveyard" && card.location !== "banished") return false;
+  if (card.summonType) return false;
+  for (const effect of state.effects) {
+    if (effect.event === "continuous" && effect.code === 31 && effect.sourceUid === card.uid && findCard(state, effect.sourceUid)) return true;
+  }
   return false;
 }
 

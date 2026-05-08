@@ -785,4 +785,46 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("card effect condition state true/true");
   });
 
+  it("enforces revive limits for unsummoned public-zone monsters", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "First Fusion Material", kind: "monster" },
+      { code: "200", name: "Second Fusion Material", kind: "monster" },
+      { code: "900", name: "Unsummoned Revive Limit Fusion", kind: "extra", fusionMaterials: ["100", "200"] },
+      { code: "901", name: "Proper Revive Limit Fusion", kind: "extra", fusionMaterials: ["100", "200"] },
+    ];
+    const session = createDuel({ seed: 170, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"], extra: ["900", "901"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local mat1=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local mat2=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local unsummoned=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_EXTRA, 0, 1, 1, nil):GetFirst()
+      local proper=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 901), 0, LOCATION_EXTRA, 0, 1, 1, nil):GetFirst()
+      unsummoned:EnableReviveLimit()
+      proper:EnableReviveLimit()
+      Duel.SendtoGrave(unsummoned,REASON_EFFECT)
+      Debug.Message("revive limit unsummoned can " .. tostring(unsummoned:IsCanBeSpecialSummoned(nil,0,0,false,false,POS_FACEUP_ATTACK)))
+      Debug.Message("revive limit unsummoned result " .. Duel.SpecialSummon(unsummoned,0,0,0,false,false,POS_FACEUP_ATTACK))
+      Debug.Message("revive limit fusion summon " .. Duel.FusionSummon(proper,Group.FromCards(mat1,mat2)))
+      Duel.SendtoGrave(proper,REASON_EFFECT)
+      Debug.Message("revive limit proper can " .. tostring(proper:IsCanBeSpecialSummoned(nil,0,0,false,false,POS_FACEUP_ATTACK)))
+      Debug.Message("revive limit proper result " .. Duel.SpecialSummon(proper,0,0,0,false,false,POS_FACEUP_ATTACK))
+      `,
+      "revive-limit-special-summon-legality.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("revive limit unsummoned can false");
+    expect(host.messages).toContain("revive limit unsummoned result 0");
+    expect(host.messages).toContain("revive limit fusion summon 1");
+    expect(host.messages).toContain("revive limit proper can true");
+    expect(host.messages).toContain("revive limit proper result 1");
+  });
+
 });
