@@ -165,6 +165,7 @@ describe("duel stale trigger responses", () => {
     const decline = getDuelLegalActions(session, 0).find((action) => action.type === "declineTrigger");
     expect(decline).toBeTruthy();
     if (!decline || decline.type !== "declineTrigger") throw new Error("Expected decline trigger action");
+    expect(decline.windowToken).toBeDefined();
 
     const forged = { ...decline, triggerBucket: "opponentOptional" as const };
     const result = applyResponse(session, forged);
@@ -174,6 +175,17 @@ describe("duel stale trigger responses", () => {
     expect(result.legalActions).toEqual(getDuelLegalActions(session, 0));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    expect(session.state.pendingTriggers).toHaveLength(1);
+    expect(queryPublicState(session).pendingTriggerBuckets).toEqual([{ player: 0, triggerBucket: "turnOptional", triggerIds: session.state.pendingTriggers.map((trigger) => trigger.id) }]);
+    expect(session.state.log.some((entry) => entry.action === "declineTrigger" && entry.detail === "stale-bucket-decline-trigger")).toBe(false);
+    const forgedEffect = { ...decline, effectId: `${decline.effectId}-forged` };
+    const forgedEffectResult = applyResponse(session, forgedEffect);
+
+    expect(forgedEffectResult.ok).toBe(false);
+    expect(forgedEffectResult.error).toContain("Response is not currently legal");
+    expect(forgedEffectResult.legalActions).toEqual(getDuelLegalActions(session, 0));
+    expect(forgedEffectResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(forgedEffectResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(forgedEffectResult.legalActions);
     expect(session.state.pendingTriggers).toHaveLength(1);
     expect(queryPublicState(session).pendingTriggerBuckets).toEqual([{ player: 0, triggerBucket: "turnOptional", triggerIds: session.state.pendingTriggers.map((trigger) => trigger.id) }]);
     expect(session.state.log.some((entry) => entry.action === "declineTrigger" && entry.detail === "stale-bucket-decline-trigger")).toBe(false);

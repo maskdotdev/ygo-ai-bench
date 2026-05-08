@@ -82,6 +82,7 @@ function runBattleDestroyRestore(eventCode: string, message: string): { messages
 
   const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
   expect(trigger).toBeDefined();
+  expect(trigger!.windowToken).toBeDefined();
   expect(
     getLuaRestoreLegalActionGroups(restored, 0).some(
       (group) =>
@@ -103,6 +104,15 @@ function runBattleDestroyRestore(eventCode: string, message: string): { messages
   expect(staleTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
   expect(staleTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
   assertLuaRestoreLegalWindow(restored, staleTrigger, 0);
+  expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["battleDestroyed"]);
+  expect(restored.host.messages).not.toContain(`${message} 200/true`);
+  const forgedEffectTrigger = applyLuaRestoreResponse(restored, {
+    ...trigger!,
+    effectId: `${trigger!.effectId}-forged`,
+  });
+  expect(forgedEffectTrigger.ok).toBe(false);
+  expect(forgedEffectTrigger.error).toContain("Response is not currently legal");
+  assertLuaRestoreLegalWindow(restored, forgedEffectTrigger, 0);
   expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["battleDestroyed"]);
   expect(restored.host.messages).not.toContain(`${message} 200/true`);
 
