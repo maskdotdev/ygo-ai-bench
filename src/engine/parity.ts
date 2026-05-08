@@ -526,7 +526,7 @@ function matchesPendingTriggerBucket(actual: PendingTriggerBucketState | undefin
 function resolveScriptedStep(step: ScriptedStepResponse, legal: DuelAction[], cards: { uid: string; code: string; location: DuelLocation }[]): DuelAction | undefined {
   if (isConcreteResponse(step)) {
     const action = legal.find((candidate) => sameAction(candidate, step));
-    if (action) return withMatchedWindowStamp(step, action);
+    return action ? withMatchedWindowStamp(step, action) : undefined;
   }
   const selector = step as ScriptedResponseSelector;
   return selectDuelActionBySelector(legal, selector, cards);
@@ -826,8 +826,8 @@ function sameAction(action: DuelAction, response: DuelAction): boolean {
   if ("uid" in action && "uid" in response && action.uid !== response.uid) return false;
   if (action.type === "activateEffect" && response.type === "activateEffect" && action.effectId !== response.effectId) return false;
   if (action.type === "specialSummonProcedure" && response.type === "specialSummonProcedure" && action.effectId !== response.effectId) return false;
-  if (action.type === "activateTrigger" && response.type === "activateTrigger" && (action.triggerId !== response.triggerId || action.triggerBucket !== response.triggerBucket)) return false;
-  if (action.type === "declineTrigger" && response.type === "declineTrigger" && (action.triggerId !== response.triggerId || action.triggerBucket !== response.triggerBucket)) return false;
+  if (action.type === "activateTrigger" && response.type === "activateTrigger" && (action.triggerId !== response.triggerId || action.triggerBucket !== response.triggerBucket || action.effectId !== response.effectId)) return false;
+  if (action.type === "declineTrigger" && response.type === "declineTrigger" && (action.triggerId !== response.triggerId || action.triggerBucket !== response.triggerBucket || action.effectId !== response.effectId)) return false;
   if (action.type === "selectOption" && response.type === "selectOption" && (action.promptId !== response.promptId || action.option !== response.option)) return false;
   if (action.type === "selectYesNo" && response.type === "selectYesNo" && (action.promptId !== response.promptId || action.yes !== response.yes)) return false;
   if (action.type === "tributeSummon" && response.type === "tributeSummon" && !sameStringMembers(action.tributeUids, response.tributeUids)) return false;
@@ -841,11 +841,18 @@ function sameAction(action: DuelAction, response: DuelAction): boolean {
   if (action.type === "changePosition" && response.type === "changePosition" && action.position !== response.position) return false;
   if (action.type === "declareAttack" && response.type === "declareAttack" && action.attackerUid !== response.attackerUid) return false;
   if (action.type === "declareAttack" && response.type === "declareAttack" && action.targetUid !== response.targetUid) return false;
+  if (action.type === "declareAttack" && response.type === "declareAttack" && !sameDirectAttackIntent(action, response)) return false;
   if (action.type === "replayAttack" && response.type === "replayAttack" && action.attackerUid !== response.attackerUid) return false;
   if (action.type === "replayAttack" && response.type === "replayAttack" && action.targetUid !== response.targetUid) return false;
+  if (action.type === "replayAttack" && response.type === "replayAttack" && !sameDirectAttackIntent(action, response)) return false;
   if (action.type === "cancelAttack" && response.type === "cancelAttack" && action.attackerUid !== response.attackerUid) return false;
   if (action.type === "changePhase" && response.type === "changePhase" && action.phase !== response.phase) return false;
   return true;
+}
+
+function sameDirectAttackIntent(action: Extract<DuelAction, { type: "declareAttack" | "replayAttack" }>, response: Extract<DuelAction, { type: "declareAttack" | "replayAttack" }>): boolean {
+  if (action.directAttack === true) return response.directAttack === true;
+  return response.directAttack !== true;
 }
 
 function describeStep(step: ScriptedStepResponse): string {
