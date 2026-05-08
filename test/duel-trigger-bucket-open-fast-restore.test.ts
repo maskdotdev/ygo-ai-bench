@@ -64,6 +64,24 @@ describe("trigger bucket open fast restore", () => {
     expect(hasGroupedEffect(restoredChainWindow, 0, "restore-open-fast-turn-chain-quick", "chainResponse")).toBe(true);
     expect(hasGroupedEffect(restoredChainWindow, 0, "restore-open-fast-turn-open-quick", "chainResponse")).toBe(false);
 
+    const chainQuick = getDuelLegalActions(restoredChainWindow, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-open-fast-turn-chain-quick");
+    expect(chainQuick).toBeDefined();
+    const forgedOpenOnly = applyResponse(restoredChainWindow, {
+      type: "activateEffect",
+      player: 0,
+      uid: turnQuick!.uid,
+      effectId: "restore-open-fast-turn-open-quick",
+      label: "Forge restored trigger-chain open-only quick into chain response",
+      windowId: chainQuick!.windowId,
+      windowKind: chainQuick!.windowKind,
+      windowToken: chainQuick!.windowToken,
+    });
+    expect(forgedOpenOnly.ok).toBe(false);
+    expect(forgedOpenOnly.error).toContain("Response is not currently legal");
+    expect(forgedOpenOnly.legalActions).toEqual(getDuelLegalActions(restoredChainWindow, 0));
+    expect(forgedOpenOnly.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredChainWindow, 0));
+    expect(restoredChainWindow.state.log.map((entry) => entry.detail)).not.toContain("restore-open-fast-turn-open-quick resolved");
+
     const pass = getDuelLegalActions(restoredChainWindow, 0).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
     const resolved = applyAndAssert(restoredChainWindow, pass!);
