@@ -109,6 +109,41 @@ describe("EDOPro parity end-damage-step quick-effect chain-response pass-handoff
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-end-damage-step-response-handoff-until-opponent-first" })),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the turn-player end-damage-step chain-response window restorable before handing until-chain-end priority back to the opponent",
+            waitingFor: 0,
+            windowId: 15,
+            windowKind: "chainResponse",
+            pendingBattle: true,
+            battleStep: "damage",
+            battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            chain: [
+              { player: 0, effectId: "fixture-end-damage-step-response-handoff-until-turn-open", sourceUid: "p0-deck-200-1" },
+              { player: 1, effectId: "fixture-end-damage-step-response-handoff-until-opponent-first", sourceUid: "p1-deck-400-0" },
+            ],
+            chainPasses: [],
+            chainLimits: [],
+            damagePasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 15, windowKind: "chainResponse", effectId: "fixture-end-damage-step-response-handoff-until-turn-blocked", count: 1 },
+              { type: "passChain", player: 0, windowId: 15, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-end-damage-step-response-handoff-until-turn-blocked", 1, 15),
+              chainPassGroup(0, 1, 15),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 15, windowKind: "chainResponse", effectId: "fixture-end-damage-step-response-handoff-until-opponent-first" },
+              { type: "passDamage", player: 0, windowId: 15, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(1, "fixture-end-damage-step-response-handoff-until-opponent-first", 15, "chainResponse"),
+              absentPassBattleGroup(0, "passDamage", 15),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro hands end-damage-step chain-response priority back to the opponent after the turn player passes the opponent's chain link",
@@ -160,6 +195,54 @@ describe("EDOPro parity end-damage-step quick-effect chain-response pass-handoff
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-end-damage-step-response-handoff-until-opponent-limiter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent end-damage-step pass-handoff response window restorable before until-chain-end limits apply",
+            waitingFor: 1,
+            windowId: 16,
+            windowKind: "chainResponse",
+            pendingBattle: true,
+            battleStep: "damage",
+            battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            chain: [
+              { player: 0, effectId: "fixture-end-damage-step-response-handoff-until-turn-open", sourceUid: "p0-deck-200-1" },
+              { player: 1, effectId: "fixture-end-damage-step-response-handoff-until-opponent-first", sourceUid: "p1-deck-400-0" },
+            ],
+            chainPasses: [0],
+            chainLimits: [],
+            damagePasses: [],
+            legalActionCounts: { 0: 0, 1: 3 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 16, windowKind: "chainResponse", effectId: "fixture-end-damage-step-response-handoff-until-opponent-limiter", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 16, windowKind: "chainResponse", effectId: "fixture-end-damage-step-response-handoff-until-opponent-followup", count: 1 },
+              { type: "passChain", player: 1, windowId: 16, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 16,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 16, windowKind: "chainResponse", effectId: "fixture-end-damage-step-response-handoff-until-opponent-limiter", count: 1 },
+                  { type: "activateEffect", player: 1, windowId: 16, windowKind: "chainResponse", effectId: "fixture-end-damage-step-response-handoff-until-opponent-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(1, 1, 16),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 16, windowKind: "chainResponse", effectId: "fixture-end-damage-step-response-handoff-until-turn-blocked" },
+              { type: "activateEffect", player: 1, windowId: 16, windowKind: "chainResponse", effectId: "fixture-end-damage-step-response-handoff-until-opponent-first" },
+              { type: "passDamage", player: 1, windowId: 16, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-end-damage-step-response-handoff-until-turn-blocked", 16, "chainResponse"),
+              absentWindowEffectGroup(1, "fixture-end-damage-step-response-handoff-until-opponent-first", 16, "chainResponse"),
+              absentPassBattleGroup(1, "passDamage", 16),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies SetChainLimitTillChainEnd restrictions after the opponent chains from an end-damage-step chain-response pass handoff",
