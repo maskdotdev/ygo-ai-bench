@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import {
+  absentTriggerActivationGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  summonGroup,
+  triggerActivationGroup,
+  triggerDeclineGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity fixture event codes", () => {
   it("asserts custom event codes in fixture windows and final state", () => {
@@ -167,6 +175,73 @@ describe("EDOPro parity fixture event codes", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-matching-custom-trigger" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps restored custom event trigger payload fields available before the matching trigger is activated",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "fixture-matching-custom-trigger",
+                eventName: "customEvent",
+                eventCode,
+                eventPlayer: 1,
+                eventValue: 77,
+                eventReason: 64,
+                eventReasonPlayer: 1,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 9001,
+                relatedEffectId: 7001,
+                eventChainDepth: 1,
+                eventChainLinkId: "fixture-origin-link",
+                eventUids: ["p0-deck-500-3", "p0-deck-100-0"],
+                eventCardUid: "p0-deck-500-3",
+                eventPreviousState: { controller: 0, location: "hand", sequence: 0, position: "faceDown", faceUp: false },
+                eventCurrentState: { controller: 0, location: "graveyard", sequence: 0, position: "faceDown", faceUp: true },
+              },
+            ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [
+              { eventName: "chainActivating", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chaining", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chainSolving", eventCardUid: "p0-deck-100-0" },
+              {
+                eventName: "customEvent",
+                eventCode,
+                eventPlayer: 1,
+                eventValue: 77,
+                eventReason: 64,
+                eventReasonPlayer: 1,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 9001,
+                relatedEffectId: 7001,
+                eventChainDepth: 1,
+                eventChainLinkId: "fixture-origin-link",
+                eventUids: ["p0-deck-500-3", "p0-deck-100-0"],
+                eventCardUid: "p0-deck-500-3",
+                eventPreviousState: { controller: 0, location: "hand", sequence: 0, position: "faceDown", faceUp: false },
+                eventCurrentState: { controller: 0, location: "graveyard", sequence: 0, position: "faceDown", faceUp: true },
+              },
+              { eventName: "chainSolved" },
+            ],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-matching-custom-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-matching-custom-trigger", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-matching-custom-trigger", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "fixture-matching-custom-trigger", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-wrong-custom-trigger", triggerBucket: "turnOptional" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(0, "fixture-wrong-custom-trigger", "turnOptional", 1, "triggerBucket")],
+            locations: { graveyard: ["500"], hand: ["100", "300", "400"] },
+            logIncludes: ["Fixture custom event raised"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro carries custom event payload fields onto the activated trigger chain link",
@@ -223,6 +298,49 @@ describe("EDOPro parity fixture event codes", () => {
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps custom event payload fields on the restored trigger chain link before chain resolution",
+            phase: "main1",
+            windowId: 2,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            chain: [
+              {
+                player: 0,
+                effectId: "fixture-matching-custom-trigger",
+                eventName: "customEvent",
+                eventCode,
+                eventPlayer: 1,
+                eventValue: 77,
+                eventReason: 64,
+                eventReasonPlayer: 1,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 9001,
+                relatedEffectId: 7001,
+                eventChainDepth: 1,
+                eventChainLinkId: "fixture-origin-link",
+                eventUids: ["p0-deck-500-3", "p0-deck-100-0"],
+                eventCardUid: "p0-deck-500-3",
+                eventPreviousState: { controller: 0, location: "hand", sequence: 0, position: "faceDown", faceUp: false },
+                eventCurrentState: { controller: 0, location: "graveyard", sequence: 0, position: "faceDown", faceUp: true },
+              },
+            ],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "fixture-custom-chain-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 2, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-custom-chain-quick", 1, 2),
+              chainPassGroup(0, 1, 2),
+            ],
+            locations: { graveyard: ["500"], hand: ["100", "300", "400"] },
+            logIncludes: ["Fixture custom event raised"],
+          },
         }),
       ],
       expected: {
