@@ -278,6 +278,7 @@ function pushGetControl(L: unknown, session: DuelSession, hostState: LuaDuelMove
   const allowedLocations = lua.lua_isnumber(L, 5) ? locationsFromMask(lua.lua_tointeger(L, 5)) : undefined;
   const controlled: string[] = [];
   beginLuaOperationMoveStep(session, hostState);
+  const triggerStart = session.state.pendingTriggers.length;
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card || card.controller === targetPlayer || !canChangeControl(session.state, card, allowedLocations)) continue;
@@ -295,6 +296,7 @@ function pushGetControl(L: unknown, session: DuelSession, hostState: LuaDuelMove
     }
   }
   finishLuaOperationMoveStep(hostState, controlled.length > 0);
+  regroupLuaOperationEvent(session, triggerStart, "controlChanged", controlled);
   setOperatedUids(hostState, controlled);
   lua.lua_pushinteger(L, controlled.length);
   return 1;
