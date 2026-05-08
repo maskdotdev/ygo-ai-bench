@@ -148,6 +148,18 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
       return code !== undefined && codes.has(code);
     } };
   }
+  const responsePlayerHandlerCode = predicate?.match(/^closure:handler-code-response-player:(\d+)$/);
+  if (responsePlayerHandlerCode?.[1]) {
+    return { ...limit, allows: (effect, player, chainPlayer) => player === chainPlayer || sourceCode(hostState, effect.sourceUid) === responsePlayerHandlerCode[1] };
+  }
+  const responsePlayerHandlerCodes = predicate?.match(/^closure:handler-codes-response-player:([\d,]+)$/);
+  if (responsePlayerHandlerCodes?.[1]) {
+    const codes = new Set(responsePlayerHandlerCodes[1].split(",").filter(Boolean));
+    return { ...limit, allows: (effect, player, chainPlayer) => {
+      const code = sourceCode(hostState, effect.sourceUid);
+      return player === chainPlayer || (code !== undefined && codes.has(code));
+    } };
+  }
   const blockedEffectType = predicate?.match(/^closure:not-effect-type:(\d+)$/);
   if (blockedEffectType?.[1]) return { ...limit, allows: (effect) => (effectTypeFlags(hostState, effect.id) & Number(blockedEffectType[1])) === 0 };
   const blockedEffectTypeForOpponent = predicate?.match(/^closure:not-effect-type-response-player:(\d+)$/);

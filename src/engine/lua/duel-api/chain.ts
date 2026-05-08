@@ -193,6 +193,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (targetHandlerExclusionUids) return `closure:target-cards-not-handler:${targetHandlerExclusionUids.map(encodeURIComponent).join(",")}`;
   const typeMask = capturedTypeMask(L, index);
   if (typeMask !== undefined) return `closure:type-mask-response-player:${typeMask}`;
+  const responsePlayerHandlerCodes = literalResponseMatchesChainPlayerOrHandlerCodesPredicate(L, index, hostState);
+  if (responsePlayerHandlerCodes !== undefined) return handlerCodeResponsePlayerPredicateDescriptor(responsePlayerHandlerCodes);
   const handlerCode = capturedHandlerCode(L, index);
   if (handlerCode !== undefined) return `closure:handler-code:${handlerCode}`;
   const literalHandlerCode = literalHandlerCodePredicate(L, index, hostState);
@@ -428,6 +430,72 @@ function numberTokenValue(token: string, upvalues: Map<string, number>): number 
 
 function handlerCodePredicateDescriptor(codes: number[]): string {
   return codes.length === 1 ? `closure:handler-code:${codes[0]}` : `closure:handler-codes:${codes.join(",")}`;
+}
+
+function handlerCodeResponsePlayerPredicateDescriptor(codes: number[]): string {
+  return codes.length === 1 ? `closure:handler-code-response-player:${codes[0]}` : `closure:handler-codes-response-player:${codes.join(",")}`;
+}
+
+function literalResponseMatchesChainPlayerOrHandlerCodesPredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number[] | undefined {
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
+  const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
+  const effectParam = params?.[0];
+  const responsePlayerParam = params?.[1];
+  const chainPlayerParam = params?.[2];
+  if (!effectParam || !responsePlayerParam || !chainPlayerParam) return undefined;
+
+  const returnExpression = lastReturnExpression(snippet);
+  if (!returnExpression) return undefined;
+  const terms = returnExpression.split(/\s+or\s+/).map((term) => trimOuterParens(term.trim())).filter(Boolean);
+  if (terms.length !== 2) return undefined;
+  const equality = terms.find((term) => responseMatchesChainPlayerTerm(term, responsePlayerParam, chainPlayerParam));
+  const codeTerm = terms.find((term) => term !== equality);
+  if (!equality || !codeTerm) return undefined;
+
+  const codes = handlerCodeTermValues(codeTerm, effectParam, capturedNumberUpvalues(L, index));
+  if (!codes || codes.length === 0) return undefined;
+  const uniqueCodes = [...new Set(codes)].sort((a, b) => a - b);
+  return uniqueCodes.every((code) => Number.isSafeInteger(code) && code > 0) ? uniqueCodes : undefined;
+}
+
+function responseMatchesChainPlayerTerm(term: string, responsePlayerParam: string, chainPlayerParam: string): boolean {
+  const equality = term.match(/^([A-Za-z_]\w*)\s*==\s*([A-Za-z_]\w*)$/);
+  if (!equality?.[1] || !equality[2]) return false;
+  return [equality[1], equality[2]].sort().join(":") === [responsePlayerParam, chainPlayerParam].sort().join(":");
+}
+
+function handlerCodeTermValues(term: string, effectParam: string, upvalues: Map<string, number> | undefined): number[] | undefined {
+  if (upvalues === undefined) return undefined;
+  const handler = `${escapeRegExp(effectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`;
+  const isCode = term.match(new RegExp(`^${handler}\\s*:\\s*IsCode\\s*\\(\\s*([^)]*?)\\s*\\)$`));
+  if (isCode?.[1]) {
+    const codes = isCode[1].split(",").map((part) => numberTokenValue(part.trim(), upvalues));
+    return codes.some((code) => code === undefined) ? undefined : codes.filter((code): code is number => code !== undefined);
+  }
+  const rightGetCode = term.match(new RegExp(`^${handler}\\s*:\\s*GetCode\\s*\\(\\s*\\)\\s*==\\s*([A-Za-z_]\\w*|\\d+)$`));
+  const leftGetCode = term.match(new RegExp(`^([A-Za-z_]\\w*|\\d+)\\s*==\\s*${handler}\\s*:\\s*GetCode\\s*\\(\\s*\\)$`));
+  const code = numberTokenValue((rightGetCode?.[1] ?? leftGetCode?.[1] ?? "").trim(), upvalues);
+  return code === undefined ? undefined : [code];
+}
+
+function trimOuterParens(value: string): string {
+  let current = value.trim();
+  while (current.startsWith("(") && current.endsWith(")") && outerParensWrapWholeExpression(current)) {
+    current = current.slice(1, -1).trim();
+  }
+  return current;
+}
+
+function outerParensWrapWholeExpression(value: string): boolean {
+  let depth = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index];
+    if (char === "(") depth += 1;
+    if (char === ")") depth -= 1;
+    if (depth === 0 && index < value.length - 1) return false;
+  }
+  return depth === 0;
 }
 
 function literalResponseMatchesChainPlayerPredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): boolean {
