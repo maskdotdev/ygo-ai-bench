@@ -3,7 +3,10 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const defaultUpstreamConstants = ".upstream/ignis/script/constant.lua";
+const defaultUpstreamConstants = [
+  ".upstream/ignis/script/constant.lua",
+  ".upstream/ignis/script/archetype_setcode_constants.lua",
+];
 const defaultSourceRoot = "src/engine/lua";
 
 function main(argv) {
@@ -12,10 +15,12 @@ function main(argv) {
     printHelp();
     return 0;
   }
-  const upstreamFile = path.resolve(options.upstreamConstants ?? defaultUpstreamConstants);
+  const configuredUpstream = options.upstreamConstants?.length ? options.upstreamConstants : defaultUpstreamConstants;
+  const upstreamFiles = configuredUpstream.map((file) => path.resolve(file));
   const sourceRoot = path.resolve(options.sourceRoot ?? defaultSourceRoot);
-  if (!fs.existsSync(upstreamFile)) {
-    console.error(`Upstream constants file not found: ${upstreamFile}`);
+  const missingUpstream = upstreamFiles.filter((file) => !fs.existsSync(file));
+  if (missingUpstream.length > 0) {
+    console.error(`Upstream constants file not found: ${missingUpstream[0]}`);
     return 1;
   }
   if (!fs.existsSync(sourceRoot)) {
@@ -23,10 +28,10 @@ function main(argv) {
     return 1;
   }
 
-  const upstream = scanUpstreamConstants(upstreamFile);
+  const upstream = scanUpstreamConstants(upstreamFiles);
   const local = scanLocalConstants(sourceRoot);
   const missing = [...upstream].filter((name) => !local.has(name)).sort((a, b) => a.localeCompare(b));
-  printReport({ upstreamFile, sourceRoot, upstream, local, missing });
+  printReport({ upstreamFiles, sourceRoot, upstream, local, missing });
   return missing.length > 0 && options.failOnMissing ? 2 : 0;
 }
 
@@ -36,9 +41,9 @@ function parseArgs(argv) {
     const arg = argv[index];
     if (arg === "--help" || arg === "-h") options.help = true;
     else if (arg === "--fail-on-missing") options.failOnMissing = true;
-    else if (arg === "--upstream") options.upstreamConstants = requireOptionValue(argv, ++index, arg);
+    else if (arg === "--upstream") (options.upstreamConstants ??= []).push(requireOptionValue(argv, ++index, arg));
     else if (arg === "--source") options.sourceRoot = requireOptionValue(argv, ++index, arg);
-    else if (!options.upstreamConstants) options.upstreamConstants = arg;
+    else if (!options.upstreamConstants?.length) options.upstreamConstants = [arg];
     else throw new Error(`Unknown argument: ${arg}`);
   }
   return options;
@@ -54,15 +59,22 @@ function printHelp() {
   console.log(`Usage: node tools/scan-lua-constants.mjs [constant.lua] [options]
 
 Options:
-  --upstream <path>      Project Ignis constant.lua path. Default: ${defaultUpstreamConstants}
+  --upstream <path>      Project Ignis constants path. Can be repeated.
+                         Default: ${defaultUpstreamConstants.join(", ")}
   --source <path>        Local Lua host source directory. Default: ${defaultSourceRoot}
   --fail-on-missing      Exit 2 when upstream constants are missing locally
 `);
 }
 
-function scanUpstreamConstants(file) {
-  const source = stripLuaComments(fs.readFileSync(file, "utf8"));
-  return new Set([...source.matchAll(/^\s*([A-Z][A-Z0-9_]+)\s*=/gm)].map((match) => match[1]).filter(Boolean));
+function scanUpstreamConstants(files) {
+  const constants = new Set();
+  for (const file of files) {
+    const source = stripLuaComments(fs.readFileSync(file, "utf8"));
+    for (const match of source.matchAll(/^\s*([A-Z][A-Z0-9_]+)\s*=/gm)) {
+      if (match[1]) constants.add(match[1]);
+    }
+  }
+  return constants;
 }
 
 function scanLocalConstants(root) {
@@ -77,9 +89,9 @@ function scanLocalConstants(root) {
   return constants;
 }
 
-function printReport({ upstreamFile, sourceRoot, upstream, local, missing }) {
+function printReport({ upstreamFiles, sourceRoot, upstream, local, missing }) {
   console.log("Lua constant corpus scan");
-  console.log(`upstream: ${upstreamFile}`);
+  console.log(`upstream: ${upstreamFiles.join(", ")}`);
   console.log(`source:   ${sourceRoot}`);
   console.log(`upstream constants: ${upstream.size}`);
   console.log(`local constants:    ${local.size}`);

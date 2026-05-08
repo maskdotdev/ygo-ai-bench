@@ -51,11 +51,38 @@ describe("Lua constant scanner", () => {
     expect(output).toContain("No missing constants found.");
   });
 
-  it("keeps local Project Ignis constant names aligned with upstream constant.lua", () => {
-    const upstream = ".upstream/ignis/script/constant.lua";
-    if (!fs.existsSync(upstream)) return;
+  it("can scan multiple upstream constant files", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "lua-constant-scan-"));
+    const upstream = path.join(root, "constant.lua");
+    const archetypes = path.join(root, "archetype_setcode_constants.lua");
+    const source = path.join(root, "source");
+    fs.mkdirSync(source, { recursive: true });
+    fs.writeFileSync(upstream, "REASON_EFFECT = 0x40\n");
+    fs.writeFileSync(archetypes, "SET_FIXTURE = 0x123\nSET_MISSING_FIXTURE = 0x456\n");
+    fs.writeFileSync(path.join(source, "basic-test-constant-data.ts"), "export const constants = { REASON_EFFECT: 0x40, SET_FIXTURE: 0x123 };\n");
 
-    const output = execFileSync(process.execPath, [scannerPath, "--upstream", upstream, "--fail-on-missing"], { encoding: "utf8" });
+    const result = spawnSync(process.execPath, [
+      scannerPath,
+      "--upstream",
+      upstream,
+      "--upstream",
+      archetypes,
+      "--source",
+      source,
+      "--fail-on-missing",
+    ], { encoding: "utf8" });
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toContain("Missing constants:");
+    expect(result.stdout).toContain("SET_MISSING_FIXTURE");
+  });
+
+  it("keeps local Project Ignis constant names aligned with upstream constant.lua", () => {
+    for (const upstream of [".upstream/ignis/script/constant.lua", ".upstream/ignis/script/archetype_setcode_constants.lua"]) {
+      if (!fs.existsSync(upstream)) return;
+    }
+
+    const output = execFileSync(process.execPath, [scannerPath, "--fail-on-missing"], { encoding: "utf8" });
 
     expect(output).toContain("No missing constants found.");
   });
