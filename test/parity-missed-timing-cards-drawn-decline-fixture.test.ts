@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentTriggerActivationGroup, absentWindowEffectGroup, triggerActivationGroup, triggerDeclineGroup } from "./parity-legal-action-group-helpers.js";
+import {
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  summonGroup,
+  triggerActivationGroup,
+  triggerDeclineGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity cards-drawn missed timing decline fixture", () => {
   it("returns declined optional if cards-drawn triggers to open fast priority while optional when remains missed", () => {
@@ -75,6 +82,67 @@ describe("EDOPro parity cards-drawn missed timing decline fixture", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "cards-drawn-decline-multistep" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the initial draw effect window restorable before cards-drawn missed-timing filtering",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            locations: { hand: ["100", "400", "500", "800"], monsterZone: ["600"], deck: ["700"] },
+            legalActionCounts: { 0: 13, 1: 0 },
+            legalActionGroupCounts: { 0: 4, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "cards-drawn-decline-open-fast", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "cards-drawn-decline-multistep", count: 1 },
+              { type: "changePosition", player: 0, windowId: 0, windowKind: "open", code: "600", location: "monsterZone", position: "faceUpDefense", count: 1 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "cards-drawn-decline-open-fast", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "cards-drawn-decline-multistep", count: 1 },
+                ],
+              },
+              {
+                player: 0,
+                label: "Actions",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "changePosition", player: 0, windowId: 0, windowKind: "open", code: "600", location: "monsterZone", position: "faceUpDefense", count: 1 }],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "normalSummon", player: 0, code: "800", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "800", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "cards-drawn-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "cards-drawn-decline-optional-if" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "cards-drawn-decline-optional-when", "turnOptional", 0, "open"),
+              absentTriggerActivationGroup(0, "cards-drawn-decline-optional-if", "turnOptional", 0, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps optional if draw triggers available while optional when draw triggers miss timing",
@@ -109,6 +177,39 @@ describe("EDOPro parity cards-drawn missed timing decline fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "cards-drawn-decline-optional-if" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the surviving optional if cards-drawn trigger decline restorable while optional when remains missed",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [
+              { player: 0, effectId: "cards-drawn-decline-optional-if", eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventValue: 1, eventUids: ["p0-deck-700-5"], eventReason: 0x40, eventReasonPlayer: 0 },
+            ],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "cards-drawn-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "cards-drawn-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "cards-drawn-decline-optional-if", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "cards-drawn-decline-optional-if", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "cards-drawn-decline-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "cards-drawn-decline-open-fast" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "cards-drawn-decline-optional-when", "turnOptional", 1, "triggerBucket"),
+              absentWindowEffectGroup(0, "cards-drawn-decline-open-fast", 1, "triggerBucket"),
+            ],
+            locations: { hand: ["100", "400", "500", "700", "800"] },
+            logIncludes: ["Cards-drawn decline multi step resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro exposes open fast effects after declining the surviving optional if draw trigger without resurrecting missed optional when triggers",
@@ -148,6 +249,58 @@ describe("EDOPro parity cards-drawn missed timing decline fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "cards-drawn-decline-open-fast" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the post-decline open fast-effect window restorable after cards-drawn missed-timing filtering",
+            windowId: 2,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 14, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "cards-drawn-decline-open-fast", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "cards-drawn-decline-multistep", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 2,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "cards-drawn-decline-open-fast", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "cards-drawn-decline-multistep", count: 1 },
+                ],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "normalSummon", player: 0, code: "700", location: "hand" },
+                { type: "normalSummon", player: 0, code: "800", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "700", location: "hand" },
+                { type: "setMonster", player: 0, code: "800", location: "hand" },
+              ], 1, 2),
+              turnGroup(2),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "cards-drawn-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "cards-drawn-decline-optional-if" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "cards-drawn-decline-optional-when", "turnOptional", 2, "open"),
+              absentTriggerActivationGroup(0, "cards-drawn-decline-optional-if", "turnOptional", 2, "open"),
+            ],
+            logIncludes: ["Cards-drawn decline multi step resolved", "cards-drawn-decline-optional-if"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the restored post-decline open fast effect without resurrecting missed optional when triggers",
