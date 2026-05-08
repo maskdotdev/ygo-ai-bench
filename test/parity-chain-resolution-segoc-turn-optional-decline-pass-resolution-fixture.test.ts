@@ -123,6 +123,44 @@ describe("EDOPro parity chain-resolution SEGOC turn optional decline pass resolu
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-double-optional-pass-resolution-turn-optional" })),
         makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "fixture-double-optional-pass-resolution-opponent-optional" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps opponent optional decline priority restorable after mandatory SEGOC chain links are selected",
+            phase: "main1",
+            windowId: 4,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [
+              { player: 0, effectId: "fixture-double-optional-pass-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-double-optional-pass-resolution-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [],
+            pendingTriggers: [{ player: 1, effectId: "fixture-double-optional-pass-resolution-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-4" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            triggerOrderPrompt: null,
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-double-optional-pass-resolution-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-double-optional-pass-resolution-opponent-optional", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-double-optional-pass-resolution-opponent-optional", "opponentOptional", 1, 4),
+              triggerDeclineGroup(1, "fixture-double-optional-pass-resolution-opponent-optional", "opponentOptional", 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-double-optional-pass-resolution-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-double-optional-pass-resolution-opponent-quick" },
+              { type: "activateTrigger", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-double-optional-pass-resolution-turn-optional", triggerBucket: "turnOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-double-optional-pass-resolution-turn-quick", 4, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-double-optional-pass-resolution-opponent-quick", 4, "triggerBucket"),
+              absentTriggerActivationGroup(0, "fixture-double-optional-pass-resolution-turn-optional", "turnOptional", 4, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "500", "400", "600", "800", "800"] },
+            logIncludes: ["Double optional pass resolution starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro opens turn-player chain-response priority after both optional chain-created SEGOC buckets are declined and the last selected trigger is the opponent mandatory trigger",
@@ -158,6 +196,38 @@ describe("EDOPro parity chain-resolution SEGOC turn optional decline pass resolu
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps turn-player post-decline chain-response priority restorable before handing responses to the opponent",
+            phase: "main1",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-double-optional-pass-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-double-optional-pass-resolution-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-double-optional-pass-resolution-turn-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(0, "fixture-double-optional-pass-resolution-turn-quick", 1, 5), chainPassGroup(0, 1, 5)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-double-optional-pass-resolution-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-double-optional-pass-resolution-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-double-optional-pass-resolution-opponent-quick", 5),
+              absentTriggerActivationGroup(1, "fixture-double-optional-pass-resolution-opponent-optional", "opponentOptional", 5, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "500", "400", "600", "800", "800"] },
+            logIncludes: ["Double optional pass resolution starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro hands chain-response priority to the opponent after the turn player passes the post-decline response window",
@@ -192,6 +262,38 @@ describe("EDOPro parity chain-resolution SEGOC turn optional decline pass resolu
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps opponent post-decline chain-response priority restorable before resolving the mandatory-only chain",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-double-optional-pass-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-double-optional-pass-resolution-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [0],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-double-optional-pass-resolution-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-double-optional-pass-resolution-opponent-quick", 1, 6), chainPassGroup(1, 1, 6)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-double-optional-pass-resolution-turn-quick" },
+              { type: "activateTrigger", player: 1, windowId: 6, windowKind: "triggerBucket", effectId: "fixture-double-optional-pass-resolution-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-double-optional-pass-resolution-turn-quick", 6),
+              absentTriggerActivationGroup(1, "fixture-double-optional-pass-resolution-opponent-optional", "opponentOptional", 6, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "500", "400", "600", "800", "800"] },
+            logIncludes: ["Double optional pass resolution starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the mandatory-only chain-created SEGOC trigger chain after both players pass the post-decline response windows",
