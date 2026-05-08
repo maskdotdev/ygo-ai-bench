@@ -230,6 +230,44 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("loaded copy effect true/true/800");
   });
 
+  it("does not re-offer face-up Spell/Trap card activations", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Persistent Field Spell", kind: "spell", typeFlags: 0x2 | 0x80000 }];
+    const session = createDuel({ seed: 101, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local activate=Effect.CreateEffect(c)
+      activate:SetType(EFFECT_TYPE_ACTIVATE)
+      activate:SetCode(EVENT_FREE_CHAIN)
+      c:RegisterEffect(activate)
+      local ignition=Effect.CreateEffect(c)
+      ignition:SetType(EFFECT_TYPE_IGNITION)
+      ignition:SetRange(LOCATION_FZONE)
+      ignition:SetOperation(function(e,tp) Debug.Message("field ignition resolved " .. tp) end)
+      c:RegisterEffect(ignition)
+      `,
+      "persistent-spell-activation.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+
+    const activation = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "lua-1-1002");
+    expect(activation).toBeDefined();
+    const activationResult = applyResponse(session, activation!);
+    expect(activationResult.ok, activationResult.error).toBe(true);
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ location: "spellTrapZone", faceUp: true });
+
+    const afterActivation = getDuelLegalActions(session, 0).filter((action) => action.type === "activateEffect");
+    expect(afterActivation.some((action) => action.effectId === "lua-1-1002")).toBe(false);
+    expect(afterActivation.some((action) => action.effectId === "lua-2")).toBe(true);
+  });
+
   it("creates and registers Lua global effects", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Global Anchor", kind: "monster" }];
     const session = createDuel({ seed: 94, startingHandSize: 1, cardReader: createCardReader(cards) });

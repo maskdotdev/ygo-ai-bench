@@ -135,7 +135,7 @@ import { hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } 
 import { applyDuelResponse, type DuelResponseHandlers } from "#duel/response-dispatch.js";
 import { runScriptedDuelResponses as runScriptedDuelResponsesWithHandlers } from "#duel/scripted-runner.js";
 import { setSpellTrap } from "#duel/spell-trap.js";
-import { shouldSendActivatedSpellTrapToGraveyard } from "#duel/spell-trap-activation.js";
+import { canActivateSpellTrapCardEffect, shouldSendActivatedSpellTrapToGraveyard } from "#duel/spell-trap-activation.js";
 import { negateCoreDuelSummon } from "#duel/summon-negation.js";
 import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
 import { changeDuelPhase, drawDuelCardsFromDeck, endDuelTurn, nextAvailableDuelPhase } from "#duel/turn-flow.js";
@@ -748,6 +748,7 @@ function specialSummonProcedureActions(state: DuelState, player: PlayerId): Duel
 
 function canChooseEffect(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId, eventName?: DuelEventName, eventCard?: DuelCardInstance, payload: DuelEventPayload = {}): boolean {
   if (isEffectActivationPrevented(state, player, source, createContinuousEffectContext(state), effect)) return false;
+  if (!canActivateSpellTrapCardEffect(source, effect)) return false;
   const ctx = createEffectContext(
     state,
     source,

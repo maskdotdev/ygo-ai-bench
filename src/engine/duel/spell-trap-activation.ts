@@ -21,6 +21,10 @@ export function shouldSendActivatedSpellTrapToGraveyard(source: DuelCardInstance
   return source.location === "spellTrapZone" && isSpellTrapCardActivation(source, effect) && !isPersistentSpellTrap(source);
 }
 
+export function canActivateSpellTrapCardEffect(source: DuelCardInstance, effect: DuelEffectDefinition): boolean {
+  return !isSpellTrapCardActivation(source, effect) || source.location !== "spellTrapZone" || !source.faceUp;
+}
+
 function isSpellTrapCardActivation(source: DuelCardInstance, effect: DuelEffectDefinition): boolean {
   return (source.kind === "spell" || source.kind === "trap") && ((effect.luaTypeFlags ?? 0) & luaEffectTypeActivate) !== 0;
 }
