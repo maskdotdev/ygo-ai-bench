@@ -308,6 +308,7 @@ function pushSwapControl(L: unknown, session: DuelSession, hostState: LuaDuelMov
   const count = Math.min(leftUids.length, rightUids.length);
   const swapped: string[] = [];
   beginLuaOperationMoveStep(session, hostState);
+  const triggerStart = session.state.pendingTriggers.length;
   for (let index = 0; index < count; index += 1) {
     const left = session.state.cards.find((candidate) => candidate.uid === leftUids[index]);
     const right = session.state.cards.find((candidate) => candidate.uid === rightUids[index]);
@@ -320,6 +321,7 @@ function pushSwapControl(L: unknown, session: DuelSession, hostState: LuaDuelMov
     swapped.push(left.uid, right.uid);
   }
   finishLuaOperationMoveStep(hostState, swapped.length > 0);
+  regroupLuaOperationEvent(session, triggerStart, "controlChanged", swapped);
   setOperatedUids(hostState, swapped);
   lua.lua_pushboolean(L, swapped.length > 0);
   return 1;
