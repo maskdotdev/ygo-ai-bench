@@ -195,6 +195,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (handlerCode !== undefined) return `closure:handler-code:${handlerCode}`;
   const literalHandlerCode = literalHandlerCodePredicate(L, index, hostState);
   if (literalHandlerCode !== undefined) return `closure:handler-code:${literalHandlerCode}`;
+  const literalCapturedHandlerCode = literalCapturedHandlerCodePredicate(L, index, hostState);
+  if (literalCapturedHandlerCode !== undefined) return `closure:handler-code:${literalCapturedHandlerCode}`;
   const blockedActiveTypeForOpponent = literalResponseMatchesChainPlayerOrNotActiveTypePredicate(L, index, hostState);
   if (blockedActiveTypeForOpponent !== undefined) return `closure:not-active-type-response-player:${blockedActiveTypeForOpponent}`;
   if (literalResponseMatchesChainPlayerPredicate(L, index, hostState)) return "closure:response-matches-chain-player";
@@ -355,6 +357,24 @@ function literalHandlerCodePredicate(L: unknown, index: number, hostState: LuaDu
   return code !== undefined && Number.isSafeInteger(code) && code > 0 ? code : undefined;
 }
 
+function literalCapturedHandlerCodePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
+  const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
+  const effectParam = params?.[0];
+  if (!effectParam) return undefined;
+  const upvalues = capturedNumberUpvalues(L, index);
+  if (!upvalues || upvalues.size === 0) return undefined;
+  const handler = `${escapeRegExp(effectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`;
+  const identifier = "([A-Za-z_]\\w*)";
+  const rightIsCode = snippet.match(new RegExp(`return\\s+${handler}\\s*:\\s*IsCode\\s*\\(\\s*${identifier}\\s*\\)`));
+  const rightGetCode = snippet.match(new RegExp(`return\\s+${handler}\\s*:\\s*GetCode\\s*\\(\\s*\\)\\s*==\\s*${identifier}`));
+  const leftGetCode = snippet.match(new RegExp(`return\\s+${identifier}\\s*==\\s*${handler}\\s*:\\s*GetCode\\s*\\(\\s*\\)`));
+  const capturedName = rightIsCode?.[1] ?? rightGetCode?.[1] ?? leftGetCode?.[1];
+  const code = capturedName ? upvalues.get(capturedName) : undefined;
+  return code !== undefined && Number.isSafeInteger(code) && code > 0 ? code : undefined;
+}
+
 function literalResponseMatchesChainPlayerPredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): boolean {
   if (hasNonEnvironmentUpvalues(L, index)) return false;
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
@@ -503,8 +523,15 @@ function capturedSinglePlayerUpvalue(L: unknown, index: number, matchesName: (na
 }
 
 function capturedSingleNumberUpvalue(L: unknown, index: number, matchesName: (name: string) => boolean): number | undefined {
+  const numbers = capturedNumberUpvalues(L, index);
+  if (!numbers) return undefined;
+  const entries = [...numbers].map(([name, value]) => ({ name, value }));
+  return entries.length === 1 && matchesName(entries[0]!.name) ? entries[0]!.value : undefined;
+}
+
+function capturedNumberUpvalues(L: unknown, index: number): Map<string, number> | undefined {
   const absoluteIndex = lua.lua_absindex(L, index);
-  const numbers: Array<{ name: string; value: number }> = [];
+  const numbers = new Map<string, number>();
   for (let upvalueIndex = 1;; upvalueIndex += 1) {
     const nameBytes = lua.lua_getupvalue(L, absoluteIndex, upvalueIndex);
     if (nameBytes === null) break;
@@ -514,15 +541,19 @@ function capturedSingleNumberUpvalue(L: unknown, index: number, matchesName: (na
         lua.lua_pop(L, 1);
         return undefined;
       }
-      numbers.push({ name, value: lua.lua_tointeger(L, -1) });
+      numbers.set(name, lua.lua_tointeger(L, -1));
     }
     lua.lua_pop(L, 1);
   }
-  return numbers.length === 1 && matchesName(numbers[0]!.name) ? numbers[0]!.value : undefined;
+  return numbers;
 }
 
 function isChainPlayerUpvalueName(name: string): boolean {
   return name === "chainPlayer" || name === "chain_player" || name === "cp";
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function luaChainLimitRegistryKey(ctx: DuelEffectContext | undefined, untilChainEnd: boolean, filterRef: number): string | undefined {
