@@ -33,6 +33,17 @@ describe("EDOPro parity only-attack-monster lock fixtures", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
           snapshotRestore: "after",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the Main Phase transition to Battle Phase restorable before evaluating ONLY_ATTACK_MONSTER attack legality",
+            phase: "main1",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingBattle: false,
+            battleWindow: null,
+            legalActions: [{ type: "changePhase", player: 0, phase: "battle", windowId: 0, windowKind: "open", count: 1 }],
+          },
           after: {
             source: "edopro",
             note: "EDOPro suppresses direct declarations for monsters affected by ONLY_ATTACK_MONSTER when no attack targets exist",

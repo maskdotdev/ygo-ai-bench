@@ -53,6 +53,16 @@ describe("EDOPro parity equal defense-position battle result fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the final equal-DEF damage-step pass restorable before closing the battle",
+            phase: "battle",
+            windowId: 13,
+            windowKind: "battle",
+            waitingFor: 0,
+            pendingBattle: true,
+            legalActions: [{ type: "passDamage", player: 0, windowId: 13, windowKind: "battle", count: 1 }],
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies no damage and destroys neither monster when ATK equals a defense-position target's DEF",

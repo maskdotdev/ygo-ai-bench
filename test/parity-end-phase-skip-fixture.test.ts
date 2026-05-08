@@ -31,6 +31,17 @@ describe("EDOPro parity End Phase skip fixtures", () => {
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "main2" }), {
           snapshotRestore: "after",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the Battle Phase transition to Main Phase 2 restorable before applying SKIP_EP legal-action filtering",
+            phase: "battle",
+            windowId: 1,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingBattle: false,
+            battleWindow: null,
+            legalActions: [{ type: "changePhase", player: 0, phase: "main2", windowId: 1, windowKind: "open", count: 1 }],
+          },
           after: {
             source: "edopro",
             note: "EDOPro omits End Phase transition actions when SKIP_EP applies to the turn player",
