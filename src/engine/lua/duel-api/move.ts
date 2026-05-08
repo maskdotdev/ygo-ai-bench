@@ -12,6 +12,7 @@ import {
   canPlayerSpecialSummon,
   changeDuelCardPosition,
   destroyDuelCard,
+  collectDuelGroupedTriggerEffects,
   collectDuelTriggerEffects,
   moveDuelCard,
   moveDuelCardWithRedirects,
@@ -197,6 +198,8 @@ function pushSpecialSummon(L: unknown, session: DuelSession, hostState: LuaDuelM
   const requestedPosition = lua.lua_isnumber(L, 7) ? positionFromMask(lua.lua_tointeger(L, 7)) : undefined;
   const zoneMask = lua.lua_isnumber(L, 8) ? lua.lua_tointeger(L, 8) : undefined;
   const moved: string[] = [];
+  const summonedCards: DuelCardInstance[] = [];
+  let successPayload: DuelEventPayload | undefined;
   beginLuaOperationMoveStep(session, hostState);
   for (const uid of uids) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
@@ -205,15 +208,24 @@ function pushSpecialSummon(L: unknown, session: DuelSession, hostState: LuaDuelM
     if (!hasOpenMonsterZone(session, player, zoneMask)) continue;
     try {
       const reasonPlayer = hostState.activeContext?.player ?? player;
-      const summoned = specialSummonDuelCard(session.state, uid, player, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer), summonType);
+      const payload = luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer);
+      const summoned = specialSummonDuelCard(session.state, uid, player, reasonPlayer, payload, summonType, false);
       if (requestedPosition) applyLuaMovePosition(summoned, requestedPosition);
       applyMonsterZoneMask(session, summoned, player, zoneMask);
+      successPayload ??= payload;
+      summonedCards.push(summoned);
       moved.push(uid);
     } catch {
-      if (!card || !specialSummonExplicitExtraDeckCard(session, card, player, summonType, requestedPosition, zoneMask, hostState)) continue;
+      const reasonPlayer = hostState.activeContext?.player ?? player;
+      const payload = luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer);
+      const summoned = specialSummonExplicitExtraDeckCard(session, card, player, summonType, reasonPlayer, payload, requestedPosition, zoneMask, hostState, false);
+      if (!card || !summoned) continue;
+      successPayload ??= payload;
+      summonedCards.push(summoned);
       moved.push(uid);
     }
   }
+  if (summonedCards.length > 0) collectDuelGroupedTriggerEffects(session.state, "specialSummoned", summonedCards, { ...(successPayload ?? {}), eventUids: moved });
   finishLuaOperationMoveStep(hostState, moved.length > 0);
   setOperatedUids(hostState, moved);
   lua.lua_pushinteger(L, moved.length);
@@ -833,14 +845,15 @@ function specialSummonExplicitExtraDeckCard(
   card: DuelCardInstance,
   player: PlayerId,
   summonType: number,
+  reasonPlayer: PlayerId,
+  payload: DuelEventPayload,
   requestedPosition: CardPosition | undefined,
   zoneMask: number | undefined,
   hostState: LuaDuelMoveApiHostState,
-): boolean {
-  if (card.location !== "extraDeck" || summonType === 0 || !hasOpenMonsterZone(session, player, zoneMask) || !canPlayerSpecialSummon(session.state, player, card, summonType, hostState.activeLuaEffectId)) return false;
+  collectSuccess = true,
+): DuelCardInstance | undefined {
+  if (card.location !== "extraDeck" || summonType === 0 || !hasOpenMonsterZone(session, player, zoneMask) || !canPlayerSpecialSummon(session.state, player, card, summonType, hostState.activeLuaEffectId)) return undefined;
   try {
-    const reasonPlayer = hostState.activeContext?.player ?? player;
-    const payload = luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer);
     collectDuelTriggerEffects(session.state, "specialSummoning", card, payload);
     moveDuelCard(session.state, card.uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon, reasonPlayer);
     if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
@@ -854,10 +867,10 @@ function specialSummonExplicitExtraDeckCard(
     card.summonMaterialUids = card.summonMaterialUids ?? [];
     recordSpecialSummonActivity(session.state, player, card);
     pushDuelLog(session.state, "specialSummon", player, card.name, "Special Summoned");
-    collectDuelTriggerEffects(session.state, "specialSummoned", card);
-    return true;
+    if (collectSuccess) collectDuelTriggerEffects(session.state, "specialSummoned", card);
+    return card;
   } catch {
-    return false;
+    return undefined;
   }
 }
 

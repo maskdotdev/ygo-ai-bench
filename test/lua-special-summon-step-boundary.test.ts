@@ -144,6 +144,78 @@ describe("Lua SpecialSummonStep timing", () => {
     }
     expect(host.messages).toEqual(expect.arrayContaining(["first own group 2", "second own group 2", "generic group 2"]));
   });
+
+  it("collects one grouped success event for direct multi-card SpecialSummon", () => {
+    const cards: DuelCardData[] = [
+      { code: "200", name: "Grouped Direct First", kind: "monster" },
+      { code: "201", name: "Grouped Direct Second", kind: "monster" },
+      { code: "300", name: "Grouped Direct Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 99, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["200", "201", "300"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local first=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local second=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 201), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local first_trigger=Effect.CreateEffect(first)
+      first_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+      first_trigger:SetCode(EVENT_SPSUMMON_SUCCESS)
+      first_trigger:SetRange(LOCATION_MZONE)
+      first_trigger:SetOperation(function(e,tp,eg)
+        Debug.Message("direct first group " .. eg:GetCount())
+      end)
+      first:RegisterEffect(first_trigger)
+
+      local second_trigger=Effect.CreateEffect(second)
+      second_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+      second_trigger:SetCode(EVENT_SPSUMMON_SUCCESS)
+      second_trigger:SetRange(LOCATION_MZONE)
+      second_trigger:SetOperation(function(e,tp,eg)
+        Debug.Message("direct second group " .. eg:GetCount())
+      end)
+      second:RegisterEffect(second_trigger)
+
+      local generic=Effect.CreateEffect(watcher)
+      generic:SetType(EFFECT_TYPE_TRIGGER_O)
+      generic:SetCode(EVENT_SPSUMMON_SUCCESS)
+      generic:SetRange(LOCATION_HAND)
+      generic:SetOperation(function(e,tp,eg)
+        Debug.Message("direct generic group " .. eg:GetCount())
+      end)
+      watcher:RegisterEffect(generic)
+
+      Debug.Message("direct grouped summon " .. Duel.SpecialSummon(Group.FromCards(first, second), 0, 0, 0, false, false, POS_FACEUP_ATTACK))
+      `,
+      "direct-special-summon-grouped-success.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+
+    const first = session.state.cards.find((card) => card.code === "200");
+    const second = session.state.cards.find((card) => card.code === "201");
+    const watcher = session.state.cards.find((card) => card.code === "300");
+    expect(host.messages).toContain("direct grouped summon 2");
+    expect(session.state.pendingTriggers).toHaveLength(3);
+    for (const trigger of session.state.pendingTriggers) expect(trigger.eventUids).toEqual([first!.uid, second!.uid]);
+    expect(session.state.pendingTriggers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceUid: first!.uid, eventCardUid: first!.uid }),
+        expect.objectContaining({ sourceUid: second!.uid, eventCardUid: second!.uid }),
+        expect.objectContaining({ sourceUid: watcher!.uid, eventCardUid: first!.uid }),
+      ]),
+    );
+
+    for (;;) {
+      const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+      if (!trigger) break;
+      applyAndAssert(session, trigger);
+    }
+    expect(host.messages).toEqual(expect.arrayContaining(["direct first group 2", "direct second group 2", "direct generic group 2"]));
+  });
 });
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
