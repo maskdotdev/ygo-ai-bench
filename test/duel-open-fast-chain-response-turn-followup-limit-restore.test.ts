@@ -117,6 +117,24 @@ describe("open fast chain-response handoff turn follow-up chain-limit restore", 
       expect(staleTurnLimiter.legalActions).toEqual(getDuelLegalActions(restored, 0));
       expect(staleTurnLimiter.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
 
+      const turnFollowupAction = findEffectAction(restored, 0, `${testCase.prefix}-turn-followup`);
+      expect(turnFollowupAction).toBeDefined();
+      const forgedOpponentBlocked = applyResponse(restored, {
+        type: "activateEffect",
+        player: 1,
+        uid: opponentBlocked!.uid,
+        effectId: `${testCase.prefix}-opponent-blocked`,
+        label: "Forge opponent response into restored turn-only follow-up limit",
+        windowId: turnFollowupAction!.windowId,
+        windowKind: turnFollowupAction!.windowKind,
+        windowToken: turnFollowupAction!.windowToken,
+      });
+      expect(forgedOpponentBlocked.ok).toBe(false);
+      expect(forgedOpponentBlocked.error).toContain("Response is not currently legal");
+      expect(forgedOpponentBlocked.legalActions).toEqual(getDuelLegalActions(restored, 0));
+      expect(forgedOpponentBlocked.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+      expect(restored.state.log.map((entry) => entry.detail)).not.toContain(`${testCase.prefix}-opponent-blocked resolved`);
+
       const restoredTurnPass = getDuelLegalActions(restored, 0).find((action) => action.type === "passChain");
       expect(restoredTurnPass).toBeDefined();
       const resolved = applyAndAssert(restored, restoredTurnPass!);
