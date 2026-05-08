@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData } from "#duel/types.js";
 
 const pendulumCards: DuelCardData[] = [
@@ -12,13 +13,7 @@ const pendulumCards: DuelCardData[] = [
 
 describe("Lua Pendulum activation", () => {
   it("activates scripted Pendulum monsters from hand as persistent scales before Pendulum Summons", () => {
-    const source = {
-      readScript(name: string) {
-        if (name === "c101.lua") return pendulumActivationScript(101);
-        if (name === "c102.lua") return pendulumActivationScript(102);
-        return undefined;
-      },
-    };
+    const source = pendulumScriptSource();
     const session = createDuel({ seed: 352, startingHandSize: 3, cardReader: createCardReader(pendulumCards) });
     loadDecks(session, {
       0: { main: ["101", "102", "301"] },
@@ -53,7 +48,64 @@ describe("Lua Pendulum activation", () => {
     expect(session.state.cards.find((card) => card.uid === lowScale!.uid)?.location).toBe("spellTrapZone");
     expect(session.state.cards.find((card) => card.uid === highScale!.uid)?.location).toBe("spellTrapZone");
   });
+
+  it("restores scripted Pendulum scale activation before the follow-up scale and Pendulum Summon", () => {
+    const source = pendulumScriptSource();
+    const session = createDuel({ seed: 352, startingHandSize: 3, cardReader: createCardReader(pendulumCards) });
+    loadDecks(session, {
+      0: { main: ["101", "102", "301"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(101, source).ok).toBe(true);
+    expect(host.loadCardScript(102, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const lowScale = session.state.cards.find((card) => card.code === "101");
+    const highScale = session.state.cards.find((card) => card.code === "102");
+    const candidate = session.state.cards.find((card) => card.code === "301");
+    expect(lowScale).toBeDefined();
+    expect(highScale).toBeDefined();
+    expect(candidate).toBeDefined();
+
+    const lowActivation = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === lowScale!.uid);
+    expect(lowActivation).toBeDefined();
+    expect(applyResponse(session, lowActivation!).ok).toBe(true);
+
+    const restoredAfterLowScale = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(pendulumCards));
+    expect(restoredAfterLowScale.restoreComplete).toBe(true);
+    expect(restoredAfterLowScale.registeredEffects).toBe(2);
+    expect(getLuaRestoreLegalActions(restoredAfterLowScale, 0).some((action) => action.type === "activateEffect" && action.uid === lowScale!.uid)).toBe(false);
+
+    const restoredHighActivation = getLuaRestoreLegalActions(restoredAfterLowScale, 0).find((action) => action.type === "activateEffect" && action.uid === highScale!.uid);
+    expect(restoredHighActivation).toBeDefined();
+    expect(applyLuaRestoreResponse(restoredAfterLowScale, restoredHighActivation!).ok).toBe(true);
+    expect(restoredAfterLowScale.session.state.cards.find((card) => card.uid === lowScale!.uid)).toMatchObject({ location: "spellTrapZone", faceUp: true, sequence: 0 });
+    expect(restoredAfterLowScale.session.state.cards.find((card) => card.uid === highScale!.uid)).toMatchObject({ location: "spellTrapZone", faceUp: true, sequence: 1 });
+
+    const restoredAfterBothScales = restoreDuelWithLuaScripts(serializeDuel(restoredAfterLowScale.session), source, createCardReader(pendulumCards));
+    expect(restoredAfterBothScales.restoreComplete).toBe(true);
+
+    const restoredPendulumSummon = getLuaRestoreLegalActions(restoredAfterBothScales, 0).find((action) => action.type === "pendulumSummon" && action.summonUids.includes(candidate!.uid));
+    expect(restoredPendulumSummon).toBeDefined();
+    expect(applyLuaRestoreResponse(restoredAfterBothScales, restoredPendulumSummon!).ok).toBe(true);
+    expect(restoredAfterBothScales.session.state.cards.find((card) => card.uid === candidate!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
+    expect(restoredAfterBothScales.session.state.cards.find((card) => card.uid === lowScale!.uid)?.location).toBe("spellTrapZone");
+    expect(restoredAfterBothScales.session.state.cards.find((card) => card.uid === highScale!.uid)?.location).toBe("spellTrapZone");
+  });
 });
+
+function pendulumScriptSource() {
+  return {
+    readScript(name: string) {
+      if (name === "c101.lua") return pendulumActivationScript(101);
+      if (name === "c102.lua") return pendulumActivationScript(102);
+      return undefined;
+    },
+  };
+}
 
 function pendulumActivationScript(code: number): string {
   return `
