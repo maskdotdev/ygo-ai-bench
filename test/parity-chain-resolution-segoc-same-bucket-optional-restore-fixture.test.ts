@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentTriggerActivationGroup, triggerActivationGroup, triggerDeclineGroup } from "./parity-legal-action-group-helpers.js";
+import {
+  absentTriggerActivationGroup,
+  openEffectGroup,
+  summonGroup,
+  triggerActivationGroup,
+  triggerDeclineGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity chain-resolution same-bucket optional restore fixture", () => {
   it("restores chain-created same-bucket optional prompts without exposing later optional buckets early", () => {
@@ -68,6 +75,58 @@ describe("EDOPro parity chain-resolution same-bucket optional restore fixture", 
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-resolution-optional-starter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the initial open window restorable before creating same-bucket optional trigger prompts",
+            phase: "main1",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 11, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-resolution-optional-starter", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "700", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "700", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              openEffectGroup(0, "fixture-chain-resolution-optional-starter", 1, 0),
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "300", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "normalSummon", player: 0, code: "700", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "300", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "700", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-resolution-first-turn-optional", triggerBucket: "turnOptional" },
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-resolution-second-turn-optional", triggerBucket: "turnOptional" },
+              { type: "activateTrigger", player: 1, windowId: 0, windowKind: "open", effectId: "fixture-chain-resolution-later-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-chain-resolution-first-turn-optional", "turnOptional", 0, "open"),
+              absentTriggerActivationGroup(0, "fixture-chain-resolution-second-turn-optional", "turnOptional", 0, "open"),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-later-opponent-optional", "opponentOptional", 0, "open"),
+            ],
+            locations: { hand: ["100", "300", "400", "700", "500", "800", "800", "800"] },
+          },
           after: {
             source: "edopro",
             note: "EDOPro restores chain-created same-bucket optional trigger ordering before exposing later opponent optional buckets",
@@ -179,6 +238,39 @@ describe("EDOPro parity chain-resolution same-bucket optional restore fixture", 
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-chain-resolution-first-turn-optional" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the remaining same-bucket optional trigger restorable before exposing later opponent optional buckets",
+            phase: "main1",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [{ player: 0, effectId: "fixture-chain-resolution-second-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" }],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-chain-resolution-first-turn-optional", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-later-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnOptional" },
+              { player: 1, triggerBucket: "opponentOptional" },
+            ],
+            triggerOrderPrompt: null,
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-turn-optional", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-turn-optional", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-chain-resolution-first-turn-optional", "turnOptional", 1, 2),
+              triggerDeclineGroup(0, "fixture-chain-resolution-first-turn-optional", "turnOptional", 1, 2),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-later-opponent-optional", triggerBucket: "opponentOptional" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(1, "fixture-chain-resolution-later-opponent-optional", "opponentOptional", 2, "triggerBucket")],
+            locations: { graveyard: ["700"], hand: ["100", "300", "400", "500", "800", "800", "800"] },
+            logIncludes: ["Chain resolution optional starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro advances to the later opponent optional bucket only after the turn optional bucket is consumed",
