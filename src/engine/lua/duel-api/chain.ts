@@ -435,7 +435,7 @@ function literalNotEffectTypePredicate(L: unknown, index: number, hostState: Lua
   if (!snippet) return undefined;
   const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
   const effectParam = params?.[0];
-  const match = snippet.match(/return\s+not\s+([A-Za-z_]\w*)\s*:\s*IsHasType\s*\(\s*([A-Za-z_]\w*|\d+)\s*\)/);
+  const match = snippet.match(new RegExp(`return\\s+not\\s+([A-Za-z_]\\w*)\\s*:\\s*IsHasType\\s*\\(\\s*(${effectTypeMaskExpressionPattern})\\s*\\)`));
   if (!effectParam || match?.[1] !== effectParam || !match[2]) return undefined;
   const mask = effectTypeMaskTokenValue(match[2]);
   return mask !== undefined && Number.isSafeInteger(mask) && mask > 0 ? mask : undefined;
@@ -450,8 +450,8 @@ function literalResponseMatchesChainPlayerOrNotEffectTypePredicate(L: unknown, i
   const responsePlayerParam = params?.[1];
   const chainPlayerParam = params?.[2];
   if (!effectParam || !responsePlayerParam || !chainPlayerParam) return undefined;
-  const effectTypePattern = `not\\s+${effectParam}\\s*:\\s*IsHasType\\s*\\(\\s*([A-Za-z_]\\w*|\\d+)\\s*\\)`;
-  const equalityPattern = `(?:${responsePlayerParam}\\s*==\\s*${chainPlayerParam}|${chainPlayerParam}\\s*==\\s*${responsePlayerParam})`;
+  const effectTypePattern = `not\\s+${escapeRegExp(effectParam)}\\s*:\\s*IsHasType\\s*\\(\\s*(${effectTypeMaskExpressionPattern})\\s*\\)`;
+  const equalityPattern = `(?:${escapeRegExp(responsePlayerParam)}\\s*==\\s*${escapeRegExp(chainPlayerParam)}|${escapeRegExp(chainPlayerParam)}\\s*==\\s*${escapeRegExp(responsePlayerParam)})`;
   const match = snippet.match(new RegExp(`return\\s+(?:${equalityPattern})\\s+or\\s+${effectTypePattern}`))
     ?? snippet.match(new RegExp(`return\\s+${effectTypePattern}\\s+or\\s+(?:${equalityPattern})`));
   const token = match?.[1] ?? match?.[2];
@@ -460,20 +460,30 @@ function literalResponseMatchesChainPlayerOrNotEffectTypePredicate(L: unknown, i
   return mask !== undefined && Number.isSafeInteger(mask) && mask > 0 ? mask : undefined;
 }
 
+const effectTypeMaskExpressionPattern = String.raw`(?:[A-Za-z_]\w*|\d+)(?:\s*(?:\+|\|)\s*(?:[A-Za-z_]\w*|\d+))*`;
+const effectTypeMasks: Record<string, number> = {
+  EFFECT_TYPE_SINGLE: 0x1,
+  EFFECT_TYPE_FIELD: 0x2,
+  EFFECT_TYPE_EQUIP: 0x4,
+  EFFECT_TYPE_ACTIVATE: 0x10,
+  EFFECT_TYPE_IGNITION: 0x40,
+  EFFECT_TYPE_TRIGGER_O: 0x80,
+  EFFECT_TYPE_QUICK_O: 0x100,
+  EFFECT_TYPE_TRIGGER_F: 0x200,
+  EFFECT_TYPE_QUICK_F: 0x400,
+  EFFECT_TYPE_CONTINUOUS: 0x800,
+};
+
 function effectTypeMaskTokenValue(token: string): number | undefined {
-  const named: Record<string, number> = {
-    EFFECT_TYPE_SINGLE: 0x1,
-    EFFECT_TYPE_FIELD: 0x2,
-    EFFECT_TYPE_EQUIP: 0x4,
-    EFFECT_TYPE_ACTIVATE: 0x10,
-    EFFECT_TYPE_IGNITION: 0x40,
-    EFFECT_TYPE_TRIGGER_O: 0x80,
-    EFFECT_TYPE_QUICK_O: 0x100,
-    EFFECT_TYPE_TRIGGER_F: 0x200,
-    EFFECT_TYPE_QUICK_F: 0x400,
-    EFFECT_TYPE_CONTINUOUS: 0x800,
-  };
-  return named[token] ?? Number(token);
+  const parts = token.split(/\s*(?:\+|\|)\s*/).filter(Boolean);
+  if (parts.length === 0) return undefined;
+  let mask = 0;
+  for (const part of parts) {
+    const value = effectTypeMasks[part] ?? (/^\d+$/.test(part) ? Number(part) : undefined);
+    if (value === undefined || !Number.isSafeInteger(value) || value <= 0) return undefined;
+    mask |= value;
+  }
+  return mask;
 }
 
 function literalNotActiveTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {

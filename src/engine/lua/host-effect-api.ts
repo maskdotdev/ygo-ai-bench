@@ -368,7 +368,7 @@ function hasEffectNumberField(field: "typeFlags" | "category" | "property") {
     const value = effect[field] ?? 0;
     const actionTypes = 0x10 | 0x20 | 0x40 | 0x80 | 0x100 | 0x200 | 0x400;
     const matchesActionGroup = field === "typeFlags" && (requested & 0x8) !== 0 && (value & actionTypes) !== 0;
-    const matchesDirectFlags = requested !== 0 && (value & requested) === requested;
+    const matchesDirectFlags = requested !== 0 && (value & requested) !== 0;
     lua.lua_pushboolean(state, matchesActionGroup || matchesDirectFlags);
     return 1;
   };
