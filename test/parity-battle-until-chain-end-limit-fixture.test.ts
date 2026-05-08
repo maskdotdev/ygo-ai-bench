@@ -90,6 +90,34 @@ describe("EDOPro parity battle until-chain-end limit fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-until-chain-end-limiter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the turn-player attack-response window restorable before applying until-chain-end limits",
+            waitingFor: 0,
+            windowId: 3,
+            windowKind: "battle",
+            pendingBattle: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-until-chain-end-limiter", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-blocked-turn-quick", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "battle",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-until-chain-end-limiter", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-blocked-turn-quick", count: 1 },
+                ],
+              },
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps Duel.SetChainLimitTillChainEnd restrictions active for the whole response chain",
@@ -148,6 +176,61 @@ describe("EDOPro parity battle until-chain-end limit fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-allowed-opponent-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent chain-response window restorable while until-chain-end limits are active",
+            waitingFor: 1,
+            windowId: 4,
+            windowKind: "chainResponse",
+            pendingBattle: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            chain: [{ player: 0, effectId: "fixture-until-chain-end-limiter" }],
+            chainLimits: [{ untilChainEnd: true }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-allowed-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 4,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-allowed-opponent-quick", count: 1 }],
+              },
+              {
+                player: 1,
+                label: "Pass",
+                windowId: 4,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [{ type: "passChain", player: 1, windowId: 4, windowKind: "chainResponse", count: 1 }],
+              },
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, effectId: "fixture-blocked-turn-quick" },
+              { type: "passAttack", player: 1, windowId: 4, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 4,
+                windowKind: "chainResponse",
+                actions: [{ type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-blocked-turn-quick" }],
+              },
+              {
+                player: 1,
+                label: "Pass",
+                windowId: 4,
+                windowKind: "battle",
+                actions: [{ type: "passAttack", player: 1, windowId: 4, windowKind: "battle" }],
+              },
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the chain when the until-chain-end limit leaves no legal turn-player response",
