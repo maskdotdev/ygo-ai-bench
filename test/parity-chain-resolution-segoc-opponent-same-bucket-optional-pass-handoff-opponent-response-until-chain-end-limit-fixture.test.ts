@@ -117,6 +117,47 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional pass-hand
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-resolution-opponent-optional-handoff-until-starter" })),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-chain-resolution-turn-optional-handoff-until" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps turn optional decline priority restorable before restored opponent same-bucket optional until-chain-end handoff begins",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-chain-resolution-turn-optional-handoff-until", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-optional-handoff-until", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-handoff-until", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnOptional" },
+              { player: 1, triggerBucket: "opponentOptional" },
+            ],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-turn-optional-handoff-until", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-turn-optional-handoff-until", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-chain-resolution-turn-optional-handoff-until", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "fixture-chain-resolution-turn-optional-handoff-until", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-opponent-optional-handoff-until-turn-blocked" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-opponent-optional-handoff-until-opponent-chain-limiter" },
+              { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional-handoff-until", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-resolution-opponent-optional-handoff-until-turn-blocked", 1, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-chain-resolution-opponent-optional-handoff-until-opponent-chain-limiter", 1, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-optional-handoff-until", "opponentOptional", 1, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900", "950"], hand: ["100", "300", "800", "400", "500", "800"] },
+            logIncludes: ["Chain resolution opponent optional handoff until starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro restores opponent same-bucket optional trigger ordering before pass-handoff until-chain-end response checks",
@@ -159,6 +200,38 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional pass-hand
         makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "fixture-chain-resolution-first-opponent-optional-handoff-until" })),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps turn-player chain-response priority restorable before opponent optional until-chain-end handoff",
+            phase: "main1",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-handoff-until", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" }],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-handoff-until-turn-blocked", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-chain-resolution-opponent-optional-handoff-until-turn-blocked", 1, 4),
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-handoff-until-opponent-chain-limiter" },
+              { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional-handoff-until", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-chain-resolution-opponent-optional-handoff-until-opponent-chain-limiter", 4),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-optional-handoff-until", "opponentOptional", 4, "chainResponse"),
+            ],
+            locations: { graveyard: ["700", "200", "900", "950"], hand: ["100", "300", "800", "400", "500", "800"] },
+            logIncludes: ["Chain resolution opponent optional handoff until starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro hands restored opponent optional trigger-chain responses to the opponent before the opponent's SetChainLimitTillChainEnd handoff response",
@@ -205,6 +278,49 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional pass-hand
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-resolution-opponent-optional-handoff-until-opponent-chain-limiter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps opponent optional handoff response choices restorable before until-chain-end limits apply",
+            phase: "main1",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-handoff-until", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" }],
+            chainPasses: [0],
+            legalActionCounts: { 0: 0, 1: 3 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-handoff-until-opponent-chain-limiter", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-handoff-until-opponent-followup", count: 1 },
+              { type: "passChain", player: 1, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 5,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-handoff-until-opponent-chain-limiter", count: 1 },
+                  { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-handoff-until-opponent-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(1, 1, 5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-handoff-until-turn-blocked" },
+              { type: "activateTrigger", player: 1, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional-handoff-until", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-chain-resolution-opponent-optional-handoff-until-turn-blocked", 5),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-optional-handoff-until", "opponentOptional", 5, "chainResponse"),
+            ],
+            locations: { graveyard: ["700", "200", "900", "950"], hand: ["100", "300", "800", "400", "500", "800"] },
+            logIncludes: ["Chain resolution opponent optional handoff until starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies SetChainLimitTillChainEnd restrictions after an opponent responds from a restored opponent optional SEGOC handoff",
