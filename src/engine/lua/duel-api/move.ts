@@ -98,7 +98,6 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_pushcfunction(L, (state: unknown) => pushShuffleSetCard(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("ShuffleSetCard"));
 }
-
 function pushSendToGenericLocation(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
   const location = readSingleDestination(L, 2);
   if (!location) {
@@ -205,6 +204,7 @@ function pushRemove(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiH
     }
   }
   finishLuaOperationMoveStep(hostState, moved.length > 0);
+  regroupLuaOperationEvent(session, triggerStart, "moved", moved);
   regroupLuaOperationEvent(session, triggerStart, "banished", moved, "banished");
   setOperatedUids(hostState, moved);
   lua.lua_pushinteger(L, moved.length);
@@ -589,6 +589,7 @@ function pushReturnToGrave(L: unknown, session: DuelSession, hostState: LuaDuelM
     }
   }
   finishLuaOperationMoveStep(hostState, moved.length > 0);
+  regroupLuaOperationEvent(session, triggerStart, "moved", moved);
   regroupLuaOperationEvent(session, triggerStart, "returnedToGraveyard", moved, "graveyard");
   setOperatedUids(hostState, moved);
   lua.lua_pushinteger(L, moved.length);
@@ -796,6 +797,7 @@ function moveCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDuelMov
     }
   }
   finishLuaOperationMoveStep(hostState, moved.length > 0);
+  regroupLuaOperationEvent(session, triggerStart, "moved", moved);
   if (groupedEventName) regroupLuaOperationEvent(session, triggerStart, groupedEventName, moved, groupedLocation);
   return moved;
 }
@@ -825,12 +827,14 @@ function moveCardOrGroupToLocation(session: DuelSession, L: unknown, hostState: 
   }
   if (location === "deck" && deckSequence === 2 && moved.length > 0) shuffleMovedDecks(session, moved);
   finishLuaOperationMoveStep(hostState, moved.length > 0);
+  regroupLuaOperationEvent(session, triggerStart, "moved", moved);
   if (location === "hand") regroupLuaOperationEvent(session, triggerStart, "sentToHand", moved, "hand");
   else if (location === "deck") regroupLuaOperationEvent(session, triggerStart, "sentToDeck", moved, "deck");
   return moved;
 }
 
 function regroupGenericDestinationEvents(session: DuelSession, triggerStart: number, moved: string[]): void {
+  regroupLuaOperationEvent(session, triggerStart, "moved", moved);
   regroupLuaOperationEvent(session, triggerStart, "sentToGraveyard", moved, "graveyard");
   regroupLuaOperationEvent(session, triggerStart, "banished", moved, "banished");
   regroupLuaOperationEvent(session, triggerStart, "sentToHand", moved, "hand");
