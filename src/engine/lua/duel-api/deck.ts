@@ -3,8 +3,8 @@ import {
   canDuelPlayerDiscardDeck,
   canDuelPlayerDiscardHand,
   canDuelPlayerDraw,
+  collectDuelGroupedTriggerEffects,
   drawDuelCards,
-  raiseDuelEventWithCode,
   sendDuelCardToGraveyard,
 } from "#duel/core.js";
 import { getCards, moveDuelCard } from "#duel/card-state.js";
@@ -15,7 +15,7 @@ import { locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef,
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary, regroupLuaOperationEvent, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import { shuffle } from "#engine/rng.js";
-import type { DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -236,9 +236,13 @@ function confirmedCodes(session: DuelSession, uids: string[]): string[] {
 function collectConfirmedEvent(session: DuelSession, uids: string[], player: PlayerId): void {
   const eventUids = uids.filter((uid) => session.state.cards.some((card) => card.uid === uid));
   if (eventUids.length === 0) return;
-  raiseDuelEventWithCode(session.state, "confirmed", 1211, undefined, { eventPlayer: player, eventValue: eventUids.length, eventUids });
+  collectDuelGroupedTriggerEffects(session.state, "confirmed", eventCardsFromUids(session, eventUids), { eventCode: 1211, eventPlayer: player, eventValue: eventUids.length, eventUids });
   const handUids = eventUids.filter((uid) => session.state.cards.some((card) => card.uid === uid && card.location === "hand"));
-  if (handUids.length > 0) raiseDuelEventWithCode(session.state, "sentToHandConfirmed", 1212, undefined, { eventPlayer: player, eventValue: handUids.length, eventUids: handUids });
+  if (handUids.length > 0) collectDuelGroupedTriggerEffects(session.state, "sentToHandConfirmed", eventCardsFromUids(session, handUids), { eventCode: 1212, eventPlayer: player, eventValue: handUids.length, eventUids: handUids });
+}
+
+function eventCardsFromUids(session: DuelSession, uids: string[]): DuelCardInstance[] {
+  return uids.map((uid) => session.state.cards.find((card) => card.uid === uid)).filter((card): card is DuelCardInstance => Boolean(card));
 }
 
 function pushSortDeckSegment(L: unknown, session: DuelSession, hostState: LuaDuelDeckApiHostState, edge: "top" | "bottom"): number {

@@ -613,6 +613,7 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
     ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) &&
     (triggerEvent === "banished" ||
       triggerEvent === "cardsDrawn" ||
+      triggerEvent === "confirmed" ||
       triggerEvent === "controlChanged" ||
       triggerEvent === "destroyed" ||
       triggerEvent === "discarded" ||
@@ -622,6 +623,7 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
       triggerEvent === "sentToDeck" ||
       triggerEvent === "sentToGraveyard" ||
       triggerEvent === "sentToHand" ||
+      triggerEvent === "sentToHandConfirmed" ||
       triggerEvent === "normalSummoned" ||
       triggerEvent === "specialSummoned")
   );
