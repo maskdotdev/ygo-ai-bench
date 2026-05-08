@@ -109,6 +109,27 @@ describe("duel response matching", () => {
     expect(duelActionMatchesSelector(action, { type: "xyzSummon", player: 0, materialUids: ["mat-a", "mat-a"] }, [])).toBe(false);
   });
 
+  it("matches fixture selectors by action window token", () => {
+    const action: DuelAction = {
+      type: "passChain",
+      player: 0,
+      label: "Pass chain",
+      windowId: 22,
+      windowKind: "chainResponse",
+      windowToken: windowToken(22),
+    };
+
+    const { windowToken: _windowToken, ...unstampedAction } = action;
+
+    expect(duelActionMatchesSelector(action, { type: "passChain", player: 0, windowToken: windowToken(22) }, [])).toBe(true);
+    expect(duelActionMatchesSelector(action, { type: "passChain", player: 0, windowToken: "forged-window" }, [])).toBe(false);
+    expect(duelActionMatchesSelector(unstampedAction, { type: "passChain", player: 0, windowToken: windowToken(22) }, [])).toBe(false);
+  });
+
+  it("describes fixture selectors with action window tokens", () => {
+    expect(describeDuelActionSelector({ type: "passChain", player: 0, windowToken: windowToken(22) })).toContain("windowToken=window-22");
+  });
+
   it("matches direct attack selectors by explicit direct attack marker", () => {
     const direct: DuelAction = { type: "declareAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct", windowId: 3, windowKind: "open", windowToken: windowToken(3) };
     const unstamped: DuelAction = { type: "declareAttack", player: 0, attackerUid: "attacker", label: "Legacy untargeted", windowId: 3, windowKind: "open", windowToken: windowToken(3) };

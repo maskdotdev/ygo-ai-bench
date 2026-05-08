@@ -22,6 +22,7 @@ export function describeDuelActionSelector(selector: ScriptedResponseSelector): 
     `player=${selector.player}`,
     selector.windowId !== undefined ? `windowId=${selector.windowId}` : undefined,
     selector.windowKind ? `windowKind=${selector.windowKind}` : undefined,
+    selector.windowToken ? `windowToken=${selector.windowToken}` : undefined,
     selector.code ? `code=${selector.code}` : undefined,
     selector.uid ? `uid=${selector.uid}` : undefined,
     selector.summonUids ? `summonUids=${selector.summonUids.join(",")}` : undefined,
@@ -46,6 +47,7 @@ export function duelActionMatchesSelector(
   if (action.type !== selector.type || action.player !== selector.player) return false;
   if (selector.windowId !== undefined && action.windowId !== selector.windowId) return false;
   if (selector.windowKind !== undefined && action.windowKind !== selector.windowKind) return false;
+  if (selector.windowToken !== undefined && action.windowToken !== selector.windowToken) return false;
   if (selector.uid && "uid" in action && action.uid !== selector.uid) return false;
   if (selector.tributeUids) {
     if ((action.type !== "tributeSummon" && action.type !== "tributeSet") || !sameStringMembers(action.tributeUids, selector.tributeUids)) return false;

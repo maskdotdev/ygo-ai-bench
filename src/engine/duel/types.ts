@@ -633,6 +633,7 @@ export interface ScriptedResponseSelector {
   player: PlayerId;
   windowId?: number;
   windowKind?: DuelActionWindowKind;
+  windowToken?: string;
   code?: string;
   uid?: string;
   tributeUids?: string[];
