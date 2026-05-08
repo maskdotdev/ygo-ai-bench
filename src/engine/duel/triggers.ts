@@ -33,8 +33,10 @@ export function collectTriggerEffects(state: DuelState, eventName: DuelEventName
     if (effect.optional !== false && effect.triggerTiming === "when" && !eventIsLast) continue;
     if (!canUseEffectCount(state, effect)) continue;
     const source = findCard(state, effect.sourceUid);
-    if (effect.triggerSourceOnly && eventCard?.uid !== source?.uid) continue;
-    if (!source || !effect.range.includes(source.location)) continue;
+    if (!source) continue;
+    if (isBattleDestroyingSingleTrigger(effect, eventName) && battleDestroyingSourceUid(state, eventCard) !== source.uid) continue;
+    if (effect.triggerSourceOnly && eventCard?.uid !== source.uid) continue;
+    if (!effect.range.includes(source.location)) continue;
     if (isTriggerPrevented(state, source)) continue;
     if (!canChooseEffect(state, effect, source, eventName, eventCard)) continue;
     collected.push({ effect, source, index });
@@ -63,7 +65,12 @@ export function collectGroupedTriggerEffects(state: DuelState, eventName: DuelEv
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (isTriggerPrevented(state, source)) continue;
-    const eventCard = effect.triggerSourceOnly ? uniqueEventCards.find((card) => card.uid === source.uid) : firstChoosableEventCard(state, effect, source, eventName, uniqueEventCards, canChooseEffect);
+    const eventCard =
+      isBattleDestroyingSingleTrigger(effect, eventName)
+        ? uniqueEventCards.find((card) => battleDestroyingSourceUid(state, card) === source.uid && canChooseEffect(state, effect, source, eventName, card))
+        : effect.triggerSourceOnly
+          ? uniqueEventCards.find((card) => card.uid === source.uid)
+          : firstChoosableEventCard(state, effect, source, eventName, uniqueEventCards, canChooseEffect);
     if (!eventCard) continue;
     if (effect.triggerSourceOnly && !canChooseEffect(state, effect, source, eventName, eventCard)) continue;
     collected.push({ effect, source, index, eventCard });
@@ -93,6 +100,18 @@ function firstChoosableEventCard(
   canChooseEffect: DuelTriggerChooser,
 ): DuelCardInstance | undefined {
   return eventCards.find((card) => canChooseEffect(state, effect, source, eventName, card));
+}
+
+function battleDestroyingSourceUid(state: DuelState, eventCard: DuelCardInstance | undefined): string | undefined {
+  const attack = state.currentAttack ?? state.pendingBattle;
+  if (!attack || !eventCard) return undefined;
+  if (eventCard.uid === attack.attackerUid) return attack.targetUid;
+  if (eventCard.uid === attack.targetUid) return attack.attackerUid;
+  return undefined;
+}
+
+function isBattleDestroyingSingleTrigger(effect: DuelEffectDefinition, eventName: DuelEventName): boolean {
+  return eventName === "battleDestroyed" && effect.triggerCode === 1139 && ((effect.luaTypeFlags ?? 0) & 0x1) !== 0;
 }
 
 function triggerPriority(state: DuelState, effect: DuelEffectDefinition): number {

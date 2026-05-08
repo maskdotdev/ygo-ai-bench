@@ -490,7 +490,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.value === undefined ? {} : { value: luaEffect.value }),
     ...(triggerEvent === undefined ? {} : { triggerEvent }),
     ...(triggerEvent !== undefined && shouldKeepTriggerCode(triggerEvent, luaEffect.code) ? { triggerCode: luaEffect.code } : {}),
-    ...(event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEvent) ? { triggerSourceOnly: true } : {}),
+    ...(event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEvent, luaEffect.code) ? { triggerSourceOnly: true } : {}),
     ...(event === "trigger" ? { optional: luaEffectTriggerIsOptional(luaEffect.typeFlags) } : {}),
     ...(event === "trigger" ? { triggerTiming: luaEffectTriggerTiming(luaEffect) } : {}),
     range,
@@ -595,7 +595,7 @@ function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffect
 }
 
 function luaEffectDefaultRange(card: DuelCardInstance, luaEffect: LuaEffectRecord, event: DuelEffectDefinition["event"]): DuelLocation[] {
-  if (event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEventFromCode(luaEffect.code))) return ["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"];
+  if (event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEventFromCode(luaEffect.code), luaEffect.code)) return ["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"];
   if (event === "continuous" || event === "summonProcedure" || event === "trigger") return [card.location];
   if ((luaEffect.typeFlags & 0x10) !== 0 && card.kind === "spell") return ["hand", "spellTrapZone"];
   if ((luaEffect.typeFlags & 0x10) !== 0 && card.kind === "trap") return ["spellTrapZone"];
@@ -607,11 +607,12 @@ function shouldKeepTriggerCode(triggerEvent: DuelEventName, code: number | undef
   return code !== undefined;
 }
 
-function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEventName | undefined): boolean {
+function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEventName | undefined, triggerCode: number | undefined): boolean {
   return (
     (typeFlags & 0x1) !== 0 &&
     ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) &&
     (triggerEvent === "banished" ||
+      (triggerEvent === "battleDestroyed" && triggerCode === 1140) ||
       triggerEvent === "cardsDrawn" ||
       triggerEvent === "confirmed" ||
       triggerEvent === "controlChanged" ||
