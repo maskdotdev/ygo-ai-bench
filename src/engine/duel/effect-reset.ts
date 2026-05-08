@@ -2,6 +2,7 @@ import { clearEffectCountUsage } from "#duel/effect-counts.js";
 import {
   destinationResetFlags,
   matchesDestinationReset,
+  matchesDisableReset,
   matchesLeaveReset,
   matchesMovementReset,
   matchesTemporaryRemove,
@@ -35,6 +36,15 @@ export function pruneResetEffectsAfterPositionChange(state: DuelState, card: Due
     const flags = normalizeResetFlags(effect.reset?.flags ?? 0);
     if ((flags & resetEvent) === 0) return true;
     return matchesTurnSetReset(flags, card) ? decrementOrRemoveResetEffect(state, effect) : true;
+  });
+}
+
+export function pruneResetEffectsAfterDisable(state: DuelState, card: DuelCardInstance, ignoredEffectId?: string): void {
+  state.effects = state.effects.filter((effect) => {
+    if (effect.sourceUid !== card.uid || effect.id === ignoredEffectId) return true;
+    const flags = normalizeResetFlags(effect.reset?.flags ?? 0);
+    if ((flags & resetEvent) === 0) return true;
+    return matchesDisableReset(flags) ? decrementOrRemoveResetEffect(state, effect) : true;
   });
 }
 

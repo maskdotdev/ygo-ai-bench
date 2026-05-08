@@ -168,16 +168,26 @@ describe("Lua continuous negation and destruction effects", () => {
       `
       local source=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local boost=Effect.CreateEffect(target)
+      boost:SetType(EFFECT_TYPE_SINGLE)
+      boost:SetCode(EFFECT_UPDATE_ATTACK)
+      boost:SetValue(500)
+      boost:SetReset(RESET_EVENT|RESET_DISABLE)
+      target:RegisterEffect(boost)
+      Debug.Message("reset disable before " .. tostring(target:IsHasEffect(EFFECT_UPDATE_ATTACK)~=nil))
       Debug.Message("negate before " .. tostring(target:IsDisabled()))
       target:NegateEffects(source, RESET_PHASE|PHASE_END, true, 2)
       Debug.Message("negate after " .. tostring(target:IsDisabled()))
+      Debug.Message("reset disable after " .. tostring(target:IsHasEffect(EFFECT_UPDATE_ATTACK)~=nil))
       `,
       "card-negate-effects.lua",
     );
 
     expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("reset disable before true");
     expect(host.messages).toContain("negate before false");
     expect(host.messages).toContain("negate after true");
+    expect(host.messages).toContain("reset disable after false");
     expect(session.state.effects.some((effect) => effect.sourceUid === target!.uid && effect.code === 2 && effect.reset?.count === 2)).toBe(true);
     expect(session.state.effects.some((effect) => effect.sourceUid === target!.uid && effect.code === 8)).toBe(true);
   });

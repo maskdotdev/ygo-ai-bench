@@ -1,6 +1,7 @@
 import {
   destinationResetFlags,
   matchesDestinationReset,
+  matchesDisableReset,
   matchesLeaveReset,
   matchesMovementReset,
   matchesTemporaryRemove,
@@ -72,6 +73,15 @@ export function pruneDuelFlagEffectsAfterPositionChange(state: DuelState, card: 
     const flags = normalizeResetFlags(flag.reset);
     if ((flags & resetEvent) === 0) return true;
     return matchesTurnSetReset(flags, card) ? decrementFlagResetCount(flag) : true;
+  });
+}
+
+export function pruneDuelFlagEffectsAfterDisable(state: DuelState, card: DuelCardInstance): void {
+  state.flagEffects = state.flagEffects.filter((flag) => {
+    if (flag.ownerType !== "card" || flag.ownerId !== card.uid) return true;
+    const flags = normalizeResetFlags(flag.reset);
+    if ((flags & resetEvent) === 0) return true;
+    return matchesDisableReset(flags) ? decrementFlagResetCount(flag) : true;
   });
 }
 

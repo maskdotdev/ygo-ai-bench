@@ -153,6 +153,37 @@ describe("duel effect reset", () => {
     expect(session.state.effects).toHaveLength(0);
   });
 
+  it("removes reset-disable effects when their source becomes disabled", () => {
+    const session = createDuel({ seed: 122, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    const common = {
+      sourceUid: source!.uid,
+      controller: 0 as const,
+      event: "continuous" as const,
+      range: ["monsterZone" as const],
+      operation() {},
+    };
+    registerEffect(session, { ...common, id: "reset-on-disable", code: 17, reset: { flags: 0x1000 + 0x10000 } });
+    registerEffect(session, { ...common, id: "counted-reset-on-disable", code: 17, reset: { flags: 0x1000 + 0x10000, count: 2 } });
+    registerEffect(session, { ...common, id: "reset-on-remove", code: 17, reset: { flags: 0x1000 + 0x80000 } });
+
+    registerEffect(session, { ...common, id: "disable-source", code: 2, reset: { flags: 0x1000 + 0x10000 } });
+
+    expect(session.state.effects).toEqual([
+      expect.objectContaining({ id: "counted-reset-on-disable", reset: { flags: 0x1000 + 0x10000, count: 1 } }),
+      expect.objectContaining({ id: "reset-on-remove" }),
+      expect.objectContaining({ id: "disable-source" }),
+    ]);
+  });
+
   it("removes reset-event effects when their source leaves range", () => {
     const session = createDuel({ seed: 113, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

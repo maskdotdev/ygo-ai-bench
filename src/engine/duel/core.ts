@@ -85,6 +85,7 @@ import {
 import type { BattleContinuationHandlers } from "#duel/battle-continuation.js";
 import {
   isDrawPrevented,
+  isCardDisabled,
   isDeckDiscardPrevented,
   isDeckLossDefeatPrevented,
   isEffectActivationPrevented,
@@ -118,8 +119,8 @@ import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { duelEventCode } from "#duel/event-codes.js";
 import { createEffectContext } from "#duel/effect-context.js";
 import { eventCardReasonPayload, eventCardStatePayload, recordDuelEvent, relatedEffectPayload, type DuelEventPayload } from "#duel/event-history.js";
-import { pruneResetEffectsAfterChain } from "#duel/effect-reset.js";
-import { pruneDuelFlagEffectsAfterChain } from "#duel/flags.js";
+import { pruneResetEffectsAfterChain, pruneResetEffectsAfterDisable } from "#duel/effect-reset.js";
+import { pruneDuelFlagEffectsAfterChain, pruneDuelFlagEffectsAfterDisable } from "#duel/flags.js";
 import type { ReplacementEffectHandlers } from "#duel/replacement-effects.js";
 import { getPendingTriggerActions } from "#duel/pending-trigger-actions.js";
 import { groupDuelLegalActions } from "#duel/legal-action-groups.js";
@@ -283,7 +284,23 @@ const responseHandlers: DuelResponseHandlers = {
 };
 
 export function registerEffect(session: DuelSession, effect: DuelEffectDefinition): void {
+  const disabledBefore = effect.event === "continuous" && effect.code === 2 ? disabledCardUids(session.state) : undefined;
   session.state.effects.push(effect);
+  if (disabledBefore) pruneNewlyDisabledCardResets(session.state, disabledBefore, effect.id);
+}
+
+function disabledCardUids(state: DuelState): Set<string> {
+  const createContext = createContinuousEffectContext(state);
+  return new Set(state.cards.filter((card) => isCardDisabled(state, card, createContext)).map((card) => card.uid));
+}
+
+function pruneNewlyDisabledCardResets(state: DuelState, disabledBefore: Set<string>, ignoredEffectId: string): void {
+  const createContext = createContinuousEffectContext(state);
+  for (const card of state.cards) {
+    if (disabledBefore.has(card.uid) || !isCardDisabled(state, card, createContext)) continue;
+    pruneResetEffectsAfterDisable(state, card, ignoredEffectId);
+    pruneDuelFlagEffectsAfterDisable(state, card);
+  }
 }
 
 export function getLegalActions(session: DuelSession, player: PlayerId): DuelAction[] {

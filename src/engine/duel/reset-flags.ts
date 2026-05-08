@@ -3,6 +3,7 @@ import { duelReason } from "#duel/reasons.js";
 import type { DuelCardInstance, DuelPhase } from "#duel/types.js";
 
 export const resetEvent = 0x1000;
+const resetDisable = 0x10000;
 export const resetTurnSet = 0x20000;
 export const resetLeave = 0x800000;
 export const resetPhase = 0x40000000;
@@ -41,6 +42,10 @@ export function matchesMovementReset(flags: number, card: DuelCardInstance): boo
 
 export function matchesLeaveReset(flags: number, card: DuelCardInstance): boolean {
   return (flags & resetLeave) !== 0 && card.previousLocation !== card.location && !isTemporaryRemove(card);
+}
+
+export function matchesDisableReset(flags: number): boolean {
+  return (flags & resetDisable) !== 0;
 }
 
 export function matchesTurnSetReset(flags: number, card: DuelCardInstance): boolean {
