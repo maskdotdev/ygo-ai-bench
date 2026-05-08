@@ -18,7 +18,6 @@ import {
   linkSummonDuelCard,
   ritualSummonDuelCard,
   sendDuelCardToGraveyard,
-  specialSummonDuelCard,
   synchroSummonDuelCard,
   getLegalActions,
   moveDuelCard,
@@ -349,19 +348,24 @@ function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuel
 
   const [lowScale, highScale] = scales;
   const summonedUids: string[] = [];
+  const reasonPlayer = hostState.activeContext?.player ?? player;
+  const payload = luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer);
   for (const card of pendulumSummonCandidates(session, player, lowScale, highScale).slice(0, zoneCount)) {
     try {
-      const reasonPlayer = hostState.activeContext?.player ?? player;
-      const summoned = specialSummonDuelCard(session.state, card.uid, player, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer), luaSummonTypePendulum);
+      const summoned = specialSummonStepCard(session, card, player, luaSummonTypePendulum, reasonPlayer, payload);
+      if (!summoned) throw new Error(`${card.name} cannot be Pendulum Summoned`);
       applySummonPosition(summoned, "faceUpAttack");
       summoned.summonType = "pendulum";
       markProcedureComplete(summoned);
-      summonedUids.push(card.uid);
+      summonedUids.push(summoned.uid);
     } catch {
       // EDOPro-style helpers report successful summons only.
     }
   }
-  if (summonedUids.length > 0) session.state.players[player].pendulumSummonAvailable = false;
+  if (summonedUids.length > 0) {
+    session.state.players[player].pendulumSummonAvailable = false;
+    collectDuelGroupedTriggerEffects(session.state, "specialSummoned", summonedUids.map((uid) => session.state.cards.find((candidate) => candidate.uid === uid)).filter((card): card is DuelCardInstance => Boolean(card)), { ...payload, eventUids: summonedUids });
+  }
   setOperatedUids(hostState, summonedUids);
   lua.lua_pushinteger(L, summonedUids.length);
   return 1;

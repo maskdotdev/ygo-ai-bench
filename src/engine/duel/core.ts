@@ -393,7 +393,7 @@ export function runScriptedDuelResponses(session: DuelSession, steps: ScriptedRe
   return runScriptedDuelResponsesWithHandlers(session, steps, { getLegalActions, applyResponse });
 }
 
-export function specialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}, summonTypeCode?: number): DuelCardInstance {
+export function specialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}, summonTypeCode?: number, collectSuccess = true): DuelCardInstance {
   const card = findCard(state, uid);
   if (!card) throw new Error(`Card ${uid} is not in the duel`);
   const summonController = controller ?? card.controller;
@@ -413,7 +413,7 @@ export function specialSummonDuelCard(state: DuelState, uid: string, controller?
   card.summonMaterialUids = [];
   recordSpecialSummonActivity(state, summonController, card);
   pushDuelLog(state, "specialSummon", card.controller, card.name, "Special Summoned");
-  collectTriggerEffects(state, "specialSummoned", card);
+  if (collectSuccess) collectTriggerEffects(state, "specialSummoned", card);
   return card;
 }
 
@@ -548,7 +548,9 @@ export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: st
 }
 
 export function pendulumSummonDuelCards(state: DuelState, player: PlayerId, summonUids: string[]): DuelCardInstance[] {
-  return pendulumSummonDuelCardsWithHooks(state, player, summonUids, (uid) => canSpecialSummonDuelCard(state, uid, player, luaSummonTypePendulum), (uid, controller) => specialSummonDuelCard(state, uid, controller, undefined, {}, luaSummonTypePendulum));
+  const summoned = pendulumSummonDuelCardsWithHooks(state, player, summonUids, (uid) => canSpecialSummonDuelCard(state, uid, player, luaSummonTypePendulum), (uid, controller) => specialSummonDuelCard(state, uid, controller, undefined, {}, luaSummonTypePendulum, false));
+  collectDuelGroupedTriggerEffects(state, "specialSummoned", summoned);
+  return summoned;
 }
 
 function canPerformTypedSpecialSummon(state: DuelState, player: PlayerId, uid: string, summonTypeCode: number): boolean {
