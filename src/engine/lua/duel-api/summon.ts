@@ -24,7 +24,7 @@ import {
   negateDuelSummon,
   xyzSummonDuelCard,
 } from "#duel/core.js";
-import { luaSummonTypePendulum, luaSummonTypeRitual } from "#duel/summon-type-codes.js";
+import { duelSummonTypeFromCode, luaSummonTypePendulum, luaSummonTypeRitual } from "#duel/summon-type-codes.js";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
@@ -381,7 +381,14 @@ function pushSpecialSummonStep(L: unknown, session: DuelSession, hostState: LuaD
   try {
     markLuaOperationTimingBoundary(session, hostState);
     const reasonPlayer = hostState.activeContext?.player ?? targetPlayer;
-    const summoned = specialSummonDuelCard(session.state, uid, targetPlayer, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer), summonType);
+    const payload = luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer);
+    let summoned: DuelCardInstance | undefined;
+    try {
+      summoned = specialSummonDuelCard(session.state, uid, targetPlayer, reasonPlayer, payload, summonType);
+    } catch {
+      summoned = specialSummonExplicitExtraDeckStep(session, target, targetPlayer, summonType, reasonPlayer, payload);
+    }
+    if (!summoned) throw new Error(`${target.name} cannot be Special Summoned`);
     if (requestedPosition) applySummonPosition(summoned, requestedPosition);
     applyMonsterZoneMask(session, summoned, targetPlayer, zoneMask);
     if (hostState.activeContext) hostState.activeOperationMoved = true;
@@ -393,6 +400,32 @@ function pushSpecialSummonStep(L: unknown, session: DuelSession, hostState: LuaD
     lua.lua_pushboolean(L, false);
     return 1;
   }
+}
+
+function specialSummonExplicitExtraDeckStep(
+  session: DuelSession,
+  card: DuelCardInstance,
+  player: PlayerId,
+  summonType: number,
+  reasonPlayer: PlayerId,
+  payload: DuelEventPayload,
+): DuelCardInstance | undefined {
+  if (card.location !== "extraDeck" || summonType === 0 || !canPlayerSpecialSummon(session.state, player, card, summonType, payload.eventReasonEffectId)) return undefined;
+  collectDuelTriggerEffects(session.state, "specialSummoning", card, payload);
+  const summoned = moveDuelCard(session.state, card.uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon, reasonPlayer);
+  if (payload.eventReasonCardUid !== undefined) summoned.reasonCardUid = payload.eventReasonCardUid;
+  if (payload.eventReasonEffectId !== undefined) summoned.reasonEffectId = payload.eventReasonEffectId;
+  summoned.position = "faceUpAttack";
+  summoned.faceUp = true;
+  summoned.summonType = duelSummonTypeFromCode(summonType);
+  summoned.summonTypeCode = summonType;
+  summoned.summonPlayer = player;
+  summoned.summonPhase = session.state.phase;
+  summoned.summonMaterialUids = [];
+  recordSpecialSummonActivity(session.state, player, summoned);
+  pushDuelLog(session.state, "specialSummon", player, summoned.name, "Special Summoned");
+  collectDuelTriggerEffects(session.state, "specialSummoned", summoned);
+  return summoned;
 }
 
 function pushSpecialSummonComplete(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
