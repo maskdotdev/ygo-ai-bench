@@ -470,6 +470,21 @@ describe("trigger bucket open fast restore", () => {
 
     const turnChain = getDuelLegalActions(restoredHandoff, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-trigger-pass-handoff-turn-chain");
     expect(turnChain).toBeDefined();
+    const forgedTurnOpenOnly = applyResponse(restoredHandoff, {
+      type: "activateEffect",
+      player: 0,
+      uid: turnQuick!.uid,
+      effectId: "restore-trigger-pass-handoff-turn-open",
+      label: "Forge trigger-chain handoff open-only quick into chain response",
+      windowId: turnChain!.windowId,
+      windowKind: turnChain!.windowKind,
+      windowToken: turnChain!.windowToken,
+    });
+    expect(forgedTurnOpenOnly.ok).toBe(false);
+    expect(forgedTurnOpenOnly.error).toContain("Response is not currently legal");
+    expect(forgedTurnOpenOnly.legalActions).toEqual(getDuelLegalActions(restoredHandoff, 0));
+    expect(forgedTurnOpenOnly.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredHandoff, 0));
+    expect(restoredHandoff.state.log.map((entry) => entry.detail)).not.toContain("restore-trigger-pass-handoff-turn-open resolved");
     const opponentReturn = applyAndAssert(restoredHandoff, turnChain!);
     expect(opponentReturn.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
     expect(opponentReturn.state.chain.map((link) => link.effectId)).toEqual(["restore-trigger-pass-handoff-success", "restore-trigger-pass-handoff-turn-chain"]);
