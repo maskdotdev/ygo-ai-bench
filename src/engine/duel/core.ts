@@ -898,18 +898,20 @@ function resolveChain(state: DuelState): void {
     while (state.chain.length) {
       const link = state.chain.pop();
       if (!link) continue;
+      const effect = state.effects.find((candidate) => candidate.id === link.effectId && candidate.sourceUid === link.sourceUid);
+      const source = findCard(state, link.sourceUid);
       if (link.negated) {
+        sendResolvedActivatedSpellTrapToGraveyard(state, link, source, effect);
         collectNegatedChainLinkEvents(state, link);
         continue;
       }
-      const effect = state.effects.find((candidate) => candidate.id === link.effectId && candidate.sourceUid === link.sourceUid);
-      const source = findCard(state, link.sourceUid);
       if (!effect || !source) continue;
       const eventCard = link.eventCardUid === undefined ? undefined : findCard(state, link.eventCardUid);
       const chainPayload = { eventPlayer: link.player, eventValue: state.chain.length + 1, eventChainDepth: state.chain.length + 1, eventChainLinkId: link.id, eventReasonPlayer: link.player, ...relatedEffectPayload(link.effectId) };
       collectDuelTriggerEffects(state, "chainSolving", source, chainPayload);
       executeContinuousEventEffects(state, "chainSolving", 1020, source, chainPayload, link);
       if (link.negated) {
+        sendResolvedActivatedSpellTrapToGraveyard(state, link, source, effect);
         collectNegatedChainLinkEvents(state, link);
         continue;
       }
@@ -941,7 +943,7 @@ function resolveChain(state: DuelState): void {
         link.possibleOperationInfos ? copyDuelOperationInfos(link.possibleOperationInfos) : [],
       );
       (link.operationOverride ?? effect.operation)(ctx);
-      if (shouldSendActivatedSpellTrapToGraveyard(source, effect)) sendDuelCardToGraveyard(state, source.uid, source.controller, duelReason.rule, link.player);
+      sendResolvedActivatedSpellTrapToGraveyard(state, link, source, effect);
       collectDuelTriggerEffects(state, "chainSolved", undefined, chainPayload);
     }
   } catch (error) {
@@ -959,6 +961,11 @@ function resolveChain(state: DuelState): void {
   if (state.pendingTriggers.length === 0) collectTriggerEffects(state, "chainEnded");
   setWaitingForPendingTriggerBucket(state);
   continueAttackResponseWindow(state, battleContinuationHandlers);
+}
+
+function sendResolvedActivatedSpellTrapToGraveyard(state: DuelState, link: ChainLink, source: DuelCardInstance | undefined, effect: DuelEffectDefinition | undefined): void {
+  if (!source || !effect || !shouldSendActivatedSpellTrapToGraveyard(source, effect)) return;
+  sendDuelCardToGraveyard(state, source.uid, source.controller, duelReason.rule, link.player);
 }
 
 function collectNegatedChainLinkEvents(state: DuelState, link: ChainLink): void {

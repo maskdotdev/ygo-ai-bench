@@ -60,6 +60,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ch
     }
     expect(restored.session.state.chain).toHaveLength(0);
     expect(restored.session.state.cards.find((card) => card.uid === ghostBelle!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restored.session.state.cards.find((card) => card.uid === wanted!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.cards.find((card) => card.uid === diabellstar!.uid)).toMatchObject({ location: "deck" });
   });
 
