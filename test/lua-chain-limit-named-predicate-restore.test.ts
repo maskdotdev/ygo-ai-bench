@@ -56,19 +56,19 @@ function expectNamedPredicateRestore(untilChainEnd: boolean): void {
 
 function sourceScript(untilChainEnd: boolean): string {
   return `
-    c100 = {}
-    c100.initial_effect = function(c)
+    local s,id=GetID()
+    function s.initial_effect(c)
       local e = Effect.CreateEffect(c)
       e:SetType(EFFECT_TYPE_IGNITION)
       e:SetRange(LOCATION_HAND)
       e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
         if chk==0 then return true end
-        Duel.${untilChainEnd ? "SetChainLimitTillChainEnd" : "SetChainLimit"}(c100.chlimit)
+        Duel.${untilChainEnd ? "SetChainLimitTillChainEnd" : "SetChainLimit"}(s.chlimit)
       end)
       e:SetOperation(function(e,tp) Debug.Message("named limit source resolved") end)
       c:RegisterEffect(e)
     end
-    function c100.chlimit(e,ep,tp)
+    function s.chlimit(e,ep,tp)
       return tp==ep
     end
   `;
@@ -76,8 +76,8 @@ function sourceScript(untilChainEnd: boolean): string {
 
 function quickScript(code: number, message: string): string {
   return `
-    c${code} = {}
-    c${code}.initial_effect = function(c)
+    local s,id=GetID()
+    function s.initial_effect(c)
       local e = Effect.CreateEffect(c)
       e:SetType(EFFECT_TYPE_QUICK_O)
       e:SetRange(LOCATION_HAND)
