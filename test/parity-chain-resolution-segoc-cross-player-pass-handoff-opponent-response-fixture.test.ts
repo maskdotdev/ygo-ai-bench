@@ -115,6 +115,42 @@ describe("EDOPro parity chain-resolution cross-player SEGOC pass-handoff opponen
         makeScriptedStep(makeResponseSelector("passChain", 0)),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-cross-handoff-opponent-response-opponent-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent trigger player chain-response window restorable before the opponent chains from pass handoff",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-cross-handoff-opponent-response-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-handoff-opponent-response-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-handoff-opponent-response-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-handoff-opponent-response-opponent-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [0],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "500", "400", "600", "800", "800"] },
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-handoff-opponent-response-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-cross-handoff-opponent-response-opponent-quick", 1, 6),
+              chainPassGroup(1, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-handoff-opponent-response-turn-quick" },
+              { type: "activateTrigger", player: 1, windowId: 6, windowKind: "triggerBucket", effectId: "fixture-cross-handoff-opponent-response-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-cross-handoff-opponent-response-turn-quick", 6),
+              absentTriggerActivationGroup(1, "fixture-cross-handoff-opponent-response-opponent-optional", "opponentOptional", 6, "triggerBucket"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro reopens turn-player responses after the opponent chains from a cross-player chain-created SEGOC pass-handoff window",

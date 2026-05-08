@@ -128,6 +128,48 @@ describe("EDOPro parity chain-resolution cross-player SEGOC pass-handoff opponen
         makeScriptedStep(makeResponseSelector("passChain", 0)),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-cross-handoff-until-opponent-chain-limiter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the cross-player SEGOC opponent-response handoff window restorable before the opponent applies an until-chain-end limit",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-cross-handoff-until-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-handoff-until-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-handoff-until-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-handoff-until-opponent-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [0],
+            chainLimits: [],
+            locations: { graveyard: ["700", "200", "900", "950"], hand: ["100", "300", "500", "400", "600", "800"] },
+            legalActionCounts: { 0: 0, 1: 3 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-handoff-until-opponent-chain-limiter", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-handoff-until-opponent-followup", count: 1 },
+              { type: "passChain", player: 1, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 6,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-handoff-until-opponent-chain-limiter", count: 1 },
+                  { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-handoff-until-opponent-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(1, 1, 6),
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-cross-handoff-until-turn-blocked" }],
+            absentLegalActionGroups: [absentChainEffectGroup(0, "fixture-cross-handoff-until-turn-blocked", 6)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies SetChainLimitTillChainEnd restrictions when the opponent responds from a cross-player chain-created SEGOC pass-handoff window",
