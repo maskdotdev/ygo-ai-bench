@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuelCard, collectDuelTriggerEffects } from "#duel/core.js";
+import { canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuelCard, collectDuelGroupedTriggerEffects } from "#duel/core.js";
 import { findCard, hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
 import { luaSummonTypePendulum } from "#duel/summon-type-codes.js";
 import {
@@ -209,11 +209,8 @@ function pushRemoveCounter(L: unknown, session: DuelSession, hostState: LuaDuelP
   hostState.operatedUids?.splice(0, hostState.operatedUids.length, ...removed);
   if (removed.length > 0) markLuaOperationTimingBoundary(session, hostState);
   const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
-  for (const uid of removed) {
-    const card = findCard(session.state, uid);
-    if (!card) continue;
-    collectDuelTriggerEffects(session.state, "counterRemoved", card, luaEffectReasonPayload(hostState, query.reason, reasonPlayer));
-  }
+  const eventCards = removed.map((uid) => findCard(session.state, uid)).filter((card): card is DuelCardInstance => Boolean(card));
+  if (eventCards.length > 0) collectDuelGroupedTriggerEffects(session.state, "counterRemoved", eventCards, luaEffectReasonPayload(hostState, query.reason, reasonPlayer));
   if (removed.length > 0 && hostState.activeContext) hostState.activeOperationMoved = true;
   lua.lua_pushinteger(L, removed.length > 0 ? query.count : 0);
   return 1;
