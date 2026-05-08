@@ -8,6 +8,7 @@ import {
   absentWindowEffectGroup,
   chainEffectGroup,
   chainPassGroup,
+  triggerActivationGroup,
 } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity chain-resolution opponent same-bucket mandatory pass-handoff opponent-response chain-limit fixture", () => {
@@ -118,6 +119,41 @@ describe("EDOPro parity chain-resolution opponent same-bucket mandatory pass-han
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-resolution-opponent-mandatory-handoff-limit-starter" })),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-resolution-turn-mandatory-handoff-limit" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps turn mandatory priority restorable before restored opponent same-bucket mandatory handoff limits begin",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-chain-resolution-turn-mandatory-handoff-limit", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory-handoff-limit", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory-handoff-limit", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnMandatory" },
+              { player: 1, triggerBucket: "opponentMandatory" },
+            ],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-turn-mandatory-handoff-limit", triggerBucket: "turnMandatory", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(0, "fixture-chain-resolution-turn-mandatory-handoff-limit", "turnMandatory", 1, 1)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-opponent-mandatory-handoff-limit-turn-blocked" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-opponent-mandatory-handoff-limit-opponent-chain-limiter" },
+              { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-handoff-limit", triggerBucket: "opponentMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-chain-resolution-opponent-mandatory-handoff-limit-turn-blocked", 1, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-chain-resolution-opponent-mandatory-handoff-limit-opponent-chain-limiter", 1, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-mandatory-handoff-limit", "opponentMandatory", 1, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900", "950"], hand: ["100", "300", "800", "400", "500", "800"] },
+            logIncludes: ["Chain resolution opponent mandatory handoff limit starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro restores opponent same-bucket mandatory trigger ordering before pass-handoff chain-limit response checks",
@@ -177,6 +213,40 @@ describe("EDOPro parity chain-resolution opponent same-bucket mandatory pass-han
         makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-chain-resolution-first-opponent-mandatory-handoff-limit" })),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps turn-player chain-response priority restorable before opponent mandatory chain-limit handoff",
+            phase: "main1",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-chain-resolution-turn-mandatory-handoff-limit", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory-handoff-limit", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory-handoff-limit", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-handoff-limit-turn-blocked", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-chain-resolution-opponent-mandatory-handoff-limit-turn-blocked", 1, 4),
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-handoff-limit-opponent-chain-limiter" },
+              { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-handoff-limit", triggerBucket: "opponentMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-chain-resolution-opponent-mandatory-handoff-limit-opponent-chain-limiter", 4),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-mandatory-handoff-limit", "opponentMandatory", 4, "chainResponse"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro hands restored opponent mandatory trigger-chain responses to the opponent before the opponent's SetChainLimit handoff response",
@@ -227,6 +297,53 @@ describe("EDOPro parity chain-resolution opponent same-bucket mandatory pass-han
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-resolution-opponent-mandatory-handoff-limit-opponent-chain-limiter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps opponent mandatory handoff response choices restorable before one-chain limits apply",
+            phase: "main1",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-chain-resolution-turn-mandatory-handoff-limit", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory-handoff-limit", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory-handoff-limit", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+            ],
+            chainPasses: [0],
+            legalActionCounts: { 0: 0, 1: 3 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-handoff-limit-opponent-chain-limiter", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-handoff-limit-opponent-followup", count: 1 },
+              { type: "passChain", player: 1, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 5,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-handoff-limit-opponent-chain-limiter", count: 1 },
+                  { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-handoff-limit-opponent-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(1, 1, 5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-handoff-limit-turn-blocked" },
+              { type: "activateTrigger", player: 1, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-handoff-limit", triggerBucket: "opponentMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-chain-resolution-opponent-mandatory-handoff-limit-turn-blocked", 5),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-mandatory-handoff-limit", "opponentMandatory", 5, "chainResponse"),
+            ],
+            locations: { graveyard: ["700", "200", "900", "950"], hand: ["100", "300", "800", "400", "500", "800"] },
+            logIncludes: ["Chain resolution opponent mandatory handoff limit starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies one-chain SetChainLimit restrictions after an opponent responds from a restored opponent mandatory SEGOC handoff",
