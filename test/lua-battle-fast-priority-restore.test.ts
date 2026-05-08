@@ -86,6 +86,30 @@ describe("Lua battle fast priority restore", () => {
     expect(resolved.legalActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "battle", uid: expect.stringContaining("500") })]));
     expect(hasGroupedLuaEffect(resolved.legalActionGroups, 1, "500", "battle")).toBe(true);
     expect(getDuelLegalActions(restored.session, 0)).toEqual([]);
+    const opponentChainQuick = restored.session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "400");
+    expect(opponentChainQuick).toBeDefined();
+    const opponentChainQuickEffect = restored.session.state.effects.find((effect) => effect.sourceUid === opponentChainQuick!.uid);
+    expect(opponentChainQuickEffect).toBeDefined();
+    const currentBattleAction = resolved.legalActions[0];
+    expect(currentBattleAction).toBeDefined();
+    expect(currentBattleAction!.windowId).toBeDefined();
+    expect(currentBattleAction!.windowKind).toBeDefined();
+    expect(currentBattleAction!.windowToken).toBeDefined();
+    const forgedChainOnlyQuick = applyLuaRestoreResponse(restored, {
+      type: "activateEffect",
+      player: 1,
+      uid: opponentChainQuick!.uid,
+      effectId: opponentChainQuickEffect!.id,
+      label: "Forge chain-only quick into battle window",
+      windowId: currentBattleAction!.windowId!,
+      windowKind: currentBattleAction!.windowKind!,
+      windowToken: currentBattleAction!.windowToken!,
+    });
+    expect(forgedChainOnlyQuick.ok).toBe(false);
+    expect(forgedChainOnlyQuick.error).toContain("Response is not currently legal");
+    expect(forgedChainOnlyQuick.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(forgedChainOnlyQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(restored.host.messages).toEqual(["restored battle quick resolved"]);
     const restoredBattleWindow = restoreDuelWithLuaScripts(serializeDuel(restored.session), fixture.source, createCardReader(fixture.cards));
     expect(restoredBattleWindow.restoreComplete, restoredBattleWindow.incompleteReasons.join("; ")).toBe(true);
     expect(queryPublicState(restoredBattleWindow.session)).toMatchObject({ waitingFor: 1, windowKind: "battle", battleWindow: { kind: "startDamageStep", responsePlayer: 1 } });
