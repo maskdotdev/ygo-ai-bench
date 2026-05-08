@@ -824,7 +824,7 @@ function sameAction(action: DuelAction, response: DuelAction): boolean {
   if (action.windowId !== undefined && response.windowId !== undefined && action.windowId !== response.windowId) return false;
   if (action.windowKind !== undefined && response.windowKind !== undefined && action.windowKind !== response.windowKind) return false;
   if (action.windowToken !== undefined && response.windowToken !== undefined && action.windowToken !== response.windowToken) return false;
-  if ("uid" in action && "uid" in response && action.uid !== response.uid) return false;
+  if ("uid" in action && (!("uid" in response) || action.uid !== response.uid)) return false;
   if (action.type === "activateEffect" && response.type === "activateEffect" && action.effectId !== response.effectId) return false;
   if (action.type === "specialSummonProcedure" && response.type === "specialSummonProcedure" && action.effectId !== response.effectId) return false;
   if (action.type === "activateTrigger" && response.type === "activateTrigger" && (action.triggerId !== response.triggerId || action.triggerBucket !== response.triggerBucket || action.effectId !== response.effectId)) return false;

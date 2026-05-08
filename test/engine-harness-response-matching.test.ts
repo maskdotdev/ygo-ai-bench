@@ -113,6 +113,36 @@ describe("EDOPro compatibility harness response matching", () => {
     ]);
   });
 
+  it("requires concrete uid-bearing responses to echo the uid", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture({
+      name: "missing uid concrete response fixture",
+      options: { seed: 10, startingHandSize: 1 },
+      decks: {
+        0: { main: ["100"] },
+        1: { main: ["200"] },
+      },
+      responses: [
+        makeScriptedStep({
+          type: "normalSummon",
+          player: 0,
+          label: "Normal Summon without uid",
+        }),
+      ],
+      expected: { source: "edopro" },
+    }, {
+      cardReader: createCardReader(cards),
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      {
+        fixture: "missing uid concrete response fixture",
+        message: "No legal response matched type=normalSummon player=0",
+      },
+    ]);
+  });
+
   it("matches concrete trigger responses by effect id", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }, { id: 300, type: 1 }], []);
     const result = runScriptedDuelFixture({
