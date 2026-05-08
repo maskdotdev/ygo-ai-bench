@@ -30,17 +30,31 @@ export interface RedirectDestination {
 
 export type MaterialUseKind = "fusion" | "synchro" | "xyz" | "link" | "ritual";
 
-export function isEffectActivationPrevented(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+export function isEffectActivationPrevented(
+  state: DuelState,
+  player: PlayerId,
+  card: DuelCardInstance,
+  createContext: ContinuousEffectContextFactory,
+  activatingEffect?: DuelEffectDefinition,
+): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 6) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     const ctx = createContext(effect, source, card);
+    const relatedEffectId = luaRelatedEffectId(activatingEffect);
+    if (relatedEffectId !== undefined) ctx.relatedEffectId = relatedEffectId;
     if (!continuousEffectTargetsPlayer(effect, source, player) && !continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (effect.targetCardPredicate && !effect.targetCardPredicate(ctx, card)) continue;
+    if (effect.valuePredicate && !effect.valuePredicate(ctx, player)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   return false;
+}
+
+function luaRelatedEffectId(effect: DuelEffectDefinition | undefined): number | undefined {
+  const id = Number(effect?.id.match(/^lua-(\d+)/)?.[1]);
+  return Number.isFinite(id) ? id : undefined;
 }
 
 export function isChainLinkNegationPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {

@@ -18,7 +18,7 @@ export function callLuaEffectValuePredicate(
   return withLuaCallbackContext(hostState, ctx, () => {
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.valueRef);
     hostState.pushEffectTable(L, luaEffect.id);
-    pushRelatedEffectTable(L, hostState);
+    pushRelatedEffectTable(L, hostState, ctx);
     lua.lua_pushinteger(L, reasonPlayer ?? ctx.player ?? card.controller);
     const status = lua.lua_pcall(L, 3, 1, 0);
     if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
@@ -83,7 +83,11 @@ function withLuaCallbackContext<T>(hostState: LuaHostState, ctx: DuelEffectConte
   }
 }
 
-function pushRelatedEffectTable(L: unknown, hostState: LuaHostState): void {
+function pushRelatedEffectTable(L: unknown, hostState: LuaHostState, ctx: DuelEffectContext): void {
+  if (ctx.relatedEffectId !== undefined && Number.isFinite(ctx.relatedEffectId)) {
+    hostState.pushEffectTable(L, ctx.relatedEffectId);
+    return;
+  }
   const link = hostState.session.state.chain[hostState.session.state.chain.length - 1];
   const id = Number(link?.effectId.match(/^lua-(\d+)/)?.[1]);
   if (Number.isFinite(id)) hostState.pushEffectTable(L, id);

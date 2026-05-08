@@ -828,7 +828,7 @@ function copySerializedEffect(effect: DuelEffectDefinition): SerializedDuelEffec
   const {
     battleDamageValue: _battleDamageValue,
     canActivate: _canActivate,
-    cost: _cost,
+    cost: _cost, luaTypeFlags: _luaTypeFlags,
     operation: _operation,
     target: _target,
     targetCardPredicate: _targetCardPredicate,

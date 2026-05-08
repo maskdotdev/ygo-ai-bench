@@ -240,6 +240,7 @@ export interface DuelEffectDefinition {
   ownerPlayer?: PlayerId;
   registryKey?: string;
   event: "ignition" | "trigger" | "quick" | "continuous" | "summonProcedure";
+  luaTypeFlags?: number;
   code?: number;
   value?: number;
   triggerEvent?: DuelEventName;
@@ -280,7 +281,7 @@ export interface ChainLimit {
 
 export type SerializedDuelEffect = Omit<
   DuelEffectDefinition,
-  "battleDamageValue" | "canActivate" | "cost" | "operation" | "target" | "targetCardPredicate" | "valueCardPredicate" | "valuePredicate"
+  "battleDamageValue" | "canActivate" | "cost" | "luaTypeFlags" | "operation" | "target" | "targetCardPredicate" | "valueCardPredicate" | "valuePredicate"
 >;
 export type SerializedChainLimit = Omit<ChainLimit, "allows" | "release">;
 

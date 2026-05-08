@@ -2,6 +2,7 @@ import { findCard, pushDuelLog, requireControlledCard } from "#duel/card-state.j
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { pruneSpentMandatoryPendingTriggers } from "#duel/pending-trigger-actions.js";
 import { otherPlayer } from "#duel/player-id.js";
+import { placeActivatedSpellTrapCard } from "#duel/spell-trap-activation.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import { pendingTriggerBucketsForState, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type {
@@ -114,6 +115,7 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
       ctx.operationInfos ?? [],
       ctx.possibleOperationInfos ?? [],
     );
+    placeActivatedSpellTrapCard(session.state, player, source, effect);
     pushDuelLog(session.state, "activate", player, source.name, effect.id);
     markEffectUsed(session.state, effect);
     const responsePlayer = otherPlayer(player);

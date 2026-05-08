@@ -134,6 +134,7 @@ import { hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } 
 import { applyDuelResponse, type DuelResponseHandlers } from "#duel/response-dispatch.js";
 import { runScriptedDuelResponses as runScriptedDuelResponsesWithHandlers } from "#duel/scripted-runner.js";
 import { setSpellTrap } from "#duel/spell-trap.js";
+import { shouldSendActivatedSpellTrapToGraveyard } from "#duel/spell-trap-activation.js";
 import { negateCoreDuelSummon } from "#duel/summon-negation.js";
 import { collectTriggerEffects as collectTriggerEffectsRule } from "#duel/triggers.js";
 import { changeDuelPhase, drawDuelCardsFromDeck, endDuelTurn, nextAvailableDuelPhase } from "#duel/turn-flow.js";
@@ -239,7 +240,8 @@ const responseHandlers: DuelResponseHandlers = {
   },
   activateEffect(session, player, uid, effectId) {
     const source = findCard(session.state, uid);
-    if (source && isEffectActivationPrevented(session.state, player, source, createContinuousEffectContext(session.state))) throw new Error(`${source.name} cannot activate effects`);
+    const effect = session.state.effects.find((candidate) => candidate.id === effectId && candidate.sourceUid === uid);
+    if (source && isEffectActivationPrevented(session.state, player, source, createContinuousEffectContext(session.state), effect)) throw new Error(`${source.name} cannot activate effects`);
     activateDuelEffect(session, player, uid, effectId, activationHandlers);
   },
   passChain,
@@ -771,7 +773,7 @@ function specialSummonProcedureActions(state: DuelState, player: PlayerId): Duel
 }
 
 function canChooseEffect(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId, eventName?: DuelEventName, eventCard?: DuelCardInstance, payload: DuelEventPayload = {}): boolean {
-  if (isEffectActivationPrevented(state, player, source, createContinuousEffectContext(state))) return false;
+  if (isEffectActivationPrevented(state, player, source, createContinuousEffectContext(state), effect)) return false;
   const ctx = createEffectContext(
     state,
     source,
@@ -962,6 +964,7 @@ function resolveChain(state: DuelState): void {
         link.possibleOperationInfos ? copyDuelOperationInfos(link.possibleOperationInfos) : [],
       );
       (link.operationOverride ?? effect.operation)(ctx);
+      if (shouldSendActivatedSpellTrapToGraveyard(source, effect)) sendDuelCardToGraveyard(state, source.uid, source.controller, duelReason.rule, link.player);
       collectDuelTriggerEffects(state, "chainSolved", undefined, chainPayload);
     }
   } catch (error) {
