@@ -184,8 +184,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (isGlobalTableFunction(L, index, "aux", "TRUE")) return "aux.TRUE";
   const cardTableField = matchingGlobalCardTableFunctionField(L, index);
   if (cardTableField) return cardTableField;
-  const cardUid = singleCapturedCardUid(L, index);
-  if (cardUid) return `closure:card-not-handler:${cardUid}`;
+  const handlerOnlyUid = literalCapturedHandlerOnlyCardUid(L, index, hostState);
+  if (handlerOnlyUid) return `closure:card-handler:${handlerOnlyUid}`;
   const handlerExclusionUids = literalCapturedHandlerExclusionCardUids(L, index, hostState);
   if (handlerExclusionUids?.length === 1) return `closure:card-not-handler:${handlerExclusionUids[0]}`;
   if (handlerExclusionUids && handlerExclusionUids.length > 1) return `closure:cards-not-handler:${handlerExclusionUids.map(encodeURIComponent).join(",")}`;
@@ -261,26 +261,6 @@ function matchingTableFunctionField(L: unknown, tableIndex: number, functionInde
   return undefined;
 }
 
-function singleCapturedCardUid(L: unknown, index: number): string | undefined {
-  const absoluteIndex = lua.lua_absindex(L, index);
-  const cardUids: string[] = [];
-  for (let upvalueIndex = 1;; upvalueIndex += 1) {
-    const nameBytes = lua.lua_getupvalue(L, absoluteIndex, upvalueIndex);
-    if (nameBytes === null) break;
-    const name = typeof nameBytes === "string" ? nameBytes : to_jsstring(nameBytes);
-    if (name !== "_ENV") {
-      const cardUid = readCardUid(L, -1);
-      if (!cardUid) {
-        lua.lua_pop(L, 1);
-        return undefined;
-      }
-      cardUids.push(cardUid);
-    }
-    lua.lua_pop(L, 1);
-  }
-  return cardUids.length === 1 ? cardUids[0] : undefined;
-}
-
 function literalCapturedHandlerExclusionCardUids(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string[] | undefined {
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
@@ -291,7 +271,7 @@ function literalCapturedHandlerExclusionCardUids(L: unknown, index: number, host
   if (!upvalues || upvalues.size === 0) return undefined;
   const aliases = [...snippet.matchAll(new RegExp(`local\\s+([A-Za-z_]\\w*)\\s*=\\s*${effectParam}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`, "g"))].map((match) => match[1]).filter(Boolean);
   const handlerExpressions = [`${effectParam}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`, ...aliases].join("|");
-  const returnExpression = snippet.match(/\breturn\s+(.+?)(?:\s+end\b|$)/)?.[1];
+  const returnExpression = lastReturnExpression(snippet);
   if (!returnExpression) return undefined;
   const blockedUids = new Set<string>();
   for (const term of returnExpression.split(/\s+and\s+/).map((part) => part.trim()).filter(Boolean)) {
@@ -303,6 +283,30 @@ function literalCapturedHandlerExclusionCardUids(L: unknown, index: number, host
     if (uid) blockedUids.add(uid);
   }
   return blockedUids.size > 0 ? [...blockedUids].sort() : undefined;
+}
+
+function literalCapturedHandlerOnlyCardUid(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string | undefined {
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
+  const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
+  const effectParam = params?.[0];
+  if (!effectParam) return undefined;
+  const upvalues = capturedCardOrNilUpvalues(L, index);
+  if (!upvalues || upvalues.size !== 1) return undefined;
+  const returnExpression = lastReturnExpression(snippet);
+  if (!returnExpression) return undefined;
+  const handlerExpression = `${effectParam}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`;
+  const rightComparison = returnExpression.match(new RegExp(`^(?:${handlerExpression})\\s*==\\s*([A-Za-z_]\\w*)$`));
+  const leftComparison = returnExpression.match(new RegExp(`^([A-Za-z_]\\w*)\\s*==\\s*(?:${handlerExpression})$`));
+  const capturedName = rightComparison?.[1] ?? leftComparison?.[1];
+  if (!capturedName) return undefined;
+  return upvalues.get(capturedName);
+}
+
+function lastReturnExpression(snippet: string): string | undefined {
+  const index = snippet.lastIndexOf("return ");
+  if (index < 0) return undefined;
+  return snippet.slice(index + "return ".length).replace(/\s+end\b.*$/, "").trim();
 }
 
 function capturedCardOrNilUpvalues(L: unknown, index: number): Map<string, string | undefined> | undefined {

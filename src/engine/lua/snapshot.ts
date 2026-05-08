@@ -99,6 +99,7 @@ function knownLuaChainLimitRestoreFactory(key: string): ((limit: ChainLimit) => 
   const knownPredicate = parts[4] === "known" ? parts.slice(5).join(":") : undefined;
   if (knownPredicate === "aux.FALSE") return (limit) => ({ ...limit, allows: () => false });
   if (knownPredicate === "aux.TRUE") return (limit) => ({ ...limit, allows: () => true });
+  if (knownPredicate?.startsWith("closure:card-handler:")) return (limit) => ({ ...limit, allows: () => false });
   if (knownPredicate?.startsWith("closure:card-not-handler:")) return (limit) => ({ ...limit, allows: () => false });
   if (knownPredicate?.startsWith("closure:cards-not-handler:")) return (limit) => ({ ...limit, allows: () => false });
   if (knownPredicate?.startsWith("closure:target-cards-not-handler:")) return (limit) => ({ ...limit, allows: () => false });
