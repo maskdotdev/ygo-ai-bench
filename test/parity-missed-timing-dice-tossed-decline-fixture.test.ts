@@ -1,0 +1,176 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentTriggerActivationGroup, absentWindowEffectGroup, openEffectGroup, triggerActivationGroup, triggerDeclineGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity dice-tossed missed timing decline fixture", () => {
+  it("returns declined optional if dice-tossed triggers to open fast priority while optional when remains missed", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Dice Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "400", name: "Dice Optional When", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Dice Optional If", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "800", name: "Open Quick After Dice", kind: "monster", attack: 500, defense: 500 },
+      { code: "700", name: "Followup Body", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "dice-tossed missed timing decline open fast fixture",
+      options: { seed: 80, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "400", "500", "800", "700"] },
+        1: { main: ["700", "700", "700", "700", "700"] },
+      },
+      setup: {
+        moveCards: [{ player: 0, code: "700", from: "hand", to: "monsterZone", position: "faceUpAttack" }],
+        effects: [
+          {
+            id: "dice-decline-multistep",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            collectEventsOnResolve: [{ collectEvent: "diceTossed", eventIsLast: false, eventPlayer: 0, eventValue: 2 }],
+            moveCardsOnResolve: [{ player: 0, code: "700", from: "monsterZone", to: "graveyard" }],
+            logMessage: "Dice decline multi step resolved",
+          },
+          {
+            id: "dice-decline-optional-when",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "diceTossed",
+            triggerTiming: "when",
+            range: ["hand"],
+            logMessage: "Dice decline optional when should not resolve",
+          },
+          {
+            id: "dice-decline-optional-if",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "diceTossed",
+            triggerTiming: "if",
+            range: ["hand"],
+            logMessage: "Dice decline optional if should not resolve",
+          },
+          {
+            id: "dice-decline-open-fast",
+            player: 0,
+            code: "800",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Dice decline open fast resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "dice-decline-multistep" }), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the initial dice-toss effect window restorable before optional missed-timing filtering",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "dice-decline-open-fast", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "dice-decline-multistep", count: 1 },
+            ],
+            legalActionGroups: [openEffectGroup(0, "dice-decline-open-fast", 1, 0)],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "dice-decline-optional-when", "turnOptional", 0, "open"),
+              absentTriggerActivationGroup(0, "dice-decline-optional-if", "turnOptional", 0, "open"),
+            ],
+          },
+          after: {
+            source: "edopro",
+            note: "EDOPro keeps optional if dice-tossed triggers available while optional when dice-tossed triggers miss timing",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "dice-decline-optional-if", eventName: "diceTossed", eventCode: 1150, eventPlayer: 0, eventValue: 2 }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "dice-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "dice-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "dice-decline-optional-if", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "dice-decline-optional-if", "turnOptional", 1, 1),
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "dice-decline-optional-when", "turnOptional", 1, "triggerBucket"),
+              absentWindowEffectGroup(0, "dice-decline-open-fast", 1, "triggerBucket"),
+            ],
+            logIncludes: ["Dice decline multi step resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "dice-decline-optional-if" }), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the surviving optional if dice-tossed trigger decline restorable while optional when remains missed",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "dice-decline-optional-if", eventName: "diceTossed", eventCode: 1150, eventPlayer: 0, eventValue: 2 }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionGroups: [
+              triggerActivationGroup(0, "dice-decline-optional-if", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "dice-decline-optional-if", "turnOptional", 1, 1),
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "dice-decline-optional-when", "turnOptional", 1, "triggerBucket"),
+              absentWindowEffectGroup(0, "dice-decline-open-fast", 1, "triggerBucket"),
+            ],
+          },
+          after: {
+            source: "edopro",
+            note: "EDOPro exposes open fast effects after declining the surviving optional if dice-tossed trigger",
+            windowId: 2,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            legalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "dice-decline-open-fast", count: 1 }],
+            legalActionGroups: [openEffectGroup(0, "dice-decline-open-fast", 1, 2)],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "dice-decline-optional-when", "turnOptional", 2, "open"),
+              absentTriggerActivationGroup(0, "dice-decline-optional-if", "turnOptional", 2, "open"),
+            ],
+            logIncludes: ["Dice decline multi step resolved", "dice-decline-optional-if"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state exposes open fast effects after declining the dice-tossed optional if trigger while optional when remains missed",
+        windowId: 2,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        chainPasses: [],
+        legalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "dice-decline-open-fast", count: 1 }],
+        legalActionGroups: [openEffectGroup(0, "dice-decline-open-fast", 1, 2)],
+        absentLegalActionGroups: [
+          absentTriggerActivationGroup(0, "dice-decline-optional-when", "turnOptional", 2, "open"),
+          absentTriggerActivationGroup(0, "dice-decline-optional-if", "turnOptional", 2, "open"),
+        ],
+        logIncludes: ["Dice decline multi step resolved", "dice-decline-optional-if"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
