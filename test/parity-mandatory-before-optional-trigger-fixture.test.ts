@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { turnGroup } from "./parity-legal-action-group-helpers.js";
+import { summonGroup, triggerActivationGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity mandatory before optional trigger fixtures", () => {
   it("holds same-player optional triggers until mandatory triggers resolve", () => {
@@ -46,6 +46,31 @@ describe("EDOPro parity mandatory before optional trigger fixtures", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the Main Phase summon action restorable before collecting same-event mandatory and optional triggers",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            phase: "main1",
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            locations: { hand: ["100", "300", "400"] },
+            legalActionCounts: { 0: 8, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [{ type: "normalSummon", player: 0, code: "100", location: "hand", windowId: 0, windowKind: "open", count: 1 }],
+            legalActionGroups: [
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "300", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "300", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro hides same-player optional triggers while same-player mandatory triggers in the same event remain pending",
@@ -93,6 +118,32 @@ describe("EDOPro parity mandatory before optional trigger fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-mandatory-first" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the mandatory trigger bucket restorable before same-player optional triggers are exposed",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnMandatory" },
+              { player: 0, triggerBucket: "turnOptional" },
+            ],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-mandatory-first", count: 1 }],
+            legalActionGroups: [triggerActivationGroup(0, "fixture-mandatory-first", "turnMandatory", 1, 1)],
+            absentLegalActions: [
+              { type: "declineTrigger", player: 0, effectId: "fixture-mandatory-first" },
+              { type: "activateTrigger", player: 0, effectId: "fixture-optional-second" },
+              { type: "declineTrigger", player: 0, effectId: "fixture-optional-second" },
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro presents same-player optional triggers only after same-player mandatory triggers are consumed",
