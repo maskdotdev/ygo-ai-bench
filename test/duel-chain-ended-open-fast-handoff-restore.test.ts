@@ -99,6 +99,103 @@ describe("chain-ended open fast handoff restore", () => {
     expect(restoredTurnWindow.state.chainPasses).toEqual([]);
     expect(hasGroupedEffect(opponentFollowupWindow.legalActionGroups, 1, "restore-chain-ended-handoff-opponent-chain", "chainResponse")).toBe(true);
   });
+
+  it("restores turn-player priority after the opponent chains from a post-chainEnded handoff", () => {
+    const session = createDuel({ seed: 248, startingHandSize: 5, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "400", "600", "700"] },
+      1: { main: ["500", "400"] },
+    });
+    startDuel(session);
+
+    const starter = findHandCard(session, 0, "100");
+    const cleanup = findHandCard(session, 0, "300");
+    const openQuick = findHandCard(session, 0, "400");
+    const turnFirst = findHandCard(session, 0, "600");
+    const turnSecond = findHandCard(session, 0, "700");
+    const opponentFirst = findHandCard(session, 1, "500");
+    const opponentSecond = findHandCard(session, 1, "400");
+    expect(starter).toBeDefined();
+    expect(cleanup).toBeDefined();
+    expect(openQuick).toBeDefined();
+    expect(turnFirst).toBeDefined();
+    expect(turnSecond).toBeDefined();
+    expect(opponentFirst).toBeDefined();
+    expect(opponentSecond).toBeDefined();
+    moveDuelCard(session.state, turnFirst!.uid, "graveyard", 0);
+    moveDuelCard(session.state, turnSecond!.uid, "graveyard", 0);
+    moveDuelCard(session.state, opponentFirst!.uid, "graveyard", 1);
+    moveDuelCard(session.state, opponentSecond!.uid, "graveyard", 1);
+
+    registerEffect(session, loggedEffect("restore-chain-ended-opponent-branch-starter", starter!.uid, 0, "ignition"));
+    registerEffect(session, cleanupTrigger("restore-chain-ended-opponent-branch-cleanup", cleanup!.uid));
+    registerEffect(session, openOnlyQuick("restore-chain-ended-opponent-branch-open", openQuick!.uid, 0, true));
+    registerEffect(session, chainOnlyQuick("restore-chain-ended-opponent-branch-turn-first", turnFirst!.uid, 0, true));
+    registerEffect(session, chainOnlyQuick("restore-chain-ended-opponent-branch-turn-second", turnSecond!.uid, 0, true));
+    registerEffect(session, chainOnlyQuick("restore-chain-ended-opponent-branch-opponent-first", opponentFirst!.uid, 1, true));
+    registerEffect(session, chainOnlyQuick("restore-chain-ended-opponent-branch-opponent-second", opponentSecond!.uid, 1, true));
+
+    const starterAction = findEffectAction(session, 0, "restore-chain-ended-opponent-branch-starter");
+    expect(starterAction).toBeDefined();
+    applyAndAssert(session, starterAction!);
+    const cleanupAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-chain-ended-opponent-branch-cleanup");
+    expect(cleanupAction).toBeDefined();
+    applyAndAssert(session, cleanupAction!);
+
+    const openAction = findEffectAction(session, 0, "restore-chain-ended-opponent-branch-open");
+    expect(openAction).toBeDefined();
+    const opponentWindow = applyAndAssert(session, openAction!);
+    expect(opponentWindow.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(hasGroupedEffect(opponentWindow.legalActionGroups, 1, "restore-chain-ended-opponent-branch-opponent-first", "chainResponse")).toBe(true);
+    expect(hasGroupedEffect(opponentWindow.legalActionGroups, 1, "restore-chain-ended-opponent-branch-opponent-second", "chainResponse")).toBe(true);
+
+    const opponentFirstAction = findEffectAction(session, 1, "restore-chain-ended-opponent-branch-opponent-first");
+    expect(opponentFirstAction).toBeDefined();
+    const turnWindow = applyAndAssert(session, opponentFirstAction!);
+    expect(turnWindow.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+    expect(turnWindow.state.chain.map((link) => link.effectId)).toEqual([
+      "restore-chain-ended-opponent-branch-open",
+      "restore-chain-ended-opponent-branch-opponent-first",
+    ]);
+    expect(session.state.chainPasses).toEqual([]);
+    expect(getDuelLegalActions(session, 1)).toEqual([]);
+    expect(hasGroupedEffect(turnWindow.legalActionGroups, 0, "restore-chain-ended-opponent-branch-turn-first", "chainResponse")).toBe(true);
+    expect(hasGroupedEffect(turnWindow.legalActionGroups, 0, "restore-chain-ended-opponent-branch-turn-second", "chainResponse")).toBe(true);
+
+    const restoredTurnWindow = restoreDuel(serializeDuel(session), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredTurnWindow)).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+    expect(restoredTurnWindow.state.chain.map((link) => link.effectId)).toEqual([
+      "restore-chain-ended-opponent-branch-open",
+      "restore-chain-ended-opponent-branch-opponent-first",
+    ]);
+    expect(getDuelLegalActions(restoredTurnWindow, 1)).toEqual([]);
+    expect(getDuelLegalActions(restoredTurnWindow, 0)).toEqual(getDuelLegalActions(session, 0));
+    expect(getGroupedDuelLegalActions(restoredTurnWindow, 0)).toEqual(getGroupedDuelLegalActions(session, 0));
+
+    const staleOpponentFirst = applyResponse(restoredTurnWindow, opponentFirstAction!);
+    expect(staleOpponentFirst.ok).toBe(false);
+    expect(staleOpponentFirst.error).toContain("Response is not currently legal");
+    expect(staleOpponentFirst.legalActions).toEqual(getDuelLegalActions(restoredTurnWindow, 0));
+    expect(staleOpponentFirst.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTurnWindow, 0));
+
+    const turnFirstAction = findEffectAction(restoredTurnWindow, 0, "restore-chain-ended-opponent-branch-turn-first");
+    expect(turnFirstAction).toBeDefined();
+    const opponentFollowupWindow = applyAndAssert(restoredTurnWindow, turnFirstAction!);
+    expect(opponentFollowupWindow.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(opponentFollowupWindow.state.chain.map((link) => link.effectId)).toEqual([
+      "restore-chain-ended-opponent-branch-open",
+      "restore-chain-ended-opponent-branch-opponent-first",
+      "restore-chain-ended-opponent-branch-turn-first",
+    ]);
+    expect(restoredTurnWindow.state.chainPasses).toEqual([]);
+    expect(getDuelLegalActions(restoredTurnWindow, 0)).toEqual([]);
+    expect(hasGroupedEffect(opponentFollowupWindow.legalActionGroups, 1, "restore-chain-ended-opponent-branch-opponent-second", "chainResponse")).toBe(true);
+
+    const restoredOpponentFollowup = restoreDuel(serializeDuel(restoredTurnWindow), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredOpponentFollowup)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(getDuelLegalActions(restoredOpponentFollowup, 1)).toEqual(getDuelLegalActions(restoredTurnWindow, 1));
+    expect(getGroupedDuelLegalActions(restoredOpponentFollowup, 1)).toEqual(getGroupedDuelLegalActions(restoredTurnWindow, 1));
+  });
 });
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
@@ -144,7 +241,9 @@ function cleanupTrigger(id: string, sourceUid: string): DuelEffectDefinition {
     oncePerTurn: true,
     operation(ctx) {
       moveFirstCard(ctx.duel, 0, "600", "graveyard", "hand");
+      moveFirstCard(ctx.duel, 0, "700", "graveyard", "hand");
       moveFirstCard(ctx.duel, 1, "500", "graveyard", "hand");
+      moveFirstCard(ctx.duel, 1, "400", "graveyard", "hand");
       ctx.log(`${id} resolved`);
     },
   };
@@ -177,6 +276,13 @@ function restoreRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "
     "restore-chain-ended-handoff-open": restoreOpenOnlyQuick,
     "restore-chain-ended-handoff-turn-chain": restoreChainOnlyQuick,
     "restore-chain-ended-handoff-opponent-chain": restoreChainOnlyQuick,
+    "restore-chain-ended-opponent-branch-starter": restoreLoggedEffect(),
+    "restore-chain-ended-opponent-branch-cleanup": restoreCleanupTrigger,
+    "restore-chain-ended-opponent-branch-open": restoreOpenOnlyQuick,
+    "restore-chain-ended-opponent-branch-turn-first": restoreChainOnlyQuick,
+    "restore-chain-ended-opponent-branch-turn-second": restoreChainOnlyQuick,
+    "restore-chain-ended-opponent-branch-opponent-first": restoreChainOnlyQuick,
+    "restore-chain-ended-opponent-branch-opponent-second": restoreChainOnlyQuick,
   };
 }
 
@@ -194,7 +300,9 @@ function restoreCleanupTrigger(effect: Omit<DuelEffectDefinition, "operation">):
     ...effect,
     operation(ctx) {
       moveFirstCard(ctx.duel, 0, "600", "graveyard", "hand");
+      moveFirstCard(ctx.duel, 0, "700", "graveyard", "hand");
       moveFirstCard(ctx.duel, 1, "500", "graveyard", "hand");
+      moveFirstCard(ctx.duel, 1, "400", "graveyard", "hand");
       ctx.log(`${effect.id} resolved`);
     },
   };
