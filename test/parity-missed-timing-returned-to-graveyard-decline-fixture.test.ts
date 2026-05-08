@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentTriggerActivationGroup, absentWindowEffectGroup, triggerActivationGroup, triggerDeclineGroup } from "./parity-legal-action-group-helpers.js";
+import {
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  summonGroup,
+  triggerActivationGroup,
+  triggerDeclineGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity returned-to-graveyard missed timing decline fixture", () => {
   it("returns declined optional if return-to-grave triggers to open fast priority while optional when remains missed", () => {
@@ -77,6 +84,67 @@ describe("EDOPro parity returned-to-graveyard missed timing decline fixture", ()
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "return-decline-multistep" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the initial return-to-graveyard effect window restorable before missed-timing filtering",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            locations: { hand: ["100", "400", "500", "800"], monsterZone: ["700"], banished: ["600"] },
+            legalActionCounts: { 0: 13, 1: 0 },
+            legalActionGroupCounts: { 0: 4, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "return-decline-open-fast", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "return-decline-multistep", count: 1 },
+              { type: "changePosition", player: 0, windowId: 0, windowKind: "open", code: "700", location: "monsterZone", position: "faceUpDefense", count: 1 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "return-decline-open-fast", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "return-decline-multistep", count: 1 },
+                ],
+              },
+              {
+                player: 0,
+                label: "Actions",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "changePosition", player: 0, windowId: 0, windowKind: "open", code: "700", location: "monsterZone", position: "faceUpDefense", count: 1 }],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "normalSummon", player: 0, code: "800", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "800", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "return-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "return-decline-optional-if" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "return-decline-optional-when", "turnOptional", 0, "open"),
+              absentTriggerActivationGroup(0, "return-decline-optional-if", "turnOptional", 0, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps optional if return-to-grave triggers available while optional when return-to-grave triggers miss timing",
@@ -108,6 +176,36 @@ describe("EDOPro parity returned-to-graveyard missed timing decline fixture", ()
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "return-decline-optional-if" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the surviving optional if return-to-graveyard trigger decline restorable while optional when remains missed",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "return-decline-optional-if", eventName: "returnedToGraveyard", eventCardUid: "p0-deck-600-4" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "return-decline-optional-if", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "return-decline-optional-if", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-decline-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "return-decline-open-fast" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "return-decline-optional-when", "turnOptional", 1, "triggerBucket"),
+              absentWindowEffectGroup(0, "return-decline-open-fast", 1, "triggerBucket"),
+            ],
+            logIncludes: ["Return decline multi step resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro exposes open fast effects after declining the surviving optional if return-to-grave trigger without resurrecting missed optional when triggers",
@@ -144,6 +242,58 @@ describe("EDOPro parity returned-to-graveyard missed timing decline fixture", ()
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "return-decline-open-fast" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the post-decline open fast-effect window restorable after return-to-graveyard missed-timing filtering",
+            windowId: 2,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 12, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "return-decline-open-fast", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "return-decline-multistep", count: 1 },
+              { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 2,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "return-decline-open-fast", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "return-decline-multistep", count: 1 },
+                ],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "normalSummon", player: 0, code: "800", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "800", location: "hand" },
+              ], 1, 2),
+              turnGroup(2),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "return-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "return-decline-optional-if" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "return-decline-optional-when", "turnOptional", 2, "open"),
+              absentTriggerActivationGroup(0, "return-decline-optional-if", "turnOptional", 2, "open"),
+            ],
+            logIncludes: ["Return decline multi step resolved", "return-decline-optional-if"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the restored post-decline open fast effect without resurrecting missed optional when triggers",
