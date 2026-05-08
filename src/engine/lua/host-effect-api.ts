@@ -599,8 +599,13 @@ function luaEffectDefaultRange(card: DuelCardInstance, luaEffect: LuaEffectRecor
   if (event === "continuous" || event === "summonProcedure" || event === "trigger") return [card.location];
   if ((luaEffect.typeFlags & 0x10) !== 0 && card.kind === "spell") return ["hand", "spellTrapZone"];
   if ((luaEffect.typeFlags & 0x10) !== 0 && card.kind === "trap") return ["spellTrapZone"];
+  if ((luaEffect.typeFlags & 0x10) !== 0 && isPendulumCard(card)) return ["hand", "spellTrapZone"];
   if (card.kind === "spell" || card.kind === "trap") return ["spellTrapZone"];
   return ["monsterZone"];
+}
+
+function isPendulumCard(card: DuelCardInstance): boolean {
+  return ((card.data.typeFlags ?? 0) & 0x1000000) !== 0;
 }
 
 function shouldKeepTriggerCode(triggerEvent: DuelEventName, code: number | undefined): code is number {
