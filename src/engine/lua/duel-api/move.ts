@@ -110,13 +110,14 @@ function pushSendToGenericLocation(L: unknown, session: DuelSession, hostState: 
   const requestedPosition = lua.lua_isnumber(L, 4) ? positionFromMask(lua.lua_tointeger(L, 4)) : undefined;
   const moved: string[] = [];
   beginLuaOperationMoveStep(session, hostState);
+  const triggerStart = session.state.pendingTriggers.length;
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
-    if (!card || !canMoveDuelCardToLocation(session.state, uid, location, reason)) continue;
+    if (!card) continue;
     const before = movementSnapshot(card);
     try {
       const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
-      const result = moveDuelCardWithRedirects(session.state, uid, location, card.controller, reason, reasonPlayer, luaEffectReasonPayload(hostState, reason ?? 0, reasonPlayer));
+      const result = moveGenericDuelCardToLocation(session, uid, location, card.controller, reason, reasonPlayer, luaEffectReasonPayload(hostState, reason ?? 0, reasonPlayer));
       assignReasonCard(result, hostState);
       if (requestedPosition) applyLuaMovePosition(result, requestedPosition);
       if (didMove(result, before)) moved.push(uid);
@@ -125,6 +126,7 @@ function pushSendToGenericLocation(L: unknown, session: DuelSession, hostState: 
     }
   }
   finishLuaOperationMoveStep(hostState, moved.length > 0);
+  regroupGenericDestinationEvents(session, triggerStart, moved);
   setOperatedUids(hostState, moved);
   lua.lua_pushinteger(L, moved.length);
   return 1;
@@ -150,6 +152,20 @@ function pushMoveToLocationHelper(L: unknown, fieldName: string, session: DuelSe
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function moveGenericDuelCardToLocation(
+  session: DuelSession,
+  uid: string,
+  location: DuelLocation,
+  controller: PlayerId,
+  reason: number | undefined,
+  reasonPlayer: PlayerId,
+  payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId">,
+): DuelCardInstance {
+  if (location === "graveyard") return sendDuelCardToGraveyard(session.state, uid, controller, reason, reasonPlayer);
+  if (location === "banished") return banishDuelCard(session.state, uid, controller, reason, reasonPlayer);
+  return moveDuelCardWithRedirects(session.state, uid, location, controller, reason, reasonPlayer, payload);
 }
 
 function pushRemoveCards(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
@@ -812,6 +828,13 @@ function moveCardOrGroupToLocation(session: DuelSession, L: unknown, hostState: 
   if (location === "hand") regroupLuaOperationEvent(session, triggerStart, "sentToHand", moved, "hand");
   else if (location === "deck") regroupLuaOperationEvent(session, triggerStart, "sentToDeck", moved, "deck");
   return moved;
+}
+
+function regroupGenericDestinationEvents(session: DuelSession, triggerStart: number, moved: string[]): void {
+  regroupLuaOperationEvent(session, triggerStart, "sentToGraveyard", moved, "graveyard");
+  regroupLuaOperationEvent(session, triggerStart, "banished", moved, "banished");
+  regroupLuaOperationEvent(session, triggerStart, "sentToHand", moved, "hand");
+  regroupLuaOperationEvent(session, triggerStart, "sentToDeck", moved, "deck");
 }
 
 function applyDeckSequence(session: DuelSession, card: DuelCardInstance, deckSequence: number | undefined): void {
