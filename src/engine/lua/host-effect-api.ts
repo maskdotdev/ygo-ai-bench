@@ -618,6 +618,7 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
       triggerEvent === "counterAdded" ||
       triggerEvent === "counterRemoved" ||
       triggerEvent === "destroyed" ||
+      triggerEvent === "destroying" ||
       triggerEvent === "discarded" ||
       triggerEvent === "leftField" ||
       triggerEvent === "leftGraveyard" ||

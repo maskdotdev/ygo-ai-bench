@@ -794,6 +794,7 @@ function moveCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDuelMov
   finishLuaOperationMoveStep(hostState, moved.length > 0);
   regroupLuaOperationEvent(session, triggerStart, "moved", moved);
   regroupLuaOperationEvent(session, triggerStart, "leftField", moved.filter((uid) => session.state.cards.some((card) => card.uid === uid && (card.previousLocation === "monsterZone" || card.previousLocation === "spellTrapZone") && card.location !== "monsterZone" && card.location !== "spellTrapZone")));
+  if (groupedEventName === "destroyed") regroupLuaOperationEvent(session, triggerStart, "destroying", moved);
   if (groupedEventName) regroupLuaOperationEvent(session, triggerStart, groupedEventName, moved, groupedLocation);
   return moved;
 }
@@ -859,7 +860,6 @@ function shuffleMovedDecks(session: DuelSession, movedUids: string[]): void {
     for (const [sequence, card] of shuffled.entries()) card.sequence = sequence;
   }
 }
-
 export function markLuaOperationTimingBoundary(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState): void {
   const start = hostState.activeOperationTriggerStart;
   if (!hostState.activeContext || start === undefined || !hostState.activeOperationMoved) return;
