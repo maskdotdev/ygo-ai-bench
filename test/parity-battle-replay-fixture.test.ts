@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentAttackGroup, absentOpenAttackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import {
+  absentAttackGroup,
+  absentOpenAttackGroup,
+  attackGroup,
+  effectGroup,
+  passBattleGroup,
+  passDamageGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity battle replay fixtures", () => {
   it("opens a replay decision and allows canceling when the attack target leaves", () => {
@@ -41,6 +49,28 @@ describe("EDOPro parity battle replay fixtures", () => {
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-1" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the targeted attack choice restorable before replay tracking begins",
+            phase: "battle",
+            waitingFor: 0,
+            windowId: 1,
+            windowKind: "open",
+            pendingBattle: false,
+            currentAttack: false,
+            battleWindow: null,
+            attacksDeclared: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-1", windowId: 1, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [attackGroup([{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-1" }], 1, 1), turnGroup(1)],
+            absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 1, windowKind: "open" }],
+            absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", undefined, true, 1)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro records the original target before a later attack replay can be required",
@@ -69,6 +99,27 @@ describe("EDOPro parity battle replay fixtures", () => {
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-remove-target-before-replay" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps turn-player attack-response priority restorable before the target-removal quick effect",
+            waitingFor: 0,
+            windowId: 3,
+            windowKind: "battle",
+            pendingBattle: true,
+            currentAttack: true,
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-1", responsePlayer: 0 },
+            attackPasses: [1],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "battle", effectId: "fixture-remove-target-before-replay", count: 1 },
+              { type: "passAttack", player: 0, windowId: 3, windowKind: "battle", count: 1 },
+            ],
+            legalActionGroups: [
+              effectGroup(0, "fixture-remove-target-before-replay", 1, 3),
+              passBattleGroup(0, "passAttack", 1, 3),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps the attack-response window active after a quick effect removes the target",
@@ -107,6 +158,22 @@ describe("EDOPro parity battle replay fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the final end-damage-step pass restorable before opening replay choices",
+            waitingFor: 0,
+            windowId: 15,
+            windowKind: "battle",
+            pendingBattle: true,
+            currentAttack: true,
+            battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-1", responsePlayer: 0 },
+            damagePasses: [1],
+            locations: { monsterZone: ["100"], graveyard: ["200"] },
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "passDamage", player: 0, windowId: 15, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passDamageGroup(0, 1, 15)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro opens replay decision instead of resolving damage when the attack target has left the field",
