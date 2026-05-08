@@ -117,7 +117,7 @@ export function installDuelDeckApi(L: unknown, session: DuelSession, hostState: 
       return 0;
     }
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
-    const moved = swapDeckAndGrave(session, player);
+    const moved = swapDeckAndGrave(session, hostState, player);
     setOperatedUids(hostState, moved);
     return 0;
   });
@@ -316,9 +316,11 @@ function finishDiscardOperation(session: DuelSession, hostState: LuaDuelDeckApiH
   regroupLuaOperationEvent(session, triggerStart, "discarded", discarded, "graveyard");
 }
 
-function swapDeckAndGrave(session: DuelSession, player: PlayerId): string[] {
+function swapDeckAndGrave(session: DuelSession, hostState: LuaDuelDeckApiHostState, player: PlayerId): string[] {
   const deckCards = getCards(session.state, player, "deck");
   const graveCards = getCards(session.state, player, "graveyard");
+  if (deckCards.length === 0 && graveCards.length === 0) return [];
+  markLuaOperationTimingBoundary(session, hostState);
   const moved: string[] = [];
   for (const card of deckCards) {
     moveDuelCard(session.state, card.uid, "graveyard", player, duelReason.effect, player);
@@ -331,7 +333,14 @@ function swapDeckAndGrave(session: DuelSession, player: PlayerId): string[] {
   for (const [sequence, card] of deckCards.entries()) card.sequence = sequence;
   for (const [sequence, card] of graveCards.entries()) card.sequence = sequence;
   shuffleDeck(session, player);
+  if (hostState.activeContext) hostState.activeOperationMoved = true;
+  collectSwapDeckAndGraveEvents(session, deckCards, graveCards);
   return moved;
+}
+
+function collectSwapDeckAndGraveEvents(session: DuelSession, toGraveyard: DuelCardInstance[], toDeck: DuelCardInstance[]): void {
+  if (toGraveyard.length > 0) collectDuelGroupedTriggerEffects(session.state, "sentToGraveyard", toGraveyard, { eventUids: toGraveyard.map((card) => card.uid) });
+  if (toDeck.length > 0) collectDuelGroupedTriggerEffects(session.state, "sentToDeck", toDeck, { eventUids: toDeck.map((card) => card.uid) });
 }
 
 function topDeckUids(session: DuelSession, player: PlayerId, count: number): string[] {
