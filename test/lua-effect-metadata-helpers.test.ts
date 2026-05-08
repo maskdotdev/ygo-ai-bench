@@ -520,4 +520,38 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("cost families custom false/false/false/false/false");
   });
 
+  it("reports Lua effect active card types", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Active Type Monster", kind: "monster", typeFlags: 0x21 },
+      { code: "200", name: "Active Type Spell", kind: "spell" },
+      { code: "300", name: "Active Type Continuous Trap", kind: "trap", typeFlags: 0x20004 },
+    ];
+    const session = createDuel({ seed: 167, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local monster=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local trap=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local monster_effect=Effect.CreateEffect(monster)
+      local spell_effect=Effect.CreateEffect(spell)
+      local trap_effect=Effect.CreateEffect(trap)
+      local global_effect=Effect.GlobalEffect()
+      Debug.Message("active type values " .. monster_effect:GetActiveType() .. "/" .. spell_effect:GetActiveType() .. "/" .. trap_effect:GetActiveType() .. "/" .. global_effect:GetActiveType())
+      Debug.Message("active type checks " .. tostring(monster_effect:IsActiveType(TYPE_MONSTER)) .. "/" .. tostring(spell_effect:IsActiveType(TYPE_SPELL)) .. "/" .. tostring(trap_effect:GetActiveType()==TYPE_TRAP) .. "/" .. tostring(trap_effect:IsActiveType(TYPE_CONTINUOUS)))
+      `,
+      "effect-active-type.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("active type values 1/2/4/0");
+    expect(host.messages).toContain("active type checks true/true/true/false");
+  });
+
 });
