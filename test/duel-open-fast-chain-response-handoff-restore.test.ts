@@ -87,6 +87,24 @@ describe("open fast chain-response handoff restore", () => {
     expect(getGroupedDuelLegalActions(restoredOpponentWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredTurnWindow, 1));
     expect(getGroupedDuelLegalActions(restoredOpponentWindow, 1).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredOpponentWindow, 1));
 
+    const currentOpponentWindowAction = getDuelLegalActions(restoredOpponentWindow, 1)[0];
+    expect(currentOpponentWindowAction).toBeDefined();
+    const forgedOpponentOpenOnly = applyResponse(restoredOpponentWindow, {
+      type: "activateEffect",
+      player: 1,
+      uid: opponentOpenOnly!.uid,
+      effectId: "restore-chain-handoff-opponent-open-quick",
+      label: "Forge opponent open-only quick into chain response",
+      windowId: currentOpponentWindowAction!.windowId,
+      windowKind: "chainResponse",
+      windowToken: currentOpponentWindowAction!.windowToken,
+    });
+    expect(forgedOpponentOpenOnly.ok).toBe(false);
+    expect(forgedOpponentOpenOnly.error).toContain("Response is not currently legal");
+    expect(forgedOpponentOpenOnly.legalActions).toEqual(getDuelLegalActions(restoredOpponentWindow, 1));
+    expect(forgedOpponentOpenOnly.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredOpponentWindow, 1));
+    expect(restoredOpponentWindow.state.log.map((entry) => entry.detail)).not.toContain("restore-chain-handoff-opponent-open-quick resolved");
+
     const staleTurnPass = applyResponse(restoredOpponentWindow, turnPass!);
     expect(staleTurnPass.ok).toBe(false);
     expect(staleTurnPass.error).toContain("Response is not currently legal");
