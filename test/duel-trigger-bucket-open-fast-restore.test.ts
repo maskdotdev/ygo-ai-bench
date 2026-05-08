@@ -322,10 +322,10 @@ describe("trigger bucket open fast restore", () => {
   });
 
   it("restores trigger-chain response priority after the opponent passes", () => {
-    const session = createDuel({ seed: 237, startingHandSize: 4, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 237, startingHandSize: 5, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "300", "500", "700"] },
-      1: { main: ["500", "700", "400", "400"] },
+      0: { main: ["100", "300", "500", "700", "600"] },
+      1: { main: ["500", "700", "600", "400", "400"] },
     });
     startDuel(session);
 
@@ -333,21 +333,27 @@ describe("trigger bucket open fast restore", () => {
     const turnTrigger = findHandCard(session, 0, "300");
     const turnQuick = findHandCard(session, 0, "500");
     const secondTurnQuick = findHandCard(session, 0, "700");
+    const thirdTurnQuick = findHandCard(session, 0, "600");
     const opponentQuick = findHandCard(session, 1, "500");
     const secondOpponentQuick = findHandCard(session, 1, "700");
+    const thirdOpponentQuick = findHandCard(session, 1, "600");
     expect(summoned).toBeDefined();
     expect(turnTrigger).toBeDefined();
     expect(turnQuick).toBeDefined();
     expect(secondTurnQuick).toBeDefined();
+    expect(thirdTurnQuick).toBeDefined();
     expect(opponentQuick).toBeDefined();
     expect(secondOpponentQuick).toBeDefined();
+    expect(thirdOpponentQuick).toBeDefined();
 
     registerEffect(session, normalSummonTrigger("restore-trigger-pass-handoff-success", turnTrigger!.uid, 0, false));
     registerEffect(session, chainOnlyQuick("restore-trigger-pass-handoff-turn-chain", turnQuick!.uid, 0, true));
     registerEffect(session, chainOnlyQuick("restore-trigger-pass-handoff-second-turn-chain", secondTurnQuick!.uid, 0, true));
+    registerEffect(session, chainOnlyQuick("restore-trigger-pass-handoff-third-turn-chain", thirdTurnQuick!.uid, 0, true));
     registerEffect(session, openOnlyQuick("restore-trigger-pass-handoff-turn-open", turnQuick!.uid, 0));
     registerEffect(session, chainOnlyQuick("restore-trigger-pass-handoff-opponent-chain", opponentQuick!.uid, 1, true));
     registerEffect(session, chainOnlyQuick("restore-trigger-pass-handoff-second-opponent-chain", secondOpponentQuick!.uid, 1, true));
+    registerEffect(session, chainOnlyQuick("restore-trigger-pass-handoff-third-opponent-chain", thirdOpponentQuick!.uid, 1, true));
 
     const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
     expect(summon).toBeDefined();
@@ -441,6 +447,47 @@ describe("trigger bucket open fast restore", () => {
       ),
     )).toBe(true);
     expect(restoredTurnReturn.state.log.map((entry) => entry.detail)).not.toContain("restore-trigger-pass-handoff-success resolved");
+
+    const restoredSecondOpponentWindow = restoreDuel(serializeDuel(restoredTurnReturn), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredSecondOpponentWindow)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(getDuelLegalActions(restoredSecondOpponentWindow, 1)).toEqual(finalOpponentWindow.legalActions);
+    expect(getGroupedDuelLegalActions(restoredSecondOpponentWindow, 1)).toEqual(finalOpponentWindow.legalActionGroups);
+    const secondOpponentResponse = getDuelLegalActions(restoredSecondOpponentWindow, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-trigger-pass-handoff-second-opponent-chain");
+    expect(secondOpponentResponse).toBeDefined();
+    const thirdTurnReturn = applyAndAssert(restoredSecondOpponentWindow, secondOpponentResponse!);
+    expect(thirdTurnReturn.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+    expect(thirdTurnReturn.state.chain.map((link) => link.effectId)).toEqual([
+      "restore-trigger-pass-handoff-success",
+      "restore-trigger-pass-handoff-turn-chain",
+      "restore-trigger-pass-handoff-opponent-chain",
+      "restore-trigger-pass-handoff-second-turn-chain",
+      "restore-trigger-pass-handoff-second-opponent-chain",
+    ]);
+    expect(getDuelLegalActions(restoredSecondOpponentWindow, 1)).toEqual([]);
+    expect(hasGroupedEffect(restoredSecondOpponentWindow, 0, "restore-trigger-pass-handoff-third-turn-chain", "chainResponse")).toBe(true);
+    expect(hasGroupedEffect(restoredSecondOpponentWindow, 0, "restore-trigger-pass-handoff-turn-chain", "chainResponse")).toBe(false);
+    expect(hasGroupedEffect(restoredSecondOpponentWindow, 0, "restore-trigger-pass-handoff-second-turn-chain", "chainResponse")).toBe(false);
+    expect(hasGroupedEffect(restoredSecondOpponentWindow, 0, "restore-trigger-pass-handoff-turn-open", "chainResponse")).toBe(false);
+
+    const restoredThirdTurnReturn = restoreDuel(serializeDuel(restoredSecondOpponentWindow), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredThirdTurnReturn)).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+    expect(getDuelLegalActions(restoredThirdTurnReturn, 1)).toEqual([]);
+    expect(getDuelLegalActions(restoredThirdTurnReturn, 0)).toEqual(getDuelLegalActions(restoredSecondOpponentWindow, 0));
+    expect(getGroupedDuelLegalActions(restoredThirdTurnReturn, 0)).toEqual(getGroupedDuelLegalActions(restoredSecondOpponentWindow, 0));
+    const thirdTurnChain = getDuelLegalActions(restoredThirdTurnReturn, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-trigger-pass-handoff-third-turn-chain");
+    expect(thirdTurnChain).toBeDefined();
+    const thirdOpponentWindow = applyAndAssert(restoredThirdTurnReturn, thirdTurnChain!);
+    expect(thirdOpponentWindow.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(thirdOpponentWindow.state.chain.map((link) => link.effectId)).toEqual([
+      "restore-trigger-pass-handoff-success",
+      "restore-trigger-pass-handoff-turn-chain",
+      "restore-trigger-pass-handoff-opponent-chain",
+      "restore-trigger-pass-handoff-second-turn-chain",
+      "restore-trigger-pass-handoff-second-opponent-chain",
+      "restore-trigger-pass-handoff-third-turn-chain",
+    ]);
+    expect(thirdOpponentWindow.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-trigger-pass-handoff-third-opponent-chain")).toBe(true);
+    expect(restoredThirdTurnReturn.state.log.map((entry) => entry.detail)).not.toContain("restore-trigger-pass-handoff-success resolved");
 
     const finalOpponentPass = getDuelLegalActions(restoredOpponentReturn, 1).find((action) => action.type === "passChain");
     expect(finalOpponentPass).toBeDefined();
@@ -539,9 +586,11 @@ function restoreRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "
     "restore-trigger-pass-handoff-success": restoreLoggedEffect,
     "restore-trigger-pass-handoff-turn-chain": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
     "restore-trigger-pass-handoff-second-turn-chain": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
+    "restore-trigger-pass-handoff-third-turn-chain": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
     "restore-trigger-pass-handoff-turn-open": (effect) => ({ ...restoreLoggedEffect(effect), canActivate: (ctx) => ctx.duel.chain.length === 0 }),
     "restore-trigger-pass-handoff-opponent-chain": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
     "restore-trigger-pass-handoff-second-opponent-chain": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
+    "restore-trigger-pass-handoff-third-opponent-chain": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
   };
 }
 
