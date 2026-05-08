@@ -103,6 +103,7 @@ import {
 } from "#duel/continuous-effects.js";
 import { canNegateDuelChainLink, negateDuelChainLink } from "#duel/chain-negation.js";
 export { canNegateDuelChainLink, negateDuelChainLink } from "#duel/chain-negation.js";
+import { chainLinksResolvable } from "#duel/chain-state.js";
 import {
   changeDuelBattleDamageWithPrevention as changeDuelBattleDamageWithPreventionRule,
   reflectedDuelBattleDamagePlayer as reflectedDuelBattleDamagePlayerRule,
@@ -769,13 +770,6 @@ function getChainResponseActions(state: DuelState, player: PlayerId): DuelAction
   const actions = quickEffectActions(state, player);
   actions.push({ type: "passChain", player, label: "Pass" });
   return actions;
-}
-
-function chainLinksResolvable(state: DuelState): boolean {
-  return state.chain.every((link) => {
-    const effect = state.effects.find((candidate) => candidate.id === link.effectId && candidate.sourceUid === link.sourceUid);
-    return Boolean(effect && findCard(state, link.sourceUid));
-  });
 }
 
 function quickEffectActions(state: DuelState, player: PlayerId): DuelAction[] {
