@@ -621,6 +621,7 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
       triggerEvent === "destroying" ||
       triggerEvent === "detachedMaterial" ||
       triggerEvent === "discarded" ||
+      triggerEvent === "equipped" ||
       triggerEvent === "leftField" ||
       triggerEvent === "leftGraveyard" ||
       triggerEvent === "moved" ||
