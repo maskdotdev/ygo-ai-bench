@@ -4,6 +4,8 @@ import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions,
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
+type NamedPredicate = "chlimit" | "chainlm" | "climit" | "chainlimit" | "chlimit2";
+
 describe("Lua named chain-limit predicate restore", () => {
   it("restores named card-table predicates from snapshots", () => {
     expectNamedPredicateRestore(false, "chlimit");
@@ -16,9 +18,19 @@ describe("Lua named chain-limit predicate restore", () => {
   it("restores Project Ignis chainlm named predicates from snapshots", () => {
     expectNamedPredicateRestore(false, "chainlm");
   });
+
+  it("restores Project Ignis climit and chainlimit named predicates from snapshots", () => {
+    for (const predicateName of ["climit", "chainlimit"] as const) {
+      expectNamedPredicateRestore(false, predicateName);
+    }
+  });
+
+  it("restores numbered Project Ignis named predicates from snapshots", () => {
+    expectNamedPredicateRestore(true, "chlimit2");
+  });
 });
 
-function expectNamedPredicateRestore(untilChainEnd: boolean, predicateName: "chlimit" | "chainlm"): void {
+function expectNamedPredicateRestore(untilChainEnd: boolean, predicateName: NamedPredicate): void {
   const source = {
     readScript(name: string) {
       if (name === "c100.lua") return sourceScript(untilChainEnd, predicateName);
@@ -28,7 +40,7 @@ function expectNamedPredicateRestore(untilChainEnd: boolean, predicateName: "chl
     },
   };
   const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }, { id: 300, type: 1 }], []);
-  const session = createDuel({ seed: untilChainEnd ? 288 : predicateName === "chainlm" ? 289 : 287, startingHandSize: 2, cardReader: createCardReader(cards) });
+  const session = createDuel({ seed: seedForPredicate(untilChainEnd, predicateName), startingHandSize: 2, cardReader: createCardReader(cards) });
   loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: ["300"] } });
   startDuel(session);
 
@@ -58,7 +70,7 @@ function expectNamedPredicateRestore(untilChainEnd: boolean, predicateName: "chl
   expect(restoredResponse.ok, restoredResponse.error).toBe(true);
 }
 
-function sourceScript(untilChainEnd: boolean, predicateName: "chlimit" | "chainlm"): string {
+function sourceScript(untilChainEnd: boolean, predicateName: NamedPredicate): string {
   return `
     local s,id=GetID()
     function s.initial_effect(c)
@@ -76,6 +88,17 @@ function sourceScript(untilChainEnd: boolean, predicateName: "chlimit" | "chainl
       return tp==ep
     end
   `;
+}
+
+function seedForPredicate(untilChainEnd: boolean, predicateName: NamedPredicate): number {
+  const offsets: Record<NamedPredicate, number> = {
+    chlimit: 0,
+    chainlm: 1,
+    climit: 2,
+    chainlimit: 3,
+    chlimit2: 4,
+  };
+  return 287 + offsets[predicateName] + (untilChainEnd ? 20 : 0);
 }
 
 function quickScript(code: number, message: string): string {
