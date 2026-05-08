@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { addDuelChainLimit, canNegateDuelChainLinkObject, negateDuelChainLinkObject } from "#duel/core.js";
 import { pushCardTable } from "#lua/card-api.js";
-import { literalActionTypeChainPlayerLimitPredicate } from "#lua/chain-limit-predicate-descriptors.js";
+import { literalActionTypeChainPlayerLimitPredicate, literalCapturedPlayerComparisonPredicate } from "#lua/chain-limit-predicate-descriptors.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid, readOptionalFunctionRef, releaseOptionalFunctionRef, symbolicLocationMask } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelSession, DuelState, PlayerId } from "#duel/types.js";
@@ -211,6 +211,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   const blockedActiveTypeForOpponent = literalResponseMatchesChainPlayerOrNotActiveTypePredicate(L, index, hostState);
   if (blockedActiveTypeForOpponent !== undefined) return `closure:not-active-type-response-player:${blockedActiveTypeForOpponent}`;
   if (literalResponseMatchesChainPlayerPredicate(L, index, hostState)) return "closure:response-matches-chain-player";
+  const capturedPlayerComparison = literalCapturedPlayerComparisonPredicate(L, index, hostState);
+  if (capturedPlayerComparison) return capturedPlayerComparison;
   const blockedEffectType = literalNotEffectTypePredicate(L, index, hostState);
   if (blockedEffectType !== undefined) return `closure:not-effect-type:${blockedEffectType}`;
   if (literalNotMonsterLinkActiveTypePredicate(L, index, hostState)) return "closure:not-active-monster-link";

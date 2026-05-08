@@ -731,7 +731,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     applyLuaRestoreAndAssert(restored, restoredAction!);
   });
 
-  it("keeps ambiguous numeric Lua chain-limit closures incomplete after snapshots", () => {
+  it("restores captured chain-player comparisons from snapshots even when the captured variable name is ambiguous", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
     tempRoots.push(root);
     fs.mkdirSync(path.join(root, "script"), { recursive: true });
@@ -744,7 +744,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
         e:SetType(EFFECT_TYPE_IGNITION)
         e:SetRange(LOCATION_HAND)
         e:SetTarget(c100.target)
-        e:SetOperation(function(e,c) Debug.Message("ambiguous limit source") end)
+        e:SetOperation(function(e,c) Debug.Message("captured chain-player limit source") end)
         c:RegisterEffect(e)
       end
       function c100.target(e,tp,eg,ep,ev,re,r,rp,chk)
@@ -768,7 +768,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
         e:SetType(EFFECT_TYPE_QUICK_O)
         e:SetRange(LOCATION_HAND)
         e:SetCondition(function(e,c) return Duel.GetCurrentChain()>0 end)
-        e:SetOperation(function(e,c) Debug.Message("ambiguous-limited response") end)
+        e:SetOperation(function(e,c) Debug.Message("captured chain-player response") end)
         c:RegisterEffect(e)
       end
       `,
@@ -793,13 +793,15 @@ describe("Node upstream chain-limit snapshot restore", () => {
     applyAndAssert(session, action!);
 
     const snapshot = serializeDuel(session);
-    expect(snapshot.state.chainLimits[0]?.registryKey).toMatch(/^lua-chain-limit:100:0:link:\d+$/);
+    expect(snapshot.state.chainLimits[0]?.registryKey).toBe("lua-chain-limit:100:0:link:known:closure:chain-player:0");
     const restored = restoreDuelWithLuaScripts(snapshot, workspace, createCardReader(cards));
 
-    expect(restored.restoreComplete).toBe(false);
-    expect(restored.missingChainLimitRegistryKeys).toEqual(restored.chainLimitRegistryKeys);
-    expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
+    expect(restored.restoreComplete).toBe(true);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expectLuaRestoreGroupsMirrorActions(restored, 1);
+    const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
+    expect(restoredAction).toBeDefined();
+    applyLuaRestoreAndAssert(restored, restoredAction!);
   });
 
   it("restores short rp response-player Lua chain-limit closures from snapshots", () => {

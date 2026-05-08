@@ -22,6 +22,51 @@ export function literalActionTypeChainPlayerLimitPredicate(L: unknown, index: nu
   return matches ? `closure:not-source-type-unless-chain-player:${TYPE_ACTION}:${1 - captured.value}` : undefined;
 }
 
+export function literalCapturedPlayerComparisonPredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string | undefined {
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
+  const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
+  const responsePlayerParam = params?.[1];
+  const chainPlayerParam = params?.[2];
+  const captured = capturedSinglePlayerUpvalue(L, index);
+  const returnExpression = lastReturnExpression(snippet);
+  if (!responsePlayerParam || !chainPlayerParam || !captured || !returnExpression) return undefined;
+  if (simpleEqualityCompares(returnExpression, responsePlayerParam, captured.name)) return `closure:response-player:${captured.value}`;
+  if (simpleEqualityCompares(returnExpression, chainPlayerParam, captured.name)) return `closure:chain-player:${captured.value}`;
+  return undefined;
+}
+
+function lastReturnExpression(snippet: string): string | undefined {
+  const index = snippet.lastIndexOf("return ");
+  if (index < 0) return undefined;
+  return snippet.slice(index + "return ".length).replace(/\s+end\b.*$/, "").trim();
+}
+
+function simpleEqualityCompares(expression: string, leftName: string, rightName: string): boolean {
+  const equality = trimOuterParens(expression).match(/^([A-Za-z_]\w*)\s*==\s*([A-Za-z_]\w*)$/);
+  if (!equality?.[1] || !equality[2]) return false;
+  return [equality[1], equality[2]].sort().join(":") === [leftName, rightName].sort().join(":");
+}
+
+function trimOuterParens(value: string): string {
+  let current = value.trim();
+  while (current.startsWith("(") && current.endsWith(")") && outerParensWrapWholeExpression(current)) {
+    current = current.slice(1, -1).trim();
+  }
+  return current;
+}
+
+function outerParensWrapWholeExpression(value: string): boolean {
+  let depth = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index];
+    if (char === "(") depth += 1;
+    if (char === ")") depth -= 1;
+    if (depth === 0 && index < value.length - 1) return false;
+  }
+  return depth === 0;
+}
+
 function luaFunctionSourceSnippet(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string | undefined {
   const location = luaFunctionSourceLocation(L, index);
   if (!location) return undefined;
