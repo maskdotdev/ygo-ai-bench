@@ -134,6 +134,56 @@ describe("EDOPro parity chain-resolution opponent same-bucket mandatory pass-han
         makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-chain-resolution-first-opponent-mandatory-turn-response-until-chain-end-limit" })),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps restored opponent mandatory trigger-chain turn-response priority restorable before the turn player passes",
+            phase: "main1",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-chain-resolution-turn-mandatory-turn-response-until-chain-end-limit", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory-turn-response-until-chain-end-limit", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory-turn-response-until-chain-end-limit", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+            ],
+            chainPasses: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-turn-quick", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 4,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-turn-quick", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-first-opponent-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-second-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-turn-response-until-chain-end-limit", triggerBucket: "opponentMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-first-opponent-quick", 4),
+              absentChainEffectGroup(1, "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-second-opponent-quick", 4),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-mandatory-turn-response-until-chain-end-limit", "opponentMandatory", 4, "chainResponse"),
+            ],
+            locations: { graveyard: ["700", "200", "970", "900", "950"], hand: ["100", "300", "800", "400", "500", "800", "800"] },
+            logIncludes: ["Chain resolution opponent mandatory turn until starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro hands restored opponent mandatory trigger-chain responses to the opponent before any opponent handoff response is chosen",
@@ -186,6 +236,56 @@ describe("EDOPro parity chain-resolution opponent same-bucket mandatory pass-han
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-first-opponent-quick" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-turn-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps turn-player priority restorable before the restored opponent mandatory handoff SetChainLimitTillChainEnd response is chosen",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-chain-resolution-turn-mandatory-turn-response-until-chain-end-limit", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory-turn-response-until-chain-end-limit", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory-turn-response-until-chain-end-limit", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-first-opponent-quick", sourceUid: "p1-deck-900-2" },
+            ],
+            chainPasses: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-turn-quick", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 6,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-turn-quick", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(0, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-first-opponent-quick" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-second-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 6, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-mandatory-turn-response-until-chain-end-limit", triggerBucket: "opponentMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-first-opponent-quick", 6),
+              absentChainEffectGroup(1, "fixture-chain-resolution-opponent-mandatory-turn-response-until-chain-end-limit-second-opponent-quick", 6),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-mandatory-turn-response-until-chain-end-limit", "opponentMandatory", 6, "chainResponse"),
+            ],
+            locations: { graveyard: ["700", "200", "970", "900", "950"], hand: ["100", "300", "800", "400", "500", "800", "800"] },
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies SetChainLimitTillChainEnd restrictions after the turn player answers a restored opponent mandatory handoff chain",
