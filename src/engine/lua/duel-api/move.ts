@@ -783,6 +783,7 @@ function moveCardOrGroupToLocation(session: DuelSession, L: unknown, hostState: 
   const reasonPlayer = readOptionalPlayer(L, reasonIndex + 1) ?? hostState.activeContext?.player ?? session.state.turnPlayer;
   const moved: string[] = [];
   beginLuaOperationMoveStep(session, hostState);
+  const triggerStart = session.state.pendingTriggers.length;
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card || !canMoveDuelCardToLocation(session.state, uid, location, reason)) continue;
@@ -800,6 +801,8 @@ function moveCardOrGroupToLocation(session: DuelSession, L: unknown, hostState: 
   }
   if (location === "deck" && deckSequence === 2 && moved.length > 0) shuffleMovedDecks(session, moved);
   finishLuaOperationMoveStep(hostState, moved.length > 0);
+  if (location === "hand") regroupLuaOperationEvent(session, triggerStart, "sentToHand", moved, "hand");
+  else if (location === "deck") regroupLuaOperationEvent(session, triggerStart, "sentToDeck", moved, "deck");
   return moved;
 }
 
