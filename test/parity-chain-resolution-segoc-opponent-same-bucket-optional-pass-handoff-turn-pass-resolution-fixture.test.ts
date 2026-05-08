@@ -107,6 +107,47 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional pass-hand
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-opponent-optional-turn-pass-starter" })),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-opponent-optional-turn-pass-turn-optional" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps turn optional decline priority restorable before restored opponent same-bucket optional turn-pass handoff begins",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-opponent-optional-turn-pass-turn-optional", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-opponent-optional-turn-pass-first-opponent", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-opponent-optional-turn-pass-second-opponent", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnOptional" },
+              { player: 1, triggerBucket: "opponentOptional" },
+            ],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-turn-pass-turn-optional", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-turn-pass-turn-optional", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-opponent-optional-turn-pass-turn-optional", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "fixture-opponent-optional-turn-pass-turn-optional", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-turn-pass-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-turn-pass-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-turn-pass-first-opponent", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-opponent-optional-turn-pass-turn-quick", 1, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-opponent-optional-turn-pass-opponent-quick", 1, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-opponent-optional-turn-pass-first-opponent", "opponentOptional", 1, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "800", "400", "500", "800", "800"] },
+            logIncludes: ["Opponent optional turn-pass starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro restores opponent same-bucket optional trigger ordering before allowing fast responses",
@@ -150,6 +191,41 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional pass-hand
         makeScriptedStep(makeResponseSelector("activateTrigger", 1, { effectId: "fixture-opponent-optional-turn-pass-second-opponent" })),
         makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "fixture-opponent-optional-turn-pass-first-opponent" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the remaining restored opponent optional trigger restorable before opening turn-pass chain responses",
+            phase: "main1",
+            windowId: 3,
+            windowKind: "triggerBucket",
+            waitingFor: 1,
+            chain: [{ player: 1, effectId: "fixture-opponent-optional-turn-pass-second-opponent", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" }],
+            chainPasses: [],
+            pendingTriggers: [{ player: 1, effectId: "fixture-opponent-optional-turn-pass-first-opponent", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            triggerOrderPrompt: null,
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-turn-pass-first-opponent", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-turn-pass-first-opponent", triggerBucket: "opponentOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(1, "fixture-opponent-optional-turn-pass-first-opponent", "opponentOptional", 1, 3),
+              triggerDeclineGroup(1, "fixture-opponent-optional-turn-pass-first-opponent", "opponentOptional", 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-turn-pass-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-turn-pass-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-turn-pass-second-opponent", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-opponent-optional-turn-pass-turn-quick", 3, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-opponent-optional-turn-pass-opponent-quick", 3, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-opponent-optional-turn-pass-second-opponent", "opponentOptional", 3, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "800", "400", "500", "800", "800"] },
+            logIncludes: ["Opponent optional turn-pass starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro opens turn-player chain-response priority after restored opponent optional selections finish",
