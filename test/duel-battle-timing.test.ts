@@ -30,9 +30,25 @@ describe("duel battle timing", () => {
       windowId: restored.state.actionWindowId,
       windowKind: "battle",
     });
+    expect(staleRestoredPass!.windowToken).toBeDefined();
     expect(groupedActionSummary(restored, 1)).toEqual([
       { label: "Pass", windowId: queryPublicState(restored).actionWindowId, windowKind: "battle", actionTypes: ["passDamage"] },
     ]);
+    const forgedAttackPass = applyResponse(restored, {
+      type: "passAttack",
+      player: 1,
+      label: "Forge attack response into restored damage window",
+      windowId: staleRestoredPass!.windowId!,
+      windowKind: staleRestoredPass!.windowKind!,
+      windowToken: staleRestoredPass!.windowToken!,
+    });
+    expect(forgedAttackPass.ok).toBe(false);
+    expect(forgedAttackPass.error).toContain("Response is not currently legal");
+    expect(forgedAttackPass.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(forgedAttackPass.legalActions).toEqual(getDuelLegalActions(restored, 1));
+    expect(forgedAttackPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+    expect(restored.state.battleWindow).toEqual(session.state.battleWindow);
+    expect(restored.state.pendingBattle).toEqual(session.state.pendingBattle);
     applyAndAssert(restored, staleRestoredPass!);
     const replay = applyResponse(restored, staleRestoredPass!);
     expect(replay.ok).toBe(false);
