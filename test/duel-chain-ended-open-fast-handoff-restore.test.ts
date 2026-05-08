@@ -186,6 +186,24 @@ describe("chain-ended open fast handoff restore", () => {
     expect(staleOpponentPass.legalActions).toEqual(getDuelLegalActions(restoredTurnWindow, 0));
     expect(staleOpponentPass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTurnWindow, 0));
 
+    const turnChainAction = findEffectAction(restoredTurnWindow, 0, "restore-chain-ended-pass-resolve-turn-chain");
+    expect(turnChainAction).toBeDefined();
+    const forgedOpponentChain = applyResponse(restoredTurnWindow, {
+      type: "activateEffect",
+      player: 1,
+      uid: opponentChain!.uid,
+      effectId: "restore-chain-ended-pass-resolve-opponent-chain",
+      label: "Forge opponent chain response into restored turn-player pass-resolution window",
+      windowId: turnChainAction!.windowId,
+      windowKind: turnChainAction!.windowKind,
+      windowToken: turnChainAction!.windowToken,
+    });
+    expect(forgedOpponentChain.ok).toBe(false);
+    expect(forgedOpponentChain.error).toContain("Response is not currently legal");
+    expect(forgedOpponentChain.legalActions).toEqual(getDuelLegalActions(restoredTurnWindow, 0));
+    expect(forgedOpponentChain.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTurnWindow, 0));
+    expect(restoredTurnWindow.state.log.map((entry) => entry.detail)).not.toContain("restore-chain-ended-pass-resolve-opponent-chain resolved");
+
     const turnPass = getDuelLegalActions(restoredTurnWindow, 0).find((action) => action.type === "passChain");
     expect(turnPass).toBeDefined();
     const resolved = applyAndAssert(restoredTurnWindow, turnPass!);
@@ -287,6 +305,23 @@ describe("chain-ended open fast handoff restore", () => {
 
     const turnFirstAction = findEffectAction(restoredTurnWindow, 0, "restore-chain-ended-opponent-branch-turn-first");
     expect(turnFirstAction).toBeDefined();
+
+    const forgedOpponentSecond = applyResponse(restoredTurnWindow, {
+      type: "activateEffect",
+      player: 1,
+      uid: opponentSecond!.uid,
+      effectId: "restore-chain-ended-opponent-branch-opponent-second",
+      label: "Forge opponent follow-up into restored turn-player branch window",
+      windowId: turnFirstAction!.windowId,
+      windowKind: turnFirstAction!.windowKind,
+      windowToken: turnFirstAction!.windowToken,
+    });
+    expect(forgedOpponentSecond.ok).toBe(false);
+    expect(forgedOpponentSecond.error).toContain("Response is not currently legal");
+    expect(forgedOpponentSecond.legalActions).toEqual(getDuelLegalActions(restoredTurnWindow, 0));
+    expect(forgedOpponentSecond.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTurnWindow, 0));
+    expect(restoredTurnWindow.state.log.map((entry) => entry.detail)).not.toContain("restore-chain-ended-opponent-branch-opponent-second resolved");
+
     const opponentFollowupWindow = applyAndAssert(restoredTurnWindow, turnFirstAction!);
     expect(opponentFollowupWindow.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
     expect(opponentFollowupWindow.state.chain.map((link) => link.effectId)).toEqual([
