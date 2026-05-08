@@ -17,6 +17,7 @@ export function queryPublicState({ state }: { state: DuelState }): PublicDuelSta
     phase: state.phase,
     ...(state.waitingFor === undefined ? {} : { waitingFor: state.waitingFor }),
     actionWindowId: state.actionWindowId,
+    actionWindowToken: state.actionWindowToken,
     ...(windowKind === undefined ? {} : { windowKind }),
     ...(state.prompt === undefined ? {} : { prompt: copyPrompt(state.prompt) }),
     ...triggerOrderPromptState(state, pendingTriggerBuckets),

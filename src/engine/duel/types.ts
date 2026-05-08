@@ -579,6 +579,7 @@ export interface PublicDuelState {
   phase: DuelPhase;
   waitingFor?: PlayerId;
   actionWindowId: number;
+  actionWindowToken: string;
   windowKind?: DuelActionWindowKind;
   prompt?: DuelPromptState;
   triggerOrderPrompt?: TriggerOrderPromptState;

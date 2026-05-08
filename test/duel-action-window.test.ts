@@ -21,14 +21,16 @@ function expectLegalActionsMatchPublicWindow(session: ReturnType<typeof setupOne
   const actions = getDuelLegalActions(session, player);
   const groups = getGroupedDuelLegalActions(session, player);
   expect(publicState.actionWindowId).toBe(session.state.actionWindowId);
+  expect(publicState.actionWindowToken).toBe(session.state.actionWindowToken);
   for (const action of actions) {
     expect(action.windowId).toBe(publicState.actionWindowId);
     expect(action.windowKind).toBe(publicState.windowKind);
-    expect(action.windowToken).toBe(session.state.actionWindowToken);
+    expect(action.windowToken).toBe(publicState.actionWindowToken);
   }
   for (const group of groups) {
     expect(group.windowId).toBe(publicState.actionWindowId);
     expect(group.windowKind).toBe(publicState.windowKind);
+    expect(group.windowToken).toBe(publicState.actionWindowToken);
   }
 }
 
@@ -36,11 +38,12 @@ function expectResultActionsMatchResultState(result: ReturnType<typeof applyResp
   for (const action of result.legalActions) {
     expect(action.windowId).toBe(result.state.actionWindowId);
     expect(action.windowKind).toBe(result.state.windowKind);
-    expect(action.windowToken).toBeDefined();
+    expect(action.windowToken).toBe(result.state.actionWindowToken);
   }
   for (const group of result.legalActionGroups) {
     expect(group.windowId).toBe(result.state.actionWindowId);
     expect(group.windowKind).toBe(result.state.windowKind);
+    expect(group.windowToken).toBe(result.state.actionWindowToken);
   }
   const groupedActions = result.legalActionGroups.flatMap((group) => group.actions);
   expect(groupedActions).toHaveLength(result.legalActions.length);
