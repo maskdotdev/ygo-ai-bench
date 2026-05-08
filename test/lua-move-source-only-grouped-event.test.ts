@@ -171,6 +171,84 @@ describe("Lua source-only grouped move events", () => {
     expect(host.messages).toEqual(expect.arrayContaining(["source leave grave 1/200", "generic leave grave 1"]));
     expect(host.messages).not.toContain("wrong leave grave 1");
   });
+
+  it("groups EVENT_LEAVE_GRAVE for multi-card moves out of the graveyard", () => {
+    const cards: DuelCardData[] = [
+      { code: "200", name: "Leave Grave First", kind: "monster" },
+      { code: "201", name: "Leave Grave Second", kind: "monster" },
+      { code: "300", name: "Leave Grave Group Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 183, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["200", "201", "300"] }, 1: { main: [] } });
+    startDuel(session);
+    for (const code of ["200", "201"]) {
+      const card = session.state.cards.find((candidate) => candidate.code === code);
+      expect(card).toBeDefined();
+      moveDuelCard(session.state, card!.uid, "graveyard", 0);
+    }
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local first=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local second=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 201), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local first_trigger=Effect.CreateEffect(first)
+      first_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+      first_trigger:SetCode(EVENT_LEAVE_GRAVE)
+      first_trigger:SetRange(LOCATION_HAND)
+      first_trigger:SetOperation(function(e,tp,eg)
+        Debug.Message("first leave group " .. eg:GetCount() .. "/" .. Duel.GetOperatedGroup():GetCount())
+      end)
+      first:RegisterEffect(first_trigger)
+
+      local second_trigger=Effect.CreateEffect(second)
+      second_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+      second_trigger:SetCode(EVENT_LEAVE_GRAVE)
+      second_trigger:SetRange(LOCATION_HAND)
+      second_trigger:SetOperation(function(e,tp,eg)
+        Debug.Message("second leave group " .. eg:GetCount() .. "/" .. Duel.GetOperatedGroup():GetCount())
+      end)
+      second:RegisterEffect(second_trigger)
+
+      local generic_trigger=Effect.CreateEffect(watcher)
+      generic_trigger:SetType(EFFECT_TYPE_TRIGGER_O)
+      generic_trigger:SetCode(EVENT_LEAVE_GRAVE)
+      generic_trigger:SetRange(LOCATION_HAND)
+      generic_trigger:SetOperation(function(e,tp,eg)
+        Debug.Message("generic leave group " .. eg:GetCount() .. "/" .. Duel.GetOperatedGroup():GetCount())
+      end)
+      watcher:RegisterEffect(generic_trigger)
+
+      Debug.Message("sent " .. Duel.SendtoHand(Group.FromCards(first, second), 0, REASON_EFFECT))
+      `,
+      "leave-grave-grouped-event.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+
+    const first = session.state.cards.find((card) => card.code === "200");
+    const second = session.state.cards.find((card) => card.code === "201");
+    const watcher = session.state.cards.find((card) => card.code === "300");
+    expect(host.messages).toContain("sent 2");
+    expect(session.state.pendingTriggers.filter((trigger) => trigger.eventName === "leftGraveyard")).toHaveLength(3);
+    for (const trigger of session.state.pendingTriggers.filter((candidate) => candidate.eventName === "leftGraveyard")) expect(trigger.eventUids).toEqual([first!.uid, second!.uid]);
+    expect(session.state.pendingTriggers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceUid: first!.uid, eventCardUid: first!.uid }),
+        expect.objectContaining({ sourceUid: second!.uid, eventCardUid: second!.uid }),
+        expect.objectContaining({ sourceUid: watcher!.uid, eventCardUid: first!.uid }),
+      ]),
+    );
+
+    for (;;) {
+      const player = session.state.waitingFor ?? 0;
+      const trigger = getDuelLegalActions(session, player).find((candidate) => candidate.type === "activateTrigger");
+      if (!trigger) break;
+      applyAndAssert(session, trigger);
+    }
+    expect(host.messages).toEqual(expect.arrayContaining(["first leave group 2/2", "second leave group 2/2", "generic leave group 2/2"]));
+  });
 });
 
 function applyAndAssert(session: DuelSession, action: Parameters<typeof applyResponse>[1]) {

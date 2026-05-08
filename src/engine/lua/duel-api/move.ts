@@ -130,7 +130,6 @@ function pushSendToGenericLocation(L: unknown, session: DuelSession, hostState: 
   lua.lua_pushinteger(L, moved.length);
   return 1;
 }
-
 function pushMoveHelper(L: unknown, fieldName: string, session: DuelSession, hostState: LuaDuelMoveApiHostState, mover: LuaCardMover, extraReason = 0): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const groupedEventName = fieldName === "Destroy" ? "destroyed" : fieldName === "SendtoGrave" ? "sentToGraveyard" : fieldName === "Release" ? "released" : undefined;
@@ -142,7 +141,6 @@ function pushMoveHelper(L: unknown, fieldName: string, session: DuelSession, hos
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
 }
-
 function pushMoveToLocationHelper(L: unknown, fieldName: string, session: DuelSession, hostState: LuaDuelMoveApiHostState, location: DuelLocation, reasonIndex: number): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const moved = moveCardOrGroupToLocation(session, state, hostState, location, reasonIndex);
@@ -152,7 +150,6 @@ function pushMoveToLocationHelper(L: unknown, fieldName: string, session: DuelSe
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
 }
-
 function moveGenericDuelCardToLocation(
   session: DuelSession,
   uid: string,
@@ -205,6 +202,7 @@ function pushRemove(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiH
   }
   finishLuaOperationMoveStep(hostState, moved.length > 0);
   regroupLuaOperationEvent(session, triggerStart, "moved", moved);
+  regroupLuaOperationEvent(session, triggerStart, "leftGraveyard", moved.filter((uid) => session.state.cards.some((card) => card.uid === uid && card.previousLocation === "graveyard")));
   regroupLuaOperationEvent(session, triggerStart, "banished", moved, "banished");
   setOperatedUids(hostState, moved);
   lua.lua_pushinteger(L, moved.length);
@@ -828,6 +826,7 @@ function moveCardOrGroupToLocation(session: DuelSession, L: unknown, hostState: 
   if (location === "deck" && deckSequence === 2 && moved.length > 0) shuffleMovedDecks(session, moved);
   finishLuaOperationMoveStep(hostState, moved.length > 0);
   regroupLuaOperationEvent(session, triggerStart, "moved", moved);
+  regroupLuaOperationEvent(session, triggerStart, "leftGraveyard", moved.filter((uid) => session.state.cards.some((card) => card.uid === uid && card.previousLocation === "graveyard")));
   if (location === "hand") regroupLuaOperationEvent(session, triggerStart, "sentToHand", moved, "hand");
   else if (location === "deck") regroupLuaOperationEvent(session, triggerStart, "sentToDeck", moved, "deck");
   return moved;
@@ -835,6 +834,7 @@ function moveCardOrGroupToLocation(session: DuelSession, L: unknown, hostState: 
 
 function regroupGenericDestinationEvents(session: DuelSession, triggerStart: number, moved: string[]): void {
   regroupLuaOperationEvent(session, triggerStart, "moved", moved);
+  regroupLuaOperationEvent(session, triggerStart, "leftGraveyard", moved.filter((uid) => session.state.cards.some((card) => card.uid === uid && card.previousLocation === "graveyard")));
   regroupLuaOperationEvent(session, triggerStart, "sentToGraveyard", moved, "graveyard");
   regroupLuaOperationEvent(session, triggerStart, "banished", moved, "banished");
   regroupLuaOperationEvent(session, triggerStart, "sentToHand", moved, "hand");
