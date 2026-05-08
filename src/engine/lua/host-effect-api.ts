@@ -613,6 +613,7 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
     ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) &&
     (triggerEvent === "banished" ||
       triggerEvent === "destroyed" ||
+      triggerEvent === "positionChanged" ||
       triggerEvent === "released" ||
       triggerEvent === "sentToDeck" ||
       triggerEvent === "sentToGraveyard" ||

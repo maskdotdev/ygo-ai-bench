@@ -332,6 +332,7 @@ function pushChangePosition(L: unknown, session: DuelSession, hostState: LuaDuel
     return 1;
   }
   beginLuaOperationMoveStep(session, hostState);
+  const triggerStart = session.state.pendingTriggers.length;
   const changed: string[] = [];
   for (const uid of uids) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
@@ -345,6 +346,7 @@ function pushChangePosition(L: unknown, session: DuelSession, hostState: LuaDuel
   }
   setOperatedUids(hostState, changed);
   finishLuaOperationMoveStep(hostState, changed.length > 0);
+  regroupLuaOperationEvent(session, triggerStart, "positionChanged", changed, "monsterZone");
   lua.lua_pushinteger(L, changed.length);
   return 1;
 }
