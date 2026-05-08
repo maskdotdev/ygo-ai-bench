@@ -49,6 +49,7 @@ describe("trigger chain-window restore", () => {
     expect(hasGroupedEffect(getGroupedDuelLegalActions(restoredChainWindow, 1), 1, "restore-opponent-chain-window-quick", "chainResponse")).toBe(true);
     expect(getDuelLegalActions(restoredChainWindow, 0)).toEqual([]);
     assertStaleResponse(restoredChainWindow, secondTrigger!);
+    assertForgedCurrentResponse(restoredChainWindow, { ...secondTrigger!, windowId: opponentQuick!.windowId, windowKind: opponentQuick!.windowKind, windowToken: opponentQuick!.windowToken }, 1, "Restored second trigger resolved");
 
     const afterOpponentQuick = applyAndAssert(restoredChainWindow, opponentQuick!);
     expect(afterOpponentQuick.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", pendingTriggers: [] });
@@ -117,6 +118,7 @@ describe("trigger chain-window restore", () => {
     const opponentQuick = getDuelLegalActions(restoredChainWindow, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-decline-opponent-chain-window-quick");
     expect(opponentQuick).toBeDefined();
     assertStalePreviousWindow(restoredChainWindow, opponentQuick!);
+    assertForgedCurrentResponse(restoredChainWindow, { ...heldDecline!, windowId: opponentQuick!.windowId, windowKind: opponentQuick!.windowKind, windowToken: opponentQuick!.windowToken }, 1, "Restored decline second trigger should not resolve");
     const afterOpponentQuick = applyAndAssert(restoredChainWindow, opponentQuick!);
     expect(afterOpponentQuick.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", pendingTriggers: [], pendingTriggerBuckets: [] });
     expect(afterOpponentQuick.state.chain.map((link) => link.effectId)).toEqual([
@@ -187,6 +189,7 @@ describe("trigger chain-window restore", () => {
     expect(hasGroupedEffect(getGroupedDuelLegalActions(restoredChainWindow, 1), 1, "restore-opponent-mandatory-chain-window-quick", "chainResponse")).toBe(true);
     expect(getDuelLegalActions(restoredChainWindow, 0)).toEqual([]);
     assertStaleResponse(restoredChainWindow, secondTrigger!);
+    assertForgedCurrentResponse(restoredChainWindow, { ...secondTrigger!, windowId: opponentQuick!.windowId, windowKind: opponentQuick!.windowKind, windowToken: opponentQuick!.windowToken }, 1, "Restored second mandatory trigger resolved");
 
     const afterOpponentQuick = applyAndAssert(restoredChainWindow, opponentQuick!);
     expect(afterOpponentQuick.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", pendingTriggers: [] });
@@ -336,6 +339,16 @@ function assertStalePreviousWindow(session: ReturnType<typeof createDuel>, actio
   expect(stale.error).toContain("Response is not currently legal");
   expect(session.state.chainPasses).toEqual(beforeChainPasses);
   assertLegalWindow(session, stale, stale.state.waitingFor!);
+}
+
+function assertForgedCurrentResponse(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1], player: 0 | 1, forbiddenDetail: string): void {
+  const beforeChainPasses = [...session.state.chainPasses];
+  const forged = applyResponse(session, action);
+  expect(forged.ok).toBe(false);
+  expect(forged.error).toContain("Response is not currently legal");
+  expect(session.state.chainPasses).toEqual(beforeChainPasses);
+  assertLegalWindow(session, forged, player);
+  expect(session.state.log.map((entry) => entry.detail)).not.toContain(forbiddenDetail);
 }
 
 function assertLegalWindow(session: ReturnType<typeof createDuel>, response: ReturnType<typeof applyResponse>, player: 0 | 1): void {
