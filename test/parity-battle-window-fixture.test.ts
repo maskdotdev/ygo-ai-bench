@@ -44,7 +44,23 @@ describe("EDOPro parity battle window fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the battle-phase direct attack declaration window restorable before attack declaration",
+            phase: "battle",
+            waitingFor: 0,
+            windowId: 1,
+            windowKind: "open",
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 1, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [directAttackGroup(0, "p0-deck-100-0", 1, 1), turnGroup(1)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro gives the non-turn player the first attack-response window after attack declaration",
@@ -81,7 +97,22 @@ describe("EDOPro parity battle window fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("passAttack", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the turn-player attack-response pass window restorable before advancing to the damage step",
+            waitingFor: 0,
+            windowId: 3,
+            pendingBattle: true,
+            battleStep: "attack",
+            windowKind: "battle",
+            battleWindow: { kind: "attackNegationResponse", step: "attack", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            attackPasses: [1],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "passAttack", player: 0, windowId: 3, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(0, "passAttack", 1, 3)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro advances to the start damage step after both players pass attack responses",
