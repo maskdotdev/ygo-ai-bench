@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { addDuelChainLimit, canNegateDuelChainLink, negateDuelChainLink } from "#duel/core.js";
 import { pushCardTable } from "#lua/card-api.js";
+import { literalActionTypeChainPlayerLimitPredicate } from "#lua/chain-limit-predicate-descriptors.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid, readOptionalFunctionRef, releaseOptionalFunctionRef, symbolicLocationMask } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelSession, DuelState, PlayerId } from "#duel/types.js";
@@ -193,6 +194,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (targetHandlerExclusionUids) return `closure:target-cards-not-handler:${targetHandlerExclusionUids.map(encodeURIComponent).join(",")}`;
   const typeMask = capturedTypeMask(L, index);
   if (typeMask !== undefined) return `closure:type-mask-response-player:${typeMask}`;
+  const actionTypeChainPlayer = literalActionTypeChainPlayerLimitPredicate(L, index, hostState);
+  if (actionTypeChainPlayer) return actionTypeChainPlayer;
   const responsePlayerHandlerCodes = literalResponseMatchesChainPlayerOrHandlerCodesPredicate(L, index, hostState);
   if (responsePlayerHandlerCodes !== undefined) return handlerCodeResponsePlayerPredicateDescriptor(responsePlayerHandlerCodes);
   const handlerCode = capturedHandlerCode(L, index);
