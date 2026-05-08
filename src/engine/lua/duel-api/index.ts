@@ -48,7 +48,7 @@ export function installDuelApi(L: unknown, session: DuelSession, hostState: LuaD
   installDuelPromptApi(L, session, hostState);
   installDuelBattleApi(L, session, hostState);
   installDuelChainApi(L, session, hostState);
-  installDuelActivityApi(L, session);
+  installDuelActivityApi(L, session, hostState);
   installDuelLpApi(L, session, hostState);
   installDuelDeckApi(L, session, hostState);
   installDuelEffectApi(L, session, hostState);

@@ -216,6 +216,7 @@ export interface DuelActivityRecord {
   player: PlayerId;
   activity: number;
   cardUid?: string;
+  effectId?: string;
 }
 
 export interface DuelLogEntry {

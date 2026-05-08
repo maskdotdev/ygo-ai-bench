@@ -34,6 +34,7 @@ export function copyDuelActivityCounts(counts: Record<PlayerId, DuelActivityCoun
 }
 
 export function getDuelActivityCount(state: DuelState, player: PlayerId, activity: number): number {
+  if (activity === duelActivity.chain) return state.activityHistory.filter((record) => record.player === player && record.activity === duelActivity.chain).length;
   const counts = state.activityCounts[player];
   if (activity === duelActivity.summon) return counts.summon;
   if (activity === duelActivity.normalSummon) return counts.normalSummon;
@@ -72,6 +73,11 @@ export function recordFlipSummonActivity(state: DuelState, player: PlayerId, car
 export function recordAttackActivity(state: DuelState, player: PlayerId, card?: DuelCardInstance): void {
   state.activityCounts[player].attack += 1;
   recordActivity(state, player, duelActivity.attack, card);
+}
+
+export function recordChainActivity(state: DuelState, player: PlayerId, card?: DuelCardInstance, effectId?: string): void {
+  markDuelPhaseActivity(state);
+  state.activityHistory.push({ player, activity: duelActivity.chain, ...(card === undefined ? {} : { cardUid: card.uid }), ...(effectId === undefined ? {} : { effectId }) });
 }
 
 function recordActivity(state: DuelState, player: PlayerId, activity: number, card?: DuelCardInstance): void {

@@ -479,8 +479,8 @@ function assertSnapshotActivityHistory(records: unknown, cardUids: ReadonlySet<s
     if (!isRecord(record)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
     assertSnapshotPlayerId(record.player, `${path}.player`);
     if (typeof record.activity !== "number") throw new Error(`Malformed duel snapshot: ${path}.activity must be a number`);
-    if (record.cardUid !== undefined && typeof record.cardUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.cardUid must be a string`);
-    if (record.cardUid !== undefined && !cardUids.has(record.cardUid)) throw new Error(`Malformed duel snapshot: ${path}.cardUid must reference a card`);
+    if (record.cardUid !== undefined) { if (typeof record.cardUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.cardUid must be a string`); if (!cardUids.has(record.cardUid)) throw new Error(`Malformed duel snapshot: ${path}.cardUid must reference a card`); }
+    if (record.effectId !== undefined && typeof record.effectId !== "string") throw new Error(`Malformed duel snapshot: ${path}.effectId must be a string`);
   }
 }
 

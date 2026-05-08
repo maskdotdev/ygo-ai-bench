@@ -2,11 +2,15 @@ import fengari from "fengari";
 import { duelActivity, getDuelActivityCount } from "#duel/activity.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
-import type { DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelActivityRecord, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
-export function installDuelActivityApi(L: unknown, session: DuelSession): void {
+export interface LuaDuelActivityApiHostState {
+  pushEffectTable: (state: unknown, id: number) => void;
+}
+
+export function installDuelActivityApi(L: unknown, session: DuelSession, hostState: LuaDuelActivityApiHostState): void {
   const customCounters: CustomActivityCounter[] = [];
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
@@ -42,7 +46,7 @@ export function installDuelActivityApi(L: unknown, session: DuelSession): void {
     const id = lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : 0;
     const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : session.state.turnPlayer);
     const activity = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : duelActivity.summon;
-    lua.lua_pushinteger(state, getCustomActivityCount(state, session, customCounters, id, player, activity));
+    lua.lua_pushinteger(state, getCustomActivityCount(state, session, hostState, customCounters, id, player, activity));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetCustomActivityCount"));
@@ -54,10 +58,18 @@ interface CustomActivityCounter {
   filterRef: number;
 }
 
-function getCustomActivityCount(L: unknown, session: DuelSession, counters: CustomActivityCounter[], id: number, player: PlayerId, activity: number): number {
+function getCustomActivityCount(
+  L: unknown,
+  session: DuelSession,
+  hostState: LuaDuelActivityApiHostState,
+  counters: CustomActivityCounter[],
+  id: number,
+  player: PlayerId,
+  activity: number,
+): number {
   const counter = findCustomCounter(counters, id, activity);
   if (!counter) return 0;
-  return session.state.activityHistory.filter((record) => record.player === player && record.activity === activity && !customActivityAllows(L, counter, record.cardUid)).length;
+  return session.state.activityHistory.filter((record) => record.player === player && record.activity === activity && !customActivityAllows(L, session, hostState, counter, record)).length;
 }
 
 function findCustomCounter(counters: CustomActivityCounter[], id: number, activity: number): CustomActivityCounter | undefined {
@@ -68,15 +80,97 @@ function findCustomCounter(counters: CustomActivityCounter[], id: number, activi
   return undefined;
 }
 
-function customActivityAllows(L: unknown, counter: CustomActivityCounter, cardUid: string | undefined): boolean {
+function customActivityAllows(
+  L: unknown,
+  session: DuelSession,
+  hostState: LuaDuelActivityApiHostState,
+  counter: CustomActivityCounter,
+  record: DuelActivityRecord,
+): boolean {
   lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, counter.filterRef);
-  if (cardUid === undefined) lua.lua_pushnil(L);
-  else pushCardTable(L, cardUid);
+  pushCustomActivitySubjectTable(L, session, hostState, record);
   const status = lua.lua_pcall(L, 1, 1, 0);
-  if (status !== lua.LUA_OK) return false;
+  if (status !== lua.LUA_OK) {
+    lua.lua_pop(L, 1);
+    return false;
+  }
   const result = lua.lua_toboolean(L, -1);
   lua.lua_pop(L, 1);
   return Boolean(result);
+}
+
+function pushCustomActivitySubjectTable(
+  L: unknown,
+  session: DuelSession,
+  hostState: LuaDuelActivityApiHostState,
+  record: DuelActivityRecord,
+): void {
+  if (record.activity === duelActivity.chain) {
+    pushActivityEffectTable(L, session, hostState, record);
+    return;
+  }
+  if (record.cardUid === undefined) lua.lua_pushnil(L);
+  else pushCardTable(L, record.cardUid);
+}
+
+function pushActivityEffectTable(
+  L: unknown,
+  session: DuelSession,
+  hostState: LuaDuelActivityApiHostState,
+  record: DuelActivityRecord,
+): void {
+  const luaEffectId = Number(record.effectId?.match(/^lua-(\d+)/)?.[1]);
+  if (Number.isFinite(luaEffectId)) {
+    hostState.pushEffectTable(L, luaEffectId);
+    return;
+  }
+  pushActivityEffectProxy(L, session, record.cardUid);
+}
+
+function pushActivityEffectProxy(L: unknown, session: DuelSession, cardUid: string | undefined): void {
+  const card = cardUid ? session.state.cards.find((candidate) => candidate.uid === cardUid) : undefined;
+  lua.lua_newtable(L);
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    if (card) pushCardTable(state, card.uid);
+    else lua.lua_pushnil(state);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetHandler"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    lua.lua_pushboolean(state, requested !== 0 && (activeTypeFlags(card) & requested) !== 0);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsActiveType"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, (activeTypeFlags(card) & 0x1) !== 0);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsMonsterEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, (activeTypeFlags(card) & 0x2) !== 0);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsSpellEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, (activeTypeFlags(card) & 0x4) !== 0);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsTrapEffect"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    lua.lua_pushboolean(state, (activeTypeFlags(card) & 0x6) !== 0);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("IsSpellTrapEffect"));
+}
+
+function activeTypeFlags(card: DuelCardInstance | undefined): number {
+  const explicit = (card?.data.typeFlags ?? 0) & 0x7;
+  if (explicit !== 0) return explicit;
+  if (card?.kind === "spell") return 0x2;
+  if (card?.kind === "trap") return 0x4;
+  if (card?.kind === "monster" || card?.kind === "extra") return 0x1;
+  return 0;
 }
 
 function normalizePlayer(value: number): PlayerId {

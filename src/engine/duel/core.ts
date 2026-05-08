@@ -1,4 +1,4 @@
-import { markDuelPhaseActivity, recordSpecialSummonActivity } from "#duel/activity.js";
+import { markDuelPhaseActivity, recordChainActivity, recordSpecialSummonActivity } from "#duel/activity.js";
 import { clearChainLimits, clearStaleChainLimits } from "#duel/chain-limits.js";
 import { collectDeferredChainEndedAfterDecline } from "#duel/chain-lifecycle.js";
 import { isDuelMonsterLike, isFaceUpPendulumExtraDeckCard } from "#duel/card-predicates.js";
@@ -869,6 +869,7 @@ function pushChainLink(
     ...(targetParam === undefined ? {} : { targetParam }),
   });
   if (source) {
+    recordChainActivity(state, player, source, effectId);
     collectTriggerEffects(state, "chainActivating", source);
     collectDuelTriggerEffects(state, "chaining", source, {
       eventPlayer: player,

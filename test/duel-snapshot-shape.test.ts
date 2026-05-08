@@ -776,11 +776,14 @@ describe("duel snapshot restore shape validation", () => {
     startDuel(session);
     const badSkip = serializeDuel(session);
     const badActivity = serializeDuel(session);
+    const badActivityEffect = serializeDuel(session);
     badSkip.state.skippedPhases = [{ player: 0, phase: "combat" as "battle", remaining: 1 }];
     badActivity.state.activityHistory = [{ player: 0, activity: "attack" as unknown as number }];
+    badActivityEffect.state.activityHistory = [{ player: 0, activity: 0x20, effectId: 7 as unknown as string }];
 
     expect(() => restoreDuel(badSkip, createCardReader(cards))).toThrow("Malformed duel snapshot: state.skippedPhases.0.phase must be a duel phase");
     expect(() => restoreDuel(badActivity, createCardReader(cards))).toThrow("Malformed duel snapshot: state.activityHistory.0.activity must be a number");
+    expect(() => restoreDuel(badActivityEffect, createCardReader(cards))).toThrow("Malformed duel snapshot: state.activityHistory.0.effectId must be a string");
   });
 
   it("rejects impossible skipped phase snapshots before restore", () => {
