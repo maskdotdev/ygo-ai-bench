@@ -553,6 +553,7 @@ function shiftedFieldZoneSequenceSnapshot(session: DuelSession, player: PlayerId
 function pushReturnToGrave(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
   const moved: string[] = [];
   beginLuaOperationMoveStep(session, hostState);
+  const triggerStart = session.state.pendingTriggers.length;
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card || card.location !== "banished" || !canMoveDuelCardToLocation(session.state, uid, "graveyard", duelReason.return)) continue;
@@ -568,6 +569,7 @@ function pushReturnToGrave(L: unknown, session: DuelSession, hostState: LuaDuelM
     }
   }
   finishLuaOperationMoveStep(hostState, moved.length > 0);
+  regroupLuaOperationEvent(session, triggerStart, "returnedToGraveyard", moved, "graveyard");
   setOperatedUids(hostState, moved);
   lua.lua_pushinteger(L, moved.length);
   return 1;
