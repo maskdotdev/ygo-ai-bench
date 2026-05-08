@@ -76,6 +76,7 @@ describe("duel stale prompt responses", () => {
     const restoredOption = getDuelLegalActions(restored, 1).find((action) => action.type === "selectOption" && action.option === 2);
     expect(restoredOption).toBeDefined();
     expect(restoredOption).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "prompt" });
+    expect(restoredOption!.windowToken).toBeDefined();
     const staleBeforeSelection = applyResponse(restored, { ...restoredOption!, windowId: restoredOption!.windowId! - 1 });
     expect(staleBeforeSelection.ok).toBe(false);
     expect(staleBeforeSelection.error).toContain("Response is not currently legal");
@@ -83,6 +84,19 @@ describe("duel stale prompt responses", () => {
     expect(staleBeforeSelection.legalActions).toEqual(getDuelLegalActions(restored, 1));
     expect(staleBeforeSelection.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
     expect(staleBeforeSelection.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeSelection.legalActions);
+    expect(restored.state.prompt).toMatchObject({ id: "restore-stale-option-prompt", type: "selectOption", player: 1 });
+    expect(restored.state.log.some((entry) => entry.action === "selectOption")).toBe(false);
+    const forgedOption = applyResponse(restored, {
+      ...restoredOption!,
+      option: 9,
+      label: "Forge invalid option into restored prompt",
+    });
+    expect(forgedOption.ok).toBe(false);
+    expect(forgedOption.error).toContain("Response is not currently legal");
+    expect(forgedOption.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(forgedOption.legalActions).toEqual(getDuelLegalActions(restored, 1));
+    expect(forgedOption.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 1));
+    expect(forgedOption.legalActionGroups.flatMap((group) => group.actions)).toEqual(forgedOption.legalActions);
     expect(restored.state.prompt).toMatchObject({ id: "restore-stale-option-prompt", type: "selectOption", player: 1 });
     expect(restored.state.log.some((entry) => entry.action === "selectOption")).toBe(false);
     const optionResult = applyResponse(restored, restoredOption!);
@@ -127,6 +141,7 @@ describe("duel stale prompt responses", () => {
     const restoredYes = getDuelLegalActions(restored, 0).find((action) => action.type === "selectYesNo" && action.yes);
     expect(restoredYes).toBeDefined();
     expect(restoredYes).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "prompt" });
+    expect(restoredYes!.windowToken).toBeDefined();
     const staleBeforeSelection = applyResponse(restored, { ...restoredYes!, windowId: restoredYes!.windowId! - 1 });
     expect(staleBeforeSelection.ok).toBe(false);
     expect(staleBeforeSelection.error).toContain("Response is not currently legal");
@@ -134,6 +149,19 @@ describe("duel stale prompt responses", () => {
     expect(staleBeforeSelection.legalActions).toEqual(getDuelLegalActions(restored, 0));
     expect(staleBeforeSelection.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
     expect(staleBeforeSelection.legalActionGroups.flatMap((group) => group.actions)).toEqual(staleBeforeSelection.legalActions);
+    expect(restored.state.prompt).toMatchObject({ id: "restore-stale-yes-no-prompt", type: "selectYesNo", player: 0 });
+    expect(restored.state.log.some((entry) => entry.action === "selectYesNo")).toBe(false);
+    const forgedPromptId = applyResponse(restored, {
+      ...restoredYes!,
+      promptId: "forged-restore-stale-yes-no-prompt",
+      label: "Forge prompt id into restored yes-no prompt",
+    });
+    expect(forgedPromptId.ok).toBe(false);
+    expect(forgedPromptId.error).toContain("Response is not currently legal");
+    expect(forgedPromptId.state.actionWindowId).toBe(restored.state.actionWindowId);
+    expect(forgedPromptId.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(forgedPromptId.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(forgedPromptId.legalActionGroups.flatMap((group) => group.actions)).toEqual(forgedPromptId.legalActions);
     expect(restored.state.prompt).toMatchObject({ id: "restore-stale-yes-no-prompt", type: "selectYesNo", player: 0 });
     expect(restored.state.log.some((entry) => entry.action === "selectYesNo")).toBe(false);
     const yesResult = applyResponse(restored, restoredYes!);
