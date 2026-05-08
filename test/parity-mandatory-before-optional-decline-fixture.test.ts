@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { turnGroup } from "./parity-legal-action-group-helpers.js";
+import {
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  openEffectGroup,
+  triggerActivationGroup,
+  triggerDeclineGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity mandatory before optional decline fixture", () => {
   it("returns mandatory-before-optional declines to open fast-effect priority", () => {
@@ -58,6 +65,41 @@ describe("EDOPro parity mandatory before optional decline fixture", () => {
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" })),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-open-mandatory-first" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps same-player mandatory triggers restorable before advancing to same-player optional trigger buckets",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-open-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-open-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnMandatory" },
+              { player: 0, triggerBucket: "turnOptional" },
+            ],
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-open-mandatory-first", triggerBucket: "turnMandatory", count: 1 },
+            ],
+            legalActionGroups: [triggerActivationGroup(0, "fixture-open-mandatory-first", "turnMandatory", 1, 1)],
+            absentLegalActions: [
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-open-mandatory-first", triggerBucket: "turnMandatory" },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-open-optional-second", triggerBucket: "turnOptional" },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-open-optional-second", triggerBucket: "turnOptional" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-open-fast-after-optional-decline" },
+            ],
+            absentLegalActionGroups: [
+              triggerDeclineGroup(0, "fixture-open-mandatory-first", "turnMandatory", 1, 1),
+              absentTriggerActivationGroup(0, "fixture-open-optional-second", "turnOptional", 1, "triggerBucket"),
+              triggerDeclineGroup(0, "fixture-open-optional-second", "turnOptional", 1, 1),
+              absentWindowEffectGroup(0, "fixture-open-fast-after-optional-decline", 1, "triggerBucket"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro exposes same-player optional triggers after same-player mandatory triggers are selected",
@@ -111,6 +153,28 @@ describe("EDOPro parity mandatory before optional decline fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "fixture-open-optional-second" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the optional bucket decline restorable before returning to open fast-effect priority",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [{ player: 0, effectId: "fixture-open-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggers: [{ player: 0, effectId: "fixture-open-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-open-optional-second", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-open-optional-second", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-open-optional-second", "turnOptional", 1, 2),
+              triggerDeclineGroup(0, "fixture-open-optional-second", "turnOptional", 1, 2),
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-open-fast-after-optional-decline" }],
+            absentLegalActionGroups: [absentWindowEffectGroup(0, "fixture-open-fast-after-optional-decline", 2, "triggerBucket")],
+          },
           after: {
             source: "edopro",
             note: "EDOPro exposes turn-player open fast effects after the optional bucket behind a mandatory trigger is declined",
@@ -166,6 +230,34 @@ describe("EDOPro parity mandatory before optional decline fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-open-fast-after-optional-decline" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the post-decline open fast-effect window restorable before resolving the open fast effect",
+            windowId: 3,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-open-fast-after-optional-decline", count: 1 },
+              { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [openEffectGroup(0, "fixture-open-fast-after-optional-decline", 1, 3), turnGroup(3)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-open-optional-second" },
+              { type: "declineTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-open-optional-second" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-open-optional-second", "turnOptional", 3, "triggerBucket"),
+              triggerDeclineGroup(0, "fixture-open-optional-second", "turnOptional", 1, 3),
+            ],
+            logIncludes: ["Open mandatory trigger resolved", "fixture-open-optional-second"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the restored open fast effect after declining the optional bucket behind a mandatory trigger",
