@@ -6,6 +6,7 @@ export interface DuelLegalActionGroup {
   label: string;
   windowId?: number;
   windowKind?: DuelActionWindowKind;
+  windowToken?: string;
   triggerBucket?: PendingTriggerBucketState;
   actions: DuelAction[];
 }
@@ -27,6 +28,7 @@ export function groupDuelLegalActions(actions: DuelAction[]): DuelLegalActionGro
         label: duelActionGroupLabel(actionKey),
         ...(action.windowId === undefined ? {} : { windowId: action.windowId }),
         ...(action.windowKind === undefined ? {} : { windowKind: action.windowKind }),
+        ...(action.windowToken === undefined ? {} : { windowToken: action.windowToken }),
         ...triggerBucketGroupState(action),
         actions: [copyDuelAction(action)],
       });

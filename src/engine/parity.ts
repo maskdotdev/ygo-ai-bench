@@ -388,10 +388,16 @@ function assertLegalActionWindowStampsForPlayer(session: DuelSession, player: Pl
     if (action.windowId !== session.state.actionWindowId || action.windowKind !== windowKind) {
       fail(`Expected player ${player} legal action ${action.type} to be stamped with window ${session.state.actionWindowId}/${windowKind ?? "none"}`);
     }
+    if (action.windowToken !== session.state.actionWindowToken) {
+      fail(`Expected player ${player} legal action ${action.type} to be stamped with token ${session.state.actionWindowToken}`);
+    }
   }
   for (const group of getGroupedDuelLegalActions(session, player)) {
     if (group.windowId !== session.state.actionWindowId || group.windowKind !== windowKind) {
       fail(`Expected player ${player} legal action group ${group.label} to be stamped with window ${session.state.actionWindowId}/${windowKind ?? "none"}`);
+    }
+    if (group.windowToken !== session.state.actionWindowToken) {
+      fail(`Expected player ${player} legal action group ${group.label} to be stamped with token ${session.state.actionWindowToken}`);
     }
   }
 }
@@ -491,6 +497,7 @@ function legalActionGroupMatches(
   if (expectation.label !== undefined && group.label !== expectation.label) return false;
   if (expectation.windowId !== undefined && group.windowId !== expectation.windowId) return false;
   if (expectation.windowKind !== undefined && group.windowKind !== expectation.windowKind) return false;
+  if (expectation.windowToken !== undefined && group.windowToken !== expectation.windowToken) return false;
   if (expectation.triggerBucket !== undefined && !matchesPendingTriggerBucket(group.triggerBucket, expectation.triggerBucket)) return false;
   for (const actionExpectation of expectation.actions ?? []) {
     const matches = group.actions.filter((action) => duelActionMatchesSelector(action, actionExpectation, cards));
@@ -902,6 +909,7 @@ function describeGroupExpectation(expectation: ScriptedLegalActionGroupExpectati
     expectation.label ? `label=${expectation.label}` : undefined,
     expectation.windowId !== undefined ? `windowId=${expectation.windowId}` : undefined,
     expectation.windowKind ? `windowKind=${expectation.windowKind}` : undefined,
+    expectation.windowToken ? `windowToken=${expectation.windowToken}` : undefined,
   ].filter(Boolean);
   return detail.join(" ");
 }

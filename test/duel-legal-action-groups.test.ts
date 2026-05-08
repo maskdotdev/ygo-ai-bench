@@ -18,6 +18,7 @@ describe("duel legal action groups", () => {
 
     expect(groups.length).toBeGreaterThan(0);
     expect(groups.every((group) => group.windowKind === "open")).toBe(true);
+    expect(groups.every((group) => group.windowToken === session.state.actionWindowToken)).toBe(true);
     expect(groups.flatMap((group) => group.actions)).toEqual(actions);
     expect(groups.some((group) => group.label === "Summons")).toBe(true);
     expect(groups.some((group) => group.label === "Turn")).toBe(true);
@@ -85,15 +86,15 @@ describe("duel legal action groups", () => {
 
   it("preserves chain-response window metadata on grouped quick effects and passes", () => {
     const actions: DuelAction[] = [
-      { type: "activateEffect", player: 1, uid: "quick", effectId: "chain-quick", label: "Quick", windowId: 8, windowKind: "chainResponse" },
-      { type: "passChain", player: 1, label: "Pass", windowId: 8, windowKind: "chainResponse" },
+      { type: "activateEffect", player: 1, uid: "quick", effectId: "chain-quick", label: "Quick", windowId: 8, windowKind: "chainResponse", windowToken: "chain-token" },
+      { type: "passChain", player: 1, label: "Pass", windowId: 8, windowKind: "chainResponse", windowToken: "chain-token" },
     ];
 
     const groups = groupDuelLegalActions(actions);
 
-    expect(groups.map((group) => ({ label: group.label, windowId: group.windowId, windowKind: group.windowKind }))).toEqual([
-      { label: "Effects", windowId: 8, windowKind: "chainResponse" },
-      { label: "Pass", windowId: 8, windowKind: "chainResponse" },
+    expect(groups.map((group) => ({ label: group.label, windowId: group.windowId, windowKind: group.windowKind, windowToken: group.windowToken }))).toEqual([
+      { label: "Effects", windowId: 8, windowKind: "chainResponse", windowToken: "chain-token" },
+      { label: "Pass", windowId: 8, windowKind: "chainResponse", windowToken: "chain-token" },
     ]);
     expect(groups.flatMap((group) => group.actions)).toEqual(actions);
   });

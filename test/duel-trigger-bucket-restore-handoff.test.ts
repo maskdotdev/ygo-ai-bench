@@ -433,11 +433,14 @@ function actionsWithoutWindowToken(actions: DuelAction[]): Array<Omit<DuelAction
   });
 }
 
-function groupsWithoutWindowToken(groups: DuelLegalActionGroup[]): DuelLegalActionGroup[] {
-  return groups.map((group) => ({
-    ...group,
-    actions: actionsWithoutWindowToken(group.actions) as DuelAction[],
-  }));
+function groupsWithoutWindowToken(groups: DuelLegalActionGroup[]): Array<Omit<DuelLegalActionGroup, "windowToken">> {
+  return groups.map((group) => {
+    const { windowToken: _windowToken, ...rest } = group;
+    return {
+      ...rest,
+      actions: actionsWithoutWindowToken(group.actions) as DuelAction[],
+    };
+  });
 }
 
 function hasGroupedEffect(

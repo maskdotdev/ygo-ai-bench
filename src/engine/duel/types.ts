@@ -665,6 +665,7 @@ export interface ScriptedLegalActionGroupExpectation {
   label?: string;
   windowId?: number;
   windowKind?: DuelActionWindowKind;
+  windowToken?: string;
   triggerBucket?: Partial<PendingTriggerBucketState>;
   count?: number;
   actions?: ScriptedLegalActionExpectation[];

@@ -146,6 +146,44 @@ describe("EDOPro compatibility harness response matching", () => {
     ]);
   });
 
+  it("matches grouped legal action expectations by action window tokens", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture({
+      name: "forged token group expectation fixture",
+      options: { seed: 12, startingHandSize: 1 },
+      decks: {
+        0: { main: ["100"] },
+        1: { main: ["200"] },
+      },
+      before: {
+        source: "edopro",
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Turn",
+            windowId: 0,
+            windowKind: "open",
+            windowToken: "forged-window-token",
+            count: 1,
+            actions: [{ type: "changePhase", player: 0, phase: "battle", windowId: 0, windowKind: "open", count: 1 }],
+          },
+        ],
+      },
+      responses: [],
+      expected: { source: "edopro" },
+    }, {
+      cardReader: createCardReader(cards),
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      {
+        fixture: "forged token group expectation fixture",
+        message: "before fixture (edopro): Expected legal action group player=0 label=Turn windowId=0 windowKind=open windowToken=forged-window-token matched 0, expected 1",
+      },
+    ]);
+  });
+
   it("requires concrete uid-bearing responses to echo the uid", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const result = runScriptedDuelFixture({
