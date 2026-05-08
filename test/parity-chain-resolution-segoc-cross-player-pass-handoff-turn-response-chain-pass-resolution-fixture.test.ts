@@ -137,6 +137,43 @@ describe("EDOPro parity chain-resolution cross-player SEGOC pass-handoff turn-re
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-cross-handoff-turn-chain-pass-resolution-first-opponent-quick" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-handoff-turn-chain-pass-resolution-turn-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the turn-player response window restorable before the turn player responds to the opponent's post-handoff chain link",
+            phase: "main1",
+            windowId: 7,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-cross-handoff-turn-chain-pass-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-handoff-turn-chain-pass-resolution-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-handoff-turn-chain-pass-resolution-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-handoff-turn-chain-pass-resolution-opponent-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-handoff-turn-chain-pass-resolution-first-opponent-quick", sourceUid: "p1-deck-900-2" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-handoff-turn-chain-pass-resolution-turn-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 7, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-cross-handoff-turn-chain-pass-resolution-turn-quick", 1, 7),
+              chainPassGroup(0, 1, 7),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-handoff-turn-chain-pass-resolution-first-opponent-quick" },
+              { type: "activateEffect", player: 1, windowId: 7, windowKind: "chainResponse", effectId: "fixture-cross-handoff-turn-chain-pass-resolution-second-opponent-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-cross-handoff-turn-chain-pass-resolution-first-opponent-quick", 7),
+              absentChainEffectGroup(1, "fixture-cross-handoff-turn-chain-pass-resolution-second-opponent-quick", 7),
+            ],
+            locations: { graveyard: ["700", "200", "900", "950"], hand: ["100", "300", "500", "400", "600", "800"] },
+          },
           after: {
             source: "edopro",
             note: "EDOPro gives the opponent another chain-response window when they still have a legal response after the turn player responds to a cross-player chain-created SEGOC handoff chain",
@@ -182,6 +219,48 @@ describe("EDOPro parity chain-resolution cross-player SEGOC pass-handoff turn-re
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent response window restorable before resolving after the opponent passes the post-turn-response chain window",
+            phase: "main1",
+            windowId: 8,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-cross-handoff-turn-chain-pass-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-handoff-turn-chain-pass-resolution-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-handoff-turn-chain-pass-resolution-turn-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-handoff-turn-chain-pass-resolution-opponent-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 1, effectId: "fixture-cross-handoff-turn-chain-pass-resolution-first-opponent-quick", sourceUid: "p1-deck-900-2" },
+              { player: 0, effectId: "fixture-cross-handoff-turn-chain-pass-resolution-turn-quick", sourceUid: "p0-deck-200-1" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 8, windowKind: "chainResponse", effectId: "fixture-cross-handoff-turn-chain-pass-resolution-second-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 8, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-cross-handoff-turn-chain-pass-resolution-second-opponent-quick", 1, 8),
+              chainPassGroup(1, 1, 8),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 8, windowKind: "chainResponse", effectId: "fixture-cross-handoff-turn-chain-pass-resolution-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 8, windowKind: "chainResponse", effectId: "fixture-cross-handoff-turn-chain-pass-resolution-first-opponent-quick" },
+              { type: "activateTrigger", player: 0, windowId: 8, windowKind: "triggerBucket", effectId: "fixture-cross-handoff-turn-chain-pass-resolution-turn-optional", triggerBucket: "turnOptional" },
+              { type: "activateTrigger", player: 1, windowId: 8, windowKind: "triggerBucket", effectId: "fixture-cross-handoff-turn-chain-pass-resolution-opponent-optional", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-cross-handoff-turn-chain-pass-resolution-turn-quick", 8),
+              absentChainEffectGroup(1, "fixture-cross-handoff-turn-chain-pass-resolution-first-opponent-quick", 8),
+              absentTriggerActivationGroup(0, "fixture-cross-handoff-turn-chain-pass-resolution-turn-optional", "turnOptional", 8, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-cross-handoff-turn-chain-pass-resolution-opponent-optional", "opponentOptional", 8, "triggerBucket"),
+            ],
+            locations: { graveyard: ["700", "200", "900", "950"], hand: ["100", "300", "500", "400", "600", "800"] },
+          },
         }),
       ],
       expected: {
