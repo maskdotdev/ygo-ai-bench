@@ -623,6 +623,7 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
       triggerEvent === "detachedMaterial" ||
       triggerEvent === "discarded" ||
       triggerEvent === "equipped" ||
+      triggerEvent === "flipSummoned" ||
       triggerEvent === "leftField" ||
       triggerEvent === "leftGraveyard" ||
       triggerEvent === "moved" ||
