@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentTriggerActivationGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentTriggerActivationGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity mandatory before optional activation opponent-response chain-limit fixture", () => {
   it("applies one-chain limits after the opponent responds to same-player mandatory and optional triggers", () => {
@@ -105,6 +105,38 @@ describe("EDOPro parity mandatory before optional activation opponent-response c
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-opponent-limit-mandatory-first" })),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-opponent-limit-optional-second" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps same-player optional trigger priority restorable after mandatory trigger selection and before opponent responses",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "fixture-opponent-limit-optional-second", eventName: "normalSummoned", triggerBucket: "turnOptional", eventCardUid: "p0-deck-100-0" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            chain: [{ player: 0, effectId: "fixture-opponent-limit-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            chainPasses: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-opponent-limit-optional-second", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-opponent-limit-optional-second", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-opponent-limit-optional-second", "turnOptional", 1, 2),
+              triggerDeclineGroup(0, "fixture-opponent-limit-optional-second", "turnOptional", 1, 2),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-opponent-limit-mandatory-first", triggerBucket: "turnMandatory" },
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-opponent-limit-turn-blocked" },
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-opponent-limit-chain-limiter" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-opponent-limit-mandatory-first", "turnMandatory", 2, "triggerBucket"),
+              absentWindowEffectGroup(0, "fixture-opponent-limit-turn-blocked", 2, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-opponent-limit-chain-limiter", 2, "triggerBucket"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro opens opponent chain-response priority after same-player mandatory and optional trigger selection completes before one-chain limits are created",
@@ -154,6 +186,52 @@ describe("EDOPro parity mandatory before optional activation opponent-response c
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-limit-chain-limiter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps opponent response choices restorable before one-chain limits are created",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-opponent-limit-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-opponent-limit-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+            ],
+            chainPasses: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 0, 1: 3 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-opponent-limit-chain-limiter", count: 1 },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-opponent-limit-followup", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-opponent-limit-chain-limiter", count: 1 },
+                  { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-opponent-limit-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(1, 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "fixture-opponent-limit-turn-blocked" },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "fixture-opponent-limit-turn-open" },
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-opponent-limit-opponent-open-filtered" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-opponent-limit-turn-blocked", 3, "chainResponse"),
+              absentWindowEffectGroup(0, "fixture-opponent-limit-turn-open", 3, "chainResponse"),
+              absentWindowEffectGroup(1, "fixture-opponent-limit-opponent-open-filtered", 3, "chainResponse"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies one-chain SetChainLimit restrictions when the opponent responds to same-player mandatory and optional triggers",
@@ -192,6 +270,41 @@ describe("EDOPro parity mandatory before optional activation opponent-response c
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the allowed opponent pass restorable before one-chain limits clear and the trigger chain resolves",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-opponent-limit-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-opponent-limit-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 1, effectId: "fixture-opponent-limit-chain-limiter", sourceUid: "p1-deck-500-0" },
+            ],
+            chainPasses: [],
+            chainLimits: [{ untilChainEnd: false, expiresAtChainLength: 3 }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-limit-followup", count: 1 },
+              { type: "passChain", player: 1, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-opponent-limit-followup", 1, 4), chainPassGroup(1, 1, 4)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-limit-turn-blocked" },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-limit-turn-open" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-limit-chain-limiter" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-opponent-limit-opponent-open-filtered" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-opponent-limit-turn-blocked", 4, "chainResponse"),
+              absentWindowEffectGroup(0, "fixture-opponent-limit-turn-open", 4, "chainResponse"),
+              absentWindowEffectGroup(1, "fixture-opponent-limit-chain-limiter", 4, "chainResponse"),
+              absentWindowEffectGroup(1, "fixture-opponent-limit-opponent-open-filtered", 4, "chainResponse"),
+            ],
+          },
         }),
       ],
       expected: {
