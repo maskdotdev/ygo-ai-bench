@@ -148,6 +148,69 @@ describe("Lua active-type chain-limit restore", () => {
     expect(hasGroupedLuaEffect(restored, 1, "lua-2")).toBe(true);
     expect(hasGroupedLuaEffect(restored, 1, "lua-3")).toBe(false);
   });
+
+  it("restores inline not IsActiveType predicates with combined masks", () => {
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+            c100 = {}
+            c100.initial_effect = function(c)
+              local e = Effect.CreateEffect(c)
+              e:SetType(EFFECT_TYPE_IGNITION)
+              e:SetRange(LOCATION_HAND)
+              e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+                if chk==0 then return true end
+                Duel.SetChainLimit(function(e) return not e:IsActiveType(TYPE_SPELL+TYPE_TRAP) end)
+              end)
+              e:SetOperation(function(e,tp) Debug.Message("combined active-type limit source resolved") end)
+              c:RegisterEffect(e)
+            end
+          `;
+        }
+        if (name === "c200.lua") return quickScript(200, "allowed monster response resolved");
+        if (name === "c300.lua") return quickScript(300, "blocked spell response resolved");
+        if (name === "c400.lua") return quickScript(400, "blocked trap response resolved");
+        return undefined;
+      },
+    };
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }, { id: 300, type: 2 }, { id: 400, type: 4 }], []);
+    const session = createDuel({ seed: 23, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: ["200", "300", "400"] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.loadCardScript(400, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(4);
+    const sourceAction = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
+    expect(sourceAction).toBeDefined();
+    const sourceResult = applyResponse(session, sourceAction!);
+    expect(sourceResult.ok, sourceResult.error).toBe(true);
+
+    const registryKey = "lua-chain-limit:100:0:link:known:closure:not-active-type:6";
+    const snapshot = serializeDuel(session);
+    expect(snapshot.state.chainLimits[0]?.registryKey).toBe(registryKey);
+    expect(getLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(true);
+    expect(getLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
+    expect(getLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-4")).toBe(false);
+
+    const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
+
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+    expect(getLuaRestoreLegalActions(restored, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2")).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
+    expect(getLuaRestoreLegalActions(restored, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-4")).toBe(false);
+    expect(hasGroupedLuaEffect(restored, 1, "lua-2")).toBe(true);
+    expect(hasGroupedLuaEffect(restored, 1, "lua-3")).toBe(false);
+    expect(hasGroupedLuaEffect(restored, 1, "lua-4")).toBe(false);
+  });
 });
 
 function quickScript(code: number, message: string): string {
