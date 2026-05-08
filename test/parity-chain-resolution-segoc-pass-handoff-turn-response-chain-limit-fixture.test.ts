@@ -110,6 +110,44 @@ describe("EDOPro parity chain-resolution SEGOC pass-handoff turn-response chain-
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-chain-resolution-segoc-limit-optional" })),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps opponent response priority restorable before passing a chain-created SEGOC chain without one-chain limits",
+            phase: "main1",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-chain-resolution-segoc-limit-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-resolution-segoc-limit-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [],
+            chainLimits: [],
+            locations: { graveyard: ["700", "200", "900", "400"], hand: ["100", "300", "500", "800", "800", "800", "800", "800"] },
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-chain-resolution-segoc-limit-opponent-blocked", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-chain-resolution-segoc-limit-opponent-blocked", 1, 3),
+              chainPassGroup(1, 1, 3),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "fixture-chain-resolution-segoc-limit-turn-chain-limiter" },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "chainResponse", effectId: "fixture-chain-resolution-segoc-limit-turn-followup" },
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-segoc-limit-optional", triggerBucket: "turnOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-chain-resolution-segoc-limit-turn-chain-limiter", 3),
+              absentChainEffectGroup(0, "fixture-chain-resolution-segoc-limit-turn-followup", 3),
+              absentTriggerActivationGroup(0, "fixture-chain-resolution-segoc-limit-optional", "turnOptional", 3, "chainResponse"),
+            ],
+            logIncludes: ["Chain resolution SEGOC limit starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro returns chain-created SEGOC response priority to the trigger player after the opponent passes before one-chain limits are created",
@@ -154,6 +192,47 @@ describe("EDOPro parity chain-resolution SEGOC pass-handoff turn-response chain-
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-resolution-segoc-limit-turn-chain-limiter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps chain-created SEGOC response priority restorable before the trigger player creates a one-chain limit",
+            phase: "main1",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-chain-resolution-segoc-limit-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-resolution-segoc-limit-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+            ],
+            chainPasses: [1],
+            chainLimits: [],
+            locations: { graveyard: ["700", "200", "900", "400"], hand: ["100", "300", "500", "800", "800", "800", "800", "800"] },
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-segoc-limit-turn-chain-limiter", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-segoc-limit-turn-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 4,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-segoc-limit-turn-chain-limiter", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-segoc-limit-turn-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [{ type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-segoc-limit-opponent-blocked" }],
+            absentLegalActionGroups: [absentChainEffectGroup(1, "fixture-chain-resolution-segoc-limit-opponent-blocked", 4)],
+            logIncludes: ["Chain resolution SEGOC limit starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies one-chain SetChainLimit restrictions when the turn player responds from a chain-created SEGOC pass-handoff window",
