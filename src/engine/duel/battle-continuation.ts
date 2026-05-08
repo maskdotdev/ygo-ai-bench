@@ -35,19 +35,21 @@ export function resolvePendingBattle(state: DuelState, handlers: BattleContinuat
       handlers.changeBattleDamage(state, damagePlayer, adjustedAmount, battleCards);
       const reason = handlers.battleDamageReason(state, damagePlayer, battleCards);
       const reasonPlayer = battleDamageReasonPlayer(state, damagePlayer, battleCards);
-      if (state.battleDamage[damagePlayer] > 0) handlers.collectEvent(state, "beforeBattleDamage", undefined, { eventPlayer: damagePlayer, eventValue: state.battleDamage[damagePlayer], eventReason: reason, eventReasonPlayer: reasonPlayer });
+      const damageSource = battleDamageSourceCard(reasonPlayer, battleCards);
+      if (state.battleDamage[damagePlayer] > 0) handlers.collectEvent(state, "beforeBattleDamage", damageSource, { eventPlayer: damagePlayer, eventValue: state.battleDamage[damagePlayer], eventReason: reason, eventReasonPlayer: reasonPlayer });
       const applied = handlers.damagePlayer(state, damagePlayer, state.battleDamage[damagePlayer], reason);
       if (duelHasEnded(state)) return applied;
-      if (applied > 0) handlers.collectEvent(state, "battleDamageDealt", undefined, { eventPlayer: damagePlayer, eventValue: applied, eventReason: reason, eventReasonPlayer: reasonPlayer });
+      if (applied > 0) handlers.collectEvent(state, "battleDamageDealt", damageSource, { eventPlayer: damagePlayer, eventValue: applied, eventReason: reason, eventReasonPlayer: reasonPlayer });
       for (const additionalPlayer of handlers.additionalBattleDamagePlayers(state, damagePlayer, battleCards)) {
         if (additionalPlayer === damagePlayer) continue;
         handlers.changeBattleDamage(state, additionalPlayer, applied, battleCards);
         const additionalReason = handlers.battleDamageReason(state, additionalPlayer, battleCards);
         const additionalReasonPlayer = battleDamageReasonPlayer(state, additionalPlayer, battleCards);
-        if (state.battleDamage[additionalPlayer] > 0) handlers.collectEvent(state, "beforeBattleDamage", undefined, { eventPlayer: additionalPlayer, eventValue: state.battleDamage[additionalPlayer], eventReason: additionalReason, eventReasonPlayer: additionalReasonPlayer });
+        const additionalDamageSource = battleDamageSourceCard(additionalReasonPlayer, battleCards);
+        if (state.battleDamage[additionalPlayer] > 0) handlers.collectEvent(state, "beforeBattleDamage", additionalDamageSource, { eventPlayer: additionalPlayer, eventValue: state.battleDamage[additionalPlayer], eventReason: additionalReason, eventReasonPlayer: additionalReasonPlayer });
         const additionalApplied = handlers.damagePlayer(state, additionalPlayer, state.battleDamage[additionalPlayer], additionalReason);
         if (duelHasEnded(state)) return applied;
-        if (additionalApplied > 0) handlers.collectEvent(state, "battleDamageDealt", undefined, { eventPlayer: additionalPlayer, eventValue: additionalApplied, eventReason: additionalReason, eventReasonPlayer: additionalReasonPlayer });
+        if (additionalApplied > 0) handlers.collectEvent(state, "battleDamageDealt", additionalDamageSource, { eventPlayer: additionalPlayer, eventValue: additionalApplied, eventReason: additionalReason, eventReasonPlayer: additionalReasonPlayer });
       }
       return applied;
     },
@@ -74,4 +76,8 @@ function battleDamageReasonPlayer(state: DuelState, damagedPlayer: PlayerId, bat
   const target = battleCards?.[1];
   if (target && damagedPlayer === attacker?.controller) return target.controller;
   return attacker?.controller ?? state.turnPlayer;
+}
+
+function battleDamageSourceCard(reasonPlayer: PlayerId, battleCards: DuelCardInstance[] | undefined): DuelCardInstance | undefined {
+  return battleCards?.find((card) => card.controller === reasonPlayer) ?? battleCards?.[0];
 }
