@@ -285,10 +285,9 @@ function operationInfosForChain(
   field: OperationInfoField,
   chainIndex: number,
 ): LuaDuelOperationInfo[] {
-  const exact = operationInfos.filter((info) => info.chainIndex === chainIndex);
-  if (exact.length > 0) return exact;
   const link = chainLinkForOperationInfo(session, hostState, chainIndex);
-  return (link?.[field] ?? []).map((info) => ({ chainIndex, ...info }));
+  if (link) return (link[field] ?? []).map((info) => ({ chainIndex, ...info }));
+  return operationInfos.filter((info) => info.chainIndex === chainIndex);
 }
 
 function syncContextOperationInfo(hostState: LuaDuelOperationApiHostState, field: OperationInfoField, info: LuaDuelOperationInfo): void {
