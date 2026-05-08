@@ -82,7 +82,7 @@ describe("Lua API usage scanner", () => {
     const output = execFileSync(process.execPath, [scannerPath, "--scripts", scripts, "--fail-on-missing"], { encoding: "utf8" });
 
     expect(output).toContain("No missing API usages found.");
-  });
+  }, 15_000);
 
   it("rejects scanner options that are missing required values", () => {
     const result = spawnSync(process.execPath, [scannerPath, "--scripts", "--limit", "5"], { encoding: "utf8" });

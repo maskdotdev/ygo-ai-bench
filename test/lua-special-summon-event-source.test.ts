@@ -6,6 +6,80 @@ import { createLuaScriptHost } from "#lua/host.js";
 import type { DuelCardData } from "#duel/types.js";
 
 describe("Lua special summon event sources", () => {
+  it("collects success triggers for Lua Extra Deck Special Summons", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Extra Summon Source", kind: "monster" },
+      { code: "300", name: "Extra Summon Watcher", kind: "monster" },
+      { code: "900", name: "Effect-Summoned Fusion", kind: "extra" },
+    ];
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+          c100={}
+          function c100.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_IGNITION)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp)
+              local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_EXTRA, 0, 1, 1, nil):GetFirst()
+              Duel.SpecialSummon(target, SUMMON_TYPE_FUSION, tp, tp, false, false, POS_FACEUP_ATTACK)
+              target:CompleteProcedure()
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        if (name === "c300.lua") {
+          return `
+          c300={}
+          function c300.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_TRIGGER_O)
+            e:SetCode(EVENT_SPSUMMON_SUCCESS)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+              Debug.Message("extra special summon trigger " .. eg:GetFirst():GetCode() .. "/" .. r .. "/" .. rp)
+            end)
+            c:RegisterEffect(e)
+          end
+          `;
+        }
+        return undefined;
+      },
+    };
+    const session = createDuel({ seed: 150, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "300"], extra: ["900"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    const starter = session.state.cards.find((card) => card.code === "100");
+    const summoned = session.state.cards.find((card) => card.code === "900");
+    expect(starter).toBeDefined();
+    expect(summoned).toMatchObject({ location: "monsterZone", controller: 0, faceUp: true, summonType: "fusion" });
+    expect(session.state.pendingTriggers).toHaveLength(1);
+    expect(session.state.pendingTriggers[0]).toMatchObject({
+      eventName: "specialSummoned",
+      eventCode: 1102,
+      eventCardUid: summoned!.uid,
+      eventReason: 0x810,
+      eventReasonPlayer: 0,
+      eventReasonCardUid: starter!.uid,
+      eventReasonEffectId: 1,
+    });
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain("extra special summon trigger 900/2064/0");
+  });
+
   it("preserves active Lua effect sources on restored special summon events", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Summon Source Starter", kind: "monster" },
