@@ -857,7 +857,7 @@ function collectLuaMoveEvent(session: DuelSession, eventName: DuelEventName, eve
   collectDuelTriggerEffects(session.state, eventName, eventCard, payload);
 }
 
-function regroupLuaOperationEvent(session: DuelSession, triggerStart: number, eventName: DuelEventName, eventUids: string[], eventLocation?: DuelLocation): void {
+export function regroupLuaOperationEvent(session: DuelSession, triggerStart: number, eventName: DuelEventName, eventUids: string[], eventLocation?: DuelLocation): void {
   const uniqueEventUids = [...new Set(eventUids)];
   if (uniqueEventUids.length <= 1) return;
   const eventCards = uniqueEventUids.map((uid) => session.state.cards.find((card) => card.uid === uid && (eventLocation === undefined || card.location === eventLocation))).filter((card): card is DuelCardInstance => Boolean(card));

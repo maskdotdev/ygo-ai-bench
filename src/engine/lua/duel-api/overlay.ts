@@ -6,7 +6,7 @@ import { locationsFromMask, readCardUid } from "#lua/api-utils.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
 import type { DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
-import { markLuaOperationTimingBoundary, type LuaDuelMoveApiHostState } from "#lua/duel-api/move.js";
+import { markLuaOperationTimingBoundary, regroupLuaOperationEvent, type LuaDuelMoveApiHostState } from "#lua/duel-api/move.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -82,7 +82,10 @@ function pushRemoveOverlayCard(L: unknown, session: DuelSession, hostState: LuaD
   const reason = lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : duelReason.cost;
   const holders = overlayHolders(session, player, selfLocations, opponentLocations);
   markLuaOperationTimingBoundary(session, hostState);
+  const triggerStart = session.state.pendingTriggers.length;
   const detached = detachOverlayRange(session, holders, min, max, player, reason, hostState);
+  regroupLuaOperationEvent(session, triggerStart, "sentToGraveyard", detached, "graveyard");
+  regroupLuaOperationEvent(session, triggerStart, "detachedMaterial", detached, "graveyard");
   setOperatedUids(hostState, detached);
   if (hostState.activeContext && detached.length > 0) hostState.activeOperationMoved = true;
   lua.lua_pushinteger(L, detached.length);
