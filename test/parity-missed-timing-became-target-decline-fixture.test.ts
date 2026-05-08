@@ -75,6 +75,58 @@ describe("EDOPro parity became-target missed timing decline fixture", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "became-target-decline-multistep" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the initial targeting effect window restorable before target-event missed-timing filtering",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            locations: { hand: ["100", "400", "500", "800"], monsterZone: ["600", "700"] },
+            legalActionCounts: { 0: 14, 1: 0 },
+            legalActionGroupCounts: { 0: 4, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "became-target-decline-open-fast", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "became-target-decline-multistep", count: 1 },
+              { type: "changePosition", player: 0, windowId: 0, windowKind: "open", code: "600", location: "monsterZone", position: "faceUpDefense", count: 1 },
+              { type: "changePosition", player: 0, windowId: 0, windowKind: "open", code: "700", location: "monsterZone", position: "faceUpDefense", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "became-target-decline-open-fast", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "became-target-decline-multistep", count: 1 },
+                ],
+              },
+              {
+                player: 0,
+                label: "Actions",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "changePosition", player: 0, windowId: 0, windowKind: "open", code: "600", location: "monsterZone", position: "faceUpDefense", count: 1 },
+                  { type: "changePosition", player: 0, windowId: 0, windowKind: "open", code: "700", location: "monsterZone", position: "faceUpDefense", count: 1 },
+                ],
+              },
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "became-target-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "became-target-decline-optional-if" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "became-target-decline-optional-when", "turnOptional", 0, "open"),
+              absentTriggerActivationGroup(0, "became-target-decline-optional-if", "turnOptional", 0, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps optional if became-target triggers available while optional when became-target triggers miss timing",
@@ -106,6 +158,36 @@ describe("EDOPro parity became-target missed timing decline fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "became-target-decline-optional-if" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the surviving optional if became-target trigger decline restorable while optional when remains missed",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "became-target-decline-optional-if", eventName: "becameTarget", eventCardUid: "p0-deck-600-4" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "became-target-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "became-target-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "became-target-decline-optional-if", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "became-target-decline-optional-if", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "became-target-decline-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "became-target-decline-open-fast" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "became-target-decline-optional-when", "turnOptional", 1, "triggerBucket"),
+              absentWindowEffectGroup(0, "became-target-decline-open-fast", 1, "triggerBucket"),
+            ],
+            logIncludes: ["Became-target decline multi step resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro exposes open fast effects after declining the surviving optional if became-target trigger without resurrecting missed optional when triggers",
@@ -153,6 +235,54 @@ describe("EDOPro parity became-target missed timing decline fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "became-target-decline-open-fast" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the post-decline open fast-effect window restorable after target-event missed-timing filtering",
+            windowId: 2,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            legalActionCounts: { 0: 13, 1: 0 },
+            legalActionGroupCounts: { 0: 4, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "became-target-decline-open-fast", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "became-target-decline-multistep", count: 1 },
+              { type: "changePosition", player: 0, windowId: 2, windowKind: "open", code: "600", location: "monsterZone", position: "faceUpDefense", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 2,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "became-target-decline-open-fast", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "became-target-decline-multistep", count: 1 },
+                ],
+              },
+              {
+                player: 0,
+                label: "Actions",
+                windowId: 2,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "changePosition", player: 0, windowId: 2, windowKind: "open", code: "600", location: "monsterZone", position: "faceUpDefense", count: 1 }],
+              },
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "became-target-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "became-target-decline-optional-if" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "became-target-decline-optional-when", "turnOptional", 2, "open"),
+              absentTriggerActivationGroup(0, "became-target-decline-optional-if", "turnOptional", 2, "open"),
+            ],
+            logIncludes: ["Became-target decline multi step resolved", "became-target-decline-optional-if"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the restored post-decline open fast effect without resurrecting missed optional when triggers",
