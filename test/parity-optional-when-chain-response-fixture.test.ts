@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { chainEffectGroup, chainPassGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { chainEffectGroup, chainPassGroup, summonGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity optional when chain response fixture", () => {
   it("opens chain responses for optional when triggers when their event is last", () => {
@@ -60,6 +60,26 @@ describe("EDOPro parity optional when chain response fixture", () => {
         makeScriptedStep(makeResponseSelector("passChain", 1)),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-optional-when-chain" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the last-event optional when trigger bucket restorable before opening chain responses",
+            windowId: 2,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "fixture-optional-when-chain", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-2" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-optional-when-chain", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-optional-when-chain", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-optional-when-chain", "turnOptional", 1, 2),
+              triggerDeclineGroup(0, "fixture-optional-when-chain", "turnOptional", 1, 2),
+            ],
+            logIncludes: ["Single step send chain resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro opens opponent chain-response priority after a last-event optional when trigger when a response exists",
@@ -80,6 +100,23 @@ describe("EDOPro parity optional when chain response fixture", () => {
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-chain-after-optional-when" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps opponent chain-response priority restorable after the optional when trigger is placed on chain",
+            windowId: 3,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 0, effectId: "fixture-optional-when-chain", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-2" }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 3, windowKind: "chainResponse", effectId: "fixture-opponent-chain-after-optional-when", count: 1 },
+              { type: "passChain", player: 1, windowId: 3, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-opponent-chain-after-optional-when", 1, 3), chainPassGroup(1, 1, 3)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro resolves the last-event optional when trigger chain after the opponent adds the only legal response",
