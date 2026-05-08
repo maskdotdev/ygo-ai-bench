@@ -5,6 +5,7 @@ import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
 import {
   absentPassBattleGroup,
   absentWindowEffectGroup,
+  chainEffectGroup,
   chainPassGroup,
   passDamageGroup,
 } from "./parity-legal-action-group-helpers.js";
@@ -86,6 +87,34 @@ describe("EDOPro parity battle quick-effect pass handoff turn-response until-cha
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-damage-step-handoff-until-open-quick" })),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent start-damage-step chain-response window restorable before the turn-player until-chain-end handoff",
+            waitingFor: 1,
+            windowId: 6,
+            windowKind: "chainResponse",
+            pendingBattle: true,
+            battleWindow: { kind: "startDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            chain: [{ player: 0, effectId: "fixture-damage-step-handoff-until-open-quick", sourceUid: "p0-deck-300-1" }],
+            chainPasses: [],
+            chainLimits: [],
+            damagePasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-opponent-damage-step-handoff-until-blocked", count: 1 },
+              { type: "passChain", player: 1, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-opponent-damage-step-handoff-until-blocked", 1, 6), chainPassGroup(1, 1, 6)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-damage-step-handoff-until-open-quick" },
+              { type: "passDamage", player: 1, windowId: 6, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-damage-step-handoff-until-open-quick", 6, "chainResponse"),
+              absentPassBattleGroup(1, "passDamage", 6),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro offers turn-player chain-only damage-step responses after the opponent passes the damage-step quick chain before until-chain-end limits apply",
@@ -131,6 +160,48 @@ describe("EDOPro parity battle quick-effect pass handoff turn-response until-cha
         }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-turn-damage-step-handoff-until-chain-limiter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the turn-player pre-limit handoff response window restorable before SetChainLimitTillChainEnd applies",
+            waitingFor: 0,
+            windowId: 7,
+            windowKind: "chainResponse",
+            pendingBattle: true,
+            battleWindow: { kind: "startDamageStep", step: "damage", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            chain: [{ player: 0, effectId: "fixture-damage-step-handoff-until-open-quick", sourceUid: "p0-deck-300-1" }],
+            chainPasses: [1],
+            chainLimits: [],
+            damagePasses: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-turn-damage-step-handoff-until-chain-limiter", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-turn-damage-step-handoff-until-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 7, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 7,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-turn-damage-step-handoff-until-chain-limiter", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-turn-damage-step-handoff-until-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(0, 1, 7),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 7, windowKind: "chainResponse", effectId: "fixture-damage-step-handoff-until-open-quick" },
+              { type: "passDamage", player: 0, windowId: 7, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-damage-step-handoff-until-open-quick", 7, "chainResponse"),
+              absentPassBattleGroup(0, "passDamage", 7),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies SetChainLimitTillChainEnd restrictions after the turn player responds to a damage-step quick pass handoff",
