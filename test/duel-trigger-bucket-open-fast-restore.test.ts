@@ -169,6 +169,74 @@ describe("trigger bucket open fast restore", () => {
     expect(staleTurnChain.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredTurnResponse, 1));
   });
 
+  it("opens restored fast-effect priority after cross-player optional trigger activations complete", () => {
+    const session = createDuel({ seed: 236, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "500", "300"] },
+    });
+    startDuel(session);
+
+    const summoned = findHandCard(session, 0, "100");
+    const turnTrigger = findHandCard(session, 0, "300");
+    const turnQuick = findHandCard(session, 0, "500");
+    const opponentTrigger = findHandCard(session, 1, "400");
+    expect(summoned).toBeDefined();
+    expect(turnTrigger).toBeDefined();
+    expect(turnQuick).toBeDefined();
+    expect(opponentTrigger).toBeDefined();
+
+    registerEffect(session, normalSummonTrigger("restore-cross-optional-turn-trigger", turnTrigger!.uid, 0));
+    registerEffect(session, normalSummonTrigger("restore-cross-optional-opponent-trigger", opponentTrigger!.uid, 1));
+    registerEffect(session, chainOnlyQuick("restore-cross-optional-turn-chain-quick", turnQuick!.uid, 0));
+    registerEffect(session, openOnlyQuick("restore-cross-optional-turn-open-quick", turnQuick!.uid, 0));
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeDefined();
+    applyAndAssert(session, summon!);
+
+    const restoredTurnBucket = restoreDuel(serializeDuel(session), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredTurnBucket).pendingTriggerBuckets.map((bucket) => bucket.triggerBucket)).toEqual(["turnOptional", "opponentOptional"]);
+    const turnActivation = getDuelLegalActions(restoredTurnBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-cross-optional-turn-trigger");
+    expect(turnActivation).toBeDefined();
+    const turnActivated = applyAndAssert(restoredTurnBucket, turnActivation!);
+    expect(turnActivated.state).toMatchObject({ waitingFor: 1, windowKind: "triggerBucket" });
+    expect(turnActivated.state.chain.map((link) => link.effectId)).toEqual(["restore-cross-optional-turn-trigger"]);
+    expect(turnActivated.state.pendingTriggerBuckets.map((bucket) => bucket.triggerBucket)).toEqual(["opponentOptional"]);
+    expect(getDuelLegalActions(restoredTurnBucket, 0)).toEqual([]);
+
+    const restoredOpponentBucket = restoreDuel(serializeDuel(restoredTurnBucket), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredOpponentBucket)).toMatchObject({ waitingFor: 1, windowKind: "triggerBucket" });
+    const opponentActivation = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "activateTrigger" && action.effectId === "restore-cross-optional-opponent-trigger");
+    expect(opponentActivation).toBeDefined();
+    const opponentActivated = applyAndAssert(restoredOpponentBucket, opponentActivation!);
+    expect(opponentActivated.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(opponentActivated.state.chain.map((link) => link.effectId)).toEqual(["restore-cross-optional-turn-trigger", "restore-cross-optional-opponent-trigger"]);
+    expect(getDuelLegalActions(restoredOpponentBucket, 1)).toEqual([]);
+    expect(hasGroupedEffect(restoredOpponentBucket, 0, "restore-cross-optional-turn-chain-quick", "chainResponse")).toBe(true);
+    expect(hasGroupedEffect(restoredOpponentBucket, 0, "restore-cross-optional-turn-open-quick", "chainResponse")).toBe(false);
+
+    const restoredChainWindow = restoreDuel(serializeDuel(restoredOpponentBucket), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredChainWindow)).toMatchObject({ waitingFor: 0, windowKind: "chainResponse", pendingTriggers: [], pendingTriggerBuckets: [] });
+    const pass = getDuelLegalActions(restoredChainWindow, 0).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    const resolved = applyAndAssert(restoredChainWindow, pass!);
+    expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredChainWindow.state.chainPasses).toEqual([]);
+    expect(resolved.legalActions.filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual(["restore-cross-optional-turn-open-quick"]);
+    expect(hasGroupedEffect(restoredChainWindow, 0, "restore-cross-optional-turn-open-quick", "open")).toBe(true);
+    expect(hasGroupedEffect(restoredChainWindow, 0, "restore-cross-optional-turn-chain-quick", "open")).toBe(false);
+    expect(restoredChainWindow.state.log.map((entry) => entry.detail)).toEqual(expect.arrayContaining([
+      "restore-cross-optional-turn-trigger resolved",
+      "restore-cross-optional-opponent-trigger resolved",
+    ]));
+    const stalePass = applyResponse(restoredChainWindow, pass!);
+    expect(stalePass.ok).toBe(false);
+    expect(stalePass.error).toContain("Response is not currently legal");
+    expect(stalePass.legalActions).toEqual(getDuelLegalActions(restoredChainWindow, 0));
+    expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredChainWindow, 0));
+  });
+
   it("resolves restored trigger-chain fast-effect alternation after the opponent chains", () => {
     const session = createDuel({ seed: 235, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -307,6 +375,10 @@ function restoreRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "
     "restore-fast-alt-turn-open-quick": (effect) => ({ ...restoreLoggedEffect(effect), canActivate: (ctx) => ctx.duel.chain.length === 0 }),
     "restore-fast-alt-opponent-chain-quick": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
     "restore-fast-alt-opponent-open-quick": (effect) => ({ ...restoreLoggedEffect(effect), canActivate: (ctx) => ctx.duel.chain.length === 0 }),
+    "restore-cross-optional-turn-trigger": restoreLoggedEffect,
+    "restore-cross-optional-opponent-trigger": restoreLoggedEffect,
+    "restore-cross-optional-turn-chain-quick": (effect) => ({ ...restoreLoggedEffect(effect), canActivate: (ctx) => ctx.duel.chain.length > 0 }),
+    "restore-cross-optional-turn-open-quick": (effect) => ({ ...restoreLoggedEffect(effect), canActivate: (ctx) => ctx.duel.chain.length === 0 }),
     "restore-fast-resolve-turn-trigger": restoreLoggedEffect,
     "restore-fast-resolve-opponent-trigger": restoreLoggedEffect,
     "restore-fast-resolve-turn-chain-quick": (effect) => ({ ...restoreLoggedEffect(effect), oncePerTurn: true, canActivate: (ctx) => ctx.duel.chain.length > 0 }),
