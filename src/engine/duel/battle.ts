@@ -1,6 +1,7 @@
 import { findCard, getCards, pushDuelLog, requireControlledCard } from "#duel/card-state.js";
 import { duelActivity, recordAttackActivity } from "#duel/activity.js";
 import { clearBattleWindowState, currentBattleWindowKind, markBattleWindowAttackNegated, openBattleWindowState } from "#duel/battle-window-state.js";
+import { otherPlayer } from "#duel/player-id.js";
 import { duelReason } from "#duel/reasons.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
@@ -365,10 +366,6 @@ function canBeBattleTarget(card: DuelCardInstance): boolean {
 
 function isMonsterPosition(position: CardPosition): boolean {
   return position === "faceUpAttack" || position === "faceUpDefense" || position === "faceDownDefense";
-}
-
-function otherPlayer(player: PlayerId): PlayerId {
-  return player === 0 ? 1 : 0;
 }
 
 function openReplayDecisionWindow(state: DuelState, attacker: DuelCardInstance): void {

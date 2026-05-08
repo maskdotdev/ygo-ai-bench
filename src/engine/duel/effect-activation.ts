@@ -1,6 +1,7 @@
 import { findCard, pushDuelLog, requireControlledCard } from "#duel/card-state.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { pruneSpentMandatoryPendingTriggers } from "#duel/pending-trigger-actions.js";
+import { otherPlayer } from "#duel/player-id.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import { pendingTriggerBucketsForState, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type {
@@ -275,10 +276,6 @@ function takePendingTrigger(state: DuelState, player: PlayerId, triggerId: strin
   const [trigger] = state.pendingTriggers.splice(triggerIndex, 1);
   if (!trigger) throw new Error(`Trigger ${triggerId} is not pending`);
   return trigger;
-}
-
-function otherPlayer(player: PlayerId): PlayerId {
-  return player === 0 ? 1 : 0;
 }
 
 function nextChainResponsePlayer(state: DuelState, activatingPlayer: PlayerId, firstResponder: PlayerId, handlers: DuelActivationHandlers): PlayerId | undefined {

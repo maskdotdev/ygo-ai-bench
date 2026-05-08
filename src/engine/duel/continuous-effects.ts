@@ -1,4 +1,5 @@
 import { findCard } from "#duel/card-state.js";
+import { otherPlayer } from "#duel/player-id.js";
 import { duelReason } from "#duel/reasons.js";
 import type {
   DuelCardInstance,
@@ -405,10 +406,6 @@ function applyBattleDamageValue(amount: number, value: number | undefined): numb
   if (value === 0x80000000) return amount * 2;
   if (value === 0x80000001) return Math.floor(amount / 2);
   return value;
-}
-
-function otherPlayer(player: PlayerId): PlayerId {
-  return player === 0 ? 1 : 0;
 }
 
 function opponentMonsterCount(state: DuelState, player: PlayerId): number {

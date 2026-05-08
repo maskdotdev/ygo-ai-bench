@@ -3,6 +3,7 @@ import { currentBattleStep, currentBattleWindowKind, isBattleDamageStep, openBat
 import { pruneResetEffectsAfterPhaseFlag } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterPhaseFlag } from "#duel/flags.js";
 import { resolvePendingBattle, type BattleContinuationHandlers } from "#duel/battle-continuation.js";
+import { otherPlayer } from "#duel/player-id.js";
 import type { BattleWindowKind, DuelState, PlayerId } from "#duel/types.js";
 
 type DamageBattleWindowKind = Extract<BattleWindowKind, "startDamageStep" | "beforeDamageCalculation" | "duringDamageCalculation" | "afterDamageCalculation" | "endDamageStep">;
@@ -110,10 +111,6 @@ function pruneBattleSubphaseResets(state: DuelState, kind: BattleWindowKind, pre
   if (phaseFlag === undefined) return;
   pruneResetEffectsAfterPhaseFlag(state, phaseFlag);
   pruneDuelFlagEffectsAfterPhaseFlag(state, phaseFlag);
-}
-
-function otherPlayer(player: PlayerId): PlayerId {
-  return player === 0 ? 1 : 0;
 }
 
 function collectBattleTimingEvent(

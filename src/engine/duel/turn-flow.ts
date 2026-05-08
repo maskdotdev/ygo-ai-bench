@@ -4,6 +4,7 @@ import { getCards, moveDuelCard, pushDuelLog } from "#duel/card-state.js";
 import { pruneResetEffectsAfterPhase } from "#duel/effect-reset.js";
 import { clearEndedDuelPendingState } from "#duel/end-state.js";
 import { pruneDuelFlagEffectsAfterPhase } from "#duel/flags.js";
+import { otherPlayer } from "#duel/player-id.js";
 import { duelReason } from "#duel/reasons.js";
 import { phaseEventCode, phaseStartEventCode } from "#duel/event-codes.js";
 import type { DuelEventName, DuelPhase, DuelState, PlayerId } from "#duel/types.js";
@@ -141,10 +142,6 @@ function consumeSkippedPhases(state: DuelState, player: PlayerId, targetPhase: D
     if (skip.player === player && skipped.has(skip.phase)) skip.remaining -= 1;
   }
   state.skippedPhases = state.skippedPhases.filter((skip) => skip.remaining > 0);
-}
-
-function otherPlayer(player: PlayerId): PlayerId {
-  return player === 0 ? 1 : 0;
 }
 
 function applyDeckDefeat(state: DuelState, player: PlayerId): void {

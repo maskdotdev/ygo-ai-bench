@@ -127,6 +127,7 @@ export { groupDuelLegalActions } from "#duel/legal-action-groups.js";
 export type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 export { describeDuelActionSelector, duelActionMatchesSelector, selectDuelActionBySelector } from "#duel/action-selectors.js";
 import { phaseMask } from "#duel/phase-mask.js";
+import { otherPlayer } from "#duel/player-id.js";
 import { damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "#duel/player-life.js";
 import { getPromptResponseActions, resolveDuelPrompt, stampDuelActions } from "#duel/prompt-response.js";
 import { hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } from "#duel/quick-effect-actions.js";
@@ -992,8 +993,4 @@ function resolveChain(state: DuelState): void {
   if (state.pendingTriggers.length === 0) collectTriggerEffects(state, "chainEnded");
   setWaitingForPendingTriggerBucket(state);
   continueAttackResponseWindow(state, battleContinuationHandlers);
-}
-
-function otherPlayer(player: PlayerId): PlayerId {
-  return player === 0 ? 1 : 0;
 }
