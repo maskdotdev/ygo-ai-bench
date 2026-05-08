@@ -128,4 +128,53 @@ describe("Lua Spell/Trap activation lifecycle", () => {
     expect(host.messages).toContain("hand trap activation resolved");
     expect(session.state.cards.find((card) => card.uid === trap!.uid)).toMatchObject({ location: "graveyard" });
   });
+
+  it("hides hand Spell activations when the Spell & Trap Zone is full", () => {
+    const cards: DuelCardData[] = [
+      { code: "101", name: "Zone Filler 1", kind: "spell", typeFlags: 0x2 },
+      { code: "102", name: "Zone Filler 2", kind: "spell", typeFlags: 0x2 },
+      { code: "103", name: "Zone Filler 3", kind: "spell", typeFlags: 0x2 },
+      { code: "104", name: "Zone Filler 4", kind: "spell", typeFlags: 0x2 },
+      { code: "105", name: "Zone Filler 5", kind: "spell", typeFlags: 0x2 },
+      { code: "106", name: "Blocked Normal Spell", kind: "spell", typeFlags: 0x2 },
+    ];
+    const session = createDuel({ seed: 296, startingHandSize: 6, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["101", "102", "103", "104", "105", "106"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c106={}
+      function c106.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_ACTIVATE)
+        e:SetCode(EVENT_FREE_CHAIN)
+        e:SetOperation(function(e,tp)
+          Debug.Message("blocked normal spell resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "blocked-normal-spell-activation.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    for (const code of ["101", "102", "103", "104", "105"]) {
+      const filler = session.state.cards.find((card) => card.code === code);
+      expect(filler).toBeDefined();
+      const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "setSpellTrap" && candidate.uid === filler!.uid);
+      expect(setAction).toBeDefined();
+      expect(applyResponse(session, setAction!).ok).toBe(true);
+    }
+
+    const blockedSpell = session.state.cards.find((card) => card.code === "106");
+    expect(blockedSpell).toBeDefined();
+    expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "spellTrapZone")).toHaveLength(5);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "activateEffect" && candidate.uid === blockedSpell!.uid)).toBe(false);
+  });
 });

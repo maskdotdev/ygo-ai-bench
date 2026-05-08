@@ -11,6 +11,7 @@ const typeField = 0x80000;
 export function placeActivatedSpellTrapCard(state: DuelState, player: PlayerId, source: DuelCardInstance, effect: DuelEffectDefinition): void {
   if (!isSpellTrapCardActivation(source, effect)) return;
   if (source.location === "hand") {
+    if (isPendulumCard(source) && !hasPendulumZoneSpace(state, player)) throw new Error(`${source.name} cannot be activated because the Pendulum Zones are full`);
     if (!hasZoneSpace(state, player, "spellTrapZone")) throw new Error(`${source.name} cannot be activated because the Spell & Trap Zone is full`);
     moveDuelCard(state, source.uid, "spellTrapZone", player, duelReason.rule, player);
     return;
@@ -22,8 +23,13 @@ export function shouldSendActivatedSpellTrapToGraveyard(source: DuelCardInstance
   return source.location === "spellTrapZone" && isSpellTrapCardActivation(source, effect) && !isPersistentSpellTrap(source);
 }
 
-export function canActivateSpellTrapCardEffect(source: DuelCardInstance, effect: DuelEffectDefinition): boolean {
-  return !isSpellTrapCardActivation(source, effect) || source.location !== "spellTrapZone" || !source.faceUp;
+export function canActivateSpellTrapCardEffect(state: DuelState, player: PlayerId, source: DuelCardInstance, effect: DuelEffectDefinition): boolean {
+  if (!isSpellTrapCardActivation(source, effect)) return true;
+  if (source.location === "hand") {
+    if (!hasZoneSpace(state, player, "spellTrapZone")) return false;
+    return !isPendulumCard(source) || hasPendulumZoneSpace(state, player);
+  }
+  return source.location !== "spellTrapZone" || !source.faceUp;
 }
 
 function isSpellTrapCardActivation(source: DuelCardInstance, effect: DuelEffectDefinition): boolean {
@@ -36,4 +42,8 @@ function isPersistentSpellTrap(source: DuelCardInstance): boolean {
 
 function isPendulumCard(source: DuelCardInstance): boolean {
   return ((source.data.typeFlags ?? 0) & typePendulum) !== 0;
+}
+
+function hasPendulumZoneSpace(state: DuelState, player: PlayerId): boolean {
+  return state.cards.filter((card) => card.controller === player && card.location === "spellTrapZone" && (card.sequence === 0 || card.sequence === 1)).length < 2;
 }

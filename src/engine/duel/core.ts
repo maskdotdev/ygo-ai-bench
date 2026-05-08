@@ -772,7 +772,7 @@ function specialSummonProcedureActions(state: DuelState, player: PlayerId): Duel
 
 function canChooseEffect(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId, eventName?: DuelEventName, eventCard?: DuelCardInstance, payload: DuelEventPayload = {}): boolean {
   if (isEffectActivationPrevented(state, player, source, createContinuousEffectContext(state), effect)) return false;
-  if (!canActivateSpellTrapCardEffect(source, effect)) return false;
+  if (!canActivateSpellTrapCardEffect(state, player, source, effect)) return false;
   const ctx = createEffectContext(
     state,
     source,
