@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentOpenAttackGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentOpenAttackGroup, passBattleGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 const resolveBattleStepsBeforeFinalPass = [
   makeScriptedStep(makeResponseSelector("passAttack", 1)),
@@ -55,6 +55,24 @@ describe("EDOPro parity battle extra monster attack lock fixtures", () => {
         ...resolveBattleStepsBeforeFinalPass,
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
           snapshotRestore: "after",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the final opposing monster on field before the final end-damage-step pass recalculates monster-only extra attacks",
+            phase: "battle",
+            waitingFor: 0,
+            windowId: 13,
+            windowKind: "battle",
+            pendingBattle: true,
+            currentAttack: true,
+            battleStep: "damage",
+            battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 0 },
+            damagePasses: [1],
+            locations: { monsterZone: ["100", "200"] },
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "passDamage", player: 0, windowId: 13, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(0, "passDamage", 1, 13)],
+          },
           after: {
             source: "edopro",
             note: "EDOPro monster-only extra attacks do not become direct attacks after all opposing monsters leave the field",
