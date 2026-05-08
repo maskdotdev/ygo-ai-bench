@@ -28,6 +28,57 @@ describe("Lua named chain-limit predicate restore", () => {
   it("restores numbered Project Ignis named predicates from snapshots", () => {
     expectNamedPredicateRestore(true, "chlimit2");
   });
+
+  it("restores named climit effect-type predicate semantics from snapshots", () => {
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") return effectTypeSourceScript();
+        if (name === "c200.lua") return activationResponseScript(200, "same-player activation response resolved");
+        if (name === "c300.lua") return activationResponseScript(300, "blocked opponent activation response resolved");
+        if (name === "c400.lua") return quickScript(400, "allowed opponent quick response resolved");
+        return undefined;
+      },
+    };
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 2 }, { id: 300, type: 2 }, { id: 400, type: 1 }], []);
+    const session = createDuel({ seed: 314, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: ["300", "400"] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.loadCardScript(400, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(4);
+
+    const sourceAction = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
+    expect(sourceAction).toBeDefined();
+    const sourceResult = applyResponse(session, sourceAction!);
+    expect(sourceResult.ok, sourceResult.error).toBe(true);
+
+    const registryKey = "lua-chain-limit:100:0:link:known:c100.climit";
+    expect(serializeDuel(session).state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
+    expect(hasLuaEffect(getLegalActions(session, 1), 1, "lua-3")).toBe(false);
+    expect(hasLuaEffect(getLegalActions(session, 1), 1, "lua-4")).toBe(true);
+
+    const opponentWindowRestored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expectRestoredChainLimit(opponentWindowRestored, registryKey, false);
+    expect(hasGroupedLuaEffect(opponentWindowRestored, 1, "lua-3")).toBe(false);
+    expect(hasGroupedLuaEffect(opponentWindowRestored, 1, "lua-4")).toBe(true);
+
+    const opponentPass = getLegalActions(session, 1).find((candidate) => candidate.type === "passChain");
+    expect(opponentPass).toBeDefined();
+    const passResult = applyResponse(session, opponentPass!);
+    expect(passResult.ok, passResult.error).toBe(true);
+
+    const handoffRestored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expectRestoredChainLimit(handoffRestored, registryKey, false);
+    expect(hasGroupedLuaEffect(handoffRestored, 0, "lua-2")).toBe(true);
+    const restoredAction = getLuaRestoreLegalActions(handoffRestored, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
+    expect(restoredAction).toBeDefined();
+    const restoredResponse = applyLuaRestoreResponse(handoffRestored, restoredAction!);
+    expect(restoredResponse.ok, restoredResponse.error).toBe(true);
+  });
 });
 
 function expectNamedPredicateRestore(untilChainEnd: boolean, predicateName: NamedPredicate): void {
@@ -111,6 +162,40 @@ function quickScript(code: number, message: string): string {
       e:SetCondition(function(e,tp) return Duel.GetCurrentChain()>0 end)
       e:SetOperation(function(e,tp) Debug.Message("${message}") end)
       c:RegisterEffect(e)
+    end
+  `;
+}
+
+function activationResponseScript(code: number, message: string): string {
+  return `
+    local s,id=GetID()
+    function s.initial_effect(c)
+      local e = Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_QUICK_O+EFFECT_TYPE_ACTIVATE)
+      e:SetRange(LOCATION_HAND)
+      e:SetCondition(function(e,tp) return Duel.GetCurrentChain()>0 end)
+      e:SetOperation(function(e,tp) Debug.Message("${message}") end)
+      c:RegisterEffect(e)
+    end
+  `;
+}
+
+function effectTypeSourceScript(): string {
+  return `
+    local s,id=GetID()
+    function s.initial_effect(c)
+      local e = Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_IGNITION)
+      e:SetRange(LOCATION_HAND)
+      e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+        if chk==0 then return true end
+        Duel.SetChainLimit(s.climit)
+      end)
+      e:SetOperation(function(e,tp) Debug.Message("named climit source resolved") end)
+      c:RegisterEffect(e)
+    end
+    function s.climit(e,lp,tp)
+      return lp==tp or not e:IsHasType(EFFECT_TYPE_ACTIVATE)
     end
   `;
 }
