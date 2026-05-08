@@ -126,6 +126,43 @@ describe("EDOPro parity chain-resolution SEGOC pass-handoff turn-response oppone
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-handoff-turn-opponent-resolution-first-opponent-quick" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-handoff-turn-opponent-resolution-second-turn-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the trigger player's reopened response window restorable before the final turn-player handoff response",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-chain-handoff-turn-opponent-resolution-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-handoff-turn-opponent-resolution-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-handoff-turn-opponent-resolution-first-turn-quick", sourceUid: "p0-deck-200-1" },
+              { player: 1, effectId: "fixture-chain-handoff-turn-opponent-resolution-first-opponent-quick", sourceUid: "p1-deck-400-0" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-handoff-turn-opponent-resolution-second-turn-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-chain-handoff-turn-opponent-resolution-second-turn-quick", 1, 6),
+              chainPassGroup(0, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-handoff-turn-opponent-resolution-first-turn-quick" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-handoff-turn-opponent-resolution-first-opponent-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-chain-handoff-turn-opponent-resolution-first-turn-quick", 6),
+              absentChainEffectGroup(1, "fixture-chain-handoff-turn-opponent-resolution-first-opponent-quick", 6),
+            ],
+            locations: { graveyard: ["700", "200", "900", "400", "450"], hand: ["100", "300", "500", "800", "800", "800", "800"] },
+            logIncludes: ["Chain handoff turn opponent resolution starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro gives the opponent another chain-response window after the trigger player's final handoff response",

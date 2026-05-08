@@ -112,6 +112,42 @@ describe("EDOPro parity chain-resolution opponent same-bucket mandatory pass-han
         makeScriptedStep(makeResponseSelector("passChain", 0)),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-opponent-mandatory-opponent-response-resolution-opponent-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps opponent same-bucket mandatory handoff response choices restorable before the opponent chains",
+            phase: "main1",
+            windowId: 5,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 0, effectId: "fixture-opponent-mandatory-opponent-response-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-opponent-mandatory-opponent-response-resolution-second-opponent", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-opponent-mandatory-opponent-response-resolution-first-opponent", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+            ],
+            chainPasses: [0],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 5, windowKind: "chainResponse", effectId: "fixture-opponent-mandatory-opponent-response-resolution-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 5, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-opponent-mandatory-opponent-response-resolution-opponent-quick", 1, 5),
+              chainPassGroup(1, 1, 5),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 5, windowKind: "chainResponse", effectId: "fixture-opponent-mandatory-opponent-response-resolution-turn-quick" },
+              { type: "activateTrigger", player: 1, windowId: 5, windowKind: "triggerBucket", effectId: "fixture-opponent-mandatory-opponent-response-resolution-first-opponent", triggerBucket: "opponentMandatory" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(0, "fixture-opponent-mandatory-opponent-response-resolution-turn-quick", 5),
+              absentTriggerActivationGroup(1, "fixture-opponent-mandatory-opponent-response-resolution-first-opponent", "opponentMandatory", 5, "chainResponse"),
+            ],
+            locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "800", "400", "500", "800", "800"] },
+            logIncludes: ["Opponent mandatory opponent-response resolution starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro reopens turn-player responses after an opponent response to restored opponent same-bucket mandatory trigger chains",
