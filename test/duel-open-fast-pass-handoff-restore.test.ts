@@ -92,6 +92,20 @@ describe("open fast pass handoff restore", () => {
     expect(hasGroupedEffect(getGroupedDuelLegalActions(restored, 1), 1, "restore-open-pass-opponent-chain-quick", "chainResponse")).toBe(false);
     expect(hasGroupedPass(getGroupedDuelLegalActions(restored, 0), 0)).toBe(true);
 
+    const turnChainQuickAction = getDuelLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-open-pass-turn-chain-quick");
+    expect(turnChainQuickAction).toBeDefined();
+    const forgedOpenOnlyQuick = {
+      ...openQuick!,
+      windowId: turnChainQuickAction!.windowId!,
+      windowKind: turnChainQuickAction!.windowKind!,
+      windowToken: turnChainQuickAction!.windowToken!,
+    };
+    const openOnlyDuringResponse = applyResponse(restored, forgedOpenOnlyQuick);
+    expect(openOnlyDuringResponse.ok).toBe(false);
+    expect(openOnlyDuringResponse.error).toContain("Response is not currently legal");
+    expect(openOnlyDuringResponse.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(openOnlyDuringResponse.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+
     const staleOpponentPass = applyResponse(restored, opponentPass!);
     expect(staleOpponentPass.ok).toBe(false);
     expect(staleOpponentPass.error).toContain("Response is not currently legal");
