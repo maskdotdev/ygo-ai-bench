@@ -78,6 +78,34 @@ describe("EDOPro parity damage-calculation quick-effect pass handoff turn respon
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-damage-calculation-handoff-resolution-open-quick" })),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the opponent damage-calculation chain-response window restorable before passing to the turn player",
+            waitingFor: 1,
+            windowId: 10,
+            windowKind: "chainResponse",
+            pendingBattle: true,
+            battleStep: "damageCalculation",
+            battleWindow: { kind: "duringDamageCalculation", step: "damageCalculation", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            chain: [{ player: 0, effectId: "fixture-damage-calculation-handoff-resolution-open-quick", sourceUid: "p0-deck-300-1" }],
+            chainPasses: [],
+            damagePasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 10, windowKind: "chainResponse", effectId: "fixture-opponent-damage-calculation-handoff-resolution-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 10, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-opponent-damage-calculation-handoff-resolution-chain-quick", 1, 10), chainPassGroup(1, 1, 10)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 10, windowKind: "chainResponse", effectId: "fixture-damage-calculation-handoff-resolution-open-quick" },
+              { type: "passDamage", player: 1, windowId: 10, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-damage-calculation-handoff-resolution-open-quick", 10, "chainResponse"),
+              absentPassBattleGroup(1, "passDamage", 10),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro offers turn-player chain-only damage-calculation responses after the opponent passes the damage-calculation quick chain",
@@ -110,6 +138,39 @@ describe("EDOPro parity damage-calculation quick-effect pass handoff turn respon
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-turn-damage-calculation-handoff-resolution-chain-quick" })),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the reopened opponent damage-calculation chain-response window restorable before chain resolution",
+            waitingFor: 1,
+            windowId: 12,
+            windowKind: "chainResponse",
+            pendingBattle: true,
+            battleStep: "damageCalculation",
+            battleWindow: { kind: "duringDamageCalculation", step: "damageCalculation", attackerUid: "p0-deck-100-0", responsePlayer: 0 },
+            chain: [
+              { player: 0, effectId: "fixture-damage-calculation-handoff-resolution-open-quick", sourceUid: "p0-deck-300-1" },
+              { player: 0, effectId: "fixture-turn-damage-calculation-handoff-resolution-chain-quick", sourceUid: "p0-deck-500-2" },
+            ],
+            chainPasses: [],
+            damagePasses: [],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 12, windowKind: "chainResponse", effectId: "fixture-opponent-damage-calculation-handoff-resolution-chain-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 12, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [chainEffectGroup(1, "fixture-opponent-damage-calculation-handoff-resolution-chain-quick", 1, 12), chainPassGroup(1, 1, 12)],
+            absentLegalActions: [
+              { type: "activateEffect", player: 0, windowId: 12, windowKind: "chainResponse", effectId: "fixture-damage-calculation-handoff-resolution-open-quick" },
+              { type: "activateEffect", player: 0, windowId: 12, windowKind: "chainResponse", effectId: "fixture-turn-damage-calculation-handoff-resolution-chain-quick" },
+              { type: "passDamage", player: 1, windowId: 12, windowKind: "battle" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(0, "fixture-damage-calculation-handoff-resolution-open-quick", 12, "chainResponse"),
+              absentWindowEffectGroup(0, "fixture-turn-damage-calculation-handoff-resolution-chain-quick", 12, "chainResponse"),
+              absentPassBattleGroup(1, "passDamage", 12),
+            ],
+          },
         }),
       ],
       expected: {
