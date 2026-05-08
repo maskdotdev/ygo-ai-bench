@@ -55,7 +55,9 @@ describe("EDOPro parity battle direct-attack lock fixtures", () => {
             legalActionGroups: [turnGroup(0)],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 0, windowKind: "open" }],
             absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 0)],
-          },
+
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },},
           after: {
             source: "edopro",
             note: "EDOPro exposes both direct and targeted attacks for monsters affected by DIRECT_ATTACK while opposing monsters exist",

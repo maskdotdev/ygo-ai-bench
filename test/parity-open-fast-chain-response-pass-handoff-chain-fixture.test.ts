@@ -101,6 +101,10 @@ describe("EDOPro parity open fast-effect chain-response pass handoff chain fixtu
               { type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-chain-opponent-second-chain-quick", count: 1 },
               { type: "passChain", player: 1, windowId: 1, windowKind: "chainResponse", count: 1 },
             ],
+            legalActionGroups: [
+              chainEffectGroup(1, "open-fast-chain-handoff-chain-opponent-first-chain-quick", 1, 1),
+              chainPassGroup(1, 1, 1),
+            ],
             absentLegalActions: [
               { type: "activateEffect", player: 0, windowId: 1, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-chain-turn-chain-quick" },
               { type: "activateEffect", player: 1, windowId: 1, windowKind: "chainResponse", effectId: "open-fast-chain-handoff-chain-opponent-open-quick" },

@@ -218,6 +218,15 @@ export const absentTriggerActivationGroup = (player: 0 | 1, effectId: string, tr
   actions: [{ type: "activateTrigger" as const, player, windowId, windowKind, effectId, ...(windowKind === "triggerBucket" ? { triggerBucket } : {}) }],
 });
 
+export const absentTriggerDeclineGroup = (player: 0 | 1, effectId: string, triggerBucket: TriggerBucket, windowId: number, windowKind: WindowKind) => ({
+  player,
+  label: "Trigger Declines",
+  windowId,
+  windowKind,
+  triggerBucket: { player, triggerBucket },
+  actions: [{ type: "declineTrigger" as const, player, windowId, windowKind, effectId, ...(windowKind === "triggerBucket" ? { triggerBucket } : {}) }],
+});
+
 export const absentWindowEffectGroup = (player: 0 | 1, effectId: string, windowId: number, windowKind: WindowKind) => ({
   player,
   label: "Effects",

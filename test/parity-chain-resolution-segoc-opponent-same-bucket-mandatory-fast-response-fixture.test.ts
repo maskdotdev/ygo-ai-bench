@@ -8,7 +8,9 @@ import {
   absentWindowEffectGroup,
   chainEffectGroup,
   chainPassGroup,
+  openEffectGroup,
   triggerActivationGroup,
+  turnGroup,
 } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity chain-resolution opponent same-bucket mandatory fast-response fixture", () => {
@@ -123,6 +125,10 @@ describe("EDOPro parity chain-resolution opponent same-bucket mandatory fast-res
               { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-resolution-opponent-mandatory-fast-starter", count: 1 },
               { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
               { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              openEffectGroup(0, "fixture-chain-resolution-opponent-mandatory-fast-starter", 1, 0),
+              turnGroup(0),
             ],
             absentLegalActions: [
               { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-resolution-opponent-mandatory-fast-turn-quick" },

@@ -7,6 +7,7 @@ import {
   absentWindowEffectGroup,
   chainEffectGroup,
   chainPassGroup,
+  openEffectGroup,
   summonGroup,
   triggerActivationGroup,
   triggerDeclineGroup,
@@ -99,6 +100,10 @@ describe("EDOPro parity chain-resolution SEGOC decline chain response fixture", 
               { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-chain-decline-starter", count: 1 },
               { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
               { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              openEffectGroup(0, "fixture-chain-decline-starter", 1, 0),
+              turnGroup(0),
             ],
             absentLegalActions: [
               { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "fixture-chain-decline-opponent-quick" },

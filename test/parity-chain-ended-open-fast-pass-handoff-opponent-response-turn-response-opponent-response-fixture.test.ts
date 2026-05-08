@@ -184,6 +184,54 @@ describe("EDOPro parity chainEnded open fast-effect handoff opponent response tu
               { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-opponent-alternation-opponent-first" },
               { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-opponent-alternation-opponent-second" },
             ],
+
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-opponent-alternation-first-turn" },
+                ],
+              },
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-opponent-alternation-second-turn" },
+                ],
+              },
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-opponent-alternation-third-turn" },
+                ],
+              },
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-opponent-alternation-opponent-first" },
+                ],
+              },
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-opponent-alternation-opponent-second" },
+                ],
+              },
+            ],
           },
           after: {
             source: "edopro",

@@ -57,7 +57,9 @@ describe("EDOPro parity battle protected-target replay fixtures", () => {
             legalActionGroups: [turnGroup(0)],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 0, windowKind: "open" }],
             absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", undefined, undefined, 0)],
-          },
+
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },},
           after: {
             source: "edopro",
             note: "EDOPro excludes CANNOT_BE_BATTLE_TARGET monsters from attack choices before replay tracking starts",
@@ -145,6 +147,18 @@ describe("EDOPro parity battle protected-target replay fixtures", () => {
             legalActions: [{ type: "passDamage", player: 0, windowId: 13, windowKind: "battle", count: 1 }],
             legalActionGroups: [passBattleGroup(0, "passDamage", 1, 13)],
             absentLegalActions: [{ type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 13, windowKind: "battle" }],
+
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Attacks",
+                windowId: 13,
+                windowKind: "battle",
+                actions: [
+                  { type: "replayAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 13, windowKind: "battle" },
+                ],
+              },
+            ],
           },
           after: {
             source: "edopro",

@@ -140,6 +140,18 @@ describe("EDOPro parity Pendulum Summon turn reset fixtures", () => {
             ],
             absentLegalActions: [{ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-400-3"], windowId: 1, windowKind: "open" }],
             locations: { monsterZone: ["300"], spellTrapZone: ["100", "200"], hand: ["400", "500"] },
+
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Summons",
+                windowId: 1,
+                windowKind: "open",
+                actions: [
+                  { type: "pendulumSummon", player: 0, summonUids: ["p0-deck-400-3"], windowId: 1, windowKind: "open" },
+                ],
+              },
+            ],
           },
           after: {
             source: "edopro",
@@ -192,6 +204,18 @@ describe("EDOPro parity Pendulum Summon turn reset fixtures", () => {
               },
             ],
             absentLegalActions: [{ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-400-3"], windowId: 2, windowKind: "open" }],
+
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Summons",
+                windowId: 2,
+                windowKind: "open",
+                actions: [
+                  { type: "pendulumSummon", player: 0, summonUids: ["p0-deck-400-3"], windowId: 2, windowKind: "open" },
+                ],
+              },
+            ],
           },
           after: {
             source: "edopro",

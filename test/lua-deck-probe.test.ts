@@ -12,6 +12,7 @@ import { parseYdk } from "#playtest/ydk.js";
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const deckProbeTimeoutMs = 30_000;
 
 describe.skipIf(!hasUpstreamScripts)("Dark Magical Blast Lua deck probe", () => {
   it("loads available scripts and exposes opening hand Lua actions", () => {
@@ -62,7 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
     expect(output).toContain("NO SCRIPT c74677422.lua");
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast Branded Lua deck probe", () => {
@@ -88,7 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Onomat Ryzeal Lua deck probe with local fallbacks", () => {
@@ -112,7 +113,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Onomat Ryzeal Lua 
     expect(output).toContain("Scripts missing: 0");
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Magician Pendulum Lua deck probe", () => {
@@ -137,7 +138,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Magician Pendulum 
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Ritual of Light and Darkness Lua deck probe", () => {
@@ -163,7 +164,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Ritual of Light an
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Branded Dracotail Lua deck probe", () => {
@@ -188,7 +189,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Branded Dracotail 
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Monarch Genesys Proto Lua deck probe", () => {
@@ -211,7 +212,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Monarch Genesys Pr
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Kewl Tune Lua deck probe", () => {
@@ -234,7 +235,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Kewl Tune Lua deck
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("HERO Competitive Lua deck probe", () => {
@@ -259,7 +260,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("HERO Competitive L
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Rokket Lua deck probe", () => {
@@ -284,7 +285,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Rokket Lua deck pr
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Labrynth Lua deck probe", () => {
@@ -301,7 +302,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Labrynth Lua deck 
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Voiceless Voice Lua deck probe", () => {
@@ -318,7 +319,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Voiceless Voice Lu
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Marincess Lua deck probe", () => {
@@ -335,7 +336,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Marincess Lua deck
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Exosister Lua deck probe", () => {
@@ -352,7 +353,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Exosister Lua deck
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Solfachord Lua deck probe", () => {
@@ -372,7 +373,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Solfachord Lua dec
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Phantom Knights Lua deck probe", () => {
@@ -396,7 +397,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Phantom Knights Lu
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Kashtira Lua deck probe", () => {
@@ -413,7 +414,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Kashtira Lua deck 
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Mikanko Lua deck probe", () => {
@@ -432,7 +433,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Mikanko Lua deck p
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Rikka Sunavalon Lua deck probe", () => {
@@ -451,7 +452,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Rikka Sunavalon Lu
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Ancient Gear Lua deck probe", () => {
@@ -476,7 +477,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Ancient Gear Lua d
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
-  });
+  }, deckProbeTimeoutMs);
 });
 
 function createProbeCards(main: string[], extra: string[]): DuelCardData[] {

@@ -2,7 +2,18 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { openEffectGroup, summonGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import {
+  absentTriggerActivationGroup,
+  absentTriggerDeclineGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  openEffectGroup,
+  summonGroup,
+  triggerActivationGroup,
+  triggerDeclineGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity missed timing fixtures", () => {
   it("keeps mandatory when triggers while optional when triggers miss timing", () => {
@@ -133,6 +144,12 @@ describe("EDOPro parity missed timing fixtures", () => {
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-optional-when" },
               { type: "activateTrigger", player: 1, windowId: 0, windowKind: "open", effectId: "fixture-opponent-optional-if" },
             ],
+
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-mandatory-when", "turnMandatory", 0, "open"),
+              absentTriggerActivationGroup(0, "fixture-optional-when", "turnOptional", 0, "open"),
+              absentTriggerActivationGroup(1, "fixture-opponent-optional-if", "opponentOptional", 0, "open"),
+            ],
           },
           after: {
             source: "edopro",
@@ -154,15 +171,7 @@ describe("EDOPro parity missed timing fixtures", () => {
             legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-mandatory-when", count: 1 }],
             legalActionGroups: [
-              {
-                player: 0,
-                label: "Trigger Activations",
-                windowId: 1,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
-                count: 1,
-                actions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-mandatory-when", count: 1 }],
-              },
+              triggerActivationGroup(0, "fixture-mandatory-when", "turnMandatory", 1, 1),
             ],
             absentLegalActions: [
               { type: "declineTrigger", player: 0, effectId: "fixture-mandatory-when" },
@@ -172,36 +181,9 @@ describe("EDOPro parity missed timing fixtures", () => {
               { type: "activateTrigger", player: 1, effectId: "fixture-opponent-optional-if" },
             ],
             absentLegalActionGroups: [
-              {
-                player: 0,
-                label: "Trigger Declines",
-                windowId: 1,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
-                actions: [{ type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-mandatory-when" }],
-              },
-              {
-                player: 0,
-                label: "Trigger Activations",
-                windowId: 1,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
-                actions: [
-                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-optional-when" },
-                  { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-optional-if" },
-                ],
-              },
-              {
-                player: 1,
-                label: "Trigger Activations",
-                windowId: 1,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 1, triggerBucket: "opponentOptional" },
-                actions: [
-                  { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-when" },
-                  { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-if" },
-                ],
-              },
+              absentTriggerDeclineGroup(0, "fixture-mandatory-when", "turnMandatory", 1, "triggerBucket"),
+              absentTriggerActivationGroup(0, "fixture-optional-when", "turnOptional", 1, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-opponent-optional-when", "opponentOptional", 1, "triggerBucket"),
             ],
             logIncludes: ["Multi step send resolved"],
           },
@@ -234,6 +216,13 @@ describe("EDOPro parity missed timing fixtures", () => {
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-optional-if" },
               { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-if" },
             ],
+
+            absentLegalActionGroups: [
+              absentTriggerDeclineGroup(0, "fixture-mandatory-when", "turnMandatory", 1, "triggerBucket"),
+              absentTriggerActivationGroup(0, "fixture-optional-when", "turnOptional", 1, "triggerBucket"),
+              absentTriggerActivationGroup(0, "fixture-optional-if", "turnOptional", 1, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-opponent-optional-if", "opponentOptional", 1, "triggerBucket"),
+            ],
           },
           after: {
             source: "edopro",
@@ -257,41 +246,15 @@ describe("EDOPro parity missed timing fixtures", () => {
               { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-optional-if", count: 1 },
             ],
             legalActionGroups: [
-              {
-                player: 0,
-                label: "Trigger Activations",
-                windowId: 2,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
-                count: 1,
-                actions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-optional-if", count: 1 }],
-              },
-              {
-                player: 0,
-                label: "Trigger Declines",
-                windowId: 2,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
-                count: 1,
-                actions: [{ type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-optional-if", count: 1 }],
-              },
+              triggerActivationGroup(0, "fixture-optional-if", "turnOptional", 1, 2),
+              triggerDeclineGroup(0, "fixture-optional-if", "turnOptional", 1, 2),
             ],
             absentLegalActions: [
               { type: "activateTrigger", player: 1, effectId: "fixture-opponent-optional-when" },
               { type: "activateTrigger", player: 1, effectId: "fixture-opponent-optional-if" },
             ],
             absentLegalActionGroups: [
-              {
-                player: 1,
-                label: "Trigger Activations",
-                windowId: 2,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 1, triggerBucket: "opponentOptional" },
-                actions: [
-                  { type: "activateTrigger", player: 1, effectId: "fixture-opponent-optional-when" },
-                  { type: "activateTrigger", player: 1, effectId: "fixture-opponent-optional-if" },
-                ],
-              },
+              absentTriggerActivationGroup(1, "fixture-opponent-optional-when", "opponentOptional", 2, "triggerBucket"),
             ],
           },
         }),
@@ -326,6 +289,11 @@ describe("EDOPro parity missed timing fixtures", () => {
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-optional-when" },
               { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-if" },
             ],
+
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-optional-when", "turnOptional", 2, "triggerBucket"),
+              absentTriggerActivationGroup(1, "fixture-opponent-optional-if", "opponentOptional", 2, "triggerBucket"),
+            ],
           },
           after: {
             source: "edopro",
@@ -346,35 +314,12 @@ describe("EDOPro parity missed timing fixtures", () => {
               { type: "declineTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-if", count: 1 },
             ],
             legalActionGroups: [
-              {
-                player: 1,
-                label: "Trigger Activations",
-                windowId: 3,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 1, triggerBucket: "opponentOptional" },
-                count: 1,
-                actions: [{ type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-if", count: 1 }],
-              },
-              {
-                player: 1,
-                label: "Trigger Declines",
-                windowId: 3,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 1, triggerBucket: "opponentOptional" },
-                count: 1,
-                actions: [{ type: "declineTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-if", count: 1 }],
-              },
+              triggerActivationGroup(1, "fixture-opponent-optional-if", "opponentOptional", 1, 3),
+              triggerDeclineGroup(1, "fixture-opponent-optional-if", "opponentOptional", 1, 3),
             ],
             absentLegalActions: [{ type: "activateTrigger", player: 1, effectId: "fixture-opponent-optional-when" }],
             absentLegalActionGroups: [
-              {
-                player: 1,
-                label: "Trigger Activations",
-                windowId: 3,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 1, triggerBucket: "opponentOptional" },
-                actions: [{ type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-when" }],
-              },
+              absentTriggerActivationGroup(1, "fixture-opponent-optional-when", "opponentOptional", 3, "triggerBucket"),
             ],
           },
         }),
@@ -403,6 +348,10 @@ describe("EDOPro parity missed timing fixtures", () => {
               triggerDeclineGroup(1, "fixture-opponent-optional-if", "opponentOptional", 1, 3),
             ],
             absentLegalActions: [{ type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-when" }],
+
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(1, "fixture-opponent-optional-when", "opponentOptional", 3, "triggerBucket"),
+            ],
           },
         }),
       ],
@@ -452,14 +401,7 @@ describe("EDOPro parity missed timing fixtures", () => {
           { type: "endTurn", player: 0, windowId: 4, windowKind: "open", count: 1 },
         ],
         legalActionGroups: [
-          {
-            player: 0,
-            label: "Effects",
-            windowId: 4,
-            windowKind: "open",
-            count: 1,
-            actions: [{ type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-multistep-send", count: 1 }],
-          },
+          openEffectGroup(0, "fixture-multistep-send", 1, 4),
           summonGroup([
             { type: "normalSummon", player: 0, code: "100", location: "hand" },
             { type: "normalSummon", player: 0, code: "300", location: "hand" },
@@ -478,22 +420,8 @@ describe("EDOPro parity missed timing fixtures", () => {
           { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-when" },
         ],
         absentLegalActionGroups: [
-          {
-            player: 0,
-            label: "Trigger Activations",
-            windowId: 4,
-            windowKind: "triggerBucket",
-            triggerBucket: { player: 0, triggerBucket: "turnOptional" },
-            actions: [{ type: "activateTrigger", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-optional-when" }],
-          },
-          {
-            player: 1,
-            label: "Trigger Activations",
-            windowId: 4,
-            windowKind: "triggerBucket",
-            triggerBucket: { player: 1, triggerBucket: "opponentOptional" },
-            actions: [{ type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-opponent-optional-when" }],
-          },
+          absentTriggerActivationGroup(0, "fixture-optional-when", "turnOptional", 4, "triggerBucket"),
+          absentTriggerActivationGroup(1, "fixture-opponent-optional-when", "opponentOptional", 4, "triggerBucket"),
         ],
       },
     };
@@ -629,6 +557,12 @@ describe("EDOPro parity missed timing fixtures", () => {
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "decline-optional-when" },
               { type: "activateTrigger", player: 1, windowId: 0, windowKind: "open", effectId: "decline-opponent-optional-if" },
             ],
+
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "decline-mandatory-when", "turnMandatory", 0, "open"),
+              absentTriggerActivationGroup(0, "decline-optional-when", "turnOptional", 0, "open"),
+              absentTriggerActivationGroup(1, "decline-opponent-optional-if", "opponentOptional", 0, "open"),
+            ],
           },
           after: {
             source: "edopro",
@@ -650,37 +584,15 @@ describe("EDOPro parity missed timing fixtures", () => {
             legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "decline-mandatory-when", count: 1 }],
             legalActionGroups: [
-              {
-                player: 0,
-                label: "Trigger Activations",
-                windowId: 1,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
-                count: 1,
-                actions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "decline-mandatory-when", count: 1 }],
-              },
+              triggerActivationGroup(0, "decline-mandatory-when", "turnMandatory", 1, 1),
             ],
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "decline-optional-when" },
               { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "decline-opponent-optional-when" },
             ],
             absentLegalActionGroups: [
-              {
-                player: 0,
-                label: "Trigger Activations",
-                windowId: 1,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
-                actions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "decline-optional-when" }],
-              },
-              {
-                player: 1,
-                label: "Trigger Activations",
-                windowId: 1,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 1, triggerBucket: "opponentOptional" },
-                actions: [{ type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "decline-opponent-optional-when" }],
-              },
+              absentTriggerActivationGroup(0, "decline-optional-when", "turnOptional", 1, "triggerBucket"),
+              absentTriggerActivationGroup(1, "decline-opponent-optional-when", "opponentOptional", 1, "triggerBucket"),
             ],
           },
         }),
@@ -711,6 +623,12 @@ describe("EDOPro parity missed timing fixtures", () => {
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "decline-optional-when" },
               { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "decline-opponent-optional-when" },
             ],
+
+            absentLegalActionGroups: [
+              absentTriggerDeclineGroup(0, "decline-mandatory-when", "turnMandatory", 1, "triggerBucket"),
+              absentTriggerActivationGroup(0, "decline-optional-when", "turnOptional", 1, "triggerBucket"),
+              absentTriggerActivationGroup(1, "decline-opponent-optional-when", "opponentOptional", 1, "triggerBucket"),
+            ],
           },
           after: {
             source: "edopro",
@@ -734,35 +652,12 @@ describe("EDOPro parity missed timing fixtures", () => {
               { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "decline-optional-if", count: 1 },
             ],
             legalActionGroups: [
-              {
-                player: 0,
-                label: "Trigger Activations",
-                windowId: 2,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
-                count: 1,
-                actions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "decline-optional-if", count: 1 }],
-              },
-              {
-                player: 0,
-                label: "Trigger Declines",
-                windowId: 2,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
-                count: 1,
-                actions: [{ type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "decline-optional-if", count: 1 }],
-              },
+              triggerActivationGroup(0, "decline-optional-if", "turnOptional", 1, 2),
+              triggerDeclineGroup(0, "decline-optional-if", "turnOptional", 1, 2),
             ],
             absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "decline-optional-when" }],
             absentLegalActionGroups: [
-              {
-                player: 0,
-                label: "Trigger Activations",
-                windowId: 2,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
-                actions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "decline-optional-when" }],
-              },
+              absentTriggerActivationGroup(0, "decline-optional-when", "turnOptional", 2, "triggerBucket"),
             ],
           },
         }),
@@ -794,6 +689,10 @@ describe("EDOPro parity missed timing fixtures", () => {
               triggerDeclineGroup(0, "decline-optional-if", "turnOptional", 1, 2),
             ],
             absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "decline-optional-when" }],
+
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "decline-optional-when", "turnOptional", 2, "triggerBucket"),
+            ],
           },
           after: {
             source: "edopro",
@@ -811,35 +710,12 @@ describe("EDOPro parity missed timing fixtures", () => {
               { type: "declineTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "decline-opponent-optional-if", count: 1 },
             ],
             legalActionGroups: [
-              {
-                player: 1,
-                label: "Trigger Activations",
-                windowId: 3,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 1, triggerBucket: "opponentOptional" },
-                count: 1,
-                actions: [{ type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "decline-opponent-optional-if", count: 1 }],
-              },
-              {
-                player: 1,
-                label: "Trigger Declines",
-                windowId: 3,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 1, triggerBucket: "opponentOptional" },
-                count: 1,
-                actions: [{ type: "declineTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "decline-opponent-optional-if", count: 1 }],
-              },
+              triggerActivationGroup(1, "decline-opponent-optional-if", "opponentOptional", 1, 3),
+              triggerDeclineGroup(1, "decline-opponent-optional-if", "opponentOptional", 1, 3),
             ],
             absentLegalActions: [{ type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "decline-opponent-optional-when" }],
             absentLegalActionGroups: [
-              {
-                player: 1,
-                label: "Trigger Activations",
-                windowId: 3,
-                windowKind: "triggerBucket",
-                triggerBucket: { player: 1, triggerBucket: "opponentOptional" },
-                actions: [{ type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "decline-opponent-optional-when" }],
-              },
+              absentTriggerActivationGroup(1, "decline-opponent-optional-when", "opponentOptional", 3, "triggerBucket"),
             ],
           },
         }),
@@ -865,6 +741,10 @@ describe("EDOPro parity missed timing fixtures", () => {
               triggerDeclineGroup(1, "decline-opponent-optional-if", "opponentOptional", 1, 3),
             ],
             absentLegalActions: [{ type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "decline-opponent-optional-when" }],
+
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(1, "decline-opponent-optional-when", "opponentOptional", 3, "triggerBucket"),
+            ],
           },
           after: {
             source: "edopro",
@@ -901,14 +781,7 @@ describe("EDOPro parity missed timing fixtures", () => {
           { type: "endTurn", player: 0, windowId: 4, windowKind: "open", count: 1 },
         ],
         legalActionGroups: [
-          {
-            player: 0,
-            label: "Effects",
-            windowId: 4,
-            windowKind: "open",
-            count: 1,
-            actions: [{ type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "decline-multistep-send", count: 1 }],
-          },
+          openEffectGroup(0, "decline-multistep-send", 1, 4),
           summonGroup([
             { type: "normalSummon", player: 0, code: "100", location: "hand" },
             { type: "normalSummon", player: 0, code: "300", location: "hand" },
@@ -927,22 +800,8 @@ describe("EDOPro parity missed timing fixtures", () => {
           { type: "activateTrigger", player: 1, windowId: 4, windowKind: "open", effectId: "decline-opponent-optional-when" },
         ],
         absentLegalActionGroups: [
-          {
-            player: 0,
-            label: "Trigger Activations",
-            windowId: 4,
-            windowKind: "open",
-            triggerBucket: { player: 0, triggerBucket: "turnOptional" },
-            actions: [{ type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "decline-optional-when" }],
-          },
-          {
-            player: 1,
-            label: "Trigger Activations",
-            windowId: 4,
-            windowKind: "open",
-            triggerBucket: { player: 1, triggerBucket: "opponentOptional" },
-            actions: [{ type: "activateTrigger", player: 1, windowId: 4, windowKind: "open", effectId: "decline-opponent-optional-when" }],
-          },
+          absentTriggerActivationGroup(0, "decline-optional-when", "turnOptional", 4, "open"),
+          absentTriggerActivationGroup(1, "decline-opponent-optional-when", "opponentOptional", 4, "open"),
         ],
       },
     };

@@ -97,7 +97,9 @@ describe("EDOPro parity sent-to-hand confirmed missed timing fixture", () => {
               absentTriggerActivationGroup(0, "hand-confirm-activation-optional-when", "turnOptional", 0, "open"),
               absentTriggerActivationGroup(0, "hand-confirm-activation-optional-if", "turnOptional", 0, "open"),
             ],
-          },
+
+            legalActionCounts: { 0: 15, 1: 0 },
+            legalActionGroupCounts: { 0: 4, 1: 0 },},
           after: {
             source: "edopro",
             note: "EDOPro keeps optional if sent-to-hand confirmed triggers available while optional when triggers miss timing",
@@ -129,7 +131,9 @@ describe("EDOPro parity sent-to-hand confirmed missed timing fixture", () => {
               absentWindowEffectGroup(0, "hand-confirm-activation-open-fast", 1, "triggerBucket"),
             ],
             logIncludes: ["Hand confirm activation multi step resolved"],
-          },
+
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },},
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "hand-confirm-activation-optional-if" }), {
           snapshotRestore: "both",
@@ -159,7 +163,8 @@ describe("EDOPro parity sent-to-hand confirmed missed timing fixture", () => {
               absentTriggerActivationGroup(0, "hand-confirm-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "hand-confirm-activation-open-fast", 1, "triggerBucket"),
             ],
-          },
+
+            legalActionGroupCounts: { 0: 2, 1: 0 },},
           after: {
             source: "edopro",
             note: "EDOPro resolves the surviving optional if sent-to-hand confirmed trigger and returns to open fast priority",
@@ -177,7 +182,9 @@ describe("EDOPro parity sent-to-hand confirmed missed timing fixture", () => {
               absentTriggerActivationGroup(0, "hand-confirm-activation-optional-if", "turnOptional", 2, "open"),
             ],
             logIncludes: ["Hand confirm activation multi step resolved", "Hand confirm activation optional if resolved"],
-          },
+
+            legalActionCounts: { 0: 14, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },},
         }),
       ],
       expected: {
@@ -197,7 +204,9 @@ describe("EDOPro parity sent-to-hand confirmed missed timing fixture", () => {
           absentTriggerActivationGroup(0, "hand-confirm-activation-optional-if", "turnOptional", 2, "open"),
         ],
         logIncludes: ["Hand confirm activation multi step resolved", "Hand confirm activation optional if resolved"],
-      },
+
+        legalActionCounts: { 0: 14, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },},
     };
 
     expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });

@@ -88,7 +88,9 @@ describe("EDOPro parity dice-tossed missed timing decline fixture", () => {
               absentTriggerActivationGroup(0, "dice-decline-optional-when", "turnOptional", 0, "open"),
               absentTriggerActivationGroup(0, "dice-decline-optional-if", "turnOptional", 0, "open"),
             ],
-          },
+
+            legalActionCounts: { 0: 13, 1: 0 },
+            legalActionGroupCounts: { 0: 4, 1: 0 },},
           after: {
             source: "edopro",
             note: "EDOPro keeps optional if dice-tossed triggers available while optional when dice-tossed triggers miss timing",
@@ -110,7 +112,9 @@ describe("EDOPro parity dice-tossed missed timing decline fixture", () => {
               absentWindowEffectGroup(0, "dice-decline-open-fast", 1, "triggerBucket"),
             ],
             logIncludes: ["Dice decline multi step resolved"],
-          },
+
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },},
         }),
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "dice-decline-optional-if" }), {
           snapshotRestore: "both",
@@ -130,7 +134,8 @@ describe("EDOPro parity dice-tossed missed timing decline fixture", () => {
               absentTriggerActivationGroup(0, "dice-decline-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "dice-decline-open-fast", 1, "triggerBucket"),
             ],
-          },
+
+            legalActionGroupCounts: { 0: 2, 1: 0 },},
           after: {
             source: "edopro",
             note: "EDOPro exposes open fast effects after declining the surviving optional if dice-tossed trigger",
@@ -148,7 +153,9 @@ describe("EDOPro parity dice-tossed missed timing decline fixture", () => {
               absentTriggerActivationGroup(0, "dice-decline-optional-if", "turnOptional", 2, "open"),
             ],
             logIncludes: ["Dice decline multi step resolved", "dice-decline-optional-if"],
-          },
+
+            legalActionCounts: { 0: 12, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },},
         }),
       ],
       expected: {
@@ -168,7 +175,9 @@ describe("EDOPro parity dice-tossed missed timing decline fixture", () => {
           absentTriggerActivationGroup(0, "dice-decline-optional-if", "turnOptional", 2, "open"),
         ],
         logIncludes: ["Dice decline multi step resolved", "dice-decline-optional-if"],
-      },
+
+        legalActionCounts: { 0: 12, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },},
     };
 
     expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });

@@ -95,7 +95,9 @@ describe("EDOPro parity confirmed missed timing fixture", () => {
               absentTriggerActivationGroup(0, "confirm-activation-optional-when", "turnOptional", 0, "open"),
               absentTriggerActivationGroup(0, "confirm-activation-optional-if", "turnOptional", 0, "open"),
             ],
-          },
+
+            legalActionCounts: { 0: 15, 1: 0 },
+            legalActionGroupCounts: { 0: 4, 1: 0 },},
           after: {
             source: "edopro",
             note: "EDOPro keeps optional if confirmed triggers available while optional when confirmed triggers miss timing",
@@ -117,7 +119,9 @@ describe("EDOPro parity confirmed missed timing fixture", () => {
               absentWindowEffectGroup(0, "confirm-activation-open-fast", 1, "triggerBucket"),
             ],
             logIncludes: ["Confirm activation multi step resolved"],
-          },
+
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },},
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "confirm-activation-optional-if" }), {
           snapshotRestore: "both",
@@ -137,7 +141,8 @@ describe("EDOPro parity confirmed missed timing fixture", () => {
               absentTriggerActivationGroup(0, "confirm-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "confirm-activation-open-fast", 1, "triggerBucket"),
             ],
-          },
+
+            legalActionGroupCounts: { 0: 2, 1: 0 },},
           after: {
             source: "edopro",
             note: "EDOPro resolves the surviving optional if confirmed trigger and returns to open fast priority",
@@ -155,7 +160,9 @@ describe("EDOPro parity confirmed missed timing fixture", () => {
               absentTriggerActivationGroup(0, "confirm-activation-optional-if", "turnOptional", 2, "open"),
             ],
             logIncludes: ["Confirm activation multi step resolved", "Confirm activation optional if resolved"],
-          },
+
+            legalActionCounts: { 0: 14, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },},
         }),
       ],
       expected: {
@@ -175,7 +182,9 @@ describe("EDOPro parity confirmed missed timing fixture", () => {
           absentTriggerActivationGroup(0, "confirm-activation-optional-if", "turnOptional", 2, "open"),
         ],
         logIncludes: ["Confirm activation multi step resolved", "Confirm activation optional if resolved"],
-      },
+
+        legalActionCounts: { 0: 14, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },},
     };
 
     expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });

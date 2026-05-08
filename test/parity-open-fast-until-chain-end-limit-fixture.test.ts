@@ -103,6 +103,27 @@ describe("EDOPro parity open fast-effect until-chain-end limit fixture", () => {
               { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "open-fast-turn-blocked" },
               { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "open-fast-opponent-allowed" },
             ],
+
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "open-fast-turn-blocked" },
+                ],
+              },
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "open-fast-opponent-allowed" },
+                ],
+              },
+            ],
           },
           after: {
             source: "edopro",

@@ -143,6 +143,33 @@ describe("EDOPro parity mandatory before optional trigger fixtures", () => {
               { type: "activateTrigger", player: 0, effectId: "fixture-optional-second" },
               { type: "declineTrigger", player: 0, effectId: "fixture-optional-second" },
             ],
+
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Declines",
+                triggerBucket: { player: 0, triggerBucket: "turnMandatory" },
+                actions: [
+                  { type: "declineTrigger", player: 0, effectId: "fixture-mandatory-first" },
+                ],
+              },
+              {
+                player: 0,
+                label: "Trigger Activations",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                actions: [
+                  { type: "activateTrigger", player: 0, effectId: "fixture-optional-second" },
+                ],
+              },
+              {
+                player: 0,
+                label: "Trigger Declines",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                actions: [
+                  { type: "declineTrigger", player: 0, effectId: "fixture-optional-second" },
+                ],
+              },
+            ],
           },
           after: {
             source: "edopro",

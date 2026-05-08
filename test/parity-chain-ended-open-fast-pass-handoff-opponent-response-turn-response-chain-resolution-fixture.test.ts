@@ -169,6 +169,45 @@ describe("EDOPro parity chainEnded open fast-effect handoff opponent response tu
               { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-chain-resolution-opponent-first" },
               { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-chain-resolution-opponent-second" },
             ],
+
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-chain-resolution-first-turn-chain" },
+                ],
+              },
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-chain-resolution-second-turn-chain" },
+                ],
+              },
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-chain-resolution-opponent-first" },
+                ],
+              },
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-chain-resolution-opponent-second" },
+                ],
+              },
+            ],
           },
           after: {
             source: "edopro",

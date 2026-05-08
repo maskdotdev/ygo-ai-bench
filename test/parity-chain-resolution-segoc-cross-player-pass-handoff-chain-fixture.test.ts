@@ -2,7 +2,17 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentChainEffectGroup, absentTriggerActivationGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, triggerActivationGroup, triggerDeclineGroup } from "./parity-legal-action-group-helpers.js";
+import {
+  absentChainEffectGroup,
+  absentTriggerActivationGroup,
+  absentWindowEffectGroup,
+  chainEffectGroup,
+  chainPassGroup,
+  openEffectGroup,
+  triggerActivationGroup,
+  triggerDeclineGroup,
+  turnGroup,
+} from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity chain-resolution cross-player SEGOC pass handoff chain fixture", () => {
   it("opens turn-player responses after the opponent chains from cross-player SEGOC pass handoff", () => {
@@ -126,6 +136,10 @@ describe("EDOPro parity chain-resolution cross-player SEGOC pass handoff chain f
               { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-cross-handoff-chain-starter", count: 1 },
               { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
               { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              openEffectGroup(0, "fixture-cross-handoff-chain-starter", 1, 0),
+              turnGroup(0),
             ],
             absentLegalActions: [
               { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-cross-handoff-chain-turn-quick" },

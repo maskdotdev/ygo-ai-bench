@@ -7,8 +7,10 @@ import {
   absentWindowEffectGroup,
   chainEffectGroup,
   chainPassGroup,
+  openEffectGroup,
   triggerActivationGroup,
   triggerDeclineGroup,
+  turnGroup,
 } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity chain-resolution cross-player later-payload first-decline pass-resolution fixture", () => {
@@ -101,6 +103,10 @@ describe("EDOPro parity chain-resolution cross-player later-payload first-declin
               { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-cross-payload-first-decline-pass-starter", count: 1 },
               { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
               { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              openEffectGroup(0, "fixture-cross-payload-first-decline-pass-starter", 1, 0),
+              turnGroup(0),
             ],
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-cross-payload-first-decline-pass-turn-trigger", triggerBucket: "turnOptional" },

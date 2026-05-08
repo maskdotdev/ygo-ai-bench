@@ -61,7 +61,11 @@ describe("EDOPro parity equal defense-position battle result fixtures", () => {
             windowKind: "battle",
             waitingFor: 0,
             pendingBattle: true,
+            battleWindow: { kind: "endDamageStep", step: "damage", attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0", responsePlayer: 0 },
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [{ type: "passDamage", player: 0, windowId: 13, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(0, "passDamage", 1, 13)],
           },
           after: {
             source: "edopro",

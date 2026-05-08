@@ -43,6 +43,21 @@ describe("EDOPro parity monster-only attack lock fixtures", () => {
             pendingBattle: false,
             battleWindow: null,
             legalActions: [{ type: "changePhase", player: 0, phase: "battle", windowId: 0, windowKind: "open", count: 1 }],
+
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Turn",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "changePhase", player: 0, phase: "battle", windowId: 0, windowKind: "open", count: 1 },
+                ],
+              },
+            ],
           },
           after: {
             source: "edopro",

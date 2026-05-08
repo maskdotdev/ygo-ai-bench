@@ -154,6 +154,36 @@ describe("EDOPro parity chainEnded open fast-effect handoff opponent response tu
               { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-resolution-second-turn-chain" },
               { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-resolution-opponent-chain" },
             ],
+
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-resolution-first-turn-chain" },
+                ],
+              },
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-resolution-second-turn-chain" },
+                ],
+              },
+              {
+                player: 1,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                actions: [
+                  { type: "activateEffect", player: 1, windowId: 3, windowKind: "open", effectId: "fixture-chain-ended-handoff-turn-resolution-opponent-chain" },
+                ],
+              },
+            ],
           },
           after: {
             source: "edopro",
