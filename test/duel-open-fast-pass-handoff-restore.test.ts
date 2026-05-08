@@ -5,6 +5,7 @@ import type { ChainLimit, DuelEffectDefinition } from "#duel/types.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
 const OPEN_HANDOFF_TURN_ONLY_CHAIN_LIMIT_KEY = "restore-open-limit-turn-only";
+const OPEN_HANDOFF_TURN_ONLY_UNTIL_CHAIN_END_LIMIT_KEY = "restore-open-until-turn-only";
 
 describe("open fast pass handoff restore", () => {
   it("restores open priority after an open fast effect has no legal response", () => {
@@ -219,6 +220,105 @@ describe("open fast pass handoff restore", () => {
     expect(getGroupedDuelLegalActions(restoredOpenWindow, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredOpenWindow, 0));
   });
 
+  it("restores until-chain-end limits after the turn player chains from an open fast-effect pass handoff", () => {
+    const session = createDuel({ seed: 259, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: ["400", "500", "500"] },
+    });
+    startDuel(session);
+
+    const turnOpenQuick = findHandCard(session, 0, "100");
+    const turnChainLimiter = findHandCard(session, 0, "300");
+    const turnFollowup = findHandCard(session, 0, "500");
+    const opponentBlocked = findHandCard(session, 1, "400");
+    expect(turnOpenQuick).toBeDefined();
+    expect(turnChainLimiter).toBeDefined();
+    expect(turnFollowup).toBeDefined();
+    expect(opponentBlocked).toBeDefined();
+
+    registerEffect(session, openOnlyQuick("restore-open-until-turn-open-quick", turnOpenQuick!.uid, 0, true));
+    registerEffect(session, chainOnlyQuickWithTurnUntilLimit("restore-open-until-turn-chain-limiter", turnChainLimiter!.uid, 0, true));
+    registerEffect(session, chainOnlyQuick("restore-open-until-turn-followup", turnFollowup!.uid, 0));
+    registerEffect(session, chainOnlyQuick("restore-open-until-opponent-blocked", opponentBlocked!.uid, 1));
+
+    const openQuick = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-open-until-turn-open-quick");
+    expect(openQuick).toBeDefined();
+    const opponentWindow = applyAndAssert(session, openQuick!);
+    expect(opponentWindow.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
+    expect(hasGroupedEffect(opponentWindow.legalActionGroups, 1, "restore-open-until-opponent-blocked", "chainResponse")).toBe(true);
+
+    const opponentBlockedAction = getDuelLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-open-until-opponent-blocked");
+    expect(opponentBlockedAction).toBeDefined();
+    const opponentPass = getDuelLegalActions(session, 1).find((action) => action.type === "passChain");
+    expect(opponentPass).toBeDefined();
+    const turnWindow = applyAndAssert(session, opponentPass!);
+    expect(turnWindow.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+    expect(turnWindow.state.chain.map((link) => link.effectId)).toEqual(["restore-open-until-turn-open-quick"]);
+    expect(session.state.chainPasses).toEqual([1]);
+    expect(hasGroupedEffect(turnWindow.legalActionGroups, 0, "restore-open-until-turn-chain-limiter", "chainResponse")).toBe(true);
+    expect(hasGroupedEffect(turnWindow.legalActionGroups, 0, "restore-open-until-turn-followup", "chainResponse")).toBe(true);
+
+    const chainLimiter = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-open-until-turn-chain-limiter");
+    expect(chainLimiter).toBeDefined();
+    const limitedWindow = applyAndAssert(session, chainLimiter!);
+    expect(limitedWindow.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+    expect(limitedWindow.state.chain.map((link) => link.effectId)).toEqual(["restore-open-until-turn-open-quick", "restore-open-until-turn-chain-limiter"]);
+    expect(session.state.chainPasses).toEqual([]);
+    expect(session.state.chainLimits.map(serializeChainLimitForAssert)).toEqual([
+      { registryKey: OPEN_HANDOFF_TURN_ONLY_UNTIL_CHAIN_END_LIMIT_KEY, untilChainEnd: true, expiresAtChainLength: undefined },
+    ]);
+    expect(getDuelLegalActions(session, 1)).toEqual([]);
+    expect(hasGroupedEffect(limitedWindow.legalActionGroups, 0, "restore-open-until-turn-followup", "chainResponse")).toBe(true);
+    expect(hasGroupedEffect(getGroupedDuelLegalActions(session, 1), 1, "restore-open-until-opponent-blocked", "chainResponse")).toBe(false);
+    expect(hasGroupedPass(limitedWindow.legalActionGroups, 0)).toBe(true);
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards), restoreRegistry(), restoreChainLimitRegistry());
+    expect(queryPublicState(restored)).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
+    expect(restored.state.chain.map((link) => link.effectId)).toEqual(["restore-open-until-turn-open-quick", "restore-open-until-turn-chain-limiter"]);
+    expect(restored.state.chainPasses).toEqual([]);
+    expect(restored.state.chainLimits.map(serializeChainLimitForAssert)).toEqual([
+      { registryKey: OPEN_HANDOFF_TURN_ONLY_UNTIL_CHAIN_END_LIMIT_KEY, untilChainEnd: true, expiresAtChainLength: undefined },
+    ]);
+    expect(getDuelLegalActions(restored, 1)).toEqual([]);
+    expect(getDuelLegalActions(restored, 0)).toEqual(getDuelLegalActions(session, 0));
+    expect(getGroupedDuelLegalActions(restored, 0)).toEqual(getGroupedDuelLegalActions(session, 0));
+    expect(hasGroupedEffect(getGroupedDuelLegalActions(restored, 0), 0, "restore-open-until-turn-followup", "chainResponse")).toBe(true);
+    expect(hasGroupedEffect(getGroupedDuelLegalActions(restored, 1), 1, "restore-open-until-opponent-blocked", "chainResponse")).toBe(false);
+    expect(hasGroupedPass(getGroupedDuelLegalActions(restored, 0), 0)).toBe(true);
+
+    const staleOpponentBlocked = applyResponse(restored, opponentBlockedAction!);
+    expect(staleOpponentBlocked.ok).toBe(false);
+    expect(staleOpponentBlocked.error).toContain("Response is not currently legal");
+    expect(staleOpponentBlocked.legalActions).toEqual(getDuelLegalActions(restored, 0));
+    expect(staleOpponentBlocked.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored, 0));
+
+    const turnPass = getDuelLegalActions(restored, 0).find((action) => action.type === "passChain");
+    expect(turnPass).toBeDefined();
+    const resolved = applyAndAssert(restored, turnPass!);
+    expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [] });
+    expect(restored.state.chainPasses).toEqual([]);
+    expect(restored.state.chainLimits).toEqual([]);
+    expect(restored.state.log.map((entry) => entry.detail)).toEqual(expect.arrayContaining([
+      "restore-open-until-turn-chain-limiter resolved",
+      "restore-open-until-turn-open-quick resolved",
+    ]));
+    expect(restored.state.log.map((entry) => entry.detail)).not.toContain("restore-open-until-turn-followup resolved");
+    expect(restored.state.log.map((entry) => entry.detail)).not.toContain("restore-open-until-opponent-blocked resolved");
+    expect(getDuelLegalActions(restored, 1)).toEqual([]);
+    expect(resolved.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-open-until-turn-open-quick")).toBe(false);
+    expect(resolved.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-open-until-turn-chain-limiter")).toBe(false);
+    expect(resolved.legalActions.some((action) => action.type === "activateEffect" && action.effectId === "restore-open-until-turn-followup")).toBe(false);
+
+    const restoredOpenWindow = restoreDuel(serializeDuel(restored), createCardReader(cards), restoreRegistry(), restoreChainLimitRegistry());
+    expect(queryPublicState(restoredOpenWindow)).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredOpenWindow.state.chainPasses).toEqual([]);
+    expect(restoredOpenWindow.state.chainLimits).toEqual([]);
+    expect(getDuelLegalActions(restoredOpenWindow, 1)).toEqual([]);
+    expect(getGroupedDuelLegalActions(restoredOpenWindow, 0)).toEqual(getGroupedDuelLegalActions(restored, 0));
+    expect(getGroupedDuelLegalActions(restoredOpenWindow, 0).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restoredOpenWindow, 0));
+  });
+
   it("restores chain-response priority to the turn player after the opponent chains", () => {
     const session = createDuel({ seed: 261, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -350,6 +450,16 @@ function chainOnlyQuickWithTurnLimit(id: string, sourceUid: string, controller: 
   };
 }
 
+function chainOnlyQuickWithTurnUntilLimit(id: string, sourceUid: string, controller: 0 | 1, oncePerTurn = false): DuelEffectDefinition {
+  return {
+    ...chainOnlyQuick(id, sourceUid, controller, oncePerTurn),
+    target(ctx) {
+      if (!ctx.checkOnly) addDuelChainLimit(ctx.duel, turnOnlyUntilChainEndLimit());
+      return true;
+    },
+  };
+}
+
 function restoreRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition> {
   return {
     "restore-open-no-response-turn-quick": restoreOpenOnlyQuick(true),
@@ -361,6 +471,10 @@ function restoreRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "
     "restore-open-limit-turn-chain-limiter": restoreChainOnlyQuickWithTurnLimit(true),
     "restore-open-limit-turn-followup": restoreChainOnlyQuick(),
     "restore-open-limit-opponent-blocked": restoreChainOnlyQuick(),
+    "restore-open-until-turn-open-quick": restoreOpenOnlyQuick(true),
+    "restore-open-until-turn-chain-limiter": restoreChainOnlyQuickWithTurnUntilLimit(true),
+    "restore-open-until-turn-followup": restoreChainOnlyQuick(),
+    "restore-open-until-opponent-blocked": restoreChainOnlyQuick(),
     "restore-open-alt-turn-open-quick": restoreOpenOnlyQuick(true),
     "restore-open-alt-turn-chain-quick": restoreChainOnlyQuick(true),
     "restore-open-alt-turn-open-only": restoreOpenOnlyQuick(),
@@ -405,9 +519,20 @@ function restoreChainOnlyQuickWithTurnLimit(oncePerTurn = false): (effect: Omit<
   });
 }
 
+function restoreChainOnlyQuickWithTurnUntilLimit(oncePerTurn = false): (effect: Omit<DuelEffectDefinition, "operation">) => DuelEffectDefinition {
+  return (effect) => ({
+    ...restoreChainOnlyQuick(oncePerTurn)(effect),
+    target(ctx) {
+      if (!ctx.checkOnly) addDuelChainLimit(ctx.duel, turnOnlyUntilChainEndLimit());
+      return true;
+    },
+  });
+}
+
 function restoreChainLimitRegistry(): Record<string, (limit: ChainLimit) => ChainLimit> {
   return {
     [OPEN_HANDOFF_TURN_ONLY_CHAIN_LIMIT_KEY]: restoreTurnOnlyChainLimit,
+    [OPEN_HANDOFF_TURN_ONLY_UNTIL_CHAIN_END_LIMIT_KEY]: restoreTurnOnlyChainLimit,
   };
 }
 
@@ -424,6 +549,16 @@ function turnOnlyChainLimit(): Omit<ChainLimit, "expiresAtChainLength"> {
   return {
     registryKey: OPEN_HANDOFF_TURN_ONLY_CHAIN_LIMIT_KEY,
     untilChainEnd: false,
+    allows(_effect, player) {
+      return player === 0;
+    },
+  };
+}
+
+function turnOnlyUntilChainEndLimit(): Omit<ChainLimit, "expiresAtChainLength"> {
+  return {
+    registryKey: OPEN_HANDOFF_TURN_ONLY_UNTIL_CHAIN_END_LIMIT_KEY,
+    untilChainEnd: true,
     allows(_effect, player) {
       return player === 0;
     },
