@@ -131,6 +131,52 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional pass-hand
         makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "fixture-chain-resolution-first-opponent-optional-turn-response-chain-limit" })),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps restored opponent optional trigger-chain turn-response priority restorable before the turn player passes",
+            phase: "main1",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-turn-response-chain-limit", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" }],
+            chainPasses: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-turn-quick", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 4,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-turn-quick", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-first-opponent-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-second-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional-turn-response-chain-limit", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-first-opponent-quick", 4),
+              absentChainEffectGroup(1, "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-second-opponent-quick", 4),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-optional-turn-response-chain-limit", "opponentOptional", 4, "chainResponse"),
+            ],
+            locations: { graveyard: ["700", "200", "970", "900", "950"], hand: ["100", "300", "800", "400", "500", "800", "800"] },
+            logIncludes: ["Chain resolution opponent optional turn limit starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro hands restored opponent optional trigger-chain responses to the opponent before the turn player's SetChainLimit response",
@@ -181,6 +227,54 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional pass-hand
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-first-opponent-quick" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-turn-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps turn-player priority restorable before the restored opponent optional SetChainLimit response is chosen",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-turn-response-chain-limit", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-first-opponent-quick", sourceUid: "p1-deck-900-2" },
+            ],
+            chainPasses: [],
+            chainLimits: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-turn-quick", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-followup", count: 1 },
+              { type: "passChain", player: 0, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 6,
+                windowKind: "chainResponse",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-turn-quick", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-followup", count: 1 },
+                ],
+              },
+              chainPassGroup(0, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-first-opponent-quick" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-second-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 6, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional-turn-response-chain-limit", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-first-opponent-quick", 6),
+              absentChainEffectGroup(1, "fixture-chain-resolution-opponent-optional-turn-response-chain-limit-second-opponent-quick", 6),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-optional-turn-response-chain-limit", "opponentOptional", 6, "chainResponse"),
+            ],
+            locations: { graveyard: ["700", "200", "970", "900", "950"], hand: ["100", "300", "800", "400", "500", "800", "800"] },
+          },
           after: {
             source: "edopro",
             note: "EDOPro applies one-chain SetChainLimit restrictions after the turn player answers a restored opponent optional handoff chain",
