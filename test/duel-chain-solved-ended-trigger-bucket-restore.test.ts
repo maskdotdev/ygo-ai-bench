@@ -119,6 +119,109 @@ describe("chainSolved before chainEnded trigger bucket restore", () => {
     expect(staleChainSolved.legalActions).toEqual(getDuelLegalActions(restoredChainSolvedBucket, 1));
     expect(staleChainSolved.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredChainSolvedBucket, 1));
   });
+
+  it("collects deferred chainEnded buckets after restored optional chainSolved declines", () => {
+    const session = createDuel({ seed: 467, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "400", "500"] },
+      1: { main: ["400", "400", "400", "400"] },
+    });
+    startDuel(session);
+
+    const starter = findPublicCard(session, 0, "hand", "100");
+    const chainSolvedSource = findPublicCard(session, 0, "hand", "300");
+    const chainEndedSource = findPublicCard(session, 0, "hand", "400");
+    const openQuickSource = findPublicCard(session, 0, "hand", "500");
+    const opponentChainSource = findPublicCard(session, 1, "hand", "400");
+    expect(starter).toBeDefined();
+    expect(chainSolvedSource).toBeDefined();
+    expect(chainEndedSource).toBeDefined();
+    expect(openQuickSource).toBeDefined();
+    expect(opponentChainSource).toBeDefined();
+
+    registerEffect(session, { ...loggedEffect("restore-solved-decline-starter", starter!.uid, "ignition", "restore-solved-decline-starter resolved"), oncePerTurn: true });
+    registerEffect(session, {
+      ...loggedEffect("restore-solved-decline-chain-solved", chainSolvedSource!.uid, "trigger", "restore-solved-decline-chain-solved should not resolve", "chainSolved"),
+      oncePerTurn: true,
+    });
+    registerEffect(session, {
+      ...loggedEffect("restore-solved-decline-chain-ended", chainEndedSource!.uid, "trigger", "restore-solved-decline-chain-ended resolved", "chainEnded"),
+      oncePerTurn: true,
+      optional: false,
+    });
+    registerEffect(session, openOnlyQuick("restore-solved-decline-open-quick", openQuickSource!.uid));
+    registerEffect(session, chainOnlyQuick("restore-solved-decline-opponent-chain-quick", opponentChainSource!.uid, 1));
+
+    const starterAction = findEffectAction(session, 0, "restore-solved-decline-starter");
+    expect(starterAction).toBeDefined();
+    applyAndAssert(session, starterAction!);
+
+    const restoredInitialChain = restoreDuel(serializeDuel(session), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredInitialChain)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", pendingTriggers: [], pendingTriggerBuckets: [] });
+    const initialPass = getDuelLegalActions(restoredInitialChain, 1).find((action) => action.type === "passChain");
+    expect(initialPass).toBeDefined();
+    applyAndAssert(restoredInitialChain, initialPass!);
+
+    const restoredChainSolvedBucket = restoreDuel(serializeDuel(restoredInitialChain), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredChainSolvedBucket)).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", chain: [], pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }] });
+    expect(restoredChainSolvedBucket.state.pendingTriggers).toEqual([
+      expect.objectContaining({ player: 0, effectId: "restore-solved-decline-chain-solved", eventName: "chainSolved", triggerBucket: "turnOptional" }),
+    ]);
+    expect(restoredChainSolvedBucket.state.pendingTriggers.some((trigger) => trigger.effectId === "restore-solved-decline-chain-ended")).toBe(false);
+    expect(hasGroupedTrigger(restoredChainSolvedBucket, 0, "restore-solved-decline-chain-solved", "triggerBucket")).toBe(true);
+    expect(hasGroupedEffect(restoredChainSolvedBucket, 0, "restore-solved-decline-open-quick", "triggerBucket")).toBe(false);
+
+    const chainSolvedDecline = getDuelLegalActions(restoredChainSolvedBucket, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-solved-decline-chain-solved");
+    expect(chainSolvedDecline).toBeDefined();
+    applyAndAssert(restoredChainSolvedBucket, chainSolvedDecline!);
+
+    const restoredChainEndedBucket = restoreDuel(serializeDuel(restoredChainSolvedBucket), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredChainEndedBucket)).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", chain: [], pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }] });
+    expect(restoredChainEndedBucket.state.pendingTriggers).toEqual([
+      expect.objectContaining({ player: 0, effectId: "restore-solved-decline-chain-ended", eventName: "chainEnded", triggerBucket: "turnMandatory" }),
+    ]);
+    expect(restoredChainEndedBucket.state.log.map((entry) => entry.detail)).not.toContain("restore-solved-decline-chain-solved should not resolve");
+    expect(hasGroupedTrigger(restoredChainEndedBucket, 0, "restore-solved-decline-chain-ended", "triggerBucket")).toBe(true);
+    expect(hasGroupedEffect(restoredChainEndedBucket, 0, "restore-solved-decline-open-quick", "triggerBucket")).toBe(false);
+
+    const chainEndedTrigger = getDuelLegalActions(restoredChainEndedBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-solved-decline-chain-ended");
+    expect(chainEndedTrigger).toBeDefined();
+    applyAndAssert(restoredChainEndedBucket, chainEndedTrigger!);
+
+    const restoredChainEndedResponse = restoreDuel(serializeDuel(restoredChainEndedBucket), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredChainEndedResponse)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredChainEndedResponse.state.chain.map((link) => link.effectId)).toEqual(["restore-solved-decline-chain-ended"]);
+    expect(effectIds(restoredChainEndedResponse, 1)).toEqual(["restore-solved-decline-opponent-chain-quick"]);
+    const chainEndedPass = getDuelLegalActions(restoredChainEndedResponse, 1).find((action) => action.type === "passChain");
+    expect(chainEndedPass).toBeDefined();
+    applyAndAssert(restoredChainEndedResponse, chainEndedPass!);
+
+    const restoredPostEndedChainSolvedBucket = restoreDuel(serializeDuel(restoredChainEndedResponse), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredPostEndedChainSolvedBucket)).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", chain: [], pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }] });
+    expect(restoredPostEndedChainSolvedBucket.state.pendingTriggers).toEqual([
+      expect.objectContaining({ player: 0, effectId: "restore-solved-decline-chain-solved", eventName: "chainSolved", triggerBucket: "turnOptional" }),
+    ]);
+    expect(restoredPostEndedChainSolvedBucket.state.pendingTriggers.some((trigger) => trigger.effectId === "restore-solved-decline-chain-ended")).toBe(false);
+    expect(restoredPostEndedChainSolvedBucket.state.log.map((entry) => entry.detail)).toContain("restore-solved-decline-chain-ended resolved");
+    expect(restoredPostEndedChainSolvedBucket.state.log.map((entry) => entry.detail)).not.toContain("restore-solved-decline-chain-solved should not resolve");
+    expect(hasGroupedEffect(restoredPostEndedChainSolvedBucket, 0, "restore-solved-decline-open-quick", "triggerBucket")).toBe(false);
+
+    const finalChainSolvedDecline = getDuelLegalActions(restoredPostEndedChainSolvedBucket, 0).find((action) => action.type === "declineTrigger" && action.effectId === "restore-solved-decline-chain-solved");
+    expect(finalChainSolvedDecline).toBeDefined();
+    applyAndAssert(restoredPostEndedChainSolvedBucket, finalChainSolvedDecline!);
+
+    const restoredOpen = restoreDuel(serializeDuel(restoredPostEndedChainSolvedBucket), createCardReader(cards), restoreRegistry());
+    expect(queryPublicState(restoredOpen)).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [], pendingTriggers: [], pendingTriggerBuckets: [] });
+    expect(restoredOpen.state.chainPasses).toEqual([]);
+    expect(restoredOpen.state.log.map((entry) => entry.detail)).toEqual(expect.arrayContaining([
+      "restore-solved-decline-starter resolved",
+      "restore-solved-decline-chain-ended resolved",
+    ]));
+    expect(restoredOpen.state.log.map((entry) => entry.detail)).not.toContain("restore-solved-decline-chain-solved should not resolve");
+    expect(restoredOpen.state.log.map((entry) => entry.detail)).not.toContain("restore-solved-decline-opponent-chain-quick resolved");
+    expect(effectIds(restoredOpen, 0)).toEqual(["restore-solved-decline-open-quick"]);
+    expect(getDuelLegalActions(restoredOpen, 1)).toEqual([]);
+  });
 });
 
 function loggedEffect(id: string, sourceUid: string, event: "ignition" | "trigger", detail: string, triggerEvent?: DuelEffectDefinition["triggerEvent"]): DuelEffectDefinition {
@@ -168,6 +271,11 @@ function restoreRegistry(): Record<string, (effect: Omit<DuelEffectDefinition, "
     "restore-solved-ended-chain-ended": restoreLoggedEffect,
     "restore-solved-ended-open-quick": restoreOpenOnlyQuick,
     "restore-solved-ended-opponent-chain-quick": restoreChainOnlyQuick,
+    "restore-solved-decline-starter": restoreLoggedEffect,
+    "restore-solved-decline-chain-solved": restoreLoggedEffect,
+    "restore-solved-decline-chain-ended": restoreLoggedEffect,
+    "restore-solved-decline-open-quick": restoreOpenOnlyQuick,
+    "restore-solved-decline-opponent-chain-quick": restoreChainOnlyQuick,
   };
 }
 
