@@ -9,6 +9,7 @@ import {
   chainPassGroup,
   triggerActivationGroup,
   triggerDeclineGroup,
+  turnGroup,
 } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity chain-resolution cross-player later-payload restore fixture", () => {
@@ -84,6 +85,53 @@ describe("EDOPro parity chain-resolution cross-player later-payload restore fixt
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-payload-starter" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps initial open priority restorable before cross-player later-payload trigger queues are created",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 13, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-cross-payload-starter", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "800", location: "hand", count: 2 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "800", location: "hand", count: 2 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-cross-payload-starter", count: 1 }],
+              },
+              turnGroup(0),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 0, windowKind: "open", effectId: "fixture-cross-payload-opponent-quick" },
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "fixture-cross-payload-turn-trigger", triggerBucket: "turnOptional" },
+              { type: "activateTrigger", player: 1, windowId: 0, windowKind: "open", effectId: "fixture-cross-payload-opponent-trigger", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentWindowEffectGroup(1, "fixture-cross-payload-opponent-quick", 0, "open"),
+              absentTriggerActivationGroup(0, "fixture-cross-payload-turn-trigger", "turnOptional", 0, "open"),
+              absentTriggerActivationGroup(1, "fixture-cross-payload-opponent-trigger", "opponentOptional", 0, "open"),
+            ],
+          },
           after: {
             source: "edopro",
             note: "EDOPro keeps a chain-created later-payload opponent optional trigger behind the active turn optional bucket after restore",
@@ -125,6 +173,44 @@ describe("EDOPro parity chain-resolution cross-player later-payload restore fixt
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-cross-payload-turn-trigger" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the active cross-player later-payload turn bucket restorable before selecting the turn trigger",
+            phase: "main1",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            chain: [],
+            chainPasses: [],
+            pendingTriggers: [
+              { player: 0, effectId: "fixture-cross-payload-turn-trigger", eventName: "customEvent", eventCode: firstEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-500-2" },
+              { player: 1, effectId: "fixture-cross-payload-opponent-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "opponentOptional", eventCardUid: "p1-deck-700-2" },
+            ],
+            pendingTriggerBuckets: [
+              { player: 0, triggerBucket: "turnOptional" },
+              { player: 1, triggerBucket: "opponentOptional" },
+            ],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-payload-turn-trigger", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-payload-turn-trigger", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-cross-payload-turn-trigger", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "fixture-cross-payload-turn-trigger", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-payload-opponent-trigger", triggerBucket: "opponentOptional" },
+              { type: "activateEffect", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-payload-opponent-quick" },
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(1, "fixture-cross-payload-opponent-trigger", "opponentOptional", 1, "triggerBucket"),
+              absentWindowEffectGroup(1, "fixture-cross-payload-opponent-quick", 1, "triggerBucket"),
+            ],
+            locations: { graveyard: ["500", "700", "600"], hand: ["100", "300", "800", "800", "400", "800", "800"] },
+            logIncludes: ["Cross payload starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro restores but hides the later-payload opponent optional trigger while opponent fast responses are available",
@@ -151,6 +237,29 @@ describe("EDOPro parity chain-resolution cross-player later-payload restore fixt
         }),
         makeScriptedStep(makeResponseSelector("passChain", 1), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the hidden cross-player later-payload opponent bucket restorable while opponent chain-response priority is active",
+            windowId: 2,
+            windowKind: "chainResponse",
+            waitingFor: 1,
+            chain: [{ player: 0, effectId: "fixture-cross-payload-turn-trigger", eventName: "customEvent", eventCode: firstEventCode, eventCardUid: "p0-deck-500-2" }],
+            chainPasses: [],
+            pendingTriggers: [{ player: 1, effectId: "fixture-cross-payload-opponent-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "opponentOptional", eventCardUid: "p1-deck-700-2" }],
+            pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "fixture-cross-payload-opponent-quick", count: 1 },
+              { type: "passChain", player: 1, windowId: 2, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(1, "fixture-cross-payload-opponent-quick", 1, 2),
+              chainPassGroup(1, 1, 2),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "fixture-cross-payload-opponent-trigger" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(1, "fixture-cross-payload-opponent-trigger", "opponentOptional", 2, "chainResponse")],
+          },
           after: {
             source: "edopro",
             note: "EDOPro advances the restored later-payload opponent optional bucket after the turn trigger chain resolves",
