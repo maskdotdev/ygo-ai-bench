@@ -322,6 +322,7 @@ describe("chainSolved before chainEnded trigger bucket restore", () => {
     expect(restoredOpponentBucket.state.pendingTriggers.some((trigger) => trigger.effectId === "restore-solved-mixed-chain-ended")).toBe(false);
     const opponentDecline = getDuelLegalActions(restoredOpponentBucket, 1).find((action) => action.type === "declineTrigger" && action.effectId === "restore-solved-mixed-opponent-optional");
     expect(opponentDecline).toBeDefined();
+    const opponentBucketSnapshot = serializeDuel(restoredOpponentBucket);
     const declined = applyAndAssert(restoredOpponentBucket, opponentDecline!);
     expect(declined.state).toMatchObject({ waitingFor: 1, windowKind: "chainResponse", pendingTriggers: [], pendingTriggerBuckets: [] });
     expect(restoredOpponentBucket.state.chain.map((link) => link.effectId)).toEqual(["restore-solved-mixed-turn-optional"]);
@@ -351,6 +352,21 @@ describe("chainSolved before chainEnded trigger bucket restore", () => {
 
     const chainEndedTrigger = getDuelLegalActions(restoredChainEndedBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-solved-mixed-chain-ended");
     expect(chainEndedTrigger).toBeDefined();
+
+    const restoredEarlyOpponentBucket = restoreDuel(opponentBucketSnapshot, createCardReader(cards), restoreRegistry());
+    const forgedEarlyChainEnded = applyResponse(restoredEarlyOpponentBucket, {
+      ...chainEndedTrigger!,
+      windowId: opponentDecline!.windowId,
+      windowKind: opponentDecline!.windowKind,
+      windowToken: opponentDecline!.windowToken,
+    });
+    expect(forgedEarlyChainEnded.ok).toBe(false);
+    expect(forgedEarlyChainEnded.error).toContain("Response is not currently legal");
+    expect(forgedEarlyChainEnded.legalActions).toEqual(getDuelLegalActions(restoredEarlyOpponentBucket, 1));
+    expect(forgedEarlyChainEnded.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredEarlyOpponentBucket, 1));
+    expect(restoredEarlyOpponentBucket.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-solved-mixed-opponent-optional"]);
+    expect(restoredEarlyOpponentBucket.state.pendingTriggers.some((trigger) => trigger.effectId === "restore-solved-mixed-chain-ended")).toBe(false);
+
     applyAndAssert(restoredChainEndedBucket, chainEndedTrigger!);
 
     const restoredOpen = restoreDuel(serializeDuel(restoredChainEndedBucket), createCardReader(cards), restoreRegistry());
