@@ -118,6 +118,40 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional pass-hand
         makeScriptedStep(makeResponseSelector("declineTrigger", 1, { effectId: "fixture-chain-resolution-first-opponent-optional-turn-response" })),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps restored opponent optional trigger-chain turn-response priority restorable before the turn player passes",
+            phase: "main1",
+            windowId: 4,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [{ player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-turn-response", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" }],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-turn-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 4, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-chain-resolution-opponent-optional-turn-response-turn-quick", 1, 4),
+              chainPassGroup(0, 1, 4),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-first-opponent-quick" },
+              { type: "activateEffect", player: 1, windowId: 4, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-second-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional-turn-response", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-chain-resolution-opponent-optional-turn-response-first-opponent-quick", 4),
+              absentChainEffectGroup(1, "fixture-chain-resolution-opponent-optional-turn-response-second-opponent-quick", 4),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-optional-turn-response", "opponentOptional", 4, "chainResponse"),
+            ],
+            locations: { graveyard: ["700", "200", "900", "950"], hand: ["100", "300", "800", "400", "500", "800"] },
+            logIncludes: ["Chain resolution opponent optional turn response starter resolved"],
+          },
           after: {
             source: "edopro",
             note: "EDOPro hands restored opponent optional trigger-chain responses to the opponent before any opponent handoff response is chosen",
@@ -165,6 +199,42 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional pass-hand
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "fixture-chain-resolution-opponent-optional-turn-response-first-opponent-quick" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-chain-resolution-opponent-optional-turn-response-turn-quick" }), {
           snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps turn-player priority restorable before the restored opponent optional handoff response is chosen",
+            phase: "main1",
+            windowId: 6,
+            windowKind: "chainResponse",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-turn-response", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-opponent-optional-turn-response-first-opponent-quick", sourceUid: "p1-deck-900-2" },
+            ],
+            chainPasses: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-turn-quick", count: 1 },
+              { type: "passChain", player: 0, windowId: 6, windowKind: "chainResponse", count: 1 },
+            ],
+            legalActionGroups: [
+              chainEffectGroup(0, "fixture-chain-resolution-opponent-optional-turn-response-turn-quick", 1, 6),
+              chainPassGroup(0, 1, 6),
+            ],
+            absentLegalActions: [
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-first-opponent-quick" },
+              { type: "activateEffect", player: 1, windowId: 6, windowKind: "chainResponse", effectId: "fixture-chain-resolution-opponent-optional-turn-response-second-opponent-quick" },
+              { type: "activateTrigger", player: 1, windowId: 6, windowKind: "triggerBucket", effectId: "fixture-chain-resolution-first-opponent-optional-turn-response", triggerBucket: "opponentOptional" },
+            ],
+            absentLegalActionGroups: [
+              absentChainEffectGroup(1, "fixture-chain-resolution-opponent-optional-turn-response-first-opponent-quick", 6),
+              absentChainEffectGroup(1, "fixture-chain-resolution-opponent-optional-turn-response-second-opponent-quick", 6),
+              absentTriggerActivationGroup(1, "fixture-chain-resolution-first-opponent-optional-turn-response", "opponentOptional", 6, "chainResponse"),
+            ],
+            locations: { graveyard: ["700", "200", "900", "950"], hand: ["100", "300", "800", "400", "500", "800"] },
+          },
         }),
       ],
       expected: {
