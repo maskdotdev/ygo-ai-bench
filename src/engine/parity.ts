@@ -823,6 +823,7 @@ function sameAction(action: DuelAction, response: DuelAction): boolean {
   if (action.type !== response.type || action.player !== response.player) return false;
   if (action.windowId !== undefined && response.windowId !== undefined && action.windowId !== response.windowId) return false;
   if (action.windowKind !== undefined && response.windowKind !== undefined && action.windowKind !== response.windowKind) return false;
+  if (action.windowToken !== undefined && response.windowToken !== undefined && action.windowToken !== response.windowToken) return false;
   if ("uid" in action && "uid" in response && action.uid !== response.uid) return false;
   if (action.type === "activateEffect" && response.type === "activateEffect" && action.effectId !== response.effectId) return false;
   if (action.type === "specialSummonProcedure" && response.type === "specialSummonProcedure" && action.effectId !== response.effectId) return false;

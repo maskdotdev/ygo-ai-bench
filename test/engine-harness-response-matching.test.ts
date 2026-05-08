@@ -79,6 +79,40 @@ describe("EDOPro compatibility harness response matching", () => {
     ]);
   });
 
+  it("matches concrete responses by action window tokens", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture({
+      name: "forged token concrete response fixture",
+      options: { seed: 9, startingHandSize: 1 },
+      decks: {
+        0: { main: ["100"] },
+        1: { main: ["200"] },
+      },
+      responses: [
+        makeScriptedStep({
+          type: "changePhase",
+          player: 0,
+          phase: "battle",
+          label: "Battle Phase",
+          windowId: 0,
+          windowKind: "open",
+          windowToken: "forged-window-token",
+        }),
+      ],
+      expected: { source: "edopro" },
+    }, {
+      cardReader: createCardReader(cards),
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      {
+        fixture: "forged token concrete response fixture",
+        message: "No legal response matched type=changePhase player=0 windowId=0 phase=battle",
+      },
+    ]);
+  });
+
   it("matches concrete trigger responses by effect id", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }, { id: 300, type: 1 }], []);
     const result = runScriptedDuelFixture({
