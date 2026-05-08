@@ -91,6 +91,25 @@ describe("chainSolved before chainEnded trigger bucket restore", () => {
     const chainEndedTrigger = getDuelLegalActions(restoredChainEndedBucket, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-solved-ended-chain-ended");
     expect(chainEndedTrigger).toBeDefined();
 
+    const forgedTriggerBucketOpenFast = applyResponse(restoredChainEndedBucket, {
+      type: "activateEffect",
+      player: 0,
+      uid: openQuickSource!.uid,
+      effectId: "restore-solved-ended-open-quick",
+      label: "Forge open-only quick effect into trigger bucket",
+      windowId: chainEndedTrigger!.windowId,
+      windowKind: chainEndedTrigger!.windowKind,
+      windowToken: chainEndedTrigger!.windowToken,
+    });
+    expect(forgedTriggerBucketOpenFast.ok).toBe(false);
+    expect(forgedTriggerBucketOpenFast.error).toContain("Response is not currently legal");
+    expect(forgedTriggerBucketOpenFast.legalActions).toEqual(getDuelLegalActions(restoredChainEndedBucket, 0));
+    expect(forgedTriggerBucketOpenFast.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredChainEndedBucket, 0));
+    expect(restoredChainEndedBucket.state.pendingTriggers).toEqual([
+      expect.objectContaining({ player: 0, effectId: "restore-solved-ended-chain-ended", eventName: "chainEnded", triggerBucket: "turnMandatory" }),
+    ]);
+    expect(restoredChainEndedBucket.state.log.map((entry) => entry.detail)).not.toContain("restore-solved-ended-open-quick resolved");
+
     const earlyChainSolvedBucket = restoreDuel(chainSolvedBucketSnapshot, createCardReader(cards), restoreRegistry());
     const forgedEarlyChainEnded = {
       ...chainEndedTrigger!,
