@@ -11,10 +11,10 @@ export function pendulumSummonActions(state: DuelState, player: PlayerId, canSum
   const scales = pendulumScales(state, player);
   if (zoneCount <= 0 || !scales) return [];
   const [lowScale, highScale] = scales;
-  const summonUids = pendulumSummonCandidates(state, player, lowScale, highScale, canSummon).slice(0, zoneCount).map((card) => card.uid);
+  const summonUids = pendulumSummonCandidates(state, player, lowScale, highScale, canSummon).map((card) => card.uid);
   if (!summonUids.length) return [];
   const summonNames = summonUids.map((uid) => findCard(state, uid)?.name ?? uid).join(", ");
-  return [{ type: "pendulumSummon", player, summonUids, label: `Pendulum Summon ${summonNames}` }];
+  return [{ type: "pendulumSummon", player, summonUids, maxSummons: zoneCount, label: `Pendulum Summon ${summonNames}` }];
 }
 
 export function pendulumSummonDuelCards(
@@ -24,7 +24,7 @@ export function pendulumSummonDuelCards(
   canSummon: (uid: string) => boolean,
   specialSummon: (uid: string, player: PlayerId) => DuelCardInstance,
 ): DuelCardInstance[] {
-  const legalAction = pendulumSummonActions(state, player, canSummon).find((action) => isPendulumSummonSelection(action.summonUids, summonUids));
+  const legalAction = pendulumSummonActions(state, player, canSummon).find((action) => isPendulumSummonSelection(action.summonUids, summonUids, action.maxSummons));
   if (!legalAction) throw new Error("Pendulum Summon is not legal");
   const summoned: DuelCardInstance[] = [];
   for (const uid of summonUids) {
@@ -38,8 +38,8 @@ export function pendulumSummonDuelCards(
   return summoned;
 }
 
-function isPendulumSummonSelection(candidates: string[], selected: string[]): boolean {
-  if (!selected.length || selected.length > candidates.length) return false;
+function isPendulumSummonSelection(candidates: string[], selected: string[], maxSummons: number): boolean {
+  if (!selected.length || selected.length > candidates.length || selected.length > maxSummons) return false;
   if (new Set(selected).size !== selected.length) return false;
   return selected.every((uid) => candidates.includes(uid));
 }

@@ -546,7 +546,7 @@ export type DuelAction = (
   | { type: "xyzSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
   | { type: "linkSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
   | { type: "ritualSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
-  | { type: "pendulumSummon"; player: PlayerId; summonUids: string[]; label: string }
+  | { type: "pendulumSummon"; player: PlayerId; summonUids: string[]; maxSummons: number; label: string }
   | { type: "setMonster"; player: PlayerId; uid: string; label: string }
   | { type: "setSpellTrap"; player: PlayerId; uid: string; label: string }
   | { type: "activateEffect"; player: PlayerId; uid: string; effectId: string; label: string }

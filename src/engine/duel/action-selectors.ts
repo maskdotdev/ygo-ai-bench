@@ -56,7 +56,7 @@ export function duelActionMatchesSelector(
     if (!isMaterialAction(action) || !sameStringMembers(action.materialUids, selector.materialUids)) return false;
   }
   if (selector.summonUids) {
-    if (action.type !== "pendulumSummon" || !sameStringMembers(action.summonUids, selector.summonUids)) return false;
+    if (action.type !== "pendulumSummon" || !isPendulumSummonSelection(action.summonUids, selector.summonUids, action.maxSummons)) return false;
   }
   if (selector.position) {
     if (action.type !== "changePosition" || action.position !== selector.position) return false;
@@ -105,4 +105,10 @@ export function duelActionMatchesSelector(
 
 function isMaterialAction(action: DuelAction): action is Extract<DuelAction, { materialUids: string[] }> {
   return action.type === "fusionSummon" || action.type === "synchroSummon" || action.type === "xyzSummon" || action.type === "linkSummon" || action.type === "ritualSummon";
+}
+
+function isPendulumSummonSelection(candidates: string[], selected: string[], maxSummons: number): boolean {
+  if (!selected.length || selected.length > candidates.length || selected.length > maxSummons) return false;
+  if (new Set(selected).size !== selected.length) return false;
+  return selected.every((uid) => candidates.includes(uid));
 }
