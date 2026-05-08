@@ -624,10 +624,12 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
       triggerEvent === "detachedMaterial" ||
       triggerEvent === "discarded" ||
       triggerEvent === "equipped" ||
+      triggerEvent === "flipSummonNegated" ||
       triggerEvent === "flipSummoned" ||
       triggerEvent === "leftField" ||
       triggerEvent === "leftGraveyard" ||
       triggerEvent === "moved" ||
+      triggerEvent === "normalSummonNegated" ||
       triggerEvent === "positionChanged" ||
       triggerEvent === "preUsedAsMaterial" ||
       triggerEvent === "released" ||
@@ -636,6 +638,7 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
       triggerEvent === "sentToGraveyard" ||
       triggerEvent === "sentToHand" ||
       triggerEvent === "sentToHandConfirmed" ||
+      triggerEvent === "specialSummonNegated" ||
       triggerEvent === "usedAsMaterial" ||
       triggerEvent === "normalSummoned" ||
       triggerEvent === "specialSummoned")
