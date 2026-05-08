@@ -172,6 +172,23 @@ describe("trigger bucket open fast restore", () => {
     expect(getDuelLegalActions(restoredOpponentResponse, 0)).toEqual([]);
     expect(hasGroupedEffect(restoredOpponentResponse, 1, "restore-fast-alt-opponent-chain-quick", "chainResponse")).toBe(true);
     expect(hasGroupedEffect(restoredOpponentResponse, 1, "restore-fast-alt-opponent-open-quick", "chainResponse")).toBe(false);
+    const opponentChain = getDuelLegalActions(restoredOpponentResponse, 1).find((action) => action.type === "activateEffect" && action.effectId === "restore-fast-alt-opponent-chain-quick");
+    expect(opponentChain).toBeDefined();
+    const forgedOpponentOpenOnly = applyResponse(restoredOpponentResponse, {
+      type: "activateEffect",
+      player: 1,
+      uid: opponentQuick!.uid,
+      effectId: "restore-fast-alt-opponent-open-quick",
+      label: "Forge restored opponent open-only quick into chain response",
+      windowId: opponentChain!.windowId,
+      windowKind: opponentChain!.windowKind,
+      windowToken: opponentChain!.windowToken,
+    });
+    expect(forgedOpponentOpenOnly.ok).toBe(false);
+    expect(forgedOpponentOpenOnly.error).toContain("Response is not currently legal");
+    expect(forgedOpponentOpenOnly.legalActions).toEqual(getDuelLegalActions(restoredOpponentResponse, 1));
+    expect(forgedOpponentOpenOnly.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredOpponentResponse, 1));
+    expect(restoredOpponentResponse.state.log.map((entry) => entry.detail)).not.toContain("restore-fast-alt-opponent-open-quick resolved");
     const opponentPass = getDuelLegalActions(restoredOpponentResponse, 1).find((action) => action.type === "passChain");
     expect(opponentPass).toBeDefined();
     const resolved = applyAndAssert(restoredOpponentResponse, opponentPass!);
