@@ -75,6 +75,23 @@ describe("trigger chain limit followup restore", () => {
 
     const secondChain = getDuelLegalActions(restoredFirstFollowup, 0).find((action) => action.type === "activateEffect" && action.effectId === "restore-trigger-followup-second-response");
     expect(secondChain).toBeDefined();
+
+    const forgedOpponentBlocked = applyResponse(restoredFirstFollowup, {
+      type: "activateEffect",
+      player: 1,
+      uid: opponentBlocked!.uid,
+      effectId: "restore-trigger-followup-opponent-blocked",
+      label: "Forge opponent response into restored trigger follow-up limit",
+      windowId: secondChain!.windowId,
+      windowKind: secondChain!.windowKind,
+      windowToken: secondChain!.windowToken,
+    });
+    expect(forgedOpponentBlocked.ok).toBe(false);
+    expect(forgedOpponentBlocked.error).toContain("Response is not currently legal");
+    expect(forgedOpponentBlocked.legalActions).toEqual(getDuelLegalActions(restoredFirstFollowup, 0));
+    expect(forgedOpponentBlocked.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredFirstFollowup, 0));
+    expect(restoredFirstFollowup.state.log.map((entry) => entry.detail)).not.toContain("restore-trigger-followup-opponent-blocked resolved");
+
     const continuedWindow = applyAndAssert(restoredFirstFollowup, secondChain!);
     expect(continuedWindow.state).toMatchObject({ waitingFor: 0, windowKind: "chainResponse" });
     expect(continuedWindow.state.chain.map((link) => link.effectId)).toEqual([

@@ -74,6 +74,23 @@ describe("trigger chain limit clear restore", () => {
 
     const firstChain = findEffectAction(restoredLimitedWindow, 0, "restore-trigger-limit-clear-first-response");
     expect(firstChain).toBeDefined();
+
+    const forgedLimitedOpponent = applyResponse(restoredLimitedWindow, {
+      type: "activateEffect",
+      player: 1,
+      uid: opponentResponse!.uid,
+      effectId: "restore-trigger-limit-clear-opponent-response",
+      label: "Forge opponent response into restored trigger one-chain limit",
+      windowId: firstChain!.windowId,
+      windowKind: firstChain!.windowKind,
+      windowToken: firstChain!.windowToken,
+    });
+    expect(forgedLimitedOpponent.ok).toBe(false);
+    expect(forgedLimitedOpponent.error).toContain("Response is not currently legal");
+    expect(forgedLimitedOpponent.legalActions).toEqual(getDuelLegalActions(restoredLimitedWindow, 0));
+    expect(forgedLimitedOpponent.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredLimitedWindow, 0));
+    expect(restoredLimitedWindow.state.log.map((entry) => entry.detail)).not.toContain("restore-trigger-limit-clear-opponent-response resolved");
+
     applyAndAssert(restoredLimitedWindow, firstChain!);
 
     const restoredClearedOpponentWindow = restoreDuel(serializeDuel(restoredLimitedWindow), createCardReader(cards), restoreRegistry(), restoreChainLimitRegistry());
@@ -92,6 +109,23 @@ describe("trigger chain limit clear restore", () => {
 
     const opponentChain = findEffectAction(restoredClearedOpponentWindow, 1, "restore-trigger-limit-clear-opponent-response");
     expect(opponentChain).toBeDefined();
+
+    const forgedTurnSecond = applyResponse(restoredClearedOpponentWindow, {
+      type: "activateEffect",
+      player: 0,
+      uid: secondResponse!.uid,
+      effectId: "restore-trigger-limit-clear-second-response",
+      label: "Forge turn response into restored cleared opponent window",
+      windowId: opponentChain!.windowId,
+      windowKind: opponentChain!.windowKind,
+      windowToken: opponentChain!.windowToken,
+    });
+    expect(forgedTurnSecond.ok).toBe(false);
+    expect(forgedTurnSecond.error).toContain("Response is not currently legal");
+    expect(forgedTurnSecond.legalActions).toEqual(getDuelLegalActions(restoredClearedOpponentWindow, 1));
+    expect(forgedTurnSecond.legalActionGroups).toEqual(getGroupedDuelLegalActions(restoredClearedOpponentWindow, 1));
+    expect(restoredClearedOpponentWindow.state.log.map((entry) => entry.detail)).not.toContain("restore-trigger-limit-clear-second-response resolved");
+
     applyAndAssert(restoredClearedOpponentWindow, opponentChain!);
 
     const restoredReturnedTriggerWindow = restoreDuel(serializeDuel(restoredClearedOpponentWindow), createCardReader(cards), restoreRegistry(), restoreChainLimitRegistry());
