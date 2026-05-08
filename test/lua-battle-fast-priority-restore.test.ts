@@ -42,6 +42,28 @@ describe("Lua battle fast priority restore", () => {
     const pass = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passChain");
     expect(pass).toBeDefined();
     expect(hasGroupedPass(getLuaRestoreLegalActionGroups(restored, 1), 1)).toBe(true);
+    const opponentBattleQuick = restored.session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "500");
+    expect(opponentBattleQuick).toBeDefined();
+    const opponentBattleQuickEffect = restored.session.state.effects.find((effect) => effect.sourceUid === opponentBattleQuick!.uid);
+    expect(opponentBattleQuickEffect).toBeDefined();
+    expect(pass!.windowId).toBeDefined();
+    expect(pass!.windowKind).toBeDefined();
+    expect(pass!.windowToken).toBeDefined();
+    const forgedBattleQuick = applyLuaRestoreResponse(restored, {
+      type: "activateEffect",
+      player: 1,
+      uid: opponentBattleQuick!.uid,
+      effectId: opponentBattleQuickEffect!.id,
+      label: "Forge battle-only quick into chain response",
+      windowId: pass!.windowId!,
+      windowKind: pass!.windowKind!,
+      windowToken: pass!.windowToken!,
+    });
+    expect(forgedBattleQuick.ok).toBe(false);
+    expect(forgedBattleQuick.error).toContain("Response is not currently legal");
+    expect(forgedBattleQuick.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(forgedBattleQuick.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(restored.host.messages).toEqual([]);
     const staleBeforePass = applyLuaRestoreResponse(restored, { ...pass!, windowId: pass!.windowId! - 1 });
     expect(staleBeforePass.ok).toBe(false);
     expect(staleBeforePass.error).toContain("Response is not currently legal");
