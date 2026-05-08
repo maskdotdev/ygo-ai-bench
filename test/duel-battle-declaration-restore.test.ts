@@ -49,6 +49,28 @@ describe("battle declaration restore", () => {
     expect(getDuelLegalActions(restored, 1).some((action) => action.type === "activateEffect" && action.effectId === "restore-attack-declare-turn-quick")).toBe(false);
     expect(getDuelLegalActions(restored, 1).some((action) => action.type === "passAttack")).toBe(true);
     expect(getGroupedDuelLegalActions(restored, 1).flatMap((group) => group.actions)).toEqual(getDuelLegalActions(restored, 1));
+    const opponentPass = getDuelLegalActions(restored, 1).find((action) => action.type === "passAttack");
+    const turnQuickEffect = restored.state.effects.find((effect) => effect.sourceUid === turnQuick!.uid);
+    expect(opponentPass).toBeDefined();
+    expect(turnQuickEffect).toBeDefined();
+    expect(opponentPass!.windowToken).toBeDefined();
+
+    const forgedTurnQuick = applyResponse(restored, {
+      type: "activateEffect",
+      player: 1,
+      uid: turnQuick!.uid,
+      effectId: turnQuickEffect!.id,
+      label: "Forge turn quick into restored opponent attack response",
+      windowId: opponentPass!.windowId!,
+      windowKind: opponentPass!.windowKind!,
+      windowToken: opponentPass!.windowToken!,
+    });
+    expect(forgedTurnQuick.ok).toBe(false);
+    expect(forgedTurnQuick.error).toContain("Response is not currently legal");
+    assertLegalWindow(restored, forgedTurnQuick, 1);
+    expect(restored.state.currentAttack).toMatchObject({ attackerUid: attacker!.uid });
+    expect(restored.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid });
+    expect(restored.state.log.some((entry) => entry.detail === "restore-attack-declare-turn-quick resolved")).toBe(false);
 
     const staleAttack = applyResponse(restored, attack!);
     expect(staleAttack.ok).toBe(false);
