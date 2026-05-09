@@ -6,6 +6,7 @@ import path from "node:path";
 const defaultUpstreamConstants = [
   ".upstream/ignis/script/constant.lua",
   ".upstream/ignis/script/archetype_setcode_constants.lua",
+  ".upstream/ignis/script/card_counter_constants.lua",
 ];
 const defaultSourceRoot = "src/engine/lua";
 
@@ -70,7 +71,8 @@ function scanUpstreamConstants(files) {
   const constants = new Set();
   for (const file of files) {
     const source = stripLuaComments(fs.readFileSync(file, "utf8"));
-    for (const match of source.matchAll(/^\s*([A-Z][A-Z0-9_]+)\s*=/gm)) {
+    for (const match of source.matchAll(/^\s*([A-Z][A-Z0-9_]+)\s*=\s*([^\n\r]+)/gm)) {
+      if (match[2]?.trim().startsWith("{")) continue;
       if (match[1]) constants.add(match[1]);
     }
   }

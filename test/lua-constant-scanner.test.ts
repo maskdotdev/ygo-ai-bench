@@ -58,7 +58,7 @@ describe("Lua constant scanner", () => {
     const source = path.join(root, "source");
     fs.mkdirSync(source, { recursive: true });
     fs.writeFileSync(upstream, "REASON_EFFECT = 0x40\n");
-    fs.writeFileSync(archetypes, "SET_FIXTURE = 0x123\nSET_MISSING_FIXTURE = 0x456\n");
+    fs.writeFileSync(archetypes, "SET_FIXTURE = 0x123\nSET_TABLE_FIXTURE = {1,2}\nSET_MISSING_FIXTURE = 0x456\n");
     fs.writeFileSync(path.join(source, "basic-test-constant-data.ts"), "export const constants = { REASON_EFFECT: 0x40, SET_FIXTURE: 0x123 };\n");
 
     const result = spawnSync(process.execPath, [
@@ -75,10 +75,11 @@ describe("Lua constant scanner", () => {
     expect(result.status).toBe(2);
     expect(result.stdout).toContain("Missing constants:");
     expect(result.stdout).toContain("SET_MISSING_FIXTURE");
+    expect(result.stdout).not.toContain("SET_TABLE_FIXTURE");
   });
 
-  it("keeps local Project Ignis constant names aligned with upstream constant.lua", () => {
-    for (const upstream of [".upstream/ignis/script/constant.lua", ".upstream/ignis/script/archetype_setcode_constants.lua"]) {
+  it("keeps local Project Ignis constant names aligned with upstream scalar constant files", () => {
+    for (const upstream of [".upstream/ignis/script/constant.lua", ".upstream/ignis/script/archetype_setcode_constants.lua", ".upstream/ignis/script/card_counter_constants.lua"]) {
       if (!fs.existsSync(upstream)) return;
     }
 
