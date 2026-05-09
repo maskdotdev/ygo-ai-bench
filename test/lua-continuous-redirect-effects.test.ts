@@ -222,6 +222,55 @@ describe("Lua continuous redirect effects", () => {
     expect(session.state.cards.find((card) => card.uid === destroyer!.uid)).toMatchObject({ location: "monsterZone" });
   });
 
+  it("applies Lua to-Grave callback redirects for destroyed monsters", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Crystal Redirect Monster", kind: "monster" }];
+    const session = createDuel({ seed: 290, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const redirected = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(redirected).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_TO_GRAVE_REDIRECT_CB)
+        e:SetProperty(EFFECT_FLAG_UNCOPYABLE)
+        e:SetCondition(function(e)
+          local c=e:GetHandler()
+          Debug.Message("grave callback condition " .. c:GetCode() .. "/" .. tostring(c:IsLocation(LOCATION_MZONE)) .. "/" .. tostring(c:IsReason(REASON_DESTROY)))
+          return c:IsFaceup() and c:IsLocation(LOCATION_MZONE) and c:IsReason(REASON_DESTROY)
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          local c=e:GetHandler()
+          Debug.Message("grave callback op " .. tostring(c:IsLocation(LOCATION_SZONE)) .. "/" .. tostring(c:IsReason(REASON_DESTROY)))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "to-grave-callback-redirect.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    moveDuelCard(session.state, redirected!.uid, "monsterZone", 0);
+    redirected!.faceUp = true;
+    redirected!.position = "faceUpAttack";
+
+    destroyDuelCard(session.state, redirected!.uid, 0, duelReason.effect | duelReason.destroy, 1);
+
+    expect(host.messages).toContain("grave callback condition 100/true/true");
+    expect(host.messages).toContain("grave callback op true/true");
+    expect(session.state.cards.find((card) => card.uid === redirected!.uid)).toMatchObject({ location: "spellTrapZone", reason: duelReason.effect | duelReason.destroy | duelReason.redirect });
+  });
+
   it("applies Lua leave-field redirects to the bottom of the Deck", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Bottom Redirected Monster", kind: "monster" },

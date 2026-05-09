@@ -1,6 +1,7 @@
 import { findCard, getCards, moveDuelCard, pushDuelLog } from "#duel/card-state.js";
 import {
   battleDestroyRedirectLocation,
+  findToGraveCallbackRedirectEffect,
   isReleasePrevented,
   leaveFieldRedirectLocation,
   moveDestinationRedirectLocation,
@@ -43,6 +44,8 @@ export function sendCoreDuelCardToGraveyard(
   const sendReplacement = applySendReplacement(state, uid, controller, reason, reasonPlayer, replacementHandlers);
   if (sendReplacement) return sendReplacement;
   const createContext = handlers.createContinuousContext(state);
+  const callbackRedirect = applyToGraveCallbackRedirect(state, uid, controller, reason, reasonPlayer, handlers);
+  if (callbackRedirect) return callbackRedirect;
   if (shouldRedirectToGraveyardMove(state, uid, createContext)) return banishCoreDuelCard(state, uid, controller, reason | duelReason.redirect, reasonPlayer, handlers);
   const redirectLocation = leaveFieldRedirectLocation(state, uid, "graveyard", createContext);
   if (redirectLocation && redirectLocation.location !== "graveyard") return moveCoreDuelCardToRedirectedLocation(state, uid, redirectLocation, controller, reason, reasonPlayer, handlers);
@@ -87,6 +90,11 @@ export function destroyCoreDuelCard(
     handlers.collectTrigger(state, "destroyed", card);
     if (battleRedirectLocation.location === "banished") handlers.collectTrigger(state, "banished", card);
     return card;
+  }
+  const callbackRedirect = applyToGraveCallbackRedirect(state, uid, controller, reason, reasonPlayer, handlers);
+  if (callbackRedirect) {
+    handlers.collectTrigger(state, "destroyed", callbackRedirect);
+    return callbackRedirect;
   }
   requireCoreDuelMoveAllowed(state, uid, "graveyard", reason, handlers);
   const card = moveDuelCard(state, uid, "graveyard", controller, reason, reasonPlayer);
@@ -198,6 +206,30 @@ function moveCoreDuelCardToRedirectedLocation(
   collectReasonTriggers(state, card, reason | duelReason.redirect, handlers);
   handlers.collectTrigger(state, "moved", card);
   collectDestinationTriggers(state, card, handlers);
+  return card;
+}
+
+function applyToGraveCallbackRedirect(
+  state: DuelState,
+  uid: string,
+  controller: PlayerId | undefined,
+  reason: number,
+  reasonPlayer: PlayerId | undefined,
+  handlers: CoreMovementHandlers,
+): DuelCardInstance | undefined {
+  const createContext = handlers.createContinuousContext(state);
+  const match = findToGraveCallbackRedirectEffect(state, uid, reason, reasonPlayer, createContext);
+  if (!match) return undefined;
+  const moveReason = reason | duelReason.redirect;
+  requireCoreDuelMoveAllowed(state, uid, "spellTrapZone", moveReason, handlers);
+  const card = moveDuelCard(state, uid, "spellTrapZone", controller, moveReason, reasonPlayer);
+  const ctx = createContext(match.effect, match.source, card, { checkOnly: false, eventReason: moveReason, eventReasonPlayer: reasonPlayer ?? card.controller, eventDestination: "graveyard" });
+  match.effect.operation?.(ctx);
+  pushDuelLog(state, "sendToGraveyard", card.controller, card.name, "Redirected to the Spell/Trap Zone");
+  collectLeaveFieldTriggers(state, card, handlers);
+  collectLeaveGraveyardTriggers(state, card, handlers);
+  collectReasonTriggers(state, card, moveReason, handlers);
+  handlers.collectTrigger(state, "moved", card);
   return card;
 }
 

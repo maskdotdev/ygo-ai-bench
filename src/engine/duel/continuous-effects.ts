@@ -17,6 +17,12 @@ export type ContinuousEffectContextFactory = (
   effect: DuelEffectDefinition,
   source: DuelCardInstance,
   card?: DuelCardInstance,
+  options?: {
+    checkOnly?: boolean;
+    eventReason?: number;
+    eventReasonPlayer?: PlayerId;
+    eventDestination?: DuelLocation;
+  },
 ) => DuelEffectContext;
 
 export interface ContinuousEffectMatch {
@@ -682,6 +688,21 @@ export function isCardDisabled(state: DuelState, card: DuelCardInstance, createC
 
 export function shouldRedirectToGraveyardMove(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): boolean {
   return moveDestinationRedirectLocation(state, uid, "graveyard", createContext)?.location === "banished";
+}
+
+export function findToGraveCallbackRedirectEffect(state: DuelState, uid: string, reason: number, reasonPlayer: PlayerId | undefined, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch | undefined {
+  if ((reason & duelReason.redirect) !== 0) return undefined;
+  const card = findCard(state, uid);
+  if (!card) return undefined;
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 313 || effect.sourceUid !== uid) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    const ctx = createContext(effect, source, card, { eventReason: reason, eventReasonPlayer: reasonPlayer ?? card.controller, eventDestination: "graveyard" });
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
+    if (!effect.canActivate || effect.canActivate(ctx)) return { effect, source, card };
+  }
+  return undefined;
 }
 
 export function shouldRedirectBanishMove(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): boolean {

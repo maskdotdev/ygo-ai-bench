@@ -652,7 +652,7 @@ export function changeDuelCardPosition(state: DuelState, player: PlayerId, uid: 
 }
 
 function createContinuousEffectContext(state: DuelState): ContinuousEffectContextFactory {
-  return (effect, source, card) => createEffectContext(state, source, effect.controller, undefined, card, [], true);
+  return (effect, source, card, options) => Object.assign(createEffectContext(state, source, effect.controller, undefined, card, [], options?.checkOnly ?? true), options?.eventReason === undefined ? {} : { eventReason: options.eventReason }, options?.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: options.eventReasonPlayer }, options?.eventDestination === undefined ? {} : { eventDestination: options.eventDestination });
 }
 
 function canEnterDuelPhase(state: DuelState, player: PlayerId, phase: DuelPhase): boolean {
