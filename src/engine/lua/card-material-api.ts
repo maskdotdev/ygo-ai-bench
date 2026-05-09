@@ -35,7 +35,7 @@ export function installCardMaterialApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsCanChangePositionRush"));
-  pushBooleanGetter(L, "IsSSetable", session, (card) => Boolean(card && canLuaSetSpellTrap(card) && hasZoneSpace(session.state, card.controller, "spellTrapZone")));
+  pushBooleanGetter(L, "IsSSetable", session, (card) => Boolean(card && canLuaSetSpellTrapToAvailableZone(session.state, card)));
   pushMaterialPredicate(L, "IsCanBeFusionMaterial", session, "fusion");
   pushMaterialPredicate(L, "IsCanBeSynchroMaterial", session, "synchro");
   pushMaterialPredicate(L, "IsCanBeXyzMaterial", session, "xyz");
@@ -99,8 +99,14 @@ function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, 
   lua.lua_setfield(L, -2, to_luastring(fieldName));
 }
 
+function canLuaSetSpellTrapToAvailableZone(state: DuelState, card: DuelCardInstance): boolean {
+  if (!canLuaSetSpellTrap(card)) return false;
+  if (card.location === "spellTrapZone") return true;
+  return hasZoneSpace(state, card.controller, "spellTrapZone");
+}
+
 function canLuaSetSpellTrap(card: DuelCardInstance): boolean {
-  return (card.kind === "spell" || card.kind === "trap") && (card.location === "hand" || card.location === "deck" || card.location === "graveyard");
+  return (card.kind === "spell" || card.kind === "trap") && (card.location === "hand" || card.location === "deck" || card.location === "graveyard" || card.location === "spellTrapZone");
 }
 
 function canTurnSet(state: DuelState, card: DuelCardInstance): boolean {

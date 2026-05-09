@@ -25,7 +25,7 @@ import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { activeFieldSpell, isDuelType, isFieldSpell } from "#lua/duel-api/field-spell-state.js";
 import { canLuaChangeControl, canLuaSwapControlPair, swapLuaCardControl } from "#lua/duel-api/move-control.js";
 import { luaMoveBlockedByImmunity, type LuaMoveImmunityHostState } from "#lua/duel-api/move-immunity.js";
-import { applyLuaMovePosition, didMove, faceupAttackOrFacedownDefensePosition, movementSnapshot } from "#lua/duel-api/move-card-state.js";
+import { applyLuaMovePosition, changeSpellTrapPosition, didMove, faceupAttackOrFacedownDefensePosition, movementSnapshot } from "#lua/duel-api/move-card-state.js";
 import { shuffleLuaMoveCards } from "#lua/duel-api/move-shuffle.js";
 import { readCardOrGroupUids, readFieldDestination, readMoveReason, readOptionalPlayer, readSingleDestination } from "#lua/duel-api/move-readers.js";
 import { installDuelOverlayApi, removeOverlayReference } from "#lua/duel-api/overlay.js";
@@ -351,7 +351,8 @@ function pushSwapControl(L: unknown, session: DuelSession, hostState: LuaDuelMov
 
 function pushChangePosition(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
   const uids = readCardOrGroupUids(L, 1);
-  const requestedPosition = lua.lua_isnumber(L, 2) ? positionFromMask(lua.lua_tointeger(L, 2)) : undefined;
+  const positionMask = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
+  const requestedPosition = positionMask === undefined ? undefined : positionFromMask(positionMask);
   if (!requestedPosition) {
     setOperatedUids(hostState, []);
     lua.lua_pushinteger(L, 0);
@@ -364,6 +365,10 @@ function pushChangePosition(L: unknown, session: DuelSession, hostState: LuaDuel
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
     if (luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) continue;
+    if (changeSpellTrapPosition(card, requestedPosition, positionMask)) {
+      changed.push(uid);
+      continue;
+    }
     try {
       changeDuelCardPosition(session.state, card.controller, uid, requestedPosition);
       changed.push(uid);

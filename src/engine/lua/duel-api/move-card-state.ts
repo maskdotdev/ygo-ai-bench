@@ -14,6 +14,21 @@ export function faceupAttackOrFacedownDefensePosition(card: DuelCardInstance): C
   return undefined;
 }
 
+export function changeSpellTrapPosition(card: DuelCardInstance, requestedPosition: CardPosition, positionMask: number | undefined): boolean {
+  if (card.location !== "spellTrapZone" || (card.kind !== "spell" && card.kind !== "trap")) return false;
+  if (requestedPosition !== "faceDownDefense" && requestedPosition !== "faceDown") return false;
+  if (positionMask !== undefined && (positionMask & 0x0a) === 0) return false;
+  if (!card.faceUp && card.position === "faceDown") return false;
+  card.previousLocation = card.location;
+  card.previousController = card.controller;
+  card.previousSequence = card.sequence;
+  card.previousPosition = card.position;
+  card.previousFaceUp = card.faceUp;
+  card.position = "faceDown";
+  card.faceUp = false;
+  return true;
+}
+
 export function movementSnapshot(card: DuelCardInstance): LuaMoveSnapshot {
   return { controller: card.controller, location: card.location, sequence: card.sequence };
 }

@@ -20,7 +20,7 @@ export function placeActivatedSpellTrapCard(state: DuelState, player: PlayerId, 
 }
 
 export function shouldSendActivatedSpellTrapToGraveyard(source: DuelCardInstance, effect: DuelEffectDefinition): boolean {
-  return source.location === "spellTrapZone" && isSpellTrapCardActivation(source, effect) && !isPersistentSpellTrap(source);
+  return source.location === "spellTrapZone" && !source.cancelToGrave && isSpellTrapCardActivation(source, effect) && !isPersistentSpellTrap(source);
 }
 
 export function canActivateSpellTrapCardEffect(state: DuelState, player: PlayerId, source: DuelCardInstance, effect: DuelEffectDefinition): boolean {
