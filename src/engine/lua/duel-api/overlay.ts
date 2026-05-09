@@ -4,6 +4,7 @@ import { canMoveDuelCardToLocation, detachDuelOverlayMaterials, moveDuelCard } f
 import { duelReason } from "#duel/reasons.js";
 import { locationsFromMask, readCardUid } from "#lua/api-utils.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
+import { luaMoveBlockedByImmunity } from "#lua/duel-api/move-immunity.js";
 import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
 import type { DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 import { markLuaOperationTimingBoundary, regroupLuaOperationEvent, type LuaDuelMoveApiHostState } from "#lua/duel-api/move.js";
@@ -41,7 +42,7 @@ function pushOverlay(L: unknown, session: DuelSession, hostState: LuaDuelMoveApi
   for (const uid of readCardOrGroupUids(L, 2)) {
     if (uid === target.uid || target.overlayUids.includes(uid)) continue;
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
-    if (!card || !canMoveDuelCardToLocation(session.state, uid, "overlay", duelReason.effect)) continue;
+    if (!card || !canMoveDuelCardToLocation(session.state, uid, "overlay", duelReason.effect) || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) continue;
     try {
       const attachedUids = [...card.overlayUids];
       removeOverlayReference(session.state, uid);
@@ -52,7 +53,7 @@ function pushOverlay(L: unknown, session: DuelSession, hostState: LuaDuelMoveApi
       for (const attachedUid of attachedUids) {
         if (target.overlayUids.includes(attachedUid)) continue;
         const attached = session.state.cards.find((candidate) => candidate.uid === attachedUid);
-        if (!attached || !canMoveDuelCardToLocation(session.state, attachedUid, "overlay", duelReason.effect)) continue;
+        if (!attached || !canMoveDuelCardToLocation(session.state, attachedUid, "overlay", duelReason.effect) || luaMoveBlockedByImmunity(L, session, hostState, attached, duelReason.effect)) continue;
         removeOverlayReference(session.state, attachedUid);
         moveDuelCard(session.state, attachedUid, "overlay", target.controller, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer);
         target.overlayUids.push(attachedUid);
