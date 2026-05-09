@@ -3,7 +3,7 @@ import { registerEffect } from "#duel/core.js";
 import { cleanupRemovedDuelEffect } from "#duel/effect-reset.js";
 import { locationsFromMask, readCardUid, readTableNumberField } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
-import { callLuaEffectBattleDamageValue, callLuaEffectStatValue, callLuaEffectValueCardPredicate, callLuaEffectValuePredicate } from "#lua/effect-value-callbacks.js";
+import { callLuaEffectBattleDamageValue, callLuaEffectLifePointValue, callLuaEffectStatValue, callLuaEffectValueCardPredicate, callLuaEffectValuePredicate } from "#lua/effect-value-callbacks.js";
 import { locationMaskFromLocation, locationMaskFromLocations } from "#lua/effect-location-mask.js";
 import { installEffectCompatibilityApi } from "#lua/effect-compatibility-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
@@ -189,7 +189,10 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     if (effect.valueRef !== undefined) lauxlib.luaL_unref(state, lua.LUA_REGISTRYINDEX, effect.valueRef);
     delete effect.valueRef;
     delete effect.value;
+    delete effect.valueDescriptor;
     if (lua.lua_isfunction(state, 2)) {
+      const valueDescriptor = knownLuaEffectValueDescriptor(state, 2, hostState);
+      if (valueDescriptor !== undefined) effect.valueDescriptor = valueDescriptor;
       lua.lua_pushvalue(state, 2);
       effect.valueRef = lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX);
     }
@@ -497,6 +500,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     luaTypeFlags: luaEffect.typeFlags,
     ...(luaEffect.code === undefined ? {} : { code: luaEffect.code }),
     ...(luaEffect.value === undefined ? {} : { value: luaEffect.value }),
+    ...(luaEffect.valueDescriptor === undefined ? {} : { luaValueDescriptor: luaEffect.valueDescriptor }),
     ...(triggerEvent === undefined ? {} : { triggerEvent }),
     ...(triggerEvent !== undefined && shouldKeepTriggerCode(triggerEvent, luaEffect.code) ? { triggerCode: luaEffect.code } : {}),
     ...(event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEvent, luaEffect.code) ? { triggerSourceOnly: true } : {}),
@@ -514,6 +518,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.targetRange === undefined ? {} : { targetRange: luaEffect.targetRange }),
     ...(luaEffect.hintTiming === undefined ? {} : { hintTiming: luaEffect.hintTiming }),
     ...(luaEffect.valueRef === undefined ? {} : { battleDamageValue: (ctx, player, amount) => callLuaEffectBattleDamageValue(L, hostState, luaEffect, ctx, player, amount, readLuaError) }),
+    ...(luaEffect.valueRef === undefined ? {} : { lifePointValue: (ctx, player, amount) => callLuaEffectLifePointValue(L, hostState, luaEffect, ctx, player, amount, readLuaError) }),
     ...(luaEffect.valueRef === undefined ? {} : { statValue: (ctx, targetCard) => callLuaEffectStatValue(L, hostState, luaEffect, ctx, targetCard, readLuaError) }),
     ...(luaEffect.valueRef === undefined ? {} : { valueCardPredicate: (ctx, targetCard) => callLuaEffectValueCardPredicate(L, hostState, luaEffect, ctx, targetCard, readLuaError) }),
     ...(luaEffect.valueRef === undefined ? {} : { valuePredicate: (ctx, reasonPlayer) => callLuaEffectValuePredicate(L, hostState, luaEffect, card, ctx, reasonPlayer, readLuaError) }),
@@ -746,6 +751,74 @@ function secondParameterName(L: unknown, functionIndex: number): string | undefi
   const name = lua.lua_isstring(L, -2) ? lua.lua_tojsstring(L, -2) : undefined;
   lua.lua_pop(L, 3);
   return name;
+}
+
+function knownLuaEffectValueDescriptor(L: unknown, index: number, hostState: LuaHostState): string | undefined {
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
+  const params = luaFunctionParams(snippet);
+  const amountParam = params?.[2];
+  const reasonParam = params?.[3];
+  if (!amountParam || !reasonParam) return undefined;
+  const amount = escapeRegExp(amountParam);
+  const reason = escapeRegExp(reasonParam);
+  const effectReason = "(?:REASON_EFFECT|64)";
+  const doubleEffectDamage = new RegExp(`\\breturn\\s+${reason}\\s*&\\s*${effectReason}\\s*>\\s*0\\s+and\\s+${amount}\\s*\\*\\s*2\\s+or\\s+${amount}\\b`);
+  return doubleEffectDamage.test(snippet) ? "change-damage:effect-double" : undefined;
+}
+
+function luaFunctionSourceSnippet(L: unknown, index: number, hostState: LuaHostState): string | undefined {
+  const location = luaFunctionSourceLocation(L, index);
+  if (!location) return undefined;
+  const source = hostState.loadedScriptBodies.get(location.source);
+  if (!source) return undefined;
+  return source.split(/\r?\n/).slice(location.line - 1, location.lastLine).join(" ");
+}
+
+function luaFunctionSourceLocation(L: unknown, index: number): { source: string; line: number; lastLine: number } | undefined {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  lua.lua_getglobal(L, to_luastring("debug"));
+  lua.lua_getfield(L, -1, to_luastring("getinfo"));
+  if (!lua.lua_isfunction(L, -1)) {
+    lua.lua_pop(L, 2);
+    return undefined;
+  }
+  lua.lua_pushvalue(L, absoluteIndex);
+  lua.lua_pushstring(L, to_luastring("S"));
+  const status = lua.lua_pcall(L, 2, 1, 0);
+  if (status !== lua.LUA_OK || !lua.lua_istable(L, -1)) {
+    lua.lua_pop(L, 2);
+    return undefined;
+  }
+  const source = readStringField(L, -1, "source");
+  const line = readIntegerField(L, -1, "linedefined");
+  const lastLine = readIntegerField(L, -1, "lastlinedefined");
+  lua.lua_pop(L, 2);
+  if (!source || line === undefined || lastLine === undefined || line < 1 || lastLine < line) return undefined;
+  return { source, line, lastLine };
+}
+
+function luaFunctionParams(snippet: string): string[] | undefined {
+  const match = snippet.match(/function\s*\(([^)]*)\)/);
+  return match?.[1]?.split(",").map((part) => part.trim()).filter(Boolean);
+}
+
+function readStringField(L: unknown, tableIndex: number, field: string): string | undefined {
+  lua.lua_getfield(L, tableIndex, to_luastring(field));
+  const value = lua.lua_isstring(L, -1) ? lua.lua_tojsstring(L, -1) : undefined;
+  lua.lua_pop(L, 1);
+  return value;
+}
+
+function readIntegerField(L: unknown, tableIndex: number, field: string): number | undefined {
+  lua.lua_getfield(L, tableIndex, to_luastring(field));
+  const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
+  lua.lua_pop(L, 1);
+  return value;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function pushRelatedEffectTable(L: unknown, hostState: LuaHostState, relatedEffectId?: number): void {

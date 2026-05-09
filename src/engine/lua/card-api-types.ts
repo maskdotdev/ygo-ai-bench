@@ -10,6 +10,7 @@ export interface LuaCardApiEffectRecord {
   property?: number;
   copyId?: number;
   value?: number;
+  valueDescriptor?: string;
   valueRef?: number;
   targetRef?: number;
   labelObjectId?: number;

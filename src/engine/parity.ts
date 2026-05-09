@@ -199,6 +199,7 @@ function snapshotEffects(effects: Array<DuelSession["state"]["effects"][number] 
       battleDamageValue: _battleDamageValue,
       canActivate: _canActivate,
       cost: _cost,
+      lifePointValue: _lifePointValue,
       operation: _operation,
       target: _target,
       targetCardPredicate: _targetCardPredicate,

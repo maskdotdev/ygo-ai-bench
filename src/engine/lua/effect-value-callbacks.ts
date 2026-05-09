@@ -87,6 +87,33 @@ export function callLuaEffectBattleDamageValue(
   });
 }
 
+export function callLuaEffectLifePointValue(
+  L: unknown,
+  hostState: LuaHostState,
+  luaEffect: LuaEffectRecord,
+  ctx: DuelEffectContext,
+  player: PlayerId,
+  amount: number,
+  readLuaError: (state: unknown) => string,
+): number | undefined {
+  if (luaEffect.valueRef === undefined) return undefined;
+  return withLuaCallbackContext(hostState, ctx, () => {
+    lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.valueRef);
+    hostState.pushEffectTable(L, luaEffect.id);
+    pushRelatedEffectTable(L, hostState, ctx);
+    lua.lua_pushinteger(L, amount);
+    lua.lua_pushinteger(L, ctx.eventReason ?? 0);
+    lua.lua_pushinteger(L, ctx.eventReasonPlayer ?? player);
+    if (ctx.eventCard) pushCardTable(L, ctx.eventCard.uid);
+    else lua.lua_pushnil(L);
+    const status = lua.lua_pcall(L, 6, 1, 0);
+    if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+    const result = lua.lua_isnumber(L, -1) ? lua.lua_tonumber(L, -1) : undefined;
+    lua.lua_pop(L, 1);
+    return result;
+  });
+}
+
 export function callLuaEffectStatValue(
   L: unknown,
   hostState: LuaHostState,

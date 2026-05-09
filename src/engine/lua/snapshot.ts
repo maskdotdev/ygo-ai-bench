@@ -1,6 +1,7 @@
 import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { applyResponse, getGroupedDuelLegalActions, getLegalActions, queryPublicState } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
@@ -98,6 +99,7 @@ function restoreKnownLuaEffects(
       ...(effect.reset ? { reset: { ...effect.reset } } : {}),
       ...(effect.targetRange ? { targetRange: [...effect.targetRange] } : {}),
       ...(effect.hintTiming ? { hintTiming: [...effect.hintTiming] } : {}),
+      ...restoredLuaValueCallbacks(effect),
       operation: () => {},
     });
     added.push(effect.registryKey);
@@ -106,7 +108,20 @@ function restoreKnownLuaEffects(
 }
 
 function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
-  return effect.event === "continuous" && (effect.code === 22 || effect.code === 25 || ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 132) && effect.value !== undefined));
+  return (
+    effect.event === "continuous" &&
+    (effect.code === 22 ||
+      effect.code === 25 ||
+      effect.luaValueDescriptor === "change-damage:effect-double" ||
+      ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 132) && effect.value !== undefined))
+  );
+}
+
+function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "battleDamageValue" | "lifePointValue"> {
+  if (effect.luaValueDescriptor !== "change-damage:effect-double") return {};
+  const applyValue = (ctx: Parameters<NonNullable<DuelEffectDefinition["lifePointValue"]>>[0], _player: PlayerId, amount: number): number =>
+    ((ctx.eventReason ?? 0) & duelReason.effect) !== 0 ? amount * 2 : amount;
+  return { battleDamageValue: applyValue, lifePointValue: applyValue };
 }
 
 function luaScriptRegistryKeys(registryKeys: Set<string>, snapshotEffects: SerializedDuelEffect[]): Set<string> {

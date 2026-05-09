@@ -118,11 +118,13 @@ interface LuaLifePointResult {
 
 function applyLuaDamage(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, player: PlayerId, amount: number, reason: number): LuaLifePointResult {
   const value = Math.max(0, Math.floor(amount));
-  if (session.state.status === "ended" || value <= 0 || isEffectDamagePrevented(session, hostState, player, reason)) return { applied: 0, eventName: "damageDealt", player };
+  if (session.state.status === "ended" || value <= 0) return { applied: 0, eventName: "damageDealt", player };
+  const changedValue = changedEffectDamageAmount(session, hostState, player, value, reason);
+  if (changedValue <= 0 || isEffectDamagePrevented(session, hostState, player, reason)) return { applied: 0, eventName: "damageDealt", player };
   if (isEffectDamageReversed(session, hostState, player, reason)) {
-    return { applied: recoverDuelPlayer(session.state, player, value), eventName: "recoveredLifePoints", player };
+    return { applied: recoverDuelPlayer(session.state, player, changedValue), eventName: "recoveredLifePoints", player };
   }
-  return { applied: damageDuelPlayer(session.state, player, value, reason), eventName: "damageDealt", player };
+  return { applied: damageDuelPlayer(session.state, player, changedValue, reason), eventName: "damageDealt", player };
 }
 
 function applyLuaRecover(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, player: PlayerId, amount: number, reason: number): LuaLifePointResult {
@@ -146,6 +148,19 @@ function isEffectRecoveryReversed(session: DuelSession, hostState: LuaOperationT
   return isEffectLifePointEffectApplied(session, hostState, player, reason, 81);
 }
 
+function changedEffectDamageAmount(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, player: PlayerId, amount: number, reason: number): number {
+  if ((reason & duelReason.effect) === 0) return amount;
+  let value = amount;
+  const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
+  const createContext = createLifePointEffectContext(session, hostState, reason, reasonPlayer);
+  for (const { effect, source } of matchingPlayerEffects(session.state, player, 82, createContext)) {
+    const ctx = createContext(effect, source);
+    const next = effect.lifePointValue?.(ctx, player, value) ?? effect.value;
+    value = applyLifePointDamageValue(value, next);
+  }
+  return value;
+}
+
 function isEffectLifePointEffectApplied(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, player: PlayerId, reason: number, code: number): boolean {
   if ((reason & duelReason.effect) === 0) return false;
   const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
@@ -154,6 +169,13 @@ function isEffectLifePointEffectApplied(session: DuelSession, hostState: LuaOper
     const ctx = createContext(effect, source);
     return !effect.valuePredicate || effect.valuePredicate(ctx, reasonPlayer);
   });
+}
+
+function applyLifePointDamageValue(amount: number, value: number | undefined): number {
+  if (value === undefined || value < 0) return amount;
+  if (value === 0x80000000) return amount * 2;
+  if (value === 0x80000001) return Math.floor(amount / 2);
+  return Math.max(0, Math.floor(value));
 }
 
 function createLifePointEffectContext(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, reason: number, reasonPlayer: PlayerId): ContinuousEffectContextFactory {
