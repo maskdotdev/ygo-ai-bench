@@ -250,6 +250,7 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
       ctx.possibleOperationInfos ?? [],
       ctx.effectLabel,
     );
+    placeActivatedSpellTrapCard(session.state, trigger.player, source, effect);
     pushDuelLog(session.state, "trigger", trigger.player, source.name, effect.id);
     markEffectUsed(session.state, effect);
     pruneSpentMandatoryPendingTriggers(session.state);

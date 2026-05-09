@@ -49,6 +49,7 @@ type LuaSummonOrSetAction = Extract<DuelAction, { type: "normalSummon" | "tribut
 
 export interface LuaDuelSummonApiHostState extends LuaOperationTimingBoundaryHostState, LuaMoveImmunityHostState {
   operatedUids: string[];
+  summonNegatedUids: string[];
   pendingSpecialSummonUids?: string[];
 }
 
@@ -465,6 +466,9 @@ function pushNegateSummon(L: unknown, session: DuelSession, hostState: LuaDuelSu
     }
   }
   setOperatedUids(hostState, negated);
+  for (const uid of negated) {
+    if (!hostState.summonNegatedUids.includes(uid)) hostState.summonNegatedUids.push(uid);
+  }
   lua.lua_pushinteger(L, negated.length);
   return 1;
 }

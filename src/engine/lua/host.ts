@@ -38,6 +38,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
     operationInfos: [],
     possibleOperationInfos: [],
     operatedUids: [],
+    summonNegatedUids: [],
     selectedUids: [],
     fusionMaterialUids: [],
     scriptSource,

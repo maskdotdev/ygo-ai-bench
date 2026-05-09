@@ -1,15 +1,16 @@
 import fengari from "fengari";
-import { destroyDuelCard } from "#duel/core.js";
+import { collectDuelTriggerEffects, destroyDuelCard } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { luaMoveBlockedByImmunity, type LuaMoveImmunityHostState } from "#lua/duel-api/move-immunity.js";
 import { didMove, movementSnapshot } from "#lua/duel-api/move-card-state.js";
 import { readCardOrGroupUids, readMoveReason, readOptionalPlayer, readSingleDestination } from "#lua/duel-api/move-readers.js";
-import type { DuelCardInstance, DuelEffectContext, DuelEventName, DuelLocation, DuelSession } from "#duel/types.js";
+import type { DuelCardInstance, DuelEffectContext, DuelEventName, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
 interface LuaDestroyHostState extends LuaMoveImmunityHostState {
   operatedUids: string[];
+  summonNegatedUids: string[];
   activeContext?: DuelEffectContext | undefined;
 }
 
@@ -42,6 +43,10 @@ function destroyCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDest
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card || luaMoveBlockedByImmunity(L, session, hostState, card, reason)) continue;
+    if (completeNegatedSummonDestroy(session, card, hostState, helpers, reason ?? duelReason.destroy, reasonPlayer)) {
+      moved.push(uid);
+      continue;
+    }
     const before = movementSnapshot(card);
     try {
       const result = destroyDuelCard(session.state, uid, card.controller, reason, reasonPlayer, destination);
@@ -58,4 +63,23 @@ function destroyCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDest
   helpers.regroupEvent(session, triggerStart, "destroyed", moved);
   helpers.regroupEvent(session, triggerStart, "banished", moved, "banished");
   return moved;
+}
+
+function completeNegatedSummonDestroy(
+  session: DuelSession,
+  card: DuelCardInstance,
+  hostState: LuaDestroyHostState,
+  helpers: LuaDestroyMoveHelpers,
+  reason: number,
+  reasonPlayer: PlayerId,
+): boolean {
+  if (!hostState.summonNegatedUids.includes(card.uid)) return false;
+  if (card.location !== "graveyard" || card.previousLocation !== "monsterZone" || (card.reason ?? 0) !== duelReason.disSummon) return false;
+  card.reason = reason;
+  card.reasonPlayer = reasonPlayer;
+  helpers.assignReasonCard(card, hostState);
+  collectDuelTriggerEffects(session.state, "destroying", card);
+  collectDuelTriggerEffects(session.state, "destroyed", card);
+  hostState.summonNegatedUids.splice(0, hostState.summonNegatedUids.length, ...hostState.summonNegatedUids.filter((uid) => uid !== card.uid));
+  return true;
 }

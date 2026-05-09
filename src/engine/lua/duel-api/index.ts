@@ -32,6 +32,7 @@ export interface LuaDuelApiHostState extends LuaDuelScriptApiHostState {
   operationInfos: LuaDuelOperationInfo[];
   possibleOperationInfos: LuaDuelOperationInfo[];
   operatedUids: string[];
+  summonNegatedUids: string[];
   selectedUids: string[];
   fusionMaterialUids: string[];
   pushEffectTable: (state: unknown, id: number) => void;

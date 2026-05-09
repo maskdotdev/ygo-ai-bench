@@ -42,6 +42,7 @@ export interface LuaOperationTimingBoundaryHostState {
 
 export interface LuaDuelMoveApiHostState extends LuaMoveImmunityHostState {
   operatedUids: string[];
+  summonNegatedUids: string[];
   activeContext?: DuelEffectContext | undefined;
   activeOperationTriggerStart?: number | undefined;
   activeOperationMoved?: boolean;

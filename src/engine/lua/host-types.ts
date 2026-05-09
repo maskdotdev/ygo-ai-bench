@@ -79,6 +79,7 @@ export interface LuaHostState {
   operationInfos: LuaDuelOperationInfo[];
   possibleOperationInfos: LuaDuelOperationInfo[];
   operatedUids: string[];
+  summonNegatedUids: string[];
   selectedUids: string[];
   fusionMaterialUids: string[];
   scriptSource: LuaScriptSource | undefined;

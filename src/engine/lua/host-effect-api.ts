@@ -565,6 +565,7 @@ function luaEffectEvent(card: DuelCardInstance, typeFlags: number, code: number 
   if (code === 1027 && (typeFlags & 0x800) !== 0) return "continuous";
   if (code === 1027 && ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0)) return "trigger";
   if (code === 1002 && (typeFlags & 0x10) !== 0 && isFastSpellTrapActivation(card)) return "quick";
+  if (isSummonAttemptTriggerEvent(triggerEvent) && (typeFlags & 0x10) !== 0 && isFastSpellTrapActivation(card)) return "trigger";
   if (triggerEvent !== undefined && (typeFlags & 0x10) !== 0 && isFastSpellTrapActivation(card)) return "quick";
   if (code === 1027) return "quick";
   if (
@@ -630,6 +631,10 @@ function luaEffectEvent(card: DuelCardInstance, typeFlags: number, code: number 
 function isFastSpellTrapActivation(card: DuelCardInstance): boolean {
   if (card.kind === "trap") return true;
   return card.kind === "spell" && ((card.data.typeFlags ?? 0) & 0x10000) !== 0;
+}
+
+function isSummonAttemptTriggerEvent(event: DuelEffectDefinition["triggerEvent"]): boolean {
+  return event === "normalSummoning" || event === "flipSummoning" || event === "specialSummoning";
 }
 
 function luaEffectDefaultRange(card: DuelCardInstance, luaEffect: LuaEffectRecord, event: DuelEffectDefinition["event"]): DuelLocation[] {
@@ -947,6 +952,7 @@ function withLuaCallbackContext<T>(hostState: LuaHostState, ctx: DuelEffectConte
   const previousTriggerStart = hostState.activeOperationTriggerStart;
   const previousOperationMoved = hostState.activeOperationMoved;
   const previousOperatedUids = [...hostState.operatedUids];
+  const previousSummonNegatedUids = [...hostState.summonNegatedUids];
   const operationTriggerStart = ctx ? luaOperationTriggerStart(hostState, ctx, kind) : previousTriggerStart;
   hostState.activeTargetUids = ctx?.targetUids;
   hostState.activeLuaEffectId = luaEffectId;
@@ -963,6 +969,7 @@ function withLuaCallbackContext<T>(hostState: LuaHostState, ctx: DuelEffectConte
     hostState.activeOperationTriggerStart = previousTriggerStart;
     hostState.activeOperationMoved = previousOperationMoved;
     if (ctx?.eventUids) hostState.operatedUids.splice(0, hostState.operatedUids.length, ...previousOperatedUids);
+    hostState.summonNegatedUids.splice(0, hostState.summonNegatedUids.length, ...previousSummonNegatedUids);
   }
 }
 
