@@ -18,8 +18,11 @@ import {
   applyDestroyReplacement,
   applyReleaseReplacement,
   applySendReplacement,
+  findApplicableDestroySubstitutes,
+  markDestroySubstitutesUsed,
   type ReplacementEffectHandlers,
 } from "#duel/replacement-effects.js";
+import type { ContinuousEffectMatch } from "#duel/continuous-effects.js";
 import type { DuelCardInstance, DuelEventName, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
 export interface CoreMovementHandlers {
@@ -72,6 +75,8 @@ export function destroyCoreDuelCard(
   const replacementHandlers = handlers.createReplacementHandlers(state);
   const indestructible = applyDestroyPrevention(state, uid, controller, reason, reasonPlayer, replacementHandlers);
   if (indestructible) return indestructible;
+  const substituteMatches = findApplicableDestroySubstitutes(state, uid, reason, reasonPlayer, replacementHandlers);
+  if (substituteMatches.length > 0) return applyDestroySubstitutes(state, uid, controller, substituteMatches, handlers);
   const replacement = applyDestroyReplacement(state, uid, controller, reason, reasonPlayer, replacementHandlers);
   if (replacement) return replacement;
   const target = findCard(state, uid);
@@ -121,6 +126,26 @@ export function destroyCoreDuelCard(
   handlers.collectTrigger(state, "destroyed", card);
   handlers.collectTrigger(state, "sentToGraveyard", card);
   return card;
+}
+
+function applyDestroySubstitutes(
+  state: DuelState,
+  uid: string,
+  controller: PlayerId | undefined,
+  matches: ContinuousEffectMatch[],
+  handlers: CoreMovementHandlers,
+): DuelCardInstance {
+  const target = findCard(state, uid);
+  if (!target) throw new Error(`Card ${uid} is not in the duel`);
+  const destroyedSourceUids = new Set<string>();
+  markDestroySubstitutesUsed(state, matches);
+  for (const match of matches) {
+    if (destroyedSourceUids.has(match.source.uid)) continue;
+    destroyedSourceUids.add(match.source.uid);
+    destroyCoreDuelCard(state, match.source.uid, match.source.controller, duelReason.effect | duelReason.destroy | duelReason.replace, match.source.controller, handlers);
+  }
+  pushDuelLog(state, "destroySubstitute", controller ?? target.controller, target.name, "Destruction substituted");
+  return target;
 }
 
 export function banishCoreDuelCard(

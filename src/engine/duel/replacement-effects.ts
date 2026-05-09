@@ -1,12 +1,10 @@
 import {
-  findDestroyReplacementEffects,
   findIndestructibleEffect,
-  findReleaseReplacementEffects,
-  findSendReplacementEffects,
   type ContinuousEffectContextFactory,
   type ContinuousEffectMatch,
 } from "#duel/continuous-effects.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
+import { findDestroyReplacementEffects, findDestroySubstituteEffects, findReleaseReplacementEffects, findSendReplacementEffects } from "#duel/replacement-effect-matches.js";
 import { duelReason } from "#duel/reasons.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
@@ -53,6 +51,24 @@ export function applyDestroyReplacement(
   if ((reason & duelReason.replace) !== 0) return undefined;
   const matches = findDestroyReplacementEffects(state, uid, handlers.createContinuousContext);
   return applyFirstReplacementEffect(state, matches, controller, reason, "graveyard", reasonPlayer, handlers, "destroyReplace", "Destruction replaced");
+}
+
+export function findApplicableDestroySubstitutes(
+  state: DuelState,
+  uid: string,
+  reason: number,
+  reasonPlayer: PlayerId | undefined,
+  handlers: ReplacementEffectHandlers,
+): ContinuousEffectMatch[] {
+  if ((reason & duelReason.replace) !== 0) return [];
+  const matches = findDestroySubstituteEffects(state, uid, reason, reasonPlayer, handlers.createContinuousContext);
+  return matches.filter((match) => destroySubstituteCanApply(state, match, reason, reasonPlayer, handlers));
+}
+
+export function markDestroySubstitutesUsed(state: DuelState, matches: ContinuousEffectMatch[]): void {
+  for (const match of matches) {
+    if (canUseEffectCount(state, match.effect)) markEffectUsed(state, match.effect);
+  }
 }
 
 export function applyReleaseReplacement(
@@ -113,6 +129,19 @@ function replacementEffectCanApply(
   if (match.effect.valueCardPredicate && !match.effect.valueCardPredicate(ctx, match.card)) return false;
   if (match.effect.cost && !match.effect.cost(ctx)) return false;
   return !match.effect.target || match.effect.target(ctx);
+}
+
+function destroySubstituteCanApply(
+  state: DuelState,
+  match: ContinuousEffectMatch,
+  reason: number,
+  reasonPlayer: PlayerId | undefined,
+  handlers: ReplacementEffectHandlers,
+): boolean {
+  if (!canUseEffectCount(state, match.effect)) return false;
+  const ctx = handlers.createReplacementContext(match.effect, match.source, match.card, true, reason, "graveyard", reasonPlayer);
+  if (match.effect.valuePredicate) return match.effect.valuePredicate(ctx, reasonPlayer);
+  return match.effect.value === undefined || match.effect.value !== 0;
 }
 
 function applyReplacementEffect(

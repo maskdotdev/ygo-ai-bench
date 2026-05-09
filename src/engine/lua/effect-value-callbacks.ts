@@ -55,6 +55,17 @@ export function callLuaEffectValuePredicate(
       lua.lua_pop(L, 1);
       return result;
     }
+    if (luaEffect.code === 45) {
+      hostState.pushEffectTable(L, luaEffect.id);
+      pushRelatedEffectTable(L, hostState, ctx);
+      lua.lua_pushinteger(L, ctx.eventReason ?? 0);
+      lua.lua_pushinteger(L, reasonPlayer ?? ctx.eventReasonPlayer ?? ctx.player ?? card.controller);
+      const status = lua.lua_pcall(L, 4, 1, 0);
+      if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+      const result = lua.lua_isnil(L, -1) ? true : Boolean(lua.lua_toboolean(L, -1));
+      lua.lua_pop(L, 1);
+      return result;
+    }
     hostState.pushEffectTable(L, luaEffect.id);
     pushRelatedEffectTable(L, hostState, ctx);
     lua.lua_pushinteger(L, reasonPlayer ?? ctx.player ?? card.controller);

@@ -2,7 +2,6 @@ import { findCard } from "#duel/card-state.js";
 import { otherPlayer } from "#duel/player-id.js";
 import { hasReviveLimitProcedureComplete } from "#duel/procedure-status.js";
 import { duelReason } from "#duel/reasons.js";
-import { orderReplacementEffects } from "#duel/replacement-effect-order.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import type {
   DuelCardInstance,
@@ -762,51 +761,6 @@ export function leaveFieldRedirectLocation(
   return undefined;
 }
 
-export function findDestroyReplacementEffect(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch | undefined {
-  return findDestroyReplacementEffects(state, uid, createContext)[0];
-}
-
-export function findDestroyReplacementEffects(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch[] {
-  return findReplacementEffects(state, uid, 45, 50, createContext);
-}
-
-export function findReleaseReplacementEffect(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch | undefined {
-  return findReleaseReplacementEffects(state, uid, createContext)[0];
-}
-
-export function findReleaseReplacementEffects(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch[] {
-  return findReplacementEffects(state, uid, 51, undefined, createContext);
-}
-
-export function findSendReplacementEffect(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch | undefined {
-  return findSendReplacementEffects(state, uid, createContext)[0];
-}
-
-export function findSendReplacementEffects(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch[] {
-  return findReplacementEffects(state, uid, 52, undefined, createContext);
-}
-
-function findReplacementEffects(
-  state: DuelState,
-  uid: string,
-  firstCode: number,
-  secondCode: number | undefined,
-  createContext: ContinuousEffectContextFactory,
-): ContinuousEffectMatch[] {
-  const card = findCard(state, uid);
-  if (!card) return [];
-  const matches: ContinuousEffectMatch[] = [];
-  for (const effect of state.effects) {
-    if (effect.event !== "continuous" || (effect.code !== firstCode && effect.code !== secondCode)) continue;
-    const source = findCard(state, effect.sourceUid);
-    if (!source || !effect.range.includes(source.location)) continue;
-    const ctx = createContext(effect, source, card);
-    if (!continuousEffectAffectsCard(effect, source, card)) continue;
-    if (!effect.canActivate || effect.canActivate(ctx)) matches.push({ effect, source, card });
-  }
-  return orderReplacementEffects(state, matches);
-}
-
 export function findIndestructibleEffect(state: DuelState, uid: string, reason: number, createContext: ContinuousEffectContextFactory, reasonPlayer?: PlayerId): ContinuousEffectMatch | undefined {
   const card = findCard(state, uid);
   if (!card) return undefined;
@@ -895,11 +849,16 @@ function isFieldLocation(location: DuelLocation): boolean {
   return location === "monsterZone" || location === "spellTrapZone";
 }
 
-function continuousEffectAffectsCard(effect: DuelEffectDefinition, source: DuelCardInstance, card: DuelCardInstance): boolean {
+export function continuousEffectAffectsCard(effect: DuelEffectDefinition, source: DuelCardInstance, card: DuelCardInstance): boolean {
   if (source.uid === card.uid) return true;
+  if (continuousEffectIsEquipType(effect) && source.equippedToUid === card.uid) return true;
   if (continuousEffectIsPlayerTarget(effect)) return continuousEffectTargetsPlayer(effect, source, card.controller);
   if (effect.targetRange !== undefined) return continuousEffectTargetsCardLocation(effect, source, card);
   return false;
+}
+
+function continuousEffectIsEquipType(effect: DuelEffectDefinition): boolean {
+  return ((effect.luaTypeFlags ?? 0) & 0x4) !== 0;
 }
 
 export function continuousEffectAppliesToCard(effect: DuelEffectDefinition, source: DuelCardInstance, card: DuelCardInstance, ctx: DuelEffectContext): boolean {
