@@ -10,13 +10,14 @@ import {
   matchingPlayerEffects,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
-import { canAddDuelCardCounter, canRemoveDuelCounters, getDuelCardCounter, removeDuelCounters } from "#duel/counters.js";
+import { canAddDuelCardCounter, canRemoveDuelCounters, getDuelCardCounter, removeDuelCardCounter, removeDuelCounters } from "#duel/counters.js";
 import { getDuelFlagEffectCount } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
+import { luaMoveBlockedByImmunity, type LuaMoveImmunityHostState } from "#lua/duel-api/move-immunity.js";
 import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { isNoTributePlayerAffected } from "#lua/no-tribute-api.js";
 import { readMinTributeRequirement, withLuaMinTributeOverride } from "#lua/tribute-metadata-api.js";
@@ -28,8 +29,7 @@ const cardAdvanceCode = 52112003;
 const luaSummonTypeNormal = 0x10000000;
 const luaSummonTypeTribute = 0x11000000;
 
-export interface LuaDuelPlayerApiHostState extends LuaOperationTimingBoundaryHostState {
-  pushEffectTable: (state: unknown, id: number) => void;
+export interface LuaDuelPlayerApiHostState extends LuaOperationTimingBoundaryHostState, LuaMoveImmunityHostState {
   operatedUids?: string[];
 }
 
@@ -205,7 +205,7 @@ function pushRemoveCounter(L: unknown, session: DuelSession, hostState: LuaDuelP
     return 1;
   }
   const query = readCounterQuery(L, session);
-  const removed = removeDuelCounters(session.state, query.player, query.selfLocations, query.opponentLocations, query.counterType, query.count);
+  const removed = removeLuaDuelCounters(L, session, hostState, query);
   hostState.operatedUids?.splice(0, hostState.operatedUids.length, ...removed);
   if (removed.length > 0) markLuaOperationTimingBoundary(session, hostState);
   const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
@@ -214,6 +214,26 @@ function pushRemoveCounter(L: unknown, session: DuelSession, hostState: LuaDuelP
   if (removed.length > 0 && hostState.activeContext) hostState.activeOperationMoved = true;
   lua.lua_pushinteger(L, removed.length > 0 ? query.count : 0);
   return 1;
+}
+
+function removeLuaDuelCounters(L: unknown, session: DuelSession, hostState: LuaDuelPlayerApiHostState, query: CounterQuery): string[] {
+  if ((query.reason & duelReason.effect) === 0) return removeDuelCounters(session.state, query.player, query.selfLocations, query.opponentLocations, query.counterType, query.count);
+  let remaining = query.count;
+  const cards = session.state.cards
+    .filter((card) => isCounterLocationIncluded(card, query.player, query.selfLocations, query.opponentLocations))
+    .filter((card) => getDuelCardCounter(card, query.counterType) > 0)
+    .filter((card) => !luaMoveBlockedByImmunity(L, session, hostState, card, query.reason));
+  if (remaining <= 0 || cards.reduce((total, card) => total + getDuelCardCounter(card, query.counterType), 0) < remaining) return [];
+  const removed: string[] = [];
+  for (const card of cards) {
+    if (remaining <= 0) break;
+    const amount = Math.min(remaining, getDuelCardCounter(card, query.counterType));
+    if (removeDuelCardCounter(findCard(session.state, card.uid), query.counterType, amount)) {
+      removed.push(card.uid);
+      remaining -= amount;
+    }
+  }
+  return remaining === 0 ? removed : [];
 }
 
 function pushGetCounter(L: unknown, session: DuelSession): number {
@@ -410,14 +430,16 @@ function pushPlayerMoveMatcher(L: unknown, fieldName: string, session: DuelSessi
   lua.lua_setfield(L, -2, to_luastring(fieldName));
 }
 
-function readCounterQuery(L: unknown, session: DuelSession): {
+interface CounterQuery {
   player: PlayerId;
   selfLocations: DuelLocation[];
   opponentLocations: DuelLocation[];
   counterType: number;
   count: number;
   reason: number;
-} {
+}
+
+function readCounterQuery(L: unknown, session: DuelSession): CounterQuery {
   return {
     player: normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer),
     selfLocations: counterLocations(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0),
