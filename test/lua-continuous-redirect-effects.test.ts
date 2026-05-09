@@ -115,6 +115,59 @@ describe("Lua continuous redirect effects", () => {
     expect(session.state.cards.find((card) => card.uid === redirected!.uid)).toMatchObject({ location: "banished", reason: 0x4000040 });
   });
 
+  it("applies Lua battle-destroy redirects", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Battle Redirected Monster", kind: "monster" },
+      { code: "200", name: "Destroying Monster", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 288, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["200"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    const redirected = session.state.cards.find((card) => card.controller === 1 && card.location === "hand" && card.code === "100");
+    expect(attacker).toBeTruthy();
+    expect(redirected).toBeTruthy();
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, redirected!.uid, "monsterZone", 1);
+    attacker!.faceUp = true;
+    attacker!.position = "faceUpAttack";
+    redirected!.faceUp = true;
+    redirected!.position = "faceUpAttack";
+    session.state.currentAttack = { attackerUid: attacker!.uid, targetUid: redirected!.uid };
+    session.state.pendingBattle = { attackerUid: attacker!.uid, targetUid: redirected!.uid };
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_BATTLE_DESTROY_REDIRECT)
+        e:SetRange(LOCATION_MZONE)
+        e:SetValue(LOCATION_REMOVED)
+        e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("battle destroy redirect checked " .. e:GetHandler():GetCode())
+          return true
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "battle-destroy-redirect.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    destroyDuelCard(session.state, redirected!.uid, 1, duelReason.battle | duelReason.destroy, 0);
+
+    expect(host.messages).toContain("battle destroy redirect checked 100");
+    expect(session.state.cards.find((card) => card.uid === redirected!.uid)).toMatchObject({ location: "banished", reason: duelReason.battle | duelReason.destroy | duelReason.redirect });
+  });
+
   it("applies Lua leave-field redirects to the bottom of the Deck", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Bottom Redirected Monster", kind: "monster" },
