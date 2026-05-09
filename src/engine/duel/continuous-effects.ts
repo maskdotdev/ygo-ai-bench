@@ -2,6 +2,7 @@ import { findCard } from "#duel/card-state.js";
 import { otherPlayer } from "#duel/player-id.js";
 import { hasReviveLimitProcedureComplete } from "#duel/procedure-status.js";
 import { duelReason } from "#duel/reasons.js";
+import { orderReplacementEffects } from "#duel/replacement-effect-order.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import type {
   DuelCardInstance,
@@ -803,7 +804,7 @@ function findReplacementEffects(
     if (!continuousEffectAffectsCard(effect, source, card)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) matches.push({ effect, source, card });
   }
-  return matches;
+  return orderReplacementEffects(state, matches);
 }
 
 export function findIndestructibleEffect(state: DuelState, uid: string, reason: number, createContext: ContinuousEffectContextFactory, reasonPlayer?: PlayerId): ContinuousEffectMatch | undefined {
