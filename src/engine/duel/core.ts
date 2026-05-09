@@ -53,6 +53,7 @@ import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import {
   cancelReplayAttack,
   getDuelAttackCostPaid as getDuelAttackCostPaidRule,
+  recordBattledPair,
   replayDuelAttack,
   setDuelAttackCostPaid as setDuelAttackCostPaidRule,
 } from "#duel/battle.js";
@@ -84,7 +85,7 @@ import {
   passAttackResponseWindow,
   passDamageResponseWindow,
 } from "#duel/attack-response-window.js";
-import type { BattleContinuationHandlers } from "#duel/battle-continuation.js";
+import { resolvePendingBattle, type BattleContinuationHandlers } from "#duel/battle-continuation.js";
 import {
   isDrawPrevented,
   isCardDisabled,
@@ -640,12 +641,22 @@ export function canDuelCardAttack(state: DuelState, uid: string, extraAttackAllo
   return canCoreDuelCardAttack(state, uid, coreBattleHandlers, extraAttackAllowance);
 }
 
-export function getDuelAttackTargets(state: DuelState, attackerUid: string): DuelCardInstance[] {
-  return getCoreDuelAttackTargets(state, attackerUid, coreBattleHandlers);
-}
+export function getDuelAttackTargets(state: DuelState, attackerUid: string): DuelCardInstance[] { return getCoreDuelAttackTargets(state, attackerUid, coreBattleHandlers); }
+export function getDuelAttackableTargets(state: DuelState, attackerUid: string): { targets: DuelCardInstance[]; directAttack: boolean } { return getCoreDuelAttackableTargets(state, attackerUid, coreBattleHandlers); }
 
-export function getDuelAttackableTargets(state: DuelState, attackerUid: string): { targets: DuelCardInstance[]; directAttack: boolean } {
-  return getCoreDuelAttackableTargets(state, attackerUid, coreBattleHandlers);
+export function calculateDuelBattle(state: DuelState, attackerUid: string, targetUid?: string): number {
+  const attacker = findCard(state, attackerUid);
+  if (!attacker || attacker.location !== "monsterZone") return 0;
+  const target = targetUid === undefined ? undefined : findCard(state, targetUid);
+  if (targetUid !== undefined && (!target || target.location !== "monsterZone")) return 0;
+  const previousLifePoints = { 0: state.players[0].lifePoints, 1: state.players[1].lifePoints };
+  state.currentAttack = { attackerUid, ...(targetUid === undefined ? {} : { targetUid }) };
+  state.pendingBattle = { ...state.currentAttack };
+  state.attackPasses = [];
+  state.damagePasses = [];
+  if (target) recordBattledPair(state, attacker.uid, target.uid);
+  resolvePendingBattle(state, battleContinuationHandlers);
+  return Math.max(0, previousLifePoints[0] - state.players[0].lifePoints) + Math.max(0, previousLifePoints[1] - state.players[1].lifePoints);
 }
 
 export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid?: string): void {

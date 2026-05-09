@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { changeDuelBattleDamage, damageDuelPlayer, getDuelAttackableTargets, getDuelAttackCostPaid, getDuelBattleDamage, negateDuelAttack, setDuelAttackCostPaid } from "#duel/core.js";
+import { calculateDuelBattle, changeDuelBattleDamage, damageDuelPlayer, getDuelAttackableTargets, getDuelAttackCostPaid, getDuelBattleDamage, negateDuelAttack, setDuelAttackCostPaid } from "#duel/core.js";
 import { recordBattledPair } from "#duel/battle.js";
 import { clearBattleWindowState, openBattleWindowState } from "#duel/battle-window-state.js";
 import { readCardUid } from "#lua/api-utils.js";
@@ -130,7 +130,13 @@ function pushCalculateDamage(L: unknown, session: DuelSession): number {
     lua.lua_pushinteger(L, 0);
     return 1;
   }
-  const result = calculateBattleDamage(attacker, defender, readOptionalStat(L, 3), readOptionalStat(L, 4));
+  const attackerAttackOverride = readOptionalStat(L, 3);
+  const defenderStatOverride = readOptionalStat(L, 4);
+  if (attackerAttackOverride === undefined && defenderStatOverride === undefined) {
+    lua.lua_pushinteger(L, calculateDuelBattle(session.state, attacker.uid, defender?.uid));
+    return 1;
+  }
+  const result = calculateBattleDamage(attacker, defender, attackerAttackOverride, defenderStatOverride);
   if (result.damage > 0) {
     changeDuelBattleDamage(session.state, result.player, result.damage);
     damageDuelPlayer(session.state, result.player, result.damage);
@@ -289,7 +295,7 @@ function calculateBattleDamage(
   defenderStatOverride: number | undefined,
 ): { player: PlayerId; damage: number } {
   const attackerAttack = attackerAttackOverride ?? battleAttack(attacker);
-  if (!defender || defender.location !== "monsterZone") return { player: otherPlayer(attacker.controller), damage: attackerAttack };
+  if (!defender || (defender.location !== "monsterZone" && defenderStatOverride === undefined)) return { player: otherPlayer(attacker.controller), damage: attackerAttack };
   const defenderStat = defenderStatOverride ?? (defender.position === "faceUpAttack" ? battleAttack(defender) : battleDefense(defender));
   if (defender.position === "faceUpAttack") {
     if (attackerAttack > defenderStat) return { player: defender.controller, damage: attackerAttack - defenderStat };
