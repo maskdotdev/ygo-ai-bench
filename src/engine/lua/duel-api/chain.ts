@@ -186,6 +186,7 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   const allowedActiveTypeForOpponent = literalResponseMatchesChainPlayerOrActiveTypePredicate(L, index, hostState);
   if (allowedActiveTypeForOpponent !== undefined) return `closure:active-type-response-player:${allowedActiveTypeForOpponent}`;
   const blockedSourceEffectType = literalNotSourceTypeOrNotEffectTypePredicate(L, index, hostState);
+  if (blockedSourceEffectType?.sourceSetcode !== undefined) return `closure:not-source-type-effect-type-setcode:${blockedSourceEffectType.sourceType}:${blockedSourceEffectType.effectType}:${blockedSourceEffectType.sourceSetcode}`;
   if (blockedSourceEffectType) return `closure:not-source-type-effect-type:${blockedSourceEffectType.sourceType}:${blockedSourceEffectType.effectType}`;
   const cardTableField = matchingGlobalCardTableFunctionField(L, index);
   if (cardTableField) return cardTableField;

@@ -83,7 +83,7 @@ export function literalResponseMatchesChainPlayerOrActiveTypePredicate(L: unknow
   return mask !== undefined && Number.isSafeInteger(mask) && mask > 0 ? mask : undefined;
 }
 
-export function literalNotSourceTypeOrNotEffectTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): { sourceType: number; effectType: number } | undefined {
+export function literalNotSourceTypeOrNotEffectTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): { sourceType: number; effectType: number; sourceSetcode?: number } | undefined {
   if (hasNonEnvironmentUpvalues(L, index)) return undefined;
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
@@ -92,12 +92,15 @@ export function literalNotSourceTypeOrNotEffectTypePredicate(L: unknown, index: 
   const returnExpression = lastReturnExpression(snippet);
   if (!returnExpression) return undefined;
   const terms = returnExpression.split(/\s+or\s+/).map((term) => trimOuterParens(term.trim())).filter(Boolean);
-  if (terms.length !== 2) return undefined;
+  if (terms.length !== 2 && terms.length !== 3) return undefined;
   const sourceTypes = terms.map((term) => notSourceTypeTermMask(term, effectParam)).filter((mask): mask is number => mask !== undefined);
   const effectTypes = terms.map((term) => notEffectTypeTermMask(term, effectParam)).filter((mask): mask is number => mask !== undefined);
+  const sourceSetcodes = terms.map((term) => notSourceSetcodeTermValue(L, term, effectParam)).filter((setcode): setcode is number => setcode !== undefined);
   const sourceType = sourceTypes[0];
   const effectType = effectTypes[0];
-  return sourceTypes.length === 1 && effectTypes.length === 1 && sourceType !== undefined && effectType !== undefined ? { sourceType, effectType } : undefined;
+  if (sourceTypes.length !== 1 || effectTypes.length !== 1 || sourceSetcodes.length > 1 || sourceType === undefined || effectType === undefined) return undefined;
+  const sourceSetcode = sourceSetcodes[0];
+  return sourceSetcode === undefined ? { sourceType, effectType } : { sourceType, effectType, sourceSetcode };
 }
 
 function notSourceTypeTermMask(term: string, effectParam: string): number | undefined {
@@ -113,6 +116,13 @@ function notEffectTypeTermMask(term: string, effectParam: string): number | unde
   const match = term.match(new RegExp(`^not\\s+${escapeRegExp(effectParam)}\\s*:\\s*IsHasType\\s*\\(\\s*(${effectTypeMaskExpressionPattern})\\s*\\)$`));
   const mask = match?.[1] ? effectTypeMaskTokenValue(match[1]) : undefined;
   return mask !== undefined && Number.isSafeInteger(mask) && mask > 0 ? mask : undefined;
+}
+
+function notSourceSetcodeTermValue(L: unknown, term: string, effectParam: string): number | undefined {
+  const handler = `${escapeRegExp(effectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`;
+  const match = term.match(new RegExp(`^not\\s+${handler}\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)$`));
+  const setcode = match?.[1] ? luaNumberTokenValue(L, match[1]) : undefined;
+  return setcode !== undefined && Number.isSafeInteger(setcode) && setcode > 0 ? setcode : undefined;
 }
 
 function sourceTypeMethodMask(method: string): number | undefined {
@@ -149,6 +159,18 @@ const effectTypeMasks: Record<string, number> = {
 
 function effectTypeMaskTokenValue(token: string): number | undefined {
   return maskTokenValue(token, effectTypeMasks);
+}
+
+const numericOrIdentifierPattern = String.raw`(?:0x[0-9A-Fa-f]+|\d+|[A-Za-z_]\w*)`;
+
+function luaNumberTokenValue(L: unknown, token: string): number | undefined {
+  if (/^0x[0-9A-Fa-f]+$/.test(token)) return Number.parseInt(token.slice(2), 16);
+  if (/^\d+$/.test(token)) return Number(token);
+  if (!/^[A-Za-z_]\w*$/.test(token)) return undefined;
+  lua.lua_getglobal(L, to_luastring(token));
+  const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
+  lua.lua_pop(L, 1);
+  return value;
 }
 
 function activeTypeMethodMask(method: string): number | undefined {

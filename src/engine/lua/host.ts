@@ -4,6 +4,7 @@ import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { recordDuelEvent } from "#duel/event-history.js";
 import { installAuxApi, installConstants, installDebugApi } from "#lua/basic-api.js";
 import { installCardApi } from "#lua/card-api.js";
+import { isSetcodeMatch } from "#lua/card-code-utils.js";
 import { installCardProcedureApi } from "#lua/card-procedure-api.js";
 import { installDuelApi } from "#lua/duel-api/index.js";
 import { installGroupApi } from "#lua/group-api.js";
@@ -143,6 +144,10 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
   if (sourceTypeUnlessChainPlayer?.[1] && sourceTypeUnlessChainPlayer[2]) {
     return { ...limit, allows: (effect, _player, chainPlayer) => chainPlayer === Number(sourceTypeUnlessChainPlayer[2]) || (sourceTypeFlags(hostState, effect.sourceUid) & Number(sourceTypeUnlessChainPlayer[1])) === 0 };
   }
+  const sourceEffectTypeSetcode = predicate?.match(/^closure:not-source-type-effect-type-setcode:(\d+):(\d+):(\d+)$/);
+  if (sourceEffectTypeSetcode?.[1] && sourceEffectTypeSetcode[2] && sourceEffectTypeSetcode[3]) {
+    return { ...limit, allows: (effect) => (sourceTypeFlags(hostState, effect.sourceUid) & Number(sourceEffectTypeSetcode[1])) === 0 || (effectTypeFlags(hostState, effect.id) & Number(sourceEffectTypeSetcode[2])) === 0 || !sourceHasSetcode(hostState, effect.sourceUid, Number(sourceEffectTypeSetcode[3])) };
+  }
   const sourceEffectType = predicate?.match(/^closure:not-source-type-effect-type:(\d+):(\d+)$/);
   if (sourceEffectType?.[1] && sourceEffectType[2]) {
     return { ...limit, allows: (effect) => (sourceTypeFlags(hostState, effect.sourceUid) & Number(sourceEffectType[1])) === 0 || (effectTypeFlags(hostState, effect.id) & Number(sourceEffectType[2])) === 0 };
@@ -223,6 +228,10 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
 
 function sourceTypeFlags(hostState: LuaHostState, sourceUid: string): number {
   return hostState.session.state.cards.find((card) => card.uid === sourceUid)?.data.typeFlags ?? 0;
+}
+
+function sourceHasSetcode(hostState: LuaHostState, sourceUid: string, requested: number): boolean {
+  return hostState.session.state.cards.find((card) => card.uid === sourceUid)?.data.setcodes?.some((setcode) => isSetcodeMatch(requested, setcode)) ?? false;
 }
 
 function sourceCode(hostState: LuaHostState, sourceUid: string): string | undefined {
