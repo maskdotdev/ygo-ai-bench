@@ -447,6 +447,92 @@ describe("Lua continuous material and replacement effects", () => {
     expect(session.state.cards.find((card) => card.uid === replacement!.uid)).toMatchObject({ location: "graveyard" });
   });
 
+  it("falls through declined Lua release replacement effects to later candidates", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Declined Release Source", kind: "monster" },
+      { code: "200", name: "Release Threatened", kind: "monster" },
+      { code: "300", name: "Accepted Release Source", kind: "monster" },
+      { code: "400", name: "Accepted Release Cost", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 279, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const threatened = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    const acceptedCost = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "400");
+    expect(threatened).toBeTruthy();
+    expect(acceptedCost).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e:SetCode(EFFECT_RELEASE_REPLACE)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_HAND)
+        e:SetTargetRange(1,0)
+        e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return true end
+          Debug.Message("first release replacement declined")
+          return false
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("first release replacement op")
+        end)
+        c:RegisterEffect(e)
+      end
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e:SetCode(EFFECT_RELEASE_REPLACE)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_HAND)
+        e:SetTargetRange(1,0)
+        e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return Duel.IsExistingMatchingCard(aux.FilterBoolFunction(Card.IsCode, 400), tp, LOCATION_HAND, 0, 1, e:GetHandler()) end
+          local g=Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode, 400), tp, LOCATION_HAND, 0, e:GetHandler())
+          Duel.SetTargetCard(g)
+          Debug.Message("second release replacement target " .. Duel.GetTargetCards():GetCount())
+          return true
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          local g=Duel.GetTargetCards()
+          Debug.Message("second release replacement op " .. g:GetFirst():GetCode())
+          Duel.Release(g, REASON_EFFECT+REASON_REPLACE)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "release-replacement-declined-candidate.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const releaseResult = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Debug.Message("release fallthrough result " .. Duel.Release(c, REASON_COST))
+      `,
+      "release-replacement-declined-candidate-run.lua",
+    );
+
+    expect(releaseResult.ok, releaseResult.error).toBe(true);
+    expect(host.messages).toContain("first release replacement declined");
+    expect(host.messages).not.toContain("first release replacement op");
+    expect(host.messages).toContain("second release replacement target 1");
+    expect(host.messages).toContain("second release replacement op 400");
+    expect(host.messages).toContain("release fallthrough result 0");
+    expect(session.state.cards.find((card) => card.uid === threatened!.uid)).toMatchObject({ location: "hand" });
+    expect(session.state.cards.find((card) => card.uid === acceptedCost!.uid)).toMatchObject({ location: "graveyard" });
+  });
+
   it("checks Lua card release-by-effect legality", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Release Lock", kind: "monster" },
@@ -628,6 +714,92 @@ describe("Lua continuous material and replacement effects", () => {
     expect(host.messages).toContain("send replacement result 0");
     expect(session.state.cards.find((card) => card.uid === threatened!.uid)).toMatchObject({ location: "hand" });
     expect(session.state.cards.find((card) => card.uid === replacement!.uid)).toMatchObject({ location: "graveyard" });
+  });
+
+  it("falls through declined Lua send replacement effects to later candidates", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Declined Send Source", kind: "monster" },
+      { code: "200", name: "Send Threatened", kind: "monster" },
+      { code: "300", name: "Accepted Send Source", kind: "monster" },
+      { code: "400", name: "Accepted Send Cost", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 280, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const threatened = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    const acceptedCost = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "400");
+    expect(threatened).toBeTruthy();
+    expect(acceptedCost).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e:SetCode(EFFECT_SEND_REPLACE)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_HAND)
+        e:SetTargetRange(1,0)
+        e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return true end
+          Debug.Message("first send replacement declined")
+          return false
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("first send replacement op")
+        end)
+        c:RegisterEffect(e)
+      end
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e:SetCode(EFFECT_SEND_REPLACE)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_HAND)
+        e:SetTargetRange(1,0)
+        e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return Duel.IsExistingMatchingCard(aux.FilterBoolFunction(Card.IsCode, 400), tp, LOCATION_HAND, 0, 1, e:GetHandler()) end
+          local g=Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode, 400), tp, LOCATION_HAND, 0, e:GetHandler())
+          Duel.SetTargetCard(g)
+          Debug.Message("second send replacement target " .. Duel.GetTargetCards():GetCount())
+          return true
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          local g=Duel.GetTargetCards()
+          Debug.Message("second send replacement op " .. g:GetFirst():GetCode())
+          Duel.SendtoGrave(g, REASON_EFFECT+REASON_REPLACE)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "send-replacement-declined-candidate.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const sendResult = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil)
+      Debug.Message("send fallthrough result " .. Duel.SendtoGrave(c, REASON_EFFECT))
+      `,
+      "send-replacement-declined-candidate-run.lua",
+    );
+
+    expect(sendResult.ok, sendResult.error).toBe(true);
+    expect(host.messages).toContain("first send replacement declined");
+    expect(host.messages).not.toContain("first send replacement op");
+    expect(host.messages).toContain("second send replacement target 1");
+    expect(host.messages).toContain("second send replacement op 400");
+    expect(host.messages).toContain("send fallthrough result 0");
+    expect(session.state.cards.find((card) => card.uid === threatened!.uid)).toMatchObject({ location: "hand" });
+    expect(session.state.cards.find((card) => card.uid === acceptedCost!.uid)).toMatchObject({ location: "graveyard" });
   });
 
   it("applies Lua cannot-move effects to ability checks and move helpers", () => {
