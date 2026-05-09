@@ -1,5 +1,6 @@
 import { currentBattleWindowKind } from "#duel/battle-window-state.js";
 import { findCard } from "#duel/card-state.js";
+import { quickEffectEventContext } from "#duel/effect-event-context.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
 import type { DuelAction, DuelCardInstance, DuelEffectDefinition, DuelState, PlayerId } from "#duel/types.js";
 
@@ -10,6 +11,7 @@ export function quickEffectActions(state: DuelState, player: PlayerId, canChoose
   for (const effect of state.effects) {
     if (effect.controller !== player || effect.event !== "quick") continue;
     if (!quickEffectTimingAllows(state, effect)) continue;
+    if (shouldRequireMatchingFirstChainEvent(state, effect) && quickEffectEventContext(state, effect) === undefined) continue;
     if (!chainLimitsAllow(state, effect, player)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
@@ -31,6 +33,15 @@ function quickEffectTimingAllows(state: DuelState, effect: DuelEffectDefinition)
     return Boolean((effect.property ?? 0) & 0x4000);
   }
   return true;
+}
+
+function shouldRequireMatchingFirstChainEvent(state: DuelState, effect: DuelEffectDefinition): boolean {
+  if (effect.triggerEvent === undefined || isChainEvent(effect.triggerEvent)) return false;
+  return state.chain[0]?.eventName !== undefined;
+}
+
+function isChainEvent(eventName: string): boolean {
+  return eventName === "chainActivating" || eventName === "chaining" || eventName === "chainSolving" || eventName === "chainSolved" || eventName === "chainNegated" || eventName === "chainDisabled" || eventName === "chainEnded";
 }
 
 function chainLimitsAllow(state: DuelState, effect: DuelEffectDefinition, player: PlayerId): boolean {

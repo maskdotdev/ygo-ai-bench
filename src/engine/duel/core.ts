@@ -465,8 +465,8 @@ export function sendDuelCardToGraveyard(state: DuelState, uid: string, controlle
   return sendCoreDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers);
 }
 
-export function destroyDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect | duelReason.destroy, reasonPlayer?: PlayerId): DuelCardInstance {
-  return destroyCoreDuelCard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers);
+export function destroyDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect | duelReason.destroy, reasonPlayer?: PlayerId, destination: DuelLocation = "graveyard"): DuelCardInstance {
+  return destroyCoreDuelCard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers, destination);
 }
 
 export function banishDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId): DuelCardInstance {

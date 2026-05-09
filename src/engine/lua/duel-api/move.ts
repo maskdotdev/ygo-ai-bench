@@ -9,7 +9,6 @@ import {
   canMoveDuelCardToLocation,
   canPlayerSpecialSummon,
   changeDuelCardPosition,
-  destroyDuelCard,
   collectDuelGroupedTriggerEffects,
   collectDuelTriggerEffects,
   moveDuelCard,
@@ -26,6 +25,7 @@ import { activeFieldSpell, isDuelType, isFieldSpell } from "#lua/duel-api/field-
 import { canLuaChangeControl, canLuaSwapControlPair, swapLuaCardControl } from "#lua/duel-api/move-control.js";
 import { luaMoveBlockedByImmunity, type LuaMoveImmunityHostState } from "#lua/duel-api/move-immunity.js";
 import { applyLuaMovePosition, changeSpellTrapPosition, didMove, faceupAttackOrFacedownDefensePosition, movementSnapshot } from "#lua/duel-api/move-card-state.js";
+import { pushDestroyHelper } from "#lua/duel-api/move-destroy.js";
 import { shuffleLuaMoveCards } from "#lua/duel-api/move-shuffle.js";
 import { readCardOrGroupUids, readFieldDestination, readMoveReason, readOptionalPlayer, readSingleDestination } from "#lua/duel-api/move-readers.js";
 import { installDuelOverlayApi, removeOverlayReference } from "#lua/duel-api/overlay.js";
@@ -53,7 +53,13 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_pushcfunction(L, (state: unknown) => pushSendToGenericLocation(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("Sendto"));
   pushMoveHelper(L, "SendtoGrave", session, hostState, (state, uid, controller, reason, reasonPlayer) => sendDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer));
-  pushMoveHelper(L, "Destroy", session, hostState, (state, uid, controller, reason, reasonPlayer) => destroyDuelCard(state, uid, controller, reason, reasonPlayer), duelReason.destroy);
+  pushDestroyHelper(L, session, hostState, {
+    beginMoveStep: beginLuaOperationMoveStep,
+    finishMoveStep: finishLuaOperationMoveStep,
+    assignReasonCard,
+    regroupEvent: regroupLuaOperationEvent,
+    setOperatedUids,
+  });
   lua.lua_pushcfunction(L, (state: unknown) => pushRemove(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("Remove"));
   lua.lua_pushcfunction(L, (state: unknown) => pushRemoveCards(state, session, hostState));

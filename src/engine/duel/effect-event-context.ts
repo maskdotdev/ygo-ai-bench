@@ -48,7 +48,7 @@ export function quickEffectEventContext(state: DuelState, effect: DuelEffectDefi
 function chainLinkMatchesTriggerEffect(link: ChainLink, effect: DuelEffectDefinition): link is ChainLink & { eventName: DuelEventName } {
   if (link.eventName !== effect.triggerEvent) return false;
   if (effect.triggerCode === undefined) return true;
-  if (link.eventCode === undefined) return false;
+  if (link.eventCode === undefined) return link.eventName !== "customEvent";
   if (effect.triggerCode === link.eventCode) return true;
   return link.eventName === "battleDestroyed" && (effect.triggerCode === 1139 || effect.triggerCode === 1140) && (link.eventCode === 1139 || link.eventCode === 1140);
 }

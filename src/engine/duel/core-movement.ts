@@ -67,6 +67,7 @@ export function destroyCoreDuelCard(
   reason: number,
   reasonPlayer: PlayerId | undefined,
   handlers: CoreMovementHandlers,
+  destination: DuelLocation = "graveyard",
 ): DuelCardInstance {
   const replacementHandlers = handlers.createReplacementHandlers(state);
   const indestructible = applyDestroyPrevention(state, uid, controller, reason, reasonPlayer, replacementHandlers);
@@ -89,6 +90,21 @@ export function destroyCoreDuelCard(
     handlers.collectTrigger(state, "moved", card);
     handlers.collectTrigger(state, "destroyed", card);
     if (battleRedirectLocation.location === "banished") handlers.collectTrigger(state, "banished", card);
+    return card;
+  }
+  if (destination !== "graveyard") {
+    const redirectLocation = moveDestinationRedirectLocation(state, uid, destination, createContext) ?? leaveFieldRedirectLocation(state, uid, destination, createContext);
+    const moveDestination = redirectLocation?.location ?? destination;
+    const moveReason = redirectLocation ? reason | duelReason.redirect : reason;
+    requireCoreDuelMoveAllowed(state, uid, moveDestination, moveReason, handlers);
+    const card = moveDuelCard(state, uid, moveDestination, controller, moveReason, reasonPlayer);
+    applyRedirectDeckSequence(state, card, redirectLocation);
+    pushDuelLog(state, "destroy", card.controller, card.name, `Destroyed and moved to ${moveDestination}`);
+    collectLeaveFieldTriggers(state, card, handlers);
+    collectLeaveGraveyardTriggers(state, card, handlers);
+    handlers.collectTrigger(state, "moved", card);
+    handlers.collectTrigger(state, "destroyed", card);
+    collectDestroyedDestinationTriggers(state, card, handlers);
     return card;
   }
   const callbackRedirect = applyToGraveCallbackRedirect(state, uid, controller, reason, reasonPlayer, handlers);
@@ -279,4 +295,10 @@ function collectReasonTriggers(state: DuelState, card: DuelCardInstance, reason:
 function collectDestinationTriggers(state: DuelState, card: DuelCardInstance, handlers: CoreMovementHandlers): void {
   if (card.location === "hand") handlers.collectTrigger(state, "sentToHand", card);
   if (card.location === "deck" || card.location === "extraDeck") handlers.collectTrigger(state, "sentToDeck", card);
+}
+
+function collectDestroyedDestinationTriggers(state: DuelState, card: DuelCardInstance, handlers: CoreMovementHandlers): void {
+  if (card.location === "graveyard") handlers.collectTrigger(state, "sentToGraveyard", card);
+  else if (card.location === "banished") handlers.collectTrigger(state, "banished", card);
+  else collectDestinationTriggers(state, card, handlers);
 }
