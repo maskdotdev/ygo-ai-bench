@@ -166,12 +166,17 @@ function copyCard(card: DuelCardInstance): DuelCardInstance {
     data: copyCardData(card.data),
     overlayUids: [...card.overlayUids],
     ...(card.counters ? { counters: { ...card.counters } } : {}),
+    ...(card.counterBuckets ? { counterBuckets: copyCounterBuckets(card.counterBuckets) } : {}),
     ...(card.effectRelationIds ? { effectRelationIds: [...card.effectRelationIds] } : {}),
     ...(card.cardTargetUids ? { cardTargetUids: [...card.cardTargetUids] } : {}),
     ...(card.summonMaterialUids ? { summonMaterialUids: [...card.summonMaterialUids] } : {}),
     ...(card.assumedProperties ? { assumedProperties: { ...card.assumedProperties } } : {}),
     ...(card.uniqueOnField ? { uniqueOnField: { ...card.uniqueOnField } } : {}),
   };
+}
+
+function copyCounterBuckets(counterBuckets: NonNullable<DuelCardInstance["counterBuckets"]>): NonNullable<DuelCardInstance["counterBuckets"]> {
+  return Object.fromEntries(Object.entries(counterBuckets).map(([counterType, buckets]) => [counterType, { ...buckets }]));
 }
 
 function copyCardData(data: DuelCardData): DuelCardData {

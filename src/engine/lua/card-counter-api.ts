@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { moveDuelCard } from "#duel/card-state.js";
 import { isCardDisabled, isCounterPlacementPrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
-import { addDuelCardCounter, canAddDuelCardCounter, getAllDuelCardCounters, getDuelCardCounter, removeAllDuelCardCounters, removeDuelCardCounter } from "#duel/counters.js";
+import { addDuelCardCounter, canAddDuelCardCounter, getAllDuelCardCounters, getDuelCardCounter, removeAllDuelCardCounters, removeDuelCardCounter, type DuelCounterBucket } from "#duel/counters.js";
 import { collectDuelTriggerEffects } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { locationMatchesCardMask, readTableStringField } from "#lua/api-utils.js";
@@ -91,7 +91,7 @@ function pushAddCounter<EffectRecord extends LuaCardApiEffectRecord>(L: unknown,
     card &&
       amount > 0 &&
       !luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect) &&
-      addDuelCardCounter(card, counterTypeKey, amount),
+      addDuelCardCounter(card, counterTypeKey, amount, counterBucket(counterType)),
   );
   if (added && card) {
     markLuaOperationTimingBoundary(session, hostState);
@@ -175,7 +175,7 @@ function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefine
 }
 
 function totalCounters(card: DuelCardInstance): number {
-  return Object.values(card.counters ?? {}).reduce((total, value) => total + value, 0);
+  return Object.values(getAllDuelCardCounters(card)).reduce((total, value) => total + value, 0);
 }
 
 function collectCounterEvent(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, eventName: DuelEventName, card: DuelCardInstance, reason: number): void {
@@ -319,6 +319,11 @@ function counterPermitTargetApplies<EffectRecord extends LuaCardApiEffectRecord>
 
 function storedCounterType(counterType: number): number {
   return counterType & ~counterNeedEnable;
+}
+
+function counterBucket(counterType: number): DuelCounterBucket {
+  if ((counterType & counterWithoutPermit) !== 0 && (counterType & counterNeedEnable) === 0) return "permanent";
+  return "resetWhileNegated";
 }
 
 function cardIsFaceUpOnField(card: DuelCardInstance): boolean {

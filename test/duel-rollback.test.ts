@@ -402,6 +402,7 @@ describe("duel rollback", () => {
     expect(card).toBeTruthy();
     card!.overlayUids.push("overlay-a");
     card!.counters = { 1: 2 };
+    card!.counterBuckets = { 1: { permanent: 1, resetWhileNegated: 1 } };
     card!.effectRelationIds = [101];
     card!.cardTargetUids = ["target-a"];
     card!.summonMaterialUids = ["material-a"];
@@ -412,6 +413,7 @@ describe("duel rollback", () => {
 
     card!.overlayUids.push("overlay-b");
     card!.counters[1] = 5;
+    card!.counterBuckets[1]!.resetWhileNegated = 4;
     card!.effectRelationIds!.push(102);
     card!.cardTargetUids.push("target-b");
     card!.summonMaterialUids.push("material-b");
@@ -425,6 +427,7 @@ describe("duel rollback", () => {
     const restored = session.state.cards.find((candidate) => candidate.uid === card!.uid);
     expect(restored?.overlayUids).toEqual(["overlay-a"]);
     expect(restored?.counters).toEqual({ 1: 2 });
+    expect(restored?.counterBuckets).toEqual({ 1: { permanent: 1, resetWhileNegated: 1 } });
     expect(restored?.effectRelationIds).toEqual([101]);
     expect(restored?.cardTargetUids).toEqual(["target-a"]);
     expect(restored?.summonMaterialUids).toEqual(["material-a"]);
@@ -438,6 +441,7 @@ describe("duel rollback", () => {
     expect(rollbackCard).toBeTruthy();
     rollbackCard!.overlayUids.push("overlay-c");
     rollbackCard!.counters![1] = 7;
+    rollbackCard!.counterBuckets![1]!.permanent = 7;
     rollbackCard!.effectRelationIds!.push(103);
     rollbackCard!.cardTargetUids!.push("target-c");
     rollbackCard!.summonMaterialUids!.push("material-c");
@@ -448,6 +452,7 @@ describe("duel rollback", () => {
     rollbackCard!.data.synchroMaterials!.nonTuners.push("500");
     expect(restored?.overlayUids).toEqual(["overlay-a"]);
     expect(restored?.counters).toEqual({ 1: 2 });
+    expect(restored?.counterBuckets).toEqual({ 1: { permanent: 1, resetWhileNegated: 1 } });
     expect(restored?.effectRelationIds).toEqual([101]);
     expect(restored?.cardTargetUids).toEqual(["target-a"]);
     expect(restored?.summonMaterialUids).toEqual(["material-a"]);

@@ -531,6 +531,48 @@ describe("Lua card counter and cost helpers", () => {
     ]);
   });
 
+  it("clears reset-while-negated counters when cards become disabled", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Counter Negation Target", kind: "monster" },
+      { code: "200", name: "Counter Negation Source", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 232, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.code === "100");
+    const source = session.state.cards.find((card) => card.code === "200");
+    expect(target).toBeDefined();
+    expect(source).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local source = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      target:EnableCounterPermit(99)
+      target:AddCounter(99,2)
+      target:AddCounter(COUNTER_WITHOUT_PERMIT+88,3)
+      target:AddCounter(COUNTER_NEED_ENABLE+COUNTER_WITHOUT_PERMIT+89,4)
+      Debug.Message("before disable " .. target:GetCounter(99) .. "/" .. target:GetCounter(COUNTER_WITHOUT_PERMIT+88) .. "/" .. target:GetCounter(COUNTER_WITHOUT_PERMIT+89))
+      target:NegateEffects(source, RESET_PHASE|PHASE_END, true, 1)
+      Debug.Message("after disable " .. tostring(target:IsDisabled()) .. "/" .. target:GetCounter(99) .. "/" .. target:GetCounter(COUNTER_WITHOUT_PERMIT+88) .. "/" .. target:GetCounter(COUNTER_WITHOUT_PERMIT+89))
+      `,
+      "counter-disable-buckets.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["before disable 2/3/4", "after disable true/0/3/0"]);
+    expect(target!.counters).toEqual({ [0x1000 + 88]: 3 });
+    expect(target!.counterBuckets).toEqual({ [0x1000 + 88]: { permanent: 3 } });
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+    expect(restored.state.cards.find((card) => card.uid === target!.uid)?.counterBuckets).toEqual({ [0x1000 + 88]: { permanent: 3 } });
+  });
+
   it("removes counters when Lua counter permit effects are removed", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Permit Reset Counter", kind: "monster" }];
     const session = createDuel({ seed: 231, startingHandSize: 1, cardReader: createCardReader(cards) });

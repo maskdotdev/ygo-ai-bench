@@ -1,46 +1,68 @@
 import { findCard } from "#duel/card-state.js";
-import type { DuelCardInstance, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
+import type { DuelCardCounterBuckets, DuelCardInstance, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
+
+export type DuelCounterBucket = "permanent" | "resetWhileNegated";
 
 export function getDuelCardCounter(card: DuelCardInstance | undefined, counterType: number): number {
-  return Math.max(0, Math.floor(card?.counters?.[counterType] ?? 0));
+  const buckets = getCounterBuckets(card, counterType);
+  return buckets.permanent + buckets.resetWhileNegated;
 }
 
 export function canAddDuelCardCounter(card: DuelCardInstance | undefined, count: number): boolean {
   return Boolean(card && count > 0 && card.location !== "deck" && card.location !== "extraDeck" && card.location !== "overlay");
 }
 
-export function addDuelCardCounter(card: DuelCardInstance | undefined, counterType: number, count: number): boolean {
+export function addDuelCardCounter(card: DuelCardInstance | undefined, counterType: number, count: number, bucket: DuelCounterBucket = "resetWhileNegated"): boolean {
   const amount = Math.max(0, Math.floor(count));
   if (!canAddDuelCardCounter(card, amount) || !card) return false;
-  card.counters = { ...(card.counters ?? {}), [counterType]: getDuelCardCounter(card, counterType) + amount };
+  const buckets = getCounterBuckets(card, counterType);
+  buckets[bucket] += amount;
+  writeCounterBuckets(card, counterType, buckets);
   return true;
 }
 
 export function removeDuelCardCounter(card: DuelCardInstance | undefined, counterType: number, count: number): boolean {
   const amount = Math.max(0, Math.floor(count));
   if (!card || amount <= 0 || getDuelCardCounter(card, counterType) < amount) return false;
-  const remaining = getDuelCardCounter(card, counterType) - amount;
-  card.counters = { ...(card.counters ?? {}) };
-  if (remaining > 0) card.counters[counterType] = remaining;
-  else delete card.counters[counterType];
-  if (Object.keys(card.counters).length === 0) delete card.counters;
+  const buckets = getCounterBuckets(card, counterType);
+  const resetRemoved = Math.min(amount, buckets.resetWhileNegated);
+  buckets.resetWhileNegated -= resetRemoved;
+  buckets.permanent -= amount - resetRemoved;
+  writeCounterBuckets(card, counterType, buckets);
   return true;
 }
 
 export function getAllDuelCardCounters(card: DuelCardInstance | undefined): Record<number, number> {
   const counters: Record<number, number> = {};
-  for (const [counterType, count] of Object.entries(card?.counters ?? {})) {
-    const normalized = Math.max(0, Math.floor(count));
-    if (normalized > 0) counters[Number(counterType)] = normalized;
+  const keys = new Set([...Object.keys(card?.counters ?? {}), ...Object.keys(card?.counterBuckets ?? {})]);
+  for (const key of keys) {
+    const normalized = getDuelCardCounter(card, Number(key));
+    if (normalized > 0) counters[Number(key)] = normalized;
   }
   return counters;
 }
 
 export function removeAllDuelCardCounters(card: DuelCardInstance | undefined): number {
-  if (!card?.counters) return 0;
+  if (!card?.counters && !card?.counterBuckets) return 0;
   const total = Object.values(getAllDuelCardCounters(card)).reduce((sum, count) => sum + count, 0);
-  if (total > 0) delete card.counters;
+  if (total > 0) {
+    delete card.counters;
+    delete card.counterBuckets;
+  }
   return total;
+}
+
+export function removeDuelCardResetWhileNegatedCounters(card: DuelCardInstance | undefined): number {
+  if (!card?.counters && !card?.counterBuckets) return 0;
+  let removed = 0;
+  for (const key of new Set([...Object.keys(card.counters ?? {}), ...Object.keys(card.counterBuckets ?? {})])) {
+    const counterType = Number(key);
+    const buckets = getCounterBuckets(card, counterType);
+    removed += buckets.resetWhileNegated;
+    buckets.resetWhileNegated = 0;
+    writeCounterBuckets(card, counterType, buckets);
+  }
+  return removed;
 }
 
 export function canRemoveDuelCounters(state: DuelState, player: PlayerId, selfLocations: DuelLocation[], opponentLocations: DuelLocation[], counterType: number, count: number): boolean {
@@ -72,4 +94,44 @@ function availableCounterCards(state: DuelState, player: PlayerId, selfLocations
 function isCounterLocationIncluded(card: DuelCardInstance, player: PlayerId, selfLocations: DuelLocation[], opponentLocations: DuelLocation[]): boolean {
   if (card.controller === player) return selfLocations.includes(card.location);
   return opponentLocations.includes(card.location);
+}
+
+function getCounterBuckets(card: DuelCardInstance | undefined, counterType: number): Required<DuelCardCounterBuckets> {
+  const stored = card?.counterBuckets?.[counterType];
+  if (stored) {
+    return {
+      permanent: normalizeCounterAmount(stored.permanent),
+      resetWhileNegated: normalizeCounterAmount(stored.resetWhileNegated),
+    };
+  }
+  return {
+    permanent: 0,
+    resetWhileNegated: normalizeCounterAmount(card?.counters?.[counterType]),
+  };
+}
+
+function writeCounterBuckets(card: DuelCardInstance, counterType: number, buckets: Required<DuelCardCounterBuckets>): void {
+  const permanent = normalizeCounterAmount(buckets.permanent);
+  const resetWhileNegated = normalizeCounterAmount(buckets.resetWhileNegated);
+  const total = permanent + resetWhileNegated;
+
+  card.counters = { ...(card.counters ?? {}) };
+  card.counterBuckets = { ...(card.counterBuckets ?? {}) };
+  if (total > 0) {
+    card.counters[counterType] = total;
+    card.counterBuckets[counterType] = {
+      ...(permanent > 0 ? { permanent } : {}),
+      ...(resetWhileNegated > 0 ? { resetWhileNegated } : {}),
+    };
+    return;
+  }
+
+  delete card.counters[counterType];
+  delete card.counterBuckets[counterType];
+  if (Object.keys(card.counters).length === 0) delete card.counters;
+  if (Object.keys(card.counterBuckets).length === 0) delete card.counterBuckets;
+}
+
+function normalizeCounterAmount(value: number | undefined): number {
+  return Math.max(0, Math.floor(value ?? 0));
 }

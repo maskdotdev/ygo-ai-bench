@@ -132,6 +132,11 @@ export interface DuelCardData {
   fitMonster?: string[];
 }
 
+export interface DuelCardCounterBuckets {
+  permanent?: number;
+  resetWhileNegated?: number;
+}
+
 export interface DuelCardInstance {
   uid: string;
   code: string;
@@ -144,6 +149,7 @@ export interface DuelCardInstance {
   position: CardPosition;
   overlayUids: string[];
   counters?: Record<number, number>;
+  counterBuckets?: Record<number, DuelCardCounterBuckets>;
   faceUp: boolean;
   previousLocation?: DuelLocation;
   previousController?: PlayerId;

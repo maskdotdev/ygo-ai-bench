@@ -1,5 +1,5 @@
 import { clearEffectCountUsage } from "#duel/effect-counts.js";
-import { getDuelCardCounter, removeDuelCardCounter } from "#duel/counters.js";
+import { getDuelCardCounter, removeDuelCardCounter, removeDuelCardResetWhileNegatedCounters } from "#duel/counters.js";
 import {
   destinationResetFlags,
   matchesDestinationReset,
@@ -46,6 +46,7 @@ export function pruneResetEffectsAfterPositionChange(state: DuelState, card: Due
 }
 
 export function pruneResetEffectsAfterDisable(state: DuelState, card: DuelCardInstance, ignoredEffectId?: string): void {
+  removeDuelCardResetWhileNegatedCounters(card);
   state.effects = state.effects.filter((effect) => {
     if (effect.sourceUid !== card.uid || effect.id === ignoredEffectId) return true;
     const flags = normalizeResetFlags(effect.reset?.flags ?? 0);

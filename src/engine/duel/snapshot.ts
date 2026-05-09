@@ -3,6 +3,7 @@ import { createActionWindowToken } from "#duel/action-window-token.js";
 import { copyBattleWindowState } from "#duel/battle-window-state.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
 import { isDuelEventName } from "#duel/event-names.js";
+import { assertSnapshotCounterBuckets, assertSnapshotCounterRecord } from "#duel/snapshot-counters.js";
 import { assertSnapshotPendingWindowConsistency } from "#duel/snapshot-window-validation.js";
 import { pendingTriggerBuckets, pendingTriggerBucketsForState, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type {
@@ -646,6 +647,7 @@ function assertSnapshotOptionalCardState(card: Record<string, unknown>, path: st
     }
   }
   if (card.counters !== undefined) assertSnapshotCounterRecord(card.counters, `${path}.counters`);
+  if (card.counterBuckets !== undefined) assertSnapshotCounterBuckets(card.counterBuckets, `${path}.counterBuckets`);
   if (card.assumedProperties !== undefined) assertSnapshotNumberRecord(card.assumedProperties, `${path}.assumedProperties`);
   if (card.uniqueOnField !== undefined) assertSnapshotUniqueOnField(card.uniqueOnField, `${path}.uniqueOnField`);
 }
@@ -687,14 +689,6 @@ function assertSnapshotNumberRecord(record: unknown, path: string): void {
   for (const [key, value] of Object.entries(record)) {
     if (!/^\d+$/.test(key)) throw new Error(`Malformed duel snapshot: ${path} must use numeric keys`);
     if (typeof value !== "number") throw new Error(`Malformed duel snapshot: ${path}.${key} must be a number`);
-  }
-}
-
-function assertSnapshotCounterRecord(record: unknown, path: string): void {
-  if (!isRecord(record)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
-  for (const [key, value] of Object.entries(record)) {
-    if (!/^\d+$/.test(key)) throw new Error(`Malformed duel snapshot: ${path} must use numeric keys`);
-    assertSnapshotNonNegativeInteger(value, `${path}.${key}`);
   }
 }
 
@@ -957,12 +951,17 @@ function copyCard(card: DuelCardInstance): DuelCardInstance {
     data: copyCardData(card.data),
     overlayUids: [...card.overlayUids],
     ...(card.counters ? { counters: { ...card.counters } } : {}),
+    ...(card.counterBuckets ? { counterBuckets: copyCounterBuckets(card.counterBuckets) } : {}),
     ...(card.effectRelationIds ? { effectRelationIds: [...card.effectRelationIds] } : {}),
     ...(card.cardTargetUids ? { cardTargetUids: [...card.cardTargetUids] } : {}),
     ...(card.summonMaterialUids ? { summonMaterialUids: [...card.summonMaterialUids] } : {}),
     ...(card.assumedProperties ? { assumedProperties: { ...card.assumedProperties } } : {}),
     ...(card.uniqueOnField ? { uniqueOnField: { ...card.uniqueOnField } } : {}),
   };
+}
+
+function copyCounterBuckets(counterBuckets: NonNullable<DuelCardInstance["counterBuckets"]>): NonNullable<DuelCardInstance["counterBuckets"]> {
+  return Object.fromEntries(Object.entries(counterBuckets).map(([counterType, buckets]) => [counterType, { ...buckets }]));
 }
 
 function copyCardData(data: DuelCardData): DuelCardData {
