@@ -113,6 +113,27 @@ export function isControlChangePrevented(state: DuelState, card: DuelCardInstanc
   return false;
 }
 
+export function setControlPlayerForCard(
+  state: DuelState,
+  card: DuelCardInstance,
+  createContext: ContinuousEffectContextFactory,
+  sourceUid?: string,
+): PlayerId | undefined {
+  let player: PlayerId | undefined;
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 4) continue;
+    if (sourceUid !== undefined && effect.sourceUid !== sourceUid) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    const value = effect.statValue?.(ctx, card) ?? effect.value;
+    if (value === 0 || value === 1) player = value;
+  }
+  return player;
+}
+
 export function isSpecialSummonPrevented(
   state: DuelState,
   player: PlayerId,

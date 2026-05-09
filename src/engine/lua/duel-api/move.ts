@@ -22,7 +22,7 @@ import { locationsFromMask, positionFromMask, readCardUid } from "#lua/api-utils
 import { moveDeckCardToBottom, moveDeckCardToTop } from "#lua/duel-api/deck-order.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { activeFieldSpell, isDuelType, isFieldSpell } from "#lua/duel-api/field-spell-state.js";
-import { canLuaChangeControl, canLuaSwapControlPair, registerLuaTemporaryControlReturnEffect, swapLuaCardControl } from "#lua/duel-api/move-control.js";
+import { applyLuaContinuousSetControl, canLuaChangeControl, canLuaSwapControlPair, registerLuaTemporaryControlReturnEffect, swapLuaCardControl } from "#lua/duel-api/move-control.js";
 import { luaMoveBlockedByImmunity, type LuaMoveImmunityHostState } from "#lua/duel-api/move-immunity.js";
 import { applyLuaMovePosition, changeSpellTrapPosition, didMove, faceupAttackOrFacedownDefensePosition, movementSnapshot } from "#lua/duel-api/move-card-state.js";
 import { pushDestroyHelper } from "#lua/duel-api/move-destroy.js";
@@ -282,6 +282,7 @@ function pushEquip(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHo
     equipCard.faceUp = true;
     pushDuelLog(session.state, "equip", player, equipCard.name, `Equipped to ${target.name}`);
     collectLuaMoveEvent(session, "equipped", equipCard);
+    if (applyLuaContinuousSetControl(session, target, hostState.activeContext?.player ?? player)) collectLuaMoveEvent(session, "controlChanged", target);
     setOperatedUids(hostState, [equipUid]);
     finishLuaOperationMoveStep(hostState, true);
     lua.lua_pushboolean(L, true);
@@ -293,7 +294,6 @@ function pushEquip(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHo
     return 1;
   }
 }
-
 function pushGetControl(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
   const targetPlayer = readOptionalPlayer(L, 2);
   if (targetPlayer === undefined) {

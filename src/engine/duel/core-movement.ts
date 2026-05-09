@@ -1,10 +1,11 @@
-import { findCard, getCards, moveDuelCard, pushDuelLog } from "#duel/card-state.js";
+import { findCard, getCards, hasZoneSpace, moveDuelCard, pushDuelLog, resequence } from "#duel/card-state.js";
 import {
   battleDestroyRedirectLocation,
   findToGraveCallbackRedirectEffect,
   isReleasePrevented,
   leaveFieldRedirectLocation,
   moveDestinationRedirectLocation,
+  setControlPlayerForCard,
   shouldRedirectBanishMove,
   shouldRedirectToGraveyardMove,
   type ContinuousEffectContextFactory,
@@ -53,14 +54,14 @@ export function sendCoreDuelCardToGraveyard(
   const redirectLocation = leaveFieldRedirectLocation(state, uid, "graveyard", createContext);
   if (redirectLocation && redirectLocation.location !== "graveyard") return moveCoreDuelCardToRedirectedLocation(state, uid, redirectLocation, controller, reason, reasonPlayer, handlers);
   requireCoreDuelMoveAllowed(state, uid, "graveyard", reason, handlers);
-  const { card, lostTargetEquipUids } = moveDuelCardWithLostTargetCapture(state, uid, "graveyard", controller, reason, reasonPlayer);
+  const { card, lostTargetEquipUids, controlReturnTargetUids } = moveDuelCardWithLostTargetCapture(state, uid, "graveyard", controller, reason, reasonPlayer, createContext);
   pushDuelLog(state, "sendToGraveyard", card.controller, card.name, "Sent to the Graveyard");
   collectLeaveFieldTriggers(state, card, handlers);
   collectLeaveGraveyardTriggers(state, card, handlers);
   collectReasonTriggers(state, card, reason, handlers);
   handlers.collectTrigger(state, "moved", card);
   handlers.collectTrigger(state, "sentToGraveyard", card);
-  sendLostTargetEquipsToGraveyard(state, lostTargetEquipUids, handlers);
+  applyPostMoveSideEffects(state, lostTargetEquipUids, controlReturnTargetUids, handlers);
   return card;
 }
 
@@ -88,7 +89,7 @@ export function destroyCoreDuelCard(
   if (battleRedirectLocation && battleRedirectLocation.location !== "graveyard") {
     const moveReason = reason | duelReason.redirect;
     requireCoreDuelMoveAllowed(state, uid, battleRedirectLocation.location, moveReason, handlers);
-    const { card, lostTargetEquipUids } = moveDuelCardWithLostTargetCapture(state, uid, battleRedirectLocation.location, controller, moveReason, reasonPlayer);
+    const { card, lostTargetEquipUids, controlReturnTargetUids } = moveDuelCardWithLostTargetCapture(state, uid, battleRedirectLocation.location, controller, moveReason, reasonPlayer, createContext);
     applyRedirectDeckSequence(state, card, battleRedirectLocation);
     pushDuelLog(state, "destroy", card.controller, card.name, `Destroyed and moved to ${battleRedirectLocation.location}`);
     collectLeaveFieldTriggers(state, card, handlers);
@@ -96,7 +97,7 @@ export function destroyCoreDuelCard(
     handlers.collectTrigger(state, "moved", card);
     handlers.collectTrigger(state, "destroyed", card);
     if (battleRedirectLocation.location === "banished") handlers.collectTrigger(state, "banished", card);
-    sendLostTargetEquipsToGraveyard(state, lostTargetEquipUids, handlers);
+    applyPostMoveSideEffects(state, lostTargetEquipUids, controlReturnTargetUids, handlers);
     return card;
   }
   if (destination !== "graveyard") {
@@ -104,7 +105,7 @@ export function destroyCoreDuelCard(
     const moveDestination = redirectLocation?.location ?? destination;
     const moveReason = redirectLocation ? reason | duelReason.redirect : reason;
     requireCoreDuelMoveAllowed(state, uid, moveDestination, moveReason, handlers);
-    const { card, lostTargetEquipUids } = moveDuelCardWithLostTargetCapture(state, uid, moveDestination, controller, moveReason, reasonPlayer);
+    const { card, lostTargetEquipUids, controlReturnTargetUids } = moveDuelCardWithLostTargetCapture(state, uid, moveDestination, controller, moveReason, reasonPlayer, createContext);
     applyRedirectDeckSequence(state, card, redirectLocation);
     pushDuelLog(state, "destroy", card.controller, card.name, `Destroyed and moved to ${moveDestination}`);
     collectLeaveFieldTriggers(state, card, handlers);
@@ -112,7 +113,7 @@ export function destroyCoreDuelCard(
     handlers.collectTrigger(state, "moved", card);
     handlers.collectTrigger(state, "destroyed", card);
     collectDestroyedDestinationTriggers(state, card, handlers);
-    sendLostTargetEquipsToGraveyard(state, lostTargetEquipUids, handlers);
+    applyPostMoveSideEffects(state, lostTargetEquipUids, controlReturnTargetUids, handlers);
     return card;
   }
   const callbackRedirect = applyToGraveCallbackRedirect(state, uid, controller, reason, reasonPlayer, handlers);
@@ -121,14 +122,14 @@ export function destroyCoreDuelCard(
     return callbackRedirect;
   }
   requireCoreDuelMoveAllowed(state, uid, "graveyard", reason, handlers);
-  const { card, lostTargetEquipUids } = moveDuelCardWithLostTargetCapture(state, uid, "graveyard", controller, reason, reasonPlayer);
+  const { card, lostTargetEquipUids, controlReturnTargetUids } = moveDuelCardWithLostTargetCapture(state, uid, "graveyard", controller, reason, reasonPlayer, createContext);
   pushDuelLog(state, "destroy", card.controller, card.name, "Destroyed");
   collectLeaveFieldTriggers(state, card, handlers);
   collectLeaveGraveyardTriggers(state, card, handlers);
   handlers.collectTrigger(state, "moved", card);
   handlers.collectTrigger(state, "destroyed", card);
   handlers.collectTrigger(state, "sentToGraveyard", card);
-  sendLostTargetEquipsToGraveyard(state, lostTargetEquipUids, handlers);
+  applyPostMoveSideEffects(state, lostTargetEquipUids, controlReturnTargetUids, handlers);
   return card;
 }
 
@@ -159,16 +160,48 @@ function moveDuelCardWithLostTargetCapture(
   controller: PlayerId | undefined,
   reason: number,
   reasonPlayer: PlayerId | undefined,
-): { card: DuelCardInstance; lostTargetEquipUids: string[] } {
+  createContext: ContinuousEffectContextFactory,
+): { card: DuelCardInstance; lostTargetEquipUids: string[]; controlReturnTargetUids: string[] } {
   const lostTargetEquipUids = lostTargetEquipUidsForMove(state, uid, to);
+  const controlReturnTargetUids = setControlReturnTargetUidsForMove(state, uid, to, createContext);
   const card = moveDuelCard(state, uid, to, controller, reason, reasonPlayer);
-  return { card, lostTargetEquipUids };
+  return { card, lostTargetEquipUids, controlReturnTargetUids };
 }
 
 function lostTargetEquipUidsForMove(state: DuelState, uid: string, to: DuelLocation): string[] {
   const card = findCard(state, uid);
   if (!card || card.location !== "monsterZone" || to === "monsterZone") return [];
   return state.cards.filter((candidate) => candidate.location === "spellTrapZone" && candidate.equippedToUid === uid).map((candidate) => candidate.uid);
+}
+
+function setControlReturnTargetUidsForMove(state: DuelState, uid: string, to: DuelLocation, createContext: ContinuousEffectContextFactory): string[] {
+  const source = findCard(state, uid);
+  if (!source || source.location !== "spellTrapZone" || to === "spellTrapZone" || source.equippedToUid === undefined) return [];
+  const target = findCard(state, source.equippedToUid);
+  if (!target || setControlPlayerForCard(state, target, createContext, source.uid) === undefined) return [];
+  return [target.uid];
+}
+
+function applyPostMoveSideEffects(state: DuelState, lostTargetEquipUids: string[], controlReturnTargetUids: string[], handlers: CoreMovementHandlers): void {
+  returnContinuousSetControlTargets(state, controlReturnTargetUids, handlers);
+  sendLostTargetEquipsToGraveyard(state, lostTargetEquipUids, handlers);
+}
+
+function returnContinuousSetControlTargets(state: DuelState, targetUids: string[], handlers: CoreMovementHandlers): void {
+  for (const uid of new Set(targetUids)) {
+    const target = findCard(state, uid);
+    if (!target || target.location !== "monsterZone") continue;
+    const activePlayer = setControlPlayerForCard(state, target, handlers.createContinuousContext(state));
+    const returnPlayer = activePlayer ?? target.previousController ?? target.owner;
+    if (returnPlayer !== 0 && returnPlayer !== 1) continue;
+    if (target.controller === returnPlayer) continue;
+    if (!hasZoneSpace(state, returnPlayer, target.location)) continue;
+    const previousController = target.controller;
+    moveDuelCard(state, target.uid, target.location, returnPlayer, duelReason.return, previousController);
+    resequence(state, previousController, target.location);
+    pushDuelLog(state, "control", returnPlayer, target.name, `Returned control to player ${returnPlayer}`);
+    handlers.collectTrigger(state, "controlChanged", target);
+  }
 }
 
 function sendLostTargetEquipsToGraveyard(state: DuelState, equipUids: string[], handlers: CoreMovementHandlers): void {
@@ -192,14 +225,14 @@ export function banishCoreDuelCard(
   const redirectLocation = leaveFieldRedirectLocation(state, uid, "banished", createContext);
   if (redirectLocation && redirectLocation.location !== "banished") return moveCoreDuelCardToRedirectedLocation(state, uid, redirectLocation, controller, reason, reasonPlayer, handlers);
   requireCoreDuelMoveAllowed(state, uid, "banished", reason, handlers);
-  const { card, lostTargetEquipUids } = moveDuelCardWithLostTargetCapture(state, uid, "banished", controller, reason, reasonPlayer);
+  const { card, lostTargetEquipUids, controlReturnTargetUids } = moveDuelCardWithLostTargetCapture(state, uid, "banished", controller, reason, reasonPlayer, createContext);
   pushDuelLog(state, "banish", card.controller, card.name, "Banished");
   collectLeaveFieldTriggers(state, card, handlers);
   collectLeaveGraveyardTriggers(state, card, handlers);
   collectReasonTriggers(state, card, reason, handlers);
   handlers.collectTrigger(state, "moved", card);
   handlers.collectTrigger(state, "banished", card);
-  sendLostTargetEquipsToGraveyard(state, lostTargetEquipUids, handlers);
+  applyPostMoveSideEffects(state, lostTargetEquipUids, controlReturnTargetUids, handlers);
   return card;
 }
 
@@ -218,7 +251,7 @@ export function moveCoreDuelCardWithRedirects(
   const destination = redirectLocation?.location ?? to;
   const moveReason = redirectLocation ? reason | duelReason.redirect : reason;
   requireCoreDuelMoveAllowed(state, uid, destination, moveReason, handlers);
-  const { card, lostTargetEquipUids } = moveDuelCardWithLostTargetCapture(state, uid, destination, controller, moveReason, reasonPlayer);
+  const { card, lostTargetEquipUids, controlReturnTargetUids } = moveDuelCardWithLostTargetCapture(state, uid, destination, controller, moveReason, reasonPlayer, createContext);
   if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
   if (payload.eventReasonEffectId !== undefined) card.reasonEffectId = payload.eventReasonEffectId;
   applyRedirectDeckSequence(state, card, redirectLocation);
@@ -227,7 +260,7 @@ export function moveCoreDuelCardWithRedirects(
   collectReasonTriggers(state, card, moveReason, handlers);
   handlers.collectTrigger(state, "moved", card);
   collectDestinationTriggers(state, card, handlers);
-  sendLostTargetEquipsToGraveyard(state, lostTargetEquipUids, handlers);
+  applyPostMoveSideEffects(state, lostTargetEquipUids, controlReturnTargetUids, handlers);
   return card;
 }
 
@@ -273,14 +306,15 @@ function moveCoreDuelCardToRedirectedLocation(
 ): DuelCardInstance {
   if (redirect.location === "graveyard") return sendCoreDuelCardToGraveyard(state, uid, controller, reason | duelReason.redirect, reasonPlayer, handlers);
   if (redirect.location === "banished") return banishCoreDuelCard(state, uid, controller, reason | duelReason.redirect, reasonPlayer, handlers);
-  const { card, lostTargetEquipUids } = moveDuelCardWithLostTargetCapture(state, uid, redirect.location, controller, reason | duelReason.redirect, reasonPlayer);
+  const createContext = handlers.createContinuousContext(state);
+  const { card, lostTargetEquipUids, controlReturnTargetUids } = moveDuelCardWithLostTargetCapture(state, uid, redirect.location, controller, reason | duelReason.redirect, reasonPlayer, createContext);
   applyRedirectDeckSequence(state, card, redirect);
   collectLeaveFieldTriggers(state, card, handlers);
   collectLeaveGraveyardTriggers(state, card, handlers);
   collectReasonTriggers(state, card, reason | duelReason.redirect, handlers);
   handlers.collectTrigger(state, "moved", card);
   collectDestinationTriggers(state, card, handlers);
-  sendLostTargetEquipsToGraveyard(state, lostTargetEquipUids, handlers);
+  applyPostMoveSideEffects(state, lostTargetEquipUids, controlReturnTargetUids, handlers);
   return card;
 }
 
@@ -297,7 +331,7 @@ function applyToGraveCallbackRedirect(
   if (!match) return undefined;
   const moveReason = reason | duelReason.redirect;
   requireCoreDuelMoveAllowed(state, uid, "spellTrapZone", moveReason, handlers);
-  const { card, lostTargetEquipUids } = moveDuelCardWithLostTargetCapture(state, uid, "spellTrapZone", controller, moveReason, reasonPlayer);
+  const { card, lostTargetEquipUids, controlReturnTargetUids } = moveDuelCardWithLostTargetCapture(state, uid, "spellTrapZone", controller, moveReason, reasonPlayer, createContext);
   const ctx = createContext(match.effect, match.source, card, { checkOnly: false, eventReason: moveReason, eventReasonPlayer: reasonPlayer ?? card.controller, eventDestination: "graveyard" });
   match.effect.operation?.(ctx);
   pushDuelLog(state, "sendToGraveyard", card.controller, card.name, "Redirected to the Spell/Trap Zone");
@@ -305,7 +339,7 @@ function applyToGraveCallbackRedirect(
   collectLeaveGraveyardTriggers(state, card, handlers);
   collectReasonTriggers(state, card, moveReason, handlers);
   handlers.collectTrigger(state, "moved", card);
-  sendLostTargetEquipsToGraveyard(state, lostTargetEquipUids, handlers);
+  applyPostMoveSideEffects(state, lostTargetEquipUids, controlReturnTargetUids, handlers);
   return card;
 }
 

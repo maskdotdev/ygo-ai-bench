@@ -1,5 +1,5 @@
 import { getCards, hasZoneSpace, moveDuelCard, pushDuelLog, resequence } from "#duel/card-state.js";
-import { isControlChangePrevented } from "#duel/continuous-effects.js";
+import { isControlChangePrevented, setControlPlayerForCard } from "#duel/continuous-effects.js";
 import { phaseMask } from "#duel/phase-mask.js";
 import { duelReason } from "#duel/reasons.js";
 import { resetEvent, resetLeave, resetPhase } from "#duel/reset-flags.js";
@@ -18,6 +18,18 @@ export function canLuaSwapControlPair(state: DuelState, left: DuelCardInstance, 
   if (left.uid === right.uid || left.controller === right.controller) return false;
   if (!canLuaChangeControl(state, left, undefined) || !canLuaChangeControl(state, right, undefined)) return false;
   return hasControlSwapSpace(state, left, right);
+}
+
+export function applyLuaContinuousSetControl(session: DuelSession, target: DuelCardInstance, reasonPlayer: PlayerId): boolean {
+  if (target.location !== "monsterZone" && target.location !== "spellTrapZone") return false;
+  const targetPlayer = setControlPlayerForCard(session.state, target, createLuaMaterialCheckContext(session.state));
+  if (targetPlayer === undefined || target.controller === targetPlayer) return false;
+  if (!hasZoneSpace(session.state, targetPlayer, target.location)) return false;
+  const previousController = target.controller;
+  moveDuelCard(session.state, target.uid, target.location, targetPlayer, duelReason.effect, reasonPlayer);
+  resequence(session.state, previousController, target.location);
+  pushDuelLog(session.state, "control", targetPlayer, target.name, `Took control from player ${previousController}`);
+  return true;
 }
 
 export function swapLuaCardControl(session: DuelSession, left: DuelCardInstance, right: DuelCardInstance, reasonPlayer: PlayerId): void {
