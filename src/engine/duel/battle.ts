@@ -381,10 +381,25 @@ function resolveWithPreservedBattleContext(
   callbacks: DuelBattleCallbacks,
   options: ResolvePendingDuelBattleOptions,
 ): boolean | undefined {
-  if (!target || target.location !== "monsterZone" || target.position === "faceUpAttack") return undefined;
+  if (!target || target.location !== "monsterZone") return undefined;
   attacker.battlePosition = attacker.position;
   target.battlePosition = target.position;
   const attackerAttack = getBattleAttack(attacker, callbacks);
+  if (target.position === "faceUpAttack") {
+    const targetAttack = getBattleAttack(target, callbacks);
+    if (attackerAttack > targetAttack) {
+      callbacks.damagePlayer(target.controller, attackerAttack - targetAttack, [attacker, target]);
+      deferBattleDestroyed(pending, target.uid, attacker.controller, attacker.uid);
+    } else if (attackerAttack < targetAttack) {
+      callbacks.damagePlayer(attacker.controller, targetAttack - attackerAttack, [attacker, target]);
+      deferBattleDestroyed(pending, attacker.uid, target.controller, target.uid);
+    } else {
+      deferBattleDestroyed(pending, attacker.uid, target.controller, target.uid);
+      deferBattleDestroyed(pending, target.uid, attacker.controller, attacker.uid);
+    }
+    markBattleResultApplied(state, options);
+    return true;
+  }
   const targetDefense = getBattleDefense(target, callbacks);
   if (attackerAttack > targetDefense) {
     if (callbacks.hasPiercingDamage?.(attacker)) return undefined;
