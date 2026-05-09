@@ -56,7 +56,7 @@ describe("Lua named chain-limit predicate restore", () => {
     const sourceResult = applyResponse(session, sourceAction!);
     expect(sourceResult.ok, sourceResult.error).toBe(true);
 
-    const registryKey = "lua-chain-limit:100:0:link:known:c100.climit";
+    const registryKey = "lua-chain-limit:100:0:link:known:closure:not-effect-type-response-player:16";
     expect(serializeDuel(session).state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(hasLuaEffect(getLegalActions(session, 1), 1, "lua-3")).toBe(false);
     expect(hasLuaEffect(getLegalActions(session, 1), 1, "lua-4")).toBe(true);
