@@ -179,6 +179,110 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 1));
   });
+
+  it("restores the chain-end Trap Hole activation limit after a Project Ignis special-summon event", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const sourceCode = "12755462";
+    const specialStarterCode = "211";
+    const specialTargetCode = "212";
+    const followUpStarterCode = "213";
+    const blockedTrapHoleCode = "311";
+    const allowedTrapHoleQuickCode = "312";
+    const allowedOffSetTrapCode = "313";
+    const sourceCards = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === sourceCode);
+    const cards: DuelCardData[] = [
+      ...sourceCards,
+      { code: specialStarterCode, name: "Special Summon Chain Starter", kind: "monster" },
+      { code: specialTargetCode, name: "Special Summon Target", kind: "monster" },
+      { code: followUpStarterCode, name: "Follow-Up Chain Starter", kind: "monster" },
+      { code: blockedTrapHoleCode, name: "Blocked Chain-End Trap Hole Activation", kind: "trap", setcodes: [0x4c] },
+      { code: allowedTrapHoleQuickCode, name: "Allowed Chain-End Trap Hole Quick Effect", kind: "trap", setcodes: [0x4c] },
+      { code: allowedOffSetTrapCode, name: "Allowed Chain-End Off-Set Trap Activation", kind: "trap", setcodes: [0x123] },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 440, startingHandSize: 0, cardReader: reader });
+    loadDecks(session, {
+      0: { main: [sourceCode, specialStarterCode, specialTargetCode, followUpStarterCode] },
+      1: { main: [blockedTrapHoleCode, allowedTrapHoleQuickCode, allowedOffSetTrapCode] },
+    });
+    startDuel(session);
+
+    const sourceCard = session.state.cards.find((card) => card.code === sourceCode && card.location === "deck");
+    const specialStarter = session.state.cards.find((card) => card.code === specialStarterCode && card.location === "deck");
+    const specialTarget = session.state.cards.find((card) => card.code === specialTargetCode && card.location === "deck");
+    const followUpStarter = session.state.cards.find((card) => card.code === followUpStarterCode && card.location === "deck");
+    const blockedTrapHole = session.state.cards.find((card) => card.code === blockedTrapHoleCode && card.location === "deck");
+    const allowedTrapHoleQuick = session.state.cards.find((card) => card.code === allowedTrapHoleQuickCode && card.location === "deck");
+    const allowedOffSetTrap = session.state.cards.find((card) => card.code === allowedOffSetTrapCode && card.location === "deck");
+    expect(sourceCard).toBeDefined();
+    expect(specialStarter).toBeDefined();
+    expect(specialTarget).toBeDefined();
+    expect(followUpStarter).toBeDefined();
+    expect(blockedTrapHole).toBeDefined();
+    expect(allowedTrapHoleQuick).toBeDefined();
+    expect(allowedOffSetTrap).toBeDefined();
+    moveDuelCard(session.state, sourceCard!.uid, "monsterZone", 0);
+    sourceCard!.faceUp = true;
+    sourceCard!.position = "faceUpAttack";
+    moveDuelCard(session.state, specialStarter!.uid, "hand", 0);
+    moveDuelCard(session.state, specialTarget!.uid, "hand", 0);
+    moveDuelCard(session.state, followUpStarter!.uid, "hand", 0);
+    moveDuelCard(session.state, blockedTrapHole!.uid, "hand", 1);
+    moveDuelCard(session.state, allowedTrapHoleQuick!.uid, "hand", 1);
+    moveDuelCard(session.state, allowedOffSetTrap!.uid, "hand", 1);
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${specialStarterCode}.lua`) return specialSummonFromHandScript("real-script chain-end special summon resolved", specialTargetCode);
+        if (name === `c${followUpStarterCode}.lua`) return openQuickScript("real-script chain-end follow-up starter resolved");
+        if (name === `c${blockedTrapHoleCode}.lua`) return chainOnlyScript("blocked chain-end trap hole activation resolved", "EFFECT_TYPE_QUICK_O+EFFECT_TYPE_ACTIVATE");
+        if (name === `c${allowedTrapHoleQuickCode}.lua`) return chainOnlyScript("allowed chain-end trap hole quick effect resolved", "EFFECT_TYPE_QUICK_O");
+        if (name === `c${allowedOffSetTrapCode}.lua`) return chainOnlyScript("allowed chain-end off-set trap activation resolved", "EFFECT_TYPE_QUICK_O+EFFECT_TYPE_ACTIVATE");
+        return workspace.readScript(name);
+      },
+    };
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(sourceCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(specialStarterCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(followUpStarterCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(blockedTrapHoleCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(allowedTrapHoleQuickCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(allowedOffSetTrapCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(6);
+
+    const specialSummonChain = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === specialStarter!.uid);
+    expect(specialSummonChain).toBeDefined();
+    expect(applyResponse(session, specialSummonChain!).ok).toBe(true);
+    passChain(session, 1);
+    passChain(session, 0);
+    expect(specialTarget!.location).toBe("monsterZone");
+
+    const registryKey = `lua-chain-limit:${sourceCode}:0:chain:known:closure:not-source-type-effect-type-setcode:4:16:76`;
+    expect(serializeDuel(session).state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
+    const restoredOpenWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restoredOpenWindow.restoreComplete, restoredOpenWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredOpenWindow.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restoredOpenWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
+    expect(getLuaRestoreLegalActionGroups(restoredOpenWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredOpenWindow.session, 0));
+
+    const startChain = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === followUpStarter!.uid);
+    expect(startChain).toBeDefined();
+    expect(applyResponse(session, startChain!).ok).toBe(true);
+    expect(getLegalActions(session, 1).some((action) => action.type === "activateEffect" && action.uid === blockedTrapHole!.uid)).toBe(false);
+    expect(getLegalActions(session, 1).some((action) => action.type === "activateEffect" && action.uid === allowedTrapHoleQuick!.uid)).toBe(true);
+    expect(getLegalActions(session, 1).some((action) => action.type === "activateEffect" && action.uid === allowedOffSetTrap!.uid)).toBe(true);
+
+    const restoredResponseWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredResponseWindow.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restoredResponseWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
+    expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === blockedTrapHole!.uid)).toBe(false);
+    expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === allowedTrapHoleQuick!.uid)).toBe(true);
+    expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === allowedOffSetTrap!.uid)).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 1));
+  });
 });
 
 function openQuickScript(message: string): string {
@@ -206,4 +310,27 @@ function chainOnlyScript(message: string, effectType: string): string {
       c:RegisterEffect(e)
     end
   `;
+}
+
+function specialSummonFromHandScript(message: string, targetCode: string): string {
+  return `
+    local s,id=GetID()
+    function s.initial_effect(c)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_QUICK_O)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp)
+        local tc=Duel.SelectMatchingCard(tp,aux.FilterBoolFunction(Card.IsCode,${targetCode}),tp,LOCATION_HAND,0,1,1,nil):GetFirst()
+        if tc then Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP_ATTACK) end
+        Debug.Message("${message}")
+      end)
+      c:RegisterEffect(e)
+    end
+  `;
+}
+
+function passChain(session: ReturnType<typeof createDuel>, player: 0 | 1): void {
+  const pass = getLegalActions(session, player).find((action) => action.type === "passChain");
+  expect(pass).toBeDefined();
+  expect(applyResponse(session, pass!).ok).toBe(true);
 }
