@@ -824,6 +824,7 @@ function copySerializedEffect(effect: DuelEffectDefinition): SerializedDuelEffec
     canActivate: _canActivate,
     cost: _cost, luaTypeFlags: _luaTypeFlags,
     operation: _operation,
+    statValue: _statValue,
     target: _target,
     targetCardPredicate: _targetCardPredicate,
     valueCardPredicate: _valueCardPredicate,
@@ -854,7 +855,7 @@ function withNoopOperation(effect: SerializedDuelEffect): DuelEffectDefinition {
 }
 
 function hasUnserializableEffectCallbacks(effect: DuelEffectDefinition): boolean {
-  return effect.battleDamageValue !== undefined || effect.targetCardPredicate !== undefined || effect.valueCardPredicate !== undefined || effect.valuePredicate !== undefined;
+  return effect.battleDamageValue !== undefined || effect.statValue !== undefined || effect.targetCardPredicate !== undefined || effect.valueCardPredicate !== undefined || effect.valuePredicate !== undefined;
 }
 
 function serializeChainLimit(limit: ChainLimit): SerializedChainLimit[] {

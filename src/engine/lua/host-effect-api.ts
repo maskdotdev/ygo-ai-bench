@@ -3,7 +3,7 @@ import { registerEffect } from "#duel/core.js";
 import { cleanupRemovedDuelEffect } from "#duel/effect-reset.js";
 import { locationsFromMask, readCardUid, readTableNumberField } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
-import { callLuaEffectBattleDamageValue, callLuaEffectValueCardPredicate, callLuaEffectValuePredicate } from "#lua/effect-value-callbacks.js";
+import { callLuaEffectBattleDamageValue, callLuaEffectStatValue, callLuaEffectValueCardPredicate, callLuaEffectValuePredicate } from "#lua/effect-value-callbacks.js";
 import { locationMaskFromLocation, locationMaskFromLocations } from "#lua/effect-location-mask.js";
 import { installEffectCompatibilityApi } from "#lua/effect-compatibility-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
@@ -514,6 +514,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.targetRange === undefined ? {} : { targetRange: luaEffect.targetRange }),
     ...(luaEffect.hintTiming === undefined ? {} : { hintTiming: luaEffect.hintTiming }),
     ...(luaEffect.valueRef === undefined ? {} : { battleDamageValue: (ctx, player, amount) => callLuaEffectBattleDamageValue(L, hostState, luaEffect, ctx, player, amount, readLuaError) }),
+    ...(luaEffect.valueRef === undefined ? {} : { statValue: (ctx, targetCard) => callLuaEffectStatValue(L, hostState, luaEffect, ctx, targetCard, readLuaError) }),
     ...(luaEffect.valueRef === undefined ? {} : { valueCardPredicate: (ctx, targetCard) => callLuaEffectValueCardPredicate(L, hostState, luaEffect, ctx, targetCard, readLuaError) }),
     ...(luaEffect.valueRef === undefined ? {} : { valuePredicate: (ctx, reasonPlayer) => callLuaEffectValuePredicate(L, hostState, luaEffect, card, ctx, reasonPlayer, readLuaError) }),
     ...(luaEffect.targetRef === undefined ? {} : { targetCardPredicate: (ctx, targetCard) => callLuaEffectCardTargetPredicate(L, hostState, luaEffect, ctx, targetCard) }),

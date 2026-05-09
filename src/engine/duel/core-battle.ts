@@ -36,7 +36,7 @@ import {
   onlyBeAttackedTargetUids,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
-import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
+import type { CardPosition, DuelAction, DuelCardInstance, DuelEffectContext, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
 export type PositionChangeSource = "effect" | "manual";
 
@@ -242,12 +242,16 @@ export function hasCorePiercingBattleDamage(state: DuelState, card: DuelCardInst
 export function getCoreBattleAttackValue(state: DuelState, card: DuelCardInstance, handlers: CoreBattleHandlers): number {
   if (hasDefenseAttack(state, card, handlers.createContinuousContext(state))) return getCoreBattleDefenseValue(state, card);
   const baseAttack = continuousSetBaseStatValue(state, card, 103, card.data.attack ?? 0);
-  return Math.max(0, baseAttack + (card.attackModifier ?? 0) + continuousStatUpdateValue(state, card, 100));
+  const updatedAttack = baseAttack + (card.attackModifier ?? 0) + continuousStatUpdateValue(state, card, 100);
+  const setAttack = continuousSetStatValue(state, card, 101) ?? updatedAttack;
+  return Math.max(0, continuousSetStatValue(state, card, 102) ?? setAttack);
 }
 
 export function getCoreBattleDefenseValue(state: DuelState, card: DuelCardInstance): number {
   const baseDefense = continuousSetBaseStatValue(state, card, 107, card.data.defense ?? 0);
-  return Math.max(0, baseDefense + (card.defenseModifier ?? 0) + continuousStatUpdateValue(state, card, 104));
+  const updatedDefense = baseDefense + (card.defenseModifier ?? 0) + continuousStatUpdateValue(state, card, 104);
+  const setDefense = continuousSetStatValue(state, card, 105) ?? updatedDefense;
+  return Math.max(0, continuousSetStatValue(state, card, 106) ?? setDefense);
 }
 
 export function getCoreAdditionalBattleDamagePlayers(state: DuelState, player: PlayerId, battleCards: DuelCardInstance[] | undefined, handlers: CoreBattleHandlers): PlayerId[] {
@@ -261,12 +265,39 @@ export function getCoreBattleDamageReason(state: DuelState, player: PlayerId, ba
 function continuousStatUpdateValue(state: DuelState, card: DuelCardInstance, code: number): number {
   return state.effects
     .filter((effect) => effect.event === "continuous" && effect.code === code && effect.sourceUid === card.uid && effect.range.includes(card.location))
-    .reduce((total, effect) => total + (effect.value ?? 0), 0);
+    .reduce((total, effect) => total + (continuousStatEffectValue(state, effect, card) ?? 0), 0);
 }
 
 function continuousSetBaseStatValue(state: DuelState, card: DuelCardInstance, code: number, fallback: number): number {
+  return continuousSetStatValue(state, card, code) ?? fallback;
+}
+
+function continuousSetStatValue(state: DuelState, card: DuelCardInstance, code: number): number | undefined {
   const effect = state.effects
-    .filter((candidate) => candidate.event === "continuous" && candidate.code === code && candidate.sourceUid === card.uid && candidate.range.includes(card.location) && candidate.value !== undefined)
+    .filter((candidate) => candidate.event === "continuous" && candidate.code === code && candidate.sourceUid === card.uid && candidate.range.includes(card.location) && (candidate.value !== undefined || candidate.statValue !== undefined))
     .at(-1);
-  return effect?.value ?? fallback;
+  return effect ? continuousStatEffectValue(state, effect, card) : undefined;
+}
+
+function continuousStatEffectValue(state: DuelState, effect: DuelState["effects"][number], card: DuelCardInstance): number | undefined {
+  const source = state.cards.find((candidate) => candidate.uid === effect.sourceUid) ?? card;
+  return effect.statValue?.(statEffectContext(state, source), card) ?? effect.value;
+}
+
+function statEffectContext(state: DuelState, source: DuelCardInstance): DuelEffectContext {
+  return {
+    duel: state,
+    source,
+    player: source.controller,
+    targetUids: [],
+    log: () => {},
+    moveCard: () => {
+      throw new Error("Stat value callbacks cannot move cards");
+    },
+    negateChainLink: () => false,
+    setTargets: () => {},
+    getTargets: () => [],
+    setTargetPlayer: () => {},
+    setTargetParam: () => {},
+  };
 }
