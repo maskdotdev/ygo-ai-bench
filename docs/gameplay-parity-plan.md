@@ -22,6 +22,7 @@ The engine already has useful surfaces to build on:
 - Phase event missed timing also covers `EVENT_PHASE+PHASE_END`/`phaseEnd` activation and decline fixtures; break-effect missed timing covers `EVENT_BREAK_EFFECT`/`breakEffect` activation and decline fixtures; turn-end missed timing covers `EVENT_TURN_END`/`turnEnded` activation and decline fixtures; adjust missed timing covers `EVENT_ADJUST`/`adjust` activation and decline fixtures.
 - Attack declaration missed timing covers `EVENT_ATTACK_ANNOUNCE`/`attackDeclared` activation and decline fixtures.
 - Battle lifecycle missed timing covers `EVENT_BE_BATTLE_TARGET`/`battleTargeted`, `EVENT_BATTLE_START`/`battleStarted`, and `EVENT_BATTLE_CONFIRM`/`battleConfirmed` activation and decline fixtures.
+- Battle destruction missed timing covers `EVENT_BATTLE_DESTROYING`/`battleDestroyed` code 1139 and `EVENT_BATTLE_DESTROYED`/`battleDestroyed` code 1140 activation and decline fixtures.
 - Attack negation missed timing covers `EVENT_ATTACK_DISABLED`/`attackDisabled` activation and decline fixtures.
 - Damage-step timing missed timing covers `EVENT_PRE_DAMAGE_CALCULATE`/`beforeDamageCalculation`, `EVENT_DAMAGE_CALCULATING`/`damageCalculating`, and `EVENT_BATTLED`/`afterDamageCalculation` activation and decline fixtures.
 - End-of-battle timing missed timing covers `EVENT_BATTLE_END`/`battleEnded` and `EVENT_DAMAGE_STEP_END`/`damageStepEnded` activation and decline fixtures.
