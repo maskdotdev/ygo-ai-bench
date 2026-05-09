@@ -28,6 +28,7 @@ The engine already has useful surfaces to build on:
 - Battle damage missed timing covers `EVENT_PRE_BATTLE_DAMAGE`/`beforeBattleDamage` and `EVENT_BATTLE_DAMAGE`/`battleDamageDealt` activation and decline fixtures with damage payloads.
 - End-of-battle timing missed timing covers `EVENT_BATTLE_END`/`battleEnded` and `EVENT_DAMAGE_STEP_END`/`damageStepEnded` activation and decline fixtures.
 - Chain activation missed timing covers `EVENT_CHAIN_ACTIVATING`/`chainActivating` and `EVENT_CHAINING`/`chaining` activation and decline fixtures.
+- Chain resolution missed timing covers `EVENT_CHAIN_SOLVING`/`chainSolving` and `EVENT_CHAIN_SOLVED`/`chainSolved` activation and decline fixtures.
 - Summon helpers exist for Normal, Tribute, Flip, Fusion, Synchro, Xyz, Link, Ritual, Pendulum, and summon procedures, with restored core summon, Lua summon procedure, summon-attempt trigger, summon-negated trigger, Pendulum Summon, full-zone Extra Deck material, and failed material/release rollback actions pinned to public window IDs/kinds; failed restored rollback groups are stamped for UI consumption, and stale restored core summon, procedure, attempt-trigger, negated-trigger, Pendulum Summon, and Extra Deck summon responses are rejected after the window advances. The helpers are still simplified compared with EDOPro procedure helpers.
 - Lua API coverage is broad enough for smoke probing, including active effect type helpers such as `GetActiveType`/`IsActiveType`, but should continue to be driven by failing real card scripts and fixture needs.
 
