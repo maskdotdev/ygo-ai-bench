@@ -37,7 +37,7 @@ export function drawDuelCardsFromDeck(state: DuelState, player: PlayerId, count:
 export function nextAvailableDuelPhase(state: DuelState, player: PlayerId, canEnterPhase: (phase: DuelPhase) => boolean = () => true): DuelPhase | undefined {
   for (const phase of phaseOrder.slice(phaseOrder.indexOf(state.phase) + 1)) {
     if (!canEnterPhase(phase)) continue;
-    if (!isPhaseSkipped(state, player, phase)) return phase;
+    if (!isDuelPhaseSkipped(state, player, phase)) return phase;
   }
   return undefined;
 }
@@ -130,14 +130,14 @@ function clearBattleState(state: DuelState): void {
   clearBattleWindowState(state);
 }
 
-function isPhaseSkipped(state: DuelState, player: PlayerId, phase: DuelPhase): boolean {
+export function isDuelPhaseSkipped(state: DuelState, player: PlayerId, phase: DuelPhase): boolean {
   return state.skippedPhases.some((skip) => skip.player === player && skip.phase === phase && skip.remaining > 0);
 }
 
 function consumeSkippedPhases(state: DuelState, player: PlayerId, targetPhase: DuelPhase): void {
   const currentIndex = phaseOrder.indexOf(state.phase);
   const targetIndex = phaseOrder.indexOf(targetPhase);
-  const skipped = new Set(phaseOrder.slice(currentIndex + 1, targetIndex).filter((phase) => isPhaseSkipped(state, player, phase)));
+  const skipped = new Set(phaseOrder.slice(currentIndex, targetIndex).filter((phase) => isDuelPhaseSkipped(state, player, phase)));
   for (const skip of state.skippedPhases) {
     if (skip.player === player && skipped.has(skip.phase)) skip.remaining -= 1;
   }

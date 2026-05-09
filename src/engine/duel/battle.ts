@@ -5,6 +5,7 @@ import { pruneResetEffectsAfterPositionChange } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterPositionChange } from "#duel/flags.js";
 import { otherPlayer } from "#duel/player-id.js";
 import { duelReason } from "#duel/reasons.js";
+import { isDuelPhaseSkipped } from "#duel/turn-flow.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
 export interface DuelBattleCallbacks {
@@ -87,6 +88,7 @@ export function negateDuelAttack(state: DuelState): boolean {
   state.damagePasses = [];
   state.attackCostPaid = 0;
   clearBattleWindowState(state);
+  state.waitingFor = attacker?.controller ?? state.turnPlayer;
   pushDuelLog(state, "attack", attacker?.controller ?? state.turnPlayer, attacker?.name, "Negated attack");
   return true;
 }
@@ -305,6 +307,7 @@ export function recordBattledPair(state: DuelState, attackerUid: string, targetU
 
 function canAttackWithCard(state: DuelState, card: DuelCardInstance, extraAttacks: number): boolean {
   if (state.phase !== "battle") return false;
+  if (isDuelPhaseSkipped(state, card.controller, "battle")) return false;
   if (card.location !== "monsterZone" || card.controller !== state.turnPlayer) return false;
   if (!isMonsterLike(card) || !card.faceUp) return false;
   if (card.position !== "faceUpAttack") return false;

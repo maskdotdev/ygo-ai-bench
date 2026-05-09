@@ -536,10 +536,12 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
 }
 
 function luaEffectEvent(card: DuelCardInstance, typeFlags: number, code: number | undefined): DuelEffectDefinition["event"] {
+  const triggerEvent = triggerEventFromCode(code);
   if (code === 34) return "summonProcedure";
   if (code === 1027 && (typeFlags & 0x800) !== 0) return "continuous";
   if (code === 1027 && ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0)) return "trigger";
   if (code === 1002 && (typeFlags & 0x10) !== 0 && isFastSpellTrapActivation(card)) return "quick";
+  if (triggerEvent !== undefined && (typeFlags & 0x10) !== 0 && isFastSpellTrapActivation(card)) return "quick";
   if (code === 1027) return "quick";
   if (
     code === 2 ||
