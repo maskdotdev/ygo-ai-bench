@@ -115,11 +115,13 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
   }
   const target = pending.targetUid === undefined ? undefined : findCard(state, pending.targetUid);
   if (pending.targetUid !== undefined && (!target || target.location !== "monsterZone")) {
+    if (options.preserveBattleContext) return false;
     openReplayDecisionWindow(state, attacker);
     return false;
   }
   const currentTargets = getAttackTargets(state, attacker.controller, (target) => callbacks.canAttackTarget?.(attacker, target) ?? true);
   if (didReplayTargetsChange(pending, currentTargets)) {
+    if (options.preserveBattleContext) return false;
     openReplayDecisionWindow(state, attacker);
     return false;
   }
