@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { createDuel, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -52,4 +52,66 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
     expect(set.ok, set.error).toBe(true);
     expect(restored.session.state.cards.find((card) => card.uid === wanted!.uid)).toMatchObject({ location: "spellTrapZone", faceUp: false });
   });
+
+  it("restores Spirit procedure End Phase return after a real Normal Summon", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const yataCode = "3078576";
+    const cards = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === yataCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 297, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [yataCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const yata = session.state.cards.find((card) => card.code === yataCode && card.location === "deck");
+    expect(yata).toBeDefined();
+    moveDuelCard(session.state, yata!.uid, "hand", 0);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(yataCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+
+    const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === yata!.uid);
+    expect(summon).toBeDefined();
+    applyAndAssert(session, summon!);
+    expect(session.state.cards.find((card) => card.uid === yata!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
+
+    for (const phase of ["battle", "main2", "end"] as const) {
+      const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === phase);
+      expect(action, JSON.stringify(getDuelLegalActions(session, 0), null, 2)).toBeDefined();
+      applyAndAssert(session, action!);
+    }
+    expect(session.state.pendingTriggers).toEqual([
+      expect.objectContaining({
+        eventCode: 0x1200,
+        eventName: "phaseEnd",
+        effectId: expect.stringMatching(/^lua-\d+-4608$/),
+        sourceUid: yata!.uid,
+      }),
+    ]);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    const returnTrigger = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.uid === yata!.uid);
+    expect(returnTrigger, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
+    const activated = applyLuaRestoreResponse(restored, returnTrigger!);
+    expect(activated.ok, activated.error).toBe(true);
+    while (restored.session.state.chain.length > 0) {
+      const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+      const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+      expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+      const passed = applyLuaRestoreResponse(restored, pass!);
+      expect(passed.ok, passed.error).toBe(true);
+    }
+    expect(restored.session.state.cards.find((card) => card.uid === yata!.uid)).toMatchObject({ location: "hand", controller: 0 });
+  });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(response.state.waitingFor === undefined ? [] : getDuelLegalActions(session, response.state.waitingFor));
+  return response;
+}
