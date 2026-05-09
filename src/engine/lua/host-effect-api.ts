@@ -600,6 +600,7 @@ function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffect
 
 function luaEffectDefaultRange(card: DuelCardInstance, luaEffect: LuaEffectRecord, event: DuelEffectDefinition["event"]): DuelLocation[] {
   if (event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEventFromCode(luaEffect.code), luaEffect.code)) return ["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"];
+  if (event === "continuous" && luaEffectIsSourceOnlyContinuousEvent(luaEffect.typeFlags, triggerEventFromCode(luaEffect.code))) return ["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"];
   if (event === "continuous" && luaEffect.code === 313) return ["monsterZone"];
   if (event === "continuous" || event === "summonProcedure" || event === "trigger") return [card.location];
   if ((luaEffect.typeFlags & 0x10) !== 0 && card.kind === "spell") return ["hand", "spellTrapZone"];
@@ -670,6 +671,10 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
       triggerEvent === "normalSummoned" ||
       triggerEvent === "specialSummoned")
   );
+}
+
+function luaEffectIsSourceOnlyContinuousEvent(typeFlags: number, triggerEvent: DuelEventName | undefined): boolean {
+  return (typeFlags & 0x1) !== 0 && (typeFlags & 0x800) !== 0 && triggerEvent !== undefined;
 }
 
 function luaEffectTriggerIsOptional(typeFlags: number): boolean {

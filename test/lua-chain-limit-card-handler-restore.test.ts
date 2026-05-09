@@ -5,6 +5,58 @@ import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua captured handler-only chain-limit restore", () => {
+  it("executes source-only continuous event effects before trigger windows", () => {
+    const source = {
+      readScript(name: string) {
+        if (name !== "c100.lua") return undefined;
+        return `
+          c100 = {}
+          c100.initial_effect = function(c)
+            local e1 = Effect.CreateEffect(c)
+            e1:SetType(EFFECT_TYPE_SINGLE + EFFECT_TYPE_CONTINUOUS)
+            e1:SetCode(EVENT_SUMMON_SUCCESS)
+            e1:SetOperation(function(e) Duel.SetChainLimitTillChainEnd(c100.genchainlm(e:GetHandler())) end)
+            c:RegisterEffect(e1)
+            local e2 = Effect.CreateEffect(c)
+            e2:SetType(EFFECT_TYPE_SINGLE + EFFECT_TYPE_TRIGGER_O)
+            e2:SetCode(EVENT_SUMMON_SUCCESS)
+            e2:SetOperation(function(e,tp) Debug.Message("summon trigger resolved") end)
+            c:RegisterEffect(e2)
+          end
+          function c100.genchainlm(c)
+            return function(e,rp,tp)
+              return e:GetHandler()==c
+            end
+          end
+        `;
+      },
+    };
+    const cards = normalizeCdbRows([{ id: 100, type: 1, level: 4 }], []);
+    const session = createDuel({ seed: 350, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const sourceUid = session.state.cards.find((card) => card.code === "100")?.uid;
+    expect(sourceUid).toBeDefined();
+    const summon = getLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === sourceUid);
+    expect(summon).toBeDefined();
+    const result = applyResponse(session, summon!);
+    expect(result.ok, result.error).toBe(true);
+
+    const registryKey = `lua-chain-limit:100:0:chain:known:closure:card-handler:${sourceUid}`;
+    expect(serializeDuel(session).state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
+    expect(getLegalActions(session, 0).some((action) => action.type === "activateTrigger" && action.effectId === "lua-2-1100")).toBe(true);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
+    expectLuaRestoreGroupsMirrorActions(restored, 0);
+  });
+
   it("restores Project Ignis-style captured handler equality factories from snapshots", () => {
     const source = {
       readScript(name: string) {

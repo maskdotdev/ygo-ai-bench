@@ -101,6 +101,7 @@ import {
   isSpecialSummonPrevented,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
+import { executeContinuousEventEffects, executeNonChainSolvingContinuousEventEffects } from "#duel/continuous-event-effects.js";
 export { canNegateDuelChainLink, canNegateDuelChainLinkObject, negateDuelChainLink, negateDuelChainLinkObject } from "#duel/chain-negation.js";
 import { chainLinksResolvable } from "#duel/chain-state.js";
 import {
@@ -679,6 +680,7 @@ export function collectDuelTriggerEffects(state: DuelState, eventName: DuelEvent
     eventCard ? [eventCard] : [],
     options,
     (duel, effect, source, triggerEventName, triggerEventCard, payload) => canChooseEffect(duel, effect, source, effect.controller, triggerEventName, triggerEventCard, payload),
+    executeNonChainSolvingContinuousEventEffects,
   );
 }
 
@@ -689,8 +691,10 @@ export function collectDuelGroupedTriggerEffects(state: DuelState, eventName: Du
     eventCards,
     options,
     (duel, effect, source, triggerEventName, triggerEventCard, payload) => canChooseEffect(duel, effect, source, effect.controller, triggerEventName, triggerEventCard, payload),
+    executeNonChainSolvingContinuousEventEffects,
   );
 }
+
 function collectBattleEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance | DuelCardInstance[], payload: DuelEventPayload = {}): void {
   Array.isArray(eventCard) ? collectDuelGroupedTriggerEffects(state, eventName, eventCard, payload) : collectDuelTriggerEffects(state, eventName, eventCard, payload);
 }
@@ -704,42 +708,6 @@ function executeContinuousPhaseEffects(state: DuelState, phase: DuelPhase): void
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     const ctx = createEffectContext(state, source, effect.controller, "phaseChanged");
-    if (effect.canActivate && !effect.canActivate(ctx)) continue;
-    effect.operation(ctx);
-    markEffectUsed(state, effect);
-  }
-}
-
-function executeContinuousEventEffects(state: DuelState, eventName: DuelEventName, eventCode: number, eventCard: DuelCardInstance | undefined, payload: DuelEventPayload, chainLink?: ChainLink): void {
-  for (const effect of [...state.effects]) {
-    if (effect.event !== "continuous" || effect.code !== eventCode || !canUseEffectCount(state, effect)) continue;
-    const source = findCard(state, effect.sourceUid);
-    if (!source || !effect.range.includes(source.location)) continue;
-    const ctx = createEffectContext(
-      state,
-      source,
-      effect.controller,
-      eventName,
-      eventCard,
-      [],
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      chainLink,
-      eventCode,
-      payload.eventPlayer,
-      payload.eventValue,
-      payload.eventReason,
-      payload.eventReasonPlayer,
-      payload.eventReasonCardUid,
-      payload.eventReasonEffectId,
-      payload.relatedEffectId,
-      payload.eventChainDepth,
-      payload.eventChainLinkId,
-      payload.eventUids,
-    );
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
     effect.operation(ctx);
     markEffectUsed(state, effect);
@@ -933,7 +901,7 @@ function resolveChain(state: DuelState): void {
       const eventCard = link.eventCardUid === undefined ? undefined : findCard(state, link.eventCardUid);
       const chainPayload = { eventPlayer: link.player, eventValue: state.chain.length + 1, eventChainDepth: state.chain.length + 1, eventChainLinkId: link.id, eventReasonPlayer: link.player, ...relatedEffectPayload(link.effectId) };
       collectDuelTriggerEffects(state, "chainSolving", source, chainPayload);
-      executeContinuousEventEffects(state, "chainSolving", 1020, source, chainPayload, link);
+      executeContinuousEventEffects(state, "chainSolving", 1020, [source], chainPayload, link);
       if (link.negated) {
         sendResolvedActivatedSpellTrapToGraveyard(state, link, source, effect);
         collectNegatedChainLinkEvents(state, link);

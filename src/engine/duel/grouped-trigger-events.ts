@@ -12,12 +12,21 @@ type GroupedTriggerChooser = (
   payload: DuelEventPayload,
 ) => boolean;
 
+type ContinuousEventExecutor = (
+  state: DuelState,
+  eventName: DuelEventName,
+  eventCode: number,
+  eventCards: DuelCardInstance[],
+  payload: DuelEventPayload,
+) => void;
+
 export function collectDuelGroupedTriggerEffectsWithChooser(
   state: DuelState,
   eventName: DuelEventName,
   eventCards: DuelCardInstance[],
   options: DuelEventPayload,
   canChooseEffect: GroupedTriggerChooser,
+  executeContinuousEvent?: ContinuousEventExecutor,
 ): void {
   const uniqueEventCards = uniqueCards(eventCards);
   const eventCard = uniqueEventCards[0];
@@ -26,6 +35,7 @@ export function collectDuelGroupedTriggerEffectsWithChooser(
   const eventCode = groupedOptions.eventCode ?? duelEventCode(eventName);
   const triggerOptions = eventCode === undefined ? groupedOptions : { ...groupedOptions, eventCode };
   recordDuelEvent(state, eventName, eventCard, eventCode, eventRecordPayload(eventCard, groupedOptions));
+  if (eventCode !== undefined) executeContinuousEvent?.(state, eventName, eventCode, uniqueEventCards, triggerOptions);
   const chooser = (duel: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, triggerEventName: DuelEventName, triggerEventCard?: DuelCardInstance) =>
     canChooseEffect(duel, effect, source, triggerEventName, triggerEventCard, triggerOptions);
   if (uniqueEventCards.length <= 1) collectTriggerEffects(state, eventName, chooser, eventCard, triggerOptions);
