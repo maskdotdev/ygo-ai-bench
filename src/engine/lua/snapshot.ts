@@ -105,7 +105,7 @@ function restoreKnownLuaEffects(
 }
 
 function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
-  return effect.event === "continuous" && effect.code === 25;
+  return effect.event === "continuous" && (effect.code === 22 || effect.code === 25);
 }
 
 function luaRegistryKeys(snapshot: SerializedDuel): Set<string> {
