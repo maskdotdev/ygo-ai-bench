@@ -65,6 +65,50 @@ describe("Lua destroy substitute effects", () => {
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script destroy substitute effects", () => {
+  it("applies Project Ignis Union procedure destroy substitute effects", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const unionCode = "99249638";
+    const targetCode = "601003";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === unionCode),
+      { code: targetCode, name: "Union Procedure Substitute Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1600, defense: 1200 },
+    ];
+    const session = createDuel({ seed: 295, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: [unionCode, targetCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const union = findHandCard(session, 0, unionCode);
+    const target = findHandCard(session, 0, targetCode);
+    moveDuelCard(session.state, target.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(unionCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+
+    moveDuelCard(session.state, union.uid, "spellTrapZone", 0);
+    union.equippedToUid = target.uid;
+    union.position = "faceUpAttack";
+    union.faceUp = true;
+    const stateResult = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${unionCode}),0,LOCATION_SZONE,0,1,1,nil):GetFirst()
+      aux.SetUnionState(c)
+      Debug.Message("union procedure status " .. tostring(c:IsHasEffect(EFFECT_UNION_STATUS)~=nil))
+      `,
+      "union-procedure-state.lua",
+    );
+    expect(stateResult.ok, stateResult.error).toBe(true);
+    expect(host.messages).toContain("union procedure status true");
+
+    destroyDuelCard(session.state, target.uid, 0, duelReason.effect | duelReason.destroy, 1);
+
+    expect(session.state.cards.find((card) => card.uid === target.uid)).toMatchObject({ location: "monsterZone" });
+    expect(session.state.cards.find((card) => card.uid === union.uid)).toMatchObject({
+      location: "graveyard",
+      reason: duelReason.effect | duelReason.destroy | duelReason.replace,
+    });
+  });
+
   it("applies Legendary Ebon Steed's Project Ignis equip destroy substitute", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const steedCode = "12324546";
