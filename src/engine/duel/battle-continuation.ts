@@ -1,5 +1,6 @@
 import { resolvePendingDuelBattle } from "#duel/battle.js";
 import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
+import type { BattleDamageChangeOptions } from "#duel/core-battle-damage.js";
 import type { DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
 export interface BattleEventPayload {
@@ -15,7 +16,7 @@ export interface BattleContinuationHandlers {
   battleDamageReason(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): number;
   canAttackTarget?(state: DuelState, attacker: DuelCardInstance, target: DuelCardInstance): boolean;
   collectEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance | DuelCardInstance[], payload?: BattleEventPayload): void;
-  changeBattleDamage(state: DuelState, player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
+  changeBattleDamage(state: DuelState, player: PlayerId, amount: number, battleCards?: DuelCardInstance[], options?: BattleDamageChangeOptions): number;
   damagePlayer(state: DuelState, player: PlayerId, amount: number, reason?: number): number;
   destroyCard(state: DuelState, uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;
   getAttackValue(state: DuelState, card: DuelCardInstance): number;
@@ -42,7 +43,7 @@ export function resolvePendingBattle(state: DuelState, handlers: BattleContinuat
       if (applied > 0) handlers.collectEvent(state, "battleDamageDealt", damageSource, { eventPlayer: damagePlayer, eventValue: applied, eventReason: reason, eventReasonPlayer: reasonPlayer });
       for (const additionalPlayer of handlers.additionalBattleDamagePlayers(state, damagePlayer, battleCards)) {
         if (additionalPlayer === damagePlayer) continue;
-        handlers.changeBattleDamage(state, additionalPlayer, applied, battleCards);
+        handlers.changeBattleDamage(state, additionalPlayer, applied, battleCards, { applyModifiers: false });
         const additionalReason = handlers.battleDamageReason(state, additionalPlayer, battleCards);
         const additionalReasonPlayer = battleDamageReasonPlayer(state, additionalPlayer, battleCards);
         const additionalDamageSource = battleDamageSourceCard(additionalReasonPlayer, battleCards);

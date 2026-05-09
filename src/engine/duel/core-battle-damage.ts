@@ -9,6 +9,10 @@ import {
 } from "#duel/continuous-effects.js";
 import type { DuelCardInstance, DuelState, PlayerId } from "#duel/types.js";
 
+export interface BattleDamageChangeOptions {
+  applyModifiers?: boolean;
+}
+
 export function getDuelBattleDamage(state: DuelState, player: PlayerId): number {
   return state.battleDamage[player] ?? 0;
 }
@@ -29,11 +33,12 @@ export function changeDuelBattleDamageWithPrevention(
   amount: number,
   createContext: ContinuousEffectContextFactory,
   battleCards: DuelCardInstance[] = [],
+  options: BattleDamageChangeOptions = {},
 ): number {
   const relatedBattleCards = battleCards.length > 0 ? battleCards : currentBattleCards(state);
   const prevented = isBattleDamagePrevented(state, player, createContext);
   const preventedByCard = isBattleDamagePreventedByCard(state, player, relatedBattleCards, createContext);
-  const changedAmount = changedBattleDamageAmount(state, player, amount, relatedBattleCards, createContext);
+  const changedAmount = options.applyModifiers === false ? amount : changedBattleDamageAmount(state, player, amount, relatedBattleCards, createContext);
   return changeDuelBattleDamage(state, player, prevented || preventedByCard ? 0 : changedAmount);
 }
 

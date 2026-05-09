@@ -196,12 +196,12 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
       lua.lua_pushvalue(state, 2);
       effect.valueRef = lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX);
     }
-    else if (lua.lua_isnumber(state, 2)) effect.value = lua.lua_tointeger(state, 2);
+    else if (lua.lua_isnumber(state, 2)) effect.value = readLuaEffectValueNumber(state, 2);
     return 0;
   });
   pushEffectMethod(L, effects, "GetValue", (state, effect) => {
     if (effect.valueRef !== undefined) lua.lua_rawgeti(state, lua.LUA_REGISTRYINDEX, effect.valueRef);
-    else lua.lua_pushinteger(state, effect.value ?? 0);
+    else pushLuaEffectValueNumber(state, effect.value ?? 0);
     return 1;
   });
   pushEffectMethod(L, effects, "SetTargetRange", (state, effect) => {
@@ -373,6 +373,18 @@ function setEffectNumberField(field: "typeFlags" | "code" | "description" | "cat
     if (lua.lua_isnumber(state, 2)) effect[field] = lua.lua_tointeger(state, 2);
     return 0;
   };
+}
+
+function readLuaEffectValueNumber(L: unknown, index: number): number {
+  const value = Math.trunc(lua.lua_tonumber(L, index));
+  if (value === -0x80000000) return 0x80000000;
+  if (value === -0x7fffffff) return 0x80000001;
+  return value;
+}
+
+function pushLuaEffectValueNumber(L: unknown, value: number): void {
+  if (Number.isInteger(value) && value >= -0x80000000 && value <= 0x7fffffff) lua.lua_pushinteger(L, value);
+  else lua.lua_pushnumber(L, value);
 }
 
 function readLuaCountLimitCode(L: unknown, codeIndex: number, flagsIndex: number): number | undefined {

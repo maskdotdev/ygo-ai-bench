@@ -37,6 +37,7 @@ import {
   onlyBeAttackedTargetUids,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
+import type { BattleDamageChangeOptions } from "#duel/core-battle-damage.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEffectContext, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
 export type PositionChangeSource = "effect" | "manual";
@@ -45,7 +46,7 @@ export interface CoreBattleHandlers {
   additionalBattleDamagePlayers(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): PlayerId[];
   battleDamagePlayer(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): PlayerId;
   battleDamageReason(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): number;
-  changeBattleDamage(state: DuelState, player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
+  changeBattleDamage(state: DuelState, player: PlayerId, amount: number, battleCards?: DuelCardInstance[], options?: BattleDamageChangeOptions): number;
   collectEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance | DuelCardInstance[], payload?: { eventPlayer?: PlayerId; eventValue?: number; eventReason?: number }): void;
   createContinuousContext(state: DuelState): ContinuousEffectContextFactory;
   damagePlayer(state: DuelState, player: PlayerId, amount: number, reason?: number): number;
@@ -131,7 +132,7 @@ export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attack
       const applied = handlers.damagePlayer(state, damagePlayer, state.battleDamage[damagePlayer], handlers.battleDamageReason(state, damagePlayer, battleCards));
       for (const additionalPlayer of handlers.additionalBattleDamagePlayers(state, damagePlayer, battleCards)) {
         if (additionalPlayer === damagePlayer) continue;
-        handlers.changeBattleDamage(state, additionalPlayer, applied, battleCards);
+        handlers.changeBattleDamage(state, additionalPlayer, applied, battleCards, { applyModifiers: false });
         handlers.damagePlayer(state, additionalPlayer, state.battleDamage[additionalPlayer], handlers.battleDamageReason(state, additionalPlayer, battleCards));
       }
       return applied;
