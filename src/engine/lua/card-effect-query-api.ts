@@ -91,7 +91,7 @@ function pushIsImmuneToEffect<EffectRecord extends LuaCardApiEffectRecord>(L: un
     lua.lua_pushboolean(L, false);
     return 1;
   }
-  const immune = matchingLuaEffects(session.state, card, 1, hostState).some((effect) => immuneEffectApplies(L, effect, targetEffect, hostState));
+  const immune = matchingLuaEffects(session.state, card, 1, hostState).some((effect) => immuneEffectApplies(L, effect, card, targetEffect, hostState));
   lua.lua_pushboolean(L, immune);
   return 1;
 }
@@ -115,7 +115,7 @@ export function canLuaCardBeEffectTarget<EffectRecord extends LuaCardApiEffectRe
   const immune =
     targetEffect &&
     ((targetEffect.property ?? 0) & 0x80) === 0 &&
-    matchingLuaEffects(session.state, card, 1, hostState).some((effect) => immuneEffectApplies(L, effect, targetEffect, hostState));
+    matchingLuaEffects(session.state, card, 1, hostState).some((effect) => immuneEffectApplies(L, effect, card, targetEffect, hostState));
   if (immune) return false;
   return !matchingLuaEffects(session.state, card, 71, hostState).some((effect) => cannotTargetEffectApplies(L, session, effect, card, targetEffect, hostState));
 }
@@ -124,7 +124,11 @@ function pushIsCanBeDisabledByEffect<EffectRecord extends LuaCardApiEffectRecord
   const card = readCard(L, session);
   const effectId = lua.lua_istable(L, 2) ? readTableNumberField(L, 2, "__effect_id") : undefined;
   const targetEffect = effectId === undefined ? undefined : hostState.effects.get(effectId);
-  const immune = card && targetEffect && ((targetEffect.property ?? 0) & 0x80) === 0 && matchingLuaEffects(session.state, card, 1, hostState).some((effect) => immuneEffectApplies(L, effect, targetEffect, hostState));
+  const immune =
+    card &&
+    targetEffect &&
+    ((targetEffect.property ?? 0) & 0x80) === 0 &&
+    matchingLuaEffects(session.state, card, 1, hostState).some((effect) => immuneEffectApplies(L, effect, card, targetEffect, hostState));
   lua.lua_pushboolean(L, Boolean(card && isNegatableCard(session.state, card) && !immune && !isDisablePrevented(session.state, card, createLuaMaterialCheckContext(session.state))));
   return 1;
 }
@@ -180,9 +184,11 @@ function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefine
 function immuneEffectApplies<EffectRecord extends LuaCardApiEffectRecord>(
   L: unknown,
   immuneEffect: EffectRecord,
+  card: DuelCardInstance,
   targetEffect: EffectRecord,
   hostState: LuaCardApiState<EffectRecord>,
 ): boolean {
+  if (immuneEffect.targetRef !== undefined && !cardTargetFilterApplies(L, immuneEffect, card, hostState)) return false;
   if (immuneEffect.valueRef === undefined) return true;
   lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, immuneEffect.valueRef);
   hostState.pushEffectTable(L, immuneEffect.id);
@@ -284,7 +290,40 @@ function isEffectActiveForCard(effect: DuelEffectDefinition, luaEffect: LuaCardA
 function continuousEffectAffectsCard(effect: DuelEffectDefinition, luaEffect: LuaCardApiEffectRecord, source: DuelCardInstance, card: DuelCardInstance): boolean {
   if (source.uid === card.uid) return true;
   if (((luaEffect.typeFlags ?? 0) & 0x1) !== 0) return false;
-  if ((effect.property ?? 0) === 0 || ((effect.property ?? 0) & 0x800) === 0) return source.controller === card.controller;
+  if (continuousEffectIsPlayerTarget(effect)) return continuousEffectTargetsPlayer(effect, source, card.controller);
+  if (effect.targetRange !== undefined) return continuousEffectTargetsCardLocation(effect, source, card);
+  return source.controller === card.controller;
+}
+
+function continuousEffectIsPlayerTarget(effect: DuelEffectDefinition): boolean {
+  return ((effect.property ?? 0) & 0x800) !== 0;
+}
+
+function continuousEffectTargetsPlayer(effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId): boolean {
   const [selfTarget = 0, opponentTarget = 0] = effect.targetRange ?? [1, 0];
-  return source.controller === card.controller ? selfTarget !== 0 : opponentTarget !== 0;
+  return source.controller === player ? selfTarget !== 0 : opponentTarget !== 0;
+}
+
+function continuousEffectTargetsCardLocation(effect: DuelEffectDefinition, source: DuelCardInstance, card: DuelCardInstance): boolean {
+  const [selfMask = 0, opponentMask = 0] = effect.targetRange ?? [];
+  return locationMaskMatchesCard(card, source.controller === card.controller ? selfMask : opponentMask);
+}
+
+function locationMaskMatchesCard(card: DuelCardInstance, mask: number): boolean {
+  if ((mask & locationMaskFromLocation(card.location)) !== 0) return true;
+  if ((mask & 0x400) !== 0 && card.location === "spellTrapZone") return true;
+  if ((mask & 0x800) !== 0 && card.location === "monsterZone" && card.sequence >= 0 && card.sequence <= 4) return true;
+  return (mask & 0x1000) !== 0 && card.location === "monsterZone" && card.sequence >= 5 && card.sequence <= 6;
+}
+
+function locationMaskFromLocation(location: DuelLocation): number {
+  if (location === "deck") return 0x01;
+  if (location === "hand") return 0x02;
+  if (location === "monsterZone") return 0x04;
+  if (location === "spellTrapZone") return 0x08;
+  if (location === "graveyard") return 0x10;
+  if (location === "banished") return 0x20;
+  if (location === "extraDeck") return 0x40;
+  if (location === "overlay") return 0x80;
+  return 0;
 }
