@@ -18,12 +18,12 @@ export interface LuaDuelChainApiHostState {
 
 export function installDuelChainApi(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, hostState.activeContext?.chainLink?.chainIndex ?? session.state.chain.length);
+    lua.lua_pushinteger(state, session.state.status === "resolving" && hostState.activeContext?.chainLink ? Math.max(session.state.chain.length, 1) : session.state.chain.length);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetCurrentChain"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, hostState.activeContext?.chainLink?.chainIndex ?? session.state.chain.length);
+    lua.lua_pushinteger(state, session.state.status === "resolving" && hostState.activeContext?.chainLink ? Math.max(session.state.chain.length, 1) : session.state.chain.length);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetChainCount"));
