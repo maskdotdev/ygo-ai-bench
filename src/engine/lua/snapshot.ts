@@ -173,10 +173,13 @@ function restoreKnownLuaEffects(
 function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
   return (
     effect.event === "continuous" &&
-    (effect.code === 22 ||
+    (effect.code === 2 ||
+      effect.code === 8 ||
+      effect.code === 22 ||
       effect.code === 25 ||
       effect.luaValueDescriptor === "change-damage:effect-double" ||
       effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous" ||
+      (effect.code === 102 && effect.value !== undefined && effect.value !== 0 && effect.targetRange === undefined) ||
       ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 132) && effect.value !== undefined))
   );
 }
