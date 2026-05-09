@@ -323,7 +323,7 @@ function literalCapturedHandlerOnlyCardUid(L: unknown, index: number, hostState:
 function lastReturnExpression(snippet: string): string | undefined {
   const index = snippet.lastIndexOf("return ");
   if (index < 0) return undefined;
-  return snippet.slice(index + "return ".length).replace(/\s+end\b.*$/, "").trim();
+  return snippet.slice(index + "return ".length).replace(/\s*end\b.*$/, "").trim();
 }
 
 function capturedCardOrNilUpvalues(L: unknown, index: number): Map<string, string | undefined> | undefined {

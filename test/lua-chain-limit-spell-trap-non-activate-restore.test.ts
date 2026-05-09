@@ -179,9 +179,7 @@ describe("Lua Spell/Trap non-activation chain-limit restore", () => {
               e:SetOperation(function(e,tp) Debug.Message("named trap non-activation limit source resolved") end)
               c:RegisterEffect(e)
             end
-            function c100.chainlm(e,rp,tp)
-              return tp==rp or (e:IsTrapEffect() and not e:IsHasType(EFFECT_TYPE_ACTIVATE))
-            end
+            function c100.chainlm(e,rp,tp)return tp==rp or (e:IsTrapEffect() and not e:IsHasType(EFFECT_TYPE_ACTIVATE))end
           `;
         }
         if (name === "c200.lua") return quickScript(200, "same-player trap-only monster response resolved", "EFFECT_TYPE_QUICK_O");
