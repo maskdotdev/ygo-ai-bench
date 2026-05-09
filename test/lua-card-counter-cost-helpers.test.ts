@@ -383,6 +383,8 @@ describe("Lua card counter and cost helpers", () => {
       local self = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local opp = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
       local deck = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_DECK, 0, 1, 1, nil):GetFirst()
+      self:EnableCounterPermit(99)
+      opp:EnableCounterPermit(99)
       Debug.Message("add self " .. tostring(self:AddCounter(99, 2)) .. "/" .. self:GetCounter(99) .. "/" .. tostring(self:HasCounter()) .. "/" .. tostring(self:HasCounter(99)) .. "/" .. tostring(self:HasCounter(77)) .. "/" .. tostring(self:HasCounters()))
       Debug.Message("add opp " .. tostring(opp:AddCounter(99, 1)) .. "/" .. opp:GetCounter(99))
       Debug.Message("can add deck " .. tostring(deck:IsCanAddCounter(99, 1)) .. "/" .. tostring(deck:AddCounter(99, 1)))
@@ -430,6 +432,8 @@ describe("Lua card counter and cost helpers", () => {
     const result = host.loadScript(
       `
       local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      target:EnableCounterPermit(99)
+      target:EnableCounterPermit(77)
       target:AddCounter(99, 2)
       target:AddCounter(77, 3)
       local all = target:GetAllCounters()
@@ -466,6 +470,7 @@ describe("Lua card counter and cost helpers", () => {
     const result = host.loadScript(
       `
       local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      target:EnableCounterPermit(99)
       Debug.Message("setup counter " .. tostring(target:AddCounter(99, 1)) .. "/" .. target:GetCounter(99))
       Duel.Win(0, WIN_REASON_EXODIA)
       Debug.Message("remove all ended " .. target:RemoveAllCounters() .. "/" .. target:GetCounter(99))
@@ -477,6 +482,53 @@ describe("Lua card counter and cost helpers", () => {
     expect(host.messages).toEqual(["setup counter true/1", "remove all ended 0/1"]);
     expect(session.state.status).toBe("ended");
     expect(target!.counters).toEqual({ 99: 1 });
+  });
+
+  it("honors Lua counter permits, target filters, and limits", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Limited Counter", kind: "monster" },
+      { code: "200", name: "Filtered Counter", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 230, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.controller === 0)) moveDuelCard(session.state, card.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local limited = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local filtered = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("without permit " .. tostring(limited:IsCanAddCounter(99,1)) .. "/" .. tostring(limited:AddCounter(99,1)))
+      Debug.Message("permit return count " .. select("#", limited:EnableCounterPermit(99)) .. "/" .. select("#", limited:SetCounterLimit(99,3)))
+      Debug.Message("with permit " .. tostring(limited:IsCanAddCounter(99,2)) .. "/" .. tostring(limited:AddCounter(99,2)) .. "/" .. limited:GetCounter(99))
+      Debug.Message("over limit " .. tostring(limited:IsCanAddCounter(99,2)) .. "/" .. tostring(limited:AddCounter(99,2)) .. "/" .. limited:GetCounter(99))
+      Debug.Message("singly limit " .. tostring(limited:IsCanAddCounter(99,2,true)) .. "/" .. tostring(limited:AddCounter(99,2,true)) .. "/" .. limited:GetCounter(99))
+      filtered:EnableCounterPermit(77,LOCATION_MZONE,function(e,c) return c:IsCode(100) end)
+      limited:EnableCounterPermit(77,LOCATION_MZONE,function(e,c) return c:IsCode(100) end)
+      Debug.Message("target permit " .. tostring(limited:AddCounter(77,1)) .. "/" .. tostring(filtered:AddCounter(77,1)))
+      Debug.Message("loc permit " .. tostring(limited:IsCanAddCounter(77,1,false,LOCATION_MZONE)) .. "/" .. tostring(limited:IsCanAddCounter(77,1,false,LOCATION_SZONE)))
+      Debug.Message("without permit flag " .. tostring(filtered:AddCounter(COUNTER_WITHOUT_PERMIT+88,1)) .. "/" .. filtered:GetCounter(COUNTER_WITHOUT_PERMIT+88))
+      Debug.Message("need enable storage " .. tostring(filtered:AddCounter(COUNTER_NEED_ENABLE+COUNTER_WITHOUT_PERMIT+89,1)) .. "/" .. filtered:GetCounter(COUNTER_WITHOUT_PERMIT+89))
+      `,
+      "card-counter-permits.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual([
+      "without permit false/false",
+      "permit return count 0/0",
+      "with permit true/true/2",
+      "over limit false/false/2",
+      "singly limit true/true/3",
+      "target permit true/false",
+      "loc permit true/false",
+      "without permit flag true/1",
+      "need enable storage true/1",
+    ]);
   });
 
   it("lets Lua scripts use counter removal cost aliases", () => {
@@ -503,6 +555,8 @@ describe("Lua card counter and cost helpers", () => {
       `
       local self=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local opp=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      self:EnableCounterPermit(77)
+      opp:EnableCounterPermit(77)
       self:AddCounter(77,3)
       opp:AddCounter(77,1)
       local e=Effect.CreateEffect(self)

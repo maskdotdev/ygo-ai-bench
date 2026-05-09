@@ -461,20 +461,29 @@ export const cardProcedureSource = `${fusionProcedureSource}
     end
     Card.EnableGeminiState=Card.EnableGeminiStatus
     Card.IsGeminiState=Card.IsGeminiStatus
-    function Card.EnableCounterPermit(c,counter_type,location)
+    function Card.EnableCounterPermit(c,counter_type,location,target)
       local mt=c:GetMetatable(false)
       if mt then
         mt.counter_place_list=mt.counter_place_list or {}
         table.insert(mt.counter_place_list,counter_type)
       end
+      if location==nil then
+        if c:IsMonster() then location=LOCATION_MZONE
+        else location=LOCATION_SZONE|LOCATION_FZONE end
+      end
       local e0=Effect.CreateEffect(c)
       e0:SetType(EFFECT_TYPE_SINGLE)
-      e0:SetProperty(EFFECT_FLAG_SINGLE_RANGE+EFFECT_FLAG_CANNOT_DISABLE)
-      if location then e0:SetRange(location) end
-      e0:SetCode(counter_type)
-      e0:SetValue(1)
+      e0:SetCode(EFFECT_COUNTER_PERMIT+counter_type)
+      e0:SetValue(location)
+      if target then e0:SetTarget(target) end
       c:RegisterEffect(e0)
-      return e0
+    end
+    function Card.SetCounterLimit(c,counter_type,limit)
+      local e0=Effect.CreateEffect(c)
+      e0:SetType(EFFECT_TYPE_SINGLE)
+      e0:SetCode(EFFECT_COUNTER_LIMIT+counter_type)
+      e0:SetValue(limit)
+      c:RegisterEffect(e0)
     end
     function Card.GetTributeRequirement(c)
       local mt=c:GetMetatable()

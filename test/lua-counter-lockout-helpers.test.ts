@@ -36,6 +36,7 @@ describe("Lua counter lockout helpers", () => {
     const checked = host.loadScript(
       `
       local c=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_MZONE,0,1,1,nil):GetFirst()
+      c:EnableCounterPermit(99)
       Debug.Message("can add locked " .. tostring(c:IsCanAddCounter(99,1)))
       Debug.Message("duel can add locked " .. tostring(Duel.IsCanAddCounter(0,99,1,c)))
       Debug.Message("add locked " .. tostring(c:AddCounter(99,1)))
@@ -85,6 +86,8 @@ describe("Lua counter lockout helpers", () => {
       `
       local locked=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,200),0,LOCATION_MZONE,0,1,1,nil):GetFirst()
       local open=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,300),0,LOCATION_MZONE,0,1,1,nil):GetFirst()
+      locked:EnableCounterPermit(99)
+      open:EnableCounterPermit(99)
       Debug.Message("targeted counter predicates " .. tostring(locked:IsCanAddCounter(99,1)) .. "/" .. tostring(open:IsCanAddCounter(99,1)))
       Debug.Message("targeted counter add " .. tostring(locked:AddCounter(99,1)) .. "/" .. tostring(open:AddCounter(99,1)))
       Debug.Message("targeted counter counts " .. locked:GetCounter(99) .. "/" .. open:GetCounter(99))

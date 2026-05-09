@@ -52,6 +52,7 @@ describe("Lua operation immunity counters", () => {
         return Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, code), 1, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       end
       local function register_immune(c)
+        c:EnableCounterPermit(99)
         local e=Effect.CreateEffect(c)
         e:SetType(EFFECT_TYPE_SINGLE)
         e:SetCode(EFFECT_IMMUNE_EFFECT)
@@ -72,6 +73,7 @@ describe("Lua operation immunity counters", () => {
           local duel_protected=pick(292)
           local duel_cost=pick(293)
           local open=pick(390)
+          open:EnableCounterPermit(99)
           Debug.Message("counter add protected " .. tostring(protected:AddCounter(99,1)) .. "/" .. protected:GetCounter(99))
           Debug.Message("counter remove protected " .. tostring(protected:RemoveCounter(tp,99,1,REASON_EFFECT)) .. "/" .. protected:GetCounter(99))
           Debug.Message("counter remove cost " .. tostring(protected_cost:RemoveCounter(tp,99,1,REASON_COST)) .. "/" .. protected_cost:GetCounter(99))

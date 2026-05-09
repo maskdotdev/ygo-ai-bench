@@ -28,6 +28,7 @@ export const cardFieldNames = [
   "IsGeminiStatus",
   "IsGeminiState",
   "EnableCounterPermit",
+  "SetCounterLimit",
   "IsNouvellesSummoned",
   "GetTributeRequirement",
   "GetMaximumAttack",
