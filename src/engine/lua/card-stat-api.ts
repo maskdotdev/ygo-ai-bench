@@ -5,11 +5,15 @@ import { readCardUid } from "#lua/api-utils.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
+import { luaMoveBlockedByImmunity, type LuaMoveImmunityHostState } from "#lua/duel-api/move-immunity.js";
 import type { DuelCardInstance, DuelSession, DuelState } from "#duel/types.js";
+import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
 
 const { lua, to_luastring } = fengari;
 
-export function installCardStatApi(L: unknown, session: DuelSession, hostState: LuaOperationTimingBoundaryHostState): void {
+type LuaCardStatHostState<EffectRecord extends LuaCardApiEffectRecord> = LuaCardApiState<EffectRecord> & LuaMoveImmunityHostState<EffectRecord> & LuaOperationTimingBoundaryHostState;
+
+export function installCardStatApi<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardStatHostState<EffectRecord>): void {
   lua.lua_pushcfunction(L, (state: unknown) => pushAssumeProperty(state, session));
   lua.lua_setfield(L, -2, to_luastring("AssumeProperty"));
   pushNumberGetter(L, "GetType", session, (card) => cardTypeFlags(card));
@@ -27,7 +31,7 @@ export function installCardStatApi(L: unknown, session: DuelSession, hostState: 
   pushNumberGetter(L, "GetAttack", session, (card) => currentAttack(card));
   pushNumberGetter(L, "GetBaseAttack", session, (card) => card?.data.attack ?? 0);
   pushNumberGetter(L, "GetTextAttack", session, (card) => currentAttack(card));
-  lua.lua_pushcfunction(L, (state: unknown) => pushUpdateAttack(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushUpdateAttack(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("UpdateAttack"));
   pushBooleanGetter(L, "HasNonZeroAttack", session, (card) => Boolean(card && currentAttack(card) !== 0));
   pushAnyNumberMatcher(L, "IsAttack", session, (card, requested) => requested.includes(currentAttack(card)));
@@ -41,7 +45,7 @@ export function installCardStatApi(L: unknown, session: DuelSession, hostState: 
   pushNumberGetter(L, "GetDefense", session, (card) => currentDefense(card));
   pushNumberGetter(L, "GetBaseDefense", session, (card) => card?.data.defense ?? 0);
   pushNumberGetter(L, "GetTextDefense", session, (card) => currentDefense(card));
-  lua.lua_pushcfunction(L, (state: unknown) => pushUpdateDefense(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushUpdateDefense(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("UpdateDefense"));
   pushBooleanGetter(L, "HasDefense", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0 && (cardTypeFlags(card) & 0x4000000) === 0));
   pushBooleanGetter(L, "HasNonZeroDefense", session, (card) => Boolean(card && currentDefense(card) !== 0));
@@ -63,7 +67,7 @@ export function installCardStatApi(L: unknown, session: DuelSession, hostState: 
   pushNumberGetter(L, "GetOriginalLeftScale", session, (card) => card?.data.leftScale ?? 0);
   pushNumberGetter(L, "GetOriginalRightScale", session, (card) => card?.data.rightScale ?? 0);
   pushNumberGetter(L, "GetScale", session, (card) => cardScale(card));
-  lua.lua_pushcfunction(L, (state: unknown) => pushUpdateScale(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushUpdateScale(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("UpdateScale"));
   pushNumberMatcher(L, "IsScale", session, (card, requested) => cardScale(card) === requested);
   pushBooleanGetter(L, "IsOddScale", session, (card) => isPendulumCardData(card) && cardScale(card) % 2 !== 0);
@@ -88,7 +92,7 @@ export function installCardStatApi(L: unknown, session: DuelSession, hostState: 
   pushNumberMatcher(L, "IsOriginalLevelBelow", session, (card, requested) => hasLevel(card) && (card.data.level ?? 0) <= requested);
   pushNumberGetter(L, "GetRank", session, (card) => currentRank(card, session.state));
   pushNumberGetter(L, "GetOriginalRank", session, (card) => cardRank(card));
-  lua.lua_pushcfunction(L, (state: unknown) => pushUpdateRank(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushUpdateRank(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("UpdateRank"));
   pushBooleanGetter(L, "HasRank", session, (card) => hasRank(card));
   pushAnyNumberMatcher(L, "IsRank", session, (card, requested) => hasRank(card) && requested.includes(currentRank(card, session.state)));
@@ -99,7 +103,7 @@ export function installCardStatApi(L: unknown, session: DuelSession, hostState: 
   pushNumberMatcher(L, "IsOriginalRankBelow", session, (card, requested) => hasRank(card) && cardRank(card) <= requested);
   pushNumberGetter(L, "GetLink", session, (card) => currentLink(card));
   pushNumberGetter(L, "GetOriginalLink", session, (card) => cardLink(card));
-  lua.lua_pushcfunction(L, (state: unknown) => pushUpdateLink(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushUpdateLink(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("UpdateLink"));
   pushAnyNumberMatcher(L, "IsLink", session, (card, requested) => requested.includes(currentLink(card)));
   pushNumberMatcher(L, "IsLinkAbove", session, (card, requested) => currentLink(card) >= requested);
@@ -243,14 +247,14 @@ function pushAssumeProperty(L: unknown, session: DuelSession): number {
   return 0;
 }
 
-function pushUpdateAttack(L: unknown, session: DuelSession): number {
+function pushUpdateAttack<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardStatHostState<EffectRecord>): number {
   if (session.state.status === "ended") {
     lua.lua_pushinteger(L, 0);
     return 1;
   }
   const card = readCard(L, session);
   const amount = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
-  if (!card) {
+  if (!card || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) {
     lua.lua_pushinteger(L, 0);
     return 1;
   }
@@ -260,14 +264,14 @@ function pushUpdateAttack(L: unknown, session: DuelSession): number {
   return 1;
 }
 
-function pushUpdateDefense(L: unknown, session: DuelSession): number {
+function pushUpdateDefense<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardStatHostState<EffectRecord>): number {
   if (session.state.status === "ended") {
     lua.lua_pushinteger(L, 0);
     return 1;
   }
   const card = readCard(L, session);
   const amount = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
-  if (!card) {
+  if (!card || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) {
     lua.lua_pushinteger(L, 0);
     return 1;
   }
@@ -277,14 +281,14 @@ function pushUpdateDefense(L: unknown, session: DuelSession): number {
   return 1;
 }
 
-function pushUpdateLevel(L: unknown, session: DuelSession, hostState: LuaOperationTimingBoundaryHostState): number {
+function pushUpdateLevel<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardStatHostState<EffectRecord>): number {
   if (session.state.status === "ended") {
     lua.lua_pushinteger(L, 0);
     return 1;
   }
   const card = readCard(L, session);
   let amount = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
-  if (!card) {
+  if (!card || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) {
     lua.lua_pushinteger(L, 0);
     return 1;
   }
@@ -305,14 +309,14 @@ function collectStatEvent(session: DuelSession, hostState: LuaOperationTimingBou
   collectDuelTriggerEffects(session.state, eventName, card, luaEffectReasonPayload(hostState, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer));
 }
 
-function pushUpdateRank(L: unknown, session: DuelSession): number {
+function pushUpdateRank<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardStatHostState<EffectRecord>): number {
   if (session.state.status === "ended") {
     lua.lua_pushinteger(L, 0);
     return 1;
   }
   const card = readCard(L, session);
   let amount = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
-  if (!card) {
+  if (!card || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) {
     lua.lua_pushinteger(L, 0);
     return 1;
   }
@@ -323,14 +327,14 @@ function pushUpdateRank(L: unknown, session: DuelSession): number {
   return 1;
 }
 
-function pushUpdateLink(L: unknown, session: DuelSession): number {
+function pushUpdateLink<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardStatHostState<EffectRecord>): number {
   if (session.state.status === "ended") {
     lua.lua_pushinteger(L, 0);
     return 1;
   }
   const card = readCard(L, session);
   let amount = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
-  if (!card) {
+  if (!card || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) {
     lua.lua_pushinteger(L, 0);
     return 1;
   }
@@ -341,14 +345,14 @@ function pushUpdateLink(L: unknown, session: DuelSession): number {
   return 1;
 }
 
-function pushUpdateScale(L: unknown, session: DuelSession): number {
+function pushUpdateScale<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardStatHostState<EffectRecord>): number {
   if (session.state.status === "ended") {
     lua.lua_pushinteger(L, 0);
     return 1;
   }
   const card = readCard(L, session);
   let amount = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
-  if (!isPendulumCardData(card) || currentLeftScale(card) === 0) {
+  if (!isPendulumCardData(card) || currentLeftScale(card) === 0 || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) {
     lua.lua_pushinteger(L, 0);
     return 1;
   }
