@@ -660,6 +660,7 @@ function moveCardsToDeckBottom(L: unknown, session: DuelSession, hostState: LuaD
       moved.push(uid);
       continue;
     }
+    if (luaMoveBlockedByImmunity(L, session, hostState, card, reason)) continue;
     if (!canMoveDuelCardToLocation(session.state, uid, "deck", reason)) continue;
     const before = movementSnapshot(card);
     try {
@@ -687,6 +688,7 @@ function moveCardsToDeckTop(L: unknown, session: DuelSession, hostState: LuaDuel
       moved.push(uid);
       continue;
     }
+    if (luaMoveBlockedByImmunity(L, session, hostState, card, reason)) continue;
     if (!canMoveDuelCardToLocation(session.state, uid, "deck", reason)) continue;
     const before = movementSnapshot(card);
     try {
