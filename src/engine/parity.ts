@@ -18,6 +18,7 @@ import {
   type CreateDuelOptions,
 } from "#duel/core.js";
 import { describeDuelActionSelector, duelActionMatchesSelector, selectDuelActionBySelector } from "#duel/action-selectors.js";
+import { duelReason } from "#duel/reasons.js";
 import { sameStringMembers } from "#duel/string-list-match.js";
 import type { DuelChainLimitRestoreRegistry, DuelEffectRestoreRegistry } from "#duel/snapshot.js";
 import type {
@@ -284,7 +285,7 @@ function assertWindow(session: DuelSession, expected: ScriptedDuelWindowExpectat
   if (expected.absentLegalActions?.length) assertLegalActions("Expected no legal action", session, expected.absentLegalActions, cards, fail, true);
   if (expected.absentLegalActionGroups?.length) assertLegalActionGroups("Expected no legal action group", session, expected.absentLegalActionGroups, cards, fail, true);
   assertLocationExpectations(cards, expected.locations, expected.locationCounts, fail);
-  assertCardExpectations(cards, expected.cards, fail);
+  assertCardExpectations(cardsWithMovementMetadata(session, cards), expected.cards, fail);
   assertStringListForWindow("positionsChanged", state.positionsChanged, expected.positionsChanged, fail);
   assertStringListForWindow("attacksDeclared", state.attacksDeclared, expected.attacksDeclared, fail);
   assertStringListForWindow("attackCanceledUids", state.attackCanceledUids, expected.attackCanceledUids, fail);
@@ -452,6 +453,23 @@ function assertCardExpectations(cards: { uid: string }[], expectedCards: (Partia
     }
     if (!matchesPartial(actualCard, expectedCard)) fail(`Expected card ${expectedCard.uid} ${JSON.stringify(expectedCard)}, got ${JSON.stringify(actualCard)}`);
   }
+}
+
+function cardsWithMovementMetadata(
+  session: DuelSession,
+  cards: Array<{ uid: string }>,
+): Array<{ uid: string; reason?: number; reasonPlayer?: PlayerId; reasonCardUid?: string; reasonEffectId?: number }> {
+  const internalCards = new Map(session.state.cards.map((card) => [card.uid, card]));
+  return cards.map((card) => {
+    const internalCard = internalCards.get(card.uid);
+    return {
+      ...card,
+      ...(internalCard?.reason === undefined ? {} : { reason: internalCard.reason }),
+      ...(internalCard?.reasonPlayer === undefined ? {} : { reasonPlayer: internalCard.reasonPlayer }),
+      ...(internalCard?.reasonCardUid === undefined ? {} : { reasonCardUid: internalCard.reasonCardUid }),
+      ...(internalCard?.reasonEffectId === undefined ? {} : { reasonEffectId: internalCard.reasonEffectId }),
+    };
+  });
 }
 
 function assertLegalActions(
@@ -690,7 +708,7 @@ function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid:
         if (!card) {
           throw new Error(`Fixture effect could not move ${move.code} for player ${move.player}`);
         }
-        const moved = ctx.moveCard(card.uid, move.to, move.controller);
+        const moved = moveDuelCard(ctx.duel, card.uid, move.to, move.controller, move.moveReason ?? duelReason.effect, move.moveReasonPlayer);
         applyFixturePosition(moved, move.position);
         if (move.collectEvent) {
           collectDuelTriggerEffects(ctx.duel, move.collectEvent, moved, fixtureMoveEventPayload(move));
@@ -788,7 +806,7 @@ function applyFixtureSetup(session: DuelSession, moves: ScriptedFixtureMove[], f
       failures.push({ fixture, message: `Setup could not find ${move.code} for player ${move.player}` });
       return;
     }
-    const moved = moveDuelCard(session.state, card.uid, move.to, move.controller);
+    const moved = moveDuelCard(session.state, card.uid, move.to, move.controller, move.moveReason, move.moveReasonPlayer);
     applyFixturePosition(moved, move.position);
     if (move.collectEvent) collectDuelTriggerEffects(session.state, move.collectEvent, moved, fixtureMoveEventPayload(move));
   }

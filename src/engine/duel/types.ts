@@ -605,6 +605,8 @@ export interface PublicDuelCard {
   counters?: Record<number, number>;
 }
 
+export type ScriptedDuelCardExpectation = Partial<PublicDuelCard & Pick<DuelCardInstance, "reason" | "reasonPlayer" | "reasonCardUid" | "reasonEffectId">> & Pick<PublicDuelCard, "uid">;
+
 export interface PublicDuelState {
   id: string;
   status: DuelStatus;
@@ -757,7 +759,7 @@ interface ScriptedDuelWindowExpectationFields {
   absentLegalActionGroups?: ScriptedLegalActionGroupExpectation[];
   locations?: Partial<Record<DuelLocation, string[]>>;
   locationCounts?: Partial<Record<DuelLocation, Record<string, number>>>;
-  cards?: Array<Partial<PublicDuelCard> & Pick<PublicDuelCard, "uid">>;
+  cards?: ScriptedDuelCardExpectation[];
   positionsChanged?: string[];
   attacksDeclared?: string[];
   attackCanceledUids?: string[];
@@ -790,6 +792,8 @@ export interface ScriptedFixtureMove {
   controller?: PlayerId;
   position?: CardPosition;
   occurrence?: number;
+  moveReason?: number;
+  moveReasonPlayer?: PlayerId;
   collectEvent?: DuelEventName;
   eventCode?: number;
   eventIsLast?: boolean;
