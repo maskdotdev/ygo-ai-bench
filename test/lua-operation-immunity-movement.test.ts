@@ -190,4 +190,67 @@ describe("Lua operation immunity movement", () => {
     expect(host.messages).toContain("cost remove protected 1");
     expect(session.state.cards.find((card) => card.code === "230")).toMatchObject({ location: "banished" });
   });
+
+  it("blocks effect release but not cost release for immune cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "130", name: "Release Source", kind: "monster" },
+      { code: "240", name: "Immune Release Target", kind: "monster" },
+      { code: "340", name: "Open Release Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 215, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["130"] },
+      1: { main: ["240", "340"] },
+    });
+    startDuel(session);
+    placeCard(session, "240", "monsterZone");
+    placeCard(session, "340", "monsterZone");
+
+    const host = createLuaScriptHost(session);
+    const setup = host.loadScript(
+      `
+      local function pick(code)
+        return Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, code), 1, LOCATION_MZONE, 0, 1, 1, nil)
+      end
+      c130={}
+      function c130.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Debug.Message("effect release protected " .. Duel.Release(pick(240), REASON_EFFECT))
+          Debug.Message("effect release open " .. Duel.Release(pick(340), REASON_EFFECT))
+          Debug.Message("cost release protected " .. Duel.Release(pick(240), REASON_COST))
+        end)
+        c:RegisterEffect(e)
+      end
+      c240={}
+      function c240.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_IMMUNE_EFFECT)
+        e:SetRange(LOCATION_MZONE)
+        e:SetValue(function(e,te)
+          return te:GetOwnerPlayer()==0
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "operation-immunity-release-movement.lua",
+    );
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.code === "130");
+    expect(source).toBeTruthy();
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeTruthy();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(host.messages).toContain("effect release protected 0");
+    expect(host.messages).toContain("effect release open 1");
+    expect(host.messages).toContain("cost release protected 1");
+    expect(session.state.cards.find((card) => card.code === "240")).toMatchObject({ location: "graveyard" });
+    expect(session.state.cards.find((card) => card.code === "340")).toMatchObject({ location: "graveyard" });
+  });
 });
