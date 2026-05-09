@@ -84,12 +84,79 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     expect(restoredSummonWindow.session.state.cards.find((card) => card.uid === unionDriver!.uid)?.equippedToUid).toBeUndefined();
     expect(restoredSummonWindow.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone" });
   });
+
+  it("restores Union Driver replacing itself with a Union from Deck", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const unionDriverCode = "99249638";
+    const platformCode = "23265594";
+    const targetCode = "601006";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => [unionDriverCode, platformCode].includes(card.code)),
+      { code: targetCode, name: "Union Driver Deck Equip Target", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1600, defense: 1200, race: 0x20 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 295, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [unionDriverCode, targetCode, platformCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const unionDriver = session.state.cards.find((card) => card.code === unionDriverCode);
+    const platform = session.state.cards.find((card) => card.code === platformCode);
+    const target = session.state.cards.find((card) => card.code === targetCode);
+    expect(unionDriver).toBeDefined();
+    expect(platform).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, unionDriver!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0).position = "faceUpAttack";
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(unionDriverCode), workspace).ok).toBe(true);
+    expect(host.loadCardScript(Number(platformCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+
+    const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restoredEquipWindow.restoreComplete, restoredEquipWindow.incompleteReasons.join("; ")).toBe(true);
+    const equipAction = findEffectAction(restoredEquipWindow.session, getLuaRestoreLegalActions(restoredEquipWindow, 0), unionDriver!.uid, 1068);
+    expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
+    resolveRestoredChain(restoredEquipWindow);
+
+    const restoredDriverDeckEquipWindow = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), workspace, reader);
+    expect(restoredDriverDeckEquipWindow.restoreComplete, restoredDriverDeckEquipWindow.incompleteReasons.join("; ")).toBe(true);
+    const driverDeckEquipAction = findEffectActionByCategory(restoredDriverDeckEquipWindow.session, getLuaRestoreLegalActions(restoredDriverDeckEquipWindow, 0), unionDriver!.uid, 0x40000);
+    expect(driverDeckEquipAction, JSON.stringify(getLuaRestoreLegalActions(restoredDriverDeckEquipWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredDriverDeckEquipWindow, driverDeckEquipAction!);
+    resolveRestoredChain(restoredDriverDeckEquipWindow);
+
+    expect(restoredDriverDeckEquipWindow.session.state.cards.find((card) => card.uid === unionDriver!.uid)).toMatchObject({ location: "banished", previousEquippedToUid: target!.uid });
+    expect(restoredDriverDeckEquipWindow.session.state.cards.find((card) => card.uid === platform!.uid)).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid });
+    expect(restoredDriverDeckEquipWindow.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone" });
+
+    const restoredPlatformStateWindow = restoreDuelWithLuaScripts(serializeDuel(restoredDriverDeckEquipWindow.session), workspace, reader);
+    expect(restoredPlatformStateWindow.restoreComplete, restoredPlatformStateWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredPlatformStateWindow.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceUid: platform!.uid, code: 76 }),
+        expect.objectContaining({ sourceUid: platform!.uid, code: 347 }),
+      ]),
+    );
+    expect(restoredPlatformStateWindow.session.state.cards.find((card) => card.uid === platform!.uid)).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid });
+  });
 });
 
 function findEffectAction(session: DuelSession, actions: DuelAction[], uid: string, description: number): Extract<DuelAction, { type: "activateEffect" }> | undefined {
   return actions.find((action): action is Extract<DuelAction, { type: "activateEffect" }> => {
     if (action.type !== "activateEffect" || action.uid !== uid) return false;
     return session.state.effects.find((effect) => effect.id === action.effectId && effect.sourceUid === uid)?.description === description;
+  });
+}
+
+function findEffectActionByCategory(session: DuelSession, actions: DuelAction[], uid: string, category: number): Extract<DuelAction, { type: "activateEffect" }> | undefined {
+  return actions.find((action): action is Extract<DuelAction, { type: "activateEffect" }> => {
+    if (action.type !== "activateEffect" || action.uid !== uid) return false;
+    const effect = session.state.effects.find((candidate) => candidate.id === action.effectId && candidate.sourceUid === uid);
+    return effect?.category === category && effect.description !== 1068;
   });
 }
 

@@ -8,8 +8,10 @@ import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import type { ApplyDuelResponseResult, ChainLimit, DuelAction, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
 
+const luaEffectEquipLimit = 76;
 const luaEffectUnionStatus = 347;
 const luaEffectOldUnionStatus = 348;
+const luaUnionStateEffectCodes = new Set([luaEffectEquipLimit, luaEffectUnionStatus, luaEffectOldUnionStatus]);
 
 export interface LuaSnapshotRestoreResult {
   session: DuelSession;
@@ -76,15 +78,45 @@ export function applyLuaRestoreResponse(restored: LuaSnapshotRestoreResult, resp
 function filterRestoredLuaEffects(session: DuelSession, registryKeys: Set<string>, snapshotEffects: SerializedDuelEffect[]): string[] {
   if (registryKeys.size === 0) return [];
   const snapshotEffectsByKey = new Map(snapshotEffects.map((effect) => [effect.registryKey, effect]).filter((entry): entry is [string, SerializedDuelEffect] => Boolean(entry[0])));
+  const semanticSnapshotEffectsByLiveKey = new Map<string, SerializedDuelEffect>();
+  const semanticRegistryKeys = new Set<string>();
   session.state.effects = session.state.effects
-    .filter((effect) => effect.registryKey === undefined || registryKeys.has(effect.registryKey))
-    .map((effect) => mergeRestoredLuaEffectMetadata(effect, snapshotEffectsByKey.get(effect.registryKey ?? "")));
-  return session.state.effects.map((effect) => effect.registryKey).filter((key): key is string => Boolean(key?.startsWith("lua:")));
+    .filter((effect) => {
+      if (effect.registryKey === undefined || registryKeys.has(effect.registryKey)) return true;
+      const snapshotEffect = findRestoredLuaStateSnapshotEffect(session, effect, registryKeys, snapshotEffects, semanticRegistryKeys);
+      if (!snapshotEffect) return false;
+      semanticSnapshotEffectsByLiveKey.set(effect.registryKey, snapshotEffect);
+      semanticRegistryKeys.add(snapshotEffect.registryKey!);
+      return true;
+    })
+    .map((effect) => mergeRestoredLuaEffectMetadata(effect, snapshotEffectsByKey.get(effect.registryKey ?? "") ?? semanticSnapshotEffectsByLiveKey.get(effect.registryKey ?? "")));
+  const exactRegistryKeys = session.state.effects.map((effect) => effect.registryKey).filter((key): key is string => Boolean(key?.startsWith("lua:") && registryKeys.has(key)));
+  return [...new Set([...exactRegistryKeys, ...semanticRegistryKeys])];
 }
 
 function mergeRestoredLuaEffectMetadata(effect: DuelEffectDefinition, snapshotEffect: SerializedDuelEffect | undefined): DuelEffectDefinition {
   if (snapshotEffect?.reset === undefined) return effect;
   return { ...effect, reset: { ...snapshotEffect.reset } };
+}
+
+function findRestoredLuaStateSnapshotEffect(
+  session: DuelSession,
+  effect: DuelEffectDefinition,
+  registryKeys: Set<string>,
+  snapshotEffects: SerializedDuelEffect[],
+  restoredRegistryKeys: Set<string>,
+): SerializedDuelEffect | undefined {
+  if (!isKnownLuaUnionStateEffect(session, effect)) return undefined;
+  return snapshotEffects.find((snapshotEffect) => {
+    if (!snapshotEffect.registryKey || !registryKeys.has(snapshotEffect.registryKey) || restoredRegistryKeys.has(snapshotEffect.registryKey)) return false;
+    return snapshotEffect.sourceUid === effect.sourceUid && snapshotEffect.event === effect.event && snapshotEffect.code === effect.code && isKnownLuaUnionStateEffect(session, snapshotEffect);
+  });
+}
+
+function isKnownLuaUnionStateEffect(session: DuelSession, effect: DuelEffectDefinition | SerializedDuelEffect): boolean {
+  if (effect.event !== "continuous" || effect.code === undefined || !luaUnionStateEffectCodes.has(effect.code)) return false;
+  const source = session.state.cards.find((card) => card.uid === effect.sourceUid);
+  return Boolean(source && source.location === "spellTrapZone" && source.equippedToUid !== undefined);
 }
 
 function restoreKnownLuaStateEffects(

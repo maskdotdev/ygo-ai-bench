@@ -133,11 +133,12 @@ export function installUnionProcedureApi(L: unknown, readLuaError: (state: unkno
       end
       return e1
     end
-    function aux.CheckUnionEquip(uc,tc)
+    function aux.CheckUnionEquip(uc,tc,ign_ct)
       ensure_union_card_api()
       local ct1,ct2=Card.GetUnionCount(tc)
-      if union_old_rules[card_key(uc)] then return ct1==0 end
-      return ct2==0
+      local ignored=ign_ct or 0
+      if union_old_rules[card_key(uc)] then return ct1<=ignored end
+      return ct2<=ignored
     end
     function aux.AddUnionProcedure(c,f,oldequip,oldprotect)
       ensure_union_card_api()
