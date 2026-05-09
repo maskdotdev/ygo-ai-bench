@@ -255,7 +255,15 @@ function pushEquip(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHo
   const targetUid = readCardUid(L, 3);
   const equipCard = equipUid ? session.state.cards.find((candidate) => candidate.uid === equipUid) : undefined;
   const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
-  if (!equipUid || !equipCard || !target || target.location !== "monsterZone" || !hasZoneSpace(session.state, player, "spellTrapZone")) {
+  if (
+    !equipUid ||
+    !equipCard ||
+    !target ||
+    target.location !== "monsterZone" ||
+    !hasZoneSpace(session.state, player, "spellTrapZone") ||
+    luaMoveBlockedByImmunity(L, session, hostState, equipCard, duelReason.effect) ||
+    luaMoveBlockedByImmunity(L, session, hostState, target, duelReason.effect)
+  ) {
     setOperatedUids(hostState, []);
     lua.lua_pushboolean(L, false);
     return 1;
