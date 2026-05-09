@@ -72,6 +72,65 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Le
       ]),
     );
   });
+
+  it("restores mutual Lesser Fiend battle destruction and redirects both monsters", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const lesserFiendCode = "16475472";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === lesserFiendCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 165, startingHandSize: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [lesserFiendCode] }, 1: { main: [lesserFiendCode] } });
+    startDuel(session);
+
+    const p0Fiend = session.state.cards.find((card) => card.code === lesserFiendCode && card.owner === 0);
+    const p1Fiend = session.state.cards.find((card) => card.code === lesserFiendCode && card.owner === 1);
+    expect(p0Fiend).toBeDefined();
+    expect(p1Fiend).toBeDefined();
+    moveDuelCard(session.state, p0Fiend!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, p1Fiend!.uid, "monsterZone", 1).position = "faceUpAttack";
+    session.state.phase = "battle";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(lesserFiendCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ event: "continuous", code: 204, sourceUid: p0Fiend!.uid, value: 0x20 }),
+        expect.objectContaining({ event: "continuous", code: 204, sourceUid: p1Fiend!.uid, value: 0x20 }),
+      ]),
+    );
+
+    const attack = getLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === p0Fiend!.uid && action.targetUid === p1Fiend!.uid);
+    expect(attack).toBeDefined();
+    applyAndAssert(session, attack!);
+    expect(session.state.battleWindow?.kind).toBe("attackNegationResponse");
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(restored.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ event: "continuous", code: 204, sourceUid: p0Fiend!.uid, value: 0x20 }),
+        expect.objectContaining({ event: "continuous", code: 204, sourceUid: p1Fiend!.uid, value: 0x20 }),
+      ]),
+    );
+
+    passBattleResponses(restored.session);
+    expect(restored.session.state.players[0].lifePoints).toBe(8000);
+    expect(restored.session.state.players[1].lifePoints).toBe(8000);
+    expect(restored.session.state.pendingTriggers).toEqual([]);
+    expect(restored.session.state.cards.find((card) => card.uid === p0Fiend!.uid)).toMatchObject({ location: "banished", reason: 0x4000021, reasonCardUid: p1Fiend!.uid });
+    expect(restored.session.state.cards.find((card) => card.uid === p1Fiend!.uid)).toMatchObject({ location: "banished", reason: 0x4000021, reasonCardUid: p0Fiend!.uid });
+    expect(restored.session.state.eventHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ eventName: "battleDestroyed", eventCode: 1140, eventUids: [p0Fiend!.uid, p1Fiend!.uid] }),
+        expect.objectContaining({ eventName: "banished", eventCode: 1011, eventCardUid: p0Fiend!.uid }),
+        expect.objectContaining({ eventName: "banished", eventCode: 1011, eventCardUid: p1Fiend!.uid }),
+      ]),
+    );
+  });
 });
 
 function passBattleResponses(session: DuelSession): void {
