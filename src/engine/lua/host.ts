@@ -6,6 +6,7 @@ import { installAuxApi, installConstants, installDebugApi } from "#lua/basic-api
 import { installCardApi } from "#lua/card-api.js";
 import { isSetcodeMatch } from "#lua/card-code-utils.js";
 import { installCardProcedureApi } from "#lua/card-procedure-api.js";
+import { cardTypeFlags } from "#lua/card-stat-api.js";
 import { installDuelApi } from "#lua/duel-api/index.js";
 import { installGroupApi } from "#lua/group-api.js";
 import { restorableStatelessLuaChainLimitSource } from "#lua/chain-limit-predicate-descriptors.js";
@@ -288,7 +289,7 @@ function compileLuaChainLimitSource(L: unknown, encodedSource: string): number |
 }
 
 function sourceTypeFlags(hostState: LuaHostState, sourceUid: string): number {
-  return hostState.session.state.cards.find((card) => card.uid === sourceUid)?.data.typeFlags ?? 0;
+  return cardTypeFlags(hostState.session.state.cards.find((card) => card.uid === sourceUid));
 }
 
 function activeTypeFlags(hostState: LuaHostState, sourceUid: string): number {
