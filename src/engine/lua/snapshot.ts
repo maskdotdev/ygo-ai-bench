@@ -4,6 +4,7 @@ import { applyResponse, getGroupedDuelLegalActions, getLegalActions, queryPublic
 import { duelReason } from "#duel/reasons.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { cardFieldId } from "#lua/card-state-api.js";
+import { luaTemporaryControlReturnDescriptor, luaTemporaryControlReturnOperation } from "#lua/duel-api/move-control.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import type { ApplyDuelResponseResult, ChainLimit, DuelAction, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
@@ -163,7 +164,7 @@ function restoreKnownLuaEffects(
       ...(effect.targetRange ? { targetRange: [...effect.targetRange] } : {}),
       ...(effect.hintTiming ? { hintTiming: [...effect.hintTiming] } : {}),
       ...restoredLuaValueCallbacks(effect),
-      operation: () => {},
+      operation: restoredLuaOperation(effect),
     });
     added.push(effect.registryKey);
   }
@@ -179,9 +180,18 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
       effect.code === 25 ||
       effect.luaValueDescriptor === "change-damage:effect-double" ||
       effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous" ||
+      effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
       (effect.code === 102 && effect.value !== undefined && effect.value !== 0 && effect.targetRange === undefined) ||
       ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 132) && effect.value !== undefined))
   );
+}
+
+function restoredLuaOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  if (effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor) {
+    const returnPlayer = effect.value === 0 || effect.value === 1 ? effect.value : undefined;
+    return luaTemporaryControlReturnOperation(returnPlayer);
+  }
+  return () => {};
 }
 
 function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "battleDamageValue" | "lifePointValue" | "valuePredicate"> {

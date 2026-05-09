@@ -1,8 +1,12 @@
-import { getCards, pushDuelLog, resequence } from "#duel/card-state.js";
+import { getCards, hasZoneSpace, moveDuelCard, pushDuelLog, resequence } from "#duel/card-state.js";
 import { isControlChangePrevented } from "#duel/continuous-effects.js";
+import { phaseMask } from "#duel/phase-mask.js";
 import { duelReason } from "#duel/reasons.js";
+import { resetEvent, resetLeave, resetPhase } from "#duel/reset-flags.js";
 import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
-import type { DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
+import type { DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelPhase, DuelSession, DuelState, PlayerId } from "#duel/types.js";
+
+export const luaTemporaryControlReturnDescriptor = "temporary-control-return";
 
 export function canLuaChangeControl(state: DuelState, card: DuelCardInstance, allowedLocations: DuelLocation[] | undefined): boolean {
   if (card.location !== "monsterZone" && card.location !== "spellTrapZone") return false;
@@ -27,6 +31,53 @@ export function swapLuaCardControl(session: DuelSession, left: DuelCardInstance,
   resequence(session.state, rightController, right.location);
   pushDuelLog(session.state, "control", rightController, left.name, `Swapped control with ${right.name}`);
   pushDuelLog(session.state, "control", leftController, right.name, `Swapped control with ${left.name}`);
+}
+
+export function createLuaTemporaryControlReturnEffect(card: DuelCardInstance, returnPlayer: PlayerId, phase: DuelPhase, count: number): DuelEffectDefinition {
+  return {
+    id: `lua-temp-control-return-${card.uid}`,
+    sourceUid: card.uid,
+    controller: returnPlayer,
+    ownerPlayer: returnPlayer,
+    registryKey: `lua:${card.code}:temporary-control-return:${card.uid}`,
+    event: "continuous",
+    code: 0x1000 | phaseMask(phase),
+    value: returnPlayer,
+    luaValueDescriptor: luaTemporaryControlReturnDescriptor,
+    range: [card.location],
+    reset: { flags: resetEvent | resetLeave | resetPhase | phaseMask(phase), count },
+    operation: luaTemporaryControlReturnOperation(returnPlayer),
+  };
+}
+
+export function registerLuaTemporaryControlReturnEffect(session: DuelSession, card: DuelCardInstance, returnPlayer: PlayerId, phaseMaskValue: number, count: number): void {
+  const phase = luaControlReturnPhase(phaseMaskValue);
+  if (phase) session.state.effects.push(createLuaTemporaryControlReturnEffect(card, returnPlayer, phase, count));
+}
+
+export function luaTemporaryControlReturnOperation(returnPlayer: PlayerId | undefined): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const card = ctx.source;
+    const targetPlayer = returnPlayer ?? card.previousController;
+    if (targetPlayer !== 0 && targetPlayer !== 1) return;
+    if (card.controller === targetPlayer) return;
+    if (card.location !== "monsterZone" && card.location !== "spellTrapZone") return;
+    if (!hasZoneSpace(ctx.duel, targetPlayer, card.location)) return;
+    const previousController = card.controller;
+    moveDuelCard(ctx.duel, card.uid, card.location, targetPlayer, duelReason.return, previousController);
+    resequence(ctx.duel, previousController, card.location);
+    pushDuelLog(ctx.duel, "control", targetPlayer, card.name, `Returned control to player ${targetPlayer}`);
+  };
+}
+
+function luaControlReturnPhase(mask: number): DuelPhase | undefined {
+  if ((mask & 0x1) !== 0) return "draw";
+  if ((mask & 0x2) !== 0) return "standby";
+  if ((mask & 0x4) !== 0) return "main1";
+  if ((mask & 0x80) !== 0) return "battle";
+  if ((mask & 0x100) !== 0) return "main2";
+  if ((mask & 0x200) !== 0) return "end";
+  return undefined;
 }
 
 function hasControlSwapSpace(state: DuelState, left: DuelCardInstance, right: DuelCardInstance): boolean {

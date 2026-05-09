@@ -22,7 +22,7 @@ import { locationsFromMask, positionFromMask, readCardUid } from "#lua/api-utils
 import { moveDeckCardToBottom, moveDeckCardToTop } from "#lua/duel-api/deck-order.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { activeFieldSpell, isDuelType, isFieldSpell } from "#lua/duel-api/field-spell-state.js";
-import { canLuaChangeControl, canLuaSwapControlPair, swapLuaCardControl } from "#lua/duel-api/move-control.js";
+import { canLuaChangeControl, canLuaSwapControlPair, registerLuaTemporaryControlReturnEffect, swapLuaCardControl } from "#lua/duel-api/move-control.js";
 import { luaMoveBlockedByImmunity, type LuaMoveImmunityHostState } from "#lua/duel-api/move-immunity.js";
 import { applyLuaMovePosition, changeSpellTrapPosition, didMove, faceupAttackOrFacedownDefensePosition, movementSnapshot } from "#lua/duel-api/move-card-state.js";
 import { pushDestroyHelper } from "#lua/duel-api/move-destroy.js";
@@ -31,9 +31,7 @@ import { readCardOrGroupUids, readFieldDestination, readMoveReason, readOptional
 import { installDuelOverlayApi, removeOverlayReference } from "#lua/duel-api/overlay.js";
 import { applyMonsterZoneMask, hasOpenMonsterZone } from "#lua/monster-zone-mask.js";
 import type { CardPosition, DuelCardInstance, DuelEffectContext, DuelEventName, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
-
 const { lua, to_luastring } = fengari;
-
 type LuaCardMover = (state: DuelState, uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId) => DuelCardInstance;
 
 export interface LuaOperationTimingBoundaryHostState {
@@ -303,6 +301,8 @@ function pushGetControl(L: unknown, session: DuelSession, hostState: LuaDuelMove
     lua.lua_pushinteger(L, 0);
     return 1;
   }
+  const returnPhaseMask = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
+  const returnCount = lua.lua_isnumber(L, 4) ? Math.max(1, lua.lua_tointeger(L, 4)) : 1;
   const allowedLocations = lua.lua_isnumber(L, 5) ? locationsFromMask(lua.lua_tointeger(L, 5)) : undefined;
   const controlled: string[] = [];
   beginLuaOperationMoveStep(session, hostState);
@@ -318,6 +318,7 @@ function pushGetControl(L: unknown, session: DuelSession, hostState: LuaDuelMove
       resequence(session.state, previousController, card.location);
       pushDuelLog(session.state, "control", targetPlayer, card.name, `Took control from player ${previousController}`);
       collectLuaMoveEvent(session, "controlChanged", card);
+      registerLuaTemporaryControlReturnEffect(session, card, previousController, returnPhaseMask, returnCount);
       controlled.push(uid);
     } catch {
       // EDOPro-style helpers report successful control changes only.
