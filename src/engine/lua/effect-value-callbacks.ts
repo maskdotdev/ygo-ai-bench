@@ -58,19 +58,33 @@ export function callLuaEffectBattleDamageValue(
   luaEffect: LuaEffectRecord,
   ctx: DuelEffectContext,
   player: PlayerId,
+  amount: number,
   readLuaError: (state: unknown) => string,
 ): number | undefined {
   if (luaEffect.valueRef === undefined) return undefined;
   return withLuaCallbackContext(hostState, ctx, () => {
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.valueRef);
     hostState.pushEffectTable(L, luaEffect.id);
-    lua.lua_pushinteger(L, player);
-    const status = lua.lua_pcall(L, 2, 1, 0);
+    const argCount = pushBattleDamageValueArgs(L, luaEffect, player, amount);
+    const status = lua.lua_pcall(L, argCount, 1, 0);
     if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
     const result = lua.lua_isnumber(L, -1) ? lua.lua_tonumber(L, -1) : undefined;
     lua.lua_pop(L, 1);
     return result;
   });
+}
+
+function pushBattleDamageValueArgs(L: unknown, luaEffect: LuaEffectRecord, player: PlayerId, amount: number): number {
+  if (luaEffect.code !== 82) {
+    lua.lua_pushinteger(L, player);
+    return 2;
+  }
+  lua.lua_pushnil(L);
+  lua.lua_pushinteger(L, amount);
+  lua.lua_pushinteger(L, 0);
+  lua.lua_pushinteger(L, player);
+  lua.lua_pushnil(L);
+  return 6;
 }
 
 function withLuaCallbackContext<T>(hostState: LuaHostState, ctx: DuelEffectContext | undefined, callback: () => T): T {

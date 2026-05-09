@@ -418,7 +418,7 @@ function assertSnapshotChain(chain: unknown, cardUids: ReadonlySet<string>): voi
     if (!cardUids.has(link.sourceUid as string)) throw new Error(`Malformed duel snapshot: ${path}.sourceUid must reference a card`);
     assertSnapshotPlayerId(link.player, `${path}.player`);
     if (link.activationLocation !== undefined && !duelSnapshotLocations.has(link.activationLocation)) throw new Error(`Malformed duel snapshot: ${path}.activationLocation must be a card location`);
-    for (const field of ["chainIndex", "activationSequence", "targetParam", "disableReason"] as const) {
+    for (const field of ["chainIndex", "activationSequence", "targetParam", "disableReason", "effectLabel"] as const) {
       if (link[field] !== undefined && typeof link[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
     }
     if (link.targetUids !== undefined) {

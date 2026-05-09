@@ -33,6 +33,7 @@ export function restoreDuelWithLuaScripts(
   const registeredEffects = loadedScripts.every((result) => result.ok) ? host.registerInitialEffects() : 0;
   restoreKnownLuaChainLimits(session, host, chainLimitRegistryKeys);
   const restoredRegistryKeys = filterRestoredLuaEffects(session, registryKeys, snapshot.state.effects);
+  restoredRegistryKeys.push(...restoreKnownLuaEffects(session, registryKeys, snapshot.state.effects, restoredRegistryKeys));
   prunePendingTriggersWithoutEffects(session.state);
   const missingRegistryKeys = [...registryKeys].filter((key) => !restoredRegistryKeys.includes(key));
   const restoredChainLimitRegistryKeys = luaChainLimitRegistryKeys({ ...snapshot, state: session.state });
@@ -77,6 +78,34 @@ function filterRestoredLuaEffects(session: DuelSession, registryKeys: Set<string
 function mergeRestoredLuaEffectMetadata(effect: DuelEffectDefinition, snapshotEffect: SerializedDuelEffect | undefined): DuelEffectDefinition {
   if (snapshotEffect?.reset === undefined) return effect;
   return { ...effect, reset: { ...snapshotEffect.reset } };
+}
+
+function restoreKnownLuaEffects(
+  session: DuelSession,
+  registryKeys: Set<string>,
+  snapshotEffects: SerializedDuelEffect[],
+  restoredRegistryKeys: string[],
+): string[] {
+  const restored = new Set(restoredRegistryKeys);
+  const added: string[] = [];
+  for (const effect of snapshotEffects) {
+    if (!effect.registryKey || !registryKeys.has(effect.registryKey) || restored.has(effect.registryKey)) continue;
+    if (!isKnownRestorableLuaEffect(effect)) continue;
+    session.state.effects.push({
+      ...effect,
+      range: [...effect.range],
+      ...(effect.reset ? { reset: { ...effect.reset } } : {}),
+      ...(effect.targetRange ? { targetRange: [...effect.targetRange] } : {}),
+      ...(effect.hintTiming ? { hintTiming: [...effect.hintTiming] } : {}),
+      operation: () => {},
+    });
+    added.push(effect.registryKey);
+  }
+  return added;
+}
+
+function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
+  return effect.event === "continuous" && effect.code === 25;
 }
 
 function luaRegistryKeys(snapshot: SerializedDuel): Set<string> {

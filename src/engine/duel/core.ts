@@ -809,6 +809,7 @@ function pushChainLink(
   eventTriggerTiming?: ChainLink["eventTriggerTiming"],
   operationInfos: ChainLink["operationInfos"] = [],
   possibleOperationInfos: ChainLink["possibleOperationInfos"] = [],
+  effectLabel?: number,
 ): void {
   const source = findCard(state, sourceUid);
   const chainLinkId = `chain-${state.log.length + 1}`;
@@ -841,6 +842,7 @@ function pushChainLink(
     ...(possibleOperationInfos.length === 0 ? {} : { possibleOperationInfos: copyDuelOperationInfos(possibleOperationInfos) }),
     ...(targetPlayer === undefined ? {} : { targetPlayer }),
     ...(targetParam === undefined ? {} : { targetParam }),
+    ...(effectLabel === undefined ? {} : { effectLabel }),
   });
   if (source) {
     recordChainActivity(state, player, source, effectId);

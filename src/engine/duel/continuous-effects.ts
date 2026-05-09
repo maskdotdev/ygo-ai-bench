@@ -346,6 +346,16 @@ export function isBattleDamagePreventedByCard(state: DuelState, player: PlayerId
 
 export function changedBattleDamageAmount(state: DuelState, player: PlayerId, amount: number, battleCards: DuelCardInstance[], createContext: ContinuousEffectContextFactory): number {
   let value = amount;
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 82) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
+    const ctx = createContext(effect, source);
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    const next = effect.battleDamageValue?.(ctx, player, value) ?? effect.value;
+    value = applyBattleDamageValue(value, next);
+  }
   for (const card of battleCards) {
     for (const effect of state.effects) {
       if (effect.event !== "continuous" || effect.code !== 208 || effect.sourceUid !== card.uid) continue;
@@ -353,7 +363,7 @@ export function changedBattleDamageAmount(state: DuelState, player: PlayerId, am
       if (!source || !effect.range.includes(source.location)) continue;
       const ctx = createContext(effect, source, card);
       if (effect.canActivate && !effect.canActivate(ctx)) continue;
-      const next = effect.battleDamageValue?.(ctx, player) ?? effect.value;
+      const next = effect.battleDamageValue?.(ctx, player, value) ?? effect.value;
       value = applyBattleDamageValue(value, next);
     }
   }

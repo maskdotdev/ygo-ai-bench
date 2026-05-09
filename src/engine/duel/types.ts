@@ -268,7 +268,7 @@ export interface DuelEffectDefinition {
   copyId?: number;
   targetRange?: [number, number?];
   hintTiming?: [number, number?];
-  battleDamageValue?: (ctx: DuelEffectContext, player: PlayerId) => number | undefined;
+  battleDamageValue?: (ctx: DuelEffectContext, player: PlayerId, amount: number) => number | undefined;
   valueCardPredicate?: (ctx: DuelEffectContext, card: DuelCardInstance) => boolean;
   targetCardPredicate?: (ctx: DuelEffectContext, card: DuelCardInstance) => boolean;
   valuePredicate?: (ctx: DuelEffectContext, reasonPlayer?: PlayerId) => boolean;
@@ -319,6 +319,7 @@ export interface DuelEffectContext {
   possibleOperationInfos?: DuelOperationInfo[];
   targetPlayer?: PlayerId;
   targetParam?: number;
+  effectLabel?: number;
   chainLink?: ChainLink;
   log(detail: string): void;
   moveCard(uid: string, to: DuelLocation, controller?: PlayerId): DuelCardInstance;
@@ -366,6 +367,7 @@ export interface ChainLink {
   possibleOperationInfos?: DuelOperationInfo[];
   targetPlayer?: PlayerId;
   targetParam?: number;
+  effectLabel?: number;
   negated?: boolean;
   disableReason?: number;
   disablePlayer?: PlayerId;

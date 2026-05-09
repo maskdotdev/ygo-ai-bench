@@ -72,6 +72,7 @@ export interface DuelActivationHandlers {
     eventTriggerTiming?: ChainLink["eventTriggerTiming"],
     operationInfos?: ChainLink["operationInfos"],
     possibleOperationInfos?: ChainLink["possibleOperationInfos"],
+    effectLabel?: number,
   ): void;
   hasChainResponses(state: DuelState, player: PlayerId): boolean;
   resolveChain(state: DuelState): void;
@@ -141,6 +142,7 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
       quickEvent?.eventTriggerTiming,
       ctx.operationInfos ?? [],
       ctx.possibleOperationInfos ?? [],
+      ctx.effectLabel,
     );
     placeActivatedSpellTrapCard(session.state, player, source, effect);
     pushDuelLog(session.state, "activate", player, source.name, effect.id);
@@ -246,6 +248,7 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
       trigger.eventTriggerTiming,
       ctx.operationInfos ?? [],
       ctx.possibleOperationInfos ?? [],
+      ctx.effectLabel,
     );
     pushDuelLog(session.state, "trigger", trigger.player, source.name, effect.id);
     markEffectUsed(session.state, effect);

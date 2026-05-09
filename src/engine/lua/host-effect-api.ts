@@ -155,7 +155,12 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     return 0;
   });
   pushEffectMethod(L, effects, "SetLabel", (state, effect) => {
-    effect.label = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    const label = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
+    effect.label = label;
+    if (hostState.activeLuaEffectId === effect.id && hostState.activeContext) {
+      hostState.activeContext.effectLabel = label;
+      if (hostState.activeContext.chainLink) hostState.activeContext.chainLink.effectLabel = label;
+    }
     return 0;
   });
   pushEffectMethod(L, effects, "GetLabel", (state, effect) => {
@@ -508,7 +513,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.copyId === undefined ? {} : { copyId: luaEffect.copyId }),
     ...(luaEffect.targetRange === undefined ? {} : { targetRange: luaEffect.targetRange }),
     ...(luaEffect.hintTiming === undefined ? {} : { hintTiming: luaEffect.hintTiming }),
-    ...(luaEffect.valueRef === undefined ? {} : { battleDamageValue: (ctx, player) => callLuaEffectBattleDamageValue(L, hostState, luaEffect, ctx, player, readLuaError) }),
+    ...(luaEffect.valueRef === undefined ? {} : { battleDamageValue: (ctx, player, amount) => callLuaEffectBattleDamageValue(L, hostState, luaEffect, ctx, player, amount, readLuaError) }),
     ...(luaEffect.valueRef === undefined ? {} : { valueCardPredicate: (ctx, targetCard) => callLuaEffectValueCardPredicate(L, hostState, luaEffect, ctx, targetCard, readLuaError) }),
     ...(luaEffect.valueRef === undefined ? {} : { valuePredicate: (ctx, reasonPlayer) => callLuaEffectValuePredicate(L, hostState, luaEffect, card, ctx, reasonPlayer, readLuaError) }),
     ...(luaEffect.targetRef === undefined ? {} : { targetCardPredicate: (ctx, targetCard) => callLuaEffectCardTargetPredicate(L, hostState, luaEffect, ctx, targetCard) }),
@@ -524,6 +529,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
         return;
       }
       withLuaCallbackContext(hostState, ctx, luaEffect.id, "operation", () => {
+        if (ctx.chainLink?.effectLabel !== undefined) luaEffect.label = ctx.chainLink.effectLabel;
         lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.operationRef);
         const legacyArgs = secondParameterName(L, -1) === "c";
         const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, "operation", legacyArgs, ctx);
