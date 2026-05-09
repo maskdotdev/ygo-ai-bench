@@ -64,6 +64,81 @@ describe("Lua continuous redirect effects", () => {
     expect(session.state.cards.find((card) => card.uid === redirected!.uid)).toMatchObject({ location: "graveyard", reason: 0x4000040 });
   });
 
+  it("prioritizes turn-player field banish redirects over earlier opponent redirects", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Banish Redirect Priority Target", kind: "monster" },
+      { code: "300", name: "Opponent Banish Redirect Source", kind: "monster" },
+      { code: "400", name: "Turn Banish Redirect Source", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 291, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    session.state.turnPlayer = 1;
+
+    const redirected = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const opponentSource = session.state.cards.find((card) => card.controller === 0 && card.code === "300");
+    const turnSource = session.state.cards.find((card) => card.controller === 1 && card.code === "400");
+    expect(redirected).toBeTruthy();
+    expect(opponentSource).toBeTruthy();
+    expect(turnSource).toBeTruthy();
+    moveDuelCard(session.state, redirected!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, opponentSource!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, turnSource!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_REMOVE_REDIRECT)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(1,0)
+        e:SetValue(LOCATION_HAND)
+        c:RegisterEffect(e)
+      end
+      c400={}
+      function c400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_REMOVE_REDIRECT)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(0,1)
+        e:SetValue(LOCATION_GRAVE)
+        c:RegisterEffect(e)
+      end
+      `,
+      "banish-redirect-turn-player-priority.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    expect(
+      session.state.effects
+        .filter((effect) => effect.code === 64)
+        .map((effect) => session.state.cards.find((card) => card.uid === effect.sourceUid)?.code),
+    ).toEqual(["300", "400"]);
+    const moveResult = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      Debug.Message("banish redirect priority " .. Duel.Remove(c, POS_FACEUP_ATTACK, REASON_EFFECT))
+      `,
+      "banish-redirect-turn-player-priority-move.lua",
+    );
+
+    expect(moveResult.ok, moveResult.error).toBe(true);
+    expect(host.messages).toContain("banish redirect priority 1");
+    expect(session.state.cards.find((card) => card.uid === redirected!.uid)).toMatchObject({ location: "graveyard", reason: 0x4000040 });
+    expect(session.state.cards.find((card) => card.uid === opponentSource!.uid)).toMatchObject({ location: "monsterZone" });
+    expect(session.state.cards.find((card) => card.uid === turnSource!.uid)).toMatchObject({ location: "monsterZone" });
+  });
+
   it("applies Lua continuous leave-field redirect effects", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Leave Redirected Monster", kind: "monster" }];
     const session = createDuel({ seed: 43, startingHandSize: 1, cardReader: createCardReader(cards) });
@@ -113,6 +188,81 @@ describe("Lua continuous redirect effects", () => {
     expect(host.messages).toContain("leave redirect checked 100");
     expect(host.messages).toContain("leave redirected 1");
     expect(session.state.cards.find((card) => card.uid === redirected!.uid)).toMatchObject({ location: "banished", reason: 0x4000040 });
+  });
+
+  it("prioritizes turn-player field leave-field redirects over earlier opponent redirects", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Leave Redirect Priority Target", kind: "monster" },
+      { code: "300", name: "Opponent Leave Redirect Source", kind: "monster" },
+      { code: "400", name: "Turn Leave Redirect Source", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 292, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    session.state.turnPlayer = 1;
+
+    const redirected = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const opponentSource = session.state.cards.find((card) => card.controller === 0 && card.code === "300");
+    const turnSource = session.state.cards.find((card) => card.controller === 1 && card.code === "400");
+    expect(redirected).toBeTruthy();
+    expect(opponentSource).toBeTruthy();
+    expect(turnSource).toBeTruthy();
+    moveDuelCard(session.state, redirected!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, opponentSource!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, turnSource!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_LEAVE_FIELD_REDIRECT)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(1,0)
+        e:SetValue(LOCATION_DECK)
+        c:RegisterEffect(e)
+      end
+      c400={}
+      function c400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_LEAVE_FIELD_REDIRECT)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(0,1)
+        e:SetValue(LOCATION_REMOVED)
+        c:RegisterEffect(e)
+      end
+      `,
+      "leave-field-redirect-turn-player-priority.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    expect(
+      session.state.effects
+        .filter((effect) => effect.code === 60)
+        .map((effect) => session.state.cards.find((card) => card.uid === effect.sourceUid)?.code),
+    ).toEqual(["300", "400"]);
+    const moveResult = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      Debug.Message("leave redirect priority " .. Duel.SendtoHand(c, 0, REASON_EFFECT))
+      `,
+      "leave-field-redirect-turn-player-priority-move.lua",
+    );
+
+    expect(moveResult.ok, moveResult.error).toBe(true);
+    expect(host.messages).toContain("leave redirect priority 1");
+    expect(session.state.cards.find((card) => card.uid === redirected!.uid)).toMatchObject({ location: "banished", reason: 0x4000040 });
+    expect(session.state.cards.find((card) => card.uid === opponentSource!.uid)).toMatchObject({ location: "monsterZone" });
+    expect(session.state.cards.find((card) => card.uid === turnSource!.uid)).toMatchObject({ location: "monsterZone" });
   });
 
   it("applies Lua battle-destroy redirects", () => {

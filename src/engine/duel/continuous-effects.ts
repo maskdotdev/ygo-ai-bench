@@ -37,6 +37,11 @@ export interface RedirectDestination {
   deckSequence?: number;
 }
 
+interface RedirectCandidate {
+  match: ContinuousEffectMatch;
+  redirect: RedirectDestination;
+}
+
 export type MaterialUseKind = "fusion" | "synchro" | "xyz" | "link" | "ritual";
 
 export function isEffectActivationPrevented(
@@ -467,7 +472,7 @@ export function battleDestroyRedirectLocation(state: DuelState, uid: string, cre
   const battlingUids = [battle?.attackerUid, battle?.targetUid].filter((id): id is string => Boolean(id));
   const battleOpponent = battlingUids.find((id) => id !== uid);
   const destroyer = battleOpponent ? findCard(state, battleOpponent) : undefined;
-  const candidates: { match: ContinuousEffectMatch; redirect: RedirectDestination }[] = [];
+  const candidates: RedirectCandidate[] = [];
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 204) continue;
     const source = findCard(state, effect.sourceUid);
@@ -482,11 +487,7 @@ export function battleDestroyRedirectLocation(state: DuelState, uid: string, cre
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
     candidates.push({ match: { effect, source, card }, redirect });
   }
-  const [first] = orderReplacementEffects(
-    state,
-    candidates.map((candidate) => candidate.match),
-  );
-  return candidates.find((candidate) => candidate.match === first)?.redirect;
+  return firstOrderedRedirect(state, candidates);
 }
 
 export function isAttackPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
@@ -755,6 +756,7 @@ export function moveDestinationRedirectLocation(
 ): RedirectDestination | undefined {
   const card = findCard(state, uid);
   if (!card) return undefined;
+  const candidates: RedirectCandidate[] = [];
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || !isDestinationRedirectCode(effect.code, destination)) continue;
     const source = findCard(state, effect.sourceUid);
@@ -763,9 +765,10 @@ export function moveDestinationRedirectLocation(
     if (!redirect) continue;
     const ctx = createContext(effect, source, card);
     if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
-    if (!effect.canActivate || effect.canActivate(ctx)) return redirect;
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    candidates.push({ match: { effect, source, card }, redirect });
   }
-  return undefined;
+  return firstOrderedRedirect(state, candidates);
 }
 
 export function leaveFieldRedirectLocation(
@@ -776,6 +779,7 @@ export function leaveFieldRedirectLocation(
 ): RedirectDestination | undefined {
   const card = findCard(state, uid);
   if (!card || !isFieldLocation(card.location) || isFieldLocation(destination)) return undefined;
+  const candidates: RedirectCandidate[] = [];
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 60) continue;
     const source = findCard(state, effect.sourceUid);
@@ -784,9 +788,18 @@ export function leaveFieldRedirectLocation(
     if (!redirect) continue;
     const ctx = createContext(effect, source, card);
     if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
-    if (!effect.canActivate || effect.canActivate(ctx)) return redirect;
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    candidates.push({ match: { effect, source, card }, redirect });
   }
-  return undefined;
+  return firstOrderedRedirect(state, candidates);
+}
+
+function firstOrderedRedirect(state: DuelState, candidates: RedirectCandidate[]): RedirectDestination | undefined {
+  const [first] = orderReplacementEffects(
+    state,
+    candidates.map((candidate) => candidate.match),
+  );
+  return candidates.find((candidate) => candidate.match === first)?.redirect;
 }
 
 export function findIndestructibleEffect(state: DuelState, uid: string, reason: number, createContext: ContinuousEffectContextFactory, reasonPlayer?: PlayerId): ContinuousEffectMatch | undefined {
