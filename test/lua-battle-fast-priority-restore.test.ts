@@ -864,7 +864,7 @@ describe("Lua battle fast priority restore", () => {
     expect(staleBeforePass.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(staleBeforePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     assertLuaRestoreLegalWindow(restored, staleBeforePass, staleBeforePass.state.waitingFor!);
-    expect(restored.session.state).toMatchObject({ damagePasses: [1], pendingTriggers: [], battleWindow: { kind: "endDamageStep", responsePlayer: 0 }, players: { 0: { lifePoints: 8000 } } });
+    expect(restored.session.state).toMatchObject({ damagePasses: [1], pendingTriggers: [], battleWindow: { kind: "endDamageStep", responsePlayer: 0 }, players: { 0: { lifePoints: 7200 } } });
 
     const cleaned = applyLuaRestoreAndAssert(restored, pass!);
     expect(cleaned.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", players: { 0: { lifePoints: 7200 } } });

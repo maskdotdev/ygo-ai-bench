@@ -10,6 +10,8 @@ import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelSta
 
 export interface DuelBattleCallbacks {
   canAttackTarget?(attacker: DuelCardInstance, target: DuelCardInstance): boolean;
+  applyStoredBattleDamage?(battleCards?: DuelCardInstance[]): boolean;
+  changeBattleDamage?(player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
   collectEvent(eventName: DuelEventName, eventCard?: DuelCardInstance | DuelCardInstance[]): void;
   damagePlayer(player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
   destroyCard(uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;
@@ -101,9 +103,10 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
   const pending = state.pendingBattle;
   if (!pending) return false;
   if (pending.resultApplied) {
+    const appliedStoredDamage = callbacks.applyStoredBattleDamage?.(pendingBattleCards(state, pending)) ?? false;
     const resolvedDeferredDestruction = resolveDeferredBattleDestroyed(state, pending, callbacks);
     clearPendingBattleState(state);
-    return resolvedDeferredDestruction;
+    return appliedStoredDamage || resolvedDeferredDestruction;
   }
   const attacker = findCard(state, pending.attackerUid);
   if (!attacker || attacker.location !== "monsterZone") {
@@ -390,10 +393,10 @@ function resolveWithPreservedBattleContext(
   if (target.position === "faceUpAttack") {
     const targetAttack = getBattleAttack(target, callbacks);
     if (attackerAttack > targetAttack) {
-      callbacks.damagePlayer(target.controller, attackerAttack - targetAttack, [attacker, target]);
+      changePreservedBattleDamage(callbacks, target.controller, attackerAttack - targetAttack, [attacker, target]);
       deferBattleDestroyed(pending, target.uid, attacker.controller, attacker.uid);
     } else if (attackerAttack < targetAttack) {
-      callbacks.damagePlayer(attacker.controller, targetAttack - attackerAttack, [attacker, target]);
+      changePreservedBattleDamage(callbacks, attacker.controller, targetAttack - attackerAttack, [attacker, target]);
       deferBattleDestroyed(pending, attacker.uid, target.controller, target.uid);
     } else {
       deferBattleDestroyed(pending, attacker.uid, target.controller, target.uid);
@@ -409,9 +412,19 @@ function resolveWithPreservedBattleContext(
     markBattleResultApplied(state, options);
     return true;
   }
-  if (attackerAttack < targetDefense) callbacks.damagePlayer(attacker.controller, targetDefense - attackerAttack, [attacker, target]);
+  if (attackerAttack < targetDefense) changePreservedBattleDamage(callbacks, attacker.controller, targetDefense - attackerAttack, [attacker, target]);
   markBattleResultApplied(state, options);
   return true;
+}
+
+function changePreservedBattleDamage(callbacks: DuelBattleCallbacks, player: PlayerId, amount: number, battleCards: DuelCardInstance[]): number {
+  return callbacks.changeBattleDamage?.(player, amount, battleCards) ?? callbacks.damagePlayer(player, amount, battleCards);
+}
+
+function pendingBattleCards(state: DuelState, pending: NonNullable<DuelState["pendingBattle"]>): DuelCardInstance[] {
+  const attacker = findCard(state, pending.attackerUid);
+  const target = pending.targetUid === undefined ? undefined : findCard(state, pending.targetUid);
+  return [attacker, target].filter((card): card is DuelCardInstance => card !== undefined);
 }
 
 function deferBattleDestroyed(pending: NonNullable<DuelState["pendingBattle"]>, uid: string, reasonPlayer: PlayerId, reasonCardUid: string): void {
