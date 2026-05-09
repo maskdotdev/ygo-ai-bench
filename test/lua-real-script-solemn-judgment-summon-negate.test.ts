@@ -111,7 +111,137 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     );
     expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "normalSummoned", eventCardUid: summoned!.uid })]));
   });
+
+  it("restores Solemn Judgment's Spell activation negation, LP-half cost, and source destruction", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const solemnCode = "41420027";
+    const starterCode = "936";
+    const drawnCode = "937";
+    const responderCode = "938";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === solemnCode),
+      { code: starterCode, name: "Solemn Judgment Draw Spell", kind: "spell", typeFlags: 0x2 },
+      { code: drawnCode, name: "Solemn Judgment Drawn Card", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: responderCode, name: "Solemn Judgment Spell Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 482, startingHandSize: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [starterCode, drawnCode, responderCode] }, 1: { main: [solemnCode] } });
+    startDuel(session);
+
+    const starter = session.state.cards.find((card) => card.code === starterCode);
+    const drawn = session.state.cards.find((card) => card.code === drawnCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    const solemn = session.state.cards.find((card) => card.code === solemnCode);
+    expect(starter).toBeDefined();
+    expect(drawn).toBeDefined();
+    expect(responder).toBeDefined();
+    expect(solemn).toBeDefined();
+    moveDuelCard(session.state, starter!.uid, "hand", 0);
+    moveDuelCard(session.state, responder!.uid, "hand", 0);
+    moveDuelCard(session.state, solemn!.uid, "spellTrapZone", 1);
+    solemn!.position = "faceDown";
+    solemn!.faceUp = false;
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${starterCode}.lua`) return drawSpellScript();
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(solemnCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(starterCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+
+    const starterAction = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === starter!.uid);
+    expect(starterAction).toBeDefined();
+    applyAndAssert(session, starterAction!);
+    expect(session.state.chain).toHaveLength(1);
+    expect(session.state.chain[0]).toMatchObject({
+      sourceUid: starter!.uid,
+      operationInfos: [{ category: 0x10000, targetUids: [], count: 0, player: 0, parameter: 1 }],
+    });
+
+    const restoredOpenChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restoredOpenChain.restoreComplete, restoredOpenChain.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restoredOpenChain, 1)).toEqual(getGroupedDuelLegalActions(restoredOpenChain.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restoredOpenChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredOpenChain, 1));
+    const solemnAction = getLuaRestoreLegalActions(restoredOpenChain, 1).find((action) => action.type === "activateEffect" && action.uid === solemn!.uid);
+    expect(solemnAction).toBeDefined();
+    const chained = applyLuaRestoreResponse(restoredOpenChain, solemnAction!);
+    expect(chained.ok, chained.error).toBe(true);
+    expect(restoredOpenChain.session.state.players[1].lifePoints).toBe(4000);
+    expect(restoredOpenChain.session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 1, eventValue: 4000, eventReason: 0x80, eventReasonPlayer: 1 })]),
+    );
+    expect(restoredOpenChain.session.state.chain).toHaveLength(2);
+    expect(restoredOpenChain.session.state.chain[1]).toMatchObject({
+      sourceUid: solemn!.uid,
+      operationInfos: [
+        { category: 0x10000000, targetUids: [starter!.uid], count: 1, player: 0, parameter: 0 },
+        { category: 0x1, targetUids: [starter!.uid], count: 1, player: 0, parameter: 0 },
+      ],
+    });
+
+    const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredOpenChain.session), source, reader);
+    expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restoredPendingResolution, 0)).toEqual(getGroupedDuelLegalActions(restoredPendingResolution.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredPendingResolution, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredPendingResolution, 0));
+
+    for (let index = 0; index < 4 && restoredPendingResolution.session.state.chain.length > 0; index += 1) {
+      const passPlayer = restoredPendingResolution.session.state.waitingFor;
+      expect(passPlayer).toBeDefined();
+      const pass = getLuaRestoreLegalActions(restoredPendingResolution, passPlayer!).find((action) => action.type === "passChain");
+      expect(pass).toBeDefined();
+      const resolved = applyLuaRestoreResponse(restoredPendingResolution, pass!);
+      expect(resolved.ok, resolved.error).toBe(true);
+    }
+
+    expect(restoredPendingResolution.session.state.chain).toHaveLength(0);
+    expect(restoredPendingResolution.session.state.players[1].lifePoints).toBe(4000);
+    expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === starter!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === solemn!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === drawn!.uid)).toMatchObject({ location: "deck" });
+    expect(restoredPendingResolution.host.messages).not.toContain("solemn judgment draw spell resolved");
+    expect(restoredPendingResolution.host.messages).not.toContain("solemn judgment chain responder resolved");
+    expect(restoredPendingResolution.session.state.eventHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: starter!.uid }),
+        expect.objectContaining({ eventName: "chainNegated", eventCode: 1024, eventPlayer: 0 }),
+        expect.objectContaining({ eventName: "chainDisabled", eventCode: 1025, eventPlayer: 0 }),
+      ]),
+    );
+    expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventUids: [drawn!.uid] })]),
+    );
+  });
 });
+
+function drawSpellScript(): string {
+  return `
+    local s,id=GetID()
+    function s.initial_effect(c)
+      local e=Effect.CreateEffect(c)
+      e:SetCategory(CATEGORY_DRAW)
+      e:SetType(EFFECT_TYPE_ACTIVATE)
+      e:SetCode(EVENT_FREE_CHAIN)
+      e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+        if chk==0 then return Duel.IsPlayerCanDraw(tp,1) end
+        Duel.SetOperationInfo(0,CATEGORY_DRAW,nil,0,tp,1)
+      end)
+      e:SetOperation(function(e,tp)
+        Duel.Draw(tp,1,REASON_EFFECT)
+        Debug.Message("solemn judgment draw spell resolved")
+      end)
+      c:RegisterEffect(e)
+    end
+  `;
+}
 
 function chainResponderScript(): string {
   return `
