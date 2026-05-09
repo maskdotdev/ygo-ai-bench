@@ -29,13 +29,13 @@ export function installCardStatApi<EffectRecord extends LuaCardApiEffectRecord>(
   pushAnyNumberMatcher(L, "IsOriginalType", session, (card, requested) => requested.some((value) => (printedCardTypeFlags(card) & value) !== 0));
   pushAnyNumberMatcher(L, "IsNotOriginalType", session, (card, requested) => requested.every((value) => (printedCardTypeFlags(card) & value) === 0));
   pushNumberGetter(L, "GetAttack", session, (card) => currentAttack(card, session.state));
-  pushNumberGetter(L, "GetBaseAttack", session, (card) => card?.data.attack ?? 0);
+  pushNumberGetter(L, "GetBaseAttack", session, (card) => currentBaseAttack(card, session.state));
   pushNumberGetter(L, "GetTextAttack", session, (card) => currentAttack(card, session.state));
   lua.lua_pushcfunction(L, (state: unknown) => pushUpdateAttack(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("UpdateAttack"));
   pushBooleanGetter(L, "HasNonZeroAttack", session, (card) => Boolean(card && currentAttack(card, session.state) !== 0));
   pushAnyNumberMatcher(L, "IsAttack", session, (card, requested) => requested.includes(currentAttack(card, session.state)));
-  pushAnyNumberMatcher(L, "IsBaseAttack", session, (card, requested) => requested.includes(card.data.attack ?? 0));
+  pushAnyNumberMatcher(L, "IsBaseAttack", session, (card, requested) => requested.includes(currentBaseAttack(card, session.state)));
   pushAnyNumberMatcher(L, "IsOriginalAttack", session, (card, requested) => requested.includes(card.data.attack ?? 0));
   pushAnyNumberMatcher(L, "IsTextAttack", session, (card, requested) => requested.includes(currentAttack(card, session.state)));
   pushNumberMatcher(L, "IsAttackAbove", session, (card, requested) => currentAttack(card, session.state) >= requested);
@@ -43,14 +43,14 @@ export function installCardStatApi<EffectRecord extends LuaCardApiEffectRecord>(
   pushNumberMatcher(L, "IsOriginalAttackAbove", session, (card, requested) => (card.data.attack ?? 0) >= requested);
   pushNumberMatcher(L, "IsOriginalAttackBelow", session, (card, requested) => (card.data.attack ?? 0) <= requested);
   pushNumberGetter(L, "GetDefense", session, (card) => currentDefense(card, session.state));
-  pushNumberGetter(L, "GetBaseDefense", session, (card) => card?.data.defense ?? 0);
+  pushNumberGetter(L, "GetBaseDefense", session, (card) => currentBaseDefense(card, session.state));
   pushNumberGetter(L, "GetTextDefense", session, (card) => currentDefense(card, session.state));
   lua.lua_pushcfunction(L, (state: unknown) => pushUpdateDefense(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("UpdateDefense"));
   pushBooleanGetter(L, "HasDefense", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x1) !== 0 && (cardTypeFlags(card) & 0x4000000) === 0));
   pushBooleanGetter(L, "HasNonZeroDefense", session, (card) => Boolean(card && currentDefense(card, session.state) !== 0));
   pushAnyNumberMatcher(L, "IsDefense", session, (card, requested) => hasDefense(card) && requested.includes(currentDefense(card, session.state)));
-  pushAnyNumberMatcher(L, "IsBaseDefense", session, (card, requested) => hasDefense(card) && requested.includes(card.data.defense ?? 0));
+  pushAnyNumberMatcher(L, "IsBaseDefense", session, (card, requested) => hasDefense(card) && requested.includes(currentBaseDefense(card, session.state)));
   pushAnyNumberMatcher(L, "IsOriginalDefense", session, (card, requested) => hasDefense(card) && requested.includes(card.data.defense ?? 0));
   pushAnyNumberMatcher(L, "IsTextDefense", session, (card, requested) => hasDefense(card) && requested.includes(currentDefense(card, session.state)));
   pushNumberMatcher(L, "IsDefenseAbove", session, (card, requested) => hasDefense(card) && currentDefense(card, session.state) >= requested);
@@ -365,12 +365,12 @@ function pushUpdateScale<EffectRecord extends LuaCardApiEffectRecord>(L: unknown
 
 function currentAttack(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (card?.assumedProperties?.[7] !== undefined) return card.assumedProperties[7];
-  return (card?.data.attack ?? 0) + (card?.attackModifier ?? 0) + statUpdateEffectValue(card, state, 100);
+  return currentBaseAttack(card, state) + (card?.attackModifier ?? 0) + statUpdateEffectValue(card, state, 100);
 }
 
 function currentDefense(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (card?.assumedProperties?.[8] !== undefined) return card.assumedProperties[8];
-  return (card?.data.defense ?? 0) + (card?.defenseModifier ?? 0) + statUpdateEffectValue(card, state, 104);
+  return currentBaseDefense(card, state) + (card?.defenseModifier ?? 0) + statUpdateEffectValue(card, state, 104);
 }
 
 function currentLevel(card: DuelCardInstance | undefined, state?: DuelState): number {
@@ -388,6 +388,23 @@ function statUpdateEffectValue(card: DuelCardInstance | undefined, state: DuelSt
   return state.effects
     .filter((effect) => effect.event === "continuous" && effect.code === code && effect.sourceUid === card.uid && effect.range.includes(card.location))
     .reduce((total, effect) => total + (effect.value ?? 0), 0);
+}
+
+function currentBaseAttack(card: DuelCardInstance | undefined, state?: DuelState): number {
+  if (!card) return 0;
+  return setBaseStatEffectValue(card, state, 103, card.data.attack ?? 0);
+}
+
+function currentBaseDefense(card: DuelCardInstance | undefined, state?: DuelState): number {
+  if (!card) return 0;
+  return setBaseStatEffectValue(card, state, 107, card.data.defense ?? 0);
+}
+
+function setBaseStatEffectValue(card: DuelCardInstance, state: DuelState | undefined, code: number, fallback: number): number {
+  const effect = state?.effects
+    .filter((candidate) => candidate.event === "continuous" && candidate.code === code && candidate.sourceUid === card.uid && candidate.range.includes(card.location) && candidate.value !== undefined)
+    .at(-1);
+  return effect?.value ?? fallback;
 }
 
 function currentLink(card: DuelCardInstance | undefined): number {

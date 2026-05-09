@@ -240,11 +240,14 @@ export function hasCorePiercingBattleDamage(state: DuelState, card: DuelCardInst
 }
 
 export function getCoreBattleAttackValue(state: DuelState, card: DuelCardInstance, handlers: CoreBattleHandlers): number {
-  return hasDefenseAttack(state, card, handlers.createContinuousContext(state)) ? getCoreBattleDefenseValue(state, card) : Math.max(0, (card.data.attack ?? 0) + (card.attackModifier ?? 0) + continuousStatUpdateValue(state, card, 100));
+  if (hasDefenseAttack(state, card, handlers.createContinuousContext(state))) return getCoreBattleDefenseValue(state, card);
+  const baseAttack = continuousSetBaseStatValue(state, card, 103, card.data.attack ?? 0);
+  return Math.max(0, baseAttack + (card.attackModifier ?? 0) + continuousStatUpdateValue(state, card, 100));
 }
 
 export function getCoreBattleDefenseValue(state: DuelState, card: DuelCardInstance): number {
-  return Math.max(0, (card.data.defense ?? 0) + (card.defenseModifier ?? 0) + continuousStatUpdateValue(state, card, 104));
+  const baseDefense = continuousSetBaseStatValue(state, card, 107, card.data.defense ?? 0);
+  return Math.max(0, baseDefense + (card.defenseModifier ?? 0) + continuousStatUpdateValue(state, card, 104));
 }
 
 export function getCoreAdditionalBattleDamagePlayers(state: DuelState, player: PlayerId, battleCards: DuelCardInstance[] | undefined, handlers: CoreBattleHandlers): PlayerId[] {
@@ -259,4 +262,11 @@ function continuousStatUpdateValue(state: DuelState, card: DuelCardInstance, cod
   return state.effects
     .filter((effect) => effect.event === "continuous" && effect.code === code && effect.sourceUid === card.uid && effect.range.includes(card.location))
     .reduce((total, effect) => total + (effect.value ?? 0), 0);
+}
+
+function continuousSetBaseStatValue(state: DuelState, card: DuelCardInstance, code: number, fallback: number): number {
+  const effect = state.effects
+    .filter((candidate) => candidate.event === "continuous" && candidate.code === code && candidate.sourceUid === card.uid && candidate.range.includes(card.location) && candidate.value !== undefined)
+    .at(-1);
+  return effect?.value ?? fallback;
 }

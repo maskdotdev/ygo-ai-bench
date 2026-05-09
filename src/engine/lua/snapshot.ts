@@ -106,7 +106,7 @@ function restoreKnownLuaEffects(
 }
 
 function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
-  return effect.event === "continuous" && (effect.code === 22 || effect.code === 25 || ((effect.code === 100 || effect.code === 104 || effect.code === 130 || effect.code === 132) && effect.value !== undefined));
+  return effect.event === "continuous" && (effect.code === 22 || effect.code === 25 || ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 132) && effect.value !== undefined));
 }
 
 function luaScriptRegistryKeys(registryKeys: Set<string>, snapshotEffects: SerializedDuelEffect[]): Set<string> {
