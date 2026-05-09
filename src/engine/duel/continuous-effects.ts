@@ -886,19 +886,49 @@ function isFieldLocation(location: DuelLocation): boolean {
 
 function continuousEffectAffectsCard(effect: DuelEffectDefinition, source: DuelCardInstance, card: DuelCardInstance): boolean {
   if (source.uid === card.uid) return true;
-  return (effect.targetRange !== undefined || ((effect.property ?? 0) & 0x800) !== 0) && continuousEffectTargetsPlayer(effect, source, card.controller);
+  if (continuousEffectIsPlayerTarget(effect)) return continuousEffectTargetsPlayer(effect, source, card.controller);
+  if (effect.targetRange !== undefined) return continuousEffectTargetsCardLocation(effect, source, card);
+  return false;
 }
 
 function continuousEffectAppliesToCard(effect: DuelEffectDefinition, source: DuelCardInstance, card: DuelCardInstance, ctx: DuelEffectContext): boolean {
-  if (!continuousEffectAffectsCard(effect, source, card) && !effect.targetCardPredicate) return false;
+  if (!continuousEffectAffectsCard(effect, source, card) && (effect.targetRange !== undefined || continuousEffectIsPlayerTarget(effect) || !effect.targetCardPredicate)) return false;
   return !effect.targetCardPredicate || effect.targetCardPredicate(ctx, card);
 }
 
 function continuousEffectTargetsPlayer(effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId): boolean {
-  if (effect.targetRange === undefined && ((effect.property ?? 0) & 0x800) === 0) return source.controller === player;
+  if (effect.targetRange === undefined && !continuousEffectIsPlayerTarget(effect)) return source.controller === player;
   const [selfTarget = 0, opponentTarget = 0] = effect.targetRange ?? [1, 0];
   if (source.controller === player) return selfTarget !== 0;
   return opponentTarget !== 0;
+}
+
+function continuousEffectIsPlayerTarget(effect: DuelEffectDefinition): boolean {
+  return ((effect.property ?? 0) & 0x800) !== 0;
+}
+
+function continuousEffectTargetsCardLocation(effect: DuelEffectDefinition, source: DuelCardInstance, card: DuelCardInstance): boolean {
+  const [selfMask = 0, opponentMask = 0] = effect.targetRange ?? [];
+  return locationMaskMatchesCard(card, source.controller === card.controller ? selfMask : opponentMask);
+}
+
+function locationMaskMatchesCard(card: DuelCardInstance, mask: number): boolean {
+  if ((mask & locationMaskFromLocation(card.location)) !== 0) return true;
+  if ((mask & 0x400) !== 0 && card.location === "spellTrapZone") return true;
+  if ((mask & 0x800) !== 0 && card.location === "monsterZone" && card.sequence >= 0 && card.sequence <= 4) return true;
+  return (mask & 0x1000) !== 0 && card.location === "monsterZone" && card.sequence >= 5 && card.sequence <= 6;
+}
+
+function locationMaskFromLocation(location: DuelLocation): number {
+  if (location === "deck") return 0x01;
+  if (location === "hand") return 0x02;
+  if (location === "monsterZone") return 0x04;
+  if (location === "spellTrapZone") return 0x08;
+  if (location === "graveyard") return 0x10;
+  if (location === "banished") return 0x20;
+  if (location === "extraDeck") return 0x40;
+  if (location === "overlay") return 0x80;
+  return 0;
 }
 
 function isIndestructibleCodeForReason(code: number | undefined, reason: number): boolean {

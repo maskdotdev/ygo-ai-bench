@@ -462,6 +462,70 @@ describe("Lua continuous redirect effects", () => {
     expect(session.state.cards.find((card) => card.uid === deckRedirected!.uid)).toMatchObject({ location: "banished", reason: 0x4000040 });
   });
 
+  it("applies field redirect target ranges as location masks", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Grave Redirect Source", kind: "monster" },
+      { code: "200", name: "Grave Redirected Monster", kind: "monster" },
+      { code: "300", name: "Field Open Monster", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 291, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const graveRedirected = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    const fieldOpen = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(source).toBeTruthy();
+    expect(graveRedirected).toBeTruthy();
+    expect(fieldOpen).toBeTruthy();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, graveRedirected!.uid, "graveyard", 0);
+    moveDuelCard(session.state, fieldOpen!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_TO_HAND_REDIRECT)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(LOCATION_GRAVE,0)
+        e:SetValue(LOCATION_REMOVED)
+        e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("grave location redirect checked " .. e:GetHandler():GetCode())
+          return true
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "field-location-range-redirect.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const moveResult = host.loadScript(
+      `
+      local grave_card=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_GRAVE, 0, 1, 1, nil)
+      local field_card=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_MZONE, 0, 1, 1, nil)
+      Debug.Message("grave range redirected " .. Duel.SendtoHand(grave_card, 0, REASON_EFFECT))
+      Debug.Message("grave range open " .. Duel.SendtoHand(field_card, 0, REASON_EFFECT))
+      `,
+      "field-location-range-redirect-move.lua",
+    );
+
+    expect(moveResult.ok, moveResult.error).toBe(true);
+    expect(host.messages).toContain("grave location redirect checked 100");
+    expect(host.messages).toContain("grave range redirected 1");
+    expect(host.messages).toContain("grave range open 1");
+    expect(session.state.cards.find((card) => card.uid === graveRedirected!.uid)).toMatchObject({ location: "banished", reason: 0x4000040 });
+    expect(session.state.cards.find((card) => card.uid === fieldOpen!.uid)).toMatchObject({ location: "hand", reason: 0x40 });
+  });
+
   it("reports zero when redirected Lua move helpers hit destination restrictions", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Blocked Redirect Source", kind: "monster" },
