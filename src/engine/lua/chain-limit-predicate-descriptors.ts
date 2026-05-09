@@ -36,27 +36,27 @@ export function literalCapturedPlayerComparisonPredicate(L: unknown, index: numb
   return undefined;
 }
 
-export function literalResponseMatchesChainPlayerOrSpellTrapNonActivatePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): boolean {
-  if (hasNonEnvironmentUpvalues(L, index)) return false;
+export function literalResponseMatchesChainPlayerOrSourceTypeNonActivatePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
+  if (hasNonEnvironmentUpvalues(L, index)) return undefined;
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
-  if (!snippet) return false;
+  if (!snippet) return undefined;
   const params = luaFunctionParams(snippet);
   const effectParam = params?.[0];
   const responsePlayerParam = params?.[1];
   const chainPlayerParam = params?.[2];
-  if (!effectParam || !responsePlayerParam || !chainPlayerParam) return false;
+  if (!effectParam || !responsePlayerParam || !chainPlayerParam) return undefined;
   const returnExpression = lastReturnExpression(snippet);
-  if (!returnExpression) return false;
+  if (!returnExpression) return undefined;
   const terms = returnExpression.split(/\s+or\s+/).map((term) => trimOuterParens(term.trim())).filter(Boolean);
-  if (terms.length !== 2) return false;
+  if (terms.length !== 2) return undefined;
   const equality = terms.find((term) => simpleEqualityCompares(term, responsePlayerParam, chainPlayerParam));
-  const spellTrapTerm = terms.find((term) => term !== equality);
-  if (!equality || !spellTrapTerm) return false;
+  const sourceTypeTerm = terms.find((term) => term !== equality);
+  if (!equality || !sourceTypeTerm) return undefined;
   const effect = escapeRegExp(effectParam);
-  const spellTrapEffect = `${effect}\\s*:\\s*IsSpellTrapEffect\\s*\\(\\s*\\)`;
   const nonActivation = `not\\s+${effect}\\s*:\\s*IsHasType\\s*\\(\\s*(?:EFFECT_TYPE_ACTIVATE|16)\\s*\\)`;
-  return new RegExp(`^${spellTrapEffect}\\s+and\\s+${nonActivation}$`).test(spellTrapTerm)
-    || new RegExp(`^${nonActivation}\\s+and\\s+${spellTrapEffect}$`).test(spellTrapTerm);
+  const sourceType = sourceTypeTerm.match(new RegExp(`^${effect}\\s*:\\s*(IsSpellTrapEffect|IsSpellEffect|IsTrapEffect)\\s*\\(\\s*\\)\\s+and\\s+${nonActivation}$`))
+    ?? sourceTypeTerm.match(new RegExp(`^${nonActivation}\\s+and\\s+${effect}\\s*:\\s*(IsSpellTrapEffect|IsSpellEffect|IsTrapEffect)\\s*\\(\\s*\\)$`));
+  return sourceType?.[1] ? sourceTypeNonActivationMethodMask(sourceType[1]) : undefined;
 }
 
 export function literalResponseMatchesChainPlayerOrActiveTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
@@ -169,6 +169,13 @@ function sourceTypeMethodMask(method: string): number | undefined {
   if (method === "IsMonster") return 0x1;
   if (method === "IsSpell") return 0x2;
   if (method === "IsTrap") return 0x4;
+  return undefined;
+}
+
+function sourceTypeNonActivationMethodMask(method: string): number | undefined {
+  if (method === "IsSpellTrapEffect") return 0x6;
+  if (method === "IsSpellEffect") return 0x2;
+  if (method === "IsTrapEffect") return 0x4;
   return undefined;
 }
 

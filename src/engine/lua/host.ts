@@ -194,6 +194,10 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
   if (allowedActiveTypeForOpponent?.[1]) {
     return { ...limit, allows: (effect, player, chainPlayer) => player === chainPlayer || (sourceTypeFlags(hostState, effect.sourceUid) & Number(allowedActiveTypeForOpponent[1])) !== 0 };
   }
+  const sourceTypeNonActivateForOpponent = predicate?.match(/^closure:source-type-non-activate-response-player:(\d+)$/);
+  if (sourceTypeNonActivateForOpponent?.[1]) {
+    return { ...limit, allows: (effect, player, chainPlayer) => player === chainPlayer || ((sourceTypeFlags(hostState, effect.sourceUid) & Number(sourceTypeNonActivateForOpponent[1])) !== 0 && (effectTypeFlags(hostState, effect.id) & 0x10) === 0) };
+  }
   if (predicate === "closure:spell-trap-non-activate-response-player") {
     return { ...limit, allows: (effect, player, chainPlayer) => player === chainPlayer || ((sourceTypeFlags(hostState, effect.sourceUid) & 0x6) !== 0 && (effectTypeFlags(hostState, effect.id) & 0x10) === 0) };
   }
