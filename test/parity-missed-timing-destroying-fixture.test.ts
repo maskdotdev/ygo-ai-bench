@@ -1,0 +1,230 @@
+import { describe, expect, it } from "vitest";
+import { createCardReader } from "#engine/data-loaders.js";
+import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
+import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { absentTriggerActivationGroup, summonGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+
+describe("EDOPro parity destroying missed timing fixtures", () => {
+  it("keeps optional if triggers while optional when destroying triggers miss timing", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Destroying Starter", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "400", name: "Destroying Optional When", kind: "monster", attack: 1500, defense: 1600 },
+      { code: "500", name: "Destroying Optional If", kind: "monster", attack: 1200, defense: 1200 },
+      { code: "600", name: "Destroying Body", kind: "monster", attack: 900, defense: 900 },
+      { code: "700", name: "After Destroying Body", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const fixture: ScriptedDuelFixture = {
+      name: "destroying missed timing fixture",
+      options: { seed: 286, startingHandSize: 5 },
+      decks: {
+        0: { main: ["100", "400", "500", "600", "700"] },
+        1: { main: ["600", "600", "600", "600", "600"] },
+      },
+      setup: {
+        moveCards: [
+          { player: 0, code: "600", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+          { player: 0, code: "700", from: "hand", to: "monsterZone", position: "faceUpAttack" },
+        ],
+        effects: [
+          {
+            id: "destroying-multistep",
+            player: 0,
+            code: "100",
+            location: "hand",
+            event: "ignition",
+            range: ["hand"],
+            moveCardsOnResolve: [
+              { player: 0, code: "600", from: "monsterZone", to: "graveyard", collectEvent: "destroying", eventIsLast: false },
+              { player: 0, code: "700", from: "monsterZone", to: "graveyard" },
+            ],
+            logMessage: "Destroying multi step resolved",
+          },
+          {
+            id: "destroying-optional-when",
+            player: 0,
+            code: "400",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "destroying",
+            triggerTiming: "when",
+            range: ["hand"],
+            logMessage: "Destroying optional when should not resolve",
+          },
+          {
+            id: "destroying-optional-if",
+            player: 0,
+            code: "500",
+            location: "hand",
+            event: "trigger",
+            triggerEvent: "destroying",
+            triggerTiming: "if",
+            range: ["hand"],
+            logMessage: "Destroying optional if resolved",
+          },
+        ],
+      },
+      responses: [
+        makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "destroying-multistep" }), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the open ignition effect restorable before the multi-step EVENT_DESTROY timing check",
+            windowId: 0,
+            windowKind: "open",
+            waitingFor: 0,
+            phase: "main1",
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            legalActionCounts: { 0: 11, 1: 0 },
+            legalActionGroupCounts: { 0: 4, 1: 0 },
+            legalActions: [{ type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "destroying-multistep", count: 1 }],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "destroying-multistep", count: 1 }],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
+          },
+          after: {
+            source: "edopro",
+            note: "EDOPro drops optional when destroying triggers when EVENT_DESTROY is followed by another event boundary, while optional if remains available",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "destroying-optional-if", eventName: "destroying", eventCode: 1010, eventCardUid: "p0-deck-600-3" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroying-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroying-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "destroying-optional-if", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "destroying-optional-if", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroying-optional-when" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(0, "destroying-optional-when", "turnOptional", 1, "triggerBucket")],
+            logIncludes: ["Destroying multi step resolved"],
+          },
+        }),
+        makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "destroying-optional-if" }), {
+          snapshotRestore: "both",
+          before: {
+            source: "edopro",
+            note: "EDOPro keeps the surviving optional if EVENT_DESTROY trigger restorable without resurrecting the missed optional when trigger",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            waitingFor: 0,
+            pendingTriggers: [{ player: 0, effectId: "destroying-optional-if", eventName: "destroying", eventCode: 1010, eventCardUid: "p0-deck-600-3" }],
+            pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroying-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroying-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "destroying-optional-if", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "destroying-optional-if", "turnOptional", 1, 1),
+            ],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "destroying-optional-when" }],
+            absentLegalActionGroups: [absentTriggerActivationGroup(0, "destroying-optional-when", "turnOptional", 1, "triggerBucket")],
+          },
+          after: {
+            source: "edopro",
+            note: "EDOPro resolves the surviving optional if EVENT_DESTROY trigger after restore without resurrecting the missed optional when trigger",
+            windowId: 2,
+            windowKind: "open",
+            waitingFor: 0,
+            pendingTriggers: [],
+            pendingTriggerBuckets: [],
+            chain: [],
+            chainPasses: [],
+            locationCounts: { graveyard: { "600": 1, "700": 1 }, hand: { "100": 1, "400": 1, "500": 1 } },
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroying-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroying-optional-if" },
+            ],
+            absentLegalActionGroups: [
+              {
+                player: 0,
+                label: "Trigger Activations",
+                windowId: 2,
+                windowKind: "open",
+                triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+                actions: [
+                  { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroying-optional-when" },
+                  { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroying-optional-if" },
+                ],
+              },
+            ],
+            logIncludes: ["Destroying optional if resolved"],
+          },
+        }),
+      ],
+      expected: {
+        source: "edopro",
+        note: "EDOPro final state resolves the optional if EVENT_DESTROY trigger without resurrecting the missed optional when trigger",
+        windowId: 2,
+        windowKind: "open",
+        waitingFor: 0,
+        pendingTriggers: [],
+        pendingTriggerBuckets: [],
+        chain: [],
+        chainPasses: [],
+        locationCounts: { graveyard: { "600": 1, "700": 1 }, hand: { "100": 1, "400": 1, "500": 1 } },
+        legalActionCounts: { 0: 9, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "destroying-multistep", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 2,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "destroying-multistep", count: 1 }],
+          },
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "100", location: "hand" },
+            { type: "normalSummon", player: 0, code: "400", location: "hand" },
+            { type: "normalSummon", player: 0, code: "500", location: "hand" },
+            { type: "setMonster", player: 0, code: "100", location: "hand" },
+            { type: "setMonster", player: 0, code: "400", location: "hand" },
+            { type: "setMonster", player: 0, code: "500", location: "hand" },
+          ], 1, 2),
+          turnGroup(2),
+        ],
+        absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "destroying-optional-when" }],
+        absentLegalActionGroups: [absentTriggerActivationGroup(0, "destroying-optional-when", "turnOptional", 2, "open")],
+        logIncludes: ["Destroying optional if resolved"],
+      },
+    };
+
+    expect(runScriptedDuelFixture(fixture, { cardReader: createCardReader(cards) })).toEqual({ ok: true, failures: [] });
+  });
+});
