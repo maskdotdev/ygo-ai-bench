@@ -770,7 +770,6 @@ function findReplacementEffects(
     if (!source || !effect.range.includes(source.location)) continue;
     const ctx = createContext(effect, source, card);
     if (!continuousEffectAffectsCard(effect, source, card)) continue;
-    if (effect.valueCardPredicate && !effect.valueCardPredicate(ctx, card)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) matches.push({ effect, source, card });
   }
   return matches;

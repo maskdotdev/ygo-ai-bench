@@ -663,8 +663,8 @@ function canEnterDuelPhase(state: DuelState, player: PlayerId, phase: DuelPhase)
 function createReplacementEffectHandlers(state: DuelState): ReplacementEffectHandlers {
   return {
     createContinuousContext: createContinuousEffectContext(state),
-    createReplacementContext(effect, source, card, checkOnly) {
-      return createEffectContext(state, source, effect.controller, undefined, card, [], checkOnly);
+    createReplacementContext(effect, source, card, checkOnly, reason, destination, reasonPlayer) {
+      return Object.assign(createEffectContext(state, source, effect.controller, undefined, card, [], checkOnly), { eventReason: reason, eventReasonPlayer: reasonPlayer ?? card.controller, eventDestination: destination });
     },
     log(action, player, cardName, detail) {
       pushDuelLog(state, action, player, cardName, detail);

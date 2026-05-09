@@ -2,19 +2,23 @@ import fengari from "fengari";
 import { locationMatchesCardMask, readCardUid } from "#lua/api-utils.js";
 import { cardCodes, isSetcodeMatch, readRequestedCodes, readRequestedNumbers } from "#lua/card-code-utils.js";
 import { cardLink, cardRank, cardTypeFlags } from "#lua/card-stat-api.js";
-import type { CardPosition, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
+import type { CardPosition, DuelCardInstance, DuelEffectContext, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
-export function installCardPreviousStateApi(L: unknown, session: DuelSession): void {
+export interface LuaCardPreviousStateApiState {
+  activeContext?: DuelEffectContext | undefined;
+}
+
+export function installCardPreviousStateApi(L: unknown, session: DuelSession, hostState?: LuaCardPreviousStateApiState): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = readRequestedNumbers(state, 2);
-    lua.lua_pushboolean(state, Boolean(card && requested.some((value) => locationMatchesCardMask(card, value))));
+    lua.lua_pushboolean(state, Boolean(card && requested.some((value) => isDestinationMatch(card, value, hostState))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsDestination"));
-  pushNumberGetter(L, "GetDestination", session, (card) => leaveFieldDestinationMask(card));
+  pushNumberGetter(L, "GetDestination", session, (card) => pendingDestinationMask(card, hostState) ?? leaveFieldDestinationMask(card));
   pushNumberGetter(L, "GetLeaveFieldDest", session, (card) => leaveFieldDestinationMask(card));
   pushAnyNumberMatcher(L, "IsLeaveFieldDest", session, (card, requested) => isLeaveFieldDestination(card) && requested.some((value) => locationMatchesCardMask(card, value)));
   pushNumberGetter(L, "GetPreviousLocation", session, (card) => locationMaskFromLocation(card?.previousLocation));
@@ -159,6 +163,17 @@ function locationMaskFromLocation(location: DuelCardInstance["location"] | undef
 function leaveFieldDestinationMask(card: DuelCardInstance | undefined): number {
   if (!isLeaveFieldDestination(card)) return 0;
   return locationMaskFromLocation(card.location);
+}
+
+function pendingDestinationMask(card: DuelCardInstance | undefined, hostState: LuaCardPreviousStateApiState | undefined): number | undefined {
+  if (!card || hostState?.activeContext?.eventCard?.uid !== card.uid || hostState.activeContext.eventDestination === undefined) return undefined;
+  return locationMaskFromLocation(hostState.activeContext.eventDestination);
+}
+
+function isDestinationMatch(card: DuelCardInstance, requested: number, hostState: LuaCardPreviousStateApiState | undefined): boolean {
+  const pending = pendingDestinationMask(card, hostState);
+  if (pending !== undefined) return (pending & requested) !== 0;
+  return locationMatchesCardMask(card, requested);
 }
 
 function isLeaveFieldDestination(card: DuelCardInstance | undefined): card is DuelCardInstance {

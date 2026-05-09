@@ -299,6 +299,7 @@ export interface DuelEffectContext {
   eventValue?: number;
   eventReason?: number;
   eventReasonPlayer?: PlayerId;
+  eventDestination?: DuelLocation;
   eventReasonCardUid?: string;
   eventReasonEffectId?: number;
   relatedEffectId?: number;

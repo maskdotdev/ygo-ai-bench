@@ -38,9 +38,9 @@ export function sendCoreDuelCardToGraveyard(
 ): DuelCardInstance {
   if ((reason & duelReason.release) !== 0 && isReleasePrevented(state, uid, reason, handlers.createContinuousContext(state))) throw new Error(`Card ${uid} cannot be released`);
   const replacementHandlers = handlers.createReplacementHandlers(state);
-  const replacement = applyReleaseReplacement(state, uid, controller, reason, replacementHandlers);
+  const replacement = applyReleaseReplacement(state, uid, controller, reason, reasonPlayer, replacementHandlers);
   if (replacement) return replacement;
-  const sendReplacement = applySendReplacement(state, uid, controller, reason, replacementHandlers);
+  const sendReplacement = applySendReplacement(state, uid, controller, reason, reasonPlayer, replacementHandlers);
   if (sendReplacement) return sendReplacement;
   const createContext = handlers.createContinuousContext(state);
   if (shouldRedirectToGraveyardMove(state, uid, createContext)) return banishCoreDuelCard(state, uid, controller, reason | duelReason.redirect, reasonPlayer, handlers);
@@ -68,7 +68,7 @@ export function destroyCoreDuelCard(
   const replacementHandlers = handlers.createReplacementHandlers(state);
   const indestructible = applyDestroyPrevention(state, uid, controller, reason, reasonPlayer, replacementHandlers);
   if (indestructible) return indestructible;
-  const replacement = applyDestroyReplacement(state, uid, controller, reason, replacementHandlers);
+  const replacement = applyDestroyReplacement(state, uid, controller, reason, reasonPlayer, replacementHandlers);
   if (replacement) return replacement;
   const target = findCard(state, uid);
   if (!target) throw new Error(`Card ${uid} is not in the duel`);

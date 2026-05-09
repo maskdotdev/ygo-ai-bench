@@ -2,25 +2,26 @@ import fengari from "fengari";
 import { cardFieldNames } from "#lua/card-field-names.js";
 import { copyGlobalFunctionToField, readCardUid, readTableNumberField } from "#lua/api-utils.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
-import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelCardInstance, DuelEffectContext, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
 export interface LuaCardReasonApiState {
+  activeContext?: DuelEffectContext | undefined;
   pushEffectTable: (state: unknown, id: number) => void;
 }
 
 export function installCardReasonApi(L: unknown, session: DuelSession, hostState: LuaCardReasonApiState): void {
-  pushNumberGetter(L, "GetReason", session, (card) => card?.reason ?? 0);
+  pushNumberGetter(L, "GetReason", session, (card) => reasonForCard(card, hostState));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session, 1);
     const requested = readRequestedNumbers(state, 2);
-    lua.lua_pushboolean(state, Boolean(card && requested.some((value) => ((card.reason ?? 0) & value) !== 0)));
+    lua.lua_pushboolean(state, Boolean(card && requested.some((value) => (reasonForCard(card, hostState) & value) !== 0)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsReason"));
-  pushNumberGetter(L, "GetReasonPlayer", session, (card) => card?.reasonPlayer ?? card?.controller ?? 0);
-  pushPlayerMatcher(L, "IsReasonPlayer", session, (card, requested) => requested.includes(card.reasonPlayer ?? card.controller));
+  pushNumberGetter(L, "GetReasonPlayer", session, (card) => reasonPlayerForCard(card, hostState));
+  pushPlayerMatcher(L, "IsReasonPlayer", session, (card, requested) => requested.includes(reasonPlayerForCard(card, hostState)));
   pushNumberGetter(L, "GetTurnID", session, (card) => card?.turnId ?? 0);
   pushNumberGetter(L, "GetTurnCounter", session, (card) => card?.turnCounter ?? 0);
   lua.lua_pushcfunction(L, (state: unknown) => pushSetTurnCounter(state, session));
@@ -73,6 +74,16 @@ function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, g
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function reasonForCard(card: DuelCardInstance | undefined, hostState: LuaCardReasonApiState): number {
+  if (card && hostState.activeContext?.eventCard?.uid === card.uid && hostState.activeContext.eventReason !== undefined) return hostState.activeContext.eventReason;
+  return card?.reason ?? 0;
+}
+
+function reasonPlayerForCard(card: DuelCardInstance | undefined, hostState: LuaCardReasonApiState): PlayerId {
+  if (card && hostState.activeContext?.eventCard?.uid === card.uid && hostState.activeContext.eventReasonPlayer !== undefined) return hostState.activeContext.eventReasonPlayer;
+  return card?.reasonPlayer ?? card?.controller ?? 0;
 }
 
 function pushPlayerMatcher(L: unknown, fieldName: string, session: DuelSession, matcher: (card: DuelCardInstance, requested: PlayerId[]) => boolean): void {
