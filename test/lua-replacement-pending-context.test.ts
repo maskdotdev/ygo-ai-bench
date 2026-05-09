@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createDuel, loadDecks, startDuel } from "#duel/core.js";
+import { createDuel, destroyDuelCard, loadDecks, moveDuelCard, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -92,6 +93,84 @@ describe("Lua replacement pending move context", () => {
     expect(host.messages).toContain("pending send op 300");
     expect(host.messages).toContain("pending effect send result 0");
     expect(session.state.cards.find((card) => card.uid === effectReasonThreat!.uid)).toMatchObject({ location: "hand" });
+    expect(session.state.cards.find((card) => card.uid === replacementCost!.uid)).toMatchObject({ location: "graveyard" });
+  });
+
+  it("exposes pending reason player to single-card destroy replacement targets", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Own Effect Destroy Replacement", kind: "monster" },
+      { code: "101", name: "Opponent Effect Destroy Replacement", kind: "monster" },
+      { code: "300", name: "Discard Replacement Cost", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 287, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "101", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const ownEffectThreat = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const opponentEffectThreat = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "101");
+    const replacementCost = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(ownEffectThreat).toBeTruthy();
+    expect(opponentEffectThreat).toBeTruthy();
+    expect(replacementCost).toBeTruthy();
+    moveDuelCard(session.state, ownEffectThreat!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, opponentEffectThreat!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local function install(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_CONTINUOUS)
+        e:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+        e:SetCode(EFFECT_DESTROY_REPLACE)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          local c=e:GetHandler()
+          if chk==0 then
+            Debug.Message("pending destroy check " .. c:GetCode() .. "/" .. c:GetReasonPlayer() .. "/" .. tostring(c:IsReasonPlayer(1-tp)))
+            return not c:IsReason(REASON_REPLACE) and c:IsReason(REASON_EFFECT) and c:IsReasonPlayer(1-tp)
+          end
+          Debug.Message("pending destroy accepted " .. c:GetCode())
+          return true
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          local cost=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode,300), tp, LOCATION_HAND, 0, 1, 1, e:GetHandler())
+          Debug.Message("pending destroy op " .. cost:GetFirst():GetCode())
+          Duel.SendtoGrave(cost, REASON_EFFECT+REASON_DISCARD+REASON_REPLACE)
+        end)
+        c:RegisterEffect(e)
+      end
+      c100={}
+      function c100.initial_effect(c)
+        install(c)
+      end
+      c101={}
+      function c101.initial_effect(c)
+        install(c)
+      end
+      `,
+      "destroy-replacement-reason-player-context.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    host.messages.splice(0, host.messages.length);
+
+    destroyDuelCard(session.state, ownEffectThreat!.uid, 0, duelReason.effect | duelReason.destroy, 0);
+    expect(host.messages).toContain("pending destroy check 100/0/false");
+    expect(host.messages).not.toContain("pending destroy accepted 100");
+    expect(host.messages).not.toContain("pending destroy op 300");
+    expect(session.state.cards.find((card) => card.uid === ownEffectThreat!.uid)).toMatchObject({ location: "graveyard" });
+    expect(session.state.cards.find((card) => card.uid === replacementCost!.uid)).toMatchObject({ location: "hand" });
+
+    destroyDuelCard(session.state, opponentEffectThreat!.uid, 0, duelReason.effect | duelReason.destroy, 1);
+    expect(host.messages).toContain("pending destroy check 101/1/true");
+    expect(host.messages).toContain("pending destroy accepted 101");
+    expect(host.messages).toContain("pending destroy op 300");
+    expect(session.state.cards.find((card) => card.uid === opponentEffectThreat!.uid)).toMatchObject({ location: "monsterZone" });
     expect(session.state.cards.find((card) => card.uid === replacementCost!.uid)).toMatchObject({ location: "graveyard" });
   });
 });
