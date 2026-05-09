@@ -91,7 +91,7 @@ function pushIsImmuneToEffect<EffectRecord extends LuaCardApiEffectRecord>(L: un
     lua.lua_pushboolean(L, false);
     return 1;
   }
-  const immune = matchingLuaEffects(session.state, card, 1, hostState).some((effect) => immuneEffectApplies(L, effect, card, targetEffect, hostState));
+  const immune = luaCardIsImmuneToEffect(L, session, hostState, card, targetEffect);
   lua.lua_pushboolean(L, immune);
   return 1;
 }
@@ -112,10 +112,7 @@ export function canLuaCardBeEffectTarget<EffectRecord extends LuaCardApiEffectRe
   targetEffect: EffectRecord | undefined,
 ): boolean {
   if (!card) return false;
-  const immune =
-    targetEffect &&
-    ((targetEffect.property ?? 0) & 0x80) === 0 &&
-    matchingLuaEffects(session.state, card, 1, hostState).some((effect) => immuneEffectApplies(L, effect, card, targetEffect, hostState));
+  const immune = luaCardIsImmuneToEffect(L, session, hostState, card, targetEffect);
   if (immune) return false;
   return !matchingLuaEffects(session.state, card, 71, hostState).some((effect) => cannotTargetEffectApplies(L, session, effect, card, targetEffect, hostState));
 }
@@ -124,11 +121,7 @@ function pushIsCanBeDisabledByEffect<EffectRecord extends LuaCardApiEffectRecord
   const card = readCard(L, session);
   const effectId = lua.lua_istable(L, 2) ? readTableNumberField(L, 2, "__effect_id") : undefined;
   const targetEffect = effectId === undefined ? undefined : hostState.effects.get(effectId);
-  const immune =
-    card &&
-    targetEffect &&
-    ((targetEffect.property ?? 0) & 0x80) === 0 &&
-    matchingLuaEffects(session.state, card, 1, hostState).some((effect) => immuneEffectApplies(L, effect, card, targetEffect, hostState));
+  const immune = card && luaCardIsImmuneToEffect(L, session, hostState, card, targetEffect);
   lua.lua_pushboolean(L, Boolean(card && isNegatableCard(session.state, card) && !immune && !isDisablePrevented(session.state, card, createLuaMaterialCheckContext(session.state))));
   return 1;
 }
@@ -139,6 +132,10 @@ function pushIsDestructable<EffectRecord extends LuaCardApiEffectRecord>(L: unkn
   const targetEffect = effectId === undefined ? undefined : hostState.effects.get(effectId);
   const reason = duelReason.effect | duelReason.destroy;
   if (!card || !canMoveDuelCardToLocation(session.state, card.uid, "graveyard", reason)) {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+  if (luaCardIsImmuneToEffect(L, session, hostState, card, targetEffect)) {
     lua.lua_pushboolean(L, false);
     return 1;
   }
@@ -179,6 +176,17 @@ function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, 
 function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefined {
   const uid = readTableStringField(L, 1, "__duel_uid");
   return uid ? session.state.cards.find((card) => card.uid === uid) : undefined;
+}
+
+function luaCardIsImmuneToEffect<EffectRecord extends LuaCardApiEffectRecord>(
+  L: unknown,
+  session: DuelSession,
+  hostState: LuaCardApiState<EffectRecord>,
+  card: DuelCardInstance,
+  targetEffect: EffectRecord | undefined,
+): boolean {
+  if (!targetEffect || ((targetEffect.property ?? 0) & 0x80) !== 0) return false;
+  return matchingLuaEffects(session.state, card, 1, hostState).some((effect) => immuneEffectApplies(L, effect, card, targetEffect, hostState));
 }
 
 function immuneEffectApplies<EffectRecord extends LuaCardApiEffectRecord>(

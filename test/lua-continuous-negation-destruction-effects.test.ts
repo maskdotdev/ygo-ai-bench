@@ -710,6 +710,66 @@ describe("Lua continuous negation and destruction effects", () => {
     expect(host.messages).toContain("destructible group 3");
   });
 
+  it("treats immune cards as not destructible by matching effects", () => {
+    const cards: DuelCardData[] = [
+      { code: "200", name: "Immune Destruction Target", kind: "monster" },
+      { code: "300", name: "Open Destruction Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 167, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["200", "300"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_IMMUNE_EFFECT)
+        e:SetRange(LOCATION_HAND)
+        e:SetValue(function(e,te)
+          return te:GetOwnerPlayer()==1
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "destructible-immunity-setup.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const query = host.loadScript(
+      `
+      local protected=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local open=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local opponent_effect=Effect.CreateEffect(open)
+      opponent_effect:SetOwnerPlayer(1)
+      local own_effect=Effect.CreateEffect(open)
+      own_effect:SetOwnerPlayer(0)
+      local ignore_effect=Effect.CreateEffect(open)
+      ignore_effect:SetOwnerPlayer(1)
+      ignore_effect:SetProperty(EFFECT_FLAG_IGNORE_IMMUNE)
+      Debug.Message("immune destructible opponent " .. tostring(protected:IsDestructable(opponent_effect)))
+      Debug.Message("immune destructible own " .. tostring(protected:IsDestructable(own_effect)))
+      Debug.Message("immune destructible ignored " .. tostring(protected:IsDestructable(ignore_effect)))
+      Debug.Message("immune destructible nil " .. tostring(protected:IsDestructable()))
+      Debug.Message("open destructible opponent " .. tostring(open:IsDestructable(opponent_effect)))
+      `,
+      "destructible-immunity-query.lua",
+    );
+
+    expect(query.ok, query.error).toBe(true);
+    expect(host.messages).toContain("immune destructible opponent false");
+    expect(host.messages).toContain("immune destructible own true");
+    expect(host.messages).toContain("immune destructible ignored true");
+    expect(host.messages).toContain("immune destructible nil true");
+    expect(host.messages).toContain("open destructible opponent true");
+  });
+
   it("applies Lua indestructible value callbacks during destruction", () => {
     const cards: DuelCardData[] = [{ code: "200", name: "Value Protected Target", kind: "monster" }];
     const session = createDuel({ seed: 82, startingHandSize: 1, cardReader: createCardReader(cards) });
