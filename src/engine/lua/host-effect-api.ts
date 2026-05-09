@@ -764,7 +764,19 @@ function knownLuaEffectValueDescriptor(L: unknown, index: number, hostState: Lua
   const reason = escapeRegExp(reasonParam);
   const effectReason = "(?:REASON_EFFECT|64)";
   const doubleEffectDamage = new RegExp(`\\breturn\\s+${reason}\\s*&\\s*${effectReason}\\s*>\\s*0\\s+and\\s+${amount}\\s*\\*\\s*2\\s+or\\s+${amount}\\b`);
-  return doubleEffectDamage.test(snippet) ? "change-damage:effect-double" : undefined;
+  if (doubleEffectDamage.test(snippet)) return "change-damage:effect-double";
+  const effectParam = params?.[0];
+  const relatedEffectParam = params?.[1];
+  const reasonPlayerParam = params?.[4];
+  if (!effectParam || !relatedEffectParam || !reasonPlayerParam) return undefined;
+  const effect = escapeRegExp(effectParam);
+  const relatedEffect = escapeRegExp(relatedEffectParam);
+  const reasonPlayer = escapeRegExp(reasonPlayerParam);
+  const continuousType = "(?:EFFECT_TYPE_CONTINUOUS|2048)";
+  const reflectOpponentNonContinuous = new RegExp(
+    `\\breturn\\s+${relatedEffect}\\s+and\\s+not\\s+${relatedEffect}\\s*:\\s*IsHasType\\s*\\(\\s*${continuousType}\\s*\\)\\s+and\\s+${reasonPlayer}\\s*==\\s*1\\s*-\\s*${effect}\\s*:\\s*GetOwnerPlayer\\s*\\(\\s*\\)`,
+  );
+  return reflectOpponentNonContinuous.test(snippet) ? "reflect-damage:opponent-non-continuous" : undefined;
 }
 
 function luaFunctionSourceSnippet(L: unknown, index: number, hostState: LuaHostState): string | undefined {
@@ -799,7 +811,7 @@ function luaFunctionSourceLocation(L: unknown, index: number): { source: string;
 }
 
 function luaFunctionParams(snippet: string): string[] | undefined {
-  const match = snippet.match(/function\s*\(([^)]*)\)/);
+  const match = snippet.match(/function(?:\s+[A-Za-z_][\w.]*\s*)?\(([^)]*)\)/);
   return match?.[1]?.split(",").map((part) => part.trim()).filter(Boolean);
 }
 

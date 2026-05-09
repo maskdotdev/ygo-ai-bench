@@ -113,15 +113,29 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
     (effect.code === 22 ||
       effect.code === 25 ||
       effect.luaValueDescriptor === "change-damage:effect-double" ||
+      effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous" ||
       ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 132) && effect.value !== undefined))
   );
 }
 
-function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "battleDamageValue" | "lifePointValue"> {
+function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "battleDamageValue" | "lifePointValue" | "valuePredicate"> {
+  if (effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous") {
+    return { valuePredicate: (ctx) => ctx.eventReasonPlayer === otherPlayer(effect.controller) && !relatedEffectIsContinuous(ctx) };
+  }
   if (effect.luaValueDescriptor !== "change-damage:effect-double") return {};
   const applyValue = (ctx: Parameters<NonNullable<DuelEffectDefinition["lifePointValue"]>>[0], _player: PlayerId, amount: number): number =>
     ((ctx.eventReason ?? 0) & duelReason.effect) !== 0 ? amount * 2 : amount;
   return { battleDamageValue: applyValue, lifePointValue: applyValue };
+}
+
+function relatedEffectIsContinuous(ctx: Parameters<NonNullable<DuelEffectDefinition["valuePredicate"]>>[0]): boolean {
+  const relatedEffectId = ctx.relatedEffectId === undefined ? ctx.chainLink?.effectId : `lua-${ctx.relatedEffectId}`;
+  const relatedEffect = ctx.duel.effects.find((effect) => effect.id === relatedEffectId);
+  return ((relatedEffect?.luaTypeFlags ?? 0) & 0x800) !== 0;
+}
+
+function otherPlayer(player: PlayerId): PlayerId {
+  return player === 0 ? 1 : 0;
 }
 
 function luaScriptRegistryKeys(registryKeys: Set<string>, snapshotEffects: SerializedDuelEffect[]): Set<string> {
