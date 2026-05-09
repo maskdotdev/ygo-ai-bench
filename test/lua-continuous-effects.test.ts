@@ -217,6 +217,79 @@ describe("Lua continuous effects", () => {
     expect(host.messages).toContain("can target protected nil true");
   });
 
+  it("applies effect-targeting restrictions target ranges as location masks", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Target Lock Source", kind: "monster" },
+      { code: "200", name: "Protected Opponent Monster", kind: "monster" },
+      { code: "300", name: "Protected Opponent Hand", kind: "monster" },
+      { code: "400", name: "Own Monster", kind: "monster" },
+      { code: "500", name: "Open Opponent Monster", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 173, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "400"] },
+      1: { main: ["200", "300", "500"] },
+    });
+    startDuel(session);
+
+    for (const code of ["100", "400"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 0 && candidate.code === code);
+      expect(card).toBeTruthy();
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+      card!.faceUp = true;
+      card!.position = "faceUpAttack";
+    }
+    for (const code of ["200", "500"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 1 && candidate.code === code);
+      expect(card).toBeTruthy();
+      moveDuelCard(session.state, card!.uid, "monsterZone", 1);
+      card!.faceUp = true;
+      card!.position = "faceUpAttack";
+    }
+
+    const host = createLuaScriptHost(session);
+    const setup = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(0,LOCATION_MZONE)
+        e:SetTarget(function(e,tc) return tc:IsCode(200) or tc:IsCode(300) end)
+        e:SetValue(aux.tgoval)
+        c:RegisterEffect(e)
+      end
+      `,
+      "target-lock-location-register.lua",
+    );
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const check = host.loadScript(
+      `
+      local protected_monster=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 1, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local protected_hand=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 1, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local own_monster=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local open_monster=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 1, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local effect=Effect.CreateEffect(own_monster)
+      effect:SetOwnerPlayer(1)
+      Debug.Message("can target protected monster " .. tostring(protected_monster:IsCanBeEffectTarget(effect)))
+      Debug.Message("can target protected hand " .. tostring(protected_hand:IsCanBeEffectTarget(effect)))
+      Debug.Message("can target own monster " .. tostring(own_monster:IsCanBeEffectTarget(effect)))
+      Debug.Message("can target open monster " .. tostring(open_monster:IsCanBeEffectTarget(effect)))
+      `,
+      "target-lock-location-check.lua",
+    );
+
+    expect(check.ok, check.error).toBe(true);
+    expect(host.messages).toContain("can target protected monster false");
+    expect(host.messages).toContain("can target protected hand true");
+    expect(host.messages).toContain("can target own monster true");
+    expect(host.messages).toContain("can target open monster true");
+  });
+
   it("returns active Lua effect tables from Card.IsHasEffect", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Has Effect Field Source", kind: "monster" },
