@@ -3,9 +3,13 @@ import { createActionWindowToken } from "#duel/action-window-token.js";
 import { applyResponse, getGroupedDuelLegalActions, getLegalActions, queryPublicState } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
+import { cardFieldId } from "#lua/card-state-api.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import type { ApplyDuelResponseResult, ChainLimit, DuelAction, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
+
+const luaEffectUnionStatus = 347;
+const luaEffectOldUnionStatus = 348;
 
 export interface LuaSnapshotRestoreResult {
   session: DuelSession;
@@ -33,6 +37,7 @@ export function restoreDuelWithLuaScripts(
   const scriptRegistryKeys = luaScriptRegistryKeys(registryKeys, snapshot.state.effects);
   const loadedScripts = [...luaRegistryCardCodes(scriptRegistryKeys, chainLimitRegistryKeys)].map((code) => host.loadCardScript(code, source));
   const registeredEffects = loadedScripts.every((result) => result.ok) ? host.registerInitialEffects() : 0;
+  const restoredStateScripts = loadedScripts.every((result) => result.ok) ? restoreKnownLuaStateEffects(session, host, registryKeys, snapshot.state.effects) : [];
   restoreKnownLuaChainLimits(session, host, chainLimitRegistryKeys);
   const restoredRegistryKeys = filterRestoredLuaEffects(session, registryKeys, snapshot.state.effects);
   restoredRegistryKeys.push(...restoreKnownLuaEffects(session, registryKeys, snapshot.state.effects, restoredRegistryKeys));
@@ -40,9 +45,9 @@ export function restoreDuelWithLuaScripts(
   const missingRegistryKeys = [...registryKeys].filter((key) => !restoredRegistryKeys.includes(key));
   const restoredChainLimitRegistryKeys = luaChainLimitRegistryKeys({ ...snapshot, state: session.state });
   const missingChainLimitRegistryKeys = chainLimitRegistryKeys.filter((key) => !restoredChainLimitRegistryKeys.includes(key));
-  const incompleteReasons = luaRestoreIncompleteReasons(loadedScripts, missingRegistryKeys, missingChainLimitRegistryKeys);
+  const incompleteReasons = luaRestoreIncompleteReasons([...loadedScripts, ...restoredStateScripts], missingRegistryKeys, missingChainLimitRegistryKeys);
   const restoreComplete = incompleteReasons.length === 0;
-  return { session, host, restoreComplete, loadedScripts, registeredEffects, restoredRegistryKeys, missingRegistryKeys, chainLimitRegistryKeys, missingChainLimitRegistryKeys, incompleteReasons };
+  return { session, host, restoreComplete, loadedScripts: [...loadedScripts, ...restoredStateScripts], registeredEffects, restoredRegistryKeys, missingRegistryKeys, chainLimitRegistryKeys, missingChainLimitRegistryKeys, incompleteReasons };
 }
 
 export function getLuaRestoreLegalActions(restored: LuaSnapshotRestoreResult, player: PlayerId): DuelAction[] {
@@ -80,6 +85,32 @@ function filterRestoredLuaEffects(session: DuelSession, registryKeys: Set<string
 function mergeRestoredLuaEffectMetadata(effect: DuelEffectDefinition, snapshotEffect: SerializedDuelEffect | undefined): DuelEffectDefinition {
   if (snapshotEffect?.reset === undefined) return effect;
   return { ...effect, reset: { ...snapshotEffect.reset } };
+}
+
+function restoreKnownLuaStateEffects(
+  session: DuelSession,
+  host: LuaScriptHost,
+  registryKeys: Set<string>,
+  snapshotEffects: SerializedDuelEffect[],
+): LuaScriptLoadResult[] {
+  const unionStateSourceUids = new Set(
+    snapshotEffects
+      .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && (effect.code === luaEffectUnionStatus || effect.code === luaEffectOldUnionStatus))
+      .map((effect) => effect.sourceUid),
+  );
+  const results: LuaScriptLoadResult[] = [];
+  for (const sourceUid of unionStateSourceUids) {
+    const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
+    if (!card || card.location !== "spellTrapZone" || card.equippedToUid === undefined) continue;
+    const script = `
+      local c=Duel.GetFieldCard(${card.controller},LOCATION_SZONE,${card.sequence})
+      if c and c:IsFieldID(${cardFieldId(card)}) then
+        aux.SetUnionState(c)
+      end
+    `;
+    results.push(host.loadScript(script, `restore-union-state-${card.uid}.lua`));
+  }
+  return results;
 }
 
 function restoreKnownLuaEffects(
