@@ -240,11 +240,11 @@ export function hasCorePiercingBattleDamage(state: DuelState, card: DuelCardInst
 }
 
 export function getCoreBattleAttackValue(state: DuelState, card: DuelCardInstance, handlers: CoreBattleHandlers): number {
-  return hasDefenseAttack(state, card, handlers.createContinuousContext(state)) ? getCoreBattleDefenseValue(card) : Math.max(0, (card.data.attack ?? 0) + (card.attackModifier ?? 0));
+  return hasDefenseAttack(state, card, handlers.createContinuousContext(state)) ? getCoreBattleDefenseValue(state, card) : Math.max(0, (card.data.attack ?? 0) + (card.attackModifier ?? 0) + continuousStatUpdateValue(state, card, 100));
 }
 
-export function getCoreBattleDefenseValue(card: DuelCardInstance): number {
-  return Math.max(0, (card.data.defense ?? 0) + (card.defenseModifier ?? 0));
+export function getCoreBattleDefenseValue(state: DuelState, card: DuelCardInstance): number {
+  return Math.max(0, (card.data.defense ?? 0) + (card.defenseModifier ?? 0) + continuousStatUpdateValue(state, card, 104));
 }
 
 export function getCoreAdditionalBattleDamagePlayers(state: DuelState, player: PlayerId, battleCards: DuelCardInstance[] | undefined, handlers: CoreBattleHandlers): PlayerId[] {
@@ -253,4 +253,10 @@ export function getCoreAdditionalBattleDamagePlayers(state: DuelState, player: P
 
 export function getCoreBattleDamageReason(state: DuelState, player: PlayerId, battleCards: DuelCardInstance[] | undefined, handlers: CoreBattleHandlers): number {
   return battleDamageReason(state, player, battleCards ?? [], handlers.createContinuousContext(state));
+}
+
+function continuousStatUpdateValue(state: DuelState, card: DuelCardInstance, code: number): number {
+  return state.effects
+    .filter((effect) => effect.event === "continuous" && effect.code === code && effect.sourceUid === card.uid && effect.range.includes(card.location))
+    .reduce((total, effect) => total + (effect.value ?? 0), 0);
 }

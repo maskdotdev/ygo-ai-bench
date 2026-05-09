@@ -29,7 +29,8 @@ export function restoreDuelWithLuaScripts(
   session.state.actionWindowToken = createActionWindowToken();
   const host = createLuaScriptHost(session);
   const registryKeys = luaRegistryKeys(snapshot);
-  const loadedScripts = [...luaRegistryCardCodes(registryKeys, chainLimitRegistryKeys)].map((code) => host.loadCardScript(code, source));
+  const scriptRegistryKeys = luaScriptRegistryKeys(registryKeys, snapshot.state.effects);
+  const loadedScripts = [...luaRegistryCardCodes(scriptRegistryKeys, chainLimitRegistryKeys)].map((code) => host.loadCardScript(code, source));
   const registeredEffects = loadedScripts.every((result) => result.ok) ? host.registerInitialEffects() : 0;
   restoreKnownLuaChainLimits(session, host, chainLimitRegistryKeys);
   const restoredRegistryKeys = filterRestoredLuaEffects(session, registryKeys, snapshot.state.effects);
@@ -105,7 +106,17 @@ function restoreKnownLuaEffects(
 }
 
 function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
-  return effect.event === "continuous" && (effect.code === 22 || effect.code === 25);
+  return effect.event === "continuous" && (effect.code === 22 || effect.code === 25 || ((effect.code === 100 || effect.code === 104 || effect.code === 130 || effect.code === 132) && effect.value !== undefined));
+}
+
+function luaScriptRegistryKeys(registryKeys: Set<string>, snapshotEffects: SerializedDuelEffect[]): Set<string> {
+  const knownRestorableKeys = new Set(
+    snapshotEffects
+      .filter(isKnownRestorableLuaEffect)
+      .map((effect) => effect.registryKey)
+      .filter((key): key is string => Boolean(key)),
+  );
+  return new Set([...registryKeys].filter((key) => !knownRestorableKeys.has(key)));
 }
 
 function luaRegistryKeys(snapshot: SerializedDuel): Set<string> {
