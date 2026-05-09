@@ -2,11 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions, loadDecks, queryPublicState, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, queryPublicState, serializeDuel, startDuel } from "#duel/core.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -50,15 +51,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script An
     expect(applyResponse(session, battle!).ok).toBe(true);
     expect(queryPublicState(session)).toMatchObject({ phase: "battle", waitingFor: 0, windowKind: "open" });
 
-    const arrowsAction = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === arrows!.uid);
-    expect(arrowsAction, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
-    const activated = applyResponse(session, arrowsAction!);
+    const restoredBattleStart = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restoredBattleStart.restoreComplete, restoredBattleStart.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredBattleStart.missingChainLimitRegistryKeys).toEqual([]);
+    expect(queryPublicState(restoredBattleStart.session)).toMatchObject({ phase: "battle", waitingFor: 0, windowKind: "open" });
+    expect(getLuaRestoreLegalActionGroups(restoredBattleStart, 0)).toEqual(getGroupedDuelLegalActions(restoredBattleStart.session, 0));
+    const arrowsAction = getLuaRestoreLegalActions(restoredBattleStart, 0).find((action) => action.type === "activateEffect" && action.uid === arrows!.uid);
+    expect(arrowsAction, JSON.stringify(getLuaRestoreLegalActions(restoredBattleStart, 0), null, 2)).toBeDefined();
+    const activated = applyResponse(restoredBattleStart.session, arrowsAction!);
     expect(activated.ok, activated.error).toBe(true);
 
-    expect(queryPublicState(session)).toMatchObject({ phase: "battle", waitingFor: 0, windowKind: "open", chain: [] });
-    expect(session.state.chainLimits).toEqual([]);
+    expect(queryPublicState(restoredBattleStart.session)).toMatchObject({ phase: "battle", waitingFor: 0, windowKind: "open", chain: [] });
+    expect(restoredBattleStart.session.state.chainLimits).toEqual([]);
     expect(activated.legalActions.some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(false);
-    expect(host.messages).not.toContain("blocked arrows responder resolved");
+    expect(restoredBattleStart.host.messages).not.toContain("blocked arrows responder resolved");
   });
 });
 
