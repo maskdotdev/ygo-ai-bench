@@ -722,6 +722,7 @@ function luaEffectTriggerTiming(luaEffect: LuaEffectRecord): "if" | "when" {
 
 function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, kind: LuaEffectCallbackKind, legacyArgs: boolean, ctx?: DuelEffectContext): number {
   const chainLink = luaEffect.code === 1027 ? hostState.session.state.chain[hostState.session.state.chain.length - 1] : undefined;
+  const eventGroupUids = ctx?.eventUids ?? (ctx?.eventCard ? [ctx.eventCard.uid] : chainLink ? [chainLink.sourceUid] : []);
   pushLuaEffectTable(L, luaEffect.id, hostState);
   if (legacyArgs) {
     pushCardTable(L, card.uid);
@@ -729,7 +730,7 @@ function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffec
   }
   const appendSummonProcedureCard = luaEffect.code === 34;
   lua.lua_pushinteger(L, ctx?.player ?? card.controller);
-  pushGroupTable(L, ctx?.eventUids ?? (ctx?.eventCard ? [ctx.eventCard.uid] : []));
+  pushGroupTable(L, eventGroupUids);
   lua.lua_pushinteger(L, chainLink?.eventPlayer ?? chainLink?.player ?? ctx?.eventPlayer ?? ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);
   lua.lua_pushinteger(L, chainLink?.eventValue ?? ctx?.eventValue ?? (chainLink ? hostState.session.state.chain.length : 0));
   pushRelatedEffectTable(L, hostState, firstFiniteNumber(chainLink?.relatedEffectId, ctx?.chainLink?.relatedEffectId, ctx?.relatedEffectId, relatedEffectIdFromEventHistory(hostState, ctx)));
