@@ -166,6 +166,7 @@ function pushSetChainLimit(L: unknown, session: DuelSession, hostState: LuaDuelC
   const registryKey = knownLuaChainLimitRegistryKey(L, hostState, untilChainEnd) ?? luaChainLimitRegistryKey(hostState.activeContext, untilChainEnd, filterRef);
   addDuelChainLimit(session.state, {
     ...(registryKey === undefined ? {} : { registryKey }),
+    ...(untilChainEnd || session.state.chain.length === 0 || (hostState.activeContext?.chainLink === undefined && hostState.activeContext?.eventName !== "chaining") ? {} : { expiresAtChainLength: session.state.chain.length }),
     untilChainEnd,
     allows: (effect, player, chainPlayer) => callChainLimit(L, hostState, filterRef, effect, player, chainPlayer),
     release: () => releaseOptionalFunctionRef(L, filterRef),
@@ -794,8 +795,7 @@ function escapeRegExp(value: string): string {
 }
 
 function luaChainLimitRegistryKey(ctx: DuelEffectContext | undefined, untilChainEnd: boolean, filterRef: number): string | undefined {
-  if (!ctx?.source.code) return undefined;
-  return `lua-chain-limit:${ctx.source.code}:${ctx.player}:${untilChainEnd ? "chain" : "link"}:${filterRef}`;
+  return ctx?.source.code ? `lua-chain-limit:${ctx.source.code}:${ctx.player}:${untilChainEnd ? "chain" : "link"}:${filterRef}` : undefined;
 }
 
 function callChainLimit(

@@ -1,9 +1,9 @@
 import type { ChainLimit, DuelState } from "#duel/types.js";
 
-export function addDuelChainLimit(state: DuelState, limit: Omit<ChainLimit, "expiresAtChainLength">): void {
+export function addDuelChainLimit(state: DuelState, limit: Omit<ChainLimit, "expiresAtChainLength"> & Pick<Partial<ChainLimit>, "expiresAtChainLength">): void {
   state.chainLimits.push({
     ...limit,
-    ...(limit.untilChainEnd ? {} : { expiresAtChainLength: state.chain.length + 1 }),
+    ...(limit.untilChainEnd ? {} : { expiresAtChainLength: limit.expiresAtChainLength ?? state.chain.length + 1 }),
   });
 }
 

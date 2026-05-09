@@ -536,6 +536,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
 
 function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffectDefinition["event"] {
   if (code === 34) return "summonProcedure";
+  if (code === 1027 && (typeFlags & 0x800) !== 0) return "continuous";
   if (code === 1027 && ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0)) return "trigger";
   if (code === 1027) return "quick";
   if (
