@@ -5,6 +5,79 @@ import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua source/effect-type chain-limit restore", () => {
+  it("restores named active-type activation block predicates from snapshots", () => {
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+            c100 = {}
+            c100.initial_effect = function(c)
+              local e = Effect.CreateEffect(c)
+              e:SetType(EFFECT_TYPE_IGNITION)
+              e:SetRange(LOCATION_HAND)
+              e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+                if chk==0 then return true end
+                Duel.SetChainLimitTillChainEnd(c100.elimit)
+              end)
+              e:SetOperation(function(e,tp) Debug.Message("active/effect-type limit source resolved") end)
+              c:RegisterEffect(e)
+            end
+            function c100.elimit(re,rp,tp)
+              return not (re:IsActiveType(TYPE_SPELL+TYPE_TRAP) and re:IsHasType(EFFECT_TYPE_ACTIVATE))
+            end
+          `;
+        }
+        if (name === "c200.lua") return quickScript(200, "blocked spell activation resolved", "EFFECT_TYPE_QUICK_O+EFFECT_TYPE_ACTIVATE");
+        if (name === "c300.lua") return quickScript(300, "blocked trap activation resolved", "EFFECT_TYPE_QUICK_O+EFFECT_TYPE_ACTIVATE");
+        if (name === "c400.lua") return quickScript(400, "allowed spell quick effect resolved", "EFFECT_TYPE_QUICK_O");
+        if (name === "c500.lua") return quickScript(500, "allowed monster activation-type response resolved", "EFFECT_TYPE_QUICK_O+EFFECT_TYPE_ACTIVATE");
+        return undefined;
+      },
+    };
+    const cards = normalizeCdbRows([
+      { id: 100, type: 1 },
+      { id: 200, type: 2 },
+      { id: 300, type: 4 },
+      { id: 400, type: 2 },
+      { id: 500, type: 1 },
+    ], []);
+    const session = createDuel({ seed: 318, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: ["200", "300", "400", "500"] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.loadCardScript(400, source).ok).toBe(true);
+    expect(host.loadCardScript(500, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(5);
+
+    const sourceAction = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
+    expect(sourceAction).toBeDefined();
+    const opened = applyResponse(session, sourceAction!);
+    expect(opened.ok, opened.error).toBe(true);
+
+    const registryKey = "lua-chain-limit:100:0:chain:known:closure:not-active-type-effect-type:6:16";
+    expect(serializeDuel(session).state.chainLimits[0]?.registryKey).toBe(registryKey);
+    expect(hasLuaEffect(getLegalActions(session, 1), 1, "lua-2")).toBe(false);
+    expect(hasLuaEffect(getLegalActions(session, 1), 1, "lua-3")).toBe(false);
+    expect(hasLuaEffect(getLegalActions(session, 1), 1, "lua-4")).toBe(true);
+    expect(hasLuaEffect(getLegalActions(session, 1), 1, "lua-5")).toBe(true);
+
+    const opponentWindowRestored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expectRestoredChainLimit(opponentWindowRestored, registryKey);
+    expect(hasGroupedLuaEffect(opponentWindowRestored, 1, "lua-2")).toBe(false);
+    expect(hasGroupedLuaEffect(opponentWindowRestored, 1, "lua-3")).toBe(false);
+    expect(hasGroupedLuaEffect(opponentWindowRestored, 1, "lua-4")).toBe(true);
+    expect(hasGroupedLuaEffect(opponentWindowRestored, 1, "lua-5")).toBe(true);
+
+    const restoredAction = getLuaRestoreLegalActions(opponentWindowRestored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-4");
+    expect(restoredAction).toBeDefined();
+    const restoredResponse = applyLuaRestoreResponse(opponentWindowRestored, restoredAction!);
+    expect(restoredResponse.ok, restoredResponse.error).toBe(true);
+  });
+
   it("restores named trap activation block predicates from snapshots", () => {
     const source = {
       readScript(name: string) {

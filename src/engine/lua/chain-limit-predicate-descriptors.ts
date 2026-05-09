@@ -157,6 +157,33 @@ export function literalNotSourceTypeOrNotEffectTypePredicate(L: unknown, index: 
   return sourceSetcode === undefined ? { sourceType, effectType } : { sourceType, effectType, sourceSetcode };
 }
 
+export function literalNotSourceOrActiveTypeAndEffectTypePredicateDescriptor(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string | undefined {
+  const sourceEffectType = literalNotSourceTypeOrNotEffectTypePredicate(L, index, hostState);
+  if (sourceEffectType?.sourceSetcode !== undefined) return `closure:not-source-type-effect-type-setcode:${sourceEffectType.sourceType}:${sourceEffectType.effectType}:${sourceEffectType.sourceSetcode}`;
+  if (sourceEffectType) return `closure:not-source-type-effect-type:${sourceEffectType.sourceType}:${sourceEffectType.effectType}`;
+  const activeEffectType = literalNotActiveTypeOrNotEffectTypePredicate(L, index, hostState);
+  return activeEffectType ? `closure:not-active-type-effect-type:${activeEffectType.activeType}:${activeEffectType.effectType}` : undefined;
+}
+
+function literalNotActiveTypeOrNotEffectTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): { activeType: number; effectType: number } | undefined {
+  if (hasNonEnvironmentUpvalues(L, index)) return undefined;
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
+  const effectParam = luaFunctionParams(snippet)?.[0];
+  const returnExpression = lastReturnExpression(snippet);
+  if (!effectParam || !returnExpression) return undefined;
+  const effect = escapeRegExp(effectParam);
+  const activeType = `${effect}\\s*:\\s*IsActiveType\\s*\\(\\s*(${activeTypeMaskExpressionPattern})\\s*\\)`;
+  const effectType = `${effect}\\s*:\\s*IsHasType\\s*\\(\\s*(${effectTypeMaskExpressionPattern})\\s*\\)`;
+  const activeThenEffect = returnExpression.match(new RegExp(`^not\\s*\\(\\s*${activeType}\\s+and\\s+${effectType}\\s*\\)$`));
+  const effectThenActive = returnExpression.match(new RegExp(`^not\\s*\\(\\s*${effectType}\\s+and\\s+${activeType}\\s*\\)$`));
+  const activeToken = activeThenEffect?.[1] ?? effectThenActive?.[2];
+  const effectToken = activeThenEffect?.[2] ?? effectThenActive?.[1];
+  const activeMask = activeToken ? activeTypeMaskTokenValue(activeToken) : undefined;
+  const effectMask = effectToken ? effectTypeMaskTokenValue(effectToken) : undefined;
+  return activeMask !== undefined && effectMask !== undefined ? { activeType: activeMask, effectType: effectMask } : undefined;
+}
+
 export function literalNotMonsterWithoutLevelActiveTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): boolean {
   if (hasNonEnvironmentUpvalues(L, index)) return false;
   const snippet = luaFunctionSourceSnippet(L, index, hostState);

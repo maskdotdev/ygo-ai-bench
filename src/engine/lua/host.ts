@@ -152,6 +152,10 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
   if (sourceEffectType?.[1] && sourceEffectType[2]) {
     return { ...limit, allows: (effect) => (sourceTypeFlags(hostState, effect.sourceUid) & Number(sourceEffectType[1])) === 0 || (effectTypeFlags(hostState, effect.id) & Number(sourceEffectType[2])) === 0 };
   }
+  const activeEffectType = predicate?.match(/^closure:not-active-type-effect-type:(\d+):(\d+)$/);
+  if (activeEffectType?.[1] && activeEffectType[2]) {
+    return { ...limit, allows: (effect) => (activeTypeFlags(hostState, effect.sourceUid) & Number(activeEffectType[1])) === 0 || (effectTypeFlags(hostState, effect.id) & Number(activeEffectType[2])) === 0 };
+  }
   const handlerCode = predicate?.match(/^closure:handler-code:(\d+)$/);
   if (handlerCode?.[1]) return { ...limit, allows: (effect) => sourceCode(hostState, effect.sourceUid) === handlerCode[1] };
   const handlerCodes = predicate?.match(/^closure:handler-codes:([\d,]+)$/);
@@ -235,6 +239,16 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
 
 function sourceTypeFlags(hostState: LuaHostState, sourceUid: string): number {
   return hostState.session.state.cards.find((card) => card.uid === sourceUid)?.data.typeFlags ?? 0;
+}
+
+function activeTypeFlags(hostState: LuaHostState, sourceUid: string): number {
+  const card = hostState.session.state.cards.find((candidate) => candidate.uid === sourceUid);
+  const explicit = (card?.data.typeFlags ?? 0) & 0x7;
+  if (explicit !== 0) return explicit;
+  if (card?.kind === "spell") return 0x2;
+  if (card?.kind === "trap") return 0x4;
+  if (card?.kind === "monster" || card?.kind === "extra") return 0x1;
+  return 0;
 }
 
 function sourceHasSetcode(hostState: LuaHostState, sourceUid: string, requested: number): boolean {
