@@ -74,6 +74,7 @@ export function runScriptedDuelFixture(fixture: ScriptedDuelFixture, options: Pa
   applyFixtureSetup(session, fixture.setup?.moveCards ?? [], failures, fixture.name);
   applyFixturePrompt(session, fixture.setup?.prompt);
   applyFixtureEffects(session, fixture.setup?.effects ?? [], failures, fixture.name, effectRegistry, chainLimitRegistry);
+  applyFixtureEvents(session, fixture.setup?.collectEvents ?? [], failures, fixture.name);
   if (failures.length) return { ok: false, failures };
   assertWindow(session, fixture.before, fixture.name, "before fixture", failures);
   for (const step of fixture.responses) {
@@ -631,6 +632,7 @@ function applyFixtureEffects(
 
 function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid: string, registryKey: string, chainLimitRegistryKey?: string): DuelEffectDefinition {
   const hasTargetHandler = effect.chainLimitOnTarget !== undefined || effect.targetCardsOnActivation !== undefined;
+  const canActivate = createFixtureCanActivate(effect);
   return {
     id: effect.id,
     sourceUid,
@@ -648,9 +650,7 @@ function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid:
     ...(effect.optional === undefined ? {} : { optional: effect.optional }),
     ...(effect.oncePerTurn === undefined ? {} : { oncePerTurn: effect.oncePerTurn }),
     ...(effect.property === undefined ? {} : { property: effect.property }),
-    ...(effect.activationChain === undefined
-      ? {}
-      : { canActivate: (ctx) => effect.activationChain === "chain" ? ctx.duel.chain.length > 0 : ctx.duel.chain.length === 0 }),
+    ...(canActivate === undefined ? {} : { canActivate }),
     ...(hasTargetHandler
       ? {
           target(ctx) {
@@ -703,6 +703,15 @@ function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid:
       if (effect.negateSummonOnResolve) ctx.log(`Negated summon ${Boolean(negateFixtureSummon(ctx.duel, effect.negateSummonOnResolve))}`);
       if (effect.logMessage) ctx.log(effect.logMessage);
     },
+  };
+}
+
+function createFixtureCanActivate(effect: ScriptedFixtureEffect): DuelEffectDefinition["canActivate"] | undefined {
+  if (effect.activationChain === undefined && effect.eventCardCode === undefined) return undefined;
+  return (ctx) => {
+    if (effect.activationChain !== undefined && (effect.activationChain === "chain" ? ctx.duel.chain.length === 0 : ctx.duel.chain.length > 0)) return false;
+    if (effect.eventCardCode !== undefined && ctx.eventCard?.code !== effect.eventCardCode) return false;
+    return true;
   };
 }
 
@@ -780,6 +789,17 @@ function applyFixtureSetup(session: DuelSession, moves: ScriptedFixtureMove[], f
     const moved = moveDuelCard(session.state, card.uid, move.to, move.controller);
     applyFixturePosition(moved, move.position);
     if (move.collectEvent) collectDuelTriggerEffects(session.state, move.collectEvent, moved, fixtureMoveEventPayload(move));
+  }
+}
+
+function applyFixtureEvents(session: DuelSession, events: ScriptedFixtureEvent[], failures: ParityFailure[], fixture: string): void {
+  for (const event of events) {
+    const eventCard = event.eventCard === undefined ? undefined : findFixtureCard(session.state, event.eventCard);
+    if (event.eventCard !== undefined && !eventCard) {
+      failures.push({ fixture, message: `Setup could not find event card ${event.eventCard.code} for player ${event.eventCard.player}` });
+      return;
+    }
+    collectDuelTriggerEffects(session.state, event.collectEvent, eventCard, fixtureEventPayload(event));
   }
 }
 

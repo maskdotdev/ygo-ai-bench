@@ -841,6 +841,7 @@ export interface ScriptedFixtureEffect {
   triggerEvent?: DuelEventName;
   triggerCode?: number;
   triggerTiming?: DuelEffectDefinition["triggerTiming"];
+  eventCardCode?: string;
   optional?: boolean;
   range: DuelLocation[];
   oncePerTurn?: boolean;
@@ -873,6 +874,7 @@ export interface ScriptedDuelFixture {
   setup?: {
     moveCards?: ScriptedFixtureMove[];
     effects?: ScriptedFixtureEffect[];
+    collectEvents?: ScriptedFixtureEvent[];
     prompt?: DuelPromptState;
   };
   before?: ScriptedDuelWindowExpectation;
