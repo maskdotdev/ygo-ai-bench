@@ -109,6 +109,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script de
     });
   });
 
+  it("honors old Project Ignis Union battle-only destroy substitute rules", () => {
+    const effectCase = setupRealOldUnionSubstitute();
+
+    destroyDuelCard(effectCase.session.state, effectCase.target.uid, 0, duelReason.effect | duelReason.destroy, 1);
+
+    expect(effectCase.session.state.cards.find((card) => card.uid === effectCase.target.uid)).toMatchObject({ location: "graveyard" });
+    expect(effectCase.session.state.cards.find((card) => card.uid === effectCase.union.uid)).toMatchObject({
+      location: "graveyard",
+      previousEquippedToUid: effectCase.target.uid,
+      reason: duelReason.lostTarget,
+    });
+
+    const battleCase = setupRealOldUnionSubstitute();
+
+    destroyDuelCard(battleCase.session.state, battleCase.target.uid, 0, duelReason.battle | duelReason.destroy, 1);
+
+    expect(battleCase.session.state.cards.find((card) => card.uid === battleCase.target.uid)).toMatchObject({ location: "monsterZone" });
+    expect(battleCase.session.state.cards.find((card) => card.uid === battleCase.union.uid)).toMatchObject({
+      location: "graveyard",
+      reason: duelReason.effect | duelReason.destroy | duelReason.replace,
+    });
+  });
+
   it("applies Legendary Ebon Steed's Project Ignis equip destroy substitute", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const steedCode = "12324546";
@@ -272,6 +295,41 @@ function setupSyntheticMultipleEquipSubstitutes(): {
     equip.faceUp = true;
   }
   return { equipA, equipB, host, session, target };
+}
+
+function setupRealOldUnionSubstitute(): { session: DuelSession; target: DuelCardInstance; union: DuelCardInstance } {
+  const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+  const unionCode = "11678191";
+  const targetCode = "84173492";
+  const cards: DuelCardData[] = [
+    ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === unionCode),
+    { code: targetCode, name: "Old Union Substitute Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1600, defense: 1200 },
+  ];
+  const session = createDuel({ seed: 296, startingHandSize: 2, cardReader: createCardReader(cards) });
+  loadDecks(session, { 0: { main: [unionCode, targetCode] }, 1: { main: [] } });
+  startDuel(session);
+
+  const union = findHandCard(session, 0, unionCode);
+  const target = findHandCard(session, 0, targetCode);
+  moveDuelCard(session.state, target.uid, "monsterZone", 0).position = "faceUpAttack";
+
+  const host = createLuaScriptHost(session, workspace);
+  expect(host.loadCardScript(Number(unionCode), workspace).ok).toBe(true);
+  expect(host.registerInitialEffects()).toBeGreaterThan(0);
+
+  moveDuelCard(session.state, union.uid, "spellTrapZone", 0);
+  union.equippedToUid = target.uid;
+  union.position = "faceUpAttack";
+  union.faceUp = true;
+  const stateResult = host.loadScript(
+    `
+    local c=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${unionCode}),0,LOCATION_SZONE,0,1,1,nil):GetFirst()
+    aux.SetUnionState(c)
+    `,
+    "old-union-procedure-state.lua",
+  );
+  expect(stateResult.ok, stateResult.error).toBe(true);
+  return { session, target, union };
 }
 
 function findHandCard(session: DuelSession, controller: 0 | 1, code: string): DuelCardInstance {
