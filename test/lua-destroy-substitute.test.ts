@@ -31,6 +31,24 @@ describe("Lua destroy substitute effects", () => {
     expect(host.messages).not.toContain("ordinary replace op 400");
   });
 
+  it("destroys every valid equip substitute handler for the same threatened card", () => {
+    const { equipA, equipB, host, session, target } = setupSyntheticMultipleEquipSubstitutes();
+
+    destroyDuelCard(session.state, target.uid, 0, duelReason.effect | duelReason.destroy, 1);
+
+    expect(host.messages).toContain("first substitute value 65/1/true");
+    expect(host.messages).toContain("second substitute value 65/1/true");
+    expect(session.state.cards.find((card) => card.uid === target.uid)).toMatchObject({ location: "monsterZone" });
+    expect(session.state.cards.find((card) => card.uid === equipA.uid)).toMatchObject({
+      location: "graveyard",
+      reason: duelReason.effect | duelReason.destroy | duelReason.replace,
+    });
+    expect(session.state.cards.find((card) => card.uid === equipB.uid)).toMatchObject({
+      location: "graveyard",
+      reason: duelReason.effect | duelReason.destroy | duelReason.replace,
+    });
+  });
+
   it("falls through a false destroy substitute value to normal destruction", () => {
     const { equip, host, session, target } = setupSyntheticEquipSubstitute();
 
@@ -149,6 +167,67 @@ function setupSyntheticEquipSubstitute(): {
   equip.position = "faceUpAttack";
   equip.faceUp = true;
   return { equip, host, session, target };
+}
+
+function setupSyntheticMultipleEquipSubstitutes(): {
+  equipA: DuelCardInstance;
+  equipB: DuelCardInstance;
+  host: ReturnType<typeof createLuaScriptHost>;
+  session: DuelSession;
+  target: DuelCardInstance;
+} {
+  const cards: DuelCardData[] = [
+    { code: "101", name: "First Substitute Equip", kind: "monster" },
+    { code: "102", name: "Second Substitute Equip", kind: "monster" },
+    { code: "200", name: "Multi-Substitute Target", kind: "monster" },
+  ];
+  const session = createDuel({ seed: 294, startingHandSize: 3, cardReader: createCardReader(cards) });
+  loadDecks(session, { 0: { main: ["101", "102", "200"] }, 1: { main: [] } });
+  startDuel(session);
+
+  const equipA = findHandCard(session, 0, "101");
+  const equipB = findHandCard(session, 0, "102");
+  const target = findHandCard(session, 0, "200");
+  moveDuelCard(session.state, target.uid, "monsterZone", 0).position = "faceUpAttack";
+
+  const host = createLuaScriptHost(session);
+  const result = host.loadScript(
+    `
+    c101={}
+    function c101.initial_effect(c)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_EQUIP)
+      e:SetCode(EFFECT_DESTROY_SUBSTITUTE)
+      e:SetValue(function(e,re,r,rp)
+        Debug.Message("first substitute value " .. r .. "/" .. rp .. "/" .. tostring(re==nil))
+        return (r&REASON_EFFECT)~=0 and rp==1
+      end)
+      c:RegisterEffect(e)
+    end
+    c102={}
+    function c102.initial_effect(c)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_EQUIP)
+      e:SetCode(EFFECT_DESTROY_SUBSTITUTE)
+      e:SetValue(function(e,re,r,rp)
+        Debug.Message("second substitute value " .. r .. "/" .. rp .. "/" .. tostring(re==nil))
+        return (r&REASON_EFFECT)~=0 and rp==1
+      end)
+      c:RegisterEffect(e)
+    end
+    `,
+    "multiple-destroy-substitutes.lua",
+  );
+
+  expect(result.ok, result.error).toBe(true);
+  expect(host.registerInitialEffects()).toBe(2);
+  for (const equip of [equipA, equipB]) {
+    moveDuelCard(session.state, equip.uid, "spellTrapZone", 0);
+    equip.equippedToUid = target.uid;
+    equip.position = "faceUpAttack";
+    equip.faceUp = true;
+  }
+  return { equipA, equipB, host, session, target };
 }
 
 function findHandCard(session: DuelSession, controller: 0 | 1, code: string): DuelCardInstance {
