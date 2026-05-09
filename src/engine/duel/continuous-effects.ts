@@ -769,7 +769,8 @@ function findReplacementEffects(
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     const ctx = createContext(effect, source, card);
-    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
+    if (!continuousEffectAffectsCard(effect, source, card)) continue;
+    if (effect.valueCardPredicate && !effect.valueCardPredicate(ctx, card)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) matches.push({ effect, source, card });
   }
   return matches;
