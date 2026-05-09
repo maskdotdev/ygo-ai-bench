@@ -253,4 +253,86 @@ describe("Lua operation immunity movement", () => {
     expect(session.state.cards.find((card) => card.code === "240")).toMatchObject({ location: "graveyard" });
     expect(session.state.cards.find((card) => card.code === "340")).toMatchObject({ location: "graveyard" });
   });
+
+  it("blocks effect special summons of immune cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "140", name: "Special Summon Source", kind: "monster" },
+      { code: "141", name: "Ignore Special Summon Source", kind: "monster" },
+      { code: "250", name: "Immune Graveyard Target", kind: "monster" },
+      { code: "350", name: "Open Graveyard Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 216, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["140", "141"] },
+      1: { main: ["250", "350"] },
+    });
+    startDuel(session);
+    placeCard(session, "250", "graveyard");
+    placeCard(session, "350", "graveyard");
+
+    const host = createLuaScriptHost(session);
+    const setup = host.loadScript(
+      `
+      local function pick(code)
+        return Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, code), 1, LOCATION_GRAVE, 0, 1, 1, nil)
+      end
+      c140={}
+      function c140.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Debug.Message("special protected " .. Duel.SpecialSummon(pick(250), 0, 0, 1, false, false, POS_FACEUP_ATTACK))
+          Debug.Message("special open " .. Duel.SpecialSummon(pick(350), 0, 0, 1, false, false, POS_FACEUP_ATTACK))
+        end)
+        c:RegisterEffect(e)
+      end
+      c141={}
+      function c141.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetProperty(EFFECT_FLAG_IGNORE_IMMUNE)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Debug.Message("ignore special protected " .. Duel.SpecialSummon(pick(250), 0, 0, 1, false, false, POS_FACEUP_ATTACK))
+        end)
+        c:RegisterEffect(e)
+      end
+      c250={}
+      function c250.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_IMMUNE_EFFECT)
+        e:SetRange(LOCATION_GRAVE)
+        e:SetValue(function(e,te)
+          return te:GetOwnerPlayer()==0
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "operation-immunity-special-summon.lua",
+    );
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.code === "140");
+    const ignoreSource = session.state.cards.find((card) => card.controller === 0 && card.code === "141");
+    expect(source).toBeTruthy();
+    expect(ignoreSource).toBeTruthy();
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeTruthy();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(host.messages).toContain("special protected 0");
+    expect(host.messages).toContain("special open 1");
+    expect(session.state.cards.find((card) => card.code === "250")).toMatchObject({ location: "graveyard" });
+    expect(session.state.cards.find((card) => card.code === "350")).toMatchObject({ location: "monsterZone" });
+
+    const ignoreAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === ignoreSource!.uid);
+    expect(ignoreAction).toBeTruthy();
+    expect(applyResponse(session, ignoreAction!).ok).toBe(true);
+
+    expect(host.messages).toContain("ignore special protected 1");
+    expect(session.state.cards.find((card) => card.code === "250")).toMatchObject({ location: "monsterZone" });
+  });
 });

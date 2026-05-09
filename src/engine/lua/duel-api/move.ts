@@ -223,6 +223,7 @@ function pushSpecialSummon(L: unknown, session: DuelSession, hostState: LuaDuelM
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
     const player = targetPlayer ?? card.controller;
+    if (luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect | duelReason.summon | duelReason.specialSummon)) continue;
     if (!hasOpenMonsterZone(session, player, zoneMask)) continue;
     try {
       const reasonPlayer = hostState.activeContext?.player ?? player;
