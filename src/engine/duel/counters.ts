@@ -27,6 +27,22 @@ export function removeDuelCardCounter(card: DuelCardInstance | undefined, counte
   return true;
 }
 
+export function getAllDuelCardCounters(card: DuelCardInstance | undefined): Record<number, number> {
+  const counters: Record<number, number> = {};
+  for (const [counterType, count] of Object.entries(card?.counters ?? {})) {
+    const normalized = Math.max(0, Math.floor(count));
+    if (normalized > 0) counters[Number(counterType)] = normalized;
+  }
+  return counters;
+}
+
+export function removeAllDuelCardCounters(card: DuelCardInstance | undefined): number {
+  if (!card?.counters) return 0;
+  const total = Object.values(getAllDuelCardCounters(card)).reduce((sum, count) => sum + count, 0);
+  if (total > 0) delete card.counters;
+  return total;
+}
+
 export function canRemoveDuelCounters(state: DuelState, player: PlayerId, selfLocations: DuelLocation[], opponentLocations: DuelLocation[], counterType: number, count: number): boolean {
   return availableCounterCards(state, player, selfLocations, opponentLocations, counterType).reduce((total, card) => total + getDuelCardCounter(card, counterType), 0) >= Math.max(0, count);
 }

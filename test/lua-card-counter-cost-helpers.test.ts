@@ -414,6 +414,71 @@ describe("Lua card counter and cost helpers", () => {
     expect(restored.state.cards.find((card) => card.uid === self!.uid)?.counters).toBeUndefined();
   });
 
+  it("lets Lua scripts inspect and remove all card counters", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "All Counter", kind: "monster" }];
+    const session = createDuel({ seed: 228, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.code === "100");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      target:AddCounter(99, 2)
+      target:AddCounter(77, 3)
+      local all = target:GetAllCounters()
+      local all_count = 0
+      for _ in pairs(all) do all_count = all_count + 1 end
+      Debug.Message("all counters " .. all[99] .. "/" .. all[77] .. "/" .. tostring(all[66] == nil) .. "/" .. all_count)
+      Debug.Message("remove all " .. target:RemoveAllCounters() .. "/" .. target:GetCounter(99) .. "/" .. target:GetCounter(77) .. "/" .. tostring(target:HasCounters()))
+      local empty = target:GetAllCounters()
+      local empty_count = 0
+      for _ in pairs(empty) do empty_count = empty_count + 1 end
+      Debug.Message("empty counters " .. tostring(empty[99] == nil) .. "/" .. empty_count)
+      `,
+      "card-all-counters.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["all counters 2/3/true/2", "remove all 5/0/0/false", "empty counters true/0"]);
+    expect(target!.counters).toBeUndefined();
+  });
+
+  it("keeps all-counter removal from mutating ended duels", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Ended All Counter", kind: "monster" }];
+    const session = createDuel({ seed: 229, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.code === "100");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("setup counter " .. tostring(target:AddCounter(99, 1)) .. "/" .. target:GetCounter(99))
+      Duel.Win(0, WIN_REASON_EXODIA)
+      Debug.Message("remove all ended " .. target:RemoveAllCounters() .. "/" .. target:GetCounter(99))
+      `,
+      "ended-card-all-counters.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["setup counter true/1", "remove all ended 0/1"]);
+    expect(session.state.status).toBe("ended");
+    expect(target!.counters).toEqual({ 99: 1 });
+  });
+
   it("lets Lua scripts use counter removal cost aliases", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Self Counter Cost", kind: "monster" },
