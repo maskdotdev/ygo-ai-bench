@@ -541,7 +541,15 @@ function pushReturnToField(L: unknown, session: DuelSession, hostState: LuaDuelM
   const destination = card?.previousLocation === "monsterZone" || card?.previousLocation === "spellTrapZone" ? card.previousLocation : undefined;
   const controller = card?.previousController;
   const previousSequence = previousFieldSequence(card);
-  if (!uid || !card || !destination || controller === undefined || !hasZoneSpace(session.state, controller, destination) || !canMoveDuelCardToLocation(session.state, uid, destination, duelReason.effect)) {
+  if (
+    !uid ||
+    !card ||
+    !destination ||
+    controller === undefined ||
+    !hasZoneSpace(session.state, controller, destination) ||
+    !canMoveDuelCardToLocation(session.state, uid, destination, duelReason.effect) ||
+    luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)
+  ) {
     setOperatedUids(hostState, []);
     lua.lua_pushboolean(L, false);
     return 1;
