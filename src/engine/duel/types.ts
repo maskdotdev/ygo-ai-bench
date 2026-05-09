@@ -158,6 +158,7 @@ export interface DuelCardInstance {
   previousFaceUp?: boolean;
   battlePosition?: CardPosition;
   equippedToUid?: string;
+  previousEquippedToUid?: string;
   reason?: number;
   reasonPlayer?: PlayerId;
   reasonCardUid?: string;

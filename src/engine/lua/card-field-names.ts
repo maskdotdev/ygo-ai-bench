@@ -297,6 +297,7 @@ export const cardFieldNames = [
   "HasEquipCard",
   "GetEquipGroup",
   "GetEquipTarget",
+  "GetPreviousEquipTarget",
   "GetUnionCount",
   "GetCardEffect",
   "GetMarkedEffects",

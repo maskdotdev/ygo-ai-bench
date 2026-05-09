@@ -33,6 +33,16 @@ export function installCardEquipApi<EffectRecord extends LuaCardApiEffectRecord>
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetEquipTarget"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    if (!card?.previousEquippedToUid) {
+      lua.lua_pushnil(state);
+      return 1;
+    }
+    pushCardTable(state, card.previousEquippedToUid);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetPreviousEquipTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushEquipByEffectAndLimitRegister(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("EquipByEffectAndLimitRegister"));
   lua.lua_pushcfunction(L, (state: unknown) => pushEquipByEffectLimit(state, session, hostState));
@@ -59,6 +69,7 @@ function pushEquipByEffectAndLimitRegister<EffectRecord extends LuaCardApiEffect
     markLuaOperationTimingBoundary(session, hostState);
     moveDuelCard(session.state, equip.uid, "spellTrapZone", player, duelReason.effect, player);
     equip.equippedToUid = target.uid;
+    delete equip.previousEquippedToUid;
     equip.position = "faceUpAttack";
     equip.faceUp = true;
     if (code !== undefined) registerDuelFlagEffect(session.state, { ownerType: "card", ownerId: equip.uid }, code, 0x1fe0000, 0, 0);

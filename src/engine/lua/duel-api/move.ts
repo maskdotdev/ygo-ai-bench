@@ -279,6 +279,7 @@ function pushEquip(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHo
     moveDuelCard(session.state, equipUid, "spellTrapZone", player, duelReason.effect, hostState.activeContext?.player ?? player);
     assignReasonCard(equipCard, hostState);
     equipCard.equippedToUid = target.uid;
+    delete equipCard.previousEquippedToUid;
     equipCard.position = "faceUpAttack";
     equipCard.faceUp = true;
     pushDuelLog(session.state, "equip", player, equipCard.name, `Equipped to ${target.name}`);

@@ -15,9 +15,15 @@ export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, co
   card.reasonPlayer = reasonPlayer ?? controller ?? card.controller;
   card.turnId = state.turn;
   card.location = to;
-  if (to !== "spellTrapZone") delete card.equippedToUid;
+  if (to !== "spellTrapZone" && card.equippedToUid !== undefined) {
+    card.previousEquippedToUid = card.equippedToUid;
+    delete card.equippedToUid;
+  }
   for (const other of state.cards) {
-    if (other.equippedToUid === uid && to !== "monsterZone") delete other.equippedToUid;
+    if (other.equippedToUid === uid && to !== "monsterZone") {
+      other.previousEquippedToUid = uid;
+      delete other.equippedToUid;
+    }
   }
   if (controller !== undefined) card.controller = controller;
   card.sequence = nextSequence(state, card.controller, to);

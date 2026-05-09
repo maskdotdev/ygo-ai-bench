@@ -38,7 +38,11 @@ describe("Lua destroy substitute effects", () => {
 
     expect(host.messages).toContain("substitute value 65/0/true");
     expect(session.state.cards.find((card) => card.uid === target.uid)).toMatchObject({ location: "graveyard" });
-    expect(session.state.cards.find((card) => card.uid === equip.uid)).toMatchObject({ location: "spellTrapZone" });
+    expect(session.state.cards.find((card) => card.uid === equip.uid)).toMatchObject({
+      location: "graveyard",
+      previousEquippedToUid: target.uid,
+      reason: duelReason.lostTarget,
+    });
   });
 });
 

@@ -556,7 +556,7 @@ function assertSnapshotCards(cards: unknown): Set<string> {
 }
 
 function assertSnapshotCardReferences(card: Record<string, unknown>, path: string, locationsByUid: ReadonlyMap<string, unknown>): void {
-  for (const field of ["equippedToUid", "reasonCardUid"] as const) {
+  for (const field of ["equippedToUid", "previousEquippedToUid", "reasonCardUid"] as const) {
     const uid = card[field];
     if (uid !== undefined && !locationsByUid.has(uid as string)) throw new Error(`Malformed duel snapshot: ${path}.${field} must reference a card`);
   }
@@ -635,7 +635,7 @@ function assertSnapshotOptionalCardState(card: Record<string, unknown>, path: st
   for (const field of ["previousFaceUp", "cancelToGrave"] as const) {
     if (card[field] !== undefined && typeof card[field] !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a boolean`);
   }
-  for (const field of ["equippedToUid", "reasonCardUid"] as const) {
+  for (const field of ["equippedToUid", "previousEquippedToUid", "reasonCardUid"] as const) {
     if (card[field] !== undefined && typeof card[field] !== "string") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a string`);
   }
   for (const field of ["effectRelationIds"] as const) {
