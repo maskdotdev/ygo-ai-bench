@@ -738,7 +738,17 @@ function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffec
   pushGroupTable(L, eventGroupUids);
   lua.lua_pushinteger(L, chainLink?.eventPlayer ?? chainLink?.player ?? ctx?.eventPlayer ?? ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);
   lua.lua_pushinteger(L, chainLink?.eventValue ?? ctx?.eventValue ?? (chainLink ? hostState.session.state.chain.length : 0));
-  pushRelatedEffectTable(L, hostState, firstFiniteNumber(chainLink?.relatedEffectId, ctx?.chainLink?.relatedEffectId, ctx?.relatedEffectId, relatedEffectIdFromEventHistory(hostState, ctx)));
+  pushRelatedEffectTable(
+    L,
+    hostState,
+    firstFiniteNumber(
+      chainLink?.relatedEffectId,
+      ctx?.chainLink?.relatedEffectId,
+      ctx?.relatedEffectId,
+      relatedEffectIdFromChainLink(chainLink),
+      relatedEffectIdFromEventHistory(hostState, ctx),
+    ),
+  );
   lua.lua_pushinteger(L, chainLink?.eventReason ?? ctx?.eventReason ?? ctx?.eventCard?.reason ?? 0);
   lua.lua_pushinteger(L, chainLink?.eventReasonPlayer ?? chainLink?.player ?? ctx?.eventReasonPlayer ?? ctx?.eventCard?.reasonPlayer ?? ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);
   if (kind === "cost" || kind === "target") {
@@ -877,6 +887,12 @@ function relatedEffectIdFromEventHistory(hostState: LuaHostState, ctx?: DuelEffe
     return event.relatedEffectId;
   }
   return latestRelatedEffectId(hostState);
+}
+
+function relatedEffectIdFromChainLink(link: DuelSession["state"]["chain"][number] | undefined): number | undefined {
+  if (!link) return undefined;
+  const relatedEffectId = Number(link.effectId.match(/^lua-(\d+)/)?.[1]);
+  return Number.isFinite(relatedEffectId) ? relatedEffectId : undefined;
 }
 
 function latestRelatedEffectId(hostState: LuaHostState): number | undefined {
