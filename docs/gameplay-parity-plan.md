@@ -133,7 +133,7 @@ Remaining deliverables:
 - Expand battle timing coverage beyond the current Negate Attack real-script fixture to more Project Ignis scripts that use battle helper APIs.
 - Deepen "during damage calculation" edge behavior for modifiers, replacement effects, and response priority where EDOPro distinguishes sub-steps beyond the current window kinds.
 - Broaden `EVENT_BATTLED`/after-damage-calculation coverage beyond the current Wall of Illusion, Divine Knight Ishzark, D.D. Assailant, and D.D. Warrior plus Wall simultaneous-trigger branches.
-- Add fixtures for battle destruction replacement conflicts and redirected branches involving multiple competing replacement effects.
+- Add fixtures for battle destruction replacement conflicts. Redirected branches involving multiple competing field battle-destroy redirects now have snapshot-backed fixture coverage.
 - Keep compatibility helpers for existing `battleStep` users until UI and script consumers fully migrate to `battleWindow`.
 
 Implementation files likely touched:

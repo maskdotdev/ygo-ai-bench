@@ -642,6 +642,7 @@ function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid:
     event: effect.event,
     range: effect.range,
     ...(effect.effectCode === undefined ? {} : { code: effect.effectCode }),
+    ...(effect.luaTypeFlags === undefined ? {} : { luaTypeFlags: effect.luaTypeFlags }),
     ...(effect.value === undefined ? {} : { value: effect.value }),
     ...(effect.valueCardCode === undefined ? {} : { valueCardPredicate: (_ctx, card) => card.code === effect.valueCardCode }),
     ...(effect.targetRange === undefined ? {} : { targetRange: effect.targetRange }),
