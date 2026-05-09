@@ -36,6 +36,7 @@ import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js"
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
+import { luaMoveBlockedByImmunity, type LuaMoveImmunityHostState } from "#lua/duel-api/move-immunity.js";
 import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { applyMonsterZoneMask, hasOpenMonsterZone } from "#lua/monster-zone-mask.js";
@@ -46,7 +47,7 @@ const { lua, to_luastring } = fengari;
 type LuaSummonType = "FusionSummon" | "SynchroSummon" | "XyzSummon" | "LinkSummon" | "RitualSummon";
 type LuaSummonOrSetAction = Extract<DuelAction, { type: "normalSummon" | "tributeSummon" | "setMonster" | "setSpellTrap" }>;
 
-export interface LuaDuelSummonApiHostState extends LuaOperationTimingBoundaryHostState {
+export interface LuaDuelSummonApiHostState extends LuaOperationTimingBoundaryHostState, LuaMoveImmunityHostState {
   operatedUids: string[];
   pendingSpecialSummonUids?: string[];
 }
@@ -379,7 +380,13 @@ function pushSpecialSummonStep(L: unknown, session: DuelSession, hostState: LuaD
   const targetPlayer = readOptionalPlayer(L, 4) ?? target?.controller;
   const requestedPosition = lua.lua_isnumber(L, 7) ? positionFromMask(lua.lua_tointeger(L, 7)) : undefined;
   const zoneMask = lua.lua_isnumber(L, 8) ? lua.lua_tointeger(L, 8) : undefined;
-  if (!uid || !target || targetPlayer === undefined || !hasOpenMonsterZone(session, targetPlayer, zoneMask)) {
+  if (
+    !uid ||
+    !target ||
+    targetPlayer === undefined ||
+    !hasOpenMonsterZone(session, targetPlayer, zoneMask) ||
+    luaMoveBlockedByImmunity(L, session, hostState, target, duelReason.effect | duelReason.summon | duelReason.specialSummon)
+  ) {
     lua.lua_pushboolean(L, false);
     return 1;
   }

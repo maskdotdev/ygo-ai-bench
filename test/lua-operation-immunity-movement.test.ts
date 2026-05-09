@@ -335,4 +335,90 @@ describe("Lua operation immunity movement", () => {
     expect(host.messages).toContain("ignore special protected 1");
     expect(session.state.cards.find((card) => card.code === "250")).toMatchObject({ location: "monsterZone" });
   });
+
+  it("blocks effect SpecialSummonStep of immune cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "150", name: "Step Special Summon Source", kind: "monster" },
+      { code: "151", name: "Ignore Step Special Summon Source", kind: "monster" },
+      { code: "260", name: "Immune Step Target", kind: "monster" },
+      { code: "360", name: "Open Step Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 217, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["150", "151"] },
+      1: { main: ["260", "360"] },
+    });
+    startDuel(session);
+    placeCard(session, "260", "graveyard");
+    placeCard(session, "360", "graveyard");
+
+    const host = createLuaScriptHost(session);
+    const setup = host.loadScript(
+      `
+      local function pick(code)
+        return Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, code), 1, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      end
+      c150={}
+      function c150.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Debug.Message("step protected " .. tostring(Duel.SpecialSummonStep(pick(260), 0, 0, 1, false, false, POS_FACEUP_ATTACK)))
+          Debug.Message("step open " .. tostring(Duel.SpecialSummonStep(pick(360), 0, 0, 1, false, false, POS_FACEUP_ATTACK)))
+          Debug.Message("step complete " .. Duel.SpecialSummonComplete())
+        end)
+        c:RegisterEffect(e)
+      end
+      c151={}
+      function c151.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetProperty(EFFECT_FLAG_IGNORE_IMMUNE)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Debug.Message("ignore step protected " .. tostring(Duel.SpecialSummonStep(pick(260), 0, 0, 1, false, false, POS_FACEUP_ATTACK)))
+          Debug.Message("ignore step complete " .. Duel.SpecialSummonComplete())
+        end)
+        c:RegisterEffect(e)
+      end
+      c260={}
+      function c260.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_IMMUNE_EFFECT)
+        e:SetRange(LOCATION_GRAVE)
+        e:SetValue(function(e,te)
+          return te:GetOwnerPlayer()==0
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "operation-immunity-special-summon-step.lua",
+    );
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.code === "150");
+    const ignoreSource = session.state.cards.find((card) => card.controller === 0 && card.code === "151");
+    expect(source).toBeTruthy();
+    expect(ignoreSource).toBeTruthy();
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeTruthy();
+    expect(applyResponse(session, action!).ok).toBe(true);
+
+    expect(host.messages).toContain("step protected false");
+    expect(host.messages).toContain("step open true");
+    expect(host.messages).toContain("step complete 1");
+    expect(session.state.cards.find((card) => card.code === "260")).toMatchObject({ location: "graveyard" });
+    expect(session.state.cards.find((card) => card.code === "360")).toMatchObject({ location: "monsterZone" });
+
+    const ignoreAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === ignoreSource!.uid);
+    expect(ignoreAction).toBeTruthy();
+    expect(applyResponse(session, ignoreAction!).ok).toBe(true);
+
+    expect(host.messages).toContain("ignore step protected true");
+    expect(host.messages).toContain("ignore step complete 1");
+    expect(session.state.cards.find((card) => card.code === "260")).toMatchObject({ location: "monsterZone" });
+  });
 });
