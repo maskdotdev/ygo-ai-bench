@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { registerEffect } from "#duel/core.js";
+import { cleanupRemovedDuelEffect } from "#duel/effect-reset.js";
 import { locationsFromMask, readCardUid, readTableNumberField } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { callLuaEffectBattleDamageValue, callLuaEffectValueCardPredicate, callLuaEffectValuePredicate } from "#lua/effect-value-callbacks.js";
@@ -328,7 +329,9 @@ export function majesticCopyLuaEffects(L: unknown, hostState: LuaHostState, rece
 function deleteRegisteredLuaEffects(session: DuelSession, effect: LuaEffectRecord): void {
   session.state.effects = session.state.effects.filter((candidate) => {
     if (candidate.id !== luaEffectDuelId(effect)) return true;
-    return effect.sourceUid === undefined ? false : candidate.sourceUid !== effect.sourceUid;
+    const remove = effect.sourceUid === undefined || candidate.sourceUid === effect.sourceUid;
+    if (remove) cleanupRemovedDuelEffect(session.state, candidate);
+    return !remove;
   });
 }
 

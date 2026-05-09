@@ -531,6 +531,49 @@ describe("Lua card counter and cost helpers", () => {
     ]);
   });
 
+  it("removes counters when Lua counter permit effects are removed", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Permit Reset Counter", kind: "monster" }];
+    const session = createDuel({ seed: 231, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.code === "100");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local delete_permit = Effect.CreateEffect(target)
+      delete_permit:SetType(EFFECT_TYPE_SINGLE)
+      delete_permit:SetCode(EFFECT_COUNTER_PERMIT+99)
+      delete_permit:SetValue(LOCATION_MZONE)
+      target:RegisterEffect(delete_permit)
+      target:AddCounter(99, 2)
+      Debug.Message("before delete " .. target:GetCounter(99) .. "/" .. tostring(target:IsHasEffect(EFFECT_COUNTER_PERMIT+99)~=nil))
+      delete_permit:Delete()
+      Debug.Message("after delete " .. target:GetCounter(99) .. "/" .. tostring(target:IsHasEffect(EFFECT_COUNTER_PERMIT+99)~=nil))
+
+      local reset_permit = Effect.CreateEffect(target)
+      reset_permit:SetType(EFFECT_TYPE_SINGLE)
+      reset_permit:SetCode(EFFECT_COUNTER_PERMIT+99)
+      reset_permit:SetValue(LOCATION_MZONE)
+      target:RegisterEffect(reset_permit)
+      target:AddCounter(99, 3)
+      target:ResetEffect(EFFECT_COUNTER_PERMIT+99, RESET_CODE)
+      Debug.Message("after reset " .. target:GetCounter(99) .. "/" .. tostring(target:IsHasEffect(EFFECT_COUNTER_PERMIT+99)~=nil))
+      `,
+      "counter-permit-removal.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["before delete 2/true", "after delete 0/false", "after reset 0/false"]);
+    expect(target!.counters).toBeUndefined();
+  });
+
   it("lets Lua scripts use counter removal cost aliases", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Self Counter Cost", kind: "monster" },

@@ -1,4 +1,5 @@
 import { clearEffectCountUsage } from "#duel/effect-counts.js";
+import { getDuelCardCounter, removeDuelCardCounter } from "#duel/counters.js";
 import {
   destinationResetFlags,
   matchesDestinationReset,
@@ -15,6 +16,11 @@ import {
   resetPhase,
 } from "#duel/reset-flags.js";
 import type { DuelCardInstance, DuelEffectDefinition, DuelPhase, DuelState } from "#duel/types.js";
+
+const effectCounterPermit = 0x10000;
+const counterEffectMask = 0xf0000;
+const counterTypeMask = 0xffff;
+const effectTypeSingle = 0x1;
 
 export function pruneResetEffectsAfterMove(state: DuelState, card: DuelCardInstance): void {
   state.effects = state.effects.filter((effect) => {
@@ -89,8 +95,13 @@ export function pruneResetEffectsAfterChain(state: DuelState): void {
   });
 }
 
-function removeResetEffect(state: DuelState, effect: DuelEffectDefinition): false {
+export function cleanupRemovedDuelEffect(state: DuelState, effect: DuelEffectDefinition): void {
   clearEffectCountUsage(state, effect);
+  removeCounterPermitCounters(state, effect);
+}
+
+function removeResetEffect(state: DuelState, effect: DuelEffectDefinition): false {
+  cleanupRemovedDuelEffect(state, effect);
   return false;
 }
 
@@ -101,4 +112,14 @@ function decrementOrRemoveResetEffect(state: DuelState, effect: DuelEffectDefini
     return true;
   }
   return removeResetEffect(state, effect);
+}
+
+function removeCounterPermitCounters(state: DuelState, effect: DuelEffectDefinition): void {
+  const code = effect.code ?? 0;
+  if ((code & counterEffectMask) !== effectCounterPermit || ((effect.luaTypeFlags ?? 0) & effectTypeSingle) === 0) return;
+  const card = state.cards.find((candidate) => candidate.uid === effect.sourceUid);
+  if (!card) return;
+  const counterType = code & counterTypeMask;
+  const count = getDuelCardCounter(card, counterType);
+  if (count > 0) removeDuelCardCounter(card, counterType, count);
 }
