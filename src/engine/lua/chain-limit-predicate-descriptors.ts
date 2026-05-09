@@ -197,6 +197,56 @@ export function literalNotMonsterWithoutLevelActiveTypePredicate(L: unknown, ind
   return new RegExp(`^not\\s*\\(\\s*(?:${monsterEffect}\\s+and\\s+${noLevelHandler}|${noLevelHandler}\\s+and\\s+${monsterEffect})\\s*\\)$`).test(returnExpression);
 }
 
+export function literalStatelessSourcePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string | undefined {
+  if (hasNonEnvironmentUpvalues(L, index)) return undefined;
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  const source = snippet ? returnOnlyAnonymousFunctionExpression(snippet) : undefined;
+  return source ? restorableStatelessLuaChainLimitSource(source) : undefined;
+}
+
+export function restorableStatelessLuaChainLimitSource(source: string): string | undefined {
+  const normalized = source.trim();
+  if (normalized.length === 0 || normalized.length > 1200) return undefined;
+  return returnOnlyAnonymousFunctionExpression(normalized) === normalized ? normalized : undefined;
+}
+
+function returnOnlyAnonymousFunctionExpression(snippet: string): string | undefined {
+  const source = anonymousFunctionExpression(snippet);
+  if (source === undefined) return undefined;
+  const match = source.match(/^function\s*\(([^)]*)\)\s*return\s+(.+?)\s*end$/);
+  const params = match?.[1]?.split(",").map((param) => param.trim()).filter(Boolean) ?? [];
+  const expression = match?.[2]?.replace(/;$/, "").trim();
+  return expression !== undefined && statelessSourceExpressionIsReadOnly(expression, params) ? source : undefined;
+}
+
+function anonymousFunctionExpression(snippet: string): string | undefined {
+  const start = snippet.indexOf("function");
+  if (start < 0) return undefined;
+  const tail = snippet.slice(start);
+  if (!/^function\s*\(/.test(tail)) return undefined;
+  let depth = 0;
+  for (const match of tail.matchAll(/\b(function|end)\b/g)) {
+    const token = match[1];
+    if (!token) continue;
+    depth += token === "function" ? 1 : -1;
+    if (depth === 0) return tail.slice(0, match.index + token.length).trim();
+  }
+  return undefined;
+}
+
+function statelessSourceExpressionIsReadOnly(expression: string, params: string[]): boolean {
+  if (expression.length === 0 || /["'.;[\]{}]/.test(expression) || !/^[A-Za-z0-9_(),:\s+\-*/%<>=~&|#]+$/.test(expression)) return false;
+  const paramNames = new Set(params);
+  const keywords = new Set(["and", "false", "nil", "not", "or", "return", "true"]);
+  for (const identifier of expression.match(/[A-Za-z_]\w*/g) ?? []) {
+    if (paramNames.has(identifier) || keywords.has(identifier)) continue;
+    if (/^(TYPE_|EFFECT_|SET_)/.test(identifier)) continue;
+    if (/^(Get|Is|Has)[A-Za-z_]\w*$/.test(identifier)) continue;
+    return false;
+  }
+  return !/\bfunction\b/.test(expression);
+}
+
 function notSourceTypeTermMask(term: string, effectParam: string): number | undefined {
   const handler = `${escapeRegExp(effectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`;
   const compatibilityMatch = term.match(new RegExp(`^not\\s+${handler}\\s*:\\s*(IsMonster|IsSpell|IsTrap)\\s*\\(\\s*\\)$`));

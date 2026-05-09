@@ -8,6 +8,7 @@ import { isSetcodeMatch } from "#lua/card-code-utils.js";
 import { installCardProcedureApi } from "#lua/card-procedure-api.js";
 import { installDuelApi } from "#lua/duel-api/index.js";
 import { installGroupApi } from "#lua/group-api.js";
+import { restorableStatelessLuaChainLimitSource } from "#lua/chain-limit-predicate-descriptors.js";
 import { scriptFilenameForCard } from "#engine/data-loaders.js";
 import { installTypeCompatibilityApi } from "#lua/type-compatibility-api.js";
 import { installTracebackHandler, loadLuaScriptFile, readLuaError, registerLuaInitialEffectsDetailed, runLuaCardScript } from "#lua/host-script-api.js";
@@ -212,6 +213,28 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
   if (predicate === "closure:response-matches-chain-player") return { ...limit, allows: (_effect, player, activeChainPlayer) => player === activeChainPlayer };
   const chainPlayer = predicate?.match(/^closure:chain-player:([01])$/);
   if (chainPlayer?.[1]) return { ...limit, allows: (_effect, _player, activeChainPlayer) => activeChainPlayer === Number(chainPlayer[1]) };
+  const sourcePredicate = predicate?.match(/^closure:source:(.+)$/);
+  if (sourcePredicate?.[1]) {
+    const ref = compileLuaChainLimitSource(L, sourcePredicate[1]);
+    if (ref === undefined) return undefined;
+    return {
+      ...limit,
+      allows(effect, player, chainPlayer) {
+        lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, ref);
+        pushLuaChainLimitEffect(L, hostState, effect.id);
+        lua.lua_pushinteger(L, player);
+        lua.lua_pushinteger(L, chainPlayer);
+        const status = lua.lua_pcall(L, 3, 1, 0);
+        if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+        const result = lua.lua_toboolean(L, -1);
+        lua.lua_pop(L, 1);
+        return Boolean(result);
+      },
+      release() {
+        lauxlib.luaL_unref(L, lua.LUA_REGISTRYINDEX, ref);
+      },
+    };
+  }
   const field = predicate?.match(/^(c\d+)\.([A-Za-z_]\w*)$/);
   if (!field) return undefined;
   const [, tableName, fieldName] = field;
@@ -235,6 +258,33 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
       return Boolean(result);
     },
   };
+}
+
+function compileLuaChainLimitSource(L: unknown, encodedSource: string): number | undefined {
+  let source: string;
+  try {
+    source = decodeURIComponent(encodedSource);
+  }
+  catch {
+    return undefined;
+  }
+  source = restorableStatelessLuaChainLimitSource(source) ?? "";
+  if (!source) return undefined;
+  const loadStatus = lauxlib.luaL_loadstring(L, to_luastring(`return ${source}`));
+  if (loadStatus !== lua.LUA_OK) {
+    lua.lua_pop(L, 1);
+    return undefined;
+  }
+  const callStatus = lua.lua_pcall(L, 0, 1, 0);
+  if (callStatus !== lua.LUA_OK) {
+    lua.lua_pop(L, 1);
+    return undefined;
+  }
+  if (!lua.lua_isfunction(L, -1)) {
+    lua.lua_pop(L, 1);
+    return undefined;
+  }
+  return lauxlib.luaL_ref(L, lua.LUA_REGISTRYINDEX);
 }
 
 function sourceTypeFlags(hostState: LuaHostState, sourceUid: string): number {
