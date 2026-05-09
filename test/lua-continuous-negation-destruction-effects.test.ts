@@ -770,6 +770,115 @@ describe("Lua continuous negation and destruction effects", () => {
     expect(host.messages).toContain("open destructible opponent true");
   });
 
+  it("blocks effect operation movement of immune cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Movement Effect Source", kind: "monster" },
+      { code: "101", name: "Ignore Immunity Source", kind: "monster" },
+      { code: "200", name: "Immune Destroy Target", kind: "monster" },
+      { code: "201", name: "Immune Send Target", kind: "monster" },
+      { code: "300", name: "Open Destroy Target", kind: "monster" },
+      { code: "301", name: "Open Send Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 191, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "101"] },
+      1: { main: ["200", "201", "300", "301"] },
+    });
+    startDuel(session);
+
+    for (const code of ["200", "201", "300", "301"]) {
+      const card = session.state.cards.find((candidate) => candidate.controller === 1 && candidate.code === code);
+      expect(card).toBeTruthy();
+      moveDuelCard(session.state, card!.uid, "monsterZone", 1);
+      card!.faceUp = true;
+      card!.position = "faceUpAttack";
+    }
+
+    const host = createLuaScriptHost(session);
+    const setup = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          local protected_destroy=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 1, LOCATION_MZONE, 0, 1, 1, nil)
+          local protected_send=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 201), 1, LOCATION_MZONE, 0, 1, 1, nil)
+          local open_destroy=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 1, LOCATION_MZONE, 0, 1, 1, nil)
+          local open_send=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 301), 1, LOCATION_MZONE, 0, 1, 1, nil)
+          Debug.Message("operation destroy protected " .. Duel.Destroy(protected_destroy, REASON_EFFECT))
+          Debug.Message("operation send protected " .. Duel.SendtoGrave(protected_send, REASON_EFFECT))
+          Debug.Message("operation destroy open " .. Duel.Destroy(open_destroy, REASON_EFFECT))
+          Debug.Message("operation send open " .. Duel.SendtoGrave(open_send, REASON_EFFECT))
+        end)
+        c:RegisterEffect(e)
+      end
+      c101={}
+      function c101.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetProperty(EFFECT_FLAG_IGNORE_IMMUNE)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          local protected_destroy=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 1, LOCATION_MZONE, 0, 1, 1, nil)
+          local protected_send=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 201), 1, LOCATION_MZONE, 0, 1, 1, nil)
+          Debug.Message("ignore destroy protected " .. Duel.Destroy(protected_destroy, REASON_EFFECT))
+          Debug.Message("ignore send protected " .. Duel.SendtoGrave(protected_send, REASON_EFFECT))
+        end)
+        c:RegisterEffect(e)
+      end
+      local function register_immune(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_IMMUNE_EFFECT)
+        e:SetRange(LOCATION_MZONE)
+        e:SetValue(function(e,te)
+          return te:GetOwnerPlayer()==0
+        end)
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        register_immune(c)
+      end
+      c201={}
+      function c201.initial_effect(c)
+        register_immune(c)
+      end
+      `,
+      "operation-immunity-movement.lua",
+    );
+    expect(setup.ok, setup.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(4);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const ignoreSource = session.state.cards.find((card) => card.controller === 0 && card.code === "101");
+    expect(source).toBeTruthy();
+    expect(ignoreSource).toBeTruthy();
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeTruthy();
+    const result = applyResponse(session, action!);
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("operation destroy protected 0");
+    expect(host.messages).toContain("operation send protected 0");
+    expect(host.messages).toContain("operation destroy open 1");
+    expect(host.messages).toContain("operation send open 1");
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "monsterZone" });
+    expect(session.state.cards.find((card) => card.code === "201")).toMatchObject({ location: "monsterZone" });
+    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "graveyard" });
+    expect(session.state.cards.find((card) => card.code === "301")).toMatchObject({ location: "graveyard" });
+
+    const ignoreAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === ignoreSource!.uid);
+    expect(ignoreAction).toBeTruthy();
+    const ignoreResult = applyResponse(session, ignoreAction!);
+    expect(ignoreResult.ok, ignoreResult.error).toBe(true);
+    expect(host.messages).toContain("ignore destroy protected 1");
+    expect(host.messages).toContain("ignore send protected 1");
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "graveyard" });
+    expect(session.state.cards.find((card) => card.code === "201")).toMatchObject({ location: "graveyard" });
+  });
+
   it("applies Lua indestructible value callbacks during destruction", () => {
     const cards: DuelCardData[] = [{ code: "200", name: "Value Protected Target", kind: "monster" }];
     const session = createDuel({ seed: 82, startingHandSize: 1, cardReader: createCardReader(cards) });

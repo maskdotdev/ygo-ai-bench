@@ -178,7 +178,7 @@ function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefine
   return uid ? session.state.cards.find((card) => card.uid === uid) : undefined;
 }
 
-function luaCardIsImmuneToEffect<EffectRecord extends LuaCardApiEffectRecord>(
+export function luaCardIsImmuneToEffect<EffectRecord extends LuaCardApiEffectRecord>(
   L: unknown,
   session: DuelSession,
   hostState: LuaCardApiState<EffectRecord>,

@@ -4,7 +4,6 @@ import { getCards, hasZoneSpace, pushDuelLog, resequence } from "#duel/card-stat
 import { isControlChangePrevented } from "#duel/continuous-effects.js";
 import { eventCardReasonPayload, type DuelEventPayload } from "#duel/event-history.js";
 import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
-import { createRng } from "#engine/rng.js";
 import {
   banishDuelCard,
   canChangeDuelCardPosition,
@@ -26,7 +25,9 @@ import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
 import { moveDeckCardToBottom, moveDeckCardToTop } from "#lua/duel-api/deck-order.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { activeFieldSpell, isDuelType, isFieldSpell } from "#lua/duel-api/field-spell-state.js";
+import { luaMoveBlockedByImmunity, type LuaMoveImmunityHostState } from "#lua/duel-api/move-immunity.js";
 import { applyLuaMovePosition, didMove, faceupAttackOrFacedownDefensePosition, movementSnapshot } from "#lua/duel-api/move-card-state.js";
+import { shuffleLuaMoveCards } from "#lua/duel-api/move-shuffle.js";
 import { readCardOrGroupUids, readFieldDestination, readMoveReason, readOptionalPlayer, readSingleDestination } from "#lua/duel-api/move-readers.js";
 import { installDuelOverlayApi, removeOverlayReference } from "#lua/duel-api/overlay.js";
 import { applyMonsterZoneMask, hasOpenMonsterZone } from "#lua/monster-zone-mask.js";
@@ -42,9 +43,8 @@ export interface LuaOperationTimingBoundaryHostState {
   activeOperationMoved?: boolean | undefined;
 }
 
-export interface LuaDuelMoveApiHostState {
+export interface LuaDuelMoveApiHostState extends LuaMoveImmunityHostState {
   operatedUids: string[];
-  activeLuaEffectId?: number | undefined;
   activeContext?: DuelEffectContext | undefined;
   activeOperationTriggerStart?: number | undefined;
   activeOperationMoved?: boolean;
@@ -113,6 +113,7 @@ function pushSendToGenericLocation(L: unknown, session: DuelSession, hostState: 
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
+    if (luaMoveBlockedByImmunity(L, session, hostState, card, reason)) continue;
     const before = movementSnapshot(card);
     try {
       const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
@@ -188,6 +189,7 @@ function pushRemove(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiH
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
+    if (luaMoveBlockedByImmunity(L, session, hostState, card, reason)) continue;
     const before = movementSnapshot(card);
     try {
       const result = banishDuelCard(session.state, uid, card.controller, reason, hostState.activeContext?.player ?? session.state.turnPlayer);
@@ -400,7 +402,8 @@ function pushMoveToField(L: unknown, session: DuelSession, hostState: LuaDuelMov
     targetPlayer === undefined ||
     !destination ||
     !hasOpenFieldZone(session, targetPlayer, destination, zoneMask, uid, requestedSequence) ||
-    !canMoveDuelCardToLocation(session.state, uid, destination, duelReason.effect)
+    !canMoveDuelCardToLocation(session.state, uid, destination, duelReason.effect) ||
+    luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)
   ) {
     setOperatedUids(hostState, []);
     lua.lua_pushinteger(L, 0);
@@ -738,7 +741,7 @@ function pushShuffleSetCard(L: unknown, session: DuelSession, hostState: LuaDuel
   const shuffled: string[] = [];
   const requested = new Set(readCardOrGroupUids(L, 1));
   for (const bucket of shuffleBuckets(session.state, requested)) {
-    const next = shuffleCards(session, bucket.cards);
+    const next = shuffleLuaMoveCards(session, bucket.cards);
     for (const [index, card] of next.entries()) card.sequence = bucket.sequences[index] ?? card.sequence;
     shuffled.push(...next.map((card) => card.uid));
   }
@@ -761,17 +764,6 @@ function shuffleBuckets(state: DuelState, requested: Set<string>): { cards: Duel
     .filter((bucket) => bucket.cards.length > 0);
 }
 
-function shuffleCards(session: DuelSession, cards: DuelCardInstance[]): DuelCardInstance[] {
-  const rng = createRng(`${session.state.seed}:shuffle-set:${session.state.randomCounter}`);
-  session.state.randomCounter += 1;
-  const shuffled = [...cards];
-  for (let index = shuffled.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(rng() * (index + 1));
-    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex]!, shuffled[index]!];
-  }
-  return shuffled;
-}
-
 function moveCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDuelMoveApiHostState, mover: LuaCardMover, extraReason = 0, groupedEventName?: DuelEventName, groupedLocation?: DuelLocation): string[] {
   if (session.state.status === "ended") return [];
   const reason = readMoveReason(L, 2, extraReason);
@@ -782,6 +774,7 @@ function moveCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDuelMov
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
+    if (luaMoveBlockedByImmunity(L, session, hostState, card, reason)) continue;
     const before = movementSnapshot(card);
     try {
       const result = mover(session.state, uid, card.controller, reason, reasonPlayer);
@@ -809,7 +802,7 @@ function moveCardOrGroupToLocation(session: DuelSession, L: unknown, hostState: 
   const triggerStart = session.state.pendingTriggers.length;
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
-    if (!card || !canMoveDuelCardToLocation(session.state, uid, location, reason)) continue;
+    if (!card || !canMoveDuelCardToLocation(session.state, uid, location, reason) || luaMoveBlockedByImmunity(L, session, hostState, card, reason)) continue;
     const before = movementSnapshot(card);
     try {
       const result = moveDuelCardWithRedirects(session.state, uid, location, readOptionalPlayer(L, 2) ?? card.controller, reason, reasonPlayer, luaEffectReasonPayload(hostState, reason ?? 0, reasonPlayer));
@@ -856,7 +849,7 @@ function shuffleMovedDecks(session: DuelSession, movedUids: string[]): void {
   }
   for (const key of keys) {
     const player = key.startsWith("1:") ? 1 : 0;
-    const shuffled = shuffleCards(session, getCards(session.state, player, "deck"));
+    const shuffled = shuffleLuaMoveCards(session, getCards(session.state, player, "deck"));
     for (const [sequence, card] of shuffled.entries()) card.sequence = sequence;
   }
 }
