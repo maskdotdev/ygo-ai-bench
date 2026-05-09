@@ -199,9 +199,10 @@ describe("Lua card relation state helpers", () => {
       local source=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_HAND,0,1,1,nil):GetFirst()
       local first=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,200),0,LOCATION_HAND,0,1,1,nil):GetFirst()
       local second=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,300),0,LOCATION_HAND,0,1,1,nil):GetFirst()
+      local function result_count(...) return select("#", ...) end
       Debug.Message("card target before " .. tostring(source:IsHasCardTarget(first)))
-      Debug.Message("card target set " .. tostring(source:SetCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(second)))
-      Debug.Message("card relation create " .. tostring(source:CreateRelation(second,RESET_EVENT+RESETS_STANDARD)) .. "/" .. tostring(source:IsHasCardTarget(second)))
+      Debug.Message("card target set " .. result_count(source:SetCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(second)))
+      Debug.Message("card relation create " .. result_count(source:CreateRelation(second,RESET_EVENT+RESETS_STANDARD)) .. "/" .. tostring(source:IsHasCardTarget(second)))
       Debug.Message("card target group " .. source:GetCardTargetCount() .. "/" .. source:GetCardTarget():GetCount() .. "/" .. source:GetFirstCardTarget():GetCode())
       Debug.Message("owner target first " .. first:GetOwnerTargetCount() .. "/" .. first:GetOwnerTarget():GetCount() .. "/" .. first:GetFirstOwnerTarget():GetCode())
       source:CancelCardTarget(first)
@@ -215,8 +216,8 @@ describe("Lua card relation state helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toEqual([
       "card target before false",
-      "card target set true/true/false",
-      "card relation create true/true",
+      "card target set 0/true/false",
+      "card relation create 0/true",
       "card target group 2/2/200",
       "owner target first 1/1/100",
       "card target cancel false/true",
@@ -251,6 +252,7 @@ describe("Lua card relation state helpers", () => {
       local source=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_HAND,0,1,1,nil):GetFirst()
       local first=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,200),0,LOCATION_HAND,0,1,1,nil):GetFirst()
       local second=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,300),0,LOCATION_HAND,0,1,1,nil):GetFirst()
+      local function result_count(...) return select("#", ...) end
       local e=Effect.CreateEffect(source)
       source:CreateEffectRelation(e)
       source:SetCardTarget(first)
@@ -259,8 +261,8 @@ describe("Lua card relation state helpers", () => {
       source:ReleaseEffectRelation(e)
       source:CancelCardTarget(first)
       source:CancelToGrave(false)
-      Debug.Message("set ended " .. tostring(source:SetCardTarget(second)))
-      Debug.Message("relation ended " .. tostring(source:CreateRelation(second,RESET_EVENT+RESETS_STANDARD)))
+      Debug.Message("set ended " .. result_count(source:SetCardTarget(second)))
+      Debug.Message("relation ended " .. result_count(source:CreateRelation(second,RESET_EVENT+RESETS_STANDARD)))
       Debug.Message("effect kept " .. tostring(source:IsRelateToEffect(e)))
       Debug.Message("targets kept " .. tostring(source:IsHasCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(second)) .. "/" .. source:GetCardTargetCount())
       `,
@@ -269,8 +271,8 @@ describe("Lua card relation state helpers", () => {
     expect(result.ok, result.error).toBe(true);
 
     expect(host.messages).toEqual([
-      "set ended false",
-      "relation ended false",
+      "set ended 0",
+      "relation ended 0",
       "effect kept true",
       "targets kept true/false/1",
     ]);

@@ -70,14 +70,11 @@ function pushReleaseEffectRelation(L: unknown, session: DuelSession): number {
 }
 
 function pushSetCardTarget(L: unknown, session: DuelSession): number {
-  if (session.state.status === "ended") {
-    lua.lua_pushboolean(L, false);
-    return 1;
-  }
+  if (session.state.status === "ended") return 0;
   const card = readCard(L, session, 1);
   const target = readCard(L, session, 2);
-  lua.lua_pushboolean(L, setCardTarget(card, target));
-  return 1;
+  setCardTarget(card, target);
+  return 0;
 }
 
 function pushCancelCardTarget(L: unknown, session: DuelSession): number {
@@ -140,14 +137,11 @@ function pushIsHasCardTarget(L: unknown, session: DuelSession): number {
 }
 
 function pushCreateRelation(L: unknown, session: DuelSession): number {
-  if (session.state.status === "ended") {
-    lua.lua_pushboolean(L, false);
-    return 1;
-  }
+  if (session.state.status === "ended") return 0;
   const card = readCard(L, session, 1);
   const target = readCard(L, session, 2);
-  lua.lua_pushboolean(L, setCardTarget(card, target));
-  return 1;
+  setCardTarget(card, target);
+  return 0;
 }
 
 function pushGetMarkedEffects<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {

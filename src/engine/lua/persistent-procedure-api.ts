@@ -16,10 +16,9 @@ export function installPersistentProcedureApi(L: unknown, readLuaError: (state: 
       function Card.SetCardTarget(c,tc)
         local key=card_key(c)
         local target_key=card_key(tc)
-        if not key or not target_key then return false end
+        if not key or not target_key then return end
         persistent_card_targets[key]=persistent_card_targets[key] or {}
         persistent_card_targets[key][target_key]=true
-        return true
       end
       function Card.IsHasCardTarget(c,tc)
         local key=card_key(c)
@@ -27,8 +26,7 @@ export function installPersistentProcedureApi(L: unknown, readLuaError: (state: 
         return key and target_key and persistent_card_targets[key] and persistent_card_targets[key][target_key] or false
       end
       function Card.CreateRelation(c,tc,reset)
-        if Card.SetCardTarget then return c:SetCardTarget(tc) end
-        return false
+        if Card.SetCardTarget then c:SetCardTarget(tc) end
       end
     end
     function aux.PersistentFilter(c,p,f,e,tp,tg,eg,ep,ev,re,r,rp)
