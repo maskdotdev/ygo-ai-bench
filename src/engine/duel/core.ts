@@ -141,7 +141,7 @@ import { setSpellTrap } from "#duel/spell-trap.js";
 import { canActivateSpellTrapCardEffect, shouldSendActivatedSpellTrapToGraveyard } from "#duel/spell-trap-activation.js";
 import { negateCoreDuelSummon } from "#duel/summon-negation.js";
 import { duelSummonTypeFromCode, luaSummonTypeFusion, luaSummonTypeLink, luaSummonTypePendulum, luaSummonTypeRitual, luaSummonTypeSynchro, luaSummonTypeXyz } from "#duel/summon-type-codes.js";
-import { changeDuelPhase, drawDuelCardsFromDeck, endDuelTurn, nextAvailableDuelPhase } from "#duel/turn-flow.js";
+import { changeDuelPhase, drawDuelCardsFromDeck, endDuelTurn, isDuelPhaseSkipped, nextAvailableDuelPhase } from "#duel/turn-flow.js";
 export { createDuel, loadDecks, startDuel, type CreateDuelOptions } from "#duel/setup.js";
 import type {
   ApplyDuelResponseResult,
@@ -328,7 +328,8 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     return stampDuelActions(actions, state.actionWindowId, "battle", state.actionWindowToken);
   }
   const hand = getCards(state, player, "hand");
-  if (state.phase === "main1" || state.phase === "main2") {
+  const currentPhaseSkipped = isDuelPhaseSkipped(state, player, state.phase);
+  if (!currentPhaseSkipped && (state.phase === "main1" || state.phase === "main2")) {
     actions.push(...normalSummonActions(state, player, hand, () => isNoTributeSummonAllowed(state, player)).filter((action) => {
       if (action.type !== "normalSummon" && action.type !== "setMonster") return true;
       const card = findCard(state, action.uid);
@@ -380,10 +381,10 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     }));
     actions.push(...corePositionChangeActions(state, player, coreBattleHandlers));
   }
-  else {
+  else if (!currentPhaseSkipped) {
     actions.push(...quickEffectActions(state, player));
   }
-  appendBattleActions(actions, state, player, coreBattleHandlers);
+  if (!currentPhaseSkipped) appendBattleActions(actions, state, player, coreBattleHandlers);
   const mustAttack = hasCoreMustAttackAction(state, player, actions, coreBattleHandlers);
   const nextPhase = nextAvailableDuelPhase(state, player, (phase) => canEnterDuelPhase(state, player, phase));
   if (!mustAttack && nextPhase) actions.push({ type: "changePhase", player, phase: nextPhase, label: `Go to ${nextPhase}` });
