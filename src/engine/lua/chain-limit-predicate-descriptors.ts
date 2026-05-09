@@ -204,10 +204,44 @@ export function literalStatelessSourcePredicate(L: unknown, index: number, hostS
   return source ? restorableStatelessLuaChainLimitSource(source) : undefined;
 }
 
+export function capturedTypeMaskDescriptor(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string | undefined {
+  const mask = capturedTypeMask(L, index);
+  if (mask === undefined) return undefined;
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  return `${capturedTypeMaskUsesOriginalType(snippet) ? "closure:original-type-mask-response-player" : "closure:type-mask-response-player"}:${mask}`;
+}
+
 export function restorableStatelessLuaChainLimitSource(source: string): string | undefined {
   const normalized = source.trim();
   if (normalized.length === 0 || normalized.length > 1200) return undefined;
   return returnOnlyAnonymousFunctionExpression(normalized) === normalized ? normalized : undefined;
+}
+
+function capturedTypeMask(L: unknown, index: number): number | undefined {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  const numbers: Array<{ name: string; value: number }> = [];
+  for (let upvalueIndex = 1;; upvalueIndex += 1) {
+    const nameBytes = lua.lua_getupvalue(L, absoluteIndex, upvalueIndex);
+    if (nameBytes === null) break;
+    const name = typeof nameBytes === "string" ? nameBytes : to_jsstring(nameBytes);
+    if (name !== "_ENV") {
+      if (!lua.lua_isnumber(L, -1)) {
+        lua.lua_pop(L, 1);
+        return undefined;
+      }
+      numbers.push({ name, value: lua.lua_tointeger(L, -1) });
+    }
+    lua.lua_pop(L, 1);
+  }
+  return numbers.length === 1 && isTypeMaskUpvalueName(numbers[0]!.name) ? numbers[0]!.value : undefined;
+}
+
+function capturedTypeMaskUsesOriginalType(snippet: string | undefined): boolean {
+  return Boolean(snippet && /:\s*(?:GetOriginalType|IsOriginalType)\s*\(/.test(snippet));
+}
+
+function isTypeMaskUpvalueName(name: string): boolean {
+  return name === "typ" || name === "typeMask" || name === "type_mask";
 }
 
 function returnOnlyAnonymousFunctionExpression(snippet: string): string | undefined {

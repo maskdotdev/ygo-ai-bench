@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { addDuelChainLimit, canNegateDuelChainLinkObject, negateDuelChainLinkObject } from "#duel/core.js";
 import { pushCardTable } from "#lua/card-api.js";
-import { literalActionTypeChainPlayerLimitPredicate, literalCapturedPlayerComparisonPredicate, literalFalsePredicate, literalNotMonsterWithoutLevelActiveTypePredicate, literalNotSourceOrActiveTypeAndEffectTypePredicateDescriptor, literalResponseMatchesChainPlayerOrActiveTypePredicate, literalResponseMatchesChainPlayerOrCurrentTargetCardsPredicate, literalResponseMatchesChainPlayerOrNotSourceTypePredicate, literalResponseMatchesChainPlayerOrSourceTypeNonActivatePredicate, literalStatelessSourcePredicate, literalTruePredicate } from "#lua/chain-limit-predicate-descriptors.js";
+import { capturedTypeMaskDescriptor, literalActionTypeChainPlayerLimitPredicate, literalCapturedPlayerComparisonPredicate, literalFalsePredicate, literalNotMonsterWithoutLevelActiveTypePredicate, literalNotSourceOrActiveTypeAndEffectTypePredicateDescriptor, literalResponseMatchesChainPlayerOrActiveTypePredicate, literalResponseMatchesChainPlayerOrCurrentTargetCardsPredicate, literalResponseMatchesChainPlayerOrNotSourceTypePredicate, literalResponseMatchesChainPlayerOrSourceTypeNonActivatePredicate, literalStatelessSourcePredicate, literalTruePredicate } from "#lua/chain-limit-predicate-descriptors.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid, readOptionalFunctionRef, releaseOptionalFunctionRef, symbolicLocationMask } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelSession, DuelState, PlayerId } from "#duel/types.js";
@@ -214,8 +214,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (handlerExclusionUids && handlerExclusionUids.length > 1) return `closure:cards-not-handler:${handlerExclusionUids.map(encodeURIComponent).join(",")}`;
   const targetHandlerExclusionUids = literalTargetCardsHandlerExclusionUids(L, index, hostState);
   if (targetHandlerExclusionUids) return `closure:target-cards-not-handler:${targetHandlerExclusionUids.map(encodeURIComponent).join(",")}`;
-  const typeMask = capturedTypeMask(L, index);
-  if (typeMask !== undefined) return `closure:type-mask-response-player:${typeMask}`;
+  const typeMask = capturedTypeMaskDescriptor(L, index, hostState);
+  if (typeMask) return typeMask;
   const actionTypeChainPlayer = literalActionTypeChainPlayerLimitPredicate(L, index, hostState);
   if (actionTypeChainPlayer) return actionTypeChainPlayer;
   const responsePlayerHandlerCodes = literalResponseMatchesChainPlayerOrHandlerCodesPredicate(L, index, hostState);
@@ -367,29 +367,6 @@ function literalTargetCardsHandlerExclusionUids(L: unknown, index: number, hostS
     String.raw`\s*:\s*GetHandler\s*\(\s*\)\s*\)`,
   ].join("");
   return new RegExp(String.raw`\breturn\s+not\s+${targetGroupContainsHandler}(?:\s+end\b|$)`).test(snippet) ? targetUids : undefined;
-}
-
-function capturedTypeMask(L: unknown, index: number): number | undefined {
-  const absoluteIndex = lua.lua_absindex(L, index);
-  const numbers: Array<{ name: string; value: number }> = [];
-  for (let upvalueIndex = 1;; upvalueIndex += 1) {
-    const nameBytes = lua.lua_getupvalue(L, absoluteIndex, upvalueIndex);
-    if (nameBytes === null) break;
-    const name = typeof nameBytes === "string" ? nameBytes : to_jsstring(nameBytes);
-    if (name !== "_ENV") {
-      if (!lua.lua_isnumber(L, -1)) {
-        lua.lua_pop(L, 1);
-        return undefined;
-      }
-      numbers.push({ name, value: lua.lua_tointeger(L, -1) });
-    }
-    lua.lua_pop(L, 1);
-  }
-  return numbers.length === 1 && isTypeMaskUpvalueName(numbers[0]!.name) ? numbers[0]!.value : undefined;
-}
-
-function isTypeMaskUpvalueName(name: string): boolean {
-  return name === "typ" || name === "typeMask" || name === "type_mask";
 }
 
 function capturedHandlerCode(L: unknown, index: number): number | undefined {

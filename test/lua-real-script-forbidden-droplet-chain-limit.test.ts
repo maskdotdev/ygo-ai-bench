@@ -76,7 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fo
     expect(dropletAction).toBeDefined();
     applyAndAssert(session, dropletAction!);
 
-    const registryKey = `lua-chain-limit:${dropletCode}:0:link:known:closure:type-mask-response-player:2`;
+    const registryKey = `lua-chain-limit:${dropletCode}:0:link:known:closure:original-type-mask-response-player:2`;
     const openedSnapshot = serializeDuel(session);
     expect(openedSnapshot.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(openedSnapshot.state.chain[0]).toMatchObject({

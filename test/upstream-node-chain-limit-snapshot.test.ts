@@ -553,7 +553,7 @@ describe("Node upstream chain-limit snapshot restore", () => {
     expect(getDuelLegalActions(session, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
 
     const snapshot = serializeDuel(session);
-    expect(snapshot.state.chainLimits[0]?.registryKey).toContain(":known:closure:type-mask-response-player:");
+    expect(snapshot.state.chainLimits[0]?.registryKey).toContain(":known:closure:original-type-mask-response-player:");
     const restored = restoreDuelWithLuaScripts(snapshot, workspace, createCardReader(cards));
 
     expect(restored.restoreComplete).toBe(true);
