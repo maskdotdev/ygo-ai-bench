@@ -183,6 +183,9 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
   if (predicate === "closure:not-active-monster-link") {
     return { ...limit, allows: (effect) => (sourceTypeFlags(hostState, effect.sourceUid) & 0x4000001) !== 0x4000001 };
   }
+  if (predicate === "closure:not-monster-without-level") {
+    return { ...limit, allows: (effect) => (sourceTypeFlags(hostState, effect.sourceUid) & 0x1) === 0 || sourceHasLevel(hostState, effect.sourceUid) };
+  }
   const blockedActiveTypeForOpponent = predicate?.match(/^closure:not-active-type-response-player:(\d+)$/);
   if (blockedActiveTypeForOpponent?.[1]) {
     return { ...limit, allows: (effect, player, chainPlayer) => player === chainPlayer || (sourceTypeFlags(hostState, effect.sourceUid) & Number(blockedActiveTypeForOpponent[1])) === 0 };
@@ -232,6 +235,11 @@ function sourceTypeFlags(hostState: LuaHostState, sourceUid: string): number {
 
 function sourceHasSetcode(hostState: LuaHostState, sourceUid: string, requested: number): boolean {
   return hostState.session.state.cards.find((card) => card.uid === sourceUid)?.data.setcodes?.some((setcode) => isSetcodeMatch(requested, setcode)) ?? false;
+}
+
+function sourceHasLevel(hostState: LuaHostState, sourceUid: string): boolean {
+  const flags = sourceTypeFlags(hostState, sourceUid);
+  return (flags & 0x1) !== 0 && (flags & 0x800000) === 0 && (flags & 0x4000000) === 0;
 }
 
 function sourceCode(hostState: LuaHostState, sourceUid: string): string | undefined {

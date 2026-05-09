@@ -130,6 +130,19 @@ export function literalNotSourceTypeOrNotEffectTypePredicate(L: unknown, index: 
   return sourceSetcode === undefined ? { sourceType, effectType } : { sourceType, effectType, sourceSetcode };
 }
 
+export function literalNotMonsterWithoutLevelActiveTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): boolean {
+  if (hasNonEnvironmentUpvalues(L, index)) return false;
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return false;
+  const effectParam = luaFunctionParams(snippet)?.[0];
+  const returnExpression = lastReturnExpression(snippet);
+  if (!effectParam || !returnExpression) return false;
+  const effect = escapeRegExp(effectParam);
+  const monsterEffect = `${effect}\\s*:\\s*IsMonsterEffect\\s*\\(\\s*\\)`;
+  const noLevelHandler = `not\\s+${effect}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*HasLevel\\s*\\(\\s*\\)`;
+  return new RegExp(`^not\\s*\\(\\s*(?:${monsterEffect}\\s+and\\s+${noLevelHandler}|${noLevelHandler}\\s+and\\s+${monsterEffect})\\s*\\)$`).test(returnExpression);
+}
+
 function notSourceTypeTermMask(term: string, effectParam: string): number | undefined {
   const handler = `${escapeRegExp(effectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`;
   const compatibilityMatch = term.match(new RegExp(`^not\\s+${handler}\\s*:\\s*(IsMonster|IsSpell|IsTrap)\\s*\\(\\s*\\)$`));

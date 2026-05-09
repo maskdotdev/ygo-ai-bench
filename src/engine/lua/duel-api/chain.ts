@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { addDuelChainLimit, canNegateDuelChainLinkObject, negateDuelChainLinkObject } from "#duel/core.js";
 import { pushCardTable } from "#lua/card-api.js";
-import { literalActionTypeChainPlayerLimitPredicate, literalCapturedPlayerComparisonPredicate, literalNotSourceTypeOrNotEffectTypePredicate, literalResponseMatchesChainPlayerOrActiveTypePredicate, literalResponseMatchesChainPlayerOrCurrentTargetCardsPredicate, literalResponseMatchesChainPlayerOrSpellTrapNonActivatePredicate } from "#lua/chain-limit-predicate-descriptors.js";
+import { literalActionTypeChainPlayerLimitPredicate, literalCapturedPlayerComparisonPredicate, literalNotMonsterWithoutLevelActiveTypePredicate, literalNotSourceTypeOrNotEffectTypePredicate, literalResponseMatchesChainPlayerOrActiveTypePredicate, literalResponseMatchesChainPlayerOrCurrentTargetCardsPredicate, literalResponseMatchesChainPlayerOrSpellTrapNonActivatePredicate } from "#lua/chain-limit-predicate-descriptors.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid, readOptionalFunctionRef, releaseOptionalFunctionRef, symbolicLocationMask } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelSession, DuelState, PlayerId } from "#duel/types.js";
@@ -190,6 +190,7 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (blockedSourceEffectType) return `closure:not-source-type-effect-type:${blockedSourceEffectType.sourceType}:${blockedSourceEffectType.effectType}`;
   const currentTargetHandlerExclusionUids = literalResponseMatchesChainPlayerOrCurrentTargetCardsPredicate(L, index, hostState);
   if (currentTargetHandlerExclusionUids) return `closure:target-cards-not-handler:${currentTargetHandlerExclusionUids.map(encodeURIComponent).join(",")}`;
+  if (literalNotMonsterWithoutLevelActiveTypePredicate(L, index, hostState)) return "closure:not-monster-without-level";
   const cardTableField = matchingGlobalCardTableFunctionField(L, index);
   if (cardTableField) return cardTableField;
   const handlerOnlyUid = literalCapturedHandlerOnlyCardUid(L, index, hostState);
