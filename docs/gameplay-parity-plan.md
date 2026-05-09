@@ -127,7 +127,7 @@ Completed baseline:
 - Quick effects are gated by battle sub-window, including damage-step-only and damage-calculation-only windows.
 - Battle window state is preserved through `serializeDuel()` and `restoreDuel()`.
 - Fixture observations cover direct attack, monster attack, attack negation, target leaving, target count changing with replay, damage calculation modifiers, both-player plus half-damage modifier ordering, after-damage triggers, end-of-damage-step triggers, and snapshot restore mid-window.
-- Real-script battle helper coverage now includes official Alien Hunter `EVENT_BATTLED` flag setup into `EVENT_BATTLE_DESTROYING` and restored `Duel.ChainAttack()` reopening after battle cleanup.
+- Real-script battle helper coverage now includes official Alien Hunter `EVENT_BATTLED` flag setup into `EVENT_BATTLE_DESTROYING` and restored `Duel.ChainAttack()` reopening after battle cleanup, plus official Toon Defense `EVENT_ATTACK_ANNOUNCE` targeting into restored `Duel.ChangeAttackTarget(nil)` direct-attack conversion.
 
 Remaining deliverables:
 
