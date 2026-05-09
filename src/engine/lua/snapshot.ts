@@ -13,6 +13,10 @@ const luaEffectEquipLimit = 76;
 const luaEffectUnionStatus = 347;
 const luaEffectOldUnionStatus = 348;
 const luaUnionStateEffectCodes = new Set([luaEffectEquipLimit, luaEffectUnionStatus, luaEffectOldUnionStatus]);
+const luaStaticSingleCardRestrictionCodes = new Set([43, 44, 85]);
+const luaResetTurnSet = 0x20000;
+const luaResetsStandardPhaseEnd = 0x41fe1200;
+const luaTemporaryRestrictionResetFlags = luaResetsStandardPhaseEnd & ~luaResetTurnSet;
 
 export interface LuaSnapshotRestoreResult {
   session: DuelSession;
@@ -181,9 +185,15 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
       effect.luaValueDescriptor === "change-damage:effect-double" ||
       effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous" ||
       effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
+      isStaticSingleCardLuaRestriction(effect) ||
       (effect.code === 102 && effect.value !== undefined && effect.value !== 0 && effect.targetRange === undefined) ||
       ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 132) && effect.value !== undefined))
   );
+}
+
+function isStaticSingleCardLuaRestriction(effect: SerializedDuelEffect): boolean {
+  if (effect.code === undefined || !luaStaticSingleCardRestrictionCodes.has(effect.code)) return false;
+  return effect.targetRange === undefined && effect.sourceUid !== undefined && effect.range.length === 1 && effect.reset?.flags === luaTemporaryRestrictionResetFlags;
 }
 
 function restoredLuaOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
