@@ -18,6 +18,19 @@ export function callLuaEffectValuePredicate(
   if (luaEffect.valueRef === undefined) return true;
   return withLuaCallbackContext(hostState, ctx, () => {
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.valueRef);
+    if (luaEffect.code === 80 || luaEffect.code === 81 || luaEffect.code === 335) {
+      hostState.pushEffectTable(L, luaEffect.id);
+      pushRelatedEffectTable(L, hostState, ctx);
+      lua.lua_pushinteger(L, ctx.eventReason ?? 0);
+      lua.lua_pushinteger(L, reasonPlayer ?? ctx.eventReasonPlayer ?? ctx.player ?? card.controller);
+      if (ctx.eventCard) pushCardTable(L, ctx.eventCard.uid);
+      else lua.lua_pushnil(L);
+      const status = lua.lua_pcall(L, 5, 1, 0);
+      if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+      const result = lua.lua_isnil(L, -1) ? true : Boolean(lua.lua_toboolean(L, -1));
+      lua.lua_pop(L, 1);
+      return result;
+    }
     hostState.pushEffectTable(L, luaEffect.id);
     pushRelatedEffectTable(L, hostState, ctx);
     lua.lua_pushinteger(L, reasonPlayer ?? ctx.player ?? card.controller);

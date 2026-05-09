@@ -1,13 +1,13 @@
 import fengari from "fengari";
-import { pushDuelLog } from "#duel/card-state.js";
-import { isEffectDefeatPrevented } from "#duel/continuous-effects.js";
+import { moveDuelCard, pushDuelLog } from "#duel/card-state.js";
+import { isEffectDefeatPrevented, matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { collectDuelTriggerEffects, damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "#duel/core.js";
 import { clearEndedDuelPendingState } from "#duel/end-state.js";
 import { duelReason } from "#duel/reasons.js";
 import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
-import type { DuelSession, DuelWinner, PlayerId } from "#duel/types.js";
+import type { DuelCardInstance, DuelEffectContext, DuelSession, DuelWinner, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -52,14 +52,14 @@ export function installDuelLpApi(L: unknown, session: DuelSession, hostState: Lu
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const value = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     const reason = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : duelReason.effect;
-    const applied = damageDuelPlayer(session.state, player, value, reason);
-    if (applied > 0 && session.state.status !== "ended") {
+    const result = applyLuaDamage(session, hostState, player, value, reason);
+    if (result.applied > 0 && (result.eventName !== "damageDealt" || session.state.status !== "ended")) {
       const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
       markLuaOperationTimingBoundary(session, hostState);
-      collectDuelTriggerEffects(session.state, "damageDealt", undefined, { eventPlayer: player, eventValue: applied, ...luaEffectReasonPayload(hostState, reason, reasonPlayer) });
+      collectDuelTriggerEffects(session.state, result.eventName, undefined, { eventPlayer: result.player, eventValue: result.applied, ...luaEffectReasonPayload(hostState, reason, reasonPlayer) });
       if (hostState.activeContext) hostState.activeOperationMoved = true;
     }
-    lua.lua_pushinteger(state, applied);
+    lua.lua_pushinteger(state, result.applied);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Damage"));
@@ -67,14 +67,14 @@ export function installDuelLpApi(L: unknown, session: DuelSession, hostState: Lu
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const value = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
     const reason = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : duelReason.effect;
-    const applied = recoverDuelPlayer(session.state, player, value);
-    if (applied > 0) {
+    const result = applyLuaRecover(session, hostState, player, value, reason);
+    if (result.applied > 0 && (result.eventName !== "damageDealt" || session.state.status !== "ended")) {
       const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
       markLuaOperationTimingBoundary(session, hostState);
-      collectDuelTriggerEffects(session.state, "recoveredLifePoints", undefined, { eventPlayer: player, eventValue: applied, ...luaEffectReasonPayload(hostState, reason, reasonPlayer) });
+      collectDuelTriggerEffects(session.state, result.eventName, undefined, { eventPlayer: result.player, eventValue: result.applied, ...luaEffectReasonPayload(hostState, reason, reasonPlayer) });
       if (hostState.activeContext) hostState.activeOperationMoved = true;
     }
-    lua.lua_pushinteger(state, applied);
+    lua.lua_pushinteger(state, result.applied);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Recover"));
@@ -106,4 +106,88 @@ function normalizeWinner(value: number): DuelWinner {
 
 function otherPlayer(player: PlayerId): PlayerId {
   return player === 0 ? 1 : 0;
+}
+
+type LuaLifePointEventName = "damageDealt" | "recoveredLifePoints";
+
+interface LuaLifePointResult {
+  applied: number;
+  eventName: LuaLifePointEventName;
+  player: PlayerId;
+}
+
+function applyLuaDamage(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, player: PlayerId, amount: number, reason: number): LuaLifePointResult {
+  const value = Math.max(0, Math.floor(amount));
+  if (session.state.status === "ended" || value <= 0 || isEffectDamagePrevented(session, hostState, player, reason)) return { applied: 0, eventName: "damageDealt", player };
+  if (isEffectDamageReversed(session, hostState, player, reason)) {
+    return { applied: recoverDuelPlayer(session.state, player, value), eventName: "recoveredLifePoints", player };
+  }
+  return { applied: damageDuelPlayer(session.state, player, value, reason), eventName: "damageDealt", player };
+}
+
+function applyLuaRecover(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, player: PlayerId, amount: number, reason: number): LuaLifePointResult {
+  const value = Math.max(0, Math.floor(amount));
+  if (session.state.status === "ended" || value <= 0) return { applied: 0, eventName: "recoveredLifePoints", player };
+  if (isEffectRecoveryReversed(session, hostState, player, reason) && !isEffectDamagePrevented(session, hostState, player, reason)) {
+    return { applied: damageDuelPlayer(session.state, player, value, reason), eventName: "damageDealt", player };
+  }
+  return { applied: recoverDuelPlayer(session.state, player, value), eventName: "recoveredLifePoints", player };
+}
+
+function isEffectDamagePrevented(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, player: PlayerId, reason: number): boolean {
+  return isEffectLifePointEffectApplied(session, hostState, player, reason, 335);
+}
+
+function isEffectDamageReversed(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, player: PlayerId, reason: number): boolean {
+  return isEffectLifePointEffectApplied(session, hostState, player, reason, 80);
+}
+
+function isEffectRecoveryReversed(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, player: PlayerId, reason: number): boolean {
+  return isEffectLifePointEffectApplied(session, hostState, player, reason, 81);
+}
+
+function isEffectLifePointEffectApplied(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, player: PlayerId, reason: number, code: number): boolean {
+  if ((reason & duelReason.effect) === 0) return false;
+  const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
+  const createContext = createLifePointEffectContext(session, hostState, reason, reasonPlayer);
+  return matchingPlayerEffects(session.state, player, code, createContext).some(({ effect, source }) => {
+    const ctx = createContext(effect, source);
+    return !effect.valuePredicate || effect.valuePredicate(ctx, reasonPlayer);
+  });
+}
+
+function createLifePointEffectContext(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, reason: number, reasonPlayer: PlayerId): ContinuousEffectContextFactory {
+  return (effect, source, card) => {
+    const targetUids = card ? [card.uid] : [];
+    const ctx: DuelEffectContext = {
+      duel: session.state,
+      source,
+      player: effect.controller,
+      checkOnly: true,
+      eventReason: reason,
+      eventReasonPlayer: reasonPlayer,
+      ...(hostState.activeContext?.chainLink === undefined ? {} : { chainLink: hostState.activeContext.chainLink }),
+      targetUids,
+      log() {},
+      moveCard(uid: string, to, controller?: PlayerId): DuelCardInstance {
+        return moveDuelCard(session.state, uid, to, controller);
+      },
+      negateChainLink() {
+        return false;
+      },
+      setTargets(uids) {
+        targetUids.splice(0, targetUids.length, ...uids);
+      },
+      getTargets() {
+        return targetUids.map((uid) => session.state.cards.find((candidate) => candidate.uid === uid)).filter((candidate): candidate is DuelCardInstance => Boolean(candidate));
+      },
+      setTargetPlayer(target) {
+        ctx.targetPlayer = target;
+      },
+      setTargetParam(parameter) {
+        ctx.targetParam = parameter;
+      },
+    };
+    return ctx;
+  };
 }
