@@ -600,6 +600,80 @@ describe("Lua battle damage modifiers", () => {
     expect(session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "monsterZone" });
   });
 
+  it("prioritizes turn-player field battle destroy redirects over earlier opponent redirects", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Redirect Priority Target", kind: "monster", attack: 1000 },
+      { code: "200", name: "Redirect Priority Attacker", kind: "monster", attack: 1800 },
+      { code: "300", name: "Opponent Redirect Source", kind: "monster", attack: 500 },
+      { code: "400", name: "Turn Redirect Source", kind: "monster", attack: 500 },
+    ];
+    const session = createDuel({ seed: 151, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["200", "400"] },
+    });
+    startDuel(session);
+    session.state.turnPlayer = 1;
+    session.state.waitingFor = 1;
+
+    const target = session.state.cards.find((card) => card.controller === 0 && card.code === "100");
+    const opponentSource = session.state.cards.find((card) => card.controller === 0 && card.code === "300");
+    const attacker = session.state.cards.find((card) => card.controller === 1 && card.code === "200");
+    const turnSource = session.state.cards.find((card) => card.controller === 1 && card.code === "400");
+    expect(target).toBeDefined();
+    expect(opponentSource).toBeDefined();
+    expect(attacker).toBeDefined();
+    expect(turnSource).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, opponentSource!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 1).position = "faceUpAttack";
+    moveDuelCard(session.state, turnSource!.uid, "monsterZone", 1).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_BATTLE_DESTROY_REDIRECT)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(1,0)
+        e:SetValue(LOCATION_DECK)
+        c:RegisterEffect(e)
+      end
+      c400={}
+      function c400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD)
+        e:SetCode(EFFECT_BATTLE_DESTROY_REDIRECT)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_MZONE)
+        e:SetTargetRange(0,1)
+        e:SetValue(LOCATION_REMOVED)
+        c:RegisterEffect(e)
+      end
+      `,
+      "battle-destroy-redirect-turn-player-priority.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    expect(
+      session.state.effects
+        .filter((effect) => effect.code === 204)
+        .map((effect) => session.state.cards.find((card) => card.uid === effect.sourceUid)?.code),
+    ).toEqual(["300", "400"]);
+
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
+    applyAndAssert(session, getDuelLegalActions(session, 1).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!);
+    passBattleResponses(session);
+
+    expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "banished", reason: 0x4000021 });
+    expect(session.state.cards.find((card) => card.uid === opponentSource!.uid)).toMatchObject({ location: "monsterZone" });
+    expect(session.state.cards.find((card) => card.uid === turnSource!.uid)).toMatchObject({ location: "monsterZone" });
+  });
+
   it("applies targeted field battle destroy redirects only through selected destroyers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Selected Redirect Attacker", kind: "monster", attack: 1800 },

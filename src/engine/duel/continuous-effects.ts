@@ -2,6 +2,7 @@ import { findCard } from "#duel/card-state.js";
 import { otherPlayer } from "#duel/player-id.js";
 import { hasReviveLimitProcedureComplete } from "#duel/procedure-status.js";
 import { duelReason } from "#duel/reasons.js";
+import { orderReplacementEffects } from "#duel/replacement-effect-order.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import type {
   DuelCardInstance,
@@ -466,6 +467,7 @@ export function battleDestroyRedirectLocation(state: DuelState, uid: string, cre
   const battlingUids = [battle?.attackerUid, battle?.targetUid].filter((id): id is string => Boolean(id));
   const battleOpponent = battlingUids.find((id) => id !== uid);
   const destroyer = battleOpponent ? findCard(state, battleOpponent) : undefined;
+  const candidates: { match: ContinuousEffectMatch; redirect: RedirectDestination }[] = [];
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 204) continue;
     const source = findCard(state, effect.sourceUid);
@@ -477,9 +479,14 @@ export function battleDestroyRedirectLocation(state: DuelState, uid: string, cre
     const sourceDestroyedOpponent = destroyer && source.uid === destroyer.uid && continuousEffectAppliesToCard(effect, source, destroyer, destroyerCtx!);
     const fieldEffectTargetsDestroyer = destroyer && source.uid !== destroyer.uid && continuousEffectAppliesToCard(effect, source, destroyer, destroyerCtx!);
     if (!sourceDestroyedOpponent && !fieldEffectTargetsDestroyer && !continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
-    if (!effect.canActivate || effect.canActivate(ctx)) return redirect;
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    candidates.push({ match: { effect, source, card }, redirect });
   }
-  return undefined;
+  const [first] = orderReplacementEffects(
+    state,
+    candidates.map((candidate) => candidate.match),
+  );
+  return candidates.find((candidate) => candidate.match === first)?.redirect;
 }
 
 export function isAttackPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
