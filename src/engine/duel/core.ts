@@ -19,6 +19,7 @@ import {
   flipSummonDuelCard as flipSummonDuelCardWithEvents,
   fusionSummonActions,
   fusionSummonDuelCard as fusionSummonDuelCardWithEvents,
+  geminiNormalSummonActions,
   linkSummonActions,
   linkSummonDuelCard as linkSummonDuelCardWithEvents,
   normalSummon,
@@ -335,6 +336,10 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
       if (action.type === "normalSummon") return !isNormalSummonPrevented(state, player, card, createContinuousEffectContext(state));
       if (action.type === "setMonster") return !isMonsterSetPrevented(state, player, card, createContinuousEffectContext(state));
       return true;
+    }));
+    actions.push(...geminiNormalSummonActions(state, player).filter((action) => {
+      const card = findCard(state, action.uid);
+      return Boolean(card && !isNormalSummonPrevented(state, player, card, createContinuousEffectContext(state)));
     }));
     actions.push(...tributeSummonActions(state, player, hand, createReleasePredicate(state, duelReason.release | duelReason.summon)).filter((action) => {
       if (action.type !== "tributeSummon") return true;

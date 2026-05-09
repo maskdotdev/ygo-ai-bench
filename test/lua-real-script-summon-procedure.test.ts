@@ -139,6 +139,51 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(hasActivateEffect(getLuaRestoreLegalActions(restored, 0), monsterReborn!.uid)).toBe(false);
   });
+
+  it("restores real Gemini second Normal Summon triggers", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const evequeCode = "16146511";
+    const geminiTargetCode = "3918345";
+    const cards = workspace.readDatabaseCards("cards.cdb").filter((card) => [evequeCode, geminiTargetCode].includes(card.code));
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 299, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [evequeCode, geminiTargetCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const eveque = session.state.cards.find((card) => card.code === evequeCode && card.location === "deck");
+    const target = session.state.cards.find((card) => card.code === geminiTargetCode && card.location === "deck");
+    expect(eveque).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, eveque!.uid, "monsterZone", 0);
+    eveque!.faceUp = true;
+    eveque!.position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "graveyard", 0);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(evequeCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    const geminiSummon = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "normalSummon" && action.uid === eveque!.uid);
+    expect(geminiSummon, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
+    const summoned = applyLuaRestoreResponse(restored, geminiSummon!);
+    expect(summoned.ok, summoned.error).toBe(true);
+    expect(restored.session.state.cards.find((card) => card.uid === eveque!.uid)).toMatchObject({
+      location: "monsterZone",
+      summonType: "normal",
+      summonTypeCode: 0x12000000,
+    });
+
+    const triggerRestored = restoreDuelWithLuaScripts(serializeDuel(restored.session), workspace, reader);
+    expect(triggerRestored.restoreComplete, triggerRestored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActions(triggerRestored, 0)).toEqual(getDuelLegalActions(triggerRestored.session, 0));
+    const trigger = getLuaRestoreLegalActions(triggerRestored, 0).find((action) => action.type === "activateTrigger" && action.uid === eveque!.uid);
+    expect(trigger, JSON.stringify(getLuaRestoreLegalActions(triggerRestored, 0), null, 2)).toBeDefined();
+  });
 });
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {

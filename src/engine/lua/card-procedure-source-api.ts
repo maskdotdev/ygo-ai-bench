@@ -76,6 +76,37 @@ export const cardProcedureSource = `${fusionProcedureSource}
       c:RegisterEffect(e1)
       return e1
     end
+    Gemini=Gemini or {}
+    function Gemini.AddProcedure(c)
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_SINGLE)
+      e1:SetCode(EFFECT_GEMINI_SUMMONABLE)
+      c:RegisterEffect(e1)
+      local e2=Effect.CreateEffect(c)
+      e2:SetType(EFFECT_TYPE_SINGLE)
+      e2:SetProperty(EFFECT_FLAG_SINGLE_RANGE+EFFECT_FLAG_IGNORE_IMMUNE)
+      e2:SetCode(EFFECT_ADD_TYPE)
+      e2:SetRange(LOCATION_MZONE|LOCATION_GRAVE)
+      e2:SetCondition(Gemini.NormalStatusCondition)
+      e2:SetValue(TYPE_NORMAL)
+      c:RegisterEffect(e2)
+      local e3=e2:Clone()
+      e3:SetCode(EFFECT_REMOVE_TYPE)
+      e3:SetValue(TYPE_EFFECT)
+      c:RegisterEffect(e3)
+    end
+    function Gemini.EffectStatusCondition(effect)
+      local c=effect:GetHandler()
+      return not c:IsDisabled() and c:IsGeminiStatus()
+    end
+    function Gemini.NormalStatusCondition(effect)
+      local c=effect:GetHandler()
+      return c:IsFaceup() and not c:IsGeminiStatus()
+    end
+    aux.EnableGeminiAttribute=Gemini.AddProcedure
+    aux.IsGeminiState=Gemini.EffectStatusCondition
+    aux.IsNotGeminiState=aux.NOT(Gemini.EffectStatusCondition)
+    aux.GeminiNormalCondition=Gemini.NormalStatusCondition
     function Synchro.NonTuner(f,...)
       local params={...}
       return function(target,scard,sumtype,tp)
@@ -457,7 +488,7 @@ export const cardProcedureSource = `${fusionProcedureSource}
       return e0
     end
     function Card.IsGeminiStatus(c)
-      return c:IsHasEffect(EFFECT_GEMINI_STATUS)~=nil
+      return (c:IsLocation(LOCATION_MZONE) and c:IsSummonLocation(LOCATION_MZONE) and c:IsSummonType(SUMMON_TYPE_GEMINI)) or c:IsHasEffect(EFFECT_GEMINI_STATUS)~=nil
     end
     Card.EnableGeminiState=Card.EnableGeminiStatus
     Card.IsGeminiState=Card.IsGeminiStatus

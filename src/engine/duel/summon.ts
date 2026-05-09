@@ -6,6 +6,9 @@ import { tributeUnitCount } from "#duel/double-tribute.js";
 import { cardCombinations, cardMatchesCode, isMonsterLike, materialCodesMatch } from "#duel/summon-materials.js";
 import type { DuelAction, DuelCardInstance, DuelEventName, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
+const typeGemini = 0x800;
+const summonTypeGemini = 0x12000000;
+
 export type DuelEventCollector = (eventName: DuelEventName, eventCard?: DuelCardInstance) => void;
 export interface DuelMaterialMoveResult {
   card: DuelCardInstance;
@@ -19,6 +22,11 @@ type ExtraDeckSummonType = "fusion" | "synchro" | "Xyz" | "Link";
 type SynchroMaterialCodes = { tuner: string; nonTuners: string[] };
 
 export function normalSummon(state: DuelState, player: PlayerId, uid: string, collectEvent: DuelEventCollector, canSummonWithoutTribute: DuelNormalSummonPredicate = () => false): void {
+  const fieldCard = findCard(state, uid);
+  if (fieldCard?.location === "monsterZone") {
+    geminiNormalSummon(state, player, fieldCard, collectEvent);
+    return;
+  }
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
   if (tributeRangeForNormalSummon(card).min > 0 && !canSummonWithoutTribute(card)) throw new Error(`${card.name} requires a Tribute Summon`);
@@ -35,6 +43,26 @@ export function normalSummon(state: DuelState, player: PlayerId, uid: string, co
   state.players[player].normalSummonAvailable = false;
   recordNormalSummonActivity(state, player, card);
   pushDuelLog(state, "normalSummon", player, card.name, "Normal Summoned from hand");
+  collectEvent("normalSummoned", card);
+}
+
+function geminiNormalSummon(state: DuelState, player: PlayerId, card: DuelCardInstance, collectEvent: DuelEventCollector): void {
+  if (!canGeminiNormalSummonDuelCard(state, player, card)) throw new Error(`${card.name} cannot be Gemini Summoned`);
+  card.previousLocation = card.location;
+  card.previousController = card.controller;
+  card.previousSequence = card.sequence;
+  card.previousPosition = card.position;
+  card.previousFaceUp = card.faceUp;
+  collectEvent("normalSummoning", card);
+  card.summonType = "normal";
+  card.summonTypeCode = summonTypeGemini;
+  card.summonPlayer = player;
+  card.summonPhase = state.phase;
+  card.summonMaterialUids = [];
+  markProcedureComplete(card);
+  state.players[player].normalSummonAvailable = false;
+  recordNormalSummonActivity(state, player, card);
+  pushDuelLog(state, "normalSummon", player, card.name, "Gemini Summoned on the field");
   collectEvent("normalSummoned", card);
 }
 
@@ -357,6 +385,29 @@ export function normalSummonActions(state: DuelState, player: PlayerId, hand: Du
     if (tributeRange.min === 0) actions.push({ type: "setMonster", player, uid: card.uid, label: `Set ${card.name}` });
   }
   return actions;
+}
+
+export function geminiNormalSummonActions(state: DuelState, player: PlayerId): Extract<DuelAction, { type: "normalSummon" }>[] {
+  if (!state.players[player].normalSummonAvailable) return [];
+  return getCards(state, player, "monsterZone")
+    .filter((card) => canGeminiNormalSummonDuelCard(state, player, card))
+    .map((card) => ({ type: "normalSummon", player, uid: card.uid, label: `Normal Summon ${card.name} again` }));
+}
+
+export function canGeminiNormalSummonDuelCard(state: DuelState, player: PlayerId, card: DuelCardInstance): boolean {
+  return (
+    state.players[player].normalSummonAvailable &&
+    card.controller === player &&
+    card.location === "monsterZone" &&
+    card.faceUp &&
+    card.kind === "monster" &&
+    ((card.data.typeFlags ?? 0) & typeGemini) !== 0 &&
+    !hasGeminiStatus(card)
+  );
+}
+
+function hasGeminiStatus(card: DuelCardInstance): boolean {
+  return card.summonTypeCode === summonTypeGemini && card.location === "monsterZone" && card.previousLocation === "monsterZone" && card.faceUp;
 }
 
 export function tributeSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[], canReleaseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
