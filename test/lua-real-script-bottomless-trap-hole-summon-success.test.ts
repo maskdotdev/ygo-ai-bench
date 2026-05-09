@@ -115,6 +115,120 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bo
     expect(restored.host.messages).toContain("bottomless chain starter resolved");
     expect(restored.host.messages).not.toContain("bottomless chain responder resolved");
   });
+
+  it("restores Bottomless Trap Hole's special-summon group target and banishes every eligible monster", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const bottomlessCode = "29401950";
+    const specialStarterCode = "873";
+    const triggerStarterCode = "874";
+    const responderCode = "875";
+    const firstSummonedCode = "876";
+    const secondSummonedCode = "877";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === bottomlessCode),
+      { code: specialStarterCode, name: "Bottomless Special Summon Starter", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: triggerStarterCode, name: "Bottomless Special Trigger Starter", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: responderCode, name: "Bottomless Special Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: firstSummonedCode, name: "Bottomless First Special Summoned Monster", kind: "monster", typeFlags: 0x1, level: 4, attack: 1500, defense: 1200 },
+      { code: secondSummonedCode, name: "Bottomless Second Special Summoned Monster", kind: "monster", typeFlags: 0x1, level: 4, attack: 1700, defense: 1200 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 463, startingHandSize: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [specialStarterCode, triggerStarterCode, responderCode, firstSummonedCode, secondSummonedCode] }, 1: { main: [bottomlessCode] } });
+    startDuel(session);
+
+    const specialStarter = session.state.cards.find((card) => card.code === specialStarterCode);
+    const triggerStarter = session.state.cards.find((card) => card.code === triggerStarterCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    const firstSummoned = session.state.cards.find((card) => card.code === firstSummonedCode);
+    const secondSummoned = session.state.cards.find((card) => card.code === secondSummonedCode);
+    const bottomless = session.state.cards.find((card) => card.code === bottomlessCode);
+    expect(specialStarter).toBeDefined();
+    expect(triggerStarter).toBeDefined();
+    expect(responder).toBeDefined();
+    expect(firstSummoned).toBeDefined();
+    expect(secondSummoned).toBeDefined();
+    expect(bottomless).toBeDefined();
+    moveDuelCard(session.state, specialStarter!.uid, "hand", 0);
+    moveDuelCard(session.state, triggerStarter!.uid, "hand", 0);
+    moveDuelCard(session.state, responder!.uid, "hand", 0);
+    moveDuelCard(session.state, firstSummoned!.uid, "hand", 0);
+    moveDuelCard(session.state, secondSummoned!.uid, "hand", 0);
+    moveDuelCard(session.state, bottomless!.uid, "spellTrapZone", 1);
+    bottomless!.position = "faceDown";
+    bottomless!.faceUp = false;
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${specialStarterCode}.lua`) return specialSummonGroupScript(firstSummonedCode, secondSummonedCode);
+        if (name === `c${triggerStarterCode}.lua`) return specialSummonChainStarterScript();
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(bottomlessCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(specialStarterCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(triggerStarterCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(4);
+
+    const specialSummonAction = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === specialStarter!.uid);
+    expect(specialSummonAction).toBeDefined();
+    applyAndAssert(session, specialSummonAction!);
+    resolveChainWithPasses(session);
+    expect(host.messages).toContain("bottomless special summon starter resolved 2");
+    expect(session.state.cards.find((card) => card.uid === firstSummoned!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, position: "faceUpAttack", summonPlayer: 0 });
+    expect(session.state.cards.find((card) => card.uid === secondSummoned!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, position: "faceUpAttack", summonPlayer: 0 });
+
+    const triggerAction = getLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.uid === triggerStarter!.uid);
+    expect(triggerAction).toBeDefined();
+    applyAndAssert(session, triggerAction!);
+    expect(session.state.chain).toHaveLength(1);
+    expect(session.state.chain[0]).toMatchObject({
+      sourceUid: triggerStarter!.uid,
+      eventName: "specialSummoned",
+      eventCode: 1102,
+      eventCardUid: firstSummoned!.uid,
+      eventUids: [firstSummoned!.uid, secondSummoned!.uid],
+    });
+
+    const bottomlessAction = getLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.uid === bottomless!.uid);
+    expect(bottomlessAction).toBeDefined();
+    applyAndAssert(session, bottomlessAction!);
+    expect(session.state.chain).toHaveLength(2);
+    expect(session.state.chain[1]).toMatchObject({
+      sourceUid: bottomless!.uid,
+      eventName: "specialSummoned",
+      eventCode: 1102,
+      eventCardUid: firstSummoned!.uid,
+      eventUids: [firstSummoned!.uid, secondSummoned!.uid],
+      targetUids: [firstSummoned!.uid, secondSummoned!.uid],
+      operationInfos: [
+        { category: 0x1, targetUids: [firstSummoned!.uid, secondSummoned!.uid], count: 2, player: 0, parameter: 0 },
+        { category: 0x4, targetUids: [firstSummoned!.uid, secondSummoned!.uid], count: 2, player: 0, parameter: 0 },
+      ],
+    });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+
+    const pass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    const resolved = applyLuaRestoreResponse(restored, pass!);
+    expect(resolved.ok, resolved.error).toBe(true);
+
+    expect(restored.session.state.cards.find((card) => card.uid === firstSummoned!.uid)).toMatchObject({ location: "banished" });
+    expect(restored.session.state.cards.find((card) => card.uid === secondSummoned!.uid)).toMatchObject({ location: "banished" });
+    expect(restored.session.state.cards.find((card) => card.uid === bottomless!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restored.host.messages).not.toContain("bottomless special summon starter resolved 2");
+    expect(restored.host.messages).toContain("bottomless special trigger starter resolved");
+    expect(restored.host.messages).not.toContain("bottomless chain responder resolved");
+  });
 });
 
 function chainStarterScript(): string {
@@ -146,6 +260,39 @@ function chainResponderScript(): string {
   `;
 }
 
+function specialSummonChainStarterScript(): string {
+  return `
+    local s,id=GetID()
+    function s.initial_effect(c)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_TRIGGER_O)
+      e:SetCode(EVENT_SPSUMMON_SUCCESS)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp) Debug.Message("bottomless special trigger starter resolved") end)
+      c:RegisterEffect(e)
+    end
+  `;
+}
+
+function specialSummonGroupScript(firstCode: string, secondCode: string): string {
+  return `
+    local s,id=GetID()
+    function s.initial_effect(c)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_QUICK_O)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp)
+        local first=Duel.SelectMatchingCard(tp,aux.FilterBoolFunction(Card.IsCode,${firstCode}),tp,LOCATION_HAND,0,1,1,nil):GetFirst()
+        local second=Duel.SelectMatchingCard(tp,aux.FilterBoolFunction(Card.IsCode,${secondCode}),tp,LOCATION_HAND,0,1,1,nil):GetFirst()
+        local ct=0
+        if first and second then ct=Duel.SpecialSummon(Group.FromCards(first,second),0,tp,tp,false,false,POS_FACEUP_ATTACK) end
+        Debug.Message("bottomless special summon starter resolved " .. ct)
+      end)
+      c:RegisterEffect(e)
+    end
+  `;
+}
+
 function applyAndAssert(session: DuelSession, action: DuelAction) {
   const response = applyResponse(session, action);
   expect(response.ok, response.error).toBe(true);
@@ -153,4 +300,18 @@ function applyAndAssert(session: DuelSession, action: DuelAction) {
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
+}
+
+function resolveChainWithPasses(session: DuelSession): void {
+  let guard = 0;
+  while (session.state.chain.length > 0 && guard < 8) {
+    guard += 1;
+    const player = session.state.waitingFor;
+    expect(player).toBeDefined();
+    const actions = getLegalActions(session, player!);
+    const pass = actions.find((action) => action.type === "passChain");
+    expect(pass, JSON.stringify(actions)).toBeDefined();
+    applyAndAssert(session, pass!);
+  }
+  expect(session.state.chain).toHaveLength(0);
 }

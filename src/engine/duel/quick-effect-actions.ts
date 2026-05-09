@@ -37,7 +37,7 @@ function quickEffectTimingAllows(state: DuelState, effect: DuelEffectDefinition)
 
 function shouldRequireMatchingFirstChainEvent(state: DuelState, effect: DuelEffectDefinition): boolean {
   if (effect.triggerEvent === undefined || isChainEvent(effect.triggerEvent)) return false;
-  return state.chain[0]?.eventName !== undefined;
+  return state.chain.length > 0;
 }
 
 function isChainEvent(eventName: string): boolean {
