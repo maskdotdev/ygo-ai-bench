@@ -316,6 +316,98 @@ describe("Lua chain-end chain-limit restore", () => {
     expect(hasGroupedLuaEffect(restored, 1, "lua-5")).toBe(false);
   });
 
+  it("restores chain-depth flag-gated EVENT_CHAIN_END limits after clearing the flag", () => {
+    const source = {
+      readScript(name: string) {
+        if (name === "c160.lua") {
+          return `
+            c160 = {}
+            c160.initial_effect = function(c)
+              local e1 = Effect.CreateEffect(c)
+              e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+              e1:SetCode(EVENT_CHAINING)
+              e1:SetRange(LOCATION_HAND)
+              e1:SetOperation(c160.mark)
+              c:RegisterEffect(e1)
+              local e2 = Effect.CreateEffect(c)
+              e2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+              e2:SetCode(EVENT_CHAIN_END)
+              e2:SetRange(LOCATION_HAND)
+              e2:SetOperation(c160.chainend)
+              c:RegisterEffect(e2)
+            end
+            function c160.mark(e,tp,eg,ep,ev,re,r,rp)
+              if Duel.GetCurrentChain()==1 then
+                e:GetHandler():RegisterFlagEffect(160,RESET_EVENT,0,1)
+              end
+            end
+            function c160.chainend(e,tp,eg,ep,ev,re,r,rp)
+              local c=e:GetHandler()
+              if c:HasFlagEffect(160) then
+                Duel.SetChainLimitTillChainEnd(function(e,rp,tp) return rp==tp end)
+              end
+              c:ResetFlagEffect(160)
+            end
+          `;
+        }
+        if (name === "c400.lua") {
+          return `
+            c400 = {}
+            c400.initial_effect = function(c)
+              local e = Effect.CreateEffect(c)
+              e:SetType(EFFECT_TYPE_IGNITION)
+              e:SetRange(LOCATION_HAND)
+              e:SetOperation(function(e,tp) Debug.Message("chain-depth flag starter resolved") end)
+              c:RegisterEffect(e)
+            end
+          `;
+        }
+        if (name === "c200.lua") return quickScript(200, "chain-depth flag same-player response resolved");
+        if (name === "c210.lua") return quickScript(210, "chain-depth flag same-player follow-up resolved");
+        if (name === "c300.lua") return quickScript(300, "chain-depth flag opponent response resolved");
+        return undefined;
+      },
+    };
+    const cards = normalizeCdbRows([{ id: 160, type: 1 }, { id: 200, type: 1 }, { id: 210, type: 1 }, { id: 300, type: 1 }, { id: 400, type: 1 }], []);
+    const session = createDuel({ seed: 432, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["160", "400", "200", "210"] }, 1: { main: ["300"] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(160, source).ok).toBe(true);
+    expect(host.loadCardScript(400, source).ok).toBe(true);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.loadCardScript(210, source).ok).toBe(true);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(5);
+
+    const starter = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("400"));
+    expect(starter).toBeDefined();
+    expect(applyResponse(session, starter!).ok).toBe(true);
+    const opponentPass = getLegalActions(session, 1).find((candidate) => candidate.type === "passChain");
+    expect(opponentPass).toBeDefined();
+    expect(applyResponse(session, opponentPass!).ok).toBe(true);
+    const turnPass = getLegalActions(session, 0).find((candidate) => candidate.type === "passChain");
+    expect(turnPass).toBeDefined();
+    expect(applyResponse(session, turnPass!).ok).toBe(true);
+
+    const registryKey = "lua-chain-limit:160:0:chain:known:closure:response-matches-chain-player";
+    const snapshot = serializeDuel(session);
+    expect(snapshot.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
+    expect(snapshot.state.flagEffects.some((flag) => flag.code === 160)).toBe(false);
+
+    const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
+
+    const nextChain = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-4");
+    expect(nextChain).toBeDefined();
+    expect(applyResponse(restored.session, nextChain!).ok).toBe(true);
+    expect(hasGroupedLuaEffect(restored, 0, "lua-5")).toBe(true);
+    expect(hasGroupedLuaEffect(restored, 1, "lua-6")).toBe(false);
+  });
+
   it("restores flag-gated EVENT_CHAIN_END aux.FALSE limits after clearing the flag", () => {
     const source = {
       readScript(name: string) {
