@@ -7,6 +7,15 @@ export function applyLuaMovePosition(card: { position: CardPosition; faceUp: boo
   card.faceUp = position !== "faceDownDefense";
 }
 
+export function bindLuaEquipTarget(equipCard: DuelCardInstance, target: DuelCardInstance): void {
+  equipCard.equippedToUid = target.uid;
+  equipCard.cardTargetUids = equipCard.cardTargetUids ?? [];
+  if (!equipCard.cardTargetUids.includes(target.uid)) equipCard.cardTargetUids.push(target.uid);
+  delete equipCard.previousEquippedToUid;
+  equipCard.position = "faceUpAttack";
+  equipCard.faceUp = true;
+}
+
 export function faceupAttackOrFacedownDefensePosition(card: DuelCardInstance): CardPosition | undefined {
   if (card.position === "faceUpAttack") return "faceDownDefense";
   if (card.position === "faceDownDefense") return "faceUpAttack";

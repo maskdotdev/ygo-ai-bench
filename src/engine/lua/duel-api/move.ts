@@ -24,7 +24,7 @@ import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { activeFieldSpell, isDuelType, isFieldSpell } from "#lua/duel-api/field-spell-state.js";
 import { applyLuaContinuousSetControl, canLuaChangeControl, canLuaSwapControlPair, registerLuaTemporaryControlReturnEffect, swapLuaCardControl } from "#lua/duel-api/move-control.js";
 import { luaMoveBlockedByImmunity, type LuaMoveImmunityHostState } from "#lua/duel-api/move-immunity.js";
-import { applyLuaMovePosition, changeSpellTrapPosition, didMove, faceupAttackOrFacedownDefensePosition, movementSnapshot } from "#lua/duel-api/move-card-state.js";
+import { applyLuaMovePosition, bindLuaEquipTarget, changeSpellTrapPosition, didMove, faceupAttackOrFacedownDefensePosition, movementSnapshot } from "#lua/duel-api/move-card-state.js";
 import { pushDestroyHelper } from "#lua/duel-api/move-destroy.js";
 import { shuffleLuaMoveCards } from "#lua/duel-api/move-shuffle.js";
 import { readCardOrGroupUids, readFieldDestination, readMoveReason, readOptionalPlayer, readSingleDestination } from "#lua/duel-api/move-readers.js";
@@ -276,10 +276,7 @@ function pushEquip(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHo
   try {
     moveDuelCard(session.state, equipUid, "spellTrapZone", player, duelReason.effect, hostState.activeContext?.player ?? player);
     assignReasonCard(equipCard, hostState);
-    equipCard.equippedToUid = target.uid;
-    delete equipCard.previousEquippedToUid;
-    equipCard.position = "faceUpAttack";
-    equipCard.faceUp = true;
+    bindLuaEquipTarget(equipCard, target);
     pushDuelLog(session.state, "equip", player, equipCard.name, `Equipped to ${target.name}`);
     collectLuaMoveEvent(session, "equipped", equipCard);
     if (applyLuaContinuousSetControl(session, target, hostState.activeContext?.player ?? player)) collectLuaMoveEvent(session, "controlChanged", target);

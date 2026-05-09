@@ -138,6 +138,11 @@ function restoreKnownLuaStateEffects(
       .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && (effect.code === luaEffectUnionStatus || effect.code === luaEffectOldUnionStatus))
       .map((effect) => effect.sourceUid),
   );
+  const equipLimitSourceUids = new Set(
+    snapshotEffects
+      .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && effect.code === luaEffectEquipLimit && !unionStateSourceUids.has(effect.sourceUid))
+      .map((effect) => effect.sourceUid),
+  );
   const results: LuaScriptLoadResult[] = [];
   for (const sourceUid of unionStateSourceUids) {
     const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
@@ -149,6 +154,27 @@ function restoreKnownLuaStateEffects(
       end
     `;
     results.push(host.loadScript(script, `restore-union-state-${card.uid}.lua`));
+  }
+  for (const sourceUid of equipLimitSourceUids) {
+    const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
+    if (!card || card.location !== "spellTrapZone" || card.equippedToUid === undefined) continue;
+    const script = `
+      local c=Duel.GetFieldCard(${card.controller},LOCATION_SZONE,${card.sequence})
+      if c and c:IsFieldID(${cardFieldId(card)}) then
+        local tc=c:GetFirstCardTarget() or c:GetEquipTarget()
+        if tc then
+          local e1=Effect.CreateEffect(c)
+          e1:SetType(EFFECT_TYPE_SINGLE)
+          e1:SetCode(EFFECT_EQUIP_LIMIT)
+          e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)
+          e1:SetReset(RESET_EVENT|RESETS_STANDARD)
+          e1:SetValue(function(e,ec) return e:GetLabelObject()==ec end)
+          e1:SetLabelObject(tc)
+          c:RegisterEffect(e1)
+        end
+      end
+    `;
+    results.push(host.loadScript(script, `restore-equip-limit-${card.uid}.lua`));
   }
   return results;
 }
