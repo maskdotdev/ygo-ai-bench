@@ -315,6 +315,82 @@ describe("Lua chain-end chain-limit restore", () => {
     expect(hasGroupedLuaEffect(restored, 0, "lua-4")).toBe(true);
     expect(hasGroupedLuaEffect(restored, 1, "lua-5")).toBe(false);
   });
+
+  it("restores flag-gated EVENT_CHAIN_END aux.FALSE limits after clearing the flag", () => {
+    const source = {
+      readScript(name: string) {
+        if (name === "c150.lua") {
+          return `
+            c150 = {}
+            c150.initial_effect = function(c)
+              local e1 = Effect.CreateEffect(c)
+              e1:SetType(EFFECT_TYPE_IGNITION)
+              e1:SetRange(LOCATION_HAND)
+              e1:SetOperation(c150.op)
+              c:RegisterEffect(e1)
+              local e2 = Effect.CreateEffect(c)
+              e2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+              e2:SetCode(EVENT_CHAIN_END)
+              e2:SetRange(LOCATION_HAND)
+              e2:SetOperation(c150.chainend)
+              c:RegisterEffect(e2)
+            end
+            function c150.op(e,tp)
+              e:GetHandler():RegisterFlagEffect(150,RESET_EVENT,0,1)
+            end
+            function c150.chainend(e,tp,eg,ep,ev,re,r,rp)
+              local c=e:GetHandler()
+              if c:HasFlagEffect(150) then
+                Duel.SetChainLimitTillChainEnd(aux.FALSE)
+              end
+              c:ResetFlagEffect(150)
+            end
+          `;
+        }
+        if (name === "c200.lua") return quickScript(200, "flag-gated aux false next chain resolved");
+        if (name === "c300.lua") return quickScript(300, "flag-gated aux false blocked response resolved");
+        return undefined;
+      },
+    };
+    const cards = normalizeCdbRows([{ id: 150, type: 1 }, { id: 200, type: 1 }, { id: 300, type: 1 }], []);
+    const session = createDuel({ seed: 431, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["150", "200"] }, 1: { main: ["300"] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(150, source).ok).toBe(true);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+
+    const starter = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
+    expect(starter).toBeDefined();
+    expect(applyResponse(session, starter!).ok).toBe(true);
+    const opponentPass = getLegalActions(session, 1).find((candidate) => candidate.type === "passChain");
+    expect(opponentPass).toBeDefined();
+    expect(applyResponse(session, opponentPass!).ok).toBe(true);
+    const turnPass = getLegalActions(session, 0).find((candidate) => candidate.type === "passChain");
+    expect(turnPass).toBeDefined();
+    expect(applyResponse(session, turnPass!).ok).toBe(true);
+
+    const registryKey = "lua-chain-limit:150:0:chain:known:aux.FALSE";
+    const snapshot = serializeDuel(session);
+    expect(snapshot.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
+    expect(snapshot.state.flagEffects.some((flag) => flag.code === 150)).toBe(false);
+
+    const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
+
+    const nextChain = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3");
+    expect(nextChain).toBeDefined();
+    const resolved = applyResponse(restored.session, nextChain!);
+    expect(resolved.ok, resolved.error).toBe(true);
+    expect(resolved.state).toMatchObject({ waitingFor: 0, windowKind: "open", chain: [] });
+    expect(restored.host.messages).toContain("flag-gated aux false next chain resolved");
+    expect(restored.host.messages).not.toContain("flag-gated aux false blocked response resolved");
+  });
 });
 
 function quickScript(code: number, message: string): string {
