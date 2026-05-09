@@ -1,5 +1,6 @@
 import { pruneResetEffectsAfterMove } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterMove } from "#duel/flags.js";
+import { removeAllDuelCardCounters } from "#duel/counters.js";
 import type { DuelCardInstance, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
 export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, controller?: PlayerId, reason = 0, reasonPlayer?: PlayerId): DuelCardInstance {
@@ -26,6 +27,7 @@ export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, co
     card.position = "faceDown";
   }
   if (to === "graveyard" || to === "banished" || to === "monsterZone" || to === "spellTrapZone") card.faceUp = true;
+  if (shouldClearCountersAfterMove(card.previousLocation, card.location)) removeAllDuelCardCounters(card);
   resequence(state, card.controller, to);
   pruneResetEffectsAfterMove(state, card);
   pruneDuelFlagEffectsAfterMove(state, card);
@@ -82,4 +84,14 @@ function nextSequence(state: DuelState, player: PlayerId, location: DuelLocation
 
 function isPendulumCard(card: DuelCardInstance): boolean {
   return ((card.data.typeFlags ?? 0) & 0x1000000) !== 0;
+}
+
+function shouldClearCountersAfterMove(previous: DuelLocation | undefined, current: DuelLocation): boolean {
+  if (current === "deck" || current === "extraDeck" || current === "hand" || current === "graveyard" || current === "banished" || current === "overlay") return true;
+  if (current === "monsterZone" || current === "spellTrapZone") return !isFieldLocation(previous) || previous !== current;
+  return false;
+}
+
+function isFieldLocation(location: DuelLocation | undefined): boolean {
+  return location === "monsterZone" || location === "spellTrapZone";
 }

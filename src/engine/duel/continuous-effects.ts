@@ -904,6 +904,7 @@ function continuousEffectTargetsPlayer(effect: DuelEffectDefinition, source: Due
 }
 
 function continuousEffectIsPlayerTarget(effect: DuelEffectDefinition): boolean {
+  if (effect.code === 57 || effect.code === 59) return true;
   return ((effect.property ?? 0) & 0x800) !== 0;
 }
 
