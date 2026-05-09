@@ -278,5 +278,5 @@ function collectReasonTriggers(state: DuelState, card: DuelCardInstance, reason:
 
 function collectDestinationTriggers(state: DuelState, card: DuelCardInstance, handlers: CoreMovementHandlers): void {
   if (card.location === "hand") handlers.collectTrigger(state, "sentToHand", card);
-  if (card.location === "deck") handlers.collectTrigger(state, "sentToDeck", card);
+  if (card.location === "deck" || card.location === "extraDeck") handlers.collectTrigger(state, "sentToDeck", card);
 }
