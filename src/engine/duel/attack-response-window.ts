@@ -48,14 +48,18 @@ export function passDamageResponseWindow(state: DuelState, player: PlayerId, han
 
 export function continueAttackResponseWindow(state: DuelState, handlers: BattleContinuationHandlers): void {
   if (!state.pendingBattle || state.chain.length || state.pendingTriggers.length) return;
+  const attacker = findCard(state, state.pendingBattle.attackerUid);
+  if (!attacker || attacker.location !== "monsterZone") {
+    resolvePendingBattle(state, handlers);
+    return;
+  }
   if (isBattleDamageStep(state)) {
     if (state.damagePasses.length > 0) return;
     openDamageResponseWindow(state, state.turnPlayer, currentDamageWindowKind(state));
     return;
   }
   if (state.attackPasses.length > 0) return;
-  const attacker = findCard(state, state.pendingBattle.attackerUid);
-  openAttackResponseWindow(state, attacker?.controller ?? state.turnPlayer);
+  openAttackResponseWindow(state, attacker.controller);
 }
 
 export function markBattleWindowChainStarted(state: DuelState): void {

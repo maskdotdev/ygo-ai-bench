@@ -19,7 +19,7 @@ export function installCardBattleApi<EffectRecord extends LuaCardApiEffectRecord
   session: DuelSession,
   hostState: LuaCardApiState<EffectRecord>,
 ): void {
-  pushBooleanGetter(L, "CanAttack", session, (card) => Boolean(card && canDuelCardAttack(session.state, card.uid)));
+  pushBooleanGetter(L, "CanAttack", session, (card) => Boolean(card && canLuaCardAttack(session.state, card)));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanChainAttack(state, session));
   lua.lua_setfield(L, -2, to_luastring("CanChainAttack"));
   pushNumberGetter(L, "GetAttackAnnouncedCount", session, (card) => (card ? session.state.attacksDeclared.filter((uid) => uid === card.uid).length : 0));
@@ -40,6 +40,12 @@ export function installCardBattleApi<EffectRecord extends LuaCardApiEffectRecord
   lua.lua_setfield(L, -2, to_luastring("GetBattledGroup"));
   pushNumberGetter(L, "GetBattledGroupCount", session, (card) => battledOpponentUids(session, card).length);
   pushNumberGetter(L, "GetAttackedCount", session, (card) => (card ? session.state.battlePairs.filter((pair) => pair.attackerUid === card.uid).length : 0));
+}
+
+function canLuaCardAttack(state: DuelState, card: DuelCardInstance): boolean {
+  const attack = state.currentAttack ?? state.pendingBattle;
+  if (state.status === "resolving" && attack?.attackerUid === card.uid && card.location === "monsterZone" && !state.attackCanceledUids.includes(card.uid)) return true;
+  return canDuelCardAttack(state, card.uid);
 }
 
 function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => number): void {
