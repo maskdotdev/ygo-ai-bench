@@ -229,7 +229,7 @@ Implementation files likely touched:
 Acceptance gates:
 
 - Fixtures cover indestructible effects, replacement effects, redirects, immunity, lingering stat/effect changes, and reset timing.
-- Replacement conflicts require a deterministic selection path or prompt. Current coverage includes falling through declined or otherwise inapplicable Lua destruction, release, and send replacement candidates to later valid candidates, preserving and respecting used Lua replacement count limits across snapshot restore, and gating Lua destroy replacement eligibility through `SetValue` threatened-card predicates.
+- Replacement conflicts require a deterministic selection path or prompt. Current coverage includes falling through declined or otherwise inapplicable Lua destruction, release, and send replacement candidates to later valid candidates, preserving and respecting used Lua replacement count limits across snapshot restore, and gating Lua destruction, release, and send replacement eligibility through `SetValue` threatened-card predicates.
 - Complex movement still preserves zone invariants and previous-state fields.
 
 ## Phase 5: Lua Compatibility Driven By Real Cards
