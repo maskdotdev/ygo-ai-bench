@@ -88,6 +88,97 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 1));
   });
+
+  it("restores the cloned field Trap Hole activation limit from the Project Ignis script", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const sourceCode = "12755462";
+    const summonedCode = "201";
+    const starterCode = "202";
+    const blockedTrapHoleCode = "301";
+    const allowedTrapHoleQuickCode = "302";
+    const allowedOffSetTrapCode = "303";
+    const sourceCards = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === sourceCode);
+    const cards: DuelCardData[] = [
+      ...sourceCards,
+      { code: summonedCode, name: "Summoned Other Monster", kind: "monster" },
+      { code: starterCode, name: "Open Chain Starter", kind: "monster" },
+      { code: blockedTrapHoleCode, name: "Blocked Trap Hole Activation", kind: "trap", setcodes: [0x4c] },
+      { code: allowedTrapHoleQuickCode, name: "Allowed Trap Hole Quick Effect", kind: "trap", setcodes: [0x4c] },
+      { code: allowedOffSetTrapCode, name: "Allowed Off-Set Trap Activation", kind: "trap", setcodes: [0x123] },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 439, startingHandSize: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [sourceCode, summonedCode, starterCode] }, 1: { main: [blockedTrapHoleCode, allowedTrapHoleQuickCode, allowedOffSetTrapCode] } });
+    startDuel(session);
+
+    const sourceCard = session.state.cards.find((card) => card.code === sourceCode && card.location === "deck");
+    const summoned = session.state.cards.find((card) => card.code === summonedCode && card.location === "deck");
+    const starter = session.state.cards.find((card) => card.code === starterCode && card.location === "deck");
+    const blockedTrapHole = session.state.cards.find((card) => card.code === blockedTrapHoleCode && card.location === "deck");
+    const allowedTrapHoleQuick = session.state.cards.find((card) => card.code === allowedTrapHoleQuickCode && card.location === "deck");
+    const allowedOffSetTrap = session.state.cards.find((card) => card.code === allowedOffSetTrapCode && card.location === "deck");
+    expect(sourceCard).toBeDefined();
+    expect(summoned).toBeDefined();
+    expect(starter).toBeDefined();
+    expect(blockedTrapHole).toBeDefined();
+    expect(allowedTrapHoleQuick).toBeDefined();
+    expect(allowedOffSetTrap).toBeDefined();
+    moveDuelCard(session.state, sourceCard!.uid, "monsterZone", 0);
+    sourceCard!.faceUp = true;
+    sourceCard!.position = "faceUpAttack";
+    moveDuelCard(session.state, summoned!.uid, "hand", 0);
+    moveDuelCard(session.state, starter!.uid, "hand", 0);
+    moveDuelCard(session.state, blockedTrapHole!.uid, "hand", 1);
+    moveDuelCard(session.state, allowedTrapHoleQuick!.uid, "hand", 1);
+    moveDuelCard(session.state, allowedOffSetTrap!.uid, "hand", 1);
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${starterCode}.lua`) return openQuickScript("real-script setcode chain starter resolved");
+        if (name === `c${blockedTrapHoleCode}.lua`) return chainOnlyScript("blocked trap hole activation resolved", "EFFECT_TYPE_QUICK_O+EFFECT_TYPE_ACTIVATE");
+        if (name === `c${allowedTrapHoleQuickCode}.lua`) return chainOnlyScript("allowed trap hole quick effect resolved", "EFFECT_TYPE_QUICK_O");
+        if (name === `c${allowedOffSetTrapCode}.lua`) return chainOnlyScript("allowed off-set trap activation resolved", "EFFECT_TYPE_QUICK_O+EFFECT_TYPE_ACTIVATE");
+        return workspace.readScript(name);
+      },
+    };
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(sourceCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(starterCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(blockedTrapHoleCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(allowedTrapHoleQuickCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(allowedOffSetTrapCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(5);
+
+    const summon = getLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(summon).toBeDefined();
+    expect(applyResponse(session, summon!).ok).toBe(true);
+
+    const registryKey = `lua-chain-limit:${sourceCode}:0:chain:known:closure:not-source-type-effect-type-setcode:4:16:76`;
+    expect(serializeDuel(session).state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
+    const restoredOpenWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restoredOpenWindow.restoreComplete, restoredOpenWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredOpenWindow.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restoredOpenWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
+    expect(getLuaRestoreLegalActionGroups(restoredOpenWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredOpenWindow.session, 0));
+
+    const startChain = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === starter!.uid);
+    expect(startChain).toBeDefined();
+    expect(applyResponse(session, startChain!).ok).toBe(true);
+    expect(getLegalActions(session, 1).some((action) => action.type === "activateEffect" && action.uid === blockedTrapHole!.uid)).toBe(false);
+    expect(getLegalActions(session, 1).some((action) => action.type === "activateEffect" && action.uid === allowedTrapHoleQuick!.uid)).toBe(true);
+    expect(getLegalActions(session, 1).some((action) => action.type === "activateEffect" && action.uid === allowedOffSetTrap!.uid)).toBe(true);
+
+    const restoredResponseWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredResponseWindow.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restoredResponseWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
+    expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === blockedTrapHole!.uid)).toBe(false);
+    expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === allowedTrapHoleQuick!.uid)).toBe(true);
+    expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === allowedOffSetTrap!.uid)).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 1));
+  });
 });
 
 function openQuickScript(message: string): string {
