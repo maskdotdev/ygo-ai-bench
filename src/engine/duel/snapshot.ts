@@ -3,6 +3,7 @@ import { createActionWindowToken } from "#duel/action-window-token.js";
 import { copyBattleWindowState } from "#duel/battle-window-state.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
 import { isDuelEventName } from "#duel/event-names.js";
+import { assertSnapshotDeferredBattleDestroyed, copyBattleAttack, copyPendingBattle } from "#duel/snapshot-battle-state.js";
 import { assertSnapshotCounterBuckets, assertSnapshotCounterRecord } from "#duel/snapshot-counters.js";
 import { assertSnapshotPendingWindowConsistency } from "#duel/snapshot-window-validation.js";
 import { pendingTriggerBuckets, pendingTriggerBucketsForState, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
@@ -804,11 +805,16 @@ function assertSnapshotBattle(battle: unknown, path: string, cardUids: ReadonlyS
     assertSnapshotUniqueStringArray(battle.replayTargetUids, `${path}.replayTargetUids`);
     assertSnapshotCardUidArray(battle.replayTargetUids, `${path}.replayTargetUids`, cardUids);
   }
-  if (battle.battleDamageOverrides === undefined) return;
-  if (!isRecord(battle.battleDamageOverrides)) throw new Error(`Malformed duel snapshot: ${path}.battleDamageOverrides must be an object`);
-  for (const [player, amount] of Object.entries(battle.battleDamageOverrides)) {
-    if (player !== "0" && player !== "1") throw new Error(`Malformed duel snapshot: ${path}.battleDamageOverrides must use player ids`);
-    assertSnapshotNonNegativeInteger(amount, `${path}.battleDamageOverrides.${player}`);
+  if (battle.resultApplied !== undefined && typeof battle.resultApplied !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.resultApplied must be a boolean`);
+  if (battle.battleDamageOverrides !== undefined) assertSnapshotBattleDamageOverrides(battle.battleDamageOverrides, `${path}.battleDamageOverrides`);
+  if (battle.deferredBattleDestroyed !== undefined) assertSnapshotDeferredBattleDestroyed(battle.deferredBattleDestroyed, `${path}.deferredBattleDestroyed`, cardUids);
+}
+
+function assertSnapshotBattleDamageOverrides(overrides: unknown, path: string): void {
+  if (!isRecord(overrides)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
+  for (const [player, amount] of Object.entries(overrides)) {
+    if (player !== "0" && player !== "1") throw new Error(`Malformed duel snapshot: ${path} must use player ids`);
+    assertSnapshotNonNegativeInteger(amount, `${path}.${player}`);
   }
 }
 
@@ -977,20 +983,6 @@ function copyCardData(data: DuelCardData): DuelCardData {
     ...(data.ritualMaterials ? { ritualMaterials: [...data.ritualMaterials] } : {}),
     ...(data.listedNames ? { listedNames: [...data.listedNames] } : {}),
     ...(data.fitMonster ? { fitMonster: [...data.fitMonster] } : {}),
-  };
-}
-
-function copyPendingBattle(pendingBattle: NonNullable<DuelState["pendingBattle"]>): NonNullable<DuelState["pendingBattle"]> {
-  return {
-    ...copyBattleAttack(pendingBattle),
-    ...(pendingBattle.battleDamageOverrides === undefined ? {} : { battleDamageOverrides: { ...pendingBattle.battleDamageOverrides } }),
-  };
-}
-
-function copyBattleAttack<T extends NonNullable<DuelState["currentAttack"]>>(battle: T): T {
-  return {
-    ...battle,
-    ...(battle.replayTargetUids === undefined ? {} : { replayTargetUids: [...battle.replayTargetUids] }),
   };
 }
 

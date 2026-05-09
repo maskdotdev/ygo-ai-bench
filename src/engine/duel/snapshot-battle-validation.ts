@@ -22,6 +22,8 @@ export function assertSnapshotBattleStateConsistency(state: Record<string, unkno
   if (!isRecord(state.currentAttack) || !isRecord(state.pendingBattle)) return;
   if (!(state.attacksDeclared as unknown[]).includes(state.currentAttack.attackerUid)) throw new Error("Malformed duel snapshot: state.currentAttack.attackerUid must be declared as an attack");
   if (state.currentAttack.battleDamageOverrides !== undefined) throw new Error("Malformed duel snapshot: state.currentAttack must not contain battleDamageOverrides");
+  if (state.currentAttack.resultApplied !== undefined) throw new Error("Malformed duel snapshot: state.currentAttack must not contain resultApplied");
+  if (state.currentAttack.deferredBattleDestroyed !== undefined) throw new Error("Malformed duel snapshot: state.currentAttack must not contain deferredBattleDestroyed");
   assertReplayTargetCountMatchesUids(state.currentAttack, "state.currentAttack");
   assertReplayTargetCountMatchesUids(state.pendingBattle, "state.pendingBattle");
   if (state.currentAttack.attackerUid !== state.pendingBattle.attackerUid) throw new Error("Malformed duel snapshot: state.pendingBattle.attackerUid must match currentAttack");

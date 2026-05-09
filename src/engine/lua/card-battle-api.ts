@@ -1,4 +1,5 @@
 import fengari from "fengari";
+import { isDuelCardPendingBattleDestroyed } from "#duel/battle.js";
 import { isPhaseEntryPrevented } from "#duel/continuous-effects.js";
 import { canDuelCardAttack } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
@@ -33,7 +34,7 @@ export function installCardBattleApi<EffectRecord extends LuaCardApiEffectRecord
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsBattlePosition"));
-  pushBooleanGetter(L, "IsBattleDestroyed", session, (card) => Boolean(card && isBattleDestroyed(card)));
+  pushBooleanGetter(L, "IsBattleDestroyed", session, (card) => Boolean(card && isBattleDestroyed(session.state, card)));
   lua.lua_pushcfunction(L, (state: unknown) => pushBattleTarget(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetBattleTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushBattledGroup(state, session));
@@ -93,8 +94,8 @@ function battledOpponentUids(session: DuelSession, card: DuelCardInstance | unde
   return [...new Set(opponents)].filter((uid) => session.state.cards.some((candidate) => candidate.uid === uid));
 }
 
-function isBattleDestroyed(card: DuelCardInstance): boolean {
-  return (card.reason ?? 0) === ((card.reason ?? 0) | duelReason.battle | duelReason.destroy);
+function isBattleDestroyed(state: DuelState, card: DuelCardInstance): boolean {
+  return isDuelCardPendingBattleDestroyed(state, card.uid) || (card.reason ?? 0) === ((card.reason ?? 0) | duelReason.battle | duelReason.destroy);
 }
 
 function pushCanChainAttack(L: unknown, session: DuelSession): number {
