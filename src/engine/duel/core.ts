@@ -118,6 +118,7 @@ import {
 } from "#duel/core-movement.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { createEffectContext } from "#duel/effect-context.js";
+import { quickEffectEventContext } from "#duel/effect-event-context.js";
 import { eventCardStatePayload, relatedEffectPayload, type DuelEventPayload } from "#duel/event-history.js";
 import { pruneResetEffectsAfterChain, pruneResetEffectsAfterDisable } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterChain, pruneDuelFlagEffectsAfterDisable } from "#duel/flags.js";
@@ -744,12 +745,13 @@ function specialSummonProcedureActions(state: DuelState, player: PlayerId): Duel
 function canChooseEffect(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId, eventName?: DuelEventName, eventCard?: DuelCardInstance, payload: DuelEventPayload = {}): boolean {
   if (isEffectActivationPrevented(state, player, source, createContinuousEffectContext(state), effect)) return false;
   if (!canActivateSpellTrapCardEffect(state, player, source, effect)) return false;
+  const quickEvent = eventName === undefined ? quickEffectEventContext(state, effect) : undefined;
   const ctx = createEffectContext(
     state,
     source,
     player,
-    eventName,
-    eventCard,
+    eventName ?? quickEvent?.eventName,
+    eventCard ?? quickEvent?.eventCard,
     [],
     true,
     undefined,
@@ -757,17 +759,17 @@ function canChooseEffect(state: DuelState, effect: DuelEffectDefinition, source:
     undefined,
     undefined,
     undefined,
-    undefined,
-    payload.eventPlayer,
-    payload.eventValue,
-    payload.eventReason,
-    payload.eventReasonPlayer,
-    payload.eventReasonCardUid,
-    payload.eventReasonEffectId,
-    payload.relatedEffectId,
-    payload.eventChainDepth,
-    payload.eventChainLinkId,
-    payload.eventUids,
+    quickEvent?.eventCode ?? payload.eventCode,
+    quickEvent?.eventPlayer ?? payload.eventPlayer,
+    quickEvent?.eventValue ?? payload.eventValue,
+    quickEvent?.eventReason ?? payload.eventReason,
+    quickEvent?.eventReasonPlayer ?? payload.eventReasonPlayer,
+    quickEvent?.eventReasonCardUid ?? payload.eventReasonCardUid,
+    quickEvent?.eventReasonEffectId ?? payload.eventReasonEffectId,
+    quickEvent?.relatedEffectId ?? payload.relatedEffectId,
+    quickEvent?.eventChainDepth ?? payload.eventChainDepth,
+    quickEvent?.eventChainLinkId ?? payload.eventChainLinkId,
+    quickEvent?.eventUids ?? payload.eventUids,
   );
   if (effect.canActivate && !effect.canActivate(ctx)) return false;
   if (effect.cost && !effect.cost(ctx)) return false;

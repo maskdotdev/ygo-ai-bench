@@ -4,6 +4,7 @@ import { pruneSpentMandatoryPendingTriggers } from "#duel/pending-trigger-action
 import { otherPlayer } from "#duel/player-id.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import { placeActivatedSpellTrapCard } from "#duel/spell-trap-activation.js";
+import { quickEffectEventContext } from "#duel/effect-event-context.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import { pendingTriggerBucketsForState, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type {
@@ -84,7 +85,32 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
   if (!effect) throw new Error(`Effect ${effectId} is not registered`);
   const source = requireControlledCard(session.state, player, uid);
   const targetUids: string[] = [];
-  const ctx = handlers.createEffectContext(session.state, source, player, undefined, undefined, targetUids);
+  const quickEvent = quickEffectEventContext(session.state, effect);
+  const ctx = handlers.createEffectContext(
+    session.state,
+    source,
+    player,
+    quickEvent?.eventName,
+    quickEvent?.eventCard,
+    targetUids,
+    false,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    quickEvent?.eventCode,
+    quickEvent?.eventPlayer,
+    quickEvent?.eventValue,
+    quickEvent?.eventReason,
+    quickEvent?.eventReasonPlayer,
+    quickEvent?.eventReasonCardUid,
+    quickEvent?.eventReasonEffectId,
+    quickEvent?.relatedEffectId,
+    quickEvent?.eventChainDepth,
+    quickEvent?.eventChainLinkId,
+    quickEvent?.eventUids,
+  );
   const rollback = captureDuelState(session.state);
   try {
     if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);
@@ -94,25 +120,25 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
       player,
       uid,
       effectId,
-      undefined,
-      undefined,
+      quickEvent?.eventName,
+      quickEvent?.eventCard,
       targetUids,
       ctx.targetPlayer,
       ctx.targetParam,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
+      quickEvent?.eventCode,
+      quickEvent?.eventPlayer,
+      quickEvent?.eventValue,
+      quickEvent?.eventReason,
+      quickEvent?.eventReasonPlayer,
+      quickEvent?.eventReasonCardUid,
+      quickEvent?.eventReasonEffectId,
+      quickEvent?.relatedEffectId,
+      quickEvent?.eventChainDepth,
+      quickEvent?.eventChainLinkId,
+      quickEvent?.eventUids,
+      quickEvent?.eventPreviousState,
+      quickEvent?.eventCurrentState,
+      quickEvent?.eventTriggerTiming,
       ctx.operationInfos ?? [],
       ctx.possibleOperationInfos ?? [],
     );
