@@ -1,8 +1,8 @@
 import {
-  findDestroyReplacementEffect,
+  findDestroyReplacementEffects,
   findIndestructibleEffect,
-  findReleaseReplacementEffect,
-  findSendReplacementEffect,
+  findReleaseReplacementEffects,
+  findSendReplacementEffects,
   type ContinuousEffectContextFactory,
   type ContinuousEffectMatch,
 } from "#duel/continuous-effects.js";
@@ -42,8 +42,8 @@ export function applyDestroyReplacement(
   handlers: ReplacementEffectHandlers,
 ): DuelCardInstance | undefined {
   if ((reason & duelReason.replace) !== 0) return undefined;
-  const match = findDestroyReplacementEffect(state, uid, handlers.createContinuousContext);
-  return applyReplacementEffect(state, match, controller, handlers, "destroyReplace", "Destruction replaced");
+  const matches = findDestroyReplacementEffects(state, uid, handlers.createContinuousContext);
+  return applyFirstReplacementEffect(state, matches, controller, handlers, "destroyReplace", "Destruction replaced");
 }
 
 export function applyReleaseReplacement(
@@ -54,8 +54,8 @@ export function applyReleaseReplacement(
   handlers: ReplacementEffectHandlers,
 ): DuelCardInstance | undefined {
   if ((reason & duelReason.release) === 0 || (reason & duelReason.replace) !== 0) return undefined;
-  const match = findReleaseReplacementEffect(state, uid, handlers.createContinuousContext);
-  return applyReplacementEffect(state, match, controller, handlers, "releaseReplace", "Release replaced");
+  const matches = findReleaseReplacementEffects(state, uid, handlers.createContinuousContext);
+  return applyFirstReplacementEffect(state, matches, controller, handlers, "releaseReplace", "Release replaced");
 }
 
 export function applySendReplacement(
@@ -66,8 +66,31 @@ export function applySendReplacement(
   handlers: ReplacementEffectHandlers,
 ): DuelCardInstance | undefined {
   if ((reason & duelReason.replace) !== 0) return undefined;
-  const match = findSendReplacementEffect(state, uid, handlers.createContinuousContext);
-  return applyReplacementEffect(state, match, controller, handlers, "sendReplace", "Send replaced");
+  const matches = findSendReplacementEffects(state, uid, handlers.createContinuousContext);
+  return applyFirstReplacementEffect(state, matches, controller, handlers, "sendReplace", "Send replaced");
+}
+
+function applyFirstReplacementEffect(
+  state: DuelState,
+  matches: ContinuousEffectMatch[],
+  controller: PlayerId | undefined,
+  handlers: ReplacementEffectHandlers,
+  action: string,
+  detail: string,
+): DuelCardInstance | undefined {
+  for (const match of matches) {
+    if (!replacementEffectCanApply(state, match, handlers)) continue;
+    const replacement = applyReplacementEffect(state, match, controller, handlers, action, detail);
+    if (replacement) return replacement;
+  }
+  return undefined;
+}
+
+function replacementEffectCanApply(state: DuelState, match: ContinuousEffectMatch, handlers: ReplacementEffectHandlers): boolean {
+  if (!canUseEffectCount(state, match.effect)) return false;
+  const ctx = handlers.createReplacementContext(match.effect, match.source, match.card, true);
+  if (match.effect.cost && !match.effect.cost(ctx)) return false;
+  return !match.effect.target || match.effect.target(ctx);
 }
 
 function applyReplacementEffect(

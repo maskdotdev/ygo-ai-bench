@@ -731,35 +731,48 @@ export function leaveFieldRedirectLocation(
 }
 
 export function findDestroyReplacementEffect(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch | undefined {
-  return findReplacementEffect(state, uid, 45, 50, createContext);
+  return findDestroyReplacementEffects(state, uid, createContext)[0];
+}
+
+export function findDestroyReplacementEffects(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch[] {
+  return findReplacementEffects(state, uid, 45, 50, createContext);
 }
 
 export function findReleaseReplacementEffect(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch | undefined {
-  return findReplacementEffect(state, uid, 51, undefined, createContext);
+  return findReleaseReplacementEffects(state, uid, createContext)[0];
+}
+
+export function findReleaseReplacementEffects(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch[] {
+  return findReplacementEffects(state, uid, 51, undefined, createContext);
 }
 
 export function findSendReplacementEffect(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch | undefined {
-  return findReplacementEffect(state, uid, 52, undefined, createContext);
+  return findSendReplacementEffects(state, uid, createContext)[0];
 }
 
-function findReplacementEffect(
+export function findSendReplacementEffects(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch[] {
+  return findReplacementEffects(state, uid, 52, undefined, createContext);
+}
+
+function findReplacementEffects(
   state: DuelState,
   uid: string,
   firstCode: number,
   secondCode: number | undefined,
   createContext: ContinuousEffectContextFactory,
-): ContinuousEffectMatch | undefined {
+): ContinuousEffectMatch[] {
   const card = findCard(state, uid);
-  if (!card) return undefined;
+  if (!card) return [];
+  const matches: ContinuousEffectMatch[] = [];
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || (effect.code !== firstCode && effect.code !== secondCode)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     const ctx = createContext(effect, source, card);
     if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
-    if (!effect.canActivate || effect.canActivate(ctx)) return { effect, source, card };
+    if (!effect.canActivate || effect.canActivate(ctx)) matches.push({ effect, source, card });
   }
-  return undefined;
+  return matches;
 }
 
 export function findIndestructibleEffect(state: DuelState, uid: string, reason: number, createContext: ContinuousEffectContextFactory, reasonPlayer?: PlayerId): ContinuousEffectMatch | undefined {

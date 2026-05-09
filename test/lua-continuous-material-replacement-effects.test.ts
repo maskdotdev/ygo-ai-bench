@@ -304,6 +304,84 @@ describe("Lua continuous material and replacement effects", () => {
     expect(session.state.cards.find((card) => card.uid === replacement!.uid)).toMatchObject({ location: "graveyard" });
   });
 
+  it("falls through declined Lua destroy replacement effects to later candidates", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Declined Replacement Source", kind: "monster" },
+      { code: "200", name: "Threatened Monster", kind: "monster" },
+      { code: "300", name: "Accepted Replacement Source", kind: "monster" },
+      { code: "400", name: "Accepted Replacement Cost", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 278, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200", "300", "400"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const threatened = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
+    const acceptedCost = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "400");
+    expect(threatened).toBeTruthy();
+    expect(acceptedCost).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e:SetCode(EFFECT_DESTROY_REPLACE)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_HAND)
+        e:SetTargetRange(1,0)
+        e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return true end
+          Debug.Message("first destroy replacement declined")
+          return false
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("first destroy replacement op")
+        end)
+        c:RegisterEffect(e)
+      end
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e:SetCode(EFFECT_DESTROY_REPLACE)
+        e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e:SetRange(LOCATION_HAND)
+        e:SetTargetRange(1,0)
+        e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return Duel.IsExistingMatchingCard(aux.FilterBoolFunction(Card.IsCode, 400), tp, LOCATION_HAND, 0, 1, e:GetHandler()) end
+          local g=Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode, 400), tp, LOCATION_HAND, 0, e:GetHandler())
+          Duel.SetTargetCard(g)
+          Debug.Message("second destroy replacement target " .. Duel.GetTargetCards():GetCount())
+          return true
+        end)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          local g=Duel.GetTargetCards()
+          Debug.Message("second destroy replacement op " .. g:GetFirst():GetCode())
+          Duel.SendtoGrave(g, REASON_EFFECT+REASON_REPLACE)
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "destroy-replacement-declined-candidate.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    destroyDuelCard(session.state, threatened!.uid, 0);
+
+    expect(host.messages).toContain("first destroy replacement declined");
+    expect(host.messages).not.toContain("first destroy replacement op");
+    expect(host.messages).toContain("second destroy replacement target 1");
+    expect(host.messages).toContain("second destroy replacement op 400");
+    expect(session.state.cards.find((card) => card.uid === threatened!.uid)).toMatchObject({ location: "hand" });
+    expect(session.state.cards.find((card) => card.uid === acceptedCost!.uid)).toMatchObject({ location: "graveyard" });
+  });
+
   it("applies Lua release replacement effects", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Release Replacement Source", kind: "monster" },
