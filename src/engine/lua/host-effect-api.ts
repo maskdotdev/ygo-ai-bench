@@ -250,6 +250,7 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     return 2;
   });
   pushEffectMethod(L, effects, "Reset", (state, effect) => {
+    deleteRegisteredLuaEffects(session, effect);
     effect.countLimit = 0;
     delete effect.countLimitCode;
     delete effect.reset;
