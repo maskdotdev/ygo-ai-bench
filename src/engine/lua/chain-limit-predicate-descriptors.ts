@@ -83,6 +83,33 @@ export function literalResponseMatchesChainPlayerOrActiveTypePredicate(L: unknow
   return mask !== undefined && Number.isSafeInteger(mask) && mask > 0 ? mask : undefined;
 }
 
+export function literalResponseMatchesChainPlayerOrCurrentTargetCardsPredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string[] | undefined {
+  if (hasNonEnvironmentUpvalues(L, index)) return undefined;
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
+  const params = luaFunctionParams(snippet);
+  const effectParam = params?.[0];
+  const responsePlayerParam = params?.[1];
+  const chainPlayerParam = params?.[2];
+  const targetUids = [...new Set(hostState.activeContext?.targetUids ?? [])].sort();
+  if (!effectParam || !responsePlayerParam || !chainPlayerParam || targetUids.length === 0) return undefined;
+  const returnExpression = lastReturnExpression(snippet);
+  if (!returnExpression) return undefined;
+  const terms = returnExpression.split(/\s+or\s+/).map((term) => trimOuterParens(term.trim())).filter(Boolean);
+  if (terms.length !== 2) return undefined;
+  const equality = terms.find((term) => simpleEqualityCompares(term, responsePlayerParam, chainPlayerParam));
+  const targetTerm = terms.find((term) => term !== equality);
+  if (!equality || !targetTerm) return undefined;
+  const effect = escapeRegExp(effectParam);
+  const aliases = [...snippet.matchAll(new RegExp(`local\\s+([A-Za-z_]\\w*)\\s*=\\s*Duel\\s*\\.\\s*GetChainInfo\\s*\\(\\s*0\\s*,\\s*CHAININFO_TARGET_CARDS\\s*\\)`, "g"))].flatMap((match) => match[1] ? [match[1]] : []);
+  const chainInfoGroup = [
+    ...aliases.map(escapeRegExp),
+    String.raw`Duel\s*\.\s*GetChainInfo\s*\(\s*0\s*,\s*CHAININFO_TARGET_CARDS\s*\)`,
+  ].join("|");
+  const containsHandler = new RegExp(`^not\\s+(?:${chainInfoGroup})\\s*:\\s*IsContains\\s*\\(\\s*${effect}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*\\)$`);
+  return containsHandler.test(targetTerm) ? targetUids : undefined;
+}
+
 export function literalNotSourceTypeOrNotEffectTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): { sourceType: number; effectType: number; sourceSetcode?: number } | undefined {
   if (hasNonEnvironmentUpvalues(L, index)) return undefined;
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
