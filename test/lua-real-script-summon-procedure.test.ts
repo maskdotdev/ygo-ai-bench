@@ -107,6 +107,38 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
     }
     expect(restored.session.state.cards.find((card) => card.uid === yata!.uid)).toMatchObject({ location: "hand", controller: 0 });
   });
+
+  it("restores real cannot-be-Special-Summoned conditions for Spirit monsters", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const yataCode = "3078576";
+    const monsterRebornCode = "83764718";
+    const cards = workspace.readDatabaseCards("cards.cdb").filter((card) => [yataCode, monsterRebornCode].includes(card.code));
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 298, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [yataCode, monsterRebornCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const yata = session.state.cards.find((card) => card.code === yataCode && card.location === "deck");
+    const monsterReborn = session.state.cards.find((card) => card.code === monsterRebornCode && card.location === "deck");
+    expect(yata).toBeDefined();
+    expect(monsterReborn).toBeDefined();
+    moveDuelCard(session.state, yata!.uid, "graveyard", 0);
+    moveDuelCard(session.state, monsterReborn!.uid, "hand", 0);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(yataCode), workspace).ok).toBe(true);
+    expect(host.loadCardScript(Number(monsterRebornCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+
+    expect(hasActivateEffect(getDuelLegalActions(session, 0), monsterReborn!.uid)).toBe(false);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(hasActivateEffect(getLuaRestoreLegalActions(restored, 0), monsterReborn!.uid)).toBe(false);
+  });
 });
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
@@ -114,4 +146,8 @@ function applyAndAssert(session: ReturnType<typeof createDuel>, action: Paramete
   expect(response.ok, response.error).toBe(true);
   expect(response.legalActions).toEqual(response.state.waitingFor === undefined ? [] : getDuelLegalActions(session, response.state.waitingFor));
   return response;
+}
+
+function hasActivateEffect(actions: ReturnType<typeof getDuelLegalActions>, uid: string): boolean {
+  return actions.some((action) => action.type === "activateEffect" && action.uid === uid);
 }
