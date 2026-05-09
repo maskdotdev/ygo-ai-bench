@@ -304,7 +304,20 @@ function continuousEffectAffectsCard(effect: DuelEffectDefinition, luaEffect: Lu
 }
 
 function continuousEffectIsPlayerTarget(effect: DuelEffectDefinition): boolean {
+  if (effect.targetRange && continuousEffectCodeUsesPlayerSelectors(effect.code) && targetRangeUsesPlayerSelectors(effect.targetRange)) return true;
   return ((effect.property ?? 0) & 0x800) !== 0;
+}
+
+function continuousEffectCodeUsesPlayerSelectors(code: number | undefined): boolean {
+  return code === 14 || code === 57 || code === 59 || code === 204;
+}
+
+function targetRangeUsesPlayerSelectors([selfTarget = 0, opponentTarget = 0]: [number, number?]): boolean {
+  return isPlayerSelector(selfTarget) && isPlayerSelector(opponentTarget);
+}
+
+function isPlayerSelector(value: number): boolean {
+  return value === 0 || value === 1;
 }
 
 function continuousEffectTargetsPlayer(effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId): boolean {
