@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { changeDuelBattleDamage, damageDuelPlayer, getDuelAttackCostPaid, getDuelBattleDamage, negateDuelAttack, setDuelAttackCostPaid } from "#duel/core.js";
+import { changeDuelBattleDamage, damageDuelPlayer, getDuelAttackableTargets, getDuelAttackCostPaid, getDuelBattleDamage, negateDuelAttack, setDuelAttackCostPaid } from "#duel/core.js";
 import { recordBattledPair } from "#duel/battle.js";
 import { clearBattleWindowState, openBattleWindowState } from "#duel/battle-window-state.js";
 import { readCardUid } from "#lua/api-utils.js";
@@ -144,18 +144,36 @@ function changeAttackTarget(session: DuelSession, targetUid: string | undefined)
   const attack = session.state.currentAttack;
   const pending = session.state.pendingBattle;
   if (!attack || !pending) return false;
+  const attacker = session.state.cards.find((card) => card.uid === attack.attackerUid);
+  if (!attacker) return false;
   if (targetUid === undefined) {
     delete attack.targetUid;
     delete pending.targetUid;
+    refreshForcedAttackTargetReplayState(session, attacker.uid);
     return true;
   }
-  const attacker = session.state.cards.find((card) => card.uid === attack.attackerUid);
   const target = session.state.cards.find((card) => card.uid === targetUid);
-  if (!attacker || !target || target.location !== "monsterZone" || target.controller === attacker.controller || target.uid === attacker.uid) return false;
+  if (!target || target.location !== "monsterZone" || target.controller === attacker.controller || target.uid === attacker.uid) return false;
   attack.targetUid = target.uid;
   pending.targetUid = target.uid;
   recordBattledPair(session.state, attacker.uid, target.uid);
+  refreshForcedAttackTargetReplayState(session, attacker.uid);
   return true;
+}
+
+function refreshForcedAttackTargetReplayState(session: DuelSession, attackerUid: string): void {
+  const replayTargetUids = getDuelAttackableTargets(session.state, attackerUid)
+    .targets.map((target) => target.uid)
+    .sort();
+  const replayTargetCount = replayTargetUids.length;
+  if (session.state.currentAttack?.attackerUid === attackerUid) {
+    session.state.currentAttack.replayTargetCount = replayTargetCount;
+    session.state.currentAttack.replayTargetUids = [...replayTargetUids];
+  }
+  if (session.state.pendingBattle?.attackerUid === attackerUid) {
+    session.state.pendingBattle.replayTargetCount = replayTargetCount;
+    session.state.pendingBattle.replayTargetUids = [...replayTargetUids];
+  }
 }
 
 function changeAttacker(session: DuelSession, attackerUid: string | undefined): boolean {
