@@ -2,23 +2,47 @@ import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, serializeDuel, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
-import type { DuelCardData, DuelSession } from "#duel/types.js";
+import type { CardPosition, DuelCardData, DuelSession } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
-const cases = [
+type FieldMoveRestoreCase = {
+  label: string;
+  seed: number;
+  targetLocation: string;
+  operation: string;
+  expectedLocation: "monsterZone" | "spellTrapZone";
+  expectedPosition: CardPosition;
+  targetKind?: DuelCardData["kind"];
+  targetTypeFlags?: number;
+  setup?: (session: DuelSession) => void;
+};
+
+const cases: FieldMoveRestoreCase[] = [
   {
     label: "MoveToField",
     seed: 189,
     targetLocation: "LOCATION_HAND",
     operation: "Duel.MoveToField(target, 0, 0, LOCATION_MZONE, POS_FACEUP_ATTACK, true)",
+    expectedLocation: "monsterZone",
     expectedPosition: "faceUpAttack",
+  },
+  {
+    label: "ActivateFieldSpell",
+    seed: 191,
+    targetLocation: "LOCATION_HAND",
+    operation: "Duel.ActivateFieldSpell(target, nil, 0)",
+    expectedLocation: "spellTrapZone",
+    expectedPosition: "faceUpAttack",
+    targetKind: "spell",
+    targetTypeFlags: 0x80002,
   },
   {
     label: "ReturnToField",
     seed: 190,
     targetLocation: "LOCATION_REMOVED",
     operation: "Duel.ReturnToField(target, POS_FACEUP_DEFENSE)",
+    expectedLocation: "monsterZone",
     expectedPosition: "faceUpDefense",
     setup(session: DuelSession) {
       const target = session.state.cards.find((card) => card.code === "200");
@@ -32,10 +56,12 @@ const cases = [
 ];
 
 describe("Lua field move restore helpers", () => {
-  it.each(cases)("restores $label missed timing after later event boundaries", ({ label, seed, targetLocation, operation, expectedPosition, setup }) => {
+  it.each(cases)("restores $label missed timing after later event boundaries", ({ label, seed, targetLocation, operation, expectedLocation, expectedPosition, targetKind, targetTypeFlags, setup }) => {
+    const targetCard: DuelCardData = { code: "200", name: `Restore ${label} Target`, kind: targetKind ?? "monster" };
+    if (targetTypeFlags !== undefined) targetCard.typeFlags = targetTypeFlags;
     const cards: DuelCardData[] = [
       { code: "100", name: `Restore ${label} Source`, kind: "monster" },
-      { code: "200", name: `Restore ${label} Target`, kind: "monster" },
+      targetCard,
       { code: "300", name: `Restore When ${label} Watcher`, kind: "monster" },
       { code: "400", name: `Restore If ${label} Watcher`, kind: "monster" },
       { code: "500", name: `Restore ${label} Damage Watcher`, kind: "monster" },
@@ -123,7 +149,7 @@ describe("Lua field move restore helpers", () => {
     expect(session.state.eventHistory).toEqual(
       expect.arrayContaining([expect.objectContaining({ eventName: "moved", eventCode: 1030 }), expect.objectContaining({ eventName: "damageDealt", eventCode: 1111 })]),
     );
-    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ controller: 0, location: "monsterZone", position: expectedPosition });
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ controller: 0, location: expectedLocation, position: expectedPosition });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
