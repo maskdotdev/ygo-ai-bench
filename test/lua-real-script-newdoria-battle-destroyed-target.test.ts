@@ -84,7 +84,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ne
 });
 
 function passBattleResponses(session: DuelSession): void {
-  while (session.state.pendingBattle) {
+  while (session.state.pendingBattle && session.state.pendingTriggers.length === 0) {
     const player = session.state.waitingFor ?? session.state.turnPlayer;
     const passType = session.state.battleStep === "damage" || session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack";
     const pass = getLegalActions(session, player).find((action) => action.type === passType);

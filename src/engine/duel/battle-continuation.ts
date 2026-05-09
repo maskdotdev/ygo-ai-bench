@@ -1,4 +1,4 @@
-import { resolvePendingDuelBattle } from "#duel/battle.js";
+import { resolvePendingDuelBattle, type ResolvePendingDuelBattleOptions } from "#duel/battle.js";
 import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type { BattleDamageChangeOptions } from "#duel/core-battle-damage.js";
 import type { DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
@@ -24,7 +24,7 @@ export interface BattleContinuationHandlers {
   hasPiercingDamage(state: DuelState, card: DuelCardInstance): boolean;
 }
 
-export function resolvePendingBattle(state: DuelState, handlers: BattleContinuationHandlers): void {
+export function resolvePendingBattle(state: DuelState, handlers: BattleContinuationHandlers, options: ResolvePendingDuelBattleOptions = {}): void {
   const battleDamageOverrides = state.pendingBattle?.battleDamageOverrides;
   resolvePendingDuelBattle(state, {
     canAttackTarget: (attacker, target) => handlers.canAttackTarget?.(state, attacker, target) ?? true,
@@ -58,7 +58,7 @@ export function resolvePendingBattle(state: DuelState, handlers: BattleContinuat
     getAttackValue: (card) => handlers.getAttackValue(state, card),
     getDefenseValue: (card) => handlers.getDefenseValue(state, card),
     hasPiercingDamage: (card) => handlers.hasPiercingDamage(state, card),
-  });
+  }, options);
   if (duelHasEnded(state)) return;
   setWaitingForPendingTriggerBucket(state);
 }

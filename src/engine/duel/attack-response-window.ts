@@ -91,7 +91,8 @@ function advanceDamageWindow(state: DuelState, lastDamageResponder: PlayerId, ha
   }
   if (kind === "duringDamageCalculation") {
     openDamageResponseWindow(state, lastDamageResponder, "afterDamageCalculation");
-    collectBattleTimingEvent(state, handlers, "afterDamageCalculation");
+    resolvePendingBattle(state, handlers, { preserveBattleContext: true });
+    if (state.pendingBattle && currentBattleWindowKind(state) === "afterDamageCalculation") collectBattleTimingEvent(state, handlers, "afterDamageCalculation");
     return;
   }
   if (kind === "afterDamageCalculation") {

@@ -16,7 +16,7 @@ export function activateEffectByCode(session: ReturnType<typeof createDuel>, pla
 }
 
 export function passBattleResponses(session: ReturnType<typeof createDuel>): void {
-  while (session.state.pendingBattle) {
+  while (session.state.pendingBattle && session.state.pendingTriggers.length === 0) {
     const player = session.state.waitingFor ?? session.state.turnPlayer;
     const passType = session.state.battleStep === "damage" || session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack";
     const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === passType);

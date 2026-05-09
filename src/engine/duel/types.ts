@@ -535,6 +535,7 @@ export interface DuelState {
     replayTargetCount?: number;
     replayTargetUids?: string[];
     battleDamageOverrides?: Partial<Record<PlayerId, number>>;
+    resultApplied?: boolean;
   };
   prompt?: DuelPromptState;
   waitingFor?: PlayerId;

@@ -18,6 +18,10 @@ export interface DuelBattleCallbacks {
   hasPiercingDamage?(card: DuelCardInstance): boolean;
 }
 
+export interface ResolvePendingDuelBattleOptions {
+  preserveBattleContext?: boolean;
+}
+
 export type DuelAttackTargetPredicate = (card: DuelCardInstance) => boolean;
 export type DuelDirectAttackPredicate = (attacker: DuelCardInstance, targets: DuelCardInstance[]) => boolean;
 
@@ -93,17 +97,16 @@ export function negateDuelAttack(state: DuelState): boolean {
   return true;
 }
 
-export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattleCallbacks): boolean {
+export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattleCallbacks, options: ResolvePendingDuelBattleOptions = {}): boolean {
   const pending = state.pendingBattle;
   if (!pending) return false;
+  if (pending.resultApplied) {
+    clearPendingBattleState(state);
+    return false;
+  }
   const attacker = findCard(state, pending.attackerUid);
   if (!attacker || attacker.location !== "monsterZone") {
-    delete state.pendingBattle;
-    delete state.currentAttack;
-    state.attackPasses = [];
-    state.damagePasses = [];
-    state.attackCostPaid = 0;
-    clearBattleWindowState(state);
+    clearPendingBattleState(state);
     return false;
   }
   const target = pending.targetUid === undefined ? undefined : findCard(state, pending.targetUid);
@@ -116,20 +119,18 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
     openReplayDecisionWindow(state, attacker);
     return false;
   }
+  if (options.preserveBattleContext && !canResolveWithPreservedBattleContext(attacker, target, callbacks)) return false;
   try {
     if (!target) {
       callbacks.damagePlayer(otherPlayer(attacker.controller), getBattleAttack(attacker, callbacks), [attacker]);
+      markBattleResultApplied(state, options);
       return true;
     }
     if (target.location === "monsterZone") resolveBattle(state, attacker, target, callbacks);
+    markBattleResultApplied(state, options);
     return true;
   } finally {
-    delete state.pendingBattle;
-    delete state.currentAttack;
-    state.attackPasses = [];
-    state.damagePasses = [];
-    state.attackCostPaid = 0;
-    clearBattleWindowState(state);
+    if (!shouldPreserveBattleContext(state, options)) clearPendingBattleState(state);
   }
 }
 
@@ -393,6 +394,30 @@ function openReplayDecisionWindow(state: DuelState, attacker: DuelCardInstance):
   openBattleWindowState(state, "replayDecision", "attack", attacker.controller);
   state.waitingFor = attacker.controller;
   pushDuelLog(state, "attackReplay", attacker.controller, attacker.name, "Replay decision pending");
+}
+
+function canResolveWithPreservedBattleContext(attacker: DuelCardInstance, target: DuelCardInstance | undefined, callbacks: DuelBattleCallbacks): boolean {
+  if (!target || target.location !== "monsterZone" || target.position === "faceUpAttack") return false;
+  const attackerAttack = getBattleAttack(attacker, callbacks);
+  const targetDefense = getBattleDefense(target, callbacks);
+  return attackerAttack <= targetDefense;
+}
+
+function markBattleResultApplied(state: DuelState, options: ResolvePendingDuelBattleOptions): void {
+  if (shouldPreserveBattleContext(state, options) && state.pendingBattle) state.pendingBattle.resultApplied = true;
+}
+
+function shouldPreserveBattleContext(state: DuelState, options: ResolvePendingDuelBattleOptions): boolean {
+  return options.preserveBattleContext === true && (state as { status?: string }).status !== "ended";
+}
+
+function clearPendingBattleState(state: DuelState): void {
+  delete state.pendingBattle;
+  delete state.currentAttack;
+  state.attackPasses = [];
+  state.damagePasses = [];
+  state.attackCostPaid = 0;
+  clearBattleWindowState(state);
 }
 
 function createBattleAttackState(attackerUid: string, targetUid: string | undefined, targets: DuelCardInstance[]): NonNullable<DuelState["currentAttack"]> {
