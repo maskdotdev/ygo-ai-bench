@@ -243,5 +243,6 @@ function ownerTargetUids(session: DuelSession, card: DuelCardInstance | undefine
 
 function isRelatedToBattle(session: DuelSession, uid: string): boolean {
   const battle = session.state.currentAttack ?? session.state.pendingBattle;
-  return battle?.attackerUid === uid || battle?.targetUid === uid;
+  const card = session.state.cards.find((candidate) => candidate.uid === uid);
+  return Boolean(card && card.location === "monsterZone" && (battle?.attackerUid === uid || battle?.targetUid === uid));
 }

@@ -304,10 +304,10 @@ function triggerEventPayloadMatchesLink(trigger: DuelState["pendingTriggers"][nu
     trigger.eventCode === link.eventCode &&
     trigger.eventPlayer === link.eventPlayer &&
     trigger.eventValue === link.eventValue &&
-    trigger.eventReason === link.eventReason &&
-    trigger.eventReasonPlayer === link.eventReasonPlayer &&
-    trigger.eventReasonCardUid === link.eventReasonCardUid &&
-    trigger.eventReasonEffectId === link.eventReasonEffectId &&
+    (sameEventGroup || trigger.eventReason === link.eventReason) &&
+    (sameEventGroup || trigger.eventReasonPlayer === link.eventReasonPlayer) &&
+    (sameEventGroup || trigger.eventReasonCardUid === link.eventReasonCardUid) &&
+    (sameEventGroup || trigger.eventReasonEffectId === link.eventReasonEffectId) &&
     trigger.relatedEffectId === link.relatedEffectId &&
     trigger.eventChainDepth === link.eventChainDepth &&
     trigger.eventChainLinkId === link.eventChainLinkId &&
