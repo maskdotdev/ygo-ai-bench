@@ -196,6 +196,7 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   const blockedEffectType = literalNotEffectTypePredicate(L, index, hostState);
   if (blockedEffectType !== undefined) return `closure:not-effect-type:${blockedEffectType}`;
   if (literalResponseMatchesChainPlayerPredicate(L, index, hostState)) return "closure:response-matches-chain-player";
+  if (literalResponseMatchesChainPlayerOrSpellTrapNonActivatePredicate(L, index, hostState)) return "closure:spell-trap-non-activate-response-player";
   const cardTableField = matchingGlobalCardTableFunctionField(L, index);
   if (cardTableField) return cardTableField;
   const handlerOnlyUid = literalCapturedHandlerOnlyCardUid(L, index, hostState);
@@ -221,7 +222,6 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (literalHandlerCodes !== undefined) return handlerCodePredicateDescriptor(literalHandlerCodes);
   const blockedActiveTypeForOpponent = literalResponseMatchesChainPlayerOrNotActiveTypePredicate(L, index, hostState);
   if (blockedActiveTypeForOpponent !== undefined) return `closure:not-active-type-response-player:${blockedActiveTypeForOpponent}`;
-  if (literalResponseMatchesChainPlayerOrSpellTrapNonActivatePredicate(L, index, hostState)) return "closure:spell-trap-non-activate-response-player";
   const capturedPlayerComparison = literalCapturedPlayerComparisonPredicate(L, index, hostState);
   if (capturedPlayerComparison) return capturedPlayerComparison;
   if (literalNotMonsterLinkActiveTypePredicate(L, index, hostState)) return "closure:not-active-monster-link";
