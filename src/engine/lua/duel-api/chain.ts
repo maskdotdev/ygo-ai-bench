@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { addDuelChainLimit, canNegateDuelChainLinkObject, negateDuelChainLinkObject } from "#duel/core.js";
 import { pushCardTable } from "#lua/card-api.js";
-import { literalActionTypeChainPlayerLimitPredicate, literalCapturedPlayerComparisonPredicate, literalNotMonsterWithoutLevelActiveTypePredicate, literalNotSourceTypeOrNotEffectTypePredicate, literalResponseMatchesChainPlayerOrActiveTypePredicate, literalResponseMatchesChainPlayerOrCurrentTargetCardsPredicate, literalResponseMatchesChainPlayerOrSourceTypeNonActivatePredicate } from "#lua/chain-limit-predicate-descriptors.js";
+import { literalActionTypeChainPlayerLimitPredicate, literalCapturedPlayerComparisonPredicate, literalNotMonsterWithoutLevelActiveTypePredicate, literalNotSourceTypeOrNotEffectTypePredicate, literalResponseMatchesChainPlayerOrActiveTypePredicate, literalResponseMatchesChainPlayerOrCurrentTargetCardsPredicate, literalResponseMatchesChainPlayerOrNotSourceTypePredicate, literalResponseMatchesChainPlayerOrSourceTypeNonActivatePredicate } from "#lua/chain-limit-predicate-descriptors.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid, readOptionalFunctionRef, releaseOptionalFunctionRef, symbolicLocationMask } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelSession, DuelState, PlayerId } from "#duel/types.js";
@@ -198,6 +198,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (literalResponseMatchesChainPlayerPredicate(L, index, hostState)) return "closure:response-matches-chain-player";
   const sourceTypeNonActivateForOpponent = literalResponseMatchesChainPlayerOrSourceTypeNonActivatePredicate(L, index, hostState);
   if (sourceTypeNonActivateForOpponent !== undefined) return `closure:source-type-non-activate-response-player:${sourceTypeNonActivateForOpponent}`;
+  const blockedSourceTypeForOpponent = literalResponseMatchesChainPlayerOrNotSourceTypePredicate(L, index, hostState);
+  if (blockedSourceTypeForOpponent !== undefined) return `closure:type-mask-response-player:${blockedSourceTypeForOpponent}`;
   const cardTableField = matchingGlobalCardTableFunctionField(L, index);
   if (cardTableField) return cardTableField;
   const handlerOnlyUid = literalCapturedHandlerOnlyCardUid(L, index, hostState);

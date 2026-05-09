@@ -59,6 +59,25 @@ export function literalResponseMatchesChainPlayerOrSourceTypeNonActivatePredicat
   return sourceType?.[1] ? sourceTypeNonActivationMethodMask(sourceType[1]) : undefined;
 }
 
+export function literalResponseMatchesChainPlayerOrNotSourceTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
+  if (hasNonEnvironmentUpvalues(L, index)) return undefined;
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
+  const params = luaFunctionParams(snippet);
+  const effectParam = params?.[0];
+  const responsePlayerParam = params?.[1];
+  const chainPlayerParam = params?.[2];
+  if (!effectParam || !responsePlayerParam || !chainPlayerParam) return undefined;
+  const returnExpression = lastReturnExpression(snippet);
+  if (!returnExpression) return undefined;
+  const terms = returnExpression.split(/\s+or\s+/).map((term) => trimOuterParens(term.trim())).filter(Boolean);
+  if (terms.length !== 2) return undefined;
+  const equality = terms.find((term) => simpleEqualityCompares(term, responsePlayerParam, chainPlayerParam));
+  const sourceTypeTerm = terms.find((term) => term !== equality);
+  if (!equality || !sourceTypeTerm) return undefined;
+  return notSourceTypeHandlerTermMask(sourceTypeTerm, effectParam);
+}
+
 export function literalResponseMatchesChainPlayerOrActiveTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
   if (hasNonEnvironmentUpvalues(L, index)) return undefined;
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
@@ -165,10 +184,20 @@ function notSourceSetcodeTermValue(L: unknown, term: string, effectParam: string
   return setcode !== undefined && Number.isSafeInteger(setcode) && setcode > 0 ? setcode : undefined;
 }
 
+function notSourceTypeHandlerTermMask(term: string, effectParam: string): number | undefined {
+  const handler = `${escapeRegExp(effectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`;
+  const compatibilityMatch = term.match(new RegExp(`^not\\s+${handler}\\s*:\\s*(IsMonster|IsSpell|IsTrap|IsSpellTrap)\\s*\\(\\s*\\)$`));
+  if (compatibilityMatch?.[1]) return sourceTypeMethodMask(compatibilityMatch[1]);
+  const directMatch = term.match(new RegExp(`^not\\s+${handler}\\s*:\\s*IsType\\s*\\(\\s*(${sourceTypeMaskExpressionPattern})\\s*\\)$`));
+  const mask = directMatch?.[1] ? sourceTypeMaskTokenValue(directMatch[1]) : undefined;
+  return mask !== undefined && Number.isSafeInteger(mask) && mask > 0 ? mask : undefined;
+}
+
 function sourceTypeMethodMask(method: string): number | undefined {
   if (method === "IsMonster") return 0x1;
   if (method === "IsSpell") return 0x2;
   if (method === "IsTrap") return 0x4;
+  if (method === "IsSpellTrap") return 0x6;
   return undefined;
 }
 
