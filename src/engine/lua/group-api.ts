@@ -1,4 +1,5 @@
 import fengari from "fengari";
+import { createRng } from "#engine/rng.js";
 import { copyGlobalFunctionToField, readCardUid, readGroupUids, readOptionalFunctionRef, readTableNumberField, releaseOptionalFunctionRef, setGroupUids } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { linkedZoneMaskForUids } from "#lua/duel-api/location.js";
@@ -243,7 +244,7 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
   lua.lua_setfield(L, -2, to_luastring("Select"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const count = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
-    pushGroupTable(state, selectGroupUids(readGroupUids(state, 1), count, count));
+    pushGroupTable(state, selectRandomGroupUids(session, readGroupUids(state, 1), count));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("RandomSelect"));
@@ -632,6 +633,20 @@ function selectSubGroup(L: unknown, uids: string[], filterRef: number | undefine
     0,
     selected,
   );
+}
+
+function selectRandomGroupUids(session: DuelSession | undefined, uids: string[], count: number): string[] {
+  const boundedCount = Math.max(0, count);
+  if (uids.length < boundedCount) return [];
+  if (!session || boundedCount === 0) return uids.slice(0, boundedCount);
+  const rng = createRng(`${session.state.seed}:lua-random-select:${session.state.randomCounter}`);
+  session.state.randomCounter += 1;
+  const shuffled = [...uids];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(rng() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex]!, shuffled[index]!];
+  }
+  return shuffled.slice(0, boundedCount);
 }
 
 function groupPredicateMatches(L: unknown, uids: string[], filterRef: number, args: LuaFilterArgs): boolean {
