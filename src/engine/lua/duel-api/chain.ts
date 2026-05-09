@@ -195,6 +195,7 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (blockedEffectTypeForOpponent !== undefined) return `closure:not-effect-type-response-player:${blockedEffectTypeForOpponent}`;
   const blockedEffectType = literalNotEffectTypePredicate(L, index, hostState);
   if (blockedEffectType !== undefined) return `closure:not-effect-type:${blockedEffectType}`;
+  if (literalResponseMatchesChainPlayerPredicate(L, index, hostState)) return "closure:response-matches-chain-player";
   const cardTableField = matchingGlobalCardTableFunctionField(L, index);
   if (cardTableField) return cardTableField;
   const handlerOnlyUid = literalCapturedHandlerOnlyCardUid(L, index, hostState);
@@ -221,7 +222,6 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   const blockedActiveTypeForOpponent = literalResponseMatchesChainPlayerOrNotActiveTypePredicate(L, index, hostState);
   if (blockedActiveTypeForOpponent !== undefined) return `closure:not-active-type-response-player:${blockedActiveTypeForOpponent}`;
   if (literalResponseMatchesChainPlayerOrSpellTrapNonActivatePredicate(L, index, hostState)) return "closure:spell-trap-non-activate-response-player";
-  if (literalResponseMatchesChainPlayerPredicate(L, index, hostState)) return "closure:response-matches-chain-player";
   const capturedPlayerComparison = literalCapturedPlayerComparisonPredicate(L, index, hostState);
   if (capturedPlayerComparison) return capturedPlayerComparison;
   if (literalNotMonsterLinkActiveTypePredicate(L, index, hostState)) return "closure:not-active-monster-link";
@@ -516,7 +516,7 @@ function literalResponseMatchesChainPlayerPredicate(L: unknown, index: number, h
   if (hasNonEnvironmentUpvalues(L, index)) return false;
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return false;
-  const params = snippet.match(/function\s*\(([^)]*)\)/)?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
+  const params = (snippet.match(/function\s+(?:[A-Za-z_]\w*(?:[.:][A-Za-z_]\w*)*)\s*\(([^)]*)\)/) ?? snippet.match(/function\s*\(([^)]*)\)/))?.[1]?.split(",").map((param) => param.trim()).filter(Boolean);
   const responsePlayerParam = params?.[1];
   const chainPlayerParam = params?.[2];
   const equality = snippet.match(/return\s+([A-Za-z_]\w*)\s*==\s*([A-Za-z_]\w*)\s*(?:;?\s*end\b|$)/);

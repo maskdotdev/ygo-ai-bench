@@ -136,7 +136,7 @@ function sourceScript(untilChainEnd: boolean, predicateName: NamedPredicate): st
       c:RegisterEffect(e)
     end
     function s.${predicateName}(e,ep,tp)
-      return tp==ep
+      return tp==ep and e:GetHandler():IsCode(200)
     end
   `;
 }
