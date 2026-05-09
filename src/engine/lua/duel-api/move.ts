@@ -659,7 +659,9 @@ function moveCardsToDeckBottom(L: unknown, session: DuelSession, hostState: LuaD
   const targetPlayer = readOptionalPlayer(L, 2);
   const reason = readMoveReason(L, 3, 0);
   const moved: string[] = [];
+  const eventMoved: string[] = [];
   beginLuaOperationMoveStep(session, hostState);
+  const triggerStart = session.state.pendingTriggers.length;
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
@@ -674,12 +676,16 @@ function moveCardsToDeckBottom(L: unknown, session: DuelSession, hostState: LuaD
     try {
       const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
       const result = moveDuelCardWithRedirects(session.state, uid, "deck", targetPlayer ?? card.controller, reason, reasonPlayer, luaEffectReasonPayload(hostState, reason ?? 0, reasonPlayer));
-      if (didMove(result, before)) moved.push(uid);
+      if (didMove(result, before)) {
+        moved.push(uid);
+        eventMoved.push(uid);
+      }
     } catch {
       // EDOPro-style helpers report successful movements only.
     }
   }
   finishLuaOperationMoveStep(hostState, moved.length > 0);
+  regroupGenericDestinationEvents(session, triggerStart, eventMoved);
   return moved;
 }
 
@@ -687,7 +693,9 @@ function moveCardsToDeckTop(L: unknown, session: DuelSession, hostState: LuaDuel
   const targetPlayer = readOptionalPlayer(L, 2);
   const reason = readMoveReason(L, 3, 0);
   const moved: string[] = [];
+  const eventMoved: string[] = [];
   beginLuaOperationMoveStep(session, hostState);
+  const triggerStart = session.state.pendingTriggers.length;
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
@@ -705,12 +713,14 @@ function moveCardsToDeckTop(L: unknown, session: DuelSession, hostState: LuaDuel
       if (didMove(result, before)) {
         moveDeckCardToTop(session.state, result);
         moved.push(uid);
+        eventMoved.push(uid);
       }
     } catch {
       // EDOPro-style helpers report successful movements only.
     }
   }
   finishLuaOperationMoveStep(hostState, moved.length > 0);
+  regroupGenericDestinationEvents(session, triggerStart, eventMoved);
   return moved;
 }
 

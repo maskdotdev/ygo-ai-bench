@@ -64,6 +64,58 @@ describe("Lua generic Sendto grouped events", () => {
 
     assertGroupedMove(session, host, "generic remove sent 2", "banished", ["generic remove first group 2", "generic remove second group 2", "generic remove generic group 2"]);
   });
+
+  it("collects one grouped EVENT_TO_DECK success event for MoveToDeckTop sends", () => {
+    const cards: DuelCardData[] = [
+      { code: "200", name: "Deck Top Send First", kind: "monster" },
+      { code: "201", name: "Deck Top Send Second", kind: "monster" },
+      { code: "300", name: "Deck Top Send Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 112, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["200", "201", "300"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local first=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local second=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 201), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      ${registerGroupedTrigger("EVENT_TO_DECK", "LOCATION_DECK", "deck top")}
+      Debug.Message("deck top sent " .. Duel.MoveToDeckTop(Group.FromCards(first, second), 0, REASON_EFFECT))
+      `,
+      "move-to-deck-top-grouped-event.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+
+    assertGroupedMove(session, host, "deck top sent 2", "deck", ["deck top first group 2", "deck top second group 2", "deck top generic group 2"]);
+  });
+
+  it("collects one grouped EVENT_TO_DECK success event for MoveToDeckBottom sends", () => {
+    const cards: DuelCardData[] = [
+      { code: "200", name: "Deck Bottom Send First", kind: "monster" },
+      { code: "201", name: "Deck Bottom Send Second", kind: "monster" },
+      { code: "300", name: "Deck Bottom Send Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 113, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["200", "201", "300"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local first=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local second=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 201), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      ${registerGroupedTrigger("EVENT_TO_DECK", "LOCATION_DECK", "deck bottom")}
+      Debug.Message("deck bottom sent " .. Duel.MoveToDeckBottom(Group.FromCards(first, second), 0, REASON_EFFECT))
+      `,
+      "move-to-deck-bottom-grouped-event.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+
+    assertGroupedMove(session, host, "deck bottom sent 2", "deck", ["deck bottom first group 2", "deck bottom second group 2", "deck bottom generic group 2"]);
+  });
 });
 
 function registerGroupedTrigger(eventCode: string, sourceRange: string, label: string): string {
@@ -97,7 +149,7 @@ function registerGroupedTrigger(eventCode: string, sourceRange: string, label: s
   `;
 }
 
-function assertGroupedMove(session: DuelSession, host: ReturnType<typeof createLuaScriptHost>, message: string, location: "graveyard" | "banished", resolvedMessages: string[]): void {
+function assertGroupedMove(session: DuelSession, host: ReturnType<typeof createLuaScriptHost>, message: string, location: "graveyard" | "banished" | "deck", resolvedMessages: string[]): void {
   const first = session.state.cards.find((card) => card.code === "200");
   const second = session.state.cards.find((card) => card.code === "201");
   const watcher = session.state.cards.find((card) => card.code === "300");
