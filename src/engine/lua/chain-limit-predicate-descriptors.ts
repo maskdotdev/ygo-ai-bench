@@ -36,6 +36,14 @@ export function literalCapturedPlayerComparisonPredicate(L: unknown, index: numb
   return undefined;
 }
 
+export function literalFalsePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): boolean {
+  return literalConstantBooleanPredicate(L, index, hostState, "false");
+}
+
+export function literalTruePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): boolean {
+  return literalConstantBooleanPredicate(L, index, hostState, "true");
+}
+
 export function literalResponseMatchesChainPlayerOrSourceTypeNonActivatePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
   if (hasNonEnvironmentUpvalues(L, index)) return undefined;
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
@@ -284,6 +292,21 @@ function luaFunctionParams(snippet: string): string[] | undefined {
     ?? snippet.match(/function\s*\(([^)]*)\)/);
   const params = match?.[1];
   return params?.split(",").map((param) => param.trim()).filter(Boolean);
+}
+
+function literalConstantBooleanPredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState, literal: "false" | "true"): boolean {
+  if (hasNonEnvironmentUpvalues(L, index)) return false;
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return false;
+  const body = luaFunctionBody(snippet);
+  const returned = body?.match(/^return\s+(.+?);?$/)?.[1];
+  return returned !== undefined && trimOuterParens(returned) === literal;
+}
+
+function luaFunctionBody(snippet: string): string | undefined {
+  const body = snippet.match(/function\s+(?:[A-Za-z_]\w*(?:[.:][A-Za-z_]\w*)*)\s*\([^)]*\)\s*(.*?)\s*end\b/)
+    ?? snippet.match(/function\s*\([^)]*\)\s*(.*?)\s*end\b/);
+  return body?.[1]?.trim();
 }
 
 function hasNonEnvironmentUpvalues(L: unknown, index: number): boolean {
