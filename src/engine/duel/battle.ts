@@ -10,7 +10,7 @@ import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelSta
 
 export interface DuelBattleCallbacks {
   canAttackTarget?(attacker: DuelCardInstance, target: DuelCardInstance): boolean;
-  collectEvent(eventName: DuelEventName, eventCard?: DuelCardInstance): void;
+  collectEvent(eventName: DuelEventName, eventCard?: DuelCardInstance | DuelCardInstance[]): void;
   damagePlayer(player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
   destroyCard(uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;
   getAttackValue?(card: DuelCardInstance): number;
@@ -347,8 +347,10 @@ function resolveAttackPositionBattle(state: DuelState, attacker: DuelCardInstanc
     if (destroyBattleCard(attacker, target.controller, target.uid, callbacks)) callbacks.collectEvent("battleDestroyed", attacker);
     return;
   }
-  if (destroyBattleCard(attacker, target.controller, target.uid, callbacks)) callbacks.collectEvent("battleDestroyed", attacker);
-  if (destroyBattleCard(target, attacker.controller, attacker.uid, callbacks)) callbacks.collectEvent("battleDestroyed", target);
+  const destroyedCards: DuelCardInstance[] = [];
+  if (destroyBattleCard(attacker, target.controller, target.uid, callbacks)) destroyedCards.push(attacker);
+  if (destroyBattleCard(target, attacker.controller, attacker.uid, callbacks)) destroyedCards.push(target);
+  if (destroyedCards.length > 0) callbacks.collectEvent("battleDestroyed", destroyedCards);
 }
 
 function resolveDefensePositionBattle(state: DuelState, attacker: DuelCardInstance, attackerAttack: number, target: DuelCardInstance, targetDefense: number, callbacks: DuelBattleCallbacks): void {
@@ -424,13 +426,15 @@ function resolveDeferredBattleDestroyed(
   callbacks: DuelBattleCallbacks,
 ): boolean {
   let moved = false;
+  const destroyedCards: DuelCardInstance[] = [];
   for (const destruction of pending.deferredBattleDestroyed ?? []) {
     const card = findCard(state, destruction.uid);
     if (!card || card.location !== "monsterZone") continue;
     if (!destroyBattleCard(card, destruction.reasonPlayer, destruction.reasonCardUid, callbacks)) continue;
-    callbacks.collectEvent("battleDestroyed", card);
+    destroyedCards.push(card);
     moved = true;
   }
+  if (destroyedCards.length > 0) callbacks.collectEvent("battleDestroyed", destroyedCards);
   return moved;
 }
 
