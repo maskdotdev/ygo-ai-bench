@@ -127,10 +127,11 @@ Completed baseline:
 - Quick effects are gated by battle sub-window, including damage-step-only and damage-calculation-only windows.
 - Battle window state is preserved through `serializeDuel()` and `restoreDuel()`.
 - Fixture observations cover direct attack, monster attack, attack negation, target leaving, target count changing with replay, damage calculation modifiers, both-player plus half-damage modifier ordering, after-damage triggers, end-of-damage-step triggers, and snapshot restore mid-window.
+- Real-script battle helper coverage now includes official Alien Hunter `EVENT_BATTLED` flag setup into `EVENT_BATTLE_DESTROYING` and restored `Duel.ChainAttack()` reopening after battle cleanup.
 
 Remaining deliverables:
 
-- Expand battle timing coverage beyond the current Negate Attack real-script fixture to more Project Ignis scripts that use battle helper APIs.
+- Continue expanding battle timing coverage beyond the current restored Negate Attack and Alien Hunter real-script fixtures to more Project Ignis scripts that use battle helper APIs.
 - Deepen "during damage calculation" edge behavior for replacement effects and response priority where EDOPro distinguishes sub-steps beyond the current window kinds. Both-player plus half-damage modifier ordering now has always-on snapshot-backed fixture coverage.
 - Broaden `EVENT_BATTLED`/after-damage-calculation coverage beyond the current Wall of Illusion, Divine Knight Ishzark, D.D. Assailant, and D.D. Warrior plus Wall simultaneous-trigger branches.
 - Battle destruction replacement conflicts and redirected branches involving multiple competing field battle-destroy redirects now have snapshot-backed fixture coverage.
