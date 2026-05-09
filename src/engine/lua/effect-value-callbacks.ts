@@ -45,6 +45,16 @@ export function callLuaEffectValuePredicate(
       lua.lua_pop(L, 1);
       return result;
     }
+    if (luaEffect.code === 42) {
+      hostState.pushEffectTable(L, luaEffect.id);
+      pushBattleOpponentTable(L, hostState, ctx);
+      lua.lua_pushinteger(L, reasonPlayer ?? ctx.eventReasonPlayer ?? ctx.player ?? card.controller);
+      const status = lua.lua_pcall(L, 3, 1, 0);
+      if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+      const result = lua.lua_isnil(L, -1) ? true : Boolean(lua.lua_toboolean(L, -1));
+      lua.lua_pop(L, 1);
+      return result;
+    }
     hostState.pushEffectTable(L, luaEffect.id);
     pushRelatedEffectTable(L, hostState, ctx);
     lua.lua_pushinteger(L, reasonPlayer ?? ctx.player ?? card.controller);
@@ -160,6 +170,15 @@ function pushBattleDamageValueArgs(L: unknown, luaEffect: LuaEffectRecord, playe
   lua.lua_pushinteger(L, player);
   lua.lua_pushnil(L);
   return 6;
+}
+
+function pushBattleOpponentTable(L: unknown, hostState: LuaHostState, ctx: DuelEffectContext): void {
+  const eventUid = ctx.eventCard?.uid;
+  const attack = hostState.session.state.currentAttack ?? hostState.session.state.pendingBattle;
+  const opponentUid = attack && eventUid === attack.attackerUid ? attack.targetUid : attack && eventUid === attack.targetUid ? attack.attackerUid : undefined;
+  const opponent = opponentUid === undefined ? undefined : hostState.session.state.cards.find((card) => card.uid === opponentUid);
+  if (opponent) pushCardTable(L, opponent.uid);
+  else lua.lua_pushnil(L);
 }
 
 function withLuaCallbackContext<T>(hostState: LuaHostState, ctx: DuelEffectContext | undefined, callback: () => T): T {
