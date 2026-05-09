@@ -1,7 +1,6 @@
 import fengari from "fengari";
 import { recordSpecialSummonActivity } from "#duel/activity.js";
 import { getCards, hasZoneSpace, pushDuelLog, resequence } from "#duel/card-state.js";
-import { isControlChangePrevented } from "#duel/continuous-effects.js";
 import { eventCardReasonPayload, type DuelEventPayload } from "#duel/event-history.js";
 import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import {
@@ -21,10 +20,10 @@ import {
 import { duelReason } from "#duel/reasons.js";
 import { duelSummonTypeFromCode } from "#duel/summon-type-codes.js";
 import { locationsFromMask, positionFromMask, readCardUid } from "#lua/api-utils.js";
-import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
 import { moveDeckCardToBottom, moveDeckCardToTop } from "#lua/duel-api/deck-order.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { activeFieldSpell, isDuelType, isFieldSpell } from "#lua/duel-api/field-spell-state.js";
+import { canLuaChangeControl, canLuaSwapControlPair, swapLuaCardControl } from "#lua/duel-api/move-control.js";
 import { luaMoveBlockedByImmunity, type LuaMoveImmunityHostState } from "#lua/duel-api/move-immunity.js";
 import { applyLuaMovePosition, didMove, faceupAttackOrFacedownDefensePosition, movementSnapshot } from "#lua/duel-api/move-card-state.js";
 import { shuffleLuaMoveCards } from "#lua/duel-api/move-shuffle.js";
@@ -295,7 +294,7 @@ function pushGetControl(L: unknown, session: DuelSession, hostState: LuaDuelMove
   const triggerStart = session.state.pendingTriggers.length;
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
-    if (!card || card.controller === targetPlayer || !canChangeControl(session.state, card, allowedLocations)) continue;
+    if (!card || card.controller === targetPlayer || !canLuaChangeControl(session.state, card, allowedLocations) || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) continue;
     if (!hasZoneSpace(session.state, targetPlayer, card.location)) continue;
     const previousController = card.controller;
     try {
@@ -326,8 +325,9 @@ function pushSwapControl(L: unknown, session: DuelSession, hostState: LuaDuelMov
   for (let index = 0; index < count; index += 1) {
     const left = session.state.cards.find((candidate) => candidate.uid === leftUids[index]);
     const right = session.state.cards.find((candidate) => candidate.uid === rightUids[index]);
-    if (!left || !right || !canSwapControlPair(session.state, left, right)) continue;
-    swapCardControl(session, left, right, hostState.activeContext?.player ?? session.state.turnPlayer);
+    if (!left || !right || !canLuaSwapControlPair(session.state, left, right)) continue;
+    if (luaMoveBlockedByImmunity(L, session, hostState, left, duelReason.effect) || luaMoveBlockedByImmunity(L, session, hostState, right, duelReason.effect)) continue;
+    swapLuaCardControl(session, left, right, hostState.activeContext?.player ?? session.state.turnPlayer);
     assignReasonCard(left, hostState);
     assignReasonCard(right, hostState);
     collectLuaMoveEvent(session, "controlChanged", left);
@@ -355,6 +355,7 @@ function pushChangePosition(L: unknown, session: DuelSession, hostState: LuaDuel
   for (const uid of uids) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
+    if (luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) continue;
     try {
       changeDuelCardPosition(session.state, card.controller, uid, requestedPosition);
       changed.push(uid);
@@ -373,7 +374,7 @@ function pushChangeToFaceupAttackOrFacedownDefense(L: unknown, session: DuelSess
   const uid = readCardUid(L, 1);
   const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
   const nextPosition = card ? faceupAttackOrFacedownDefensePosition(card) : undefined;
-  if (!uid || !card || !nextPosition || !canChangeDuelCardPosition(session.state, uid, nextPosition)) {
+  if (!uid || !card || !nextPosition || !canChangeDuelCardPosition(session.state, uid, nextPosition) || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) {
     setOperatedUids(hostState, []);
     return 0;
   }
@@ -940,53 +941,6 @@ function swappableSequencePair(first: DuelCardInstance | undefined, second: Duel
 
 function canReorderFieldZone(location: DuelLocation): boolean {
   return location === "monsterZone" || location === "spellTrapZone";
-}
-
-function canChangeControl(state: DuelState, card: DuelCardInstance, allowedLocations: DuelLocation[] | undefined): boolean {
-  if (card.location !== "monsterZone" && card.location !== "spellTrapZone") return false;
-  if (isControlChangePrevented(state, card, createLuaMaterialCheckContext(state))) return false;
-  return !allowedLocations || allowedLocations.includes(card.location);
-}
-
-function canSwapControlPair(state: DuelState, left: DuelCardInstance, right: DuelCardInstance): boolean {
-  if (left.uid === right.uid || left.controller === right.controller) return false;
-  if (!canChangeControl(state, left, undefined) || !canChangeControl(state, right, undefined)) return false;
-  return hasControlSwapSpace(state, left, right);
-}
-
-function hasControlSwapSpace(state: DuelState, left: DuelCardInstance, right: DuelCardInstance): boolean {
-  return [left.controller, right.controller].every((player) =>
-    (["monsterZone", "spellTrapZone"] as const).every((location) => {
-      const current = state.cards.filter((card) => card.controller === player && card.location === location).length;
-      const outgoing = [left, right].filter((card) => card.controller === player && card.location === location).length;
-      const incoming = [left, right].filter((card) => card.controller !== player && card.location === location).length;
-      return current - outgoing + incoming <= 5;
-    }),
-  );
-}
-
-function swapCardControl(session: DuelSession, left: DuelCardInstance, right: DuelCardInstance, reasonPlayer: PlayerId): void {
-  const leftController = left.controller;
-  const rightController = right.controller;
-  applyControlSwapCardState(left, rightController, reasonPlayer);
-  applyControlSwapCardState(right, leftController, reasonPlayer);
-  resequence(session.state, leftController, left.location);
-  resequence(session.state, rightController, left.location);
-  resequence(session.state, leftController, right.location);
-  resequence(session.state, rightController, right.location);
-  pushDuelLog(session.state, "control", rightController, left.name, `Swapped control with ${right.name}`);
-  pushDuelLog(session.state, "control", leftController, right.name, `Swapped control with ${left.name}`);
-}
-
-function applyControlSwapCardState(card: DuelCardInstance, controller: PlayerId, reasonPlayer: PlayerId): void {
-  card.previousLocation = card.location;
-  card.previousController = card.controller;
-  card.previousSequence = card.sequence;
-  card.previousPosition = card.position;
-  card.previousFaceUp = card.faceUp;
-  card.reason = duelReason.effect;
-  card.reasonPlayer = reasonPlayer;
-  card.controller = controller;
 }
 
 function setOperatedUids(hostState: LuaDuelMoveApiHostState, uids: string[]): void {
