@@ -726,6 +726,11 @@ function pushSwapSequence(L: unknown, session: DuelSession, hostState: LuaDuelMo
     return 1;
   }
   const [left, right] = pair;
+  if (luaMoveBlockedByImmunity(L, session, hostState, left, duelReason.effect) || luaMoveBlockedByImmunity(L, session, hostState, right, duelReason.effect)) {
+    setOperatedUids(hostState, []);
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
   const firstSequence = left.sequence;
   left.sequence = right.sequence;
   right.sequence = firstSequence;
@@ -739,6 +744,11 @@ function pushMoveSequence(L: unknown, session: DuelSession, hostState: LuaDuelMo
   const sequence = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
   const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
   if (!card || sequence === undefined || !canReorderFieldZone(card.location)) {
+    setOperatedUids(hostState, []);
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
+  if (luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) {
     setOperatedUids(hostState, []);
     lua.lua_pushinteger(L, 0);
     return 1;
