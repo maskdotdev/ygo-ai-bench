@@ -20,11 +20,11 @@ const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pendulum procedure actions", () => {
-  it("restores real Pendulum scale activations and a Pendulum Summon action", () => {
+  it("restores real Pendulum scale activations, Pendulum Summon, and summon-success trigger", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const lowScaleCode = "7868571";
     const highScaleCode = "14105623";
-    const candidateCode = "48461764";
+    const candidateCode = "64207696";
     const cards = workspace.readDatabaseCards("cards.cdb").filter((card) => [lowScaleCode, highScaleCode, candidateCode].includes(card.code));
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 296, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
@@ -46,6 +46,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pe
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(lowScaleCode), workspace).ok).toBe(true);
     expect(host.loadCardScript(Number(highScaleCode), workspace).ok).toBe(true);
+    expect(host.loadCardScript(Number(candidateCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBeGreaterThan(0);
 
     const restoredLowScaleWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
@@ -80,6 +81,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pe
       summonType: "pendulum",
     });
     expect(restoredPendulumWindow.session.state.players[0].pendulumSummonAvailable).toBe(false);
+
+    const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredPendulumWindow.session), workspace, reader);
+    expect(restoredTriggerWindow.restoreComplete, restoredTriggerWindow.incompleteReasons.join("; ")).toBe(true);
+    assertLegalActions(restoredTriggerWindow);
+    expect(restoredTriggerWindow.session.state.pendingTriggers).toEqual([
+      expect.objectContaining({
+        eventCode: 1102,
+        eventName: "specialSummoned",
+        eventCardUid: candidate!.uid,
+      }),
+    ]);
+    const summonSuccessTrigger = getLuaRestoreLegalActions(restoredTriggerWindow, 0).find(
+      (action): action is Extract<DuelAction, { type: "activateTrigger" }> => action.type === "activateTrigger" && action.uid === candidate!.uid,
+    );
+    expect(summonSuccessTrigger, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredTriggerWindow, summonSuccessTrigger!);
+    resolveRestoredChain(restoredTriggerWindow);
+
+    const attackBoosts = restoredTriggerWindow.session.state.effects.filter((effect) => effect.sourceUid === candidate!.uid && effect.event === "continuous" && effect.code === 100);
+    expect(attackBoosts).toEqual([
+      expect.objectContaining({
+        value: 200,
+        range: ["monsterZone"],
+      }),
+    ]);
+    const attackProbe = restoredTriggerWindow.host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode, ${candidateCode}),0,LOCATION_MZONE,0,nil)
+      Debug.Message("gold fang restored attack " .. (c and c:GetAttack() or -1))
+      `,
+      "gold-fang-restored-attack-probe.lua",
+    );
+    expect(attackProbe.ok, attackProbe.error).toBe(true);
+    expect(restoredTriggerWindow.host.messages).toContain("gold fang restored attack 2000");
   });
 });
 
