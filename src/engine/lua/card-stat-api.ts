@@ -1,4 +1,5 @@
 import fengari from "fengari";
+import { continuousEffectAppliesToCard } from "#duel/continuous-effects.js";
 import { collectDuelTriggerEffects } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { readCardUid } from "#lua/api-utils.js";
@@ -6,7 +7,7 @@ import { readRequestedNumbers } from "#lua/card-code-utils.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import { luaMoveBlockedByImmunity, type LuaMoveImmunityHostState } from "#lua/duel-api/move-immunity.js";
-import type { DuelCardInstance, DuelEffectContext, DuelSession, DuelState } from "#duel/types.js";
+import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelSession, DuelState } from "#duel/types.js";
 import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
 
 const { lua, to_luastring } = fengari;
@@ -386,10 +387,9 @@ function currentRank(card: DuelCardInstance | undefined, state?: DuelState): num
 }
 
 function statUpdateEffectValue(card: DuelCardInstance | undefined, state: DuelState | undefined, code: number): number {
-  if (!card || !state) return 0;
-  return state.effects
-    .filter((effect) => effect.event === "continuous" && effect.code === code && effect.sourceUid === card.uid && effect.range.includes(card.location))
-    .reduce((total, effect) => total + (statEffectValue(card, state, effect) ?? 0), 0);
+  if (!card) return 0;
+  return matchingStatEffects(card, state, code)
+    .reduce((total, { effect, ctx }) => total + (statEffectValue(card, state, effect, ctx) ?? 0), 0);
 }
 
 function currentBaseAttack(card: DuelCardInstance | undefined, state?: DuelState): number {
@@ -403,24 +403,39 @@ function currentBaseDefense(card: DuelCardInstance | undefined, state?: DuelStat
 }
 
 function setStatEffectValue(card: DuelCardInstance | undefined, state: DuelState | undefined, code: number): number | undefined {
-  if (!card) return undefined;
-  const effect = state?.effects
-    .filter((candidate) => candidate.event === "continuous" && candidate.code === code && candidate.sourceUid === card.uid && candidate.range.includes(card.location) && (candidate.value !== undefined || candidate.statValue !== undefined))
+  const match = matchingStatEffects(card, state, code)
+    .filter(({ effect }) => effect.value !== undefined || effect.statValue !== undefined)
     .at(-1);
-  return effect ? statEffectValue(card, state, effect) : undefined;
+  return card && match ? statEffectValue(card, state, match.effect, match.ctx) : undefined;
 }
 
-function statEffectValue(card: DuelCardInstance, state: DuelState | undefined, effect: DuelState["effects"][number]): number | undefined {
+function matchingStatEffects(card: DuelCardInstance | undefined, state: DuelState | undefined, code: number): Array<{ effect: DuelEffectDefinition; ctx: DuelEffectContext }> {
+  if (!card || !state) return [];
+  const matches: Array<{ effect: DuelEffectDefinition; ctx: DuelEffectContext }> = [];
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== code) continue;
+    const source = state.cards.find((candidate) => candidate.uid === effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    const ctx = statEffectContext(state, effect, source);
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    matches.push({ effect, ctx });
+  }
+  return matches;
+}
+
+function statEffectValue(card: DuelCardInstance, state: DuelState | undefined, effect: DuelState["effects"][number], ctx?: DuelEffectContext): number | undefined {
   if (!state) return effect.value;
   const source = state.cards.find((candidate) => candidate.uid === effect.sourceUid) ?? card;
-  return effect.statValue?.(statEffectContext(state, source), card) ?? effect.value;
+  const resolvedContext = ctx ?? statEffectContext(state, effect, source);
+  return effect.statValue?.(resolvedContext, card) ?? effect.value;
 }
 
-function statEffectContext(state: DuelState, source: DuelCardInstance): DuelEffectContext {
+function statEffectContext(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance): DuelEffectContext {
   return {
     duel: state,
     source,
-    player: source.controller,
+    player: effect.controller,
     targetUids: [],
     log: () => {},
     moveCard: () => {

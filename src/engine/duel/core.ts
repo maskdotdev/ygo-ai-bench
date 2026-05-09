@@ -187,7 +187,7 @@ const battleContinuationHandlers: BattleContinuationHandlers = {
   damagePlayer: damageDuelPlayer,
   destroyCard: destroyDuelCard,
   getAttackValue: (state, card) => getCoreBattleAttackValue(state, card, coreBattleHandlers),
-  getDefenseValue: (state, card) => getCoreBattleDefenseValue(state, card),
+  getDefenseValue: (state, card) => getCoreBattleDefenseValue(state, card, coreBattleHandlers),
   hasPiercingDamage: (state, card) => hasCorePiercingBattleDamage(state, card, coreBattleHandlers),
 };
 
@@ -201,7 +201,7 @@ const coreBattleHandlers: CoreBattleHandlers = {
   damagePlayer: damageDuelPlayer,
   destroyCard: destroyDuelCard,
   getAttackValue: (state, card) => getCoreBattleAttackValue(state, card, coreBattleHandlers),
-  getDefenseValue: (state, card) => getCoreBattleDefenseValue(state, card),
+  getDefenseValue: (state, card) => getCoreBattleDefenseValue(state, card, coreBattleHandlers),
   hasPiercingDamage: (state, card) => hasCorePiercingBattleDamage(state, card, coreBattleHandlers),
 };
 

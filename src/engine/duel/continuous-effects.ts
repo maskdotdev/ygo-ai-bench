@@ -901,7 +901,7 @@ function continuousEffectAffectsCard(effect: DuelEffectDefinition, source: DuelC
   return false;
 }
 
-function continuousEffectAppliesToCard(effect: DuelEffectDefinition, source: DuelCardInstance, card: DuelCardInstance, ctx: DuelEffectContext): boolean {
+export function continuousEffectAppliesToCard(effect: DuelEffectDefinition, source: DuelCardInstance, card: DuelCardInstance, ctx: DuelEffectContext): boolean {
   if (!continuousEffectAffectsCard(effect, source, card) && (effect.targetRange !== undefined || continuousEffectIsPlayerTarget(effect) || !effect.targetCardPredicate)) return false;
   return !effect.targetCardPredicate || effect.targetCardPredicate(ctx, card);
 }
