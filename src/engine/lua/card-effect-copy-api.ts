@@ -1,6 +1,8 @@
 import fengari from "fengari";
+import { duelReason } from "#duel/reasons.js";
 import { pushCardTable } from "#lua/card-table-api.js";
 import { readCardUid } from "#lua/api-utils.js";
+import { luaMoveBlockedByImmunity } from "#lua/duel-api/move-immunity.js";
 import { readLuaError } from "#lua/host-script-api.js";
 import type { DuelEffectDefinition, DuelSession } from "#duel/types.js";
 import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
@@ -30,7 +32,7 @@ function pushCopyEffect<EffectRecord extends LuaCardApiEffectRecord>(
   const resetFlags = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : undefined;
   const resetCount = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : undefined;
   const receiver = receiverUid ? session.state.cards.find((card) => card.uid === receiverUid) : undefined;
-  if (!receiver || !copiedCode || !ensureCopiedScriptLoaded(L, hostState, copiedCode)) {
+  if (!receiver || !copiedCode || luaMoveBlockedByImmunity(L, session, hostState, receiver, duelReason.effect) || !ensureCopiedScriptLoaded(L, hostState, copiedCode)) {
     lua.lua_pushinteger(L, 0);
     return 1;
   }
