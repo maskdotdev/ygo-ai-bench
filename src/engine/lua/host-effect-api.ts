@@ -478,7 +478,7 @@ function getEffectFunctionField(field: "conditionRef" | "costRef" | "targetRef" 
 }
 
 export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unknown, hostState: LuaHostState): DuelEffectDefinition {
-  const event = luaEffectEvent(luaEffect.typeFlags, luaEffect.code);
+  const event = luaEffectEvent(card, luaEffect.typeFlags, luaEffect.code);
   const range = luaEffect.range ?? luaEffectDefaultRange(card, luaEffect, event);
   const triggerEvent = triggerEventFromCode(luaEffect.code);
   if (!luaEffect.isGlobal) luaEffect.sourceUid = card.uid;
@@ -535,10 +535,11 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
   };
 }
 
-function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffectDefinition["event"] {
+function luaEffectEvent(card: DuelCardInstance, typeFlags: number, code: number | undefined): DuelEffectDefinition["event"] {
   if (code === 34) return "summonProcedure";
   if (code === 1027 && (typeFlags & 0x800) !== 0) return "continuous";
   if (code === 1027 && ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0)) return "trigger";
+  if (code === 1002 && (typeFlags & 0x10) !== 0 && isFastSpellTrapActivation(card)) return "quick";
   if (code === 1027) return "quick";
   if (
     code === 2 ||
@@ -598,6 +599,11 @@ function luaEffectEvent(typeFlags: number, code: number | undefined): DuelEffect
   if ((typeFlags & 0x40) !== 0 || (typeFlags & 0x10) !== 0) return "ignition";
   if ((typeFlags & (0x1 | 0x4 | 0x1000 | 0x2000 | 0x4000)) !== 0) return "continuous";
   return "ignition";
+}
+
+function isFastSpellTrapActivation(card: DuelCardInstance): boolean {
+  if (card.kind === "trap") return true;
+  return card.kind === "spell" && ((card.data.typeFlags ?? 0) & 0x10000) !== 0;
 }
 
 function luaEffectDefaultRange(card: DuelCardInstance, luaEffect: LuaEffectRecord, event: DuelEffectDefinition["event"]): DuelLocation[] {

@@ -374,6 +374,9 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     }));
     actions.push(...corePositionChangeActions(state, player, coreBattleHandlers));
   }
+  else {
+    actions.push(...quickEffectActions(state, player));
+  }
   appendBattleActions(actions, state, player, coreBattleHandlers);
   const mustAttack = hasCoreMustAttackAction(state, player, actions, coreBattleHandlers);
   const nextPhase = nextAvailableDuelPhase(state, player, (phase) => canEnterDuelPhase(state, player, phase));
