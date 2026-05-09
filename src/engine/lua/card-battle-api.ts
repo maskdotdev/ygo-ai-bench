@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { isDuelCardPendingBattleDestroyed } from "#duel/battle.js";
 import { isPhaseEntryPrevented } from "#duel/continuous-effects.js";
-import { canDuelCardAttack } from "#duel/core.js";
+import { canDuelCardAttack, getDuelAttackableTargets } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { nextAvailableDuelPhase } from "#duel/turn-flow.js";
 import { readCardUid } from "#lua/api-utils.js";
@@ -37,6 +37,8 @@ export function installCardBattleApi<EffectRecord extends LuaCardApiEffectRecord
   pushBooleanGetter(L, "IsBattleDestroyed", session, (card) => Boolean(card && isBattleDestroyed(session.state, card)));
   lua.lua_pushcfunction(L, (state: unknown) => pushBattleTarget(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetBattleTarget"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushAttackableTarget(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetAttackableTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushBattledGroup(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetBattledGroup"));
   pushNumberGetter(L, "GetBattledGroupCount", session, (card) => battledOpponentUids(session, card).length);
@@ -77,6 +79,14 @@ function pushBattleTarget(L: unknown, session: DuelSession): number {
   if (!targetUid) lua.lua_pushnil(L);
   else pushCardTable(L, targetUid);
   return 1;
+}
+
+function pushAttackableTarget(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const result = card ? getDuelAttackableTargets(session.state, card.uid) : { targets: [], directAttack: false };
+  pushGroupTable(L, result.targets.map((target) => target.uid));
+  lua.lua_pushboolean(L, result.directAttack);
+  return 2;
 }
 
 function pushBattledGroup(L: unknown, session: DuelSession): number {

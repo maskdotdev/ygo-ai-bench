@@ -1,5 +1,6 @@
+import { currentBattleWindowKind } from "#duel/battle-window-state.js";
 import { findCard } from "#duel/card-state.js";
-import type { ChainLink, DuelCardInstance, DuelEffectDefinition, DuelEventCardState, DuelEventName, DuelState, PlayerId, TriggerTiming } from "#duel/types.js";
+import type { ChainLink, DuelCardInstance, DuelEffectDefinition, DuelEventCardState, DuelEventName, DuelEventRecord, DuelState, PlayerId, TriggerTiming } from "#duel/types.js";
 
 export interface DuelEffectEventContext {
   eventName: DuelEventName;
@@ -23,32 +24,73 @@ export interface DuelEffectEventContext {
 export function quickEffectEventContext(state: DuelState, effect: DuelEffectDefinition): DuelEffectEventContext | undefined {
   if (effect.event !== "quick" || effect.triggerEvent === undefined) return undefined;
   const firstLink = state.chain[0];
-  if (!firstLink || !chainLinkMatchesTriggerEffect(firstLink, effect)) return undefined;
-  const eventCard = firstLink.eventCardUid === undefined ? undefined : findCard(state, firstLink.eventCardUid);
+  if (firstLink) return eventSourceMatchesTriggerEffect(firstLink, effect) ? eventContextFromSource(state, firstLink) : undefined;
+  return liveQuickEffectEventContext(state, effect);
+}
+
+type DuelEffectEventSource = {
+  eventName: DuelEventName;
+  eventCode?: number;
+  eventPlayer?: PlayerId;
+  eventValue?: number;
+  eventReason?: number;
+  eventReasonPlayer?: PlayerId;
+  eventReasonCardUid?: string;
+  eventReasonEffectId?: number;
+  relatedEffectId?: number;
+  eventChainDepth?: number;
+  eventChainLinkId?: string;
+  eventUids?: string[];
+  eventCardUid?: string;
+  eventPreviousState?: DuelEventCardState;
+  eventCurrentState?: DuelEventCardState;
+  eventTriggerTiming?: TriggerTiming;
+};
+
+function eventContextFromSource(state: DuelState, source: DuelEffectEventSource): DuelEffectEventContext {
+  const eventCard = source.eventCardUid === undefined ? undefined : findCard(state, source.eventCardUid);
   return {
-    eventName: firstLink.eventName,
-    ...(firstLink.eventCode === undefined ? {} : { eventCode: firstLink.eventCode }),
-    ...(firstLink.eventPlayer === undefined ? {} : { eventPlayer: firstLink.eventPlayer }),
-    ...(firstLink.eventValue === undefined ? {} : { eventValue: firstLink.eventValue }),
-    ...(firstLink.eventReason === undefined ? {} : { eventReason: firstLink.eventReason }),
-    ...(firstLink.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: firstLink.eventReasonPlayer }),
-    ...(firstLink.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: firstLink.eventReasonCardUid }),
-    ...(firstLink.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: firstLink.eventReasonEffectId }),
-    ...(firstLink.relatedEffectId === undefined ? {} : { relatedEffectId: firstLink.relatedEffectId }),
-    ...(firstLink.eventChainDepth === undefined ? {} : { eventChainDepth: firstLink.eventChainDepth }),
-    ...(firstLink.eventChainLinkId === undefined ? {} : { eventChainLinkId: firstLink.eventChainLinkId }),
-    ...(firstLink.eventUids === undefined ? {} : { eventUids: [...firstLink.eventUids] }),
+    eventName: source.eventName,
+    ...(source.eventCode === undefined ? {} : { eventCode: source.eventCode }),
+    ...(source.eventPlayer === undefined ? {} : { eventPlayer: source.eventPlayer }),
+    ...(source.eventValue === undefined ? {} : { eventValue: source.eventValue }),
+    ...(source.eventReason === undefined ? {} : { eventReason: source.eventReason }),
+    ...(source.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: source.eventReasonPlayer }),
+    ...(source.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: source.eventReasonCardUid }),
+    ...(source.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: source.eventReasonEffectId }),
+    ...(source.relatedEffectId === undefined ? {} : { relatedEffectId: source.relatedEffectId }),
+    ...(source.eventChainDepth === undefined ? {} : { eventChainDepth: source.eventChainDepth }),
+    ...(source.eventChainLinkId === undefined ? {} : { eventChainLinkId: source.eventChainLinkId }),
+    ...(source.eventUids === undefined ? {} : { eventUids: [...source.eventUids] }),
     ...(eventCard === undefined ? {} : { eventCard }),
-    ...(firstLink.eventPreviousState === undefined ? {} : { eventPreviousState: { ...firstLink.eventPreviousState } }),
-    ...(firstLink.eventCurrentState === undefined ? {} : { eventCurrentState: { ...firstLink.eventCurrentState } }),
-    ...(firstLink.eventTriggerTiming === undefined ? {} : { eventTriggerTiming: firstLink.eventTriggerTiming }),
+    ...(source.eventPreviousState === undefined ? {} : { eventPreviousState: { ...source.eventPreviousState } }),
+    ...(source.eventCurrentState === undefined ? {} : { eventCurrentState: { ...source.eventCurrentState } }),
+    ...(source.eventTriggerTiming === undefined ? {} : { eventTriggerTiming: source.eventTriggerTiming }),
   };
 }
 
-function chainLinkMatchesTriggerEffect(link: ChainLink, effect: DuelEffectDefinition): link is ChainLink & { eventName: DuelEventName } {
-  if (link.eventName !== effect.triggerEvent) return false;
+function liveQuickEffectEventContext(state: DuelState, effect: DuelEffectDefinition): DuelEffectEventContext | undefined {
+  if (!canUseLiveEventHistoryForQuickEffect(state, effect.triggerEvent)) return undefined;
+  const attack = state.pendingBattle ?? state.currentAttack;
+  for (let index = state.eventHistory.length - 1; index >= 0; index--) {
+    const event = state.eventHistory[index];
+    if (!event || !eventSourceMatchesTriggerEffect(event, effect)) continue;
+    if (event.eventName === "attackDeclared" && event.eventCardUid !== attack?.attackerUid) continue;
+    return eventContextFromSource(state, event);
+  }
+  return undefined;
+}
+
+function canUseLiveEventHistoryForQuickEffect(state: DuelState, eventName: DuelEventName | undefined): boolean {
+  if (eventName !== "attackDeclared" || !(state.pendingBattle ?? state.currentAttack)) return false;
+  const kind = currentBattleWindowKind(state);
+  return kind === "attackDeclaration" || kind === "attackTargetConfirmation" || kind === "attackNegationResponse";
+}
+
+function eventSourceMatchesTriggerEffect(source: ChainLink | DuelEventRecord, effect: DuelEffectDefinition): source is (ChainLink | DuelEventRecord) & { eventName: DuelEventName } {
+  if (source.eventName !== effect.triggerEvent) return false;
   if (effect.triggerCode === undefined) return true;
-  if (link.eventCode === undefined) return link.eventName !== "customEvent";
-  if (effect.triggerCode === link.eventCode) return true;
-  return link.eventName === "battleDestroyed" && (effect.triggerCode === 1139 || effect.triggerCode === 1140) && (link.eventCode === 1139 || link.eventCode === 1140);
+  if (source.eventCode === undefined) return source.eventName !== "customEvent";
+  if (effect.triggerCode === source.eventCode) return true;
+  return source.eventName === "battleDestroyed" && (effect.triggerCode === 1139 || effect.triggerCode === 1140) && (source.eventCode === 1139 || source.eventCode === 1140);
 }

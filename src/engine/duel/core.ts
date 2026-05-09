@@ -66,6 +66,7 @@ import {
   corePositionChangeActions,
   declareCoreDuelAttack,
   getCoreDuelAttackTargets,
+  getCoreDuelAttackableTargets,
   getCoreAdditionalBattleDamagePlayers,
   getCoreBattleAttackValue,
   getCoreBattleDamageReason,
@@ -641,6 +642,10 @@ export function canDuelCardAttack(state: DuelState, uid: string, extraAttackAllo
 
 export function getDuelAttackTargets(state: DuelState, attackerUid: string): DuelCardInstance[] {
   return getCoreDuelAttackTargets(state, attackerUid, coreBattleHandlers);
+}
+
+export function getDuelAttackableTargets(state: DuelState, attackerUid: string): { targets: DuelCardInstance[]; directAttack: boolean } {
+  return getCoreDuelAttackableTargets(state, attackerUid, coreBattleHandlers);
 }
 
 export function declareDuelAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid?: string): void {

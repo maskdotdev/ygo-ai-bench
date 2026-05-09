@@ -112,6 +112,20 @@ export function getCoreDuelAttackTargets(state: DuelState, attackerUid: string, 
   );
 }
 
+export function getCoreDuelAttackableTargets(state: DuelState, attackerUid: string, handlers: CoreBattleHandlers): { targets: DuelCardInstance[]; directAttack: boolean } {
+  const card = findCard(state, attackerUid);
+  const createContext = handlers.createContinuousContext(state);
+  if (!card || card.location !== "monsterZone" || isAttackPrevented(state, card, createContext)) return { targets: [], directAttack: false };
+  const onlyTargets = onlyBeAttackedTargetUids(state, card.controller, createContext);
+  const targets = getDuelAttackTargetsRule(
+    state,
+    attackerUid,
+    Number.MAX_SAFE_INTEGER,
+    (target) => canSelectBattleTarget(state, card.controller, target, createContext) && isOnlyAttackTargetAllowed(onlyTargets, target) && canAttackMonsterTarget(state, card, target, createContext),
+  );
+  return { targets, directAttack: canReplayDirectAttack(state, card, targets, createContext) };
+}
+
 export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid: string | undefined, handlers: CoreBattleHandlers): void {
   const attacker = findCard(state, attackerUid);
   const createContext = handlers.createContinuousContext(state);
