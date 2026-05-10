@@ -126,9 +126,17 @@ function pushChainInfoValue(L: unknown, session: DuelSession, hostState: LuaDuel
   else if (info === 27) lua.lua_pushinteger(L, source?.summonType ? locationMaskFromLocation(source.previousLocation) : 0);
   else if (info === 28) lua.lua_pushinteger(L, summonTypeMask(source));
   else if (info === 29) lua.lua_pushboolean(L, Boolean(source?.summonType));
-  else if (info === 30) pushGroupTable(L, []);
+  else if (info === 30) pushNumberArrayTable(L, source?.data.setcodes ?? []);
   else if (info === 31 && source) pushCardTable(L, source.uid);
   else lua.lua_pushnil(L);
+}
+
+function pushNumberArrayTable(L: unknown, values: readonly number[]): void {
+  lua.lua_newtable(L);
+  for (const [index, value] of values.entries()) {
+    lua.lua_pushinteger(L, value);
+    lua.lua_rawseti(L, -2, index + 1);
+  }
 }
 
 function pushChainEvent(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState): number {
