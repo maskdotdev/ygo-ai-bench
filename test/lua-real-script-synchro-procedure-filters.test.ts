@@ -194,6 +194,59 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sy
     });
   });
 
+  it("uses restored Synchro material filters for Lua Duel.SynchroSummon default material selection", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const swordsoulsCode = "74405783";
+    const wrongMaterialCodes = ["900000205", "900000206"];
+    const matchingMaterialCodes = ["900000207", "900000208"];
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === swordsoulsCode),
+      { code: wrongMaterialCodes[0]!, name: "Level 3 Tuner", kind: "monster" as const, typeFlags: 0x1001, level: 3 },
+      { code: wrongMaterialCodes[1]!, name: "Level 5 Non-Tuner", kind: "monster" as const, typeFlags: 0x1, level: 5 },
+      { code: matchingMaterialCodes[0]!, name: "Level 4 Tuner", kind: "monster" as const, typeFlags: 0x1001, level: 4 },
+      { code: matchingMaterialCodes[1]!, name: "Level 4 Non-Tuner", kind: "monster" as const, typeFlags: 0x1, level: 4 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 323, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [...wrongMaterialCodes, ...matchingMaterialCodes], extra: [swordsoulsCode] }, 1: { main: [] } });
+    startDuel(session);
+    const synchro = session.state.cards.find((card) => card.code === swordsoulsCode && card.location === "extraDeck");
+    expect(synchro).toBeDefined();
+    for (const code of [...wrongMaterialCodes, ...matchingMaterialCodes]) {
+      const material = session.state.cards.find((card) => card.code === code && card.location === "deck");
+      expect(material).toBeDefined();
+      moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+    }
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(swordsoulsCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.data).toMatchObject({
+      synchroTunerMin: 1,
+      synchroTunerMax: 1,
+      synchroTunerLevel: 4,
+      synchroNonTunerMin: 1,
+      synchroNonTunerMax: 99,
+    });
+    const result = host.loadScript(
+      `
+      local synchro=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${swordsoulsCode}),0,LOCATION_EXTRA,0,1,1,nil):GetFirst()
+      Debug.Message("default synchro tuner filter " .. Duel.SynchroSummon(synchro))
+      `,
+      "swordsouls-default-synchro.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("default synchro tuner filter 1");
+    const summoned = session.state.cards.find((card) => card.uid === synchro!.uid);
+    expect(summoned).toMatchObject({
+      location: "monsterZone",
+      summonType: "synchro",
+      summonMaterialUids: expect.arrayContaining(matchingMaterialCodes.map((code) => expect.stringContaining(code))),
+    });
+    expect(summoned?.summonMaterialUids).toHaveLength(2);
+  });
+
   it("restores official Synchro.AddProcedure tuner setcode filters for real extra deck summons", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const gormfaobharCode = "36556781";

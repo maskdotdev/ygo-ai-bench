@@ -6,18 +6,22 @@ import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 type SynchroMaterialCodes = { tuner: string; nonTuners: string[] };
 
 export function canLuaSynchroSummonCard(session: DuelSession, card: DuelCardInstance, suppliedUids: string[]): boolean {
-  if (card.location !== "extraDeck" || !isMonsterLike(card)) return false;
+  return findLuaSynchroMaterialUidSet(session, card, suppliedUids) !== undefined;
+}
+
+export function findLuaSynchroMaterialUidSet(session: DuelSession, card: DuelCardInstance, suppliedUids: string[]): string[] | undefined {
+  if (card.location !== "extraDeck" || !isMonsterLike(card)) return undefined;
   const supplied = new Set(suppliedUids);
   const materialPool = session.state.cards.filter((candidate) => candidate.controller === card.controller && candidate.location === "monsterZone" && canBeSynchroMaterial(session, candidate, card));
-  if ([...supplied].some((uid) => !materialPool.some((candidate) => candidate.uid === uid))) return false;
+  if ([...supplied].some((uid) => !materialPool.some((candidate) => candidate.uid === uid))) return undefined;
   const explicitMaterials = card.data.synchroMaterials;
   for (let count = Math.max(2, supplied.size); count <= materialPool.length; count += 1) {
     for (const materials of cardCombinations(materialPool, count)) {
       if ([...supplied].some((uid) => !materials.some((material) => material.uid === uid))) continue;
-      if ((explicitMaterials ? synchroMaterialRolesMatch(materials, explicitMaterials) : canGenericSynchroMaterialsMatch(card, materials)) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return true;
+      if ((explicitMaterials ? synchroMaterialRolesMatch(materials, explicitMaterials) : canGenericSynchroMaterialsMatch(card, materials)) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return materials.map((material) => material.uid);
     }
   }
-  return false;
+  return undefined;
 }
 
 function hasSummonZoneAfterMaterials(session: DuelSession, player: PlayerId, materials: DuelCardInstance[]): boolean {

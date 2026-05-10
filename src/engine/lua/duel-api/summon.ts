@@ -39,6 +39,7 @@ import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import { luaMoveBlockedByImmunity, type LuaMoveImmunityHostState } from "#lua/duel-api/move-immunity.js";
 import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
+import { findLuaSynchroMaterialUidSet } from "#lua/synchro-summonable.js";
 import { isSetcodeMatch } from "#lua/card-code-utils.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { applyMonsterZoneMask, hasOpenMonsterZone } from "#lua/monster-zone-mask.js";
@@ -238,7 +239,14 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
   }
   try {
     const summonPlayer = player ?? target.controller;
-    const selectedMaterials = summonType === "XyzSummon" && materialUids.length === 0 ? defaultXyzMaterialUids(session, target, summonPlayer) : materialUids;
+    const selectedMaterials =
+      materialUids.length > 0
+        ? materialUids
+        : summonType === "SynchroSummon"
+          ? findLuaSynchroMaterialUidSet(session, target, []) ?? []
+          : summonType === "XyzSummon"
+            ? defaultXyzMaterialUids(session, target, summonPlayer)
+            : materialUids;
     markLuaOperationTimingBoundary(session, hostState);
     if (summonType === "FusionSummon") {
       if (fusionMaterialsMovedByEffect || materialsAlreadyMoved || selectedMaterials.some((uid) => session.state.cards.some((card) => card.uid === uid && !isDefaultFusionMaterialLocation(card.location)))) {
