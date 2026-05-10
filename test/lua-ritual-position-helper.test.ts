@@ -54,6 +54,7 @@ describe("Lua ritual position helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("ritual position complete");
+    expect(host.messages).toContain("confirmed 1: 940");
     expect(session.state.cards.find((card) => card.uid === ritual!.uid)).toMatchObject({
       location: "monsterZone",
       position: "faceDownDefense",
@@ -62,6 +63,7 @@ describe("Lua ritual position helpers", () => {
       summonMaterialUids: [material!.uid],
     });
     expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "graveyard" });
+    expect(session.state.eventHistory.at(-1)).toMatchObject({ eventName: "confirmed", eventPlayer: 1, eventUids: [ritual!.uid] });
     expect(session.state.pendingTriggers).toEqual([expect.objectContaining({ sourceUid: watcher!.uid, eventName: "specialSummoned", eventCardUid: ritual!.uid })]);
   });
 });

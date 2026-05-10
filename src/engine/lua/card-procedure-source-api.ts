@@ -89,9 +89,11 @@ export const cardProcedureSource = `${fusionProcedureSource}
             params.extraop(sg:Clone(),e,tp,eg,ep,ev,re,r,rp,rc)
             Duel.BreakEffect()
             Duel.RitualSummon(rc,sg,true,params.sumpos)
+            if rc:IsFacedown() then Duel.ConfirmCards(1-tp,rc) end
             if params.stage2 then params.stage2(sg,e,tp,eg,ep,ev,re,r,rp,rc) end
           else
             Duel.RitualSummon(rc,sg,false,params.sumpos)
+            if rc:IsFacedown() then Duel.ConfirmCards(1-tp,rc) end
           end
         end
       end
