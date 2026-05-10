@@ -213,10 +213,11 @@ function pushSelectedFusionMaterial(L: unknown, session: DuelSession): number {
   const target = targetUid ? session.state.cards.find((card) => card.uid === targetUid) : undefined;
   const suppliedUids = readGroupUids(L, 3);
   const forcedUids = readCardOrGroupUids(L, 4);
+  const hasSuppliedMaterialGroup = suppliedUids.length > 0;
   const poolUids = suppliedUids.length > 0 ? suppliedUids : fieldGroupUids(session, player, 0x02 | 0x04, 0);
   const candidates = poolUids
     .map((uid) => session.state.cards.find((card) => card.uid === uid))
-    .filter((card): card is DuelCardInstance => Boolean(card && card.uid !== targetUid && card.controller === player && canUseAsFusionMaterial(card)));
+    .filter((card): card is DuelCardInstance => Boolean(card && card.uid !== targetUid && (hasSuppliedMaterialGroup || card.controller === player) && canUseAsFusionMaterial(card)));
   pushGroupTable(L, selectFusionMaterialUids(candidates, target, forcedUids));
   return 1;
 }
