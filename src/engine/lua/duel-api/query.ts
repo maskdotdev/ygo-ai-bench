@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { moveDuelCard } from "#duel/card-state.js";
 import { isEffectTargetSelectionPrevented, matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
+import { currentCardMatchesCode } from "#duel/card-code-state.js";
 import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
 import { selectMaterialUidsForCodes } from "#duel/summon-materials.js";
 import { cardTypeFlags as instanceCardTypeFlags } from "#duel/card-stats.js";
@@ -663,7 +664,8 @@ function selectFusionMaterialUids(session: DuelSession, candidates: DuelCardInst
     selectMaterialUidsForCodes(orderedCandidates, requiredCodes, {
       maxSubstitutes: 1,
       requiredUids: uniqueForcedUids,
-      canSubstitute: (card, code) => Boolean(target && !cardCodes(card).includes(code) && canUseFusionSubstitute(session.state, card, target)),
+      matchesCode: (card, code) => currentCardMatchesCode(card, session.state, code),
+      canSubstitute: (card, code) => Boolean(target && !currentCardMatchesCode(card, session.state, code) && canUseFusionSubstitute(session.state, card, target)),
     }) ?? []
   );
 }
@@ -678,10 +680,6 @@ function isFusionMaterialLocation(location: DuelLocation): boolean {
 
 function isMonsterLike(state: DuelState, card: DuelCardInstance): boolean {
   return (instanceCardTypeFlags(card, state) & 0x1) !== 0;
-}
-
-function cardCodes(card: DuelCardInstance): string[] {
-  return card.data.alias ? [card.code, card.data.alias] : [card.code];
 }
 
 function normalizePlayer(value: number): PlayerId {

@@ -2,6 +2,7 @@ import type { DuelCardInstance } from "#duel/types.js";
 
 export interface MaterialCodeMatchOptions {
   canSubstitute?: (card: DuelCardInstance, requiredCode: string) => boolean;
+  matchesCode?: (card: DuelCardInstance, requiredCode: string) => boolean;
   maxSubstitutes?: number;
   requiredUids?: readonly string[];
 }
@@ -48,13 +49,13 @@ function selectMaterialUids(
   }
   const code = requiredCodes[codeIndex];
   if (!code) return undefined;
-  const exactMatches = cards.map((card) => ({ card, substitute: false })).filter(({ card }) => !used.has(card.uid) && cardMatchesCode(card, code));
+  const exactMatches = cards.map((card) => ({ card, substitute: false })).filter(({ card }) => !used.has(card.uid) && materialMatchesCode(card, code, options));
   const substituteMatches =
     substituteCount >= maxSubstitutes
       ? []
       : cards
           .map((card) => ({ card, substitute: true }))
-          .filter(({ card }) => !used.has(card.uid) && !cardMatchesCode(card, code) && Boolean(options.canSubstitute?.(card, code)));
+          .filter(({ card }) => !used.has(card.uid) && !materialMatchesCode(card, code, options) && Boolean(options.canSubstitute?.(card, code)));
   for (const { card, substitute } of [...exactMatches, ...substituteMatches]) {
     used.add(card.uid);
     const tail = selectMaterialUids(cards, requiredCodes, options, maxSubstitutes, requiredUids, used, codeIndex + 1, substituteCount + (substitute ? 1 : 0));
@@ -62,6 +63,10 @@ function selectMaterialUids(
     if (tail) return [card.uid, ...tail];
   }
   return undefined;
+}
+
+function materialMatchesCode(card: DuelCardInstance, code: string, options: MaterialCodeMatchOptions): boolean {
+  return options.matchesCode?.(card, code) ?? cardMatchesCode(card, code);
 }
 
 export function cardMatchesCode(card: DuelCardInstance, code: string): boolean {

@@ -26,6 +26,7 @@ import {
 } from "#duel/core.js";
 import { duelSummonTypeFromCode, luaSummonTypeFusion, luaSummonTypePendulum, luaSummonTypeRitual } from "#duel/summon-type-codes.js";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
+import { currentCardCodes, currentCardMatchesCode } from "#duel/card-code-state.js";
 import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
@@ -437,13 +438,13 @@ function canBeSelectedRitualMaterial(session: DuelSession, material: DuelCardIns
     isSelectedRitualMaterialLocation(material.location) &&
     material.controller === target.controller &&
     material.uid !== target.uid &&
-    targetAllowsMaterial(target, material, "ritual") &&
+    targetAllowsMaterial(session.state, target, material, "ritual") &&
     !isMaterialUsePrevented(session.state, material.uid, "ritual", createMaterialCheckContext(session.state))
   );
 }
 
 function canTrackMovedRitualMaterial(session: DuelSession, material: DuelCardInstance | undefined, target: DuelCardInstance): boolean {
-  return Boolean(material && isMonsterLike(session.state, material) && material.uid !== target.uid && targetAllowsMaterial(target, material, "ritual"));
+  return Boolean(material && isMonsterLike(session.state, material) && material.uid !== target.uid && targetAllowsMaterial(session.state, target, material, "ritual"));
 }
 
 function isSelectedRitualMaterialLocation(location: DuelLocation): boolean {
@@ -651,7 +652,7 @@ function canBeRitualMaterial(state: DuelState, card: DuelCardInstance, target: D
   return (
     isMonsterLike(state, card) &&
     (card.location === "hand" || card.location === "monsterZone") &&
-    targetAllowsMaterial(target, card, "ritual") &&
+    targetAllowsMaterial(state, target, card, "ritual") &&
     !isMaterialUsePrevented(state, card.uid, "ritual", createMaterialCheckContext(state))
   );
 }
@@ -687,10 +688,10 @@ function pendulumScale(session: DuelSession, card: DuelCardInstance): number {
   return card.data.leftScale === undefined ? currentRightScale(card, session.state) : currentLeftScale(card, session.state);
 }
 
-function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCardInstance, kind: MaterialUseKind): boolean {
+function targetAllowsMaterial(state: DuelState, target: DuelCardInstance | undefined, card: DuelCardInstance, kind: MaterialUseKind): boolean {
   if (!target) return true;
   if (target.uid === card.uid) return false;
-  const codes = cardCodes(card);
+  const codes = currentCardCodes(card, state);
   if (kind === "fusion") return !target.data.fusionMaterials?.length || target.data.fusionMaterials.some((code) => codes.includes(code));
   if (kind === "ritual") return !target.data.ritualMaterials?.length || target.data.ritualMaterials.some((code) => codes.includes(code));
   return true;
@@ -701,14 +702,15 @@ function targetAllowsFusionMaterial(state: DuelState, target: DuelCardInstance |
   if (target.uid === card.uid) return false;
   const requiredCodes = target.data.fusionMaterials ?? [];
   if (!requiredCodes.length) return true;
-  const codes = cardCodes(card);
+  const codes = currentCardCodes(card, state);
   return requiredCodes.some((code) => codes.includes(code)) || canUseFusionSubstitute(state, card, target);
 }
 
 function fusionMaterialMatchOptions(state: DuelState, target: DuelCardInstance): MaterialCodeMatchOptions {
   return {
+    matchesCode: (material, code) => currentCardMatchesCode(material, state, code),
     maxSubstitutes: 1,
-    canSubstitute: (material, code) => !cardCodes(material).includes(code) && canUseFusionSubstitute(state, material, target),
+    canSubstitute: (material, code) => !currentCardMatchesCode(material, state, code) && canUseFusionSubstitute(state, material, target),
   };
 }
 
@@ -755,10 +757,6 @@ function isPendulumMonster(state: DuelState, card: DuelCardInstance): boolean {
 
 function isPendulumCard(state: DuelState, card: DuelCardInstance): boolean {
   return (cardTypeFlags(card, state) & 0x1000000) !== 0;
-}
-
-function cardCodes(card: DuelCardInstance): string[] {
-  return card.data.alias ? [card.code, card.data.alias] : [card.code];
 }
 
 function applySummonPosition(card: { position: CardPosition; faceUp: boolean }, position: CardPosition): void {

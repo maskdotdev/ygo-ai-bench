@@ -149,6 +149,63 @@ describe("Lua dynamic summon material traits", () => {
     });
   });
 
+  it("uses current code and setcode effects for non-Link summon material legal actions", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Dynamic General Material", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: "200", name: "Static General Material", kind: "monster", typeFlags: 0x1, level: 4, setcodes: [0x321] },
+      { code: "300", name: "Dynamic-Code Fusion", kind: "extra", typeFlags: 0x41, fusionMaterials: ["900", "200"] },
+      { code: "400", name: "Dynamic-Code Xyz", kind: "extra", typeFlags: 0x800001, level: 4, xyzMaterials: ["900", "200"] },
+      { code: "500", name: "Dynamic-Code Synchro", kind: "extra", typeFlags: 0x2001, level: 8, synchroMaterials: { tuner: "900", nonTuners: ["200"] } },
+      { code: "600", name: "Dynamic-Code Ritual", kind: "monster", typeFlags: 0x81, level: 8, ritualMaterials: ["900", "200"] },
+      { code: "700", name: "Dynamic-Setcode Xyz", kind: "extra", typeFlags: 0x800001, level: 4, xyzMaterialCount: 2, xyzMaterialSetcode: 0x321 },
+      { code: "800", name: "Dynamic-Setcode Synchro", kind: "extra", typeFlags: 0x2001, level: 8, synchroTunerSetcode: 0x321, synchroNonTunerSetcode: 0x321 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 106, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: ["100", "200", "600"], extra: ["300", "400", "500", "700", "800"] }, 1: { main: [] } });
+    startDuel(session);
+    const dynamicMaterial = requireCard(session, "100", "deck");
+    const staticMaterial = requireCard(session, "200", "deck");
+    const ritual = requireCard(session, "600", "deck");
+    const fusion = requireCard(session, "300", "extraDeck");
+    const xyz = requireCard(session, "400", "extraDeck");
+    const synchro = requireCard(session, "500", "extraDeck");
+    const setcodeXyz = requireCard(session, "700", "extraDeck");
+    const setcodeSynchro = requireCard(session, "800", "extraDeck");
+    moveDuelCard(session.state, dynamicMaterial.uid, "monsterZone", 0);
+    moveDuelCard(session.state, staticMaterial.uid, "monsterZone", 0);
+    moveDuelCard(session.state, ritual.uid, "hand", 0);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = { readScript: dynamicGeneralMaterialTraitScript };
+    const host = createLuaScriptHost(session, source);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    expect(host.messages).toContain("dynamic general material true/true/true/true");
+
+    const materialUids = [dynamicMaterial.uid, staticMaterial.uid];
+    const actions = getDuelLegalActions(session, 0);
+    expect(actions).toContainEqual(expect.objectContaining({ type: "fusionSummon", uid: fusion.uid, materialUids }));
+    expect(actions).toContainEqual(expect.objectContaining({ type: "xyzSummon", uid: xyz.uid, materialUids }));
+    expect(actions).toContainEqual(expect.objectContaining({ type: "synchroSummon", uid: synchro.uid, materialUids }));
+    expect(actions).toContainEqual(expect.objectContaining({ type: "ritualSummon", uid: ritual.uid, materialUids }));
+    expect(actions).toContainEqual(expect.objectContaining({ type: "xyzSummon", uid: setcodeXyz.uid, materialUids }));
+    expect(actions).toContainEqual(expect.objectContaining({ type: "synchroSummon", uid: setcodeSynchro.uid, materialUids }));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    const restoredActions = getLuaRestoreLegalActions(restored, 0);
+    expect(restoredActions).toContainEqual(expect.objectContaining({ type: "fusionSummon", uid: fusion.uid, materialUids }));
+    expect(restoredActions).toContainEqual(expect.objectContaining({ type: "xyzSummon", uid: xyz.uid, materialUids }));
+    expect(restoredActions).toContainEqual(expect.objectContaining({ type: "synchroSummon", uid: synchro.uid, materialUids }));
+    expect(restoredActions).toContainEqual(expect.objectContaining({ type: "ritualSummon", uid: ritual.uid, materialUids }));
+    expect(restoredActions).toContainEqual(expect.objectContaining({ type: "xyzSummon", uid: setcodeXyz.uid, materialUids }));
+    expect(restoredActions).toContainEqual(expect.objectContaining({ type: "synchroSummon", uid: setcodeSynchro.uid, materialUids }));
+  });
+
   it("uses current monster type for Lua Fusion material selection and summons", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Material Losing Monster Type", kind: "monster", typeFlags: 0x1, level: 4 },
@@ -304,6 +361,31 @@ function dynamicLinkMaterialTraitScript(name: string): string | undefined {
     `;
   }
   return undefined;
+}
+
+function dynamicGeneralMaterialTraitScript(name: string): string | undefined {
+  if (name !== "c100.lua") return undefined;
+  return `
+    c100={}
+    function c100.initial_effect(c)
+      local e0=Effect.CreateEffect(c)
+      e0:SetType(EFFECT_TYPE_SINGLE)
+      e0:SetCode(EFFECT_ADD_CODE)
+      e0:SetValue(900)
+      c:RegisterEffect(e0)
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_SINGLE)
+      e1:SetCode(EFFECT_ADD_TYPE)
+      e1:SetValue(TYPE_TUNER)
+      c:RegisterEffect(e1)
+      local e2=Effect.CreateEffect(c)
+      e2:SetType(EFFECT_TYPE_SINGLE)
+      e2:SetCode(EFFECT_ADD_SETCODE)
+      e2:SetValue(0x321)
+      c:RegisterEffect(e2)
+      Debug.Message("dynamic general material " .. tostring(c:IsCode(900)) .. "/" .. tostring(c:IsType(TYPE_TUNER)) .. "/" .. tostring(c:IsSetCard(0x321)) .. "/" .. tostring(c:IsOriginalCode(100)))
+    end
+  `;
 }
 
 function dynamicRemovedMonsterMaterialScript(name: string): string | undefined {

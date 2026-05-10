@@ -4,8 +4,7 @@ import { isMaterialUsePrevented, type MaterialUseKind } from "#duel/continuous-e
 import { duelReason } from "#duel/reasons.js";
 import { isSummonTypeMaskMatch, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
 import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
-import { currentLinkMaterialCodes, currentLinkMaterialMatchesSetcode } from "#duel/card-code-state.js";
-import { isSetcodeMatch } from "#lua/card-code-utils.js";
+import { currentCardCodes, currentCardMatchesSetcode, currentLinkMaterialCodes, currentLinkMaterialMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttribute, currentLevel, currentLink, currentRace, currentRank } from "#duel/card-stats.js";
 import type { DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
@@ -61,7 +60,7 @@ function hasAvailableMonsterZone(session: DuelSession, player: PlayerId, zoneMas
 function targetAllowsMaterial(state: DuelState, target: DuelCardInstance | undefined, card: DuelCardInstance, kind: MaterialUseKind): boolean {
   if (!target) return true;
   if (target.uid === card.uid) return false;
-  const codes = cardCodes(card);
+  const codes = currentCardCodes(card, state);
   if (kind === "fusion") return !target.data.fusionMaterials?.length || target.data.fusionMaterials.some((code) => codes.includes(code));
   if (kind === "ritual") return !target.data.ritualMaterials?.length || target.data.ritualMaterials.some((code) => codes.includes(code));
   if (kind === "synchro") {
@@ -77,11 +76,11 @@ function targetAllowsMaterial(state: DuelState, target: DuelCardInstance | undef
     if (tuner && target.data.synchroTunerAttribute !== undefined && (currentAttribute(card, state) & target.data.synchroTunerAttribute) === 0) return false;
     if (tuner && target.data.synchroTunerRace !== undefined && (currentRace(card, state) & target.data.synchroTunerRace) === 0) return false;
     if (tuner && target.data.synchroTunerType !== undefined && (cardTypeFlags(card, state) & target.data.synchroTunerType) === 0) return false;
-    if (tuner && target.data.synchroTunerSetcode !== undefined && !(card.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.synchroTunerSetcode!, setcode))) return false;
+    if (tuner && target.data.synchroTunerSetcode !== undefined && !currentCardMatchesSetcode(card, state, target.data.synchroTunerSetcode)) return false;
     if (!tuner && target.data.synchroNonTunerAttribute !== undefined && (currentAttribute(card, state) & target.data.synchroNonTunerAttribute) === 0) return false;
     if (!tuner && target.data.synchroNonTunerRace !== undefined && (currentRace(card, state) & target.data.synchroNonTunerRace) === 0) return false;
     if (!tuner && target.data.synchroNonTunerType !== undefined && (cardTypeFlags(card, state) & target.data.synchroNonTunerType) === 0) return false;
-    if (!tuner && target.data.synchroNonTunerSetcode !== undefined && !(card.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.synchroNonTunerSetcode!, setcode))) return false;
+    if (!tuner && target.data.synchroNonTunerSetcode !== undefined && !currentCardMatchesSetcode(card, state, target.data.synchroNonTunerSetcode)) return false;
     return targetLevel > 0 && materialLevel > 0 && materialLevel < targetLevel;
   }
   if (kind === "xyz") {
@@ -89,7 +88,7 @@ function targetAllowsMaterial(state: DuelState, target: DuelCardInstance | undef
     if (target.data.xyzMaterialRace !== undefined && (currentRace(card, state) & target.data.xyzMaterialRace) === 0) return false;
     if (target.data.xyzMaterialAttribute !== undefined && (currentAttribute(card, state) & target.data.xyzMaterialAttribute) === 0) return false;
     if (target.data.xyzMaterialType !== undefined && (cardTypeFlags(card, state) & target.data.xyzMaterialType) === 0) return false;
-    if (target.data.xyzMaterialSetcode !== undefined && !(card.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.xyzMaterialSetcode!, setcode))) return false;
+    if (target.data.xyzMaterialSetcode !== undefined && !currentCardMatchesSetcode(card, state, target.data.xyzMaterialSetcode)) return false;
     if (target.data.xyzMaterialRank !== undefined && currentRank(card, state) !== target.data.xyzMaterialRank) return false;
     const targetRank = currentRank(target, state);
     const materialLevel = currentLevel(card, state);
@@ -119,8 +118,4 @@ function linkMaterialRating(card: DuelCardInstance, state: DuelState): number {
 
 function isTuner(state: DuelState, card: DuelCardInstance): boolean {
   return (cardTypeFlags(card, state) & 0x1000) !== 0;
-}
-
-function cardCodes(card: DuelCardInstance): string[] {
-  return card.data.alias ? [card.code, card.data.alias] : [card.code];
 }

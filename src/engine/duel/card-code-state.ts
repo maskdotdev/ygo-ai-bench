@@ -18,6 +18,10 @@ export function currentCardCodes(card: DuelCardInstance, state: DuelState | unde
   return unique(codes);
 }
 
+export function currentCardMatchesCode(card: DuelCardInstance, state: DuelState | undefined, requested: string): boolean {
+  return currentCardCodes(card, state).includes(requested);
+}
+
 export function currentCardSetcodes(card: DuelCardInstance, state: DuelState | undefined): number[] {
   let setcodes = [...printedCardSetcodes(card)];
   for (const setcode of currentFiniteEffectValues(card, state, effectChangeSetcode)) setcodes = [setcode];
@@ -26,6 +30,10 @@ export function currentCardSetcodes(card: DuelCardInstance, state: DuelState | u
     setcodes = setcodes.filter((current) => !isSetcodeMatch(setcode, current));
   }
   return unique(setcodes);
+}
+
+export function currentCardMatchesSetcode(card: DuelCardInstance, state: DuelState | undefined, requested: number): boolean {
+  return currentCardSetcodes(card, state).some((setcode) => isSetcodeMatch(requested, setcode));
 }
 
 export function currentLinkMaterialCodes(card: DuelCardInstance, state: DuelState | undefined): string[] {
