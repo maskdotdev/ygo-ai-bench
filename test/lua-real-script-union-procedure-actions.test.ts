@@ -143,6 +143,100 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     );
     expect(restoredPlatformStateWindow.session.state.cards.find((card) => card.uid === platform!.uid)).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid });
   });
+
+  it("restores Trigon old-union battle-destroying Special Summon trigger", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const trigonCode = "48568432";
+    const targetCode = "601024";
+    const battleTargetCode = "601025";
+    const graveMachineCode = "601026";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === trigonCode),
+      { code: targetCode, name: "Trigon Union Battle Target", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1800, defense: 1200, race: 0x20 },
+      { code: battleTargetCode, name: "Trigon Battle Victim", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: graveMachineCode, name: "Trigon Graveyard Machine", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1200, defense: 1000, race: 0x20, attribute: 0x10 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 296, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [trigonCode, targetCode, graveMachineCode] }, 1: { main: [battleTargetCode] } });
+    startDuel(session);
+
+    const trigon = session.state.cards.find((card) => card.code === trigonCode);
+    const target = session.state.cards.find((card) => card.code === targetCode);
+    const battleTarget = session.state.cards.find((card) => card.code === battleTargetCode);
+    const graveMachine = session.state.cards.find((card) => card.code === graveMachineCode);
+    expect(trigon).toBeDefined();
+    expect(target).toBeDefined();
+    expect(battleTarget).toBeDefined();
+    expect(graveMachine).toBeDefined();
+    moveDuelCard(session.state, trigon!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, battleTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
+    moveDuelCard(session.state, graveMachine!.uid, "graveyard", 0);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(trigonCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+
+    const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restoredEquipWindow.restoreComplete, restoredEquipWindow.incompleteReasons.join("; ")).toBe(true);
+    const equipAction = findEffectAction(restoredEquipWindow.session, getLuaRestoreLegalActions(restoredEquipWindow, 0), trigon!.uid, 1068);
+    expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
+    resolveRestoredChain(restoredEquipWindow);
+
+    expect(restoredEquipWindow.session.state.cards.find((card) => card.uid === trigon!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      equippedToUid: target!.uid,
+      faceUp: true,
+    });
+
+    const restoredUnionState = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), workspace, reader);
+    expect(restoredUnionState.restoreComplete, restoredUnionState.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredUnionState.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceUid: trigon!.uid, code: 347 }),
+        expect.objectContaining({ sourceUid: trigon!.uid, code: 348 }),
+      ]),
+    );
+
+    restoredUnionState.session.state.phase = "battle";
+    restoredUnionState.session.state.waitingFor = 0;
+    const restoredBattleWindow = restoreDuelWithLuaScripts(serializeDuel(restoredUnionState.session), workspace, reader);
+    expect(restoredBattleWindow.restoreComplete, restoredBattleWindow.incompleteReasons.join("; ")).toBe(true);
+    const attack = getLuaRestoreLegalActions(restoredBattleWindow, 0).find(
+      (action) => action.type === "declareAttack" && action.attackerUid === target!.uid && action.targetUid === battleTarget!.uid,
+    );
+    expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredBattleWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredBattleWindow, attack!);
+    passRestoredBattleResponsesUntilTrigger(restoredBattleWindow);
+
+    expect(restoredBattleWindow.session.state.cards.find((card) => card.uid === battleTarget!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restoredBattleWindow.session.state.pendingTriggers).toEqual([
+      expect.objectContaining({ sourceUid: trigon!.uid, eventName: "battleDestroyed", eventCardUid: target!.uid, player: 0 }),
+    ]);
+
+    const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredBattleWindow.session), workspace, reader);
+    expect(restoredTriggerWindow.restoreComplete, restoredTriggerWindow.incompleteReasons.join("; ")).toBe(true);
+    const trigger = getLuaRestoreLegalActions(restoredTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.uid === trigon!.uid);
+    expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredTriggerWindow, trigger!);
+
+    expect(restoredTriggerWindow.session.state.pendingTriggers).toEqual([]);
+    expect(restoredTriggerWindow.session.state.cards.find((card) => card.uid === graveMachine!.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 0,
+      position: "faceUpAttack",
+    });
+    expect(restoredTriggerWindow.session.state.eventHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ eventName: "battleDestroyed", eventCode: 1140, eventCardUid: battleTarget!.uid }),
+        expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventCardUid: graveMachine!.uid }),
+      ]),
+    );
+  });
 });
 
 function findEffectAction(session: DuelSession, actions: DuelAction[], uid: string, description: number): Extract<DuelAction, { type: "activateEffect" }> | undefined {
@@ -182,6 +276,18 @@ function endTurnAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>
   const endTurn = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "endTurn");
   expect(endTurn, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
   applyLuaRestoreAndAssert(restored, endTurn!);
+}
+
+function passRestoredBattleResponsesUntilTrigger(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  let guard = 0;
+  while (restored.session.state.pendingBattle && restored.session.state.pendingTriggers.length === 0) {
+    expect(++guard).toBeLessThan(20);
+    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    const passType = restored.session.state.battleStep === "damage" || restored.session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack";
+    const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === passType);
+    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restored, pass!);
+  }
 }
 
 function assertLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {

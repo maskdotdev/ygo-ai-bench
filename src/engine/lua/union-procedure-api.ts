@@ -5,7 +5,9 @@ const { lua, lauxlib, to_luastring } = fengari;
 export function installUnionProcedureApi(L: unknown, readLuaError: (state: unknown) => string): void {
   const source = `
     local union_old_rules = union_old_rules or {}
+    local union_old_rule_codes = union_old_rule_codes or {}
     local union_limit_values = union_limit_values or {}
+    local union_limit_code_values = union_limit_code_values or {}
     local function card_key(c)
       if not c then return nil end
       if c.GetFieldID then return "fid:" .. tostring(c:GetFieldID()) end
@@ -32,7 +34,7 @@ export function installUnionProcedureApi(L: unknown, readLuaError: (state: unkno
       end
       if not Card.CheckUnionTarget then
         function Card.CheckUnionTarget(c,tc)
-          local value=union_limit_values[card_key(c)]
+          local value=union_limit_values[card_key(c)] or union_limit_code_values[c:GetOriginalCode()]
           return not value or value(nil,tc)
         end
       end
@@ -112,7 +114,7 @@ export function installUnionProcedureApi(L: unknown, readLuaError: (state: unkno
     function aux.SetUnionState(c)
       ensure_union_card_api()
       local key=card_key(c)
-      local value=union_limit_values[key] or aux.UnionLimit(nil)
+      local value=union_limit_values[key] or union_limit_code_values[c:GetOriginalCode()] or aux.UnionLimit(nil)
       local e0=Effect.CreateEffect(c)
       e0:SetType(EFFECT_TYPE_SINGLE)
       e0:SetCode(EFFECT_EQUIP_LIMIT)
@@ -126,7 +128,7 @@ export function installUnionProcedureApi(L: unknown, readLuaError: (state: unkno
       e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)
       e1:SetReset(RESET_EVENT+RESETS_STANDARD)
       c:RegisterEffect(e1)
-      if union_old_rules[key] then
+      if union_old_rules[key] or union_old_rule_codes[c:GetOriginalCode()] then
         local e2=e1:Clone()
         e2:SetCode(EFFECT_OLDUNION_STATUS)
         c:RegisterEffect(e2)
@@ -137,7 +139,7 @@ export function installUnionProcedureApi(L: unknown, readLuaError: (state: unkno
       ensure_union_card_api()
       local ct1,ct2=Card.GetUnionCount(tc)
       local ignored=ign_ct or 0
-      if union_old_rules[card_key(uc)] then return ct1<=ignored end
+      if union_old_rules[card_key(uc)] or union_old_rule_codes[uc:GetOriginalCode()] then return ct1<=ignored end
       return ct2<=ignored
     end
     function aux.AddUnionProcedure(c,f,oldequip,oldprotect)
@@ -179,7 +181,11 @@ export function installUnionProcedureApi(L: unknown, readLuaError: (state: unkno
       c:RegisterEffect(e4)
       local key=card_key(c)
       union_limit_values[key]=value
-      if oldequip then union_old_rules[key]=true end
+      union_limit_code_values[c:GetOriginalCode()]=value
+      if oldequip then
+        union_old_rules[key]=true
+        union_old_rule_codes[c:GetOriginalCode()]=true
+      end
       return e1,e2,e3,e4
     end
   `;
