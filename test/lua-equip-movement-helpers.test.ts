@@ -103,6 +103,40 @@ describe("Lua equip movement helpers", () => {
     expect(session.state.log.some((entry) => entry.action === "equip" && entry.detail === "Equipped to Equip Target")).toBe(true);
   });
 
+  it("treats currently equipped monster cards as Equip Cards", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Monster Equip Target", kind: "monster" },
+      { code: "501", name: "Monster Equip Card", kind: "monster", typeFlags: 0x21 },
+    ];
+    const session = createDuel({ seed: 137, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "501"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local target = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local equip = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 501), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("monster equip before " .. tostring(equip:IsEquipCard()) .. "/" .. tostring(equip:IsMonster()))
+      Debug.Message("monster equip result " .. tostring(Duel.Equip(0, equip, target)))
+      Debug.Message("monster equip after " .. tostring(equip:IsEquipCard()) .. "/" .. tostring(equip:IsMonster()))
+      `,
+      "monster-equip-card.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("monster equip before false/true");
+    expect(host.messages).toContain("monster equip result true");
+    expect(host.messages).toContain("monster equip after true/true");
+    expect(session.state.cards.find((card) => card.code === "501")).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid, faceUp: true });
+  });
+
   it("queues Lua equip triggers after Duel.Equip succeeds", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Equip Trigger Target", kind: "monster" },

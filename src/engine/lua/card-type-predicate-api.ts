@@ -19,7 +19,7 @@ export function installCardTypePredicateApi(L: unknown, session: DuelSession): v
   pushBooleanGetter(L, "IsActionSpell", session, (card) => (cardTypeFlags(card, session.state) & 0x10000002) === 0x10000002 && (cardTypeFlags(card, session.state) & 0x80000) === 0);
   pushBooleanGetter(L, "IsActionTrap", session, (card) => (cardTypeFlags(card, session.state) & 0x10000004) === 0x10000004 && (cardTypeFlags(card, session.state) & 0x80000) === 0);
   pushBooleanGetter(L, "IsActionField", session, (card) => (cardTypeFlags(card, session.state) & 0x10080000) === 0x10080000);
-  pushBooleanGetter(L, "IsEquipCard", session, (card) => (cardTypeFlags(card, session.state) & 0x40000) !== 0);
+  pushBooleanGetter(L, "IsEquipCard", session, (card) => Boolean(card && ((cardTypeFlags(card, session.state) & 0x40000) !== 0 || card.equippedToUid)));
   pushBooleanGetter(L, "IsEquipSpell", session, (card) => cardTypeFlags(card, session.state) === 0x40002);
   pushBooleanGetter(L, "IsEquipTrap", session, (card) => (cardTypeFlags(card, session.state) & 0x40004) === 0x40004);
   pushBooleanGetter(L, "IsFieldSpell", session, (card) => (cardTypeFlags(card, session.state) & 0x80002) === 0x80002);

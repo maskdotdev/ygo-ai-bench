@@ -144,6 +144,105 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     expect(restoredPlatformStateWindow.session.state.cards.find((card) => card.uid === platform!.uid)).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid });
   });
 
+  it("restores Union Pilot cost-to-hand, banished Union equip, and self Special Summon", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const unionPilotCode = "89357740";
+    const unionDriverCode = "99249638";
+    const targetCode = "601027";
+    const responderCode = "601028";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => [unionPilotCode, unionDriverCode].includes(card.code)),
+      { code: targetCode, name: "Union Pilot Effect Target", kind: "monster" as const, typeFlags: 0x21, level: 4, attack: 1600, defense: 1200 },
+      { code: responderCode, name: "Union Pilot Chain Responder", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 297, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [unionPilotCode, unionDriverCode, targetCode] }, 1: { main: [responderCode] } });
+    startDuel(session);
+
+    const unionPilot = session.state.cards.find((card) => card.code === unionPilotCode);
+    const unionDriver = session.state.cards.find((card) => card.code === unionDriverCode);
+    const target = session.state.cards.find((card) => card.code === targetCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(unionPilot).toBeDefined();
+    expect(unionDriver).toBeDefined();
+    expect(target).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, unionPilot!.uid, "spellTrapZone", 0).position = "faceUpAttack";
+    unionPilot!.equippedToUid = target!.uid;
+    unionPilot!.faceUp = true;
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, unionDriver!.uid, "banished", 0);
+    unionDriver!.faceUp = true;
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${responderCode}.lua`) return chainResponderScript("union pilot responder resolved");
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(unionPilotCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(unionDriverCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+
+    const restoredEquippedState = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restoredEquippedState.restoreComplete, restoredEquippedState.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredEquippedState.session.state.cards.find((card) => card.uid === unionPilot!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      equippedToUid: target!.uid,
+      faceUp: true,
+    });
+
+    const pilotEquipSummon = findEffectActionByCategory(restoredEquippedState.session, getLuaRestoreLegalActions(restoredEquippedState, 0), unionPilot!.uid, 0x40200);
+    expect(pilotEquipSummon, JSON.stringify(getLuaRestoreLegalActions(restoredEquippedState, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredEquippedState, pilotEquipSummon!);
+
+    expect(restoredEquippedState.session.state.cards.find((card) => card.uid === unionPilot!.uid)).toMatchObject({
+      location: "hand",
+      controller: 0,
+      previousEquippedToUid: target!.uid,
+    });
+    expect(restoredEquippedState.session.state.chain[0]).toMatchObject({
+      sourceUid: unionPilot!.uid,
+      operationInfos: expect.arrayContaining([
+        { category: 0x40000, targetUids: [], count: 1, player: 0, parameter: 0x20 },
+        { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 },
+      ]),
+    });
+
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquippedState.session), source, reader);
+    expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredChain.session.state.chain[0]).toMatchObject(restoredEquippedState.session.state.chain[0]!);
+    expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+    resolveRestoredChain(restoredChain);
+
+    expect(restoredChain.session.state.cards.find((card) => card.uid === unionDriver!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      equippedToUid: target!.uid,
+      faceUp: true,
+    });
+    expect(restoredChain.session.state.cards.find((card) => card.uid === unionPilot!.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 0,
+      faceUp: true,
+    });
+
+    const restoredDriverState = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
+    expect(restoredDriverState.restoreComplete, restoredDriverState.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredDriverState.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceUid: unionDriver!.uid, code: 76 }),
+        expect.objectContaining({ sourceUid: unionDriver!.uid, code: 347 }),
+      ]),
+    );
+    expect(restoredChain.host.messages).not.toContain("union pilot responder resolved");
+  });
+
   it("restores Trigon old-union battle-destroying Special Summon trigger", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const trigonCode = "48568432";
@@ -238,6 +337,21 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     );
   });
 });
+
+function chainResponderScript(message: string): string {
+  return `
+    local s,id=GetID()
+    function s.initial_effect(c)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_QUICK_O)
+      e:SetCode(EVENT_FREE_CHAIN)
+      e:SetRange(LOCATION_HAND)
+      e:SetCondition(function(e,tp) return Duel.GetCurrentChain()>0 end)
+      e:SetOperation(function(e,tp) Debug.Message("${message}") end)
+      c:RegisterEffect(e)
+    end
+  `;
+}
 
 function findEffectAction(session: DuelSession, actions: DuelAction[], uid: string, description: number): Extract<DuelAction, { type: "activateEffect" }> | undefined {
   return actions.find((action): action is Extract<DuelAction, { type: "activateEffect" }> => {
