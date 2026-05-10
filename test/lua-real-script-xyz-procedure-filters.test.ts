@@ -201,6 +201,63 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
     });
   });
 
+  it("uses restored Xyz material type filters for Lua Duel.XyzSummon default material selection", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const thunderEndCode = "698785";
+    const effectMaterialCode = "900000202";
+    const normalMaterialCodes = ["900000203", "900000204"];
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === thunderEndCode),
+      { code: effectMaterialCode, name: "Level 8 Effect Material", kind: "monster" as const, typeFlags: 0x21, level: 8 },
+      ...normalMaterialCodes.map((code, index) => ({
+        code,
+        name: `Level 8 Normal Material ${index + 1}`,
+        kind: "monster" as const,
+        typeFlags: 0x11,
+        level: 8,
+      })),
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 322, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [effectMaterialCode, ...normalMaterialCodes], extra: [thunderEndCode] }, 1: { main: [] } });
+    startDuel(session);
+    const xyz = session.state.cards.find((card) => card.code === thunderEndCode && card.location === "extraDeck");
+    expect(xyz).toBeDefined();
+    for (const code of [effectMaterialCode, ...normalMaterialCodes]) {
+      const material = session.state.cards.find((card) => card.code === code && card.location === "deck");
+      expect(material).toBeDefined();
+      moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+    }
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(thunderEndCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.data).toMatchObject({
+      xyzMaterialCount: 2,
+      xyzMaterialType: 0x10,
+    });
+    const result = host.loadScript(
+      `
+      local xyz=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${thunderEndCode}),0,LOCATION_EXTRA,0,1,1,nil):GetFirst()
+      Debug.Message("default xyz type filter " .. Duel.XyzSummon(xyz))
+      `,
+      "thunder-end-default-xyz.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("default xyz type filter 1");
+    const summoned = session.state.cards.find((card) => card.uid === xyz!.uid);
+    const effectMaterial = session.state.cards.find((card) => card.code === effectMaterialCode);
+    const normalMaterialUids = normalMaterialCodes.map((code) => session.state.cards.find((card) => card.code === code)?.uid);
+    expect(summoned).toMatchObject({
+      location: "monsterZone",
+      summonType: "xyz",
+    });
+    expect(summoned?.overlayUids).toEqual(expect.arrayContaining(normalMaterialUids));
+    expect(summoned?.overlayUids).toHaveLength(2);
+    expect(summoned?.overlayUids).not.toContain(effectMaterial?.uid);
+  });
+
   it("restores official Xyz.AddProcedure rank filters for real extra deck summons", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const disasterCode = "67359907";

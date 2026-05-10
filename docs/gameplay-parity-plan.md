@@ -67,6 +67,7 @@ The engine already has useful surfaces to build on:
 - Xyz procedure metadata also restores non-Ex `aux.FilterBoolFunction(Card.IsRace, ...)` material filters through Melffy Mommy and `Card.IsSetCard` material filters through Gimmick Puppet Gigantes Doll.
 - Xyz procedure metadata also restores `Card.IsRank` material filters through Disaster, Dragon Ruler of All Apocalypses.
 - Xyz procedure metadata also restores `Xyz.InfiniteMats` max-material ranges through Melffy Mommy.
+- Lua `Duel.XyzSummon` default material selection now honors restored Xyz procedure type filters through Thunder End Dragon.
 - Link procedure metadata also restores `Card.IsSetCard` material filters through X-Krawler Qualiark.
 - Link procedure metadata also restores `Card.IsSummonType` material filters through Clara & Rushka, the Ventriloduo.
 - Link procedure metadata also restores `Card.IsLevel` material filters through Linkuriboh.

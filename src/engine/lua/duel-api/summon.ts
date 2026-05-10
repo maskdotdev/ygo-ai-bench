@@ -30,6 +30,7 @@ import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelReason } from "#duel/reasons.js";
 import { tributeSetDuelCard } from "#duel/summon.js";
+import { cardCombinations } from "#duel/summon-materials.js";
 import { sameStringMembers } from "#duel/string-list-match.js";
 import { setSpellTrap as setCoreSpellTrap } from "#duel/spell-trap.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
@@ -263,18 +264,32 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
 }
 
 function defaultXyzMaterialUids(session: DuelSession, target: DuelCardInstance, player: PlayerId): string[] {
-  const count = target.data.xyzMaterials?.length || target.data.xyzMaterialCount || 2;
-  return session.state.cards.filter((card) => card.controller === player && card.location === "monsterZone" && canBeXyzMaterial(card, target)).slice(0, count).map((card) => card.uid);
+  const materials = session.state.cards.filter((card) => card.controller === player && card.location === "monsterZone" && canBeXyzMaterial(card, target));
+  if (target.data.xyzMaterials?.length) return materials.slice(0, target.data.xyzMaterials.length).map((card) => card.uid);
+  const min = target.data.xyzMaterialCount ?? 2;
+  const max = Math.min(materials.length, target.data.xyzMaterialMax ?? min);
+  for (let count = min; count <= max; count += 1) {
+    const match = cardCombinations(materials, count).find((candidates) => canGenericXyzMaterialsMatch(target, candidates));
+    if (match) return match.map((card) => card.uid);
+  }
+  return materials.slice(0, min).map((card) => card.uid);
 }
 
 function canBeXyzMaterial(card: DuelCardInstance, target: DuelCardInstance): boolean {
   if (!isMonsterLike(card) || card.uid === target.uid) return false;
   if (target.data.xyzMaterials?.length) return target.data.xyzMaterials.some((code) => cardCodes(card).includes(code));
   if (target.data.xyzMaterialRace !== undefined && ((card.data.race ?? 0) & target.data.xyzMaterialRace) === 0) return false;
+  if (target.data.xyzMaterialAttribute !== undefined && ((card.data.attribute ?? 0) & target.data.xyzMaterialAttribute) === 0) return false;
+  if (target.data.xyzMaterialType !== undefined && (cardTypeFlags(card) & target.data.xyzMaterialType) === 0) return false;
   if (target.data.xyzMaterialSetcode !== undefined && !(card.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.xyzMaterialSetcode!, setcode))) return false;
   if (target.data.xyzMaterialRank !== undefined && xyzRank(card) !== target.data.xyzMaterialRank) return false;
   const rank = (cardTypeFlags(target) & 0x800000) !== 0 ? target.data.level ?? 0 : 0;
   return rank > 0 && (card.data.level ?? 0) === rank;
+}
+
+function canGenericXyzMaterialsMatch(target: DuelCardInstance, materials: DuelCardInstance[]): boolean {
+  const rank = xyzRank(target);
+  return rank > 0 && materials.every((material) => (material.data.level ?? 0) === rank && canBeXyzMaterial(material, target));
 }
 
 function fusionSummonSelectedMaterials(
