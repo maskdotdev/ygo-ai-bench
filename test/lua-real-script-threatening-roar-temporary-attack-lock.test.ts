@@ -1,0 +1,168 @@
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { moveDuelCard } from "#duel/card-state.js";
+import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import type { DuelCardData, DuelResponse } from "#duel/types.js";
+import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
+import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
+import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+
+const upstreamRoot = path.resolve(".upstream/ignis");
+const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
+const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const typeMonster = 0x1;
+const typeEffect = 0x20;
+const resetPhaseEnd = 0x40000200;
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Threatening Roar temporary attack lock", () => {
+  it("restores a Trap-registered player-target attack-announcement lock until the End Phase", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const roarCode = "36361633";
+    const defenderCode = "614501";
+    const attackerCode = "614502";
+    const responderCode = "614503";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === roarCode),
+      { code: defenderCode, name: "Threatening Roar Defender", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
+      { code: attackerCode, name: "Threatening Roar Attacker", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1800, defense: 1200 },
+      { code: responderCode, name: "Threatening Roar Chain Responder", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 3636, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [roarCode, defenderCode] }, 1: { main: [attackerCode, responderCode] } });
+    startDuel(session);
+
+    const roar = session.state.cards.find((card) => card.code === roarCode);
+    const defender = session.state.cards.find((card) => card.code === defenderCode);
+    const attacker = session.state.cards.find((card) => card.code === attackerCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(roar).toBeDefined();
+    expect(defender).toBeDefined();
+    expect(attacker).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, roar!.uid, "spellTrapZone", 0);
+    roar!.position = "faceDown";
+    roar!.faceUp = false;
+    moveDuelCard(session.state, defender!.uid, "monsterZone", 0);
+    defender!.position = "faceUpAttack";
+    defender!.faceUp = true;
+    moveDuelCard(session.state, attacker!.uid, "monsterZone", 1);
+    attacker!.position = "faceUpAttack";
+    attacker!.faceUp = true;
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.turn = 2;
+    session.state.turnPlayer = 1;
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(roarCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(1);
+
+    const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
+    const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === roar!.uid);
+    expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredActivation, activation!);
+
+    expect(restoredActivation.session.state.chain[0]).toMatchObject({ sourceUid: roar!.uid });
+    expect(restoredActivation.session.state.chain[0]?.targetUids ?? []).toEqual([]);
+    expect(restoredActivation.session.state.chain[0]?.operationInfos ?? []).toEqual([]);
+    expect(getLuaRestoreLegalActions(restoredActivation, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
+    expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
+    resolveRestoredChain(restoredChain);
+
+    expect(restoredChain.session.state.cards.find((card) => card.uid === roar!.uid)).toMatchObject({
+      location: "graveyard",
+      previousLocation: "spellTrapZone",
+    });
+    expect(restoredChain.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceUid: roar!.uid,
+          code: 86,
+          property: expect.any(Number),
+          targetRange: [0, 1],
+          reset: { flags: resetPhaseEnd },
+        }),
+      ]),
+    );
+    expect(restoredChain.host.messages).not.toContain("threatening roar responder resolved");
+
+    const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
+    expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
+    const probe = restoredLock.host.loadScript(attackLockProbeScript(attackerCode), "threatening-roar-attack-lock-probe.lua");
+    expect(probe.ok, probe.error).toBe(true);
+    expect(restoredLock.host.messages).toContain("threatening roar attack false");
+
+    restoredLock.session.state.phase = "battle";
+    restoredLock.session.state.waitingFor = 1;
+    const battleActions = getLuaRestoreLegalActions(restoredLock, 1).filter((action) => action.type === "declareAttack");
+    expect(battleActions.some((action) => action.attackerUid === attacker!.uid)).toBe(false);
+
+    restoredLock.session.state.phase = "main2";
+    restoredLock.session.state.waitingFor = 1;
+    const endPhase = getLuaRestoreLegalActions(restoredLock, 1).find((action) => action.type === "changePhase" && action.phase === "end");
+    expect(endPhase, JSON.stringify(getLuaRestoreLegalActions(restoredLock, 1), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredLock, endPhase!);
+    expect(restoredLock.session.state.effects.some((effect) => effect.sourceUid === roar!.uid && effect.code === 86)).toBe(false);
+  });
+});
+
+function chainResponderScript(): string {
+  return `
+    local s,id=GetID()
+    function s.initial_effect(c)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_QUICK_O)
+      e:SetCode(EVENT_FREE_CHAIN)
+      e:SetRange(LOCATION_HAND)
+      e:SetCondition(function(e,tp) return Duel.GetCurrentChain()>0 end)
+      e:SetOperation(function(e,tp) Debug.Message("threatening roar responder resolved") end)
+      c:RegisterEffect(e)
+    end
+  `;
+}
+
+function attackLockProbeScript(attackerCode: string): string {
+  return `
+    local attacker=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${attackerCode}),0,0,LOCATION_MZONE,nil)
+    Debug.Message("threatening roar attack " .. tostring(attacker and attacker:CanAttack()))
+  `;
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, response: DuelResponse): void {
+  const result = applyLuaRestoreResponse(restored, response);
+  expect(result.ok, result.error).toBe(true);
+  const waitingFor = restored.session.state.waitingFor;
+  if (waitingFor !== undefined) {
+    expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+    expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  }
+}
+
+function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  let guard = 0;
+  while (restored.session.state.chain.length > 0) {
+    expect(++guard).toBeLessThan(10);
+    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restored, pass!);
+  }
+}
