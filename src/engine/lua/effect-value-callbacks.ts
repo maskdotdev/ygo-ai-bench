@@ -56,7 +56,7 @@ export function callLuaEffectValuePredicate(
       lua.lua_pop(L, 1);
       return result;
     }
-    if (luaEffect.code === 45) {
+    if (luaEffect.code === 45 || luaEffect.code === 47) {
       hostState.pushEffectTable(L, luaEffect.id);
       pushRelatedEffectTable(L, hostState, ctx);
       lua.lua_pushinteger(L, ctx.eventReason ?? 0);
