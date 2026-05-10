@@ -306,6 +306,7 @@ export interface DuelEffectDefinition {
     flags: number;
     count?: number;
   };
+  label?: number;
   description?: number;
   category?: number;
   property?: number;

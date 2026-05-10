@@ -1,6 +1,6 @@
 import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
-import { applyResponse, getGroupedDuelLegalActions, getLegalActions, queryPublicState } from "#duel/core.js";
+import { applyResponse, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { cardFieldId } from "#duel/card-field-id.js";
@@ -25,10 +25,13 @@ const luaEffectReasonPredicateDescriptor = "value-predicate:effect-reason";
 const luaReasonMaskPredicateDescriptorPrefix = "value-predicate:reason-mask:";
 const luaValueCardNotHandlerDescriptor = "value-card:not-handler";
 const luaSourceControllerConditionDescriptor = "condition:source-controller";
+const luaYellowAlertCode = "59277750";
 const luaResetEvent = 0x1000;
 const luaResetTurnSet = 0x20000;
 const luaResetPhase = 0x40000000;
+const luaPhaseBattle = 0x80;
 const luaPhaseEnd = 0x200;
+const luaBattlePhaseEventCode = luaResetEvent | luaPhaseBattle;
 const luaPhaseEndResetFlags = luaResetPhase | luaPhaseEnd;
 const luaResetsStandardPhaseEnd = 0x41fe1200;
 const luaResetEventStandard = luaResetEvent | 0x1fe0000;
@@ -238,11 +241,22 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
         isKnownLifePointReasonPredicateEffect(effect) ||
         isKnownIndestructibleCountReasonPredicateEffect(effect) ||
         isKnownCannotSelectBattleTargetNotHandlerEffect(effect) ||
+        isKnownYellowAlertDelayedReturnEffect(effect) ||
         effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
         isStaticSingleCardLuaRestriction(effect) ||
         isStaticPlayerPhaseLock(effect) ||
         (effect.code === 102 && effect.value !== undefined && effect.value !== 0 && effect.targetRange === undefined) ||
         ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 132) && effect.value !== undefined)))
+  );
+}
+
+function isKnownYellowAlertDelayedReturnEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaYellowAlertCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === luaBattlePhaseEventCode &&
+    effect.label !== undefined &&
+    effect.targetRange === undefined
   );
 }
 
@@ -328,11 +342,30 @@ function isStaticPlayerPhaseLock(effect: SerializedDuelEffect): boolean {
 }
 
 function restoredLuaOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  if (isKnownYellowAlertDelayedReturnEffect(effect)) return yellowAlertDelayedReturnOperation(effect);
   if (effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor) {
     const returnPlayer = effect.value === 0 || effect.value === 1 ? effect.value : undefined;
     return luaTemporaryControlReturnOperation(returnPlayer);
   }
   return () => {};
+}
+
+function yellowAlertDelayedReturnOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const fieldId = effect.label;
+    const flagCode = Number(ctx.source.code);
+    if (fieldId === undefined || !Number.isSafeInteger(flagCode)) return;
+    const targetUids = ctx.duel.flagEffects.filter((flag) => flag.ownerType === "card" && flag.code === flagCode && flag.value === fieldId).map((flag) => flag.ownerId);
+    for (const uid of [...new Set(targetUids)]) {
+      const target = ctx.duel.cards.find((card) => card.uid === uid);
+      if (!target) continue;
+      try {
+        moveDuelCardWithRedirects(ctx.duel, target.uid, "hand", target.controller, duelReason.effect, ctx.player, { eventReasonCardUid: ctx.source.uid });
+      } catch {
+        // EDOPro-style delayed operations ignore targets that can no longer move.
+      }
+    }
+  };
 }
 
 function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "battleDamageValue" | "lifePointValue" | "valueCardPredicate" | "valuePredicate"> {

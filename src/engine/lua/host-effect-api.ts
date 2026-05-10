@@ -23,7 +23,6 @@ const luaEffectTypeSingle = 0x1;
 const luaResetEvent = 0x1000;
 const luaResetToField = 0x1000000;
 const luaEffectFusionSubstitute = 234;
-
 export function installEffectApi(L: unknown, hostState: LuaHostState, readLuaError: (state: unknown) => string): void {
   lua.lua_newtable(L);
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -543,6 +542,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.countLimit === undefined ? {} : { countLimit: luaEffect.countLimit }),
     ...(luaEffect.countLimitCode === undefined ? {} : { countLimitCode: luaEffect.countLimitCode }),
     ...(luaEffect.reset === undefined ? {} : { reset: luaEffect.reset }),
+    ...(luaEffect.label === undefined ? {} : { label: luaEffect.label }),
     ...(luaEffect.description === undefined ? {} : { description: luaEffect.description }),
     ...(luaEffect.category === undefined ? {} : { category: luaEffect.category }),
     ...(luaEffect.property === undefined ? {} : { property: luaEffect.property }),

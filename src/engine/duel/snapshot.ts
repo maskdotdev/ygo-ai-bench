@@ -590,7 +590,7 @@ function assertSnapshotEffects(effects: unknown, cardUids: ReadonlySet<string>):
     for (const [rangeIndex, location] of effect.range.entries()) {
       if (!duelSnapshotLocations.has(location)) throw new Error(`Malformed duel snapshot: ${path}.range.${rangeIndex} must be a card location`);
     }
-    for (const field of ["code", "value", "triggerCode", "countLimit", "countLimitCode", "description", "category", "property", "copyId"] as const) {
+    for (const field of ["code", "value", "triggerCode", "countLimit", "countLimitCode", "label", "description", "category", "property", "copyId"] as const) {
       if (effect[field] !== undefined && typeof effect[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
     }
     for (const field of ["triggerSourceOnly", "optional", "oncePerTurn"] as const) {
