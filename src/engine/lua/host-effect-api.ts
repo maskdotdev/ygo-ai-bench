@@ -647,8 +647,8 @@ function luaEffectEvent(card: DuelCardInstance, luaEffect: LuaEffectRecord): Due
   )
     return "continuous";
   if ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) return "trigger";
-  if ((typeFlags & 0x2) !== 0) return "continuous";
   if ((typeFlags & 0x100) !== 0 || (typeFlags & 0x400) !== 0) return "quick";
+  if ((typeFlags & 0x2) !== 0) return "continuous";
   if ((typeFlags & 0x800) !== 0) return "continuous";
   if ((typeFlags & 0x40) !== 0 || (typeFlags & 0x10) !== 0) return "ignition";
   if ((typeFlags & (0x1 | 0x4 | 0x1000 | 0x2000 | 0x4000)) !== 0) return "continuous";
