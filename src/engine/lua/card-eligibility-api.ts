@@ -69,7 +69,10 @@ function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCa
     const materialRank = cardRank(card);
     return targetRank > 0 && (materialLevel === targetRank || (materialRank > 0 && targetRank === materialRank + 1));
   }
-  if (kind === "link") return !target.data.linkMaterials?.length ? cardLink(target) > 0 && linkMaterialRating(card) <= cardLink(target) : target.data.linkMaterials.some((code) => codes.includes(code));
+  if (kind === "link") {
+    if (target.data.linkMaterialType !== undefined && (cardTypeFlags(card) & target.data.linkMaterialType) === 0) return false;
+    return !target.data.linkMaterials?.length ? cardLink(target) > 0 && linkMaterialRating(card) <= cardLink(target) : target.data.linkMaterials.some((code) => codes.includes(code));
+  }
   return true;
 }
 

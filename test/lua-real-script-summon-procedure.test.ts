@@ -225,6 +225,55 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
     });
   });
 
+  it("restores official Link.AddProcedure type filters for real extra deck summons", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const linkSpiderCode = "98978921";
+    const effectMaterialCode = "900000041";
+    const normalMaterialCode = "900000042";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === linkSpiderCode),
+      { code: effectMaterialCode, name: "Effect Link Material", kind: "monster" as const, typeFlags: 0x21, level: 4 },
+      { code: normalMaterialCode, name: "Normal Link Material", kind: "monster" as const, typeFlags: 0x11, level: 4 },
+    ];
+    const reader = createCardReader(cards);
+    const restoreWithMaterial = (code: string) => {
+      const session = createDuel({ seed: 296, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+      loadDecks(session, { 0: { main: [code], extra: [linkSpiderCode] }, 1: { main: [] } });
+      startDuel(session);
+      const link = session.state.cards.find((card) => card.code === linkSpiderCode && card.location === "extraDeck");
+      const material = session.state.cards.find((card) => card.code === code && card.location === "deck");
+      expect(link).toBeDefined();
+      expect(material).toBeDefined();
+      moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+      session.state.phase = "main1";
+      session.state.waitingFor = 0;
+      const host = createLuaScriptHost(session, workspace);
+      expect(host.loadCardScript(Number(linkSpiderCode), workspace).ok).toBe(true);
+      expect(host.registerInitialEffects()).toBeGreaterThan(0);
+      expect(session.state.cards.find((card) => card.uid === link!.uid)?.data).toMatchObject({ linkMaterialMin: 1, linkMaterialMax: 1, linkMaterialType: 0x10 });
+      const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+      expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+      expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+      return { restored, link };
+    };
+
+    const wrongType = restoreWithMaterial(effectMaterialCode);
+    expect(getLuaRestoreLegalActions(wrongType.restored, 0).some((action) => action.type === "linkSummon" && action.uid === wrongType.link!.uid)).toBe(false);
+
+    const matchingType = restoreWithMaterial(normalMaterialCode);
+    const actions = getLuaRestoreLegalActions(matchingType.restored, 0).filter((action) => action.type === "linkSummon" && action.uid === matchingType.link!.uid);
+    expect(actions, JSON.stringify(getLuaRestoreLegalActions(matchingType.restored, 0), null, 2)).toHaveLength(1);
+    const action = actions[0];
+    expect(action?.type).toBe("linkSummon");
+    if (!action || action.type !== "linkSummon") throw new Error("Expected Link Summon action");
+    const summoned = applyLuaRestoreResponse(matchingType.restored, action);
+    expect(summoned.ok, summoned.error).toBe(true);
+    expect(matchingType.restored.session.state.cards.find((card) => card.uid === matchingType.link!.uid)).toMatchObject({
+      location: "monsterZone",
+      summonType: "link",
+    });
+  });
+
   it("restores official Synchro.AddProcedure tuner and non-tuner count ranges for real extra deck summons", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const boardeflyCode = "3966653";

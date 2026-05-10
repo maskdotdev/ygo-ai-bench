@@ -21,10 +21,18 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
   const linkMax = readProcedureNumberField(L, card, "link_materials", 3);
   if (linkMin !== undefined) card.data.linkMaterialMin = linkMin;
   if (linkMax !== undefined) card.data.linkMaterialMax = linkMax;
+  const linkType = readLinkProcedureTypeFilter(source);
+  if (linkType !== undefined) card.data.linkMaterialType = linkType;
 }
 
 function readXyzProcedureRaceFilter(source: string | undefined): number | undefined {
   const match = source?.match(/Xyz\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsRace\s*,\s*(RACE_[A-Z0-9_]+)\s*\)/);
+  if (!match?.[1]) return undefined;
+  return luaNumericConstants[match[1]];
+}
+
+function readLinkProcedureTypeFilter(source: string | undefined): number | undefined {
+  const match = source?.match(/Link\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsType\s*,\s*(TYPE_[A-Z0-9_]+)\s*\)/);
   if (!match?.[1]) return undefined;
   return luaNumericConstants[match[1]];
 }

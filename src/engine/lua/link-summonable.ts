@@ -55,6 +55,7 @@ function canBeLinkMaterial(session: DuelSession, card: DuelCardInstance, target:
 }
 
 function targetAllowsMaterial(target: DuelCardInstance, card: DuelCardInstance): boolean {
+  if (!linkMaterialTypeMatches(target, card)) return false;
   return !target.data.linkMaterials?.length || target.data.linkMaterials.some((code) => cardCodes(card).includes(code));
 }
 
@@ -83,6 +84,10 @@ function linkMaterialRatings(card: DuelCardInstance): number[] {
 function linkRating(card: DuelCardInstance): number {
   if (!card.data.linkMaterials?.length && (cardTypeFlags(card) & 0x4000000) === 0) return 0;
   return card.data.level ?? card.data.linkMaterials?.length ?? 0;
+}
+
+function linkMaterialTypeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.linkMaterialType === undefined || (cardTypeFlags(material) & target.data.linkMaterialType) !== 0;
 }
 
 function materialCodesMatch(materials: DuelCardInstance[], requiredCodes: string[]): boolean {
