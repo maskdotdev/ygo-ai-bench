@@ -232,7 +232,9 @@ function pushSpecialSummon(L: unknown, session: DuelSession, hostState: LuaDuelM
     try {
       const reasonPlayer = hostState.activeContext?.player ?? player;
       const payload = luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer);
+      const presetMaterialUids = summonType !== 0 ? [...(card.summonMaterialUids ?? [])] : [];
       const summoned = specialSummonDuelCard(session.state, uid, player, reasonPlayer, payload, summonType, false);
+      if (presetMaterialUids.length > 0) summoned.summonMaterialUids = presetMaterialUids;
       if (requestedPosition) applyLuaMovePosition(summoned, requestedPosition);
       applyMonsterZoneMask(session, summoned, player, zoneMask);
       successPayload ??= payload;

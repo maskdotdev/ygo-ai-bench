@@ -55,7 +55,7 @@ function pushIsPlayerCanRelease(L: unknown, session: DuelSession): number {
   const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
   const uid = readCardUid(L, 2);
   const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
-  lua.lua_pushboolean(L, card ? isReleasableMonster(session, card, player, []) : releasableMonsterUids(L, session, undefined, player, [], { start: 3, count: 0 }).length > 0);
+  lua.lua_pushboolean(L, card ? isReleaseProbeAllowed(session, card, player) : releasableMonsterUids(L, session, undefined, player, [], { start: 3, count: 0 }).length > 0);
   return 1;
 }
 
@@ -297,6 +297,12 @@ function releasableMonsterUids(L: unknown, session: DuelSession, filterRef: numb
 function isReleasableMonster(session: DuelSession, card: DuelCardInstance, player: PlayerId, excluded: string[], includeHand = false): boolean {
   if (excluded.includes(card.uid)) return false;
   if (card.controller !== player || (card.location !== "monsterZone" && (!includeHand || card.location !== "hand"))) return false;
+  if (card.kind !== "monster" && card.kind !== "extra") return false;
+  return canMoveDuelCardToLocation(session.state, card.uid, "graveyard", duelReason.release | duelReason.cost);
+}
+
+function isReleaseProbeAllowed(session: DuelSession, card: DuelCardInstance, player: PlayerId): boolean {
+  if (card.controller !== player) return false;
   if (card.kind !== "monster" && card.kind !== "extra") return false;
   return canMoveDuelCardToLocation(session.state, card.uid, "graveyard", duelReason.release | duelReason.cost);
 }
