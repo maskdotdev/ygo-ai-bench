@@ -35,7 +35,9 @@ export const cardProcedureSource = `${fusionProcedureSource}
         local extra=params.extrafil(e,tp,eg,ep,ev,re,r,rp,chk)
         if extra then mg:Merge(extra) end
       end
+      if ritual_c then mg:RemoveCard(ritual_c) end
       if params.matfilter then mg=mg:Filter(params.matfilter,nil,e,tp,ritual_c) end
+      if params.specificmatfilter then mg:Match(params.specificmatfilter,nil,ritual_c,mg,tp) end
       return mg
     end
     local function ritual_selection_filter(g,e,tp,params,ritual_c,lv)
