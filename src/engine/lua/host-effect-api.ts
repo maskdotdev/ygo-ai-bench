@@ -4,6 +4,7 @@ import { cleanupRemovedDuelEffect } from "#duel/effect-reset.js";
 import { locationsFromMask, readCardUid, readGroupUids, readTableNumberField } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { callLuaEffectBattleDamageValue, callLuaEffectLifePointValue, callLuaEffectStatValue, callLuaEffectValueCardPredicate, callLuaEffectValuePredicate } from "#lua/effect-value-callbacks.js";
+import { knownLuaEffectConditionDescriptor } from "#lua/effect-condition-descriptor.js";
 import { knownLuaEffectTargetDescriptor } from "#lua/effect-target-descriptor.js";
 import { knownLuaEffectValueDescriptor } from "#lua/effect-value-descriptor.js";
 import { locationMaskFromLocation, locationMaskFromLocations } from "#lua/effect-location-mask.js";
@@ -491,6 +492,9 @@ function activeTypeFlags(card: DuelCardInstance | undefined, session: DuelSessio
 function setEffectFunctionField(field: "conditionRef" | "costRef" | "targetRef", hostState: LuaHostState) {
   return (state: unknown, effect: LuaEffectRecord): number => {
     if (!lua.lua_isfunction(state, 2)) return 0;
+    const conditionDescriptor = field === "conditionRef" ? knownLuaEffectConditionDescriptor(state, 2, hostState) : undefined;
+    if (field === "conditionRef" && conditionDescriptor === undefined) delete effect.conditionDescriptor;
+    else if (conditionDescriptor !== undefined) effect.conditionDescriptor = conditionDescriptor;
     if (field === "targetRef") {
       const descriptor = knownLuaEffectTargetDescriptor(state, 2, hostState);
       if (descriptor === undefined) delete effect.targetDescriptor;
@@ -526,6 +530,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     luaTypeFlags: luaEffect.typeFlags,
     ...(luaEffect.code === undefined ? {} : { code: luaEffect.code }),
     ...(luaEffect.value === undefined ? {} : { value: luaEffect.value }),
+    ...(luaEffect.conditionDescriptor === undefined ? {} : { luaConditionDescriptor: luaEffect.conditionDescriptor }),
     ...(luaEffect.valueDescriptor === undefined ? {} : { luaValueDescriptor: luaEffect.valueDescriptor }),
     ...(luaEffect.targetDescriptor === undefined ? {} : { luaTargetDescriptor: luaEffect.targetDescriptor }),
     ...(triggerEvent === undefined ? {} : { triggerEvent }),

@@ -71,6 +71,87 @@ describe("Lua battle target value callbacks", () => {
     expectAttackTarget(restored.session, vulnerableAttacker!.uid, protectedTargetB!.uid, false);
     expectAttackTarget(restored.session, vulnerableAttacker!.uid, lockSource!.uid, true);
   });
+
+  it("restores temporary battle target selection locks with not-handler value callbacks", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Battle Target Selection Attacker", kind: "monster", typeFlags: 0x1, level: 4, attack: 2000, defense: 1000 },
+      { code: "200", name: "Selectable Special Summoned Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: "300", name: "Locked Other Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 171, startingHandSize: 2, cardReader: reader });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: ["200", "300"] } });
+    startDuel(session);
+
+    const attacker = session.state.cards.find((card) => card.code === "100");
+    const selectableTarget = session.state.cards.find((card) => card.code === "200");
+    const lockedTarget = session.state.cards.find((card) => card.code === "300");
+    expect(attacker).toBeDefined();
+    expect(selectableTarget).toBeDefined();
+    expect(lockedTarget).toBeDefined();
+    for (const card of [attacker!, selectableTarget!, lockedTarget!]) {
+      const moved = moveDuelCard(session.state, card.uid, "monsterZone", card.controller);
+      moved.faceUp = true;
+      moved.position = "faceUpAttack";
+    }
+    session.state.phase = "battle";
+    session.state.turnPlayer = 0;
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local sc=Duel.GetFieldCard(1,LOCATION_MZONE,0)
+      local tp=sc:GetControler()
+      local e=Effect.CreateEffect(sc)
+      e:SetType(EFFECT_TYPE_FIELD)
+      e:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_IGNORE_IMMUNE)
+      e:SetCode(EFFECT_CANNOT_SELECT_BATTLE_TARGET)
+      e:SetRange(LOCATION_MZONE)
+      e:SetTargetRange(0,LOCATION_MZONE)
+      e:SetCondition(function() return sc:IsControler(tp) end)
+      e:SetValue(function(e,c) return c~=e:GetHandler() end)
+      e:SetReset(RESET_EVENT|RESETS_STANDARD)
+      sc:RegisterEffect(e)
+      `,
+      "temporary-battle-target-selection-lock.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          event: "continuous",
+          code: 332,
+          sourceUid: selectableTarget!.uid,
+          luaConditionDescriptor: "condition:source-controller",
+          luaValueDescriptor: "value-card:not-handler",
+        }),
+      ]),
+    );
+    expectAttackTarget(session, attacker!.uid, selectableTarget!.uid, true);
+    expectAttackTarget(session, attacker!.uid, lockedTarget!.uid, false);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: () => undefined }, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          event: "continuous",
+          code: 332,
+          sourceUid: selectableTarget!.uid,
+          luaConditionDescriptor: "condition:source-controller",
+          luaValueDescriptor: "value-card:not-handler",
+        }),
+      ]),
+    );
+    expectAttackTarget(restored.session, attacker!.uid, selectableTarget!.uid, true);
+    expectAttackTarget(restored.session, attacker!.uid, lockedTarget!.uid, false);
+
+    const restoredSelectable = restored.session.state.cards.find((card) => card.uid === selectableTarget!.uid);
+    expect(restoredSelectable).toBeDefined();
+    restoredSelectable!.controller = 0;
+    expectAttackTarget(restored.session, attacker!.uid, lockedTarget!.uid, true);
+  });
 });
 
 function battleTargetValueCallbackSource(): LuaScriptSource {

@@ -290,6 +290,7 @@ export interface DuelEffectDefinition {
   luaTypeFlags?: number;
   code?: number;
   value?: number;
+  luaConditionDescriptor?: string;
   luaValueDescriptor?: string;
   luaTargetDescriptor?: string;
   triggerEvent?: DuelEventName;

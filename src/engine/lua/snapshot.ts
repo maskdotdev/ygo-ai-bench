@@ -23,11 +23,15 @@ const luaIndestructibleValueDescriptors = new Set(["indestructible:opponent", "i
 const luaLifePointReasonPredicateEffectCodes = new Set([80, 81]);
 const luaEffectReasonPredicateDescriptor = "value-predicate:effect-reason";
 const luaReasonMaskPredicateDescriptorPrefix = "value-predicate:reason-mask:";
+const luaValueCardNotHandlerDescriptor = "value-card:not-handler";
+const luaSourceControllerConditionDescriptor = "condition:source-controller";
+const luaResetEvent = 0x1000;
 const luaResetTurnSet = 0x20000;
 const luaResetPhase = 0x40000000;
 const luaPhaseEnd = 0x200;
 const luaPhaseEndResetFlags = luaResetPhase | luaPhaseEnd;
 const luaResetsStandardPhaseEnd = 0x41fe1200;
+const luaResetEventStandard = luaResetEvent | 0x1fe0000;
 const luaTemporaryRestrictionResetFlags = luaResetsStandardPhaseEnd & ~luaResetTurnSet;
 const luaTemporaryPositionLockResetFlags = luaResetPhase | luaPhaseEnd;
 const luaStaticPlayerPhaseLockCodes = new Set([183, 184, 185, 186, 187, 189]);
@@ -208,6 +212,7 @@ function restoreKnownLuaEffects(
       ...(effect.targetRange ? { targetRange: [...effect.targetRange] } : {}),
       ...(effect.hintTiming ? { hintTiming: [...effect.hintTiming] } : {}),
       ...restoredLuaValueCallbacks(effect),
+      ...restoredLuaConditionCallbacks(effect),
       ...restoredLuaTargetCallbacks(effect),
       operation: restoredLuaOperation(effect),
     });
@@ -232,11 +237,26 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
         effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous" ||
         isKnownLifePointReasonPredicateEffect(effect) ||
         isKnownIndestructibleCountReasonPredicateEffect(effect) ||
+        isKnownCannotSelectBattleTargetNotHandlerEffect(effect) ||
         effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
         isStaticSingleCardLuaRestriction(effect) ||
         isStaticPlayerPhaseLock(effect) ||
         (effect.code === 102 && effect.value !== undefined && effect.value !== 0 && effect.targetRange === undefined) ||
         ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 132) && effect.value !== undefined)))
+  );
+}
+
+function isKnownCannotSelectBattleTargetNotHandlerEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 332 &&
+    effect.luaValueDescriptor === luaValueCardNotHandlerDescriptor &&
+    effect.luaConditionDescriptor === luaSourceControllerConditionDescriptor &&
+    effect.reset?.flags === luaResetEventStandard &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone" &&
+    effect.targetRange?.[0] === 0 &&
+    effect.targetRange?.[1] === 0x04
   );
 }
 
@@ -315,7 +335,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect): DuelEffectDefinitio
   return () => {};
 }
 
-function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "battleDamageValue" | "lifePointValue" | "valuePredicate"> {
+function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "battleDamageValue" | "lifePointValue" | "valueCardPredicate" | "valuePredicate"> {
   if (effect.luaValueDescriptor === "cannot-be-effect-target:opponent") {
     return { valuePredicate: (_ctx, player) => player !== undefined && player !== effect.controller };
   }
@@ -332,10 +352,20 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   if (reasonMask !== undefined) {
     return { valuePredicate: (ctx) => ((ctx.eventReason ?? 0) & reasonMask) !== 0 };
   }
+  if (effect.luaValueDescriptor === luaValueCardNotHandlerDescriptor) {
+    return { valueCardPredicate: (_ctx, card) => card.uid !== effect.sourceUid };
+  }
   if (effect.luaValueDescriptor !== "change-damage:effect-double") return {};
   const applyValue = (ctx: Parameters<NonNullable<DuelEffectDefinition["lifePointValue"]>>[0], _player: PlayerId, amount: number): number =>
     ((ctx.eventReason ?? 0) & duelReason.effect) !== 0 ? amount * 2 : amount;
   return { battleDamageValue: applyValue, lifePointValue: applyValue };
+}
+
+function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "canActivate"> {
+  if (effect.luaConditionDescriptor === luaSourceControllerConditionDescriptor) {
+    return { canActivate: (ctx) => ctx.source.controller === effect.controller };
+  }
+  return {};
 }
 
 function luaReasonPredicateMask(descriptor: string | undefined): number | undefined {
