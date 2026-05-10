@@ -351,7 +351,7 @@ export interface ChainLimit {
 
 export type SerializedDuelEffect = Omit<
   DuelEffectDefinition,
-  "battleDamageValue" | "canActivate" | "cost" | "labelObjectUid" | "labelObjectUids" | "lifePointValue" | "luaTypeFlags" | "operation" | "statValue" | "target" | "targetCardPredicate" | "valueCardPredicate" | "valuePredicate"
+  "battleDamageValue" | "canActivate" | "cost" | "lifePointValue" | "luaTypeFlags" | "operation" | "statValue" | "target" | "targetCardPredicate" | "valueCardPredicate" | "valuePredicate"
 >;
 export type SerializedChainLimit = Omit<ChainLimit, "allows" | "release">;
 

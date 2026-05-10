@@ -175,14 +175,8 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
   });
   pushEffectMethod(L, effects, "SetLabelObject", (state, effect) => {
     if (effect.labelObjectRef !== undefined) lauxlib.luaL_unref(state, lua.LUA_REGISTRYINDEX, effect.labelObjectRef);
-    delete effect.labelObjectId;
-    delete effect.labelObjectUid;
-    delete effect.labelObjectUids;
-    if (lua.lua_isnoneornil(state, 2)) {
-      delete effect.labelObjectRef;
-      syncActiveLabelObject(hostState, effect);
-      return 0;
-    }
+    delete effect.labelObjectId; delete effect.labelObjectUid; delete effect.labelObjectUids;
+    if (lua.lua_isnoneornil(state, 2)) { delete effect.labelObjectRef; syncActiveLabelObject(hostState, effect); syncRegisteredDuelEffectLabelObject(hostState, effect); return 0; }
     const labelObjectId = readTableNumberField(state, 2, "__effect_id");
     if (labelObjectId !== undefined) effect.labelObjectId = labelObjectId;
     const labelObjectUid = readCardUid(state, 2);
@@ -192,6 +186,7 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     lua.lua_pushvalue(state, 2);
     effect.labelObjectRef = lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX);
     syncActiveLabelObject(hostState, effect, labelObjectUid, labelObjectUids.length > 0 ? labelObjectUids : undefined);
+    syncRegisteredDuelEffectLabelObject(hostState, effect);
     return 0;
   });
   pushEffectMethod(L, effects, "GetLabelObject", (state, effect) => {
@@ -958,6 +953,11 @@ function syncActiveLabelObject(hostState: LuaHostState, effect: LuaEffectRecord,
 function syncDuelEffectLabelObjectUid(effect: DuelEffectDefinition, luaEffect: LuaEffectRecord): void {
   if (luaEffect.labelObjectUid === undefined) delete effect.labelObjectUid; else effect.labelObjectUid = luaEffect.labelObjectUid;
   if (luaEffect.labelObjectUids === undefined) delete effect.labelObjectUids; else effect.labelObjectUids = [...luaEffect.labelObjectUids];
+}
+
+function syncRegisteredDuelEffectLabelObject(hostState: LuaHostState, luaEffect: LuaEffectRecord): void {
+  const duelEffectId = luaEffectDuelId(luaEffect);
+  for (const effect of hostState.session.state.effects) if (effect.id === duelEffectId && (luaEffect.sourceUid === undefined || effect.sourceUid === luaEffect.sourceUid)) syncDuelEffectLabelObjectUid(effect, luaEffect);
 }
 
 function sameUids(left: string[] | undefined, right: string[]): boolean { return left?.length === right.length && left.every((uid, index) => uid === right[index]); }

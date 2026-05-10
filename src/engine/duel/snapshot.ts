@@ -599,6 +599,9 @@ function assertSnapshotEffects(effects: unknown, cardUids: ReadonlySet<string>):
     if (effect.triggerEvent !== undefined && typeof effect.triggerEvent !== "string") throw new Error(`Malformed duel snapshot: ${path}.triggerEvent must be a string`);
     if (effect.triggerEvent !== undefined && !isDuelEventName(effect.triggerEvent)) throw new Error(`Malformed duel snapshot: ${path}.triggerEvent must be a duel event`);
     if (effect.triggerTiming !== undefined && effect.triggerTiming !== "if" && effect.triggerTiming !== "when") throw new Error(`Malformed duel snapshot: ${path}.triggerTiming must be trigger timing`);
+    if (effect.labelObjectUid !== undefined && typeof effect.labelObjectUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.labelObjectUid must be a string`);
+    if (effect.labelObjectUid !== undefined && !cardUids.has(effect.labelObjectUid)) throw new Error(`Malformed duel snapshot: ${path}.labelObjectUid must reference a card`);
+    if (effect.labelObjectUids !== undefined) { assertSnapshotStringArray(effect.labelObjectUids, `${path}.labelObjectUids`); assertSnapshotUniqueStringArray(effect.labelObjectUids, `${path}.labelObjectUids`); assertSnapshotCardUidArray(effect.labelObjectUids, `${path}.labelObjectUids`, cardUids); }
     if (effect.reset !== undefined) assertSnapshotEffectReset(effect.reset, `${path}.reset`);
     if (effect.targetRange !== undefined) assertSnapshotNumberTuple(effect.targetRange, `${path}.targetRange`);
     if (effect.hintTiming !== undefined) assertSnapshotNumberTuple(effect.hintTiming, `${path}.hintTiming`);
@@ -831,28 +834,15 @@ function serializeEffect(effect: DuelEffectDefinition): SerializedDuelEffect[] {
 }
 
 function copySerializedEffect(effect: DuelEffectDefinition): SerializedDuelEffect {
-  const {
-    battleDamageValue: _battleDamageValue,
-    canActivate: _canActivate,
-    cost: _cost,
-    labelObjectUid: _labelObjectUid,
-    labelObjectUids: _labelObjectUids,
-    lifePointValue: _lifePointValue,
-    luaTypeFlags: _luaTypeFlags,
-    operation: _operation,
-    statValue: _statValue,
-    target: _target,
-    targetCardPredicate: _targetCardPredicate,
-    valueCardPredicate: _valueCardPredicate,
-    valuePredicate: _valuePredicate,
-    ...metadata
-  } = effect;
+  const { battleDamageValue: _battleDamageValue, canActivate: _canActivate, cost: _cost, labelObjectUid, labelObjectUids, lifePointValue: _lifePointValue, luaTypeFlags: _luaTypeFlags, operation: _operation, statValue: _statValue, target: _target, targetCardPredicate: _targetCardPredicate, valueCardPredicate: _valueCardPredicate, valuePredicate: _valuePredicate, ...metadata } = effect;
   return {
     ...metadata,
     range: [...effect.range],
     ...(effect.reset ? { reset: { ...effect.reset } } : {}),
     ...(effect.targetRange ? { targetRange: [...effect.targetRange] } : {}),
     ...(effect.hintTiming ? { hintTiming: [...effect.hintTiming] } : {}),
+    ...(labelObjectUid === undefined ? {} : { labelObjectUid }),
+    ...(labelObjectUids === undefined ? {} : { labelObjectUids: [...labelObjectUids] }),
   };
 }
 

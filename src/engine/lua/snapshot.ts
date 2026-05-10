@@ -144,8 +144,13 @@ function filterRestoredLuaEffects(session: DuelSession, registryKeys: Set<string
 }
 
 function mergeRestoredLuaEffectMetadata(effect: DuelEffectDefinition, snapshotEffect: SerializedDuelEffect | undefined): DuelEffectDefinition {
-  if (snapshotEffect?.reset === undefined) return effect;
-  return { ...effect, reset: { ...snapshotEffect.reset } };
+  if (!snapshotEffect) return effect;
+  return {
+    ...effect,
+    ...(snapshotEffect.reset === undefined ? {} : { reset: { ...snapshotEffect.reset } }),
+    ...(snapshotEffect.labelObjectUid === undefined ? {} : { labelObjectUid: snapshotEffect.labelObjectUid }),
+    ...(snapshotEffect.labelObjectUids === undefined ? {} : { labelObjectUids: [...snapshotEffect.labelObjectUids] }),
+  };
 }
 
 function findRestoredLuaStateSnapshotEffect(

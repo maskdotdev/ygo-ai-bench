@@ -42,6 +42,8 @@ export function executeContinuousEventEffects(state: DuelState, eventName: DuelE
       payload.eventChainLinkId,
       payload.eventUids,
     );
+    if (effect.labelObjectUid !== undefined) ctx.effectLabelObjectUid = effect.labelObjectUid;
+    if (effect.labelObjectUids !== undefined) ctx.effectLabelObjectUids = [...effect.labelObjectUids];
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
     effect.operation(ctx);
     markEffectUsed(state, effect);
