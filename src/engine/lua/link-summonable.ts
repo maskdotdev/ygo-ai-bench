@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
 import { isMaterialUsePrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
+import { cardTypeFlags, currentAttribute, currentLevel, currentLink, currentRace } from "#duel/card-stats.js";
 import { isSummonTypeMaskMatch, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
 import { readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { isSetcodeMatch } from "#lua/card-code-utils.js";
@@ -13,7 +14,7 @@ export function canLuaLinkSummonCard(session: DuelSession, card: DuelCardInstanc
 }
 
 export function findLuaLinkMaterialUidSet(session: DuelSession, card: DuelCardInstance, requiredUids: string[], materialGroupUids: string[], min?: number, max?: number): string[] | undefined {
-  if (card.location !== "extraDeck" || !isMonsterLike(card)) return undefined;
+  if (card.location !== "extraDeck" || !isMonsterLike(session, card)) return undefined;
   const required = new Set(requiredUids);
   const allowed = new Set(materialGroupUids);
   const materialPool = session.state.cards.filter(
@@ -24,14 +25,14 @@ export function findLuaLinkMaterialUidSet(session: DuelSession, card: DuelCardIn
       canBeLinkMaterial(session, candidate, card),
   );
   if ([...required].some((uid) => !materialPool.some((candidate) => candidate.uid === uid))) return undefined;
-  const targetRating = linkRating(card);
+  const targetRating = linkRating(session, card);
   if (targetRating <= 0) return undefined;
   const minCount = Math.max(1, min ?? card.data.linkMaterialMin ?? 1, required.size);
   const maxCount = Math.min(materialPool.length, max ?? card.data.linkMaterialMax ?? Number.POSITIVE_INFINITY, targetRating);
   for (let count = minCount; count <= maxCount; count += 1) {
     for (const materials of cardCombinations(materialPool, count)) {
       if ([...required].some((uid) => !materials.some((material) => material.uid === uid))) continue;
-      if (linkMaterialCodesMatch(materials, card.data.linkMaterials) && canLinkMaterialsMatchRating(materials, targetRating) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return materials.map((material) => material.uid);
+      if (linkMaterialCodesMatch(materials, card.data.linkMaterials) && canLinkMaterialsMatchRating(session, materials, targetRating) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return materials.map((material) => material.uid);
     }
   }
   return undefined;
@@ -56,18 +57,18 @@ export function readLinkMaterialArguments(L: unknown): { requiredUids: string[];
 }
 
 function canBeLinkMaterial(session: DuelSession, card: DuelCardInstance, target: DuelCardInstance): boolean {
-  if (!isMonsterLike(card) || card.uid === target.uid) return false;
-  return targetAllowsMaterial(target, card) && !isMaterialUsePrevented(session.state, card.uid, "link", createMaterialCheckContext(session));
+  if (!isMonsterLike(session, card) || card.uid === target.uid) return false;
+  return targetAllowsMaterial(session, target, card) && !isMaterialUsePrevented(session.state, card.uid, "link", createMaterialCheckContext(session));
 }
 
-function targetAllowsMaterial(target: DuelCardInstance, card: DuelCardInstance): boolean {
-  if (!linkMaterialTypeMatches(target, card)) return false;
-  if (!linkMaterialRaceMatches(target, card)) return false;
-  if (!linkMaterialAttributeMatches(target, card)) return false;
+function targetAllowsMaterial(session: DuelSession, target: DuelCardInstance, card: DuelCardInstance): boolean {
+  if (!linkMaterialTypeMatches(session, target, card)) return false;
+  if (!linkMaterialRaceMatches(session, target, card)) return false;
+  if (!linkMaterialAttributeMatches(session, target, card)) return false;
   if (!linkMaterialSetcodeMatches(target, card)) return false;
   if (!linkMaterialSummonTypeMatches(target, card)) return false;
-  if (!linkMaterialLevelMatches(target, card)) return false;
-  if (!linkMaterialMinLevelMatches(target, card)) return false;
+  if (!linkMaterialLevelMatches(session, target, card)) return false;
+  if (!linkMaterialMinLevelMatches(session, target, card)) return false;
   return !target.data.linkMaterials?.length || target.data.linkMaterials.some((code) => cardCodes(card).includes(code));
 }
 
@@ -75,9 +76,9 @@ function linkMaterialCodesMatch(materials: DuelCardInstance[], requiredCodes: st
   return !requiredCodes?.length || materialCodesMatch(materials, requiredCodes);
 }
 
-function canLinkMaterialsMatchRating(materials: DuelCardInstance[], targetRating: number): boolean {
+function canLinkMaterialsMatchRating(session: DuelSession, materials: DuelCardInstance[], targetRating: number): boolean {
   if (materials.length === 0 || materials.length > targetRating) return false;
-  return linkRatingChoicesMatch(materials.map(linkMaterialRatings), targetRating, 0, 0);
+  return linkRatingChoicesMatch(materials.map((material) => linkMaterialRatings(session, material)), targetRating, 0, 0);
 }
 
 function linkRatingChoicesMatch(choices: number[][], targetRating: number, index: number, currentRating: number): boolean {
@@ -88,26 +89,26 @@ function linkRatingChoicesMatch(choices: number[][], targetRating: number, index
   return false;
 }
 
-function linkMaterialRatings(card: DuelCardInstance): number[] {
-  const rating = linkRating(card);
+function linkMaterialRatings(session: DuelSession, card: DuelCardInstance): number[] {
+  const rating = linkRating(session, card);
   return rating > 1 ? [1, rating] : [1];
 }
 
-function linkRating(card: DuelCardInstance): number {
-  if (!card.data.linkMaterials?.length && (cardTypeFlags(card) & 0x4000000) === 0) return 0;
-  return card.data.level ?? card.data.linkMaterials?.length ?? 0;
+function linkRating(session: DuelSession, card: DuelCardInstance): number {
+  if (!card.data.linkMaterials?.length && (cardTypeFlags(card, session.state) & 0x4000000) === 0) return 0;
+  return card.data.level === undefined ? card.data.linkMaterials?.length ?? 0 : currentLink(card);
 }
 
-function linkMaterialTypeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.linkMaterialType === undefined || (cardTypeFlags(material) & target.data.linkMaterialType) !== 0;
+function linkMaterialTypeMatches(session: DuelSession, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.linkMaterialType === undefined || (cardTypeFlags(material, session.state) & target.data.linkMaterialType) !== 0;
 }
 
-function linkMaterialRaceMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.linkMaterialRace === undefined || ((material.data.race ?? 0) & target.data.linkMaterialRace) !== 0;
+function linkMaterialRaceMatches(session: DuelSession, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.linkMaterialRace === undefined || (currentRace(material, session.state) & target.data.linkMaterialRace) !== 0;
 }
 
-function linkMaterialAttributeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.linkMaterialAttribute === undefined || ((material.data.attribute ?? 0) & target.data.linkMaterialAttribute) !== 0;
+function linkMaterialAttributeMatches(session: DuelSession, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.linkMaterialAttribute === undefined || (currentAttribute(material, session.state) & target.data.linkMaterialAttribute) !== 0;
 }
 
 function linkMaterialSetcodeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
@@ -118,12 +119,12 @@ function linkMaterialSummonTypeMatches(target: DuelCardInstance, material: DuelC
   return target.data.linkMaterialSummonType === undefined || isSummonTypeMaskMatch(summonTypeMaskFromCard(material), target.data.linkMaterialSummonType);
 }
 
-function linkMaterialLevelMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.linkMaterialLevel === undefined || material.data.level === target.data.linkMaterialLevel;
+function linkMaterialLevelMatches(session: DuelSession, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.linkMaterialLevel === undefined || currentLevel(material, session.state) === target.data.linkMaterialLevel;
 }
 
-function linkMaterialMinLevelMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.linkMaterialMinLevel === undefined || (material.data.level ?? 0) >= target.data.linkMaterialMinLevel;
+function linkMaterialMinLevelMatches(session: DuelSession, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.linkMaterialMinLevel === undefined || currentLevel(material, session.state) >= target.data.linkMaterialMinLevel;
 }
 
 function materialCodesMatch(materials: DuelCardInstance[], requiredCodes: string[]): boolean {
@@ -153,12 +154,8 @@ function cardCodes(card: DuelCardInstance): string[] {
   return [card.code, ...(card.data.alias ? [card.data.alias] : [])];
 }
 
-function cardTypeFlags(card: DuelCardInstance): number {
-  return card.data.typeFlags ?? (card.kind === "spell" ? 0x2 : card.kind === "trap" ? 0x4 : 0x1);
-}
-
-function isMonsterLike(card: DuelCardInstance): boolean {
-  return (cardTypeFlags(card) & 0x1) !== 0;
+function isMonsterLike(session: DuelSession, card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card, session.state) & 0x1) !== 0;
 }
 
 function readNumber(L: unknown, index: number): number | undefined {

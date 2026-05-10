@@ -4,7 +4,8 @@ import { markProcedureComplete } from "#duel/procedure-status.js";
 import { duelReason } from "#duel/reasons.js";
 import { tributeUnitCount } from "#duel/double-tribute.js";
 import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
-import { cardCombinations, cardMatchesCode, isMonsterLike, materialCodesMatch, selectMaterialUidsForCodes, type MaterialCodeMatchOptions } from "#duel/summon-materials.js";
+import { cardTypeFlags, currentAttribute, currentLevel, currentLink, currentRace, currentRank } from "#duel/card-stats.js";
+import { cardCombinations, cardMatchesCode, materialCodesMatch, selectMaterialUidsForCodes, type MaterialCodeMatchOptions } from "#duel/summon-materials.js";
 import { isSummonTypeMaskMatch, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
@@ -339,7 +340,7 @@ export function ritualSummonDuelCard(
   if (materials.some((material) => material.uid === card.uid)) throw new Error(`${card.name} cannot use itself as ritual material`);
   if (!materialCodesMatch(materials, requiredMaterials)) throw new Error(`${card.name} ritual materials are not legal`);
   for (const material of materials) {
-    if ((material.location !== "hand" && material.location !== "monsterZone") || !isMonsterLike(material)) throw new Error(`${material.name} cannot be used as ritual material`);
+    if ((material.location !== "hand" && material.location !== "monsterZone") || !isMonsterLike(state, material)) throw new Error(`${material.name} cannot be used as ritual material`);
     if (!canUseMaterial(material.uid)) throw new Error(`${material.name} cannot be used as ritual material`);
   }
   requireSummonZoneAfterMaterials(state, player, materialUids);
@@ -423,7 +424,7 @@ export function tributeSetActions(state: DuelState, player: PlayerId, hand: Duel
 
 function tributeNormalActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[], type: "tributeSummon" | "tributeSet", labelVerb: string, canReleaseMaterial: DuelMaterialPredicate): DuelAction[] {
   if (!state.players[player].normalSummonAvailable) return [];
-  const availableTributes = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canReleaseMaterial(card.uid));
+  const availableTributes = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(state, card) && canReleaseMaterial(card.uid));
   const actions: DuelAction[] = [];
   for (const card of hand.filter((candidate) => candidate.kind === "monster")) {
     const tributeRange = tributeRangeForNormalSummon(card);
@@ -452,16 +453,16 @@ function canFlipSummonDuelCard(state: DuelState, player: PlayerId, card: DuelCar
 export function fusionSummonActions(state: DuelState, player: PlayerId, canUseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
   const materialPool = getCards(state, player, "hand")
     .filter((card) => card.kind === "monster" && canUseMaterial(card.uid))
-    .concat(getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canUseMaterial(card.uid)));
+    .concat(getCards(state, player, "monsterZone").filter((card) => isMonsterLike(state, card) && canUseMaterial(card.uid)));
   return extraDeckSummonActions(state, player, materialPool, "fusionSummon", "Fusion", (card) => card.data.fusionMaterials);
 }
 
 export function synchroSummonActions(state: DuelState, player: PlayerId, canUseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
-  const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canUseMaterial(card.uid));
+  const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(state, card) && canUseMaterial(card.uid));
   const actions: DuelAction[] = [];
   for (const card of getCards(state, player, "extraDeck")) {
-    if (!isMonsterLike(card)) continue;
-    for (const materialUids of findSynchroMaterialUidSets(materialPool, card)) {
+    if (!isMonsterLike(state, card)) continue;
+    for (const materialUids of findSynchroMaterialUidSets(state, materialPool, card)) {
       if (!hasSummonZoneAfterMaterials(state, player, materialUids)) continue;
       const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
       actions.push({ type: "synchroSummon", player, uid: card.uid, materialUids, label: `Synchro Summon ${card.name} using ${materialNames}` });
@@ -471,11 +472,11 @@ export function synchroSummonActions(state: DuelState, player: PlayerId, canUseM
 }
 
 export function xyzSummonActions(state: DuelState, player: PlayerId, canUseMaterial: (uid: string) => boolean = () => true): DuelAction[] {
-  const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canUseMaterial(card.uid));
+  const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(state, card) && canUseMaterial(card.uid));
   const actions: DuelAction[] = [];
   for (const card of getCards(state, player, "extraDeck")) {
-    if (!isMonsterLike(card)) continue;
-    for (const materialUids of findXyzMaterialUidSets(materialPool, card)) {
+    if (!isMonsterLike(state, card)) continue;
+    for (const materialUids of findXyzMaterialUidSets(state, materialPool, card)) {
       if (!hasSummonZoneAfterMaterials(state, player, materialUids)) continue;
       const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
       actions.push({ type: "xyzSummon", player, uid: card.uid, materialUids, label: `Xyz Summon ${card.name} using ${materialNames}` });
@@ -485,11 +486,11 @@ export function xyzSummonActions(state: DuelState, player: PlayerId, canUseMater
 }
 
 export function linkSummonActions(state: DuelState, player: PlayerId, canUseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
-  const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canUseMaterial(card.uid));
+  const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(state, card) && canUseMaterial(card.uid));
   const actions: DuelAction[] = [];
   for (const card of getCards(state, player, "extraDeck")) {
-    if (!isMonsterLike(card)) continue;
-    for (const materialUids of findLinkMaterialUidSets(materialPool, card)) {
+    if (!isMonsterLike(state, card)) continue;
+    for (const materialUids of findLinkMaterialUidSets(state, materialPool, card)) {
       if (!hasSummonZoneAfterMaterials(state, player, materialUids)) continue;
       const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
       actions.push({ type: "linkSummon", player, uid: card.uid, materialUids, label: `Link Summon ${card.name} using ${materialNames}` });
@@ -501,7 +502,7 @@ export function linkSummonActions(state: DuelState, player: PlayerId, canUseMate
 export function ritualSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[], canUseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
   const materialPool = hand
     .filter((card) => card.kind === "monster" && canUseMaterial(card.uid))
-    .concat(getCards(state, player, "monsterZone").filter((card) => isMonsterLike(card) && canUseMaterial(card.uid)));
+    .concat(getCards(state, player, "monsterZone").filter((card) => isMonsterLike(state, card) && canUseMaterial(card.uid)));
   const actions: DuelAction[] = [];
   for (const card of hand.filter((candidate) => candidate.kind === "monster" && candidate.data.ritualMaterials?.length)) {
     for (const materialUids of findSummonMaterialUidSets(state, player, materialPool.filter((material) => material.uid !== card.uid), card.data.ritualMaterials ?? [])) {
@@ -522,7 +523,7 @@ function extraDeckSummonActions(
 ): DuelAction[] {
   const actions: DuelAction[] = [];
   for (const card of getCards(state, player, "extraDeck")) {
-    if (!isMonsterLike(card)) continue;
+    if (!isMonsterLike(state, card)) continue;
     const requiredCodes = materialCodes(card);
     if (!requiredCodes?.length) continue;
     const options = type === "fusionSummon" ? fusionMaterialMatchOptions(state, card) : undefined;
@@ -635,13 +636,13 @@ function requireExtraDeckSummonMaterials(
   canUseMaterial: DuelMaterialPredicate,
 ): { card: DuelCardInstance; materials: DuelCardInstance[] } {
   const card = requireControlledCard(state, player, uid, "extraDeck");
-  if (!isMonsterLike(card)) throw new Error(`${card.name} is not a ${summonType} monster`);
+  if (!isMonsterLike(state, card)) throw new Error(`${card.name} is not a ${summonType} monster`);
   if (!requiredMaterials?.length) throw new Error(`${card.name} does not define ${summonType} materials`);
   if (new Set(materialUids).size !== materialUids.length) throw new Error(`${card.name} ${summonType} materials must be unique`);
   const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
   if (!materialCodesMatch(materials, requiredMaterials, summonType === "fusion" ? fusionMaterialMatchOptions(state, card) : undefined)) throw new Error(`${card.name} ${summonType} materials are not legal`);
   for (const material of materials) {
-    if (!allowedLocations.includes(material.location) || !isMonsterLike(material)) throw new Error(`${material.name} cannot be used as ${summonType} material`);
+    if (!allowedLocations.includes(material.location) || !isMonsterLike(state, material)) throw new Error(`${material.name} cannot be used as ${summonType} material`);
     if (!canUseMaterial(material.uid)) throw new Error(`${material.name} cannot be used as ${summonType} material`);
   }
   requireSummonZoneAfterMaterials(state, player, materialUids);
@@ -650,17 +651,17 @@ function requireExtraDeckSummonMaterials(
 
 function requireSynchroSummonMaterials(state: DuelState, player: PlayerId, uid: string, materialUids: string[], canUseMaterial: DuelMaterialPredicate): { card: DuelCardInstance; materials: DuelCardInstance[] } {
   const card = requireControlledCard(state, player, uid, "extraDeck");
-  if (!isMonsterLike(card)) throw new Error(`${card.name} is not a synchro monster`);
+  if (!isMonsterLike(state, card)) throw new Error(`${card.name} is not a synchro monster`);
   if (new Set(materialUids).size !== materialUids.length) throw new Error(`${card.name} synchro materials must be unique`);
   const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
   if (!materials.length) throw new Error(`${card.name} synchro materials are not legal`);
   if (card.data.synchroMaterials) {
-    if (!synchroMaterialRolesMatch(materials, card.data.synchroMaterials)) throw new Error(`${card.name} synchro materials are not legal`);
-  } else if (!canGenericSynchroMaterialsMatch(card, materials)) {
+    if (!synchroMaterialRolesMatch(state, materials, card.data.synchroMaterials)) throw new Error(`${card.name} synchro materials are not legal`);
+  } else if (!canGenericSynchroMaterialsMatch(state, card, materials)) {
     throw new Error(`${card.name} synchro materials are not legal`);
   }
   for (const material of materials) {
-    if (material.location !== "monsterZone" || !isMonsterLike(material)) throw new Error(`${material.name} cannot be used as synchro material`);
+    if (material.location !== "monsterZone" || !isMonsterLike(state, material)) throw new Error(`${material.name} cannot be used as synchro material`);
     if (!canUseMaterial(material.uid)) throw new Error(`${material.name} cannot be used as synchro material`);
   }
   requireSummonZoneAfterMaterials(state, player, materialUids);
@@ -669,17 +670,17 @@ function requireSynchroSummonMaterials(state: DuelState, player: PlayerId, uid: 
 
 function requireXyzSummonMaterials(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): { card: DuelCardInstance; materials: DuelCardInstance[] } {
   const card = requireControlledCard(state, player, uid, "extraDeck");
-  if (!isMonsterLike(card)) throw new Error(`${card.name} is not an Xyz monster`);
+  if (!isMonsterLike(state, card)) throw new Error(`${card.name} is not an Xyz monster`);
   if (new Set(materialUids).size !== materialUids.length) throw new Error(`${card.name} Xyz materials must be unique`);
   const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
   if (!materials.length) throw new Error(`${card.name} Xyz materials are not legal`);
   if (card.data.xyzMaterials?.length) {
     if (!materialCodesMatch(materials, card.data.xyzMaterials)) throw new Error(`${card.name} Xyz materials are not legal`);
-  } else if (!canGenericXyzMaterialsMatch(card, materials)) {
+  } else if (!canGenericXyzMaterialsMatch(state, card, materials)) {
     throw new Error(`${card.name} Xyz materials are not legal`);
   }
   for (const material of materials) {
-    if (material.location !== "monsterZone" || !isMonsterLike(material)) throw new Error(`${material.name} cannot be used as Xyz material`);
+    if (material.location !== "monsterZone" || !isMonsterLike(state, material)) throw new Error(`${material.name} cannot be used as Xyz material`);
   }
   requireSummonZoneAfterMaterials(state, player, materialUids);
   return { card, materials };
@@ -687,18 +688,18 @@ function requireXyzSummonMaterials(state: DuelState, player: PlayerId, uid: stri
 
 function requireLinkSummonMaterials(state: DuelState, player: PlayerId, uid: string, materialUids: string[], canUseMaterial: DuelMaterialPredicate): { card: DuelCardInstance; materials: DuelCardInstance[] } {
   const card = requireControlledCard(state, player, uid, "extraDeck");
-  if (!isMonsterLike(card)) throw new Error(`${card.name} is not a Link monster`);
-  const targetRating = linkRating(card);
+  if (!isMonsterLike(state, card)) throw new Error(`${card.name} is not a Link monster`);
+  const targetRating = linkRating(state, card);
   if (targetRating <= 0) throw new Error(`${card.name} does not define Link materials`);
   if (new Set(materialUids).size !== materialUids.length) throw new Error(`${card.name} Link materials must be unique`);
   const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
   if (!materials.length) throw new Error(`${card.name} Link materials are not legal`);
   if (!linkMaterialCountAllowed(card, materials.length)) throw new Error(`${card.name} Link materials are not legal`);
-  if (!materials.every((material) => linkMaterialTypeMatches(card, material) && linkMaterialRaceMatches(card, material) && linkMaterialAttributeMatches(card, material) && linkMaterialSetcodeMatches(card, material) && linkMaterialSummonTypeMatches(card, material) && linkMaterialLevelMatches(card, material) && linkMaterialMinLevelMatches(card, material))) throw new Error(`${card.name} Link materials are not legal`);
+  if (!materials.every((material) => linkMaterialMatches(state, card, material))) throw new Error(`${card.name} Link materials are not legal`);
   if (!linkMaterialCodesMatch(materials, card.data.linkMaterials)) throw new Error(`${card.name} Link materials are not legal`);
-  if (!canLinkMaterialsMatchRating(materials, targetRating)) throw new Error(`${card.name} Link materials are not legal`);
+  if (!canLinkMaterialsMatchRating(state, materials, targetRating)) throw new Error(`${card.name} Link materials are not legal`);
   for (const material of materials) {
-    if (material.location !== "monsterZone" || !isMonsterLike(material)) throw new Error(`${material.name} cannot be used as Link material`);
+    if (material.location !== "monsterZone" || !isMonsterLike(state, material)) throw new Error(`${material.name} cannot be used as Link material`);
     if (!canUseMaterial(material.uid)) throw new Error(`${material.name} cannot be used as Link material`);
   }
   requireSummonZoneAfterMaterials(state, player, materialUids);
@@ -712,16 +713,16 @@ function cardDataMaterials(state: DuelState, player: PlayerId, uid: string, summ
   return card.data.linkMaterials;
 }
 
-function findLinkMaterialUidSets(materialPool: DuelCardInstance[], card: DuelCardInstance): string[][] {
-  const targetRating = linkRating(card);
+function findLinkMaterialUidSets(state: DuelState, materialPool: DuelCardInstance[], card: DuelCardInstance): string[][] {
+  const targetRating = linkRating(state, card);
   if (targetRating <= 0) return [];
   const results: string[][] = [];
   const seen = new Set<string>();
   if (card.data.linkMaterials?.length) {
     for (const materials of cardCombinations(materialPool, card.data.linkMaterials.length)) {
       if (!linkMaterialCountAllowed(card, materials.length)) continue;
-      if (!materials.every((material) => linkMaterialTypeMatches(card, material) && linkMaterialRaceMatches(card, material) && linkMaterialAttributeMatches(card, material) && linkMaterialSetcodeMatches(card, material) && linkMaterialSummonTypeMatches(card, material) && linkMaterialLevelMatches(card, material) && linkMaterialMinLevelMatches(card, material))) continue;
-      if (materialCodesMatch(materials, card.data.linkMaterials) && canLinkMaterialsMatchRating(materials, targetRating)) {
+      if (!materials.every((material) => linkMaterialMatches(state, card, material))) continue;
+      if (materialCodesMatch(materials, card.data.linkMaterials) && canLinkMaterialsMatchRating(state, materials, targetRating)) {
         appendMaterialUidSet(results, seen, materials.map((material) => material.uid));
       }
     }
@@ -730,42 +731,42 @@ function findLinkMaterialUidSets(materialPool: DuelCardInstance[], card: DuelCar
   for (let count = 1; count <= materialPool.length; count += 1) {
     if (!linkMaterialCountAllowed(card, count)) continue;
     for (const materials of cardCombinations(materialPool, count)) {
-      if (!materials.every((material) => linkMaterialTypeMatches(card, material) && linkMaterialRaceMatches(card, material) && linkMaterialAttributeMatches(card, material) && linkMaterialSetcodeMatches(card, material) && linkMaterialSummonTypeMatches(card, material) && linkMaterialLevelMatches(card, material) && linkMaterialMinLevelMatches(card, material))) continue;
-      if (canLinkMaterialsMatchRating(materials, targetRating)) appendMaterialUidSet(results, seen, materials.map((material) => material.uid));
+      if (!materials.every((material) => linkMaterialMatches(state, card, material))) continue;
+      if (canLinkMaterialsMatchRating(state, materials, targetRating)) appendMaterialUidSet(results, seen, materials.map((material) => material.uid));
     }
   }
   return results;
 }
 
-function findSynchroMaterialUidSets(materialPool: DuelCardInstance[], card: DuelCardInstance): string[][] {
-  if (card.data.synchroMaterials) return findSynchroMaterialRoleUidSets(materialPool, card.data.synchroMaterials);
+function findSynchroMaterialUidSets(state: DuelState, materialPool: DuelCardInstance[], card: DuelCardInstance): string[][] {
+  if (card.data.synchroMaterials) return findSynchroMaterialRoleUidSets(state, materialPool, card.data.synchroMaterials);
   const results: string[][] = [];
   for (let count = 2; count <= materialPool.length; count += 1) {
     for (const materials of cardCombinations(materialPool, count)) {
-      if (canGenericSynchroMaterialsMatch(card, materials)) results.push(materials.map((material) => material.uid));
+      if (canGenericSynchroMaterialsMatch(state, card, materials)) results.push(materials.map((material) => material.uid));
     }
   }
   return results;
 }
 
-function findXyzMaterialUidSets(materialPool: DuelCardInstance[], card: DuelCardInstance): string[][] {
+function findXyzMaterialUidSets(state: DuelState, materialPool: DuelCardInstance[], card: DuelCardInstance): string[][] {
   if (card.data.xyzMaterials?.length) return findMaterialUidSets(materialPool, card.data.xyzMaterials);
   const results: string[][] = [];
   const maxCount = Math.min(materialPool.length, xyzMaterialMax(card));
   for (let count = xyzMaterialCount(card); count <= maxCount; count += 1) {
     for (const materials of cardCombinations(materialPool, count)) {
-      if (canGenericXyzMaterialsMatch(card, materials)) results.push(materials.map((material) => material.uid));
+      if (canGenericXyzMaterialsMatch(state, card, materials)) results.push(materials.map((material) => material.uid));
     }
   }
   return results;
 }
 
-function findSynchroMaterialRoleUidSets(cards: DuelCardInstance[], required: SynchroMaterialCodes): string[][] {
+function findSynchroMaterialRoleUidSets(state: DuelState, cards: DuelCardInstance[], required: SynchroMaterialCodes): string[][] {
   const results: string[][] = [];
   const seen = new Set<string>();
   for (const tuner of cards) {
-    if (!isTuner(tuner) || !cardMatchesCode(tuner, required.tuner)) continue;
-    const nonTunerPool = cards.filter((card) => card.uid !== tuner.uid && !isTuner(card));
+    if (!isTuner(state, tuner) || !cardMatchesCode(tuner, required.tuner)) continue;
+    const nonTunerPool = cards.filter((card) => card.uid !== tuner.uid && !isTuner(state, card));
     for (const nonTunerUids of findMaterialUidSets(nonTunerPool, required.nonTuners)) {
       appendMaterialUidSet(results, seen, [tuner.uid, ...nonTunerUids]);
     }
@@ -773,31 +774,31 @@ function findSynchroMaterialRoleUidSets(cards: DuelCardInstance[], required: Syn
   return results;
 }
 
-function synchroMaterialRolesMatch(materials: DuelCardInstance[], required: SynchroMaterialCodes): boolean {
+function synchroMaterialRolesMatch(state: DuelState, materials: DuelCardInstance[], required: SynchroMaterialCodes): boolean {
   const selectedKey = materialUidSetKey(materials.map((material) => material.uid));
-  return findSynchroMaterialRoleUidSets(materials, required).some((materialUids) => materialUidSetKey(materialUids) === selectedKey);
+  return findSynchroMaterialRoleUidSets(state, materials, required).some((materialUids) => materialUidSetKey(materialUids) === selectedKey);
 }
 
-function canGenericSynchroMaterialsMatch(card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
-  const targetLevel = synchroLevel(card);
+function canGenericSynchroMaterialsMatch(state: DuelState, card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
+  const targetLevel = synchroLevel(state, card);
   if (targetLevel <= 0 || materials.length < 2) return false;
-  if (!synchroMaterialCountsAllowed(card, materials)) return false;
-  if (!materials.every((material) => !isTuner(material) || (synchroTunerLevelMatches(card, material) && synchroTunerAttributeMatches(card, material) && synchroTunerRaceMatches(card, material) && synchroTunerTypeMatches(card, material) && synchroTunerSetcodeMatches(card, material)))) return false;
-  if (!materials.every((material) => isTuner(material) || (synchroNonTunerAttributeMatches(card, material) && synchroNonTunerRaceMatches(card, material) && synchroNonTunerTypeMatches(card, material) && synchroNonTunerSetcodeMatches(card, material)))) return false;
-  return materials.reduce((total, material) => total + (material.data.level ?? 0), 0) === targetLevel;
+  if (!synchroMaterialCountsAllowed(state, card, materials)) return false;
+  if (!materials.every((material) => !isTuner(state, material) || (synchroTunerLevelMatches(state, card, material) && synchroTunerAttributeMatches(state, card, material) && synchroTunerRaceMatches(state, card, material) && synchroTunerTypeMatches(state, card, material) && synchroTunerSetcodeMatches(card, material)))) return false;
+  if (!materials.every((material) => isTuner(state, material) || (synchroNonTunerAttributeMatches(state, card, material) && synchroNonTunerRaceMatches(state, card, material) && synchroNonTunerTypeMatches(state, card, material) && synchroNonTunerSetcodeMatches(card, material)))) return false;
+  return materials.reduce((total, material) => total + currentLevel(material, state), 0) === targetLevel;
 }
 
-function synchroLevel(card: DuelCardInstance): number {
-  return ((card.data.typeFlags ?? 0) & 0x2000) !== 0 ? card.data.level ?? 0 : 0;
+function synchroLevel(state: DuelState, card: DuelCardInstance): number {
+  return (cardTypeFlags(card, state) & 0x2000) !== 0 ? currentLevel(card, state) : 0;
 }
 
-function canGenericXyzMaterialsMatch(card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
-  const targetRank = xyzRank(card);
-  return targetRank > 0 && materials.length >= xyzMaterialCount(card) && materials.length <= xyzMaterialMax(card) && materials.every((material) => (material.data.level ?? 0) === targetRank && xyzMaterialRaceMatches(card, material) && xyzMaterialAttributeMatches(card, material) && xyzMaterialTypeMatches(card, material) && xyzMaterialSetcodeMatches(card, material) && xyzMaterialRankMatches(card, material));
+function canGenericXyzMaterialsMatch(state: DuelState, card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
+  const targetRank = xyzRank(state, card);
+  return targetRank > 0 && materials.length >= xyzMaterialCount(card) && materials.length <= xyzMaterialMax(card) && materials.every((material) => currentLevel(material, state) === targetRank && xyzMaterialRaceMatches(state, card, material) && xyzMaterialAttributeMatches(state, card, material) && xyzMaterialTypeMatches(state, card, material) && xyzMaterialSetcodeMatches(card, material) && xyzMaterialRankMatches(state, card, material));
 }
 
-function xyzRank(card: DuelCardInstance): number {
-  return ((card.data.typeFlags ?? 0) & 0x800000) !== 0 ? card.data.level ?? 0 : 0;
+function xyzRank(state: DuelState, card: DuelCardInstance): number {
+  return (cardTypeFlags(card, state) & 0x800000) !== 0 ? currentRank(card, state) : 0;
 }
 
 function xyzMaterialCount(card: DuelCardInstance): number {
@@ -808,36 +809,36 @@ function xyzMaterialMax(card: DuelCardInstance): number {
   return card.data.xyzMaterialMax ?? xyzMaterialCount(card);
 }
 
-function xyzMaterialRaceMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.xyzMaterialRace === undefined || ((material.data.race ?? 0) & target.data.xyzMaterialRace) !== 0;
+function xyzMaterialRaceMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.xyzMaterialRace === undefined || (currentRace(material, state) & target.data.xyzMaterialRace) !== 0;
 }
 
-function xyzMaterialAttributeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.xyzMaterialAttribute === undefined || ((material.data.attribute ?? 0) & target.data.xyzMaterialAttribute) !== 0;
+function xyzMaterialAttributeMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.xyzMaterialAttribute === undefined || (currentAttribute(material, state) & target.data.xyzMaterialAttribute) !== 0;
 }
 
-function xyzMaterialTypeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.xyzMaterialType === undefined || ((material.data.typeFlags ?? 0) & target.data.xyzMaterialType) !== 0;
+function xyzMaterialTypeMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.xyzMaterialType === undefined || (cardTypeFlags(material, state) & target.data.xyzMaterialType) !== 0;
 }
 
 function xyzMaterialSetcodeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
   return target.data.xyzMaterialSetcode === undefined || (material.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.xyzMaterialSetcode!, setcode));
 }
 
-function xyzMaterialRankMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.xyzMaterialRank === undefined || xyzRank(material) === target.data.xyzMaterialRank;
+function xyzMaterialRankMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.xyzMaterialRank === undefined || xyzRank(state, material) === target.data.xyzMaterialRank;
 }
 
 function isSetcodeMatch(requested: number, setcode: number): boolean {
   return (setcode & 0xfff) === (requested & 0xfff) && (setcode & requested) === requested;
 }
 
-function isTuner(card: DuelCardInstance): boolean {
-  return ((card.data.typeFlags ?? 0) & 0x1000) !== 0;
+function isTuner(state: DuelState, card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card, state) & 0x1000) !== 0;
 }
 
-function synchroMaterialCountsAllowed(card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
-  const tunerCount = materials.filter((material) => isTuner(material)).length;
+function synchroMaterialCountsAllowed(state: DuelState, card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
+  const tunerCount = materials.filter((material) => isTuner(state, material)).length;
   const nonTunerCount = materials.length - tunerCount;
   const tunerMin = card.data.synchroTunerMin ?? 1;
   const tunerMax = card.data.synchroTunerMax ?? 1;
@@ -846,36 +847,36 @@ function synchroMaterialCountsAllowed(card: DuelCardInstance, materials: DuelCar
   return tunerCount >= tunerMin && tunerCount <= tunerMax && nonTunerCount >= nonTunerMin && nonTunerCount <= nonTunerMax;
 }
 
-function synchroTunerAttributeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.synchroTunerAttribute === undefined || ((material.data.attribute ?? 0) & target.data.synchroTunerAttribute) !== 0;
+function synchroTunerAttributeMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroTunerAttribute === undefined || (currentAttribute(material, state) & target.data.synchroTunerAttribute) !== 0;
 }
 
-function synchroTunerLevelMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.synchroTunerLevel === undefined || material.data.level === target.data.synchroTunerLevel;
+function synchroTunerLevelMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroTunerLevel === undefined || currentLevel(material, state) === target.data.synchroTunerLevel;
 }
 
-function synchroTunerRaceMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.synchroTunerRace === undefined || ((material.data.race ?? 0) & target.data.synchroTunerRace) !== 0;
+function synchroTunerRaceMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroTunerRace === undefined || (currentRace(material, state) & target.data.synchroTunerRace) !== 0;
 }
 
-function synchroTunerTypeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.synchroTunerType === undefined || ((material.data.typeFlags ?? 0) & target.data.synchroTunerType) !== 0;
+function synchroTunerTypeMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroTunerType === undefined || (cardTypeFlags(material, state) & target.data.synchroTunerType) !== 0;
 }
 
 function synchroTunerSetcodeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
   return target.data.synchroTunerSetcode === undefined || (material.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.synchroTunerSetcode!, setcode));
 }
 
-function synchroNonTunerAttributeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.synchroNonTunerAttribute === undefined || ((material.data.attribute ?? 0) & target.data.synchroNonTunerAttribute) !== 0;
+function synchroNonTunerAttributeMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroNonTunerAttribute === undefined || (currentAttribute(material, state) & target.data.synchroNonTunerAttribute) !== 0;
 }
 
-function synchroNonTunerRaceMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.synchroNonTunerRace === undefined || ((material.data.race ?? 0) & target.data.synchroNonTunerRace) !== 0;
+function synchroNonTunerRaceMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroNonTunerRace === undefined || (currentRace(material, state) & target.data.synchroNonTunerRace) !== 0;
 }
 
-function synchroNonTunerTypeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.synchroNonTunerType === undefined || ((material.data.typeFlags ?? 0) & target.data.synchroNonTunerType) !== 0;
+function synchroNonTunerTypeMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroNonTunerType === undefined || (cardTypeFlags(material, state) & target.data.synchroNonTunerType) !== 0;
 }
 
 function synchroNonTunerSetcodeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
@@ -886,9 +887,9 @@ function linkMaterialCodesMatch(materials: DuelCardInstance[], requiredCodes: st
   return !requiredCodes?.length || materialCodesMatch(materials, requiredCodes);
 }
 
-function canLinkMaterialsMatchRating(materials: DuelCardInstance[], targetRating: number): boolean {
+function canLinkMaterialsMatchRating(state: DuelState, materials: DuelCardInstance[], targetRating: number): boolean {
   if (materials.length === 0 || materials.length > targetRating) return false;
-  return linkRatingChoicesMatch(materials.map(linkMaterialRatings), targetRating, 0, 0);
+  return linkRatingChoicesMatch(materials.map((material) => linkMaterialRatings(state, material)), targetRating, 0, 0);
 }
 
 function linkRatingChoicesMatch(choices: number[][], targetRating: number, index: number, currentRating: number): boolean {
@@ -899,14 +900,14 @@ function linkRatingChoicesMatch(choices: number[][], targetRating: number, index
   return false;
 }
 
-function linkMaterialRatings(card: DuelCardInstance): number[] {
-  const rating = linkRating(card);
+function linkMaterialRatings(state: DuelState, card: DuelCardInstance): number[] {
+  const rating = linkRating(state, card);
   return rating > 1 ? [1, rating] : [1];
 }
 
-function linkRating(card: DuelCardInstance): number {
-  if (!card.data.linkMaterials?.length && ((card.data.typeFlags ?? 0) & 0x4000000) === 0) return 0;
-  if (card.data.level !== undefined) return card.data.level;
+function linkRating(state: DuelState, card: DuelCardInstance): number {
+  if (!card.data.linkMaterials?.length && (cardTypeFlags(card, state) & 0x4000000) === 0) return 0;
+  if (card.data.level !== undefined) return currentLink(card);
   return card.data.linkMaterials?.length ?? 0;
 }
 
@@ -916,16 +917,26 @@ function linkMaterialCountAllowed(card: DuelCardInstance, count: number): boolea
   return count >= min && count <= max;
 }
 
-function linkMaterialTypeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.linkMaterialType === undefined || ((material.data.typeFlags ?? 0) & target.data.linkMaterialType) !== 0;
+function linkMaterialMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return linkMaterialTypeMatches(state, target, material)
+    && linkMaterialRaceMatches(state, target, material)
+    && linkMaterialAttributeMatches(state, target, material)
+    && linkMaterialSetcodeMatches(target, material)
+    && linkMaterialSummonTypeMatches(target, material)
+    && linkMaterialLevelMatches(state, target, material)
+    && linkMaterialMinLevelMatches(state, target, material);
 }
 
-function linkMaterialRaceMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.linkMaterialRace === undefined || ((material.data.race ?? 0) & target.data.linkMaterialRace) !== 0;
+function linkMaterialTypeMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.linkMaterialType === undefined || (cardTypeFlags(material, state) & target.data.linkMaterialType) !== 0;
 }
 
-function linkMaterialAttributeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.linkMaterialAttribute === undefined || ((material.data.attribute ?? 0) & target.data.linkMaterialAttribute) !== 0;
+function linkMaterialRaceMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.linkMaterialRace === undefined || (currentRace(material, state) & target.data.linkMaterialRace) !== 0;
+}
+
+function linkMaterialAttributeMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.linkMaterialAttribute === undefined || (currentAttribute(material, state) & target.data.linkMaterialAttribute) !== 0;
 }
 
 function linkMaterialSetcodeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
@@ -936,12 +947,16 @@ function linkMaterialSummonTypeMatches(target: DuelCardInstance, material: DuelC
   return target.data.linkMaterialSummonType === undefined || isSummonTypeMaskMatch(summonTypeMaskFromCard(material), target.data.linkMaterialSummonType);
 }
 
-function linkMaterialLevelMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.linkMaterialLevel === undefined || material.data.level === target.data.linkMaterialLevel;
+function linkMaterialLevelMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.linkMaterialLevel === undefined || currentLevel(material, state) === target.data.linkMaterialLevel;
 }
 
-function linkMaterialMinLevelMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.linkMaterialMinLevel === undefined || (material.data.level ?? 0) >= target.data.linkMaterialMinLevel;
+function linkMaterialMinLevelMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.linkMaterialMinLevel === undefined || currentLevel(material, state) >= target.data.linkMaterialMinLevel;
+}
+
+function isMonsterLike(state: DuelState, card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card, state) & 0x1) !== 0;
 }
 
 function synchroMaterialCodes(card: DuelCardInstance): string[] | undefined {

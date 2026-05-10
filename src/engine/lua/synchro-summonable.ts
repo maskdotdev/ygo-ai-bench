@@ -1,5 +1,6 @@
 import { hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
 import { isMaterialUsePrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
+import { cardTypeFlags, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
 import { isSetcodeMatch } from "#lua/card-code-utils.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
@@ -10,7 +11,7 @@ export function canLuaSynchroSummonCard(session: DuelSession, card: DuelCardInst
 }
 
 export function findLuaSynchroMaterialUidSet(session: DuelSession, card: DuelCardInstance, suppliedUids: string[]): string[] | undefined {
-  if (card.location !== "extraDeck" || !isMonsterLike(card)) return undefined;
+  if (card.location !== "extraDeck" || !isMonsterLike(session, card)) return undefined;
   const supplied = new Set(suppliedUids);
   const materialPool = session.state.cards.filter((candidate) => candidate.controller === card.controller && candidate.location === "monsterZone" && canBeSynchroMaterial(session, candidate, card));
   if ([...supplied].some((uid) => !materialPool.some((candidate) => candidate.uid === uid))) return undefined;
@@ -18,7 +19,7 @@ export function findLuaSynchroMaterialUidSet(session: DuelSession, card: DuelCar
   for (let count = Math.max(2, supplied.size); count <= materialPool.length; count += 1) {
     for (const materials of cardCombinations(materialPool, count)) {
       if ([...supplied].some((uid) => !materials.some((material) => material.uid === uid))) continue;
-      if ((explicitMaterials ? synchroMaterialRolesMatch(materials, explicitMaterials) : canGenericSynchroMaterialsMatch(card, materials)) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return materials.map((material) => material.uid);
+      if ((explicitMaterials ? synchroMaterialRolesMatch(session, materials, explicitMaterials) : canGenericSynchroMaterialsMatch(session, card, materials)) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return materials.map((material) => material.uid);
     }
   }
   return undefined;
@@ -29,36 +30,36 @@ function hasSummonZoneAfterMaterials(session: DuelSession, player: PlayerId, mat
 }
 
 function canBeSynchroMaterial(session: DuelSession, card: DuelCardInstance, target: DuelCardInstance): boolean {
-  if (!isMonsterLike(card) || card.uid === target.uid) return false;
-  return targetAllowsMaterial(target, card) && !isMaterialUsePrevented(session.state, card.uid, "synchro", createMaterialCheckContext(session));
+  if (!isMonsterLike(session, card) || card.uid === target.uid) return false;
+  return targetAllowsMaterial(session, target, card) && !isMaterialUsePrevented(session.state, card.uid, "synchro", createMaterialCheckContext(session));
 }
 
-function targetAllowsMaterial(target: DuelCardInstance, card: DuelCardInstance): boolean {
+function targetAllowsMaterial(session: DuelSession, target: DuelCardInstance, card: DuelCardInstance): boolean {
   const materials = target.data.synchroMaterials;
   if (materials) {
-    if (isTuner(card)) return cardCodes(card).includes(materials.tuner);
+    if (isTuner(session, card)) return cardCodes(card).includes(materials.tuner);
     return materials.nonTuners.some((code) => cardCodes(card).includes(code));
   }
-  const targetLevel = (cardTypeFlags(target) & 0x2000) !== 0 ? target.data.level ?? 0 : 0;
-  const materialLevel = card.data.level ?? 0;
-  if (isTuner(card) && (!synchroTunerLevelMatches(target, card) || !synchroTunerAttributeMatches(target, card) || !synchroTunerRaceMatches(target, card) || !synchroTunerTypeMatches(target, card) || !synchroTunerSetcodeMatches(target, card))) return false;
-  if (!isTuner(card) && (!synchroNonTunerAttributeMatches(target, card) || !synchroNonTunerRaceMatches(target, card) || !synchroNonTunerTypeMatches(target, card) || !synchroNonTunerSetcodeMatches(target, card))) return false;
+  const targetLevel = (cardTypeFlags(target, session.state) & 0x2000) !== 0 ? currentLevel(target, session.state) : 0;
+  const materialLevel = currentLevel(card, session.state);
+  if (isTuner(session, card) && (!synchroTunerLevelMatches(session, target, card) || !synchroTunerAttributeMatches(session, target, card) || !synchroTunerRaceMatches(session, target, card) || !synchroTunerTypeMatches(session, target, card) || !synchroTunerSetcodeMatches(target, card))) return false;
+  if (!isTuner(session, card) && (!synchroNonTunerAttributeMatches(session, target, card) || !synchroNonTunerRaceMatches(session, target, card) || !synchroNonTunerTypeMatches(session, target, card) || !synchroNonTunerSetcodeMatches(target, card))) return false;
   return targetLevel > 0 && materialLevel > 0 && materialLevel < targetLevel;
 }
 
-function canGenericSynchroMaterialsMatch(card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
-  const targetLevel = (cardTypeFlags(card) & 0x2000) !== 0 ? card.data.level ?? 0 : 0;
+function canGenericSynchroMaterialsMatch(session: DuelSession, card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
+  const targetLevel = (cardTypeFlags(card, session.state) & 0x2000) !== 0 ? currentLevel(card, session.state) : 0;
   if (targetLevel <= 0 || materials.length < 2) return false;
-  if (!synchroMaterialCountsAllowed(card, materials)) return false;
-  if (!materials.every((material) => !isTuner(material) || (synchroTunerLevelMatches(card, material) && synchroTunerAttributeMatches(card, material) && synchroTunerRaceMatches(card, material) && synchroTunerTypeMatches(card, material) && synchroTunerSetcodeMatches(card, material)))) return false;
-  if (!materials.every((material) => isTuner(material) || (synchroNonTunerAttributeMatches(card, material) && synchroNonTunerRaceMatches(card, material) && synchroNonTunerTypeMatches(card, material) && synchroNonTunerSetcodeMatches(card, material)))) return false;
-  return materials.reduce((total, material) => total + (material.data.level ?? 0), 0) === targetLevel;
+  if (!synchroMaterialCountsAllowed(session, card, materials)) return false;
+  if (!materials.every((material) => !isTuner(session, material) || (synchroTunerLevelMatches(session, card, material) && synchroTunerAttributeMatches(session, card, material) && synchroTunerRaceMatches(session, card, material) && synchroTunerTypeMatches(session, card, material) && synchroTunerSetcodeMatches(card, material)))) return false;
+  if (!materials.every((material) => isTuner(session, material) || (synchroNonTunerAttributeMatches(session, card, material) && synchroNonTunerRaceMatches(session, card, material) && synchroNonTunerTypeMatches(session, card, material) && synchroNonTunerSetcodeMatches(card, material)))) return false;
+  return materials.reduce((total, material) => total + currentLevel(material, session.state), 0) === targetLevel;
 }
 
-function synchroMaterialRolesMatch(materials: DuelCardInstance[], required: SynchroMaterialCodes): boolean {
-  const tuner = materials.find((material) => isTuner(material) && cardCodes(material).includes(required.tuner));
+function synchroMaterialRolesMatch(session: DuelSession, materials: DuelCardInstance[], required: SynchroMaterialCodes): boolean {
+  const tuner = materials.find((material) => isTuner(session, material) && cardCodes(material).includes(required.tuner));
   if (!tuner) return false;
-  const nonTuners = materials.filter((material) => material.uid !== tuner.uid && !isTuner(material));
+  const nonTuners = materials.filter((material) => material.uid !== tuner.uid && !isTuner(session, material));
   return nonTuners.length === materials.length - 1 && materialCodesMatch(nonTuners, required.nonTuners);
 }
 
@@ -89,16 +90,12 @@ function cardCodes(card: DuelCardInstance): string[] {
   return [card.code, ...(card.data.alias ? [card.data.alias] : [])];
 }
 
-function cardTypeFlags(card: DuelCardInstance): number {
-  return card.data.typeFlags ?? (card.kind === "spell" ? 0x2 : card.kind === "trap" ? 0x4 : 0x1);
+function isTuner(session: DuelSession, card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card, session.state) & 0x1000) !== 0;
 }
 
-function isTuner(card: DuelCardInstance): boolean {
-  return (cardTypeFlags(card) & 0x1000) !== 0;
-}
-
-function synchroMaterialCountsAllowed(card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
-  const tunerCount = materials.filter((material) => isTuner(material)).length;
+function synchroMaterialCountsAllowed(session: DuelSession, card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
+  const tunerCount = materials.filter((material) => isTuner(session, material)).length;
   const nonTunerCount = materials.length - tunerCount;
   const tunerMin = card.data.synchroTunerMin ?? 1;
   const tunerMax = card.data.synchroTunerMax ?? 1;
@@ -107,44 +104,44 @@ function synchroMaterialCountsAllowed(card: DuelCardInstance, materials: DuelCar
   return tunerCount >= tunerMin && tunerCount <= tunerMax && nonTunerCount >= nonTunerMin && nonTunerCount <= nonTunerMax;
 }
 
-function synchroTunerAttributeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.synchroTunerAttribute === undefined || ((material.data.attribute ?? 0) & target.data.synchroTunerAttribute) !== 0;
+function synchroTunerAttributeMatches(session: DuelSession, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroTunerAttribute === undefined || (currentAttribute(material, session.state) & target.data.synchroTunerAttribute) !== 0;
 }
 
-function synchroTunerLevelMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.synchroTunerLevel === undefined || material.data.level === target.data.synchroTunerLevel;
+function synchroTunerLevelMatches(session: DuelSession, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroTunerLevel === undefined || currentLevel(material, session.state) === target.data.synchroTunerLevel;
 }
 
-function synchroTunerRaceMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.synchroTunerRace === undefined || ((material.data.race ?? 0) & target.data.synchroTunerRace) !== 0;
+function synchroTunerRaceMatches(session: DuelSession, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroTunerRace === undefined || (currentRace(material, session.state) & target.data.synchroTunerRace) !== 0;
 }
 
-function synchroTunerTypeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.synchroTunerType === undefined || (cardTypeFlags(material) & target.data.synchroTunerType) !== 0;
+function synchroTunerTypeMatches(session: DuelSession, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroTunerType === undefined || (cardTypeFlags(material, session.state) & target.data.synchroTunerType) !== 0;
 }
 
 function synchroTunerSetcodeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
   return target.data.synchroTunerSetcode === undefined || (material.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.synchroTunerSetcode!, setcode));
 }
 
-function synchroNonTunerAttributeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.synchroNonTunerAttribute === undefined || ((material.data.attribute ?? 0) & target.data.synchroNonTunerAttribute) !== 0;
+function synchroNonTunerAttributeMatches(session: DuelSession, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroNonTunerAttribute === undefined || (currentAttribute(material, session.state) & target.data.synchroNonTunerAttribute) !== 0;
 }
 
-function synchroNonTunerRaceMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.synchroNonTunerRace === undefined || ((material.data.race ?? 0) & target.data.synchroNonTunerRace) !== 0;
+function synchroNonTunerRaceMatches(session: DuelSession, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroNonTunerRace === undefined || (currentRace(material, session.state) & target.data.synchroNonTunerRace) !== 0;
 }
 
-function synchroNonTunerTypeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return target.data.synchroNonTunerType === undefined || (cardTypeFlags(material) & target.data.synchroNonTunerType) !== 0;
+function synchroNonTunerTypeMatches(session: DuelSession, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroNonTunerType === undefined || (cardTypeFlags(material, session.state) & target.data.synchroNonTunerType) !== 0;
 }
 
 function synchroNonTunerSetcodeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
   return target.data.synchroNonTunerSetcode === undefined || (material.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.synchroNonTunerSetcode!, setcode));
 }
 
-function isMonsterLike(card: DuelCardInstance): boolean {
-  return (cardTypeFlags(card) & 0x1) !== 0;
+function isMonsterLike(session: DuelSession, card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card, session.state) & 0x1) !== 0;
 }
 
 function createMaterialCheckContext(session: DuelSession): ContinuousEffectContextFactory {
