@@ -23,6 +23,14 @@ export function isKnownTemporaryBattleProtectionEffect(effect: SerializedDuelEff
   return isKnownTemporaryPlayerBattleDamageAvoidEffect(effect) || isKnownTemporaryMonsterBattleIndestructibleEffect(effect);
 }
 
+export function isKnownPlayerDamageZeroEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    (isPlainPhaseEndStaticValueEffect(effect, 82, 0) || isPlainPhaseEndStaticValueEffect(effect, 335, 0)) &&
+    hasPlayerTargetFlag(effect) &&
+    targetRangeEquals(effect, 1, 1)
+  );
+}
+
 function isKnownTemporaryPlayerBattleDamageAvoidEffect(effect: SerializedDuelEffect): boolean {
   return isPlainTemporaryStaticValueEffect(effect, 201) && hasPlayerTargetFlag(effect) && targetRangeEquals(effect, 1, 0);
 }
@@ -32,12 +40,16 @@ function isKnownTemporaryMonsterBattleIndestructibleEffect(effect: SerializedDue
 }
 
 function isPlainTemporaryStaticValueEffect(effect: SerializedDuelEffect, code: number): boolean {
+  return isPlainPhaseEndStaticValueEffect(effect, code, 1);
+}
+
+function isPlainPhaseEndStaticValueEffect(effect: SerializedDuelEffect, code: number, value: number): boolean {
   return (
     effect.event === "continuous" &&
     effect.code === code &&
     effect.sourceUid !== undefined &&
     effect.reset?.flags === luaPhaseEndResetFlags &&
-    effect.value === 1 &&
+    effect.value === value &&
     effect.luaValueDescriptor === undefined &&
     effect.luaTargetDescriptor === undefined &&
     hasDefaultLuaFieldRange(effect)
