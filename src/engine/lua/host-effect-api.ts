@@ -731,6 +731,10 @@ function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffec
   pushLuaEffectTable(L, luaEffect.id, hostState);
   if (legacyArgs) {
     pushCardTable(L, card.uid);
+    if (luaEffect.code === 96 && kind === "cost") {
+      lua.lua_pushinteger(L, ctx?.player ?? card.controller);
+      return 3;
+    }
     return 2;
   }
   const appendSummonProcedureCard = luaEffect.code === 34;
@@ -934,7 +938,7 @@ function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: Lu
   return withLuaCallbackContext(hostState, ctx, luaEffect.id, kind, () => {
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, ref);
     const legacyArgs = secondParameterName(L, -1) === "c";
-    if (legacyArgs && ctx?.checkOnly && (kind === "cost" || kind === "target")) {
+    if (legacyArgs && ctx?.checkOnly && (kind === "cost" || kind === "target") && luaEffect.code !== 96) {
       lua.lua_pop(L, 1);
       return fallback;
     }

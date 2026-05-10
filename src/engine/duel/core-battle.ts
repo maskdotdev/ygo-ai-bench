@@ -43,6 +43,7 @@ import type { BattleDamageChangeOptions } from "#duel/core-battle-damage.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEffectContext, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
 export type PositionChangeSource = "effect" | "manual";
+const effectAttackCost = 96;
 
 export interface CoreBattleHandlers {
   additionalBattleDamagePlayers(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): PlayerId[];
@@ -73,6 +74,7 @@ export function appendBattleActions(actions: DuelAction[], state: DuelState, pla
     if (action.type !== "declareAttack") continue;
     const attacker = findCard(state, action.attackerUid);
     if (!attacker || isAttackPrevented(state, attacker, createContext)) continue;
+    if (!canPayAttackCosts(state, attacker, createContext)) continue;
     if (!isFirstAttackAllowed(firstAttackers, attacker)) continue;
     if (action.targetUid === undefined && (isDirectAttackPrevented(state, attacker, createContext) || hasMustAttackMonsterRestriction(state, attacker, createContext) || hasOnlyAttackMonsterRestriction(state, attacker, createContext))) continue;
     if (action.targetUid === undefined && hasSpentMonsterOnlyExtraAttack(state, attacker, createContext)) continue;
@@ -90,6 +92,7 @@ export function canCoreDuelCardAttack(state: DuelState, uid: string, handlers: C
     card &&
       isFirstAttackAllowed(firstAttackers, card) &&
       !isAttackPrevented(state, card, createContext) &&
+      canPayAttackCosts(state, card, createContext) &&
       canDuelCardAttackRule(state, uid, totalExtraAttackCount(state, card, createContext) + Math.max(0, extraAttackAllowance)),
   );
 }
@@ -105,7 +108,7 @@ export function getCoreDuelAttackTargets(state: DuelState, attackerUid: string, 
   const card = findCard(state, attackerUid);
   const createContext = handlers.createContinuousContext(state);
   const onlyTargets = onlyBeAttackedTargetUids(state, card?.controller ?? state.turnPlayer, createContext);
-  if (!card || isAttackPrevented(state, card, createContext)) return [];
+  if (!card || isAttackPrevented(state, card, createContext) || !canPayAttackCosts(state, card, createContext)) return [];
   return getDuelAttackTargetsRule(
     state,
     attackerUid,
@@ -117,7 +120,7 @@ export function getCoreDuelAttackTargets(state: DuelState, attackerUid: string, 
 export function getCoreDuelAttackableTargets(state: DuelState, attackerUid: string, handlers: CoreBattleHandlers): { targets: DuelCardInstance[]; directAttack: boolean } {
   const card = findCard(state, attackerUid);
   const createContext = handlers.createContinuousContext(state);
-  if (!card || card.location !== "monsterZone" || isAttackPrevented(state, card, createContext)) return { targets: [], directAttack: false };
+  if (!card || card.location !== "monsterZone" || isAttackPrevented(state, card, createContext) || !canPayAttackCosts(state, card, createContext)) return { targets: [], directAttack: false };
   const onlyTargets = onlyBeAttackedTargetUids(state, card.controller, createContext);
   const targets = getDuelAttackTargetsRule(
     state,
@@ -137,8 +140,9 @@ export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attack
   if (attacker && targetUid === undefined && isDirectAttackPrevented(state, attacker, createContext)) throw new Error(`${attacker.name} cannot attack directly`);
   if (attacker && targetUid === undefined && hasMustAttackMonsterRestriction(state, attacker, createContext)) throw new Error(`${attacker.name} must attack a monster`);
   if (attacker && targetUid === undefined && hasOnlyAttackMonsterRestriction(state, attacker, createContext)) throw new Error(`${attacker.name} can only attack monsters`);
-  state.battleDamage = { 0: 0, 1: 0 };
   const pendingTriggerCount = state.pendingTriggers.length;
+  if (attacker && !payAttackCosts(state, attacker, createContext)) throw new Error(`${attacker.name} cannot pay attack cost`);
+  state.battleDamage = { 0: 0, 1: 0 };
   declareDuelAttackRule(state, player, attackerUid, targetUid, {
     collectEvent: (eventName, eventCard) => handlers.collectEvent(state, eventName, eventCard),
     damagePlayer: (damagedPlayer, amount, battleCards) => {
@@ -157,7 +161,7 @@ export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attack
     getAttackValue: (card) => handlers.getAttackValue(state, card),
     getDefenseValue: (card) => handlers.getDefenseValue(state, card),
     hasPiercingDamage: (card) => handlers.hasPiercingDamage(state, card),
-  }, attacker ? totalExtraAttackCount(state, attacker, createContext) : 0, (target) => !attacker || (canSelectBattleTarget(state, attacker.controller, target, createContext) && isOnlyAttackTargetAllowed(onlyTargets, target) && canAttackMonsterTarget(state, attacker, target, createContext)), attacker ? canDirectAttackThroughTargets(state, attacker, createContext) : false);
+  }, attacker ? totalExtraAttackCount(state, attacker, createContext) : 0, (target) => !attacker || (canSelectBattleTarget(state, attacker.controller, target, createContext) && isOnlyAttackTargetAllowed(onlyTargets, target) && canAttackMonsterTarget(state, attacker, target, createContext)), attacker ? canDirectAttackThroughTargets(state, attacker, createContext) : false, { preserveAttackCostPaid: state.attackCostPaid !== 0 });
   if (state.pendingTriggers.length === pendingTriggerCount) openAttackResponseWindow(state, player);
 }
 
@@ -223,6 +227,39 @@ export function changeCoreDuelCardPosition(state: DuelState, player: PlayerId, u
 export function corePositionChangeActions(state: DuelState, player: PlayerId, handlers: CoreBattleHandlers): DuelAction[] {
   const createContext = handlers.createContinuousContext(state);
   return positionChangeActionsRule(state, player, (card) => !isPositionChangePrevented(state, card, createContext));
+}
+
+function canPayAttackCosts(state: DuelState, attacker: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  for (const { effect, source } of attackCostEffects(state, attacker, createContext)) {
+    if (effect.cost && !effect.cost(createContext(effect, source, attacker, { checkOnly: true }))) return false;
+  }
+  return true;
+}
+
+function payAttackCosts(state: DuelState, attacker: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  const costs = attackCostEffects(state, attacker, createContext);
+  if (costs.length === 0) return true;
+  state.attackCostPaid = 0;
+  for (const { effect, source } of costs) {
+    if (effect.cost && !effect.cost(createContext(effect, source, attacker, { checkOnly: true }))) return false;
+    effect.operation(createContext(effect, source, attacker, { checkOnly: false }));
+    if (state.attackCostPaid === 2) return false;
+  }
+  return true;
+}
+
+function attackCostEffects(state: DuelState, attacker: DuelCardInstance, createContext: ContinuousEffectContextFactory): Array<{ effect: DuelState["effects"][number]; source: DuelCardInstance }> {
+  const matches: Array<{ effect: DuelState["effects"][number]; source: DuelCardInstance }> = [];
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== effectAttackCost) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    const ctx = createContext(effect, source, attacker, { checkOnly: true });
+    if (!continuousEffectAppliesToCard(effect, source, attacker, ctx)) continue;
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    matches.push({ effect, source });
+  }
+  return matches;
 }
 
 function canSelectBattleTarget(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {

@@ -27,6 +27,10 @@ export interface ResolvePendingDuelBattleOptions {
 export type DuelAttackTargetPredicate = (card: DuelCardInstance) => boolean;
 export type DuelDirectAttackPredicate = (attacker: DuelCardInstance, targets: DuelCardInstance[]) => boolean;
 
+export interface DeclareDuelAttackOptions {
+  preserveAttackCostPaid?: boolean;
+}
+
 export function canDuelCardAttack(state: DuelState, uid: string, extraAttacks = 0): boolean {
   const card = findCard(state, uid);
   return Boolean(card && canAttackWithCard(state, card, extraAttacks));
@@ -47,6 +51,7 @@ export function declareDuelAttack(
   extraAttacks = 0,
   canAttackTarget: DuelAttackTargetPredicate = () => true,
   canDirectAttackThroughTargets = false,
+  options: DeclareDuelAttackOptions = {},
 ): void {
   const attacker = requireControlledCard(state, player, attackerUid, "monsterZone");
   if (state.phase !== "battle") throw new Error("Attacks can only be declared during the battle phase");
@@ -65,7 +70,7 @@ export function declareDuelAttack(
   }
 
   state.attacksDeclared.push(attacker.uid);
-  state.attackCostPaid = 0;
+  if (!options.preserveAttackCostPaid) state.attackCostPaid = 0;
   recordAttackActivity(state, player, attacker);
   state.currentAttack = createBattleAttackState(attacker.uid, target?.uid, targets);
   state.pendingBattle = { ...state.currentAttack };
