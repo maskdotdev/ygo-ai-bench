@@ -436,7 +436,7 @@ function canBeSelectedRitualMaterial(session: DuelSession, material: DuelCardIns
 }
 
 function canTrackMovedRitualMaterial(material: DuelCardInstance | undefined, target: DuelCardInstance): boolean {
-  return Boolean(material && isMonsterLike(material) && material.controller === target.controller && material.uid !== target.uid && targetAllowsMaterial(target, material, "ritual"));
+  return Boolean(material && isMonsterLike(material) && material.uid !== target.uid && targetAllowsMaterial(target, material, "ritual"));
 }
 
 function isSelectedRitualMaterialLocation(location: DuelLocation): boolean {

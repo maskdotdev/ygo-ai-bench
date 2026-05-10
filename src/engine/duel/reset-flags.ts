@@ -41,7 +41,7 @@ export function matchesMovementReset(flags: number, card: DuelCardInstance): boo
 }
 
 export function matchesLeaveReset(flags: number, card: DuelCardInstance): boolean {
-  return (flags & resetLeave) !== 0 && card.previousLocation !== card.location && !isTemporaryRemove(card);
+  return (flags & resetLeave) !== 0 && card.previousLocation !== card.location && !isTemporaryRemove(card) && !enteredField(card);
 }
 
 export function matchesDisableReset(flags: number): boolean {
@@ -74,6 +74,10 @@ export function matchesTurnReset(flags: number, owner: 0 | 1, turnPlayer: 0 | 1)
 
 function isFieldLocation(location: DuelCardInstance["location"] | undefined): boolean {
   return location === "monsterZone" || location === "spellTrapZone";
+}
+
+function enteredField(card: DuelCardInstance): boolean {
+  return !isFieldLocation(card.previousLocation) && isFieldLocation(card.location);
 }
 
 function isMonsterSpellZoneChange(previous: DuelCardInstance["location"] | undefined, current: DuelCardInstance["location"]): boolean {

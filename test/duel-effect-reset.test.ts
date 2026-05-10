@@ -153,6 +153,31 @@ describe("duel effect reset", () => {
     expect(session.state.effects).toHaveLength(0);
   });
 
+  it("keeps reset-leave effects when reset-to-field is excluded and their source enters the field", () => {
+    const session = createDuel({ seed: 128, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(source).toBeDefined();
+    registerEffect(session, {
+      id: "reset-leave-without-tofield",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "continuous",
+      range: ["hand", "monsterZone"],
+      reset: { flags: 0x1000 + 0x800000 },
+      operation() {},
+    });
+
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+
+    expect(session.state.effects).toEqual([expect.objectContaining({ id: "reset-leave-without-tofield" })]);
+  });
+
   it("removes reset-disable effects when their source becomes disabled", () => {
     const session = createDuel({ seed: 122, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

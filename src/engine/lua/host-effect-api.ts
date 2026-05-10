@@ -16,6 +16,9 @@ import type { LuaEffectRecord, LuaHostState } from "#lua/host-types.js";
 
 const { lua, lauxlib, to_luastring } = fengari;
 const allDuelLocations: DuelLocation[] = ["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"];
+const luaEffectTypeSingle = 0x1;
+const luaResetEvent = 0x1000;
+const luaResetToField = 0x1000000;
 
 export function installEffectApi(L: unknown, hostState: LuaHostState, readLuaError: (state: unknown) => string): void {
   lua.lua_newtable(L);
@@ -661,6 +664,7 @@ function luaEffectDefaultRange(card: DuelCardInstance, luaEffect: LuaEffectRecor
   if (event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEventFromCode(luaEffect.code), luaEffect.code)) return ["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"];
   if (event === "continuous" && luaEffectIsSourceOnlyContinuousEvent(luaEffect.typeFlags, triggerEventFromCode(luaEffect.code))) return ["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"];
   if (event === "continuous" && (luaEffect.typeFlags & 0x4) !== 0) return ["spellTrapZone"];
+  if (event === "continuous" && shouldSurviveLuaSingleEffectEnteringField(card, luaEffect)) return [...allDuelLocations];
   if (event === "continuous" && luaEffect.code === 313) return ["monsterZone"];
   if (event === "continuous" || event === "summonProcedure" || event === "trigger") return [card.location];
   if ((luaEffect.typeFlags & 0x10) !== 0 && card.kind === "spell") return ["hand", "spellTrapZone"];
@@ -668,6 +672,17 @@ function luaEffectDefaultRange(card: DuelCardInstance, luaEffect: LuaEffectRecor
   if ((luaEffect.typeFlags & 0x10) !== 0 && isPendulumCard(card)) return ["hand", "spellTrapZone"];
   if (card.kind === "spell" || card.kind === "trap") return ["spellTrapZone"];
   return ["monsterZone"];
+}
+
+function shouldSurviveLuaSingleEffectEnteringField(card: DuelCardInstance, luaEffect: LuaEffectRecord): boolean {
+  const resetFlags = luaEffect.reset?.flags ?? 0;
+  return (
+    (luaEffect.typeFlags & luaEffectTypeSingle) !== 0 &&
+    (resetFlags & luaResetEvent) !== 0 &&
+    (resetFlags & luaResetToField) === 0 &&
+    card.location !== "monsterZone" &&
+    card.location !== "spellTrapZone"
+  );
 }
 
 function isPendulumCard(card: DuelCardInstance): boolean {

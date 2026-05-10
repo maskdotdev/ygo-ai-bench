@@ -21,9 +21,11 @@ const luaIndestructibleValueDescriptors = new Set(["indestructible:opponent", "i
 const luaResetTurnSet = 0x20000;
 const luaResetPhase = 0x40000000;
 const luaPhaseEnd = 0x200;
+const luaPhaseEndResetFlags = luaResetPhase | luaPhaseEnd;
 const luaResetsStandardPhaseEnd = 0x41fe1200;
 const luaTemporaryRestrictionResetFlags = luaResetsStandardPhaseEnd & ~luaResetTurnSet;
 const luaTemporaryPositionLockResetFlags = luaResetPhase | luaPhaseEnd;
+const luaStaticPlayerPhaseLockCodes = new Set([183, 184, 185, 186, 187, 189]);
 
 export interface LuaSnapshotRestoreResult {
   session: DuelSession;
@@ -223,6 +225,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
       effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous" ||
       effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
       isStaticSingleCardLuaRestriction(effect) ||
+      isStaticPlayerPhaseLock(effect) ||
       (effect.code === 102 && effect.value !== undefined && effect.value !== 0 && effect.targetRange === undefined) ||
       ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 132) && effect.value !== undefined))
   );
@@ -247,6 +250,18 @@ function isStaticSingleCardLuaRestriction(effect: SerializedDuelEffect): boolean
   if (effect.targetRange !== undefined || effect.sourceUid === undefined || effect.range.length !== 1) return false;
   if (effect.code === 14) return effect.reset?.flags === luaTemporaryPositionLockResetFlags;
   return effect.code !== undefined && luaStaticSingleCardRestrictionCodes.has(effect.code) && effect.reset?.flags === luaTemporaryRestrictionResetFlags;
+}
+
+function isStaticPlayerPhaseLock(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.code !== undefined &&
+    luaStaticPlayerPhaseLockCodes.has(effect.code) &&
+    effect.targetRange !== undefined &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    effect.value === undefined &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined
+  );
 }
 
 function restoredLuaOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
