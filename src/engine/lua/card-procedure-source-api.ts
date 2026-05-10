@@ -393,9 +393,13 @@ export const cardProcedureSource = `${fusionProcedureSource}
     end
     function Pendulum.PlayerCanGainAdditionalPendulumSummon(player,effect_flag)
       return Duel.IsTurnPlayer(player) and not Duel.IsPhase(PHASE_END)
+        and not Duel.HasFlagEffect(player,CARD_ZEFRAATH)
+        and not (effect_flag and Duel.HasFlagEffect(player,effect_flag))
     end
     function Pendulum.GrantAdditionalPendulumSummon(handler,condition,tp,locations,desc1,desc2,effect_flag)
       local player=tp or (handler and handler:GetControler()) or 0
+      if effect_flag and not Pendulum.PlayerCanGainAdditionalPendulumSummon(player,effect_flag) then return end
+      if effect_flag then Duel.RegisterFlagEffect(player,effect_flag,RESET_PHASE|PHASE_END,0,1) end
       Duel.GrantAdditionalPendulumSummon(player,locations or (LOCATION_HAND|LOCATION_EXTRA),1,condition)
     end
 ${spiritProcedureSource}

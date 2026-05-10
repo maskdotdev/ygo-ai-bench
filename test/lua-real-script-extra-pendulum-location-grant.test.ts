@@ -32,15 +32,16 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ex
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 583, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
-    loadDecks(session, { 0: { main: [extraPendulumCode, lowScaleCode, highScaleCode, handCandidateCode], extra: [extraCandidateCode] }, 1: { main: [] } });
+    loadDecks(session, { 0: { main: [extraPendulumCode, extraPendulumCode, lowScaleCode, highScaleCode, handCandidateCode], extra: [extraCandidateCode] }, 1: { main: [] } });
     startDuel(session);
 
-    const extraPendulum = session.state.cards.find((card) => card.code === extraPendulumCode);
+    const [extraPendulum, secondExtraPendulum] = session.state.cards.filter((card) => card.code === extraPendulumCode);
     const lowScale = session.state.cards.find((card) => card.code === lowScaleCode);
     const highScale = session.state.cards.find((card) => card.code === highScaleCode);
     const handCandidate = session.state.cards.find((card) => card.code === handCandidateCode);
     const extraCandidate = session.state.cards.find((card) => card.code === extraCandidateCode);
     expect(extraPendulum).toBeDefined();
+    expect(secondExtraPendulum).toBeDefined();
     expect(lowScale).toBeDefined();
     expect(highScale).toBeDefined();
     expect(handCandidate).toBeDefined();
@@ -49,6 +50,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ex
     moveDuelCard(session.state, lowScale!.uid, "spellTrapZone", 0);
     moveDuelCard(session.state, highScale!.uid, "spellTrapZone", 0);
     moveDuelCard(session.state, extraPendulum!.uid, "hand", 0);
+    moveDuelCard(session.state, secondExtraPendulum!.uid, "hand", 0);
     moveDuelCard(session.state, handCandidate!.uid, "hand", 0);
     moveDuelCard(session.state, extraCandidate!.uid, "extraDeck", 0);
     session.state.players[0].pendulumSummonAvailable = false;
@@ -73,6 +75,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ex
     const restoredAfterGrant = restoreDuelWithLuaScripts(serializeDuel(restored.session), workspace, reader);
     expect(restoredAfterGrant.restoreComplete, restoredAfterGrant.incompleteReasons.join("; ")).toBe(true);
     assertLegalActions(restoredAfterGrant);
+    expect(restoredAfterGrant.session.state.flagEffects).toEqual(expect.arrayContaining([expect.objectContaining({ ownerType: "player", ownerId: "0", code: Number(extraPendulumCode) })]));
+    expect(findExtraPendulumActivation(restoredAfterGrant.session, getLuaRestoreLegalActions(restoredAfterGrant, 0), secondExtraPendulum!.uid)).toBeUndefined();
     const pendulumSummon = findPendulumSummon(getLuaRestoreLegalActions(restoredAfterGrant, 0), extraCandidate!.uid);
     expect(pendulumSummon, JSON.stringify(getLuaRestoreLegalActions(restoredAfterGrant, 0), null, 2)).toBeDefined();
     expect(pendulumSummon!.summonUids).toContain(extraCandidate!.uid);
