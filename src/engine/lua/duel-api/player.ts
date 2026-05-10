@@ -13,6 +13,7 @@ import { canRemoveDuelCounters, getDuelCardCounter, removeDuelCardCounter, remov
 import { getDuelFlagEffectCount } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
+import { cardTypeFlags, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
@@ -344,9 +345,9 @@ function canPendulumSummon(session: DuelSession, player: PlayerId): boolean {
 }
 
 function canPendulumSummonCard(session: DuelSession, player: PlayerId, card: DuelCardInstance, lowScale: number, highScale: number): boolean {
-  if (card.controller !== player || !isPendulumMonster(card)) return false;
+  if (card.controller !== player || !isPendulumMonster(session, card)) return false;
   if (card.location !== "hand" && !(card.location === "extraDeck" && card.faceUp)) return false;
-  const level = card.data.level ?? 0;
+  const level = currentLevel(card, session.state);
   if (level <= lowScale || level >= highScale) return false;
   return canSpecialSummonDuelCard(session.state, card.uid, player, luaSummonTypePendulum);
 }
@@ -361,11 +362,11 @@ function pendulumScales(session: DuelSession, player: PlayerId): [number, number
 }
 
 function pendulumZoneCard(session: DuelSession, player: PlayerId, sequence: number): DuelCardInstance | undefined {
-  return session.state.cards.find((card) => card.controller === player && card.location === "spellTrapZone" && card.sequence === sequence && isPendulumCard(card));
+  return session.state.cards.find((card) => card.controller === player && card.location === "spellTrapZone" && card.sequence === sequence && isPendulumCard(session, card));
 }
 
 function pendulumScale(card: DuelCardInstance): number {
-  return card.data.leftScale ?? card.data.rightScale ?? 0;
+  return card.data.leftScale === undefined ? currentRightScale(card) : currentLeftScale(card);
 }
 
 function syntheticSpecialSummonCard(L: unknown, player: PlayerId): DuelCardInstance {
@@ -475,12 +476,12 @@ function isMonsterLike(kind: string): boolean {
   return kind === "monster" || kind === "extra";
 }
 
-function isPendulumMonster(card: DuelCardInstance): boolean {
-  return isMonsterLike(card.kind) && isPendulumCard(card);
+function isPendulumMonster(session: DuelSession, card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card, session.state) & 0x1000001) === 0x1000001;
 }
 
-function isPendulumCard(card: DuelCardInstance): boolean {
-  return ((card.data.typeFlags ?? 0) & 0x1000000) !== 0;
+function isPendulumCard(session: DuelSession, card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card, session.state) & 0x1000000) !== 0;
 }
 
 function luaEffectId(effect: DuelEffectDefinition): number | undefined {

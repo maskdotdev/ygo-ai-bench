@@ -64,6 +64,14 @@ export function currentLink(card: DuelCardInstance | undefined): number {
   return cardLink(card) + (card?.linkModifier ?? 0);
 }
 
+export function currentLeftScale(card: DuelCardInstance | undefined): number {
+  return (card?.data.leftScale ?? 0) + (card?.scaleModifier ?? 0);
+}
+
+export function currentRightScale(card: DuelCardInstance | undefined): number {
+  return (card?.data.rightScale ?? 0) + (card?.scaleModifier ?? 0);
+}
+
 export function currentRace(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (!card) return 0;
   if (card.assumedProperties?.[6] !== undefined) return card.assumedProperties[6];

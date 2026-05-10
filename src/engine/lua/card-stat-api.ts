@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { collectDuelTriggerEffects } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
-import { cardLink, cardMainTypeFlags, cardRank, cardTypeFlags, currentAttack, currentAttribute, currentBaseAttack, currentBaseDefense, currentDefense, currentLevel, currentLink, currentRace, currentRank, printedCardTypeFlags } from "#duel/card-stats.js";
+import { cardLink, cardMainTypeFlags, cardRank, cardTypeFlags, currentAttack, currentAttribute, currentBaseAttack, currentBaseDefense, currentDefense, currentLeftScale, currentLevel, currentLink, currentRace, currentRank, currentRightScale, printedCardTypeFlags } from "#duel/card-stats.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
@@ -14,7 +14,7 @@ const { lua, to_luastring } = fengari;
 
 type LuaCardStatHostState<EffectRecord extends LuaCardApiEffectRecord> = LuaCardApiState<EffectRecord> & LuaMoveImmunityHostState<EffectRecord> & LuaOperationTimingBoundaryHostState;
 
-export { cardLink, cardMainTypeFlags, cardRank, cardTypeFlags, currentAttack, currentAttribute, currentDefense, currentLevel, currentRace, currentRank, printedCardTypeFlags } from "#duel/card-stats.js";
+export { cardLink, cardMainTypeFlags, cardRank, cardTypeFlags, currentAttack, currentAttribute, currentDefense, currentLeftScale, currentLevel, currentRace, currentRank, currentRightScale, printedCardTypeFlags } from "#duel/card-stats.js";
 
 export function installCardStatApi<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardStatHostState<EffectRecord>): void {
   lua.lua_pushcfunction(L, (state: unknown) => pushAssumeProperty(state, session));
@@ -338,14 +338,6 @@ function pushUpdateScale<EffectRecord extends LuaCardApiEffectRecord>(L: unknown
   card.scaleModifier = (card.scaleModifier ?? 0) + amount;
   lua.lua_pushinteger(L, currentLeftScale(card) - before);
   return 1;
-}
-
-function currentLeftScale(card: DuelCardInstance | undefined): number {
-  return (card?.data.leftScale ?? 0) + (card?.scaleModifier ?? 0);
-}
-
-function currentRightScale(card: DuelCardInstance | undefined): number {
-  return (card?.data.rightScale ?? 0) + (card?.scaleModifier ?? 0);
 }
 
 function isPendulumCardData(card: DuelCardInstance | undefined): card is DuelCardInstance {

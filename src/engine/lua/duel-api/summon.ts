@@ -31,7 +31,7 @@ import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelReason } from "#duel/reasons.js";
 import { tributeSetDuelCard } from "#duel/summon.js";
-import { cardTypeFlags, currentLevel } from "#duel/card-stats.js";
+import { cardTypeFlags, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
 import { cardCombinations, materialCodesMatch, type MaterialCodeMatchOptions } from "#duel/summon-materials.js";
 import { sameStringMembers } from "#duel/string-list-match.js";
 import { setSpellTrap as setCoreSpellTrap } from "#duel/spell-trap.js";
@@ -684,7 +684,7 @@ function pendulumZoneCard(session: DuelSession, player: PlayerId, sequence: numb
 }
 
 function pendulumScale(card: DuelCardInstance): number {
-  return card.data.leftScale ?? card.data.rightScale ?? 0;
+  return card.data.leftScale === undefined ? currentRightScale(card) : currentLeftScale(card);
 }
 
 function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCardInstance, kind: MaterialUseKind): boolean {

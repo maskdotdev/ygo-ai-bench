@@ -1,5 +1,5 @@
-import { isDuelMonsterLike } from "#duel/card-predicates.js";
 import { findCard, getCards, pushDuelLog } from "#duel/card-state.js";
+import { cardTypeFlags, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelAction, DuelCardInstance, DuelState, PlayerId } from "#duel/types.js";
 
@@ -52,14 +52,14 @@ function pendulumSummonCandidates(
   canSummon: (uid: string) => boolean,
 ): DuelCardInstance[] {
   return state.cards
-    .filter((card) => canPendulumSummonCard(player, card, lowScale, highScale, canSummon))
+    .filter((card) => canPendulumSummonCard(state, player, card, lowScale, highScale, canSummon))
     .sort((a, b) => locationSort(a.location) - locationSort(b.location) || a.sequence - b.sequence);
 }
 
-function canPendulumSummonCard(player: PlayerId, card: DuelCardInstance, lowScale: number, highScale: number, canSummon: (uid: string) => boolean): boolean {
-  if (card.controller !== player || !isPendulumMonster(card)) return false;
+function canPendulumSummonCard(state: DuelState, player: PlayerId, card: DuelCardInstance, lowScale: number, highScale: number, canSummon: (uid: string) => boolean): boolean {
+  if (card.controller !== player || !isPendulumMonster(state, card)) return false;
   if (card.location !== "hand" && !(card.location === "extraDeck" && card.faceUp)) return false;
-  const level = card.data.level ?? 0;
+  const level = currentLevel(card, state);
   return level > lowScale && level < highScale && canSummon(card.uid);
 }
 
@@ -73,19 +73,19 @@ function pendulumScales(state: DuelState, player: PlayerId): [number, number] | 
 }
 
 function pendulumZoneCard(state: DuelState, player: PlayerId, sequence: number): DuelCardInstance | undefined {
-  return state.cards.find((card) => card.controller === player && card.location === "spellTrapZone" && card.sequence === sequence && isPendulumCard(card));
+  return state.cards.find((card) => card.controller === player && card.location === "spellTrapZone" && card.sequence === sequence && isPendulumCard(state, card));
 }
 
 function pendulumScale(card: DuelCardInstance): number {
-  return card.data.leftScale ?? card.data.rightScale ?? 0;
+  return card.data.leftScale === undefined ? currentRightScale(card) : currentLeftScale(card);
 }
 
-function isPendulumMonster(card: DuelCardInstance): boolean {
-  return isDuelMonsterLike(card) && isPendulumCard(card);
+function isPendulumMonster(state: DuelState, card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card, state) & 0x1000001) === 0x1000001;
 }
 
-function isPendulumCard(card: DuelCardInstance): boolean {
-  return ((card.data.typeFlags ?? 0) & 0x1000000) !== 0;
+function isPendulumCard(state: DuelState, card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card, state) & 0x1000000) !== 0;
 }
 
 function locationSort(location: DuelCardInstance["location"]): number {
