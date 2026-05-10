@@ -3,6 +3,9 @@ import { luaNumericConstants } from "#lua/basic-constant-data.js";
 import type { DuelCardInstance } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
+const ATTRIBUTE_CONSTANT_EXPRESSION = String.raw`ATTRIBUTE_[A-Z0-9_]+(?:\s*\|\s*ATTRIBUTE_[A-Z0-9_]+)*`;
+const RACE_CONSTANT_EXPRESSION = String.raw`RACES?_[A-Z0-9_]+(?:\s*\|\s*RACES?_[A-Z0-9_]+)*`;
+const TYPE_CONSTANT_EXPRESSION = String.raw`TYPE_[A-Z0-9_]+(?:\s*\|\s*TYPE_[A-Z0-9_]+)*`;
 
 export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardInstance, source?: string): void {
   const synchroTunerMin = readProcedureNumberField(L, card, "synchro_materials", 2);
@@ -46,75 +49,76 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
 }
 
 function readXyzProcedureRaceFilter(source: string | undefined): number | undefined {
-  const match = source?.match(/Xyz\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsRace\s*,\s*(RACE_[A-Z0-9_]+)\s*\)/);
-  if (!match?.[1]) return undefined;
-  return luaNumericConstants[match[1]];
+  return readAddProcedureConstantFilter(source, "Xyz", "Card.IsRace", RACE_CONSTANT_EXPRESSION);
 }
 
 function readSynchroProcedureTunerAttributeFilter(source: string | undefined): number | undefined {
-  const match = source?.match(/Synchro\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsAttribute\s*,\s*(ATTRIBUTE_[A-Z0-9_]+)\s*\)/);
-  if (!match?.[1]) return undefined;
-  return luaNumericConstants[match[1]];
+  return readAddProcedureConstantFilter(source, "Synchro", "Card.IsAttribute", ATTRIBUTE_CONSTANT_EXPRESSION);
 }
 
 function readSynchroProcedureNonTunerAttributeFilter(source: string | undefined): number | undefined {
-  const match = source?.match(/Synchro\.NonTunerEx\(\s*Card\.IsAttribute\s*,\s*(ATTRIBUTE_[A-Z0-9_]+)\s*\)/);
-  if (!match?.[1]) return undefined;
-  return luaNumericConstants[match[1]];
+  return readSynchroNonTunerConstantFilter(source, "Card.IsAttribute", ATTRIBUTE_CONSTANT_EXPRESSION);
 }
 
 function readSynchroProcedureTunerRaceFilter(source: string | undefined): number | undefined {
-  const match = source?.match(/Synchro\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsRace\s*,\s*(RACE_[A-Z0-9_]+)\s*\)/);
-  if (!match?.[1]) return undefined;
-  return luaNumericConstants[match[1]];
+  return readAddProcedureConstantFilter(source, "Synchro", "Card.IsRace", RACE_CONSTANT_EXPRESSION);
 }
 
 function readSynchroProcedureNonTunerRaceFilter(source: string | undefined): number | undefined {
-  const match = source?.match(/Synchro\.NonTunerEx\(\s*Card\.IsRace\s*,\s*(RACE_[A-Z0-9_]+)\s*\)/);
-  if (!match?.[1]) return undefined;
-  return luaNumericConstants[match[1]];
+  return readSynchroNonTunerConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION);
 }
 
 function readSynchroProcedureTunerTypeFilter(source: string | undefined): number | undefined {
-  const match = source?.match(/Synchro\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsType\s*,\s*(TYPE_[A-Z0-9_]+)\s*\)/);
-  if (!match?.[1]) return undefined;
-  return luaNumericConstants[match[1]];
+  return readAddProcedureConstantFilter(source, "Synchro", "Card.IsType", TYPE_CONSTANT_EXPRESSION);
 }
 
 function readSynchroProcedureNonTunerTypeFilter(source: string | undefined): number | undefined {
-  const match = source?.match(/Synchro\.NonTunerEx\(\s*Card\.IsType\s*,\s*(TYPE_[A-Z0-9_]+)\s*\)/);
-  if (!match?.[1]) return undefined;
-  return luaNumericConstants[match[1]];
+  return readSynchroNonTunerConstantFilter(source, "Card.IsType", TYPE_CONSTANT_EXPRESSION);
 }
 
 function readXyzProcedureAttributeFilter(source: string | undefined): number | undefined {
-  const match = source?.match(/Xyz\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsAttribute\s*,\s*(ATTRIBUTE_[A-Z0-9_]+)\s*\)/);
-  if (!match?.[1]) return undefined;
-  return luaNumericConstants[match[1]];
+  return readAddProcedureConstantFilter(source, "Xyz", "Card.IsAttribute", ATTRIBUTE_CONSTANT_EXPRESSION);
 }
 
 function readXyzProcedureTypeFilter(source: string | undefined): number | undefined {
-  const match = source?.match(/Xyz\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsType\s*,\s*(TYPE_[A-Z0-9_]+)\s*\)/);
-  if (!match?.[1]) return undefined;
-  return luaNumericConstants[match[1]];
+  return readAddProcedureConstantFilter(source, "Xyz", "Card.IsType", TYPE_CONSTANT_EXPRESSION);
 }
 
 function readLinkProcedureTypeFilter(source: string | undefined): number | undefined {
-  const match = source?.match(/Link\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsType\s*,\s*(TYPE_[A-Z0-9_]+)\s*\)/);
-  if (!match?.[1]) return undefined;
-  return luaNumericConstants[match[1]];
+  return readAddProcedureConstantFilter(source, "Link", "Card.IsType", TYPE_CONSTANT_EXPRESSION);
 }
 
 function readLinkProcedureRaceFilter(source: string | undefined): number | undefined {
-  const match = source?.match(/Link\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsRace\s*,\s*(RACE_[A-Z0-9_]+)\s*\)/);
-  if (!match?.[1]) return undefined;
-  return luaNumericConstants[match[1]];
+  return readAddProcedureConstantFilter(source, "Link", "Card.IsRace", RACE_CONSTANT_EXPRESSION);
 }
 
 function readLinkProcedureAttributeFilter(source: string | undefined): number | undefined {
-  const match = source?.match(/Link\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsAttribute\s*,\s*(ATTRIBUTE_[A-Z0-9_]+)\s*\)/);
-  if (!match?.[1]) return undefined;
-  return luaNumericConstants[match[1]];
+  return readAddProcedureConstantFilter(source, "Link", "Card.IsAttribute", ATTRIBUTE_CONSTANT_EXPRESSION);
+}
+
+function readAddProcedureConstantFilter(source: string | undefined, procedure: "Link" | "Synchro" | "Xyz", predicate: string, constantExpression: string): number | undefined {
+  const match = source?.match(new RegExp(String.raw`${procedure}\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*${escapeRegExp(predicate)}\s*,\s*(${constantExpression})\s*\)`));
+  return readLuaConstantExpression(match?.[1]);
+}
+
+function readSynchroNonTunerConstantFilter(source: string | undefined, predicate: string, constantExpression: string): number | undefined {
+  const match = source?.match(new RegExp(String.raw`Synchro\.NonTunerEx\(\s*${escapeRegExp(predicate)}\s*,\s*(${constantExpression})\s*\)`));
+  return readLuaConstantExpression(match?.[1]);
+}
+
+function readLuaConstantExpression(expression: string | undefined): number | undefined {
+  if (!expression) return undefined;
+  let value = 0;
+  for (const constant of expression.split("|").map((part) => part.trim())) {
+    const numeric = luaNumericConstants[constant];
+    if (numeric === undefined) return undefined;
+    value |= numeric;
+  }
+  return value;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function readProcedureNumberField(L: unknown, card: DuelCardInstance, fieldName: string, index: number): number | undefined {
