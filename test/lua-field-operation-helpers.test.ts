@@ -167,11 +167,11 @@ describe("Lua field operation helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("change group 2");
     expect(host.messages).toContain("change operated 2");
-    expect(host.messages).toContain("change repeat blocked 0");
-    expect(host.messages).toContain("change repeat operated 0");
+    expect(host.messages).toContain("change repeat blocked 1");
+    expect(host.messages).toContain("change repeat operated 1");
     expect(host.messages).toContain("change invalid 0");
     expect(host.messages).toContain("change invalid operated 0");
-    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ position: "faceUpDefense", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ position: "faceUpAttack", faceUp: true });
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ position: "faceUpDefense", faceUp: true });
     expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ position: "faceUpAttack", faceUp: true });
   });
@@ -253,7 +253,7 @@ describe("Lua field operation helpers", () => {
     expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "positionChanged", eventCode: 1016 }), expect.objectContaining({ eventName: "damageDealt", eventCode: 1111 })]));
   });
 
-  it("blocks Lua position changes for cards Summoned or Set this turn", () => {
+  it("allows Lua effect position changes for cards Summoned or Set this turn", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Same Turn Summoned", kind: "monster" },
       { code: "200", name: "Same Turn Set", kind: "monster" },
@@ -286,7 +286,7 @@ describe("Lua field operation helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toEqual(["change same turn summoned 0", "change same turn set 0", "change same turn operated 0"]);
+    expect(host.messages).toEqual(["change same turn summoned 1", "change same turn set 1", "change same turn operated 1"]);
   });
 
   it("allows Lua position changes after same-turn lockouts reset", () => {
@@ -380,7 +380,7 @@ describe("Lua field operation helpers", () => {
     expect(defense).toMatchObject({ position: "faceUpAttack", faceUp: true });
   });
 
-  it("blocks Rush position toggles for cards Summoned or Set this turn", () => {
+  it("blocks manual Rush position toggles for cards Summoned or Set this turn", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Rush Same Turn Summoned", kind: "monster" },
       { code: "200", name: "Rush Same Turn Set", kind: "monster" },

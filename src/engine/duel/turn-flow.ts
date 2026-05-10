@@ -6,7 +6,7 @@ import { clearEndedDuelPendingState } from "#duel/end-state.js";
 import { pruneDuelFlagEffectsAfterPhase } from "#duel/flags.js";
 import { otherPlayer } from "#duel/player-id.js";
 import { duelReason } from "#duel/reasons.js";
-import { phaseEventCode, phaseStartEventCode } from "#duel/event-codes.js";
+import { phaseEventCode, phaseStartEventCode, phaseTimingEventCode } from "#duel/event-codes.js";
 import type { DuelEventName, DuelPhase, DuelState, PlayerId } from "#duel/types.js";
 
 export interface DuelTurnFlowHandlers {
@@ -46,6 +46,7 @@ export function changeDuelPhase(state: DuelState, player: PlayerId, phase: DuelP
   if (state.turnPlayer !== player) throw new Error("Only the turn player can change phases");
   if (phaseOrder.indexOf(phase) <= phaseOrder.indexOf(state.phase)) throw new Error(`Cannot move from ${state.phase} to ${phase}`);
   if (phase !== nextAvailableDuelPhase(state, player, handlers.canEnterPhase)) throw new Error(`Cannot move from ${state.phase} to ${phase}`);
+  if (state.phase === "battle") handlers.collectEvent("phaseBattle", phaseTimingEventCode("battle"));
   consumeSkippedPhases(state, player, phase);
   state.phase = phase;
   state.phaseActivity = false;

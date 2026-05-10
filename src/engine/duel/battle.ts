@@ -206,14 +206,21 @@ export function cancelReplayAttack(state: DuelState, player: PlayerId, attackerU
 }
 
 export function canChangeDuelCardPosition(state: DuelState, uid: string, position: CardPosition): boolean {
+  if (!canEffectChangeDuelCardPosition(state, uid, position)) return false;
+  const card = findCard(state, uid);
+  if (!card) return false;
+  if (state.positionsChanged.includes(card.uid)) return false;
+  if (state.attacksDeclared.includes(card.uid)) return false;
+  if (wasSummonedOrSetThisTurn(state, card)) return false;
+  return true;
+}
+
+export function canEffectChangeDuelCardPosition(state: DuelState, uid: string, position: CardPosition): boolean {
   const card = findCard(state, uid);
   if (!card || card.location !== "monsterZone") return false;
   if (!isMonsterLike(card)) return false;
   if (!isMonsterPosition(position)) return false;
   if (card.position === position) return false;
-  if (state.positionsChanged.includes(card.uid)) return false;
-  if (state.attacksDeclared.includes(card.uid)) return false;
-  if (wasSummonedOrSetThisTurn(state, card)) return false;
   return true;
 }
 
@@ -229,6 +236,17 @@ export function getDuelAttackCostPaid(state: DuelState): number {
 export function changeDuelCardPosition(state: DuelState, player: PlayerId, uid: string, position: CardPosition, collectEvent: DuelBattleCallbacks["collectEvent"]): DuelCardInstance {
   const card = requireControlledCard(state, player, uid, "monsterZone");
   if (!canChangeDuelCardPosition(state, uid, position)) throw new Error(`${card.name} cannot change to ${position}`);
+  return applyDuelCardPositionChange(state, player, uid, position, collectEvent);
+}
+
+export function changeDuelCardPositionByEffect(state: DuelState, player: PlayerId, uid: string, position: CardPosition, collectEvent: DuelBattleCallbacks["collectEvent"]): DuelCardInstance {
+  const card = requireControlledCard(state, player, uid, "monsterZone");
+  if (!canEffectChangeDuelCardPosition(state, uid, position)) throw new Error(`${card.name} cannot change to ${position}`);
+  return applyDuelCardPositionChange(state, player, uid, position, collectEvent);
+}
+
+function applyDuelCardPositionChange(state: DuelState, player: PlayerId, uid: string, position: CardPosition, collectEvent: DuelBattleCallbacks["collectEvent"]): DuelCardInstance {
+  const card = requireControlledCard(state, player, uid, "monsterZone");
   card.previousLocation = card.location;
   card.previousController = card.controller;
   card.previousSequence = card.sequence;

@@ -94,6 +94,10 @@ export function phaseEventCode(phase: DuelPhase): number {
   return 0x1000 | phaseMask(phase);
 }
 
+export function phaseTimingEventCode(phase: DuelPhase): number {
+  return 0x1000 | phaseMask(phase);
+}
+
 export function phaseStartEventCode(phase: DuelPhase): number {
   if (phase === "battle") return 0x2008;
   return 0x2000 | phaseMask(phase);

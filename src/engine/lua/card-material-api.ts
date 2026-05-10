@@ -113,13 +113,13 @@ function canTurnSet(state: DuelState, card: DuelCardInstance): boolean {
   if (card.location !== "monsterZone" || !card.faceUp) return false;
   if (card.kind !== "monster" && card.kind !== "extra") return false;
   if ((cardTypeFlags(card) & 0x4000000) !== 0) return false;
-  return canChangeDuelCardPosition(state, card.uid, "faceDownDefense");
+  return canChangeDuelCardPosition(state, card.uid, "faceDownDefense", "effect");
 }
 
 function canChangePosition(state: DuelState, card: DuelCardInstance, requested: CardPosition | undefined): boolean {
-  if (requested) return canChangeDuelCardPosition(state, card.uid, requested);
-  if (card.position === "faceUpAttack") return canChangeDuelCardPosition(state, card.uid, "faceUpDefense");
-  if (card.position === "faceUpDefense" || card.position === "faceDownDefense") return canChangeDuelCardPosition(state, card.uid, "faceUpAttack");
+  if (requested) return canChangeDuelCardPosition(state, card.uid, requested, "effect");
+  if (card.position === "faceUpAttack") return canChangeDuelCardPosition(state, card.uid, "faceUpDefense", "effect");
+  if (card.position === "faceUpDefense" || card.position === "faceDownDefense") return canChangeDuelCardPosition(state, card.uid, "faceUpAttack", "effect");
   return false;
 }
 

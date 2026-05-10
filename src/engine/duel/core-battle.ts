@@ -1,8 +1,10 @@
 import { findCard } from "#duel/card-state.js";
 import {
   attackActions,
+  canEffectChangeDuelCardPosition as canEffectChangeDuelCardPositionRule,
   canChangeDuelCardPosition as canChangeDuelCardPositionRule,
   canDuelCardAttack as canDuelCardAttackRule,
+  changeDuelCardPositionByEffect as changeDuelCardPositionByEffectRule,
   changeDuelCardPosition as changeDuelCardPositionRule,
   declareDuelAttack as declareDuelAttackRule,
   getDuelAttackTargets as getDuelAttackTargetsRule,
@@ -198,9 +200,11 @@ export function negateCoreDuelAttack(state: DuelState): boolean {
 export function canCoreChangeDuelCardPosition(state: DuelState, uid: string, position: CardPosition, handlers: CoreBattleHandlers, source: PositionChangeSource = "effect"): boolean {
   const card = findCard(state, uid);
   const createContext = handlers.createContinuousContext(state);
+  const ruleAllowsPositionChange =
+    source === "effect" ? canEffectChangeDuelCardPositionRule(state, uid, position) : canChangeDuelCardPositionRule(state, uid, position);
   return Boolean(
     card
-      && canChangeDuelCardPositionRule(state, uid, position)
+      && ruleAllowsPositionChange
       && !isPositionChangePrevented(state, card, createContext)
       && (source !== "effect" || !isEffectPositionChangePrevented(state, card, createContext))
       && (position !== "faceDownDefense" || !isTurnSetPrevented(state, card, createContext)),
@@ -212,7 +216,8 @@ export function changeCoreDuelCardPosition(state: DuelState, player: PlayerId, u
     const card = findCard(state, uid);
     throw new Error(`${card?.name ?? uid} cannot change position`);
   }
-  return changeDuelCardPositionRule(state, player, uid, position, (eventName, eventCard) => handlers.collectEvent(state, eventName, eventCard));
+  const changePosition = source === "effect" ? changeDuelCardPositionByEffectRule : changeDuelCardPositionRule;
+  return changePosition(state, player, uid, position, (eventName, eventCard) => handlers.collectEvent(state, eventName, eventCard));
 }
 
 export function corePositionChangeActions(state: DuelState, player: PlayerId, handlers: CoreBattleHandlers): DuelAction[] {

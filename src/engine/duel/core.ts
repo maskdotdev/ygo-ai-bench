@@ -670,7 +670,7 @@ export function negateDuelAttack(state: DuelState, reasonPlayer: PlayerId = stat
   return disabled;
 }
 
-export function canChangeDuelCardPosition(state: DuelState, uid: string, position: CardPosition, source: "effect" | "manual" = "effect"): boolean {
+export function canChangeDuelCardPosition(state: DuelState, uid: string, position: CardPosition, source: "effect" | "manual" = "manual"): boolean {
   return canCoreChangeDuelCardPosition(state, uid, position, coreBattleHandlers, source);
 }
 

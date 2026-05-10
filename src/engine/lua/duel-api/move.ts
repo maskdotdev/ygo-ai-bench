@@ -393,13 +393,13 @@ function pushChangeToFaceupAttackOrFacedownDefense(L: unknown, session: DuelSess
   const uid = readCardUid(L, 1);
   const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
   const nextPosition = card ? faceupAttackOrFacedownDefensePosition(card) : undefined;
-  if (!uid || !card || !nextPosition || !canChangeDuelCardPosition(session.state, uid, nextPosition) || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) {
+  if (!uid || !card || !nextPosition || !canChangeDuelCardPosition(session.state, uid, nextPosition, "manual") || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) {
     setOperatedUids(hostState, []);
     return 0;
   }
   try {
     beginLuaOperationMoveStep(session, hostState);
-    changeDuelCardPosition(session.state, card.controller, uid, nextPosition);
+    changeDuelCardPosition(session.state, card.controller, uid, nextPosition, "manual");
     setOperatedUids(hostState, [uid]);
     finishLuaOperationMoveStep(hostState, true);
   } catch {

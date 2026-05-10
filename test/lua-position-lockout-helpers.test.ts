@@ -29,7 +29,7 @@ function setupRestoredSameTurnLockout(seed: number): DuelSession {
 }
 
 describe("Lua position lockout helpers", () => {
-  it("rejects restored same-turn position changes", () => {
+  it("allows restored same-turn Lua effect position changes", () => {
     const restored = setupRestoredSameTurnLockout(200);
     const host = createLuaScriptHost(restored);
     const result = host.loadScript(
@@ -44,7 +44,7 @@ describe("Lua position lockout helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toEqual(["restored change summoned 0", "restored change set 0", "restored change operated 0"]);
+    expect(host.messages).toEqual(["restored change summoned 1", "restored change set 1", "restored change operated 1"]);
   });
 
   it("rejects restored same-turn Rush position toggles", () => {
@@ -87,7 +87,7 @@ describe("Lua position lockout helpers", () => {
     expect(host.messages).toEqual(["restored reset change summoned 1", "restored reset change set 1", "restored reset change operated 1"]);
   });
 
-  it("rejects restored same-turn Lua turn-set operations", () => {
+  it("allows restored same-turn Lua effect turn-set operations", () => {
     const restored = setupRestoredSameTurnLockout(204);
     const host = createLuaScriptHost(restored);
     const result = host.loadScript(
@@ -100,7 +100,7 @@ describe("Lua position lockout helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toEqual(["restored turn set blocked 0", "restored turn set operated 0"]);
+    expect(host.messages).toEqual(["restored turn set blocked 1", "restored turn set operated 1"]);
   });
 
   it("allows restored Lua turn-set operations after the turn cycles", () => {
