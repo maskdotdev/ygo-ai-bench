@@ -30,13 +30,17 @@ export const cardProcedureSource = `${fusionProcedureSource}
     local function ritual_material_level(material,ritual_c)
       return material:GetRitualLevel(ritual_c)
     end
-    local function ritual_material_pool(tp,ritual_c,params,e)
+    local function ritual_material_pool(tp,ritual_c,params,e,eg,ep,ev,re,r,rp,chk)
       local mg=Duel.GetRitualMaterial(tp,ritual_c)
+      if params.extrafil then
+        local extra=params.extrafil(e,tp,eg,ep,ev,re,r,rp,chk)
+        if extra then mg:Merge(extra) end
+      end
       if params.matfilter then mg=mg:Filter(params.matfilter,nil,e,tp,ritual_c) end
       return mg
     end
-    local function ritual_has_materials(tp,ritual_c,params,e)
-      local mg=ritual_material_pool(tp,ritual_c,params,e)
+    local function ritual_has_materials(tp,ritual_c,params,e,eg,ep,ev,re,r,rp,chk)
+      local mg=ritual_material_pool(tp,ritual_c,params,e,eg,ep,ev,re,r,rp,chk)
       local lv=ritual_required_level(params,ritual_c)
       if not mg or lv<=0 then return false end
       if params.lvtype==RITPROC_GREATER then
@@ -44,11 +48,11 @@ export const cardProcedureSource = `${fusionProcedureSource}
       end
       return mg:CheckWithSumEqual(ritual_material_level,lv,1,lv,ritual_c)
     end
-    local function ritual_filter(c,e,tp,params)
+    local function ritual_filter(c,e,tp,params,eg,ep,ev,re,r,rp,chk)
       if not c:IsRitualMonster() then return false end
       if params.filter and not params.filter(c) then return false end
       if not c:IsCanBeSpecialSummoned(e,SUMMON_TYPE_RITUAL,tp,true,false) then return false end
-      return ritual_has_materials(tp,c,params,e)
+      return ritual_has_materials(tp,c,params,e,eg,ep,ev,re,r,rp,chk)
     end
     function Ritual.Target(params,...)
       params=ritual_params(params,...)
@@ -56,8 +60,9 @@ export const cardProcedureSource = `${fusionProcedureSource}
         local location=ritual_target_location(params)
         if chk==0 then
           return Duel.GetLocationCount(tp,LOCATION_MZONE)>0
-            and Duel.IsExistingMatchingCard(ritual_filter,tp,location,0,1,nil,e,tp,params)
+            and Duel.IsExistingMatchingCard(ritual_filter,tp,location,0,1,nil,e,tp,params,eg,ep,ev,re,r,rp,chk)
         end
+        if params.extratg then params.extratg(e,tp,eg,ep,ev,re,r,rp,chk) end
         Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,location)
       end
     end
@@ -65,10 +70,10 @@ export const cardProcedureSource = `${fusionProcedureSource}
       params=ritual_params(params,...)
       return function(e,tp,eg,ep,ev,re,r,rp)
         local location=ritual_target_location(params)
-        local g=Duel.GetMatchingGroup(ritual_filter,tp,location,0,nil,e,tp,params)
+        local g=Duel.GetMatchingGroup(ritual_filter,tp,location,0,nil,e,tp,params,eg,ep,ev,re,r,rp)
         local rc=g and g:GetFirst()
         if not rc then return end
-        local mg=ritual_material_pool(tp,rc,params,e)
+        local mg=ritual_material_pool(tp,rc,params,e,eg,ep,ev,re,r,rp)
         local lv=ritual_required_level(params,rc)
         local sg=nil
         if params.lvtype==RITPROC_GREATER then
@@ -76,7 +81,19 @@ export const cardProcedureSource = `${fusionProcedureSource}
         else
           sg=mg:SelectWithSumEqual(tp,ritual_material_level,lv,1,lv,rc)
         end
-        if sg and sg:GetCount()>0 then Duel.RitualSummon(rc,sg) end
+        if sg and sg:GetCount()>0 then
+          if params.customoperation then
+            params.customoperation(sg:Clone(),e,tp,eg,ep,ev,re,r,rp,rc)
+          elseif params.extraop then
+            rc:SetMaterial(sg)
+            params.extraop(sg:Clone(),e,tp,eg,ep,ev,re,r,rp,rc)
+            Duel.BreakEffect()
+            Duel.RitualSummon(rc,sg,true)
+            if params.stage2 then params.stage2(sg,e,tp,eg,ep,ev,re,r,rp,rc) end
+          else
+            Duel.RitualSummon(rc,sg)
+          end
+        end
       end
     end
     function Ritual.CreateProc(params,...)

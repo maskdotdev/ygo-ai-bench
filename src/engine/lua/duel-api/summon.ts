@@ -226,6 +226,7 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
   const player = playerFirst ? readOptionalPlayer(L, 1) ?? session.state.turnPlayer : undefined;
   const targetUid = readCardUid(L, playerFirst ? 2 : 1);
   const materialUids = playerFirst ? readCardOrGroupUids(L, 3) : readCardOrGroupUids(L, 2);
+  const materialsAlreadyMoved = summonType === "RitualSummon" && Boolean(lua.lua_toboolean(L, playerFirst ? 4 : 3));
   const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
   if (!target) {
     setOperatedUids(hostState, []);
@@ -241,7 +242,7 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
     else if (summonType === "XyzSummon") xyzSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
     else if (summonType === "LinkSummon") linkSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
     else if (target.data.ritualMaterials?.length) ritualSummonDuelCard(session.state, target.controller, target.uid, materialUids);
-    else ritualSummonSelectedMaterials(session, hostState, target, materialUids);
+    else ritualSummonSelectedMaterials(session, hostState, target, materialUids, materialsAlreadyMoved);
     if (hostState.activeContext) hostState.activeOperationMoved = true;
     setOperatedUids(hostState, [target.uid]);
     lua.lua_pushinteger(L, 1);
@@ -264,7 +265,7 @@ function canBeXyzMaterial(card: DuelCardInstance, target: DuelCardInstance): boo
   return rank > 0 && (card.data.level ?? 0) === rank;
 }
 
-function ritualSummonSelectedMaterials(session: DuelSession, hostState: LuaDuelSummonApiHostState, target: DuelCardInstance, materialUids: string[]): void {
+function ritualSummonSelectedMaterials(session: DuelSession, hostState: LuaDuelSummonApiHostState, target: DuelCardInstance, materialUids: string[], materialsAlreadyMoved = false): void {
   if (target.kind !== "monster" || !isSelectedRitualTargetLocation(target.location)) throw new Error(`${target.name} is not a ritual monster in a summonable location`);
   if (new Set(materialUids).size !== materialUids.length || materialUids.length === 0) throw new Error(`${target.name} ritual materials are not legal`);
   if (
@@ -276,15 +277,18 @@ function ritualSummonSelectedMaterials(session: DuelSession, hostState: LuaDuelS
   }
   for (const uid of materialUids) {
     const material = session.state.cards.find((candidate) => candidate.uid === uid);
-    if (!material || !canBeRitualMaterial(session.state, material, undefined) || material.controller !== target.controller || material.uid === target.uid) {
+    const canUseMaterial = materialsAlreadyMoved ? canTrackMovedRitualMaterial(material, target) : canBeSelectedRitualMaterial(session, material, target);
+    if (!canUseMaterial) {
       throw new Error(`${target.name} ritual materials are not legal`);
     }
   }
-  for (const uid of materialUids) {
-    const material = session.state.cards.find((candidate) => candidate.uid === uid);
-    if (!material) continue;
-    sendDuelCardToGraveyard(session.state, uid, target.controller, duelReason.material | duelReason.ritual, target.controller);
-    pushDuelLog(session.state, "ritualMaterial", target.controller, material.name, `Used for ${target.name}`);
+  if (!materialsAlreadyMoved) {
+    for (const uid of materialUids) {
+      const material = session.state.cards.find((candidate) => candidate.uid === uid);
+      if (!material) continue;
+      sendDuelCardToGraveyard(session.state, uid, target.controller, duelReason.material | duelReason.ritual, target.controller);
+      pushDuelLog(session.state, "ritualMaterial", target.controller, material.name, `Used for ${target.name}`);
+    }
   }
   hostState.activeOperationMoved = true;
   moveDuelCard(session.state, target.uid, "monsterZone", target.controller, duelReason.summon | duelReason.specialSummon | duelReason.ritual);
@@ -302,6 +306,26 @@ function ritualSummonSelectedMaterials(session: DuelSession, hostState: LuaDuelS
 
 function isSelectedRitualTargetLocation(location: DuelLocation): boolean {
   return location === "hand" || location === "graveyard" || location === "deck";
+}
+
+function canBeSelectedRitualMaterial(session: DuelSession, material: DuelCardInstance | undefined, target: DuelCardInstance): boolean {
+  if (!material) return false;
+  return (
+    isMonsterLike(material) &&
+    isSelectedRitualMaterialLocation(material.location) &&
+    material.controller === target.controller &&
+    material.uid !== target.uid &&
+    targetAllowsMaterial(target, material, "ritual") &&
+    !isMaterialUsePrevented(session.state, material.uid, "ritual", createMaterialCheckContext(session.state))
+  );
+}
+
+function canTrackMovedRitualMaterial(material: DuelCardInstance | undefined, target: DuelCardInstance): boolean {
+  return Boolean(material && isMonsterLike(material) && material.controller === target.controller && material.uid !== target.uid && targetAllowsMaterial(target, material, "ritual"));
+}
+
+function isSelectedRitualMaterialLocation(location: DuelLocation): boolean {
+  return location === "hand" || location === "monsterZone" || location === "deck" || location === "graveyard" || location === "extraDeck";
 }
 
 function collectLuaSummonEvent(session: DuelSession, eventName: Parameters<typeof collectDuelTriggerEffects>[1], eventCard?: DuelCardInstance): void {
