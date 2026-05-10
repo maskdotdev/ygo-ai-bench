@@ -32,7 +32,7 @@ import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummon, tributeSetDuelCard } from "#duel/summon.js";
-import { consumePendulumSummon, grantExtraPendulumSummons, hasPendulumSummonAvailable } from "#duel/pendulum-availability.js";
+import { consumePendulumSummon, grantExtraPendulumSummons, hasPendulumSummonAvailable, pendulumSummonCandidatesForAvailability } from "#duel/pendulum-availability.js";
 import { cardTypeFlags, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
 import { cardCombinations, materialCodesMatch, type MaterialCodeMatchOptions } from "#duel/summon-materials.js";
 import { sameStringMembers } from "#duel/string-list-match.js";
@@ -528,7 +528,9 @@ function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuel
   const summonedUids: string[] = [];
   const reasonPlayer = hostState.activeContext?.player ?? player;
   const payload = luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer);
-  for (const card of pendulumSummonCandidates(session, player, lowScale, highScale).slice(0, zoneCount)) {
+  const candidates = pendulumSummonCandidatesForAvailability(session.state, player, pendulumSummonCandidates(session, player, lowScale, highScale)).slice(0, zoneCount);
+  const summonedCards: DuelCardInstance[] = [];
+  for (const card of candidates) {
     try {
       const summoned = specialSummonStepCard(session, card, player, luaSummonTypePendulum, reasonPlayer, payload);
       if (!summoned) throw new Error(`${card.name} cannot be Pendulum Summoned`);
@@ -536,12 +538,13 @@ function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuel
       summoned.summonType = "pendulum";
       markProcedureComplete(summoned);
       summonedUids.push(summoned.uid);
+      summonedCards.push(summoned);
     } catch {
       // EDOPro-style helpers report successful summons only.
     }
   }
   if (summonedUids.length > 0) {
-    consumePendulumSummon(session.state, player);
+    consumePendulumSummon(session.state, player, summonedCards);
     collectDuelGroupedTriggerEffects(session.state, "specialSummoned", summonedUids.map((uid) => session.state.cards.find((candidate) => candidate.uid === uid)).filter((card): card is DuelCardInstance => Boolean(card)), { ...payload, eventUids: summonedUids });
   }
   setOperatedUids(hostState, summonedUids);
@@ -552,8 +555,11 @@ function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuel
 function pushGrantAdditionalPendulumSummon(L: unknown, session: DuelSession): number {
   if (session.state.status === "ended") return 0;
   const player = readOptionalPlayer(L, 1) ?? session.state.turnPlayer;
-  const count = Math.max(1, Math.floor(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 1));
-  grantExtraPendulumSummons(session.state, player, count);
+  const second = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
+  const hasCount = lua.lua_isnumber(L, 3);
+  const locationMask = hasCount ? second : undefined;
+  const count = Math.max(1, Math.floor(hasCount ? lua.lua_tointeger(L, 3) : second ?? 1));
+  grantExtraPendulumSummons(session.state, player, count, { locationMask });
   return 0;
 }
 

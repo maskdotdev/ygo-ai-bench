@@ -79,6 +79,7 @@ export function endDuelTurn(state: DuelState, player: PlayerId, handlers: DuelTu
   pruneResetEffectsAfterPhase(state, "end");
   pruneDuelFlagEffectsAfterPhase(state, "end");
   state.players[player].extraPendulumSummons = 0;
+  delete state.players[player].extraPendulumSummonGrants;
   state.turn += 1;
   state.turnPlayer = otherPlayer(player);
   handlers.collectEvent("turnEnded");
@@ -97,6 +98,7 @@ export function endDuelTurn(state: DuelState, player: PlayerId, handlers: DuelTu
   state.players[state.turnPlayer].normalSummonAvailable = true;
   state.players[state.turnPlayer].pendulumSummonAvailable = true;
   state.players[state.turnPlayer].extraPendulumSummons = 0;
+  delete state.players[state.turnPlayer].extraPendulumSummonGrants;
   handlers.collectEvent("preDraw");
   if (handlers.canDraw?.(state.turnPlayer) ?? true) drawDuelCardsFromDeck(state, state.turnPlayer, state.options.drawPerTurn, "Turn draw", (drawPlayer) => handlers.canLoseByDeck?.(drawPlayer) ?? true);
   if (state.status === "ended") return;

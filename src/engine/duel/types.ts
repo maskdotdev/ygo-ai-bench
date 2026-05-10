@@ -249,7 +249,12 @@ export interface DuelPlayerState {
   normalSummonAvailable: boolean;
   pendulumSummonAvailable: boolean;
   extraPendulumSummons?: number;
+  extraPendulumSummonGrants?: ExtraPendulumSummonGrant[];
   initialMainDeckSize?: number;
+}
+
+export interface ExtraPendulumSummonGrant {
+  locationMask?: number;
 }
 
 export interface DuelActivityCounts {

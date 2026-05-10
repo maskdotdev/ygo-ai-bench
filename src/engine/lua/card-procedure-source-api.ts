@@ -396,8 +396,7 @@ export const cardProcedureSource = `${fusionProcedureSource}
     end
     function Pendulum.GrantAdditionalPendulumSummon(handler,condition,tp,locations,desc1,desc2,effect_flag)
       local player=tp or (handler and handler:GetControler()) or 0
-      if condition and not condition(handler,player,locations,effect_flag) then return end
-      Duel.GrantAdditionalPendulumSummon(player,1)
+      Duel.GrantAdditionalPendulumSummon(player,locations or (LOCATION_HAND|LOCATION_EXTRA),1)
     end
 ${spiritProcedureSource}
     Cost=Cost or {}

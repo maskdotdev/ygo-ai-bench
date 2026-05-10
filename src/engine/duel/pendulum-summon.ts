@@ -1,6 +1,6 @@
 import { findCard, getCards, pushDuelLog } from "#duel/card-state.js";
 import { cardTypeFlags, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
-import { consumePendulumSummon, hasPendulumSummonAvailable } from "#duel/pendulum-availability.js";
+import { canConsumePendulumSummon, consumePendulumSummon, hasPendulumSummonAvailable, pendulumSummonCandidatesForAvailability } from "#duel/pendulum-availability.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelAction, DuelCardInstance, DuelState, PlayerId } from "#duel/types.js";
 
@@ -12,7 +12,8 @@ export function pendulumSummonActions(state: DuelState, player: PlayerId, canSum
   const scales = pendulumScales(state, player);
   if (zoneCount <= 0 || !scales) return [];
   const [lowScale, highScale] = scales;
-  const summonUids = pendulumSummonCandidates(state, player, lowScale, highScale, canSummon).map((card) => card.uid);
+  const candidates = pendulumSummonCandidates(state, player, lowScale, highScale, canSummon);
+  const summonUids = pendulumSummonCandidatesForAvailability(state, player, candidates).map((card) => card.uid);
   if (!summonUids.length) return [];
   const summonNames = summonUids.map((uid) => findCard(state, uid)?.name ?? uid).join(", ");
   return [{ type: "pendulumSummon", player, summonUids, maxSummons: zoneCount, label: `Pendulum Summon ${summonNames}` }];
@@ -27,6 +28,8 @@ export function pendulumSummonDuelCards(
 ): DuelCardInstance[] {
   const legalAction = pendulumSummonActions(state, player, canSummon).find((action) => isPendulumSummonSelection(action.summonUids, summonUids, action.maxSummons));
   if (!legalAction) throw new Error("Pendulum Summon is not legal");
+  const selectedCards = summonUids.map((uid) => findCard(state, uid)).filter((card): card is DuelCardInstance => Boolean(card));
+  if (!canConsumePendulumSummon(state, player, selectedCards)) throw new Error("Pendulum Summon is not legal");
   const summoned: DuelCardInstance[] = [];
   for (const uid of summonUids) {
     const card = specialSummon(uid, player);
@@ -34,7 +37,7 @@ export function pendulumSummonDuelCards(
     markProcedureComplete(card);
     summoned.push(card);
   }
-  consumePendulumSummon(state, player);
+  consumePendulumSummon(state, player, selectedCards);
   pushDuelLog(state, "pendulumSummon", player, undefined, `Pendulum Summoned ${summoned.length} monster(s)`);
   return summoned;
 }
