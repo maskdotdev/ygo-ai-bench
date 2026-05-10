@@ -128,6 +128,8 @@ export interface DuelCardData {
   xyzMaterials?: string[];
   xyzMaterialCount?: number;
   linkMaterials?: string[];
+  linkMaterialMin?: number;
+  linkMaterialMax?: number;
   ritualMaterials?: string[];
   listedNames?: string[];
   fitMonster?: string[];

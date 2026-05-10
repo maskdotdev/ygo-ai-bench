@@ -6,7 +6,7 @@ import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua } = fengari;
 
-export function canLuaLinkSummonCard(session: DuelSession, card: DuelCardInstance, requiredUids: string[], materialGroupUids: string[], min = 1, max = Number.POSITIVE_INFINITY): boolean {
+export function canLuaLinkSummonCard(session: DuelSession, card: DuelCardInstance, requiredUids: string[], materialGroupUids: string[], min?: number, max?: number): boolean {
   if (card.location !== "extraDeck" || !isMonsterLike(card)) return false;
   const required = new Set(requiredUids);
   const allowed = new Set(materialGroupUids);
@@ -20,8 +20,8 @@ export function canLuaLinkSummonCard(session: DuelSession, card: DuelCardInstanc
   if ([...required].some((uid) => !materialPool.some((candidate) => candidate.uid === uid))) return false;
   const targetRating = linkRating(card);
   if (targetRating <= 0) return false;
-  const minCount = Math.max(1, min, required.size);
-  const maxCount = Math.min(materialPool.length, max, targetRating);
+  const minCount = Math.max(1, min ?? card.data.linkMaterialMin ?? 1, required.size);
+  const maxCount = Math.min(materialPool.length, max ?? card.data.linkMaterialMax ?? Number.POSITIVE_INFINITY, targetRating);
   for (let count = minCount; count <= maxCount; count += 1) {
     for (const materials of cardCombinations(materialPool, count)) {
       if ([...required].some((uid) => !materials.some((material) => material.uid === uid))) continue;

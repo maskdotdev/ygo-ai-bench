@@ -6,6 +6,10 @@ const { lua, to_luastring } = fengari;
 export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardInstance): void {
   const xyzCount = readProcedureNumberField(L, card, "xyz_materials", 3);
   if (xyzCount !== undefined) card.data.xyzMaterialCount = xyzCount;
+  const linkMin = readProcedureNumberField(L, card, "link_materials", 2);
+  const linkMax = readProcedureNumberField(L, card, "link_materials", 3);
+  if (linkMin !== undefined) card.data.linkMaterialMin = linkMin;
+  if (linkMax !== undefined) card.data.linkMaterialMax = linkMax;
 }
 
 function readProcedureNumberField(L: unknown, card: DuelCardInstance, fieldName: string, index: number): number | undefined {

@@ -103,6 +103,63 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
     });
   });
 
+  it("restores official Link.AddProcedure material count ranges for real extra deck summons", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const babaBarberCode = "67073561";
+    const link2MaterialCode = "900000011";
+    const normalMaterialCodes = ["900000012", "900000013"];
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === babaBarberCode),
+      { code: link2MaterialCode, name: "Synthetic Link-2 Material", kind: "extra" as const, typeFlags: 0x4000001, level: 2 },
+      ...normalMaterialCodes.map((code, index) => ({
+        code,
+        name: `Link Material ${index + 1}`,
+        kind: "monster" as const,
+        typeFlags: 0x1,
+      })),
+    ];
+    const reader = createCardReader(cards);
+    const restoreWithMaterials = (main: string[]) => {
+      const session = createDuel({ seed: 293, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+      loadDecks(session, { 0: { main, extra: [babaBarberCode] }, 1: { main: [] } });
+      startDuel(session);
+      const link = session.state.cards.find((card) => card.code === babaBarberCode && card.location === "extraDeck");
+      expect(link).toBeDefined();
+      for (const code of main) {
+        const material = session.state.cards.find((card) => card.code === code && card.location === "deck");
+        expect(material).toBeDefined();
+        moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+      }
+      session.state.phase = "main1";
+      session.state.waitingFor = 0;
+      const host = createLuaScriptHost(session, workspace);
+      expect(host.loadCardScript(Number(babaBarberCode), workspace).ok).toBe(true);
+      expect(host.registerInitialEffects()).toBeGreaterThan(0);
+      expect(session.state.cards.find((card) => card.uid === link!.uid)?.data).toMatchObject({ linkMaterialMin: 2, linkMaterialMax: 2 });
+      const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+      expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+      expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+      return { restored, link };
+    };
+
+    const singleLinkMaterial = restoreWithMaterials([link2MaterialCode]);
+    expect(getLuaRestoreLegalActions(singleLinkMaterial.restored, 0).some((action) => action.type === "linkSummon" && action.uid === singleLinkMaterial.link!.uid)).toBe(false);
+
+    const twoMaterials = restoreWithMaterials(normalMaterialCodes);
+    const actions = getLuaRestoreLegalActions(twoMaterials.restored, 0).filter((action) => action.type === "linkSummon" && action.uid === twoMaterials.link!.uid);
+    expect(actions, JSON.stringify(getLuaRestoreLegalActions(twoMaterials.restored, 0), null, 2)).toHaveLength(1);
+    const action = actions[0];
+    expect(action?.type).toBe("linkSummon");
+    if (!action || action.type !== "linkSummon") throw new Error("Expected Link Summon action");
+    expect(action.materialUids).toHaveLength(2);
+    const summoned = applyLuaRestoreResponse(twoMaterials.restored, action);
+    expect(summoned.ok, summoned.error).toBe(true);
+    expect(twoMaterials.restored.session.state.cards.find((card) => card.uid === twoMaterials.link!.uid)).toMatchObject({
+      location: "monsterZone",
+      summonType: "link",
+    });
+  });
+
   it("restores Spirit procedure End Phase return after a real Normal Summon", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const yataCode = "3078576";

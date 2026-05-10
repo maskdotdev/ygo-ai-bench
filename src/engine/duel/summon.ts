@@ -690,6 +690,7 @@ function requireLinkSummonMaterials(state: DuelState, player: PlayerId, uid: str
   if (new Set(materialUids).size !== materialUids.length) throw new Error(`${card.name} Link materials must be unique`);
   const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
   if (!materials.length) throw new Error(`${card.name} Link materials are not legal`);
+  if (!linkMaterialCountAllowed(card, materials.length)) throw new Error(`${card.name} Link materials are not legal`);
   if (!linkMaterialCodesMatch(materials, card.data.linkMaterials)) throw new Error(`${card.name} Link materials are not legal`);
   if (!canLinkMaterialsMatchRating(materials, targetRating)) throw new Error(`${card.name} Link materials are not legal`);
   for (const material of materials) {
@@ -714,6 +715,7 @@ function findLinkMaterialUidSets(materialPool: DuelCardInstance[], card: DuelCar
   const seen = new Set<string>();
   if (card.data.linkMaterials?.length) {
     for (const materials of cardCombinations(materialPool, card.data.linkMaterials.length)) {
+      if (!linkMaterialCountAllowed(card, materials.length)) continue;
       if (materialCodesMatch(materials, card.data.linkMaterials) && canLinkMaterialsMatchRating(materials, targetRating)) {
         appendMaterialUidSet(results, seen, materials.map((material) => material.uid));
       }
@@ -721,6 +723,7 @@ function findLinkMaterialUidSets(materialPool: DuelCardInstance[], card: DuelCar
     return results;
   }
   for (let count = 1; count <= materialPool.length; count += 1) {
+    if (!linkMaterialCountAllowed(card, count)) continue;
     for (const materials of cardCombinations(materialPool, count)) {
       if (canLinkMaterialsMatchRating(materials, targetRating)) appendMaterialUidSet(results, seen, materials.map((material) => material.uid));
     }
@@ -816,6 +819,12 @@ function linkRating(card: DuelCardInstance): number {
   if (!card.data.linkMaterials?.length && ((card.data.typeFlags ?? 0) & 0x4000000) === 0) return 0;
   if (card.data.level !== undefined) return card.data.level;
   return card.data.linkMaterials?.length ?? 0;
+}
+
+function linkMaterialCountAllowed(card: DuelCardInstance, count: number): boolean {
+  const min = card.data.linkMaterialMin ?? 1;
+  const max = card.data.linkMaterialMax ?? Number.POSITIVE_INFINITY;
+  return count >= min && count <= max;
 }
 
 function synchroMaterialCodes(card: DuelCardInstance): string[] | undefined {
