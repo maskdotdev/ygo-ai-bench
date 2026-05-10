@@ -75,10 +75,25 @@ function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefine
 function pushBattleTarget(L: unknown, session: DuelSession): number {
   const card = readCard(L, session);
   const attack = session.state.currentAttack ?? session.state.pendingBattle;
-  const targetUid = attack && card?.uid === attack.attackerUid ? attack.targetUid : attack && card?.uid === attack.targetUid ? attack.attackerUid : undefined;
+  const targetUid =
+    attack && card?.uid === attack.attackerUid
+      ? attack.targetUid
+      : attack && card?.uid === attack.targetUid
+        ? attack.attackerUid
+        : battlePairTargetUid(session, card);
   if (!targetUid) lua.lua_pushnil(L);
   else pushCardTable(L, targetUid);
   return 1;
+}
+
+function battlePairTargetUid(session: DuelSession, card: DuelCardInstance | undefined): string | undefined {
+  if (!card) return undefined;
+  for (let i = session.state.battlePairs.length - 1; i >= 0; i--) {
+    const pair = session.state.battlePairs[i]!;
+    if (pair.attackerUid === card.uid) return pair.targetUid;
+    if (pair.targetUid === card.uid) return pair.attackerUid;
+  }
+  return undefined;
 }
 
 function pushAttackableTarget(L: unknown, session: DuelSession): number {

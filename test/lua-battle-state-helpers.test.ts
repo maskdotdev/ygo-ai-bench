@@ -807,6 +807,22 @@ describe("Lua battle state helpers", () => {
     expect(host.messages).toContain("card battle target attacker 200");
     expect(host.messages).toContain("card battle target defender 100");
     expect(host.messages).toContain("card battle target idle nil true");
+
+    delete session.state.currentAttack;
+    delete session.state.pendingBattle;
+    session.state.battlePairs = [{ attackerUid: attacker!.uid, targetUid: target!.uid }];
+    host.messages.length = 0;
+    const fallback = host.loadScript(
+      `
+      local attacker=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+      Debug.Message("card battle target fallback " .. attacker:GetBattleTarget():GetCode() .. "/" .. target:GetBattleTarget():GetCode())
+      `,
+      "card-battle-target-fallback.lua",
+    );
+
+    expect(fallback.ok, fallback.error).toBe(true);
+    expect(host.messages).toContain("card battle target fallback 200/100");
   });
 
   it("marks both monsters as opposing battle participants for Lua status checks", () => {
