@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { locationMatchesCardMask, readCardUid } from "#lua/api-utils.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
+import { cardFieldId } from "#duel/card-field-id.js";
 import type { CardPosition, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -48,16 +49,6 @@ export function installCardStateApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsLocation"));
-}
-
-export function cardFieldId(card: DuelCardInstance | undefined): number {
-  if (!card) return 0;
-  let value = 0x811c9dc5;
-  for (let index = 0; index < card.uid.length; index += 1) {
-    value ^= card.uid.charCodeAt(index);
-    value = Math.imul(value, 0x01000193) >>> 0;
-  }
-  return value & 0x7fffffff;
 }
 
 function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => number): void {

@@ -1,6 +1,7 @@
 import { pruneResetEffectsAfterMove } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterMove } from "#duel/flags.js";
 import { removeAllDuelCardCounters } from "#duel/counters.js";
+import { nextDuelCardFieldId } from "#duel/card-field-id.js";
 import type { DuelCardInstance, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
 export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, controller?: PlayerId, reason = 0, reasonPlayer?: PlayerId): DuelCardInstance {
@@ -14,6 +15,7 @@ export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, co
   card.reason = reason;
   card.reasonPlayer = reasonPlayer ?? controller ?? card.controller;
   card.turnId = state.turn;
+  if (card.location !== to) card.fieldId = nextDuelCardFieldId(state);
   card.location = to;
   if (to !== "spellTrapZone" && card.equippedToUid !== undefined) {
     card.previousEquippedToUid = card.equippedToUid;

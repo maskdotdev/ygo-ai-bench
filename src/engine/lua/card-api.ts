@@ -34,7 +34,7 @@ import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-type
 const { lua, to_luastring } = fengari;
 
 export type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
-export { cardFieldId } from "#lua/card-state-api.js";
+export { cardFieldId } from "#duel/card-field-id.js";
 export { pushCardTable } from "#lua/card-table-api.js";
 
 export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(

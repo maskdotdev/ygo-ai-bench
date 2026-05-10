@@ -2,6 +2,7 @@ import { shuffle } from "#engine/rng.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { createDuelActivityCounts } from "#duel/activity.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
+import { nextDuelCardFieldId } from "#duel/card-field-id.js";
 import { getCards, pushDuelLog, resequence } from "#duel/card-state.js";
 import { drawDuelCardsFromDeck } from "#duel/turn-flow.js";
 import type { CardPosition, DuelCardReader, DuelLocation, DuelOptions, DuelPlayerDeck, DuelSession, DuelState, PlayerId } from "#duel/types.js";
@@ -99,6 +100,7 @@ function instantiateDeck(session: DuelSession, player: PlayerId, location: DuelL
     const data = session.cardReader(String(code)) ?? fallbackCardReader(String(code));
     session.state.cards.push({
       uid: `p${player}-${location}-${code}-${index}`,
+      fieldId: nextDuelCardFieldId(session.state),
       code: data.code,
       name: data.name,
       kind: location === "extraDeck" ? "extra" : data.kind,

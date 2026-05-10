@@ -171,6 +171,7 @@ export interface DuelCardInstance {
   code: string;
   name: string;
   kind: DuelCardKind;
+  fieldId?: number;
   owner: PlayerId;
   controller: PlayerId;
   location: DuelLocation;

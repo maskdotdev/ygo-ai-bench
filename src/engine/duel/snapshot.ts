@@ -632,7 +632,7 @@ function assertSnapshotOptionalCardState(card: Record<string, unknown>, path: st
   if (card.battlePosition !== undefined && !duelSnapshotPositions.has(card.battlePosition)) throw new Error(`Malformed duel snapshot: ${path}.battlePosition must be a card position`);
   if (card.summonType !== undefined && !duelSnapshotSummonTypes.has(card.summonType)) throw new Error(`Malformed duel snapshot: ${path}.summonType must be a summon type`);
   if (card.summonPhase !== undefined && !duelSnapshotPhases.has(card.summonPhase)) throw new Error(`Malformed duel snapshot: ${path}.summonPhase must be a duel phase`);
-  for (const field of ["previousSequence", "turnId", "turnCounter"] as const) {
+  for (const field of ["fieldId", "previousSequence", "turnId", "turnCounter"] as const) {
     if (card[field] !== undefined) assertSnapshotNonNegativeInteger(card[field], `${path}.${field}`);
   }
   for (const field of ["reason", "reasonEffectId", "customStatusMask", "summonTypeCode", "attackModifier", "defenseModifier", "levelModifier", "rankModifier", "linkModifier", "scaleModifier"] as const) {

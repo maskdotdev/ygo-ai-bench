@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, registerEffect, restoreDuel, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
+import { cardFieldId } from "#duel/card-field-id.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -41,6 +42,60 @@ describe("Lua field and query helpers", () => {
     expect(host.messages).toContain("field id matchers true/true/false");
     expect(host.messages).toContain("card id alias true/true");
     expect(host.messages).toContain("card id lookup 100/true");
+  });
+
+  it("refreshes Lua field ids after cards leave and return", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Field Id Reset", kind: "monster" }];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 180, startingHandSize: 1, cardReader: reader });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const card = session.state.cards.find((candidate) => candidate.code === "100")!;
+    const oldFieldId = cardFieldId(card);
+    expect(oldFieldId).toBeGreaterThan(0);
+    moveDuelCard(session.state, card.uid, "monsterZone", 0);
+    const fieldIdOnField = cardFieldId(card);
+    expect(fieldIdOnField).not.toBe(oldFieldId);
+    moveDuelCard(session.state, card.uid, "graveyard", 0);
+    const fieldIdInGraveyard = cardFieldId(card);
+    expect(fieldIdInGraveyard).not.toBe(oldFieldId);
+    expect(fieldIdInGraveyard).not.toBe(fieldIdOnField);
+    moveDuelCard(session.state, card.uid, "monsterZone", 0);
+    const currentFieldId = cardFieldId(card);
+    expect(currentFieldId).not.toBe(oldFieldId);
+    expect(currentFieldId).not.toBe(fieldIdInGraveyard);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      Debug.Message("field id refreshed " .. tostring(c:GetFieldID() ~= ${oldFieldId}) .. "/" .. tostring(c:IsFieldID(${oldFieldId})) .. "/" .. tostring(Duel.GetCardFromCardID(${oldFieldId}) == nil))
+      Debug.Message("field id current " .. tostring(c:IsFieldID(${currentFieldId})) .. "/" .. Duel.GetCardFromCardID(${currentFieldId}):GetCode())
+      `,
+      "card-field-id-refresh.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("field id refreshed true/false/true");
+    expect(host.messages).toContain("field id current true/100");
+
+    const restored = restoreDuel(serializeDuel(session), reader);
+    const restoredCard = restored.state.cards.find((candidate) => candidate.uid === card.uid);
+    expect(cardFieldId(restoredCard)).toBe(currentFieldId);
+    const restoredHost = createLuaScriptHost(restored);
+    const restoredResult = restoredHost.loadScript(
+      `
+      local c=Duel.GetCardFromCardID(${currentFieldId})
+      Debug.Message("field id restored " .. tostring(c and c:IsFieldID(${currentFieldId})) .. "/" .. (c and c:GetCode() or 0))
+      `,
+      "card-field-id-restore.lua",
+    );
+    expect(restoredResult.ok, restoredResult.error).toBe(true);
+    expect(restoredHost.messages).toContain("field id restored true/100");
   });
 
   it("lets Lua scripts read static card data by code", () => {

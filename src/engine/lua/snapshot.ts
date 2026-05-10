@@ -3,7 +3,7 @@ import { createActionWindowToken } from "#duel/action-window-token.js";
 import { applyResponse, getGroupedDuelLegalActions, getLegalActions, queryPublicState } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
-import { cardFieldId } from "#lua/card-state-api.js";
+import { cardFieldId } from "#duel/card-field-id.js";
 import { cardSetcodes, isSetcodeMatch } from "#lua/card-code-utils.js";
 import { luaTemporaryControlReturnDescriptor, luaTemporaryControlReturnOperation } from "#lua/duel-api/move-control.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
