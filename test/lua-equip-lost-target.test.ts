@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, moveDuelCardWithRedirects, sendDuelCardToGraveyard, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, destroyDuelCard, getGroupedDuelLegalActions, getLegalActions, loadDecks, moveDuelCardWithRedirects, sendDuelCardToGraveyard, serializeDuel, startDuel } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelCardInstance, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
@@ -131,7 +131,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script eq
       ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === shieldCode),
       { code: targetCode, name: "Gladiator Lost Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1600, defense: 1200, setcodes: [0x19] },
     ];
-    const session = createDuel({ seed: 292, startingHandSize: 2, cardReader: createCardReader(cards) });
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 292, startingHandSize: 2, cardReader: reader });
     loadDecks(session, { 0: { main: [shieldCode, targetCode] }, 1: { main: [] } });
     startDuel(session);
 
@@ -157,12 +158,68 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script eq
       reason: duelReason.lostTarget,
     });
 
-    const trigger = getLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.uid === shield.uid);
-    expect(trigger).toBeDefined();
-    applyAndAssert(session, trigger!);
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state.cards.find((card) => card.uid === shield.uid)).toMatchObject({
+      location: "graveyard",
+      previousEquippedToUid: target.uid,
+      reason: duelReason.lostTarget,
+    });
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
 
-    expect(session.state.cards.find((card) => card.uid === shield.uid)).toMatchObject({ location: "hand" });
-    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "confirmed", eventCardUid: shield.uid })]));
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger" && action.uid === shield.uid);
+    expect(trigger).toBeDefined();
+    applyLuaRestoreAndAssert(restored, trigger!);
+
+    expect(restored.session.state.cards.find((card) => card.uid === shield.uid)).toMatchObject({ location: "hand" });
+    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "confirmed", eventCardUid: shield.uid })]));
+  });
+
+  it("restores Gladiator Beast's Battle Archfiend Shield equip destroy substitute", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const shieldCode = "8730435";
+    const targetCode = "601003";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === shieldCode),
+      { code: targetCode, name: "Gladiator Substitute Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1700, defense: 1200, setcodes: [0x19] },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 294, startingHandSize: 2, cardReader: reader });
+    loadDecks(session, { 0: { main: [shieldCode, targetCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const shield = findCard(session, shieldCode, "hand");
+    const target = findCard(session, targetCode, "hand");
+    moveDuelCard(session.state, target.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(shieldCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+
+    moveDuelCard(session.state, shield.uid, "spellTrapZone", 0);
+    shield.equippedToUid = target.uid;
+    shield.position = "faceUpAttack";
+    shield.faceUp = true;
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state.cards.find((card) => card.uid === shield.uid)).toMatchObject({
+      location: "spellTrapZone",
+      equippedToUid: target.uid,
+      faceUp: true,
+    });
+    expect(restored.session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ sourceUid: shield.uid, event: "continuous", code: 45 })]));
+
+    destroyDuelCard(restored.session.state, target.uid, 0, duelReason.effect | duelReason.destroy, 1);
+
+    expect(restored.session.state.cards.find((card) => card.uid === target.uid)).toMatchObject({ location: "monsterZone" });
+    expect(restored.session.state.cards.find((card) => card.uid === shield.uid)).toMatchObject({
+      location: "graveyard",
+      previousEquippedToUid: target.uid,
+      reason: duelReason.effect | duelReason.destroy | duelReason.replace,
+    });
+    expect(restored.session.state.log).toContainEqual(expect.objectContaining({ action: "destroySubstitute", card: target.name }));
   });
 });
 
