@@ -1,0 +1,110 @@
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { moveDuelCard } from "#duel/card-state.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import type { DuelAction, DuelCardData } from "#duel/types.js";
+import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
+import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
+import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+
+const upstreamRoot = path.resolve(".upstream/ignis");
+const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
+const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const typeMonster = 0x1;
+const typeSynchro = 0x2000;
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gundari battle-start Synchro bounce", () => {
+  it("restores its battle-start trigger and returns both battling monsters to hand", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const gundariCode = "38975369";
+    const synchroCode = "38975370";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === gundariCode),
+      { code: synchroCode, name: "Gundari Synchro Target", kind: "monster", typeFlags: typeMonster | typeSynchro, level: 6, attack: 1800, defense: 1200 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 389, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [gundariCode] }, 1: { main: [synchroCode] } });
+    startDuel(session);
+
+    const gundari = session.state.cards.find((card) => card.code === gundariCode);
+    const synchro = session.state.cards.find((card) => card.code === synchroCode);
+    expect(gundari).toBeDefined();
+    expect(synchro).toBeDefined();
+    moveDuelCard(session.state, gundari!.uid, "monsterZone", 0);
+    gundari!.position = "faceUpAttack";
+    gundari!.faceUp = true;
+    moveDuelCard(session.state, synchro!.uid, "monsterZone", 1);
+    synchro!.position = "faceUpAttack";
+    synchro!.faceUp = true;
+    session.state.phase = "battle";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(gundariCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+
+    const restoredSetup = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restoredSetup.restoreComplete, restoredSetup.incompleteReasons.join("; ")).toBe(true);
+    const attack = getLuaRestoreLegalActions(restoredSetup, 0).find(
+      (action) => action.type === "declareAttack" && action.attackerUid === gundari!.uid && action.targetUid === synchro!.uid,
+    );
+    expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredSetup, 0), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restoredSetup, attack!);
+    passAttackResponsesUntilTrigger(restoredSetup);
+
+    expect(restoredSetup.session.state.battleWindow?.kind).toBe("startDamageStep");
+    expect(restoredSetup.session.state.pendingTriggers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceUid: gundari!.uid,
+          eventName: "battleStarted",
+          eventCode: 1132,
+          eventCardUid: gundari!.uid,
+        }),
+      ]),
+    );
+
+    const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredSetup.session), workspace, reader);
+    expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restoredTrigger, 0)).toEqual(getGroupedDuelLegalActions(restoredTrigger.session, 0));
+    const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === gundari!.uid);
+    expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restoredTrigger, trigger!);
+
+    expect(restoredTrigger.session.state.cards.find((card) => card.uid === gundari!.uid)).toMatchObject({ location: "hand", controller: 0 });
+    expect(restoredTrigger.session.state.cards.find((card) => card.uid === synchro!.uid)).toMatchObject({ location: "hand", controller: 1 });
+    expect(restoredTrigger.session.state.pendingBattle).toBeUndefined();
+    expect(restoredTrigger.session.state.eventHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ eventName: "battleStarted", eventCode: 1132, eventUids: [gundari!.uid, synchro!.uid] }),
+        expect.objectContaining({ eventName: "sentToHand", eventCode: 1012, eventCardUid: gundari!.uid }),
+        expect.objectContaining({ eventName: "sentToHand", eventCode: 1012, eventCardUid: synchro!.uid }),
+      ]),
+    );
+  });
+});
+
+function passAttackResponsesUntilTrigger(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  let guard = 0;
+  while (restored.session.state.pendingBattle && restored.session.state.pendingTriggers.length === 0) {
+    expect(++guard).toBeLessThan(10);
+    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passAttack");
+    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restored, pass!);
+  }
+}
+
+function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: DuelAction): void {
+  const result = applyLuaRestoreResponse(restored, action);
+  expect(result.ok, result.error).toBe(true);
+  const waitingFor = restored.session.state.waitingFor;
+  if (waitingFor !== undefined) {
+    expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+    expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  }
+}
