@@ -34,6 +34,7 @@ import { duelReason } from "#duel/reasons.js";
 import { normalSummon, tributeSetDuelCard } from "#duel/summon.js";
 import { consumePendulumSummon, grantExtraPendulumSummons, hasPendulumSummonAvailable, pendulumSummonCandidatesForAvailability } from "#duel/pendulum-availability.js";
 import { cardTypeFlags, currentCardHasEffect, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
+import { pendulumAnyLevelScaleEffectCode, pendulumLevelBypassEffectCode } from "#duel/pendulum-effect-codes.js";
 import { cardCombinations, materialCodesMatch, type MaterialCodeMatchOptions } from "#duel/summon-materials.js";
 import { sameStringMembers } from "#duel/string-list-match.js";
 import { setSpellTrap as setCoreSpellTrap } from "#duel/spell-trap.js";
@@ -55,7 +56,11 @@ const { lua, to_luastring } = fengari;
 
 type LuaSummonType = "FusionSummon" | "SynchroSummon" | "XyzSummon" | "LinkSummon" | "RitualSummon";
 type LuaSummonOrSetAction = Extract<DuelAction, { type: "normalSummon" | "tributeSummon" | "setMonster" | "setSpellTrap" }>;
-const pendulumLevelBypassEffectCode = 511004423;
+interface PendulumScaleInfo {
+  anyLevelCandidateAllowed: boolean;
+  highScale: number;
+  lowScale: number;
+}
 
 export interface LuaDuelSummonApiHostState extends LuaOperationTimingBoundaryHostState, LuaMoveImmunityHostState {
   loadedScriptBodies?: Map<string, string>;
@@ -527,11 +532,13 @@ function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuel
     return 1;
   }
 
-  const [lowScale, highScale] = scales;
   const summonedUids: string[] = [];
   const reasonPlayer = hostState.activeContext?.player ?? player;
   const payload = luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer);
-  const candidates = pendulumSummonCandidatesForAvailability(session.state, player, pendulumSummonCandidates(session, player, lowScale, highScale)).slice(0, zoneCount);
+  const candidateGroups = pendulumSummonCandidates(session, player, scales);
+  const regularCandidates = pendulumSummonCandidatesForAvailability(session.state, player, candidateGroups.regular);
+  const anyLevelCandidates = pendulumSummonCandidatesForAvailability(session.state, player, candidateGroups.anyLevel);
+  const candidates = regularCandidates.length > 0 ? regularCandidates.slice(0, zoneCount) : anyLevelCandidates.slice(0, 1);
   const summonedCards: DuelCardInstance[] = [];
   for (const card of candidates) {
     try {
@@ -708,27 +715,40 @@ function canBeRitualMaterial(state: DuelState, card: DuelCardInstance, target: D
   );
 }
 
-function pendulumSummonCandidates(session: DuelSession, player: PlayerId, lowScale: number, highScale: number): DuelCardInstance[] {
-  return session.state.cards
-    .filter((card) => canPendulumSummonCard(session, player, card, lowScale, highScale))
-    .sort((a, b) => locationSort(a.location) - locationSort(b.location) || a.sequence - b.sequence);
+function pendulumSummonCandidates(session: DuelSession, player: PlayerId, scales: PendulumScaleInfo): { anyLevel: DuelCardInstance[]; regular: DuelCardInstance[] } {
+  const regular: DuelCardInstance[] = [];
+  const anyLevel: DuelCardInstance[] = [];
+  for (const card of session.state.cards) {
+    const candidateKind = pendulumSummonCandidateKind(session, player, card, scales);
+    if (candidateKind === "regular") regular.push(card);
+    else if (candidateKind === "anyLevel") anyLevel.push(card);
+  }
+  return {
+    anyLevel: anyLevel.sort(comparePendulumCandidateLocation),
+    regular: regular.sort(comparePendulumCandidateLocation),
+  };
 }
 
-function canPendulumSummonCard(session: DuelSession, player: PlayerId, card: DuelCardInstance, lowScale: number, highScale: number): boolean {
+function pendulumSummonCandidateKind(session: DuelSession, player: PlayerId, card: DuelCardInstance, scales: PendulumScaleInfo): "anyLevel" | "regular" | undefined {
+  if (!canBasicPendulumSummonCandidate(session, player, card)) return undefined;
+  const level = currentLevel(card, session.state);
+  if (level > scales.lowScale && level < scales.highScale || currentCardHasEffect(card, session.state, pendulumLevelBypassEffectCode)) return "regular";
+  return scales.anyLevelCandidateAllowed ? "anyLevel" : undefined;
+}
+
+function canBasicPendulumSummonCandidate(session: DuelSession, player: PlayerId, card: DuelCardInstance): boolean {
   if (card.controller !== player || !isPendulumMonster(session.state, card)) return false;
   if (card.location !== "hand" && !(card.location === "extraDeck" && card.faceUp)) return false;
-  const level = currentLevel(card, session.state);
-  if ((level <= lowScale || level >= highScale) && !currentCardHasEffect(card, session.state, pendulumLevelBypassEffectCode)) return false;
   return canSpecialSummonDuelCard(session.state, card.uid, player, luaSummonTypePendulum);
 }
 
-function pendulumScales(session: DuelSession, player: PlayerId): [number, number] | undefined {
+function pendulumScales(session: DuelSession, player: PlayerId): PendulumScaleInfo | undefined {
   const left = pendulumZoneCard(session, player, 0);
   const right = pendulumZoneCard(session, player, 1);
   if (!left || !right) return undefined;
   const low = Math.min(pendulumScale(session, left), pendulumScale(session, right));
   const high = Math.max(pendulumScale(session, left), pendulumScale(session, right));
-  return low < high ? [low, high] : undefined;
+  return low < high ? { anyLevelCandidateAllowed: currentCardHasEffect(left, session.state, pendulumAnyLevelScaleEffectCode) && currentCardHasEffect(right, session.state, pendulumAnyLevelScaleEffectCode), highScale: high, lowScale: low } : undefined;
 }
 
 function pendulumZoneCard(session: DuelSession, player: PlayerId, sequence: number): DuelCardInstance | undefined {
@@ -763,6 +783,10 @@ function fusionMaterialMatchOptions(state: DuelState, target: DuelCardInstance):
     maxSubstitutes: 1,
     canSubstitute: (material, code) => !currentCardMatchesCode(material, state, code) && canUseFusionSubstitute(state, material, target),
   };
+}
+
+function comparePendulumCandidateLocation(a: DuelCardInstance, b: DuelCardInstance): number {
+  return locationSort(a.location) - locationSort(b.location) || a.sequence - b.sequence;
 }
 
 function locationSort(location: DuelLocation): number {
