@@ -1,22 +1,33 @@
 import { findCard, getCards, pushDuelLog } from "#duel/card-state.js";
 import { cardTypeFlags, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
-import { canConsumePendulumSummon, consumePendulumSummon, hasPendulumSummonAvailable, pendulumSummonCandidatesForAvailability } from "#duel/pendulum-availability.js";
+import { canConsumePendulumSummon, consumePendulumSummon, hasPendulumSummonAvailable, pendulumSummonCandidatesForAvailability, pendulumSummonCandidatesForGrant, pendulumSummonExtraGrants } from "#duel/pendulum-availability.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
-import type { DuelAction, DuelCardInstance, DuelState, PlayerId } from "#duel/types.js";
+import type { DuelAction, DuelCardInstance, DuelState, ExtraPendulumSummonGrant, PlayerId } from "#duel/types.js";
 
 type PendulumSummonAction = Extract<DuelAction, { type: "pendulumSummon" }>;
 
 export function pendulumSummonActions(state: DuelState, player: PlayerId, canSummon: (uid: string) => boolean): PendulumSummonAction[] {
   if (!hasPendulumSummonAvailable(state, player)) return [];
   const zoneCount = 5 - getCards(state, player, "monsterZone").length;
-  const scales = pendulumScales(state, player);
-  if (zoneCount <= 0 || !scales) return [];
-  const [lowScale, highScale] = scales;
-  const candidates = pendulumSummonCandidates(state, player, lowScale, highScale, canSummon);
-  const summonUids = pendulumSummonCandidatesForAvailability(state, player, candidates).map((card) => card.uid);
-  if (!summonUids.length) return [];
-  const summonNames = summonUids.map((uid) => findCard(state, uid)?.name ?? uid).join(", ");
-  return [{ type: "pendulumSummon", player, summonUids, maxSummons: zoneCount, label: `Pendulum Summon ${summonNames}` }];
+  if (zoneCount <= 0) return [];
+  const actions: PendulumSummonAction[] = [];
+  const seenCandidateSets = new Set<string>();
+  const pushAction = (scalePlayer: PlayerId, grant?: ExtraPendulumSummonGrant) => {
+    const scales = pendulumScales(state, scalePlayer);
+    if (!scales) return;
+    const [lowScale, highScale] = scales;
+    const candidates = pendulumSummonCandidates(state, player, lowScale, highScale, canSummon);
+    const summonUids = (grant ? pendulumSummonCandidatesForGrant(state, candidates, grant) : pendulumSummonCandidatesForAvailability(state, player, candidates)).map((card) => card.uid);
+    if (!summonUids.length) return;
+    const candidateKey = summonUids.join("|");
+    if (seenCandidateSets.has(candidateKey)) return;
+    seenCandidateSets.add(candidateKey);
+    const summonNames = summonUids.map((uid) => findCard(state, uid)?.name ?? uid).join(", ");
+    actions.push({ type: "pendulumSummon", player, summonUids, maxSummons: zoneCount, label: `Pendulum Summon ${summonNames}` });
+  };
+  if (state.players[player].pendulumSummonAvailable) pushAction(player);
+  for (const grant of pendulumSummonExtraGrants(state, player)) pushAction(grant.scalePlayer ?? player, grant);
+  return actions;
 }
 
 export function pendulumSummonDuelCards(

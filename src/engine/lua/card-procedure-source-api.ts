@@ -402,6 +402,15 @@ export const cardProcedureSource = `${fusionProcedureSource}
       if effect_flag then Duel.RegisterFlagEffect(player,effect_flag,RESET_PHASE|PHASE_END,0,1) end
       Duel.GrantAdditionalPendulumSummon(player,locations or (LOCATION_HAND|LOCATION_EXTRA),1,condition)
     end
+    function Pendulum.CreateHarmonicOscillationEffect(handler,condition,desc,effect_flag,pendulum_flag)
+      local player=(handler and handler:GetControler()) or 0
+      local flag=pendulum_flag or CARD_ZEFRAATH
+      if not Duel.HasFlagEffect(player,flag) then
+        Duel.RegisterFlagEffect(player,flag,RESET_PHASE|PHASE_END,0,1)
+        Duel.GrantAdditionalPendulumSummon(player,LOCATION_EXTRA,1,condition,1-player)
+      end
+      return {},{}
+    end
 ${spiritProcedureSource}
     Cost=Cost or {}
     __duel_detach_costs=__duel_detach_costs or setmetatable({}, {__mode="k"})

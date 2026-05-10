@@ -255,6 +255,7 @@ export interface DuelPlayerState {
 
 export interface ExtraPendulumSummonGrant {
   locationMask?: number;
+  scalePlayer?: PlayerId;
   setcode?: number;
 }
 

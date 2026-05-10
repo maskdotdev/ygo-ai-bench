@@ -18,6 +18,14 @@ export function pendulumSummonCandidatesForAvailability(state: DuelState, player
   return cards.filter((card) => extraPendulumSummonGrants(state, player).some((grant) => extraPendulumSummonGrantMatchesCard(state, card, grant)));
 }
 
+export function pendulumSummonExtraGrants(state: DuelState, player: PlayerId): ExtraPendulumSummonGrant[] {
+  return extraPendulumSummonGrants(state, player).map((grant) => ({ ...grant }));
+}
+
+export function pendulumSummonCandidatesForGrant(state: DuelState, cards: DuelCardInstance[], grant: ExtraPendulumSummonGrant): DuelCardInstance[] {
+  return cards.filter((card) => extraPendulumSummonGrantMatchesCard(state, card, grant));
+}
+
 export function canConsumePendulumSummon(state: DuelState, player: PlayerId, cards: DuelCardInstance[]): boolean {
   if (state.players[player].pendulumSummonAvailable) return true;
   return findExtraPendulumSummonGrantIndex(state, player, cards) !== -1;
