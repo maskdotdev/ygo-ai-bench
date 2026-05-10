@@ -14,7 +14,7 @@ const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Earth Chant exact Ritual Summon", () => {
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script exact Ritual Summons", () => {
   it("restores AddProcEqual and selects exact-level Ritual materials", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const earthChantCode = "59820352";
@@ -101,6 +101,89 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ea
     expect(restored.session.state.cards.find((card) => card.uid === earthChant!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(restored.session.state.eventHistory).toEqual(
       expect.arrayContaining([expect.objectContaining({ eventName: "specialSummoned", eventCardUid: ritualTarget!.uid, eventReason: duelReason.summon | duelReason.specialSummon | duelReason.ritual })]),
+    );
+    expect(restored.host.messages).not.toContain("earth chant responder resolved");
+  });
+
+  it("restores AddProcEqualCode into an exact-code Ritual Summon", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const luminousDragonRitualCode = "34834619";
+    const paladinCode = "85346853";
+    const decoyMaterialCode = "3483";
+    const exactMaterialCode = "3484";
+    const responderCode = "3485";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === luminousDragonRitualCode || card.code === paladinCode),
+      { code: decoyMaterialCode, name: "Luminous Dragon Level 5 Decoy Fixture", kind: "monster", typeFlags: 0x1, level: 5, attack: 1600, defense: 1200 },
+      { code: exactMaterialCode, name: "Luminous Dragon Level 4 Material Fixture", kind: "monster", typeFlags: 0x1, level: 4, attack: 1400, defense: 1000 },
+      { code: responderCode, name: "Luminous Dragon Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 348, startingHandSize: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [luminousDragonRitualCode, paladinCode, decoyMaterialCode, exactMaterialCode] }, 1: { main: [responderCode] } });
+    startDuel(session);
+
+    const ritualSpell = session.state.cards.find((card) => card.code === luminousDragonRitualCode);
+    const paladin = session.state.cards.find((card) => card.code === paladinCode);
+    const decoyMaterial = session.state.cards.find((card) => card.code === decoyMaterialCode);
+    const exactMaterial = session.state.cards.find((card) => card.code === exactMaterialCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(ritualSpell).toBeDefined();
+    expect(paladin).toBeDefined();
+    expect(decoyMaterial).toBeDefined();
+    expect(exactMaterial).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, ritualSpell!.uid, "hand", 0);
+    moveDuelCard(session.state, paladin!.uid, "hand", 0);
+    moveDuelCard(session.state, decoyMaterial!.uid, "hand", 0);
+    moveDuelCard(session.state, exactMaterial!.uid, "hand", 0);
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(luminousDragonRitualCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+
+    const activate = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === ritualSpell!.uid);
+    expect(activate).toBeDefined();
+    applyAndAssert(session, activate!);
+    expect(session.state.chain).toHaveLength(1);
+    expect(session.state.chain[0]).toMatchObject({
+      sourceUid: ritualSpell!.uid,
+      operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }],
+    });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+
+    const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    const resolved = applyLuaRestoreResponse(restored, pass!);
+    expect(resolved.ok, resolved.error).toBe(true);
+
+    expect(restored.session.state.cards.find((card) => card.uid === paladin!.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 0,
+      position: "faceUpAttack",
+      faceUp: true,
+      summonType: "ritual",
+      summonMaterialUids: [exactMaterial!.uid],
+    });
+    expect(restored.session.state.cards.find((card) => card.uid === exactMaterial!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.material | duelReason.ritual });
+    expect(restored.session.state.cards.find((card) => card.uid === decoyMaterial!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.session.state.cards.find((card) => card.uid === ritualSpell!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
+    expect(restored.session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "specialSummoned", eventCardUid: paladin!.uid, eventReason: duelReason.summon | duelReason.specialSummon | duelReason.ritual })]),
     );
     expect(restored.host.messages).not.toContain("earth chant responder resolved");
   });
