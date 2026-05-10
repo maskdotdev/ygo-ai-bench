@@ -104,17 +104,17 @@ export function installCardStatApi<EffectRecord extends LuaCardApiEffectRecord>(
   pushAnyNumberMatcher(L, "IsOriginalRank", session, (card, requested) => hasRank(card, session.state) && requested.includes(cardRank(card)));
   pushNumberMatcher(L, "IsOriginalRankAbove", session, (card, requested) => hasRank(card, session.state) && cardRank(card) >= requested);
   pushNumberMatcher(L, "IsOriginalRankBelow", session, (card, requested) => hasRank(card, session.state) && cardRank(card) <= requested);
-  pushNumberGetter(L, "GetLink", session, (card) => currentLink(card));
+  pushNumberGetter(L, "GetLink", session, (card) => currentLink(card, session.state));
   pushNumberGetter(L, "GetOriginalLink", session, (card) => cardLink(card));
   lua.lua_pushcfunction(L, (state: unknown) => pushUpdateLink(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("UpdateLink"));
-  pushAnyNumberMatcher(L, "IsLink", session, (card, requested) => requested.includes(currentLink(card)));
-  pushNumberMatcher(L, "IsLinkAbove", session, (card, requested) => currentLink(card) >= requested);
-  pushNumberMatcher(L, "IsLinkBelow", session, (card, requested) => currentLink(card) <= requested);
+  pushAnyNumberMatcher(L, "IsLink", session, (card, requested) => requested.includes(currentLink(card, session.state)));
+  pushNumberMatcher(L, "IsLinkAbove", session, (card, requested) => currentLink(card, session.state) >= requested);
+  pushNumberMatcher(L, "IsLinkBelow", session, (card, requested) => currentLink(card, session.state) <= requested);
   pushAnyNumberMatcher(L, "IsOriginalLink", session, (card, requested) => requested.includes(cardLink(card)));
   pushNumberMatcher(L, "IsOriginalLinkAbove", session, (card, requested) => cardLink(card) >= requested);
   pushNumberMatcher(L, "IsOriginalLinkBelow", session, (card, requested) => cardLink(card) <= requested);
-  pushBooleanGetter(L, "IsLinkMonster", session, (card) => currentLink(card) > 0);
+  pushBooleanGetter(L, "IsLinkMonster", session, (card) => currentLink(card, session.state) > 0);
   pushNumberGetter(L, "GetLinkMarker", session, (card) => card?.assumedProperties?.[10] ?? card?.data.linkMarkers ?? 0);
   pushNumberGetter(L, "GetRace", session, (card) => currentRace(card, session.state));
   pushNumberGetter(L, "GetOriginalRace", session, (card) => card?.data.race ?? 0);
@@ -315,10 +315,10 @@ function pushUpdateLink<EffectRecord extends LuaCardApiEffectRecord>(L: unknown,
     lua.lua_pushinteger(L, 0);
     return 1;
   }
-  const before = currentLink(card);
+  const before = currentLink(card, session.state);
   if (before + amount <= 0) amount = -(before - 1);
   card.linkModifier = (card.linkModifier ?? 0) + amount;
-  lua.lua_pushinteger(L, currentLink(card) - before);
+  lua.lua_pushinteger(L, currentLink(card, session.state) - before);
   return 1;
 }
 

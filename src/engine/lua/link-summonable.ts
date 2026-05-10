@@ -96,7 +96,7 @@ function linkMaterialRatings(session: DuelSession, card: DuelCardInstance): numb
 
 function linkRating(session: DuelSession, card: DuelCardInstance): number {
   if (!card.data.linkMaterials?.length && (cardTypeFlags(card, session.state) & 0x4000000) === 0) return 0;
-  return card.data.level === undefined ? card.data.linkMaterials?.length ?? 0 : currentLink(card);
+  return card.data.level === undefined ? card.data.linkMaterials?.length ?? 0 : currentLink(card, session.state);
 }
 
 function linkMaterialTypeMatches(session: DuelSession, target: DuelCardInstance, material: DuelCardInstance): boolean {

@@ -103,7 +103,7 @@ function targetAllowsMaterial(state: DuelState, target: DuelCardInstance | undef
     if (target.data.linkMaterialSummonType !== undefined && !isSummonTypeMaskMatch(summonTypeMaskFromCard(card), target.data.linkMaterialSummonType)) return false;
     if (target.data.linkMaterialLevel !== undefined && currentLevel(card, state) !== target.data.linkMaterialLevel) return false;
     if (target.data.linkMaterialMinLevel !== undefined && currentLevel(card, state) < target.data.linkMaterialMinLevel) return false;
-    return !target.data.linkMaterials?.length ? currentLink(target) > 0 && linkMaterialRating(card) <= currentLink(target) : target.data.linkMaterials.some((code) => codes.includes(code));
+    return !target.data.linkMaterials?.length ? currentLink(target, state) > 0 && linkMaterialRating(card, state) <= currentLink(target, state) : target.data.linkMaterials.some((code) => codes.includes(code));
   }
   return true;
 }
@@ -112,8 +112,8 @@ function isPendulumCard(card: DuelCardInstance, state?: DuelState): boolean {
   return (cardTypeFlags(card, state) & 0x1000000) !== 0;
 }
 
-function linkMaterialRating(card: DuelCardInstance): number {
-  return currentLink(card) || 1;
+function linkMaterialRating(card: DuelCardInstance, state: DuelState): number {
+  return currentLink(card, state) || 1;
 }
 
 function isTuner(state: DuelState, card: DuelCardInstance): boolean {

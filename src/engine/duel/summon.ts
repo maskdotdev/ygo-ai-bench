@@ -907,7 +907,7 @@ function linkMaterialRatings(state: DuelState, card: DuelCardInstance): number[]
 
 function linkRating(state: DuelState, card: DuelCardInstance): number {
   if (!card.data.linkMaterials?.length && (cardTypeFlags(card, state) & 0x4000000) === 0) return 0;
-  if (card.data.level !== undefined) return currentLink(card);
+  if (card.data.level !== undefined) return currentLink(card, state);
   return card.data.linkMaterials?.length ?? 0;
 }
 

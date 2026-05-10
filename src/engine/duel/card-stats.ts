@@ -62,9 +62,10 @@ export function currentRank(card: DuelCardInstance | undefined, state?: DuelStat
   return setStatEffectValue(card, state, 315) ?? setStatEffectValue(card, state, 133) ?? updatedRank;
 }
 
-export function currentLink(card: DuelCardInstance | undefined): number {
+export function currentLink(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (card?.assumedProperties?.[9] !== undefined) return card.assumedProperties[9];
-  return cardLink(card) + (card?.linkModifier ?? 0);
+  const updatedLink = cardLink(card) + (card?.linkModifier ?? 0) + statUpdateEffectValue(card, state, 420);
+  return setStatEffectValue(card, state, 422) ?? setStatEffectValue(card, state, 421) ?? updatedLink;
 }
 
 export function currentLeftScale(card: DuelCardInstance | undefined, state?: DuelState): number {
