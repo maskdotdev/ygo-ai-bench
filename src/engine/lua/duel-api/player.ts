@@ -14,7 +14,7 @@ import { getDuelFlagEffectCount } from "#duel/flags.js";
 import { hasPendulumSummonAvailable } from "#duel/pendulum-availability.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
-import { cardTypeFlags, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
+import { cardTypeFlags, currentCardHasEffect, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
@@ -29,6 +29,7 @@ import type { DuelCardData, DuelCardInstance, DuelEffectDefinition, DuelLocation
 const { lua, to_luastring } = fengari;
 const blueEyesSpiritRestrictionCode = 69832741;
 const cardAdvanceCode = 52112003;
+const pendulumLevelBypassEffectCode = 511004423;
 const luaSummonTypeNormal = 0x10000000;
 const luaSummonTypeTribute = 0x11000000;
 
@@ -349,7 +350,7 @@ function canPendulumSummonCard(session: DuelSession, player: PlayerId, card: Due
   if (card.controller !== player || !isPendulumMonster(session, card)) return false;
   if (card.location !== "hand" && !(card.location === "extraDeck" && card.faceUp)) return false;
   const level = currentLevel(card, session.state);
-  if (level <= lowScale || level >= highScale) return false;
+  if ((level <= lowScale || level >= highScale) && !currentCardHasEffect(card, session.state, pendulumLevelBypassEffectCode)) return false;
   return canSpecialSummonDuelCard(session.state, card.uid, player, luaSummonTypePendulum);
 }
 

@@ -111,6 +111,10 @@ export function currentFiniteEffectValues(card: DuelCardInstance | undefined, st
     .map((value) => Math.trunc(value));
 }
 
+export function currentCardHasEffect(card: DuelCardInstance | undefined, state: DuelState | undefined, code: number): boolean {
+  return matchingStatEffects(card, state, code).length > 0;
+}
+
 function finiteMaskValue(value: number | undefined): number {
   return value !== undefined && Number.isFinite(value) ? Math.trunc(value) : 0;
 }

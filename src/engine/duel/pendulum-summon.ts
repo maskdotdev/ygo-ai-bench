@@ -1,10 +1,11 @@
 import { findCard, getCards, pushDuelLog } from "#duel/card-state.js";
-import { cardTypeFlags, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
+import { cardTypeFlags, currentCardHasEffect, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
 import { canConsumePendulumSummon, consumePendulumSummon, hasPendulumSummonAvailable, pendulumSummonCandidatesForAvailability, pendulumSummonCandidatesForGrant, pendulumSummonExtraGrants } from "#duel/pendulum-availability.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelAction, DuelCardInstance, DuelState, ExtraPendulumSummonGrant, PlayerId } from "#duel/types.js";
 
 type PendulumSummonAction = Extract<DuelAction, { type: "pendulumSummon" }>;
+const pendulumLevelBypassEffectCode = 511004423;
 
 export function pendulumSummonActions(state: DuelState, player: PlayerId, canSummon: (uid: string) => boolean): PendulumSummonAction[] {
   if (!hasPendulumSummonAvailable(state, player)) return [];
@@ -81,7 +82,7 @@ function canPendulumSummonCard(state: DuelState, player: PlayerId, card: DuelCar
   if (card.controller !== player || !isPendulumMonster(state, card)) return false;
   if (card.location !== "hand" && !(card.location === "extraDeck" && card.faceUp)) return false;
   const level = currentLevel(card, state);
-  return level > lowScale && level < highScale && canSummon(card.uid);
+  return (level > lowScale && level < highScale || currentCardHasEffect(card, state, pendulumLevelBypassEffectCode)) && canSummon(card.uid);
 }
 
 function pendulumScales(state: DuelState, player: PlayerId): [number, number] | undefined {

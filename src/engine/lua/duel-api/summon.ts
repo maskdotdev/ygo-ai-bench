@@ -33,7 +33,7 @@ import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummon, tributeSetDuelCard } from "#duel/summon.js";
 import { consumePendulumSummon, grantExtraPendulumSummons, hasPendulumSummonAvailable, pendulumSummonCandidatesForAvailability } from "#duel/pendulum-availability.js";
-import { cardTypeFlags, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
+import { cardTypeFlags, currentCardHasEffect, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
 import { cardCombinations, materialCodesMatch, type MaterialCodeMatchOptions } from "#duel/summon-materials.js";
 import { sameStringMembers } from "#duel/string-list-match.js";
 import { setSpellTrap as setCoreSpellTrap } from "#duel/spell-trap.js";
@@ -55,6 +55,7 @@ const { lua, to_luastring } = fengari;
 
 type LuaSummonType = "FusionSummon" | "SynchroSummon" | "XyzSummon" | "LinkSummon" | "RitualSummon";
 type LuaSummonOrSetAction = Extract<DuelAction, { type: "normalSummon" | "tributeSummon" | "setMonster" | "setSpellTrap" }>;
+const pendulumLevelBypassEffectCode = 511004423;
 
 export interface LuaDuelSummonApiHostState extends LuaOperationTimingBoundaryHostState, LuaMoveImmunityHostState {
   loadedScriptBodies?: Map<string, string>;
@@ -717,7 +718,7 @@ function canPendulumSummonCard(session: DuelSession, player: PlayerId, card: Due
   if (card.controller !== player || !isPendulumMonster(session.state, card)) return false;
   if (card.location !== "hand" && !(card.location === "extraDeck" && card.faceUp)) return false;
   const level = currentLevel(card, session.state);
-  if (level <= lowScale || level >= highScale) return false;
+  if ((level <= lowScale || level >= highScale) && !currentCardHasEffect(card, session.state, pendulumLevelBypassEffectCode)) return false;
   return canSpecialSummonDuelCard(session.state, card.uid, player, luaSummonTypePendulum);
 }
 
