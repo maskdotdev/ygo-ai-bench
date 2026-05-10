@@ -518,14 +518,14 @@ function attackCount(state: DuelState, uid: string): number {
   return state.attacksDeclared.filter((attackerUid) => attackerUid === uid).length;
 }
 
-export function isBattleTargetPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+export function isBattleTargetPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory, attacker?: DuelCardInstance): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 70) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     const ctx = createContext(effect, source, card);
     if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
-    if (effect.valueCardPredicate && !effect.valueCardPredicate(ctx, card)) continue;
+    if (effect.valueCardPredicate && (!attacker || !effect.valueCardPredicate(ctx, attacker))) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   return false;

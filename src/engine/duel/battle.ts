@@ -24,7 +24,7 @@ export interface ResolvePendingDuelBattleOptions {
   preserveBattleContext?: boolean;
 }
 
-export type DuelAttackTargetPredicate = (card: DuelCardInstance) => boolean;
+export type DuelAttackTargetPredicate = (target: DuelCardInstance, attacker: DuelCardInstance) => boolean;
 export type DuelDirectAttackPredicate = (attacker: DuelCardInstance, targets: DuelCardInstance[]) => boolean;
 
 export interface DeclareDuelAttackOptions {
@@ -39,7 +39,7 @@ export function canDuelCardAttack(state: DuelState, uid: string, extraAttacks = 
 export function getDuelAttackTargets(state: DuelState, attackerUid: string, extraAttacks = 0, canAttackTarget: DuelAttackTargetPredicate = () => true): DuelCardInstance[] {
   const attacker = findCard(state, attackerUid);
   if (!attacker || !canAttackWithCard(state, attacker, extraAttacks)) return [];
-  return getAttackTargets(state, attacker.controller, canAttackTarget);
+  return getAttackTargets(state, attacker.controller, attacker, canAttackTarget);
 }
 
 export function declareDuelAttack(
@@ -57,7 +57,7 @@ export function declareDuelAttack(
   if (state.phase !== "battle") throw new Error("Attacks can only be declared during the battle phase");
   if (!canAttackWithCard(state, attacker, extraAttacks)) throw new Error(`${attacker.name} cannot attack`);
 
-  const targets = getAttackTargets(state, player, canAttackTarget);
+  const targets = getAttackTargets(state, player, attacker, canAttackTarget);
   const target = targetUid === undefined ? undefined : findCard(state, targetUid);
   if (targets.length > 0) {
     if (targetUid === undefined && canDirectAttackThroughTargets) {
@@ -124,7 +124,7 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
     openReplayDecisionWindow(state, attacker);
     return false;
   }
-  const currentTargets = getAttackTargets(state, attacker.controller, (target) => callbacks.canAttackTarget?.(attacker, target) ?? true);
+  const currentTargets = getAttackTargets(state, attacker.controller, attacker, (target) => callbacks.canAttackTarget?.(attacker, target) ?? true);
   if (didReplayTargetsChange(pending, currentTargets)) {
     if (options.preserveBattleContext) return false;
     openReplayDecisionWindow(state, attacker);
@@ -158,7 +158,7 @@ export function replayAttackActions(
   if (currentBattleWindowKind(state) !== "replayDecision" || !state.pendingBattle) return [];
   const attacker = findCard(state, state.pendingBattle.attackerUid);
   if (!attacker || attacker.controller !== player || attacker.location !== "monsterZone") return [];
-  const targets = getAttackTargets(state, player, canAttackTarget);
+  const targets = getAttackTargets(state, player, attacker, canAttackTarget);
   return [
     { type: "cancelAttack", player, attackerUid: attacker.uid, label: `Cancel ${attacker.name}'s attack` },
     ...(canDirectAttack(attacker, targets) ? [{ type: "replayAttack" as const, player, attackerUid: attacker.uid, directAttack: true as const, label: `${attacker.name}: Attack directly` }] : []),
@@ -176,7 +176,7 @@ export function replayDuelAttack(
 ): void {
   const attacker = requireControlledCard(state, player, attackerUid, "monsterZone");
   if (currentBattleWindowKind(state) !== "replayDecision" || state.pendingBattle?.attackerUid !== attacker.uid) throw new Error("No replay decision is pending for this attacker");
-  const targets = getAttackTargets(state, player, canAttackTarget);
+  const targets = getAttackTargets(state, player, attacker, canAttackTarget);
   const target = targetUid === undefined ? undefined : findCard(state, targetUid);
   if (targets.length > 0) {
     if (targetUid === undefined) {
@@ -292,8 +292,8 @@ export function attackActions(
 ): DuelAction[] {
   const actions: DuelAction[] = [];
   const attackers = getCards(state, player, "monsterZone").filter((card) => canAttackWithCard(state, card, extraAttacksForCard(card)));
-  const targets = getAttackTargets(state, player, canAttackTarget);
   for (const attacker of attackers) {
+    const targets = getAttackTargets(state, player, attacker, canAttackTarget);
     if (targets.length === 0) {
       actions.push({ type: "declareAttack", player, attackerUid: attacker.uid, directAttack: true, label: `${attacker.name}: Direct attack` });
       continue;
@@ -348,8 +348,8 @@ function canAttackWithCard(state: DuelState, card: DuelCardInstance, extraAttack
   return state.attacksDeclared.filter((uid) => uid === card.uid).length <= Math.max(0, extraAttacks);
 }
 
-function getAttackTargets(state: DuelState, player: PlayerId, canAttackTarget: DuelAttackTargetPredicate = () => true): DuelCardInstance[] {
-  return getCards(state, otherPlayer(player), "monsterZone").filter((card) => canBeBattleTarget(card) && canAttackTarget(card));
+function getAttackTargets(state: DuelState, player: PlayerId, attacker: DuelCardInstance, canAttackTarget: DuelAttackTargetPredicate = () => true): DuelCardInstance[] {
+  return getCards(state, otherPlayer(player), "monsterZone").filter((card) => canBeBattleTarget(card) && canAttackTarget(card, attacker));
 }
 
 function resolveBattle(state: DuelState, attacker: DuelCardInstance, target: DuelCardInstance, callbacks: DuelBattleCallbacks): void {

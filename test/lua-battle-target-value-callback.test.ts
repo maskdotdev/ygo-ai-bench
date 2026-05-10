@@ -7,27 +7,30 @@ import { createLuaScriptHost, type LuaScriptSource } from "#lua/host.js";
 import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua battle target value callbacks", () => {
-  it("applies aux.imval1 immunity checks to battle target locks before and after restore", () => {
+  it("applies aux.imval1 attacker immunity checks to battle target locks before and after restore", () => {
     const cards: DuelCardData[] = [
-      { code: "100", name: "Battle Target Callback Attacker", kind: "monster", typeFlags: 0x1, level: 4, attack: 2000, defense: 1000 },
+      { code: "100", name: "Immune Battle Target Callback Attacker", kind: "monster", typeFlags: 0x1, level: 4, attack: 2000, defense: 1000 },
+      { code: "500", name: "Vulnerable Battle Target Callback Attacker", kind: "monster", typeFlags: 0x1, level: 4, attack: 2000, defense: 1000 },
       { code: "200", name: "Battle Target Lock Source", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
-      { code: "300", name: "Immune Battle Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
-      { code: "400", name: "Vulnerable Battle Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: "300", name: "Protected Battle Target A", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: "400", name: "Protected Battle Target B", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
-    const session = createDuel({ seed: 170, startingHandSize: 4, cardReader: reader });
-    loadDecks(session, { 0: { main: ["100"] }, 1: { main: ["200", "300", "400"] } });
+    const session = createDuel({ seed: 170, startingHandSize: 5, cardReader: reader });
+    loadDecks(session, { 0: { main: ["100", "500"] }, 1: { main: ["200", "300", "400"] } });
     startDuel(session);
 
-    const attacker = session.state.cards.find((card) => card.code === "100");
+    const immuneAttacker = session.state.cards.find((card) => card.code === "100");
+    const vulnerableAttacker = session.state.cards.find((card) => card.code === "500");
     const lockSource = session.state.cards.find((card) => card.code === "200");
-    const immuneTarget = session.state.cards.find((card) => card.code === "300");
-    const vulnerableTarget = session.state.cards.find((card) => card.code === "400");
-    expect(attacker).toBeDefined();
+    const protectedTargetA = session.state.cards.find((card) => card.code === "300");
+    const protectedTargetB = session.state.cards.find((card) => card.code === "400");
+    expect(immuneAttacker).toBeDefined();
+    expect(vulnerableAttacker).toBeDefined();
     expect(lockSource).toBeDefined();
-    expect(immuneTarget).toBeDefined();
-    expect(vulnerableTarget).toBeDefined();
-    for (const card of [attacker!, lockSource!, immuneTarget!, vulnerableTarget!]) {
+    expect(protectedTargetA).toBeDefined();
+    expect(protectedTargetB).toBeDefined();
+    for (const card of [immuneAttacker!, vulnerableAttacker!, lockSource!, protectedTargetA!, protectedTargetB!]) {
       const moved = moveDuelCard(session.state, card.uid, "monsterZone", card.controller);
       moved.faceUp = true;
       moved.position = "faceUpAttack";
@@ -35,19 +38,22 @@ describe("Lua battle target value callbacks", () => {
 
     const source = battleTargetValueCallbackSource();
     const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
     expect(host.loadCardScript(200, source).ok).toBe(true);
-    expect(host.loadCardScript(300, source).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ event: "continuous", code: 70, sourceUid: lockSource!.uid }),
-        expect.objectContaining({ event: "continuous", code: 1, sourceUid: immuneTarget!.uid }),
+        expect.objectContaining({ event: "continuous", code: 1, sourceUid: immuneAttacker!.uid }),
       ]),
     );
 
     applyAndAssert(session, getLegalActions(session, 0).find((action) => action.type === "changePhase" && action.phase === "battle")!);
-    expectAttackTarget(session, attacker!.uid, immuneTarget!.uid, true);
-    expectAttackTarget(session, attacker!.uid, vulnerableTarget!.uid, false);
+    expectAttackTarget(session, immuneAttacker!.uid, protectedTargetA!.uid, true);
+    expectAttackTarget(session, immuneAttacker!.uid, protectedTargetB!.uid, true);
+    expectAttackTarget(session, vulnerableAttacker!.uid, protectedTargetA!.uid, false);
+    expectAttackTarget(session, vulnerableAttacker!.uid, protectedTargetB!.uid, false);
+    expectAttackTarget(session, vulnerableAttacker!.uid, lockSource!.uid, true);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -56,19 +62,22 @@ describe("Lua battle target value callbacks", () => {
     expect(restored.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ event: "continuous", code: 70, sourceUid: lockSource!.uid }),
-        expect.objectContaining({ event: "continuous", code: 1, sourceUid: immuneTarget!.uid }),
+        expect.objectContaining({ event: "continuous", code: 1, sourceUid: immuneAttacker!.uid }),
       ]),
     );
-    expectAttackTarget(restored.session, attacker!.uid, immuneTarget!.uid, true);
-    expectAttackTarget(restored.session, attacker!.uid, vulnerableTarget!.uid, false);
+    expectAttackTarget(restored.session, immuneAttacker!.uid, protectedTargetA!.uid, true);
+    expectAttackTarget(restored.session, immuneAttacker!.uid, protectedTargetB!.uid, true);
+    expectAttackTarget(restored.session, vulnerableAttacker!.uid, protectedTargetA!.uid, false);
+    expectAttackTarget(restored.session, vulnerableAttacker!.uid, protectedTargetB!.uid, false);
+    expectAttackTarget(restored.session, vulnerableAttacker!.uid, lockSource!.uid, true);
   });
 });
 
 function battleTargetValueCallbackSource(): LuaScriptSource {
   return {
     readScript(name) {
+      if (name === "c100.lua") return battleTargetImmunityScript();
       if (name === "c200.lua") return battleTargetLockScript();
-      if (name === "c300.lua") return battleTargetImmunityScript();
       return undefined;
     },
   };
