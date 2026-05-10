@@ -272,6 +272,7 @@ function canBeXyzMaterial(card: DuelCardInstance, target: DuelCardInstance): boo
   if (target.data.xyzMaterials?.length) return target.data.xyzMaterials.some((code) => cardCodes(card).includes(code));
   if (target.data.xyzMaterialRace !== undefined && ((card.data.race ?? 0) & target.data.xyzMaterialRace) === 0) return false;
   if (target.data.xyzMaterialSetcode !== undefined && !(card.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.xyzMaterialSetcode!, setcode))) return false;
+  if (target.data.xyzMaterialRank !== undefined && xyzRank(card) !== target.data.xyzMaterialRank) return false;
   const rank = (cardTypeFlags(target) & 0x800000) !== 0 ? target.data.level ?? 0 : 0;
   return rank > 0 && (card.data.level ?? 0) === rank;
 }
@@ -724,6 +725,10 @@ function cardTypeFlags(card: DuelCardInstance): number {
   if (card.kind === "spell") return 0x2;
   if (card.kind === "trap") return 0x4;
   return 0x1;
+}
+
+function xyzRank(card: DuelCardInstance): number {
+  return (cardTypeFlags(card) & 0x800000) !== 0 ? card.data.level ?? 0 : 0;
 }
 
 function cardCodes(card: DuelCardInstance): string[] {

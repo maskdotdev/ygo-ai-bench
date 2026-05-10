@@ -76,6 +76,7 @@ function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCa
     if (target.data.xyzMaterialAttribute !== undefined && ((card.data.attribute ?? 0) & target.data.xyzMaterialAttribute) === 0) return false;
     if (target.data.xyzMaterialType !== undefined && (cardTypeFlags(card) & target.data.xyzMaterialType) === 0) return false;
     if (target.data.xyzMaterialSetcode !== undefined && !(card.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.xyzMaterialSetcode!, setcode))) return false;
+    if (target.data.xyzMaterialRank !== undefined && cardRank(card) !== target.data.xyzMaterialRank) return false;
     const targetRank = cardRank(target);
     const materialLevel = card.data.level ?? 0;
     const materialRank = cardRank(card);

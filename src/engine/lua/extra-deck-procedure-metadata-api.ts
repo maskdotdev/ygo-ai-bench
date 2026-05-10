@@ -44,6 +44,8 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
   if (xyzType !== undefined) card.data.xyzMaterialType = xyzType;
   const xyzSetcode = readXyzProcedureSetcodeFilter(source);
   if (xyzSetcode !== undefined) card.data.xyzMaterialSetcode = xyzSetcode;
+  const xyzRank = readXyzProcedureRankFilter(source);
+  if (xyzRank !== undefined) card.data.xyzMaterialRank = xyzRank;
   const linkMin = readProcedureNumberField(L, card, "link_materials", 2);
   const linkMax = readProcedureNumberField(L, card, "link_materials", 3);
   if (linkMin !== undefined) card.data.linkMaterialMin = linkMin;
@@ -108,6 +110,10 @@ function readXyzProcedureTypeFilter(source: string | undefined): number | undefi
 
 function readXyzProcedureSetcodeFilter(source: string | undefined): number | undefined {
   return readAddProcedureConstantFilter(source, "Xyz", "Card.IsSetCard", SET_CONSTANT_EXPRESSION);
+}
+
+function readXyzProcedureRankFilter(source: string | undefined): number | undefined {
+  return readAddProcedureNumberFilter(source, "Xyz", "Card.IsRank");
 }
 
 function readLinkProcedureTypeFilter(source: string | undefined): number | undefined {
