@@ -81,6 +81,58 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
     });
   });
 
+  it("restores official Xyz.AddProcedure infinite material ranges for real extra deck summons", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const melffyMommyCode = "76833149";
+    const beastMaterialCodes = ["900000199", "900000200", "900000201"];
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === melffyMommyCode),
+      ...beastMaterialCodes.map((code, index) => ({
+        code,
+        name: `Extra Beast Xyz Material ${index + 1}`,
+        kind: "monster" as const,
+        typeFlags: 0x1,
+        level: 2,
+        race: 0x4000,
+      })),
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 321, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: beastMaterialCodes, extra: [melffyMommyCode] }, 1: { main: [] } });
+    startDuel(session);
+    const xyz = session.state.cards.find((card) => card.code === melffyMommyCode && card.location === "extraDeck");
+    expect(xyz).toBeDefined();
+    for (const code of beastMaterialCodes) {
+      const material = session.state.cards.find((card) => card.code === code && card.location === "deck");
+      expect(material).toBeDefined();
+      moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+    }
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(melffyMommyCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.data).toMatchObject({
+      xyzMaterialCount: 2,
+      xyzMaterialMax: 99,
+      xyzMaterialRace: 0x4000,
+    });
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "xyzSummon" && candidate.uid === xyz!.uid && candidate.materialUids.length === 3);
+    expect(action, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
+    if (!action || action.type !== "xyzSummon") throw new Error("Expected three-material Xyz Summon action");
+    const summoned = applyLuaRestoreResponse(restored, action);
+    expect(summoned.ok, summoned.error).toBe(true);
+    expect(restored.session.state.cards.find((card) => card.uid === xyz!.uid)).toMatchObject({
+      location: "monsterZone",
+      summonType: "xyz",
+      overlayUids: expect.arrayContaining(beastMaterialCodes.map((code) => expect.stringContaining(code))),
+    });
+    expect(restored.session.state.cards.find((card) => card.uid === xyz!.uid)?.overlayUids).toHaveLength(3);
+  });
+
   it("restores official Xyz.AddProcedure setcode filters for real extra deck summons", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const gigantesDollCode = "7593748";

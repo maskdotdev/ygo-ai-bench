@@ -9,6 +9,7 @@ const RACE_CONSTANT_EXPRESSION = String.raw`RACES?_[A-Z0-9_]+(?:\s*\|\s*RACES?_[
 const SET_CONSTANT_EXPRESSION = String.raw`SET_[A-Z0-9_]+(?:\s*\|\s*SET_[A-Z0-9_]+)*`;
 const SUMMON_TYPE_CONSTANT_EXPRESSION = String.raw`SUMMON_TYPE_[A-Z0-9_]+(?:\s*\|\s*SUMMON_TYPE_[A-Z0-9_]+)*`;
 const TYPE_CONSTANT_EXPRESSION = String.raw`TYPE_[A-Z0-9_]+(?:\s*\|\s*TYPE_[A-Z0-9_]+)*`;
+const XYZ_INFINITE_MATERIAL_MAX = 99;
 
 export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardInstance, source?: string): void {
   const synchroTunerMin = readProcedureNumberField(L, card, "synchro_materials", 2);
@@ -39,6 +40,8 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
   if (synchroNonTunerSetcode !== undefined) card.data.synchroNonTunerSetcode = synchroNonTunerSetcode;
   const xyzCount = readProcedureNumberField(L, card, "xyz_materials", 3);
   if (xyzCount !== undefined) card.data.xyzMaterialCount = xyzCount;
+  const xyzMax = readProcedureNumberField(L, card, "xyz_materials", 6) ?? readXyzProcedureInfiniteMaterialMax(source);
+  if (xyzMax !== undefined) card.data.xyzMaterialMax = xyzMax;
   const xyzRace = readXyzProcedureRaceFilter(source);
   if (xyzRace !== undefined) card.data.xyzMaterialRace = xyzRace;
   const xyzAttribute = readXyzProcedureAttributeFilter(source);
@@ -123,6 +126,10 @@ function readXyzProcedureSetcodeFilter(source: string | undefined): number | und
 
 function readXyzProcedureRankFilter(source: string | undefined): number | undefined {
   return readAddProcedureNumberFilter(source, "Xyz", "Card.IsRank");
+}
+
+function readXyzProcedureInfiniteMaterialMax(source: string | undefined): number | undefined {
+  return source && /Xyz\.AddProcedure\([^\n]*Xyz\.InfiniteMats/.test(source) ? XYZ_INFINITE_MATERIAL_MAX : undefined;
 }
 
 function readLinkProcedureTypeFilter(source: string | undefined): number | undefined {

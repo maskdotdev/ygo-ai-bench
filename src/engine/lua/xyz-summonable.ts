@@ -8,11 +8,22 @@ export function canLuaXyzSummonCard(session: DuelSession, card: DuelCardInstance
   const supplied = new Set(suppliedUids);
   const materialPool = session.state.cards.filter((candidate) => candidate.controller === card.controller && candidate.location === "monsterZone" && canBeXyzMaterial(session, candidate, card));
   if ([...supplied].some((uid) => !materialPool.some((candidate) => candidate.uid === uid))) return false;
-  const count = xyzMaterialCount(card);
-  if (supplied.size > count) return false;
-  for (const materials of cardCombinations(materialPool, count)) {
-    if ([...supplied].some((uid) => !materials.some((material) => material.uid === uid))) continue;
-    if ((card.data.xyzMaterials?.length ? materialCodesMatch(materials, card.data.xyzMaterials) : canGenericXyzMaterialsMatch(card, materials)) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return true;
+  if (card.data.xyzMaterials?.length) {
+    const count = xyzMaterialCount(card);
+    if (supplied.size > count) return false;
+    for (const materials of cardCombinations(materialPool, count)) {
+      if ([...supplied].some((uid) => !materials.some((material) => material.uid === uid))) continue;
+      if (materialCodesMatch(materials, card.data.xyzMaterials) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return true;
+    }
+    return false;
+  }
+  const maxCount = Math.min(materialPool.length, xyzMaterialMax(card));
+  if (supplied.size > maxCount) return false;
+  for (let count = Math.max(xyzMaterialCount(card), supplied.size); count <= maxCount; count += 1) {
+    for (const materials of cardCombinations(materialPool, count)) {
+      if ([...supplied].some((uid) => !materials.some((material) => material.uid === uid))) continue;
+      if (canGenericXyzMaterialsMatch(card, materials) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return true;
+    }
   }
   return false;
 }
@@ -39,7 +50,7 @@ function targetAllowsMaterial(target: DuelCardInstance, card: DuelCardInstance):
 
 function canGenericXyzMaterialsMatch(card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
   const targetRank = cardRank(card);
-  return targetRank > 0 && materials.length === xyzMaterialCount(card) && materials.every((material) => (material.data.level ?? 0) === targetRank && xyzMaterialRaceMatches(card, material) && xyzMaterialAttributeMatches(card, material) && xyzMaterialTypeMatches(card, material) && xyzMaterialSetcodeMatches(card, material) && xyzMaterialRankMatches(card, material));
+  return targetRank > 0 && materials.length >= xyzMaterialCount(card) && materials.length <= xyzMaterialMax(card) && materials.every((material) => (material.data.level ?? 0) === targetRank && xyzMaterialRaceMatches(card, material) && xyzMaterialAttributeMatches(card, material) && xyzMaterialTypeMatches(card, material) && xyzMaterialSetcodeMatches(card, material) && xyzMaterialRankMatches(card, material));
 }
 
 function materialCodesMatch(materials: DuelCardInstance[], requiredCodes: string[]): boolean {
@@ -75,6 +86,10 @@ function cardRank(card: DuelCardInstance): number {
 
 function xyzMaterialCount(card: DuelCardInstance): number {
   return card.data.xyzMaterials?.length || card.data.xyzMaterialCount || 2;
+}
+
+function xyzMaterialMax(card: DuelCardInstance): number {
+  return card.data.xyzMaterials?.length || card.data.xyzMaterialMax || xyzMaterialCount(card);
 }
 
 function xyzMaterialRaceMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {

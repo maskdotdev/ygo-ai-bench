@@ -748,7 +748,14 @@ function findSynchroMaterialUidSets(materialPool: DuelCardInstance[], card: Duel
 
 function findXyzMaterialUidSets(materialPool: DuelCardInstance[], card: DuelCardInstance): string[][] {
   if (card.data.xyzMaterials?.length) return findMaterialUidSets(materialPool, card.data.xyzMaterials);
-  return cardCombinations(materialPool, xyzMaterialCount(card)).filter((materials) => canGenericXyzMaterialsMatch(card, materials)).map((materials) => materials.map((material) => material.uid));
+  const results: string[][] = [];
+  const maxCount = Math.min(materialPool.length, xyzMaterialMax(card));
+  for (let count = xyzMaterialCount(card); count <= maxCount; count += 1) {
+    for (const materials of cardCombinations(materialPool, count)) {
+      if (canGenericXyzMaterialsMatch(card, materials)) results.push(materials.map((material) => material.uid));
+    }
+  }
+  return results;
 }
 
 function findSynchroMaterialRoleUidSets(cards: DuelCardInstance[], required: SynchroMaterialCodes): string[][] {
@@ -784,7 +791,7 @@ function synchroLevel(card: DuelCardInstance): number {
 
 function canGenericXyzMaterialsMatch(card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
   const targetRank = xyzRank(card);
-  return targetRank > 0 && materials.length === xyzMaterialCount(card) && materials.every((material) => (material.data.level ?? 0) === targetRank && xyzMaterialRaceMatches(card, material) && xyzMaterialAttributeMatches(card, material) && xyzMaterialTypeMatches(card, material) && xyzMaterialSetcodeMatches(card, material) && xyzMaterialRankMatches(card, material));
+  return targetRank > 0 && materials.length >= xyzMaterialCount(card) && materials.length <= xyzMaterialMax(card) && materials.every((material) => (material.data.level ?? 0) === targetRank && xyzMaterialRaceMatches(card, material) && xyzMaterialAttributeMatches(card, material) && xyzMaterialTypeMatches(card, material) && xyzMaterialSetcodeMatches(card, material) && xyzMaterialRankMatches(card, material));
 }
 
 function xyzRank(card: DuelCardInstance): number {
@@ -793,6 +800,10 @@ function xyzRank(card: DuelCardInstance): number {
 
 function xyzMaterialCount(card: DuelCardInstance): number {
   return card.data.xyzMaterialCount ?? 2;
+}
+
+function xyzMaterialMax(card: DuelCardInstance): number {
+  return card.data.xyzMaterialMax ?? xyzMaterialCount(card);
 }
 
 function xyzMaterialRaceMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
