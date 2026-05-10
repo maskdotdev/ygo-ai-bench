@@ -60,6 +60,7 @@ function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCa
     const targetLevel = cardTypeFlags(target) & 0x2000 ? target.data.level ?? 0 : 0;
     const materialLevel = card.data.level ?? 0;
     if (isTuner(card) && target.data.synchroTunerAttribute !== undefined && ((card.data.attribute ?? 0) & target.data.synchroTunerAttribute) === 0) return false;
+    if (isTuner(card) && target.data.synchroTunerRace !== undefined && ((card.data.race ?? 0) & target.data.synchroTunerRace) === 0) return false;
     return targetLevel > 0 && materialLevel > 0 && materialLevel < targetLevel;
   }
   if (kind === "xyz") {
