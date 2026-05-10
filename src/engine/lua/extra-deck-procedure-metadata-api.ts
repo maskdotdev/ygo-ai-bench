@@ -19,6 +19,8 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
   if (synchroNonTunerAttribute !== undefined) card.data.synchroNonTunerAttribute = synchroNonTunerAttribute;
   const synchroTunerRace = readSynchroProcedureTunerRaceFilter(source);
   if (synchroTunerRace !== undefined) card.data.synchroTunerRace = synchroTunerRace;
+  const synchroNonTunerRace = readSynchroProcedureNonTunerRaceFilter(source);
+  if (synchroNonTunerRace !== undefined) card.data.synchroNonTunerRace = synchroNonTunerRace;
   const synchroTunerType = readSynchroProcedureTunerTypeFilter(source);
   if (synchroTunerType !== undefined) card.data.synchroTunerType = synchroTunerType;
   const xyzCount = readProcedureNumberField(L, card, "xyz_materials", 3);
@@ -61,6 +63,12 @@ function readSynchroProcedureNonTunerAttributeFilter(source: string | undefined)
 
 function readSynchroProcedureTunerRaceFilter(source: string | undefined): number | undefined {
   const match = source?.match(/Synchro\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsRace\s*,\s*(RACE_[A-Z0-9_]+)\s*\)/);
+  if (!match?.[1]) return undefined;
+  return luaNumericConstants[match[1]];
+}
+
+function readSynchroProcedureNonTunerRaceFilter(source: string | undefined): number | undefined {
+  const match = source?.match(/Synchro\.NonTunerEx\(\s*Card\.IsRace\s*,\s*(RACE_[A-Z0-9_]+)\s*\)/);
   if (!match?.[1]) return undefined;
   return luaNumericConstants[match[1]];
 }

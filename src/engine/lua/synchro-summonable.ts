@@ -37,7 +37,7 @@ function targetAllowsMaterial(target: DuelCardInstance, card: DuelCardInstance):
   const targetLevel = (cardTypeFlags(target) & 0x2000) !== 0 ? target.data.level ?? 0 : 0;
   const materialLevel = card.data.level ?? 0;
   if (isTuner(card) && (!synchroTunerAttributeMatches(target, card) || !synchroTunerRaceMatches(target, card) || !synchroTunerTypeMatches(target, card))) return false;
-  if (!isTuner(card) && !synchroNonTunerAttributeMatches(target, card)) return false;
+  if (!isTuner(card) && (!synchroNonTunerAttributeMatches(target, card) || !synchroNonTunerRaceMatches(target, card))) return false;
   return targetLevel > 0 && materialLevel > 0 && materialLevel < targetLevel;
 }
 
@@ -46,7 +46,7 @@ function canGenericSynchroMaterialsMatch(card: DuelCardInstance, materials: Duel
   if (targetLevel <= 0 || materials.length < 2) return false;
   if (!synchroMaterialCountsAllowed(card, materials)) return false;
   if (!materials.every((material) => !isTuner(material) || (synchroTunerAttributeMatches(card, material) && synchroTunerRaceMatches(card, material) && synchroTunerTypeMatches(card, material)))) return false;
-  if (!materials.every((material) => isTuner(material) || synchroNonTunerAttributeMatches(card, material))) return false;
+  if (!materials.every((material) => isTuner(material) || (synchroNonTunerAttributeMatches(card, material) && synchroNonTunerRaceMatches(card, material)))) return false;
   return materials.reduce((total, material) => total + (material.data.level ?? 0), 0) === targetLevel;
 }
 
@@ -116,6 +116,10 @@ function synchroTunerTypeMatches(target: DuelCardInstance, material: DuelCardIns
 
 function synchroNonTunerAttributeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
   return target.data.synchroNonTunerAttribute === undefined || ((material.data.attribute ?? 0) & target.data.synchroNonTunerAttribute) !== 0;
+}
+
+function synchroNonTunerRaceMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroNonTunerRace === undefined || ((material.data.race ?? 0) & target.data.synchroNonTunerRace) !== 0;
 }
 
 function isMonsterLike(card: DuelCardInstance): boolean {
