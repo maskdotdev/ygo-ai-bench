@@ -359,21 +359,21 @@ function pushSwapControl(L: unknown, session: DuelSession, hostState: LuaDuelMov
 
 function pushChangePosition(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
   const uids = readCardOrGroupUids(L, 1);
-  const positionMask = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
-  const requestedPosition = positionMask === undefined ? undefined : positionFromMask(positionMask);
-  if (!requestedPosition) {
-    setOperatedUids(hostState, []);
-    lua.lua_pushinteger(L, 0);
-    return 1;
+  const firstPositionMask = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
+  if (firstPositionMask === undefined || !positionFromMask(firstPositionMask)) {
+    setOperatedUids(hostState, []); lua.lua_pushinteger(L, 0); return 1;
   }
+  const usesPositionOverload = lua.lua_isnumber(L, 3) || lua.lua_isnumber(L, 4) || lua.lua_isnumber(L, 5);
+  const faceUpDefenseMask = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : undefined, faceDownDefenseMask = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : undefined;
   beginLuaOperationMoveStep(session, hostState);
   const triggerStart = session.state.pendingTriggers.length;
   const changed: string[] = [];
   for (const uid of uids) {
-    const card = session.state.cards.find((candidate) => candidate.uid === uid);
-    if (!card) continue;
-    if (luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) continue;
-    if (changeSpellTrapPosition(session.state, card, requestedPosition, positionMask)) {
+    const card = session.state.cards.find((candidate) => candidate.uid === uid); if (!card) continue;
+    const requestedPositionMask = !usesPositionOverload ? firstPositionMask : card.position === "faceUpDefense" ? faceUpDefenseMask : card.position === "faceDownDefense" ? faceDownDefenseMask : firstPositionMask;
+    const requestedPosition = requestedPositionMask === undefined ? undefined : positionFromMask(requestedPositionMask);
+    if (!requestedPosition || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) continue;
+    if (changeSpellTrapPosition(session.state, card, requestedPosition, requestedPositionMask)) {
       changed.push(uid);
       continue;
     }
