@@ -88,6 +88,44 @@ describe("Lua dynamic summon material traits", () => {
     expect(host.messages).toContain("dynamic predicate traits 4097/2/32");
     expect(host.messages).toContain("dynamic material predicates true/true/true/true");
   });
+
+  it("uses current monster type for Lua Fusion material selection and summons", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Material Losing Monster Type", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: "200", name: "Normal Fusion Material", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: "300", name: "Specific Fusion", kind: "extra", typeFlags: 0x41, fusionMaterials: ["100", "200"] },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 104, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: ["100", "200"], extra: ["300"] }, 1: { main: [] } });
+    startDuel(session);
+    moveDuelCard(session.state, requireCard(session, "100", "deck").uid, "monsterZone", 0);
+    moveDuelCard(session.state, requireCard(session, "200", "deck").uid, "monsterZone", 0);
+
+    const source = { readScript: dynamicRemovedMonsterMaterialScript };
+    const host = createLuaScriptHost(session, source);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const result = host.loadScript(
+      `
+      local c100=Duel.GetFieldCard(0,LOCATION_MZONE,0)
+      local c200=Duel.GetFieldCard(0,LOCATION_MZONE,1)
+      local fusion=Duel.GetFieldCard(0,LOCATION_EXTRA,0)
+      local pool=Duel.GetFusionMaterial(0)
+      local selected=Duel.SelectFusionMaterial(0,fusion,Group.FromCards(c100,c200),0)
+      Debug.Message("dynamic removed fusion pool " .. tostring(c100:IsMonster()) .. "/" .. pool:GetCount() .. "/" .. tostring(pool:IsContains(c100)) .. "/" .. tostring(pool:IsContains(c200)))
+      Debug.Message("dynamic removed fusion selected " .. selected:GetCount())
+      Debug.Message("dynamic removed fusion summon " .. Duel.FusionSummon(fusion,Group.FromCards(c100,c200)))
+      `,
+      "dynamic-removed-fusion-material.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("dynamic removed fusion pool false/1/false/true");
+    expect(host.messages).toContain("dynamic removed fusion selected 0");
+    expect(host.messages).toContain("dynamic removed fusion summon 0");
+    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ location: "extraDeck" });
+  });
 });
 
 function setupDynamicSynchroFixture(seed: number): {
@@ -176,6 +214,20 @@ function dynamicMaterialPredicateScript(name: string): string | undefined {
       e2:SetCode(EFFECT_CHANGE_ATTRIBUTE)
       e2:SetValue(ATTRIBUTE_DARK)
       c:RegisterEffect(e2)
+    end
+  `;
+}
+
+function dynamicRemovedMonsterMaterialScript(name: string): string | undefined {
+  if (name !== "c100.lua") return undefined;
+  return `
+    c100={}
+    function c100.initial_effect(c)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetCode(EFFECT_REMOVE_TYPE)
+      e:SetValue(TYPE_MONSTER)
+      c:RegisterEffect(e)
     end
   `;
 }

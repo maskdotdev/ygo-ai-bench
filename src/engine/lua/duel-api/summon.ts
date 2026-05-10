@@ -31,6 +31,7 @@ import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelReason } from "#duel/reasons.js";
 import { tributeSetDuelCard } from "#duel/summon.js";
+import { cardTypeFlags, currentLevel } from "#duel/card-stats.js";
 import { cardCombinations, materialCodesMatch, type MaterialCodeMatchOptions } from "#duel/summon-materials.js";
 import { sameStringMembers } from "#duel/string-list-match.js";
 import { setSpellTrap as setCoreSpellTrap } from "#duel/spell-trap.js";
@@ -295,7 +296,7 @@ function fusionSummonSelectedMaterials(
   materialsAlreadyMoved = false,
   materialReason = duelReason.material | duelReason.fusion,
 ): void {
-  if (!isMonsterLike(target) || !isSelectedFusionTargetLocation(target.location)) throw new Error(`${target.name} is not a Fusion monster in a summonable location`);
+  if (!isMonsterLike(session.state, target) || !isSelectedFusionTargetLocation(target.location)) throw new Error(`${target.name} is not a Fusion monster in a summonable location`);
   if (new Set(materialUids).size !== materialUids.length || materialUids.length === 0) throw new Error(`${target.name} fusion materials are not legal`);
   const materials = materialUids.map((uid) => session.state.cards.find((candidate) => candidate.uid === uid));
   if (
@@ -349,7 +350,7 @@ function isSelectedFusionTargetLocation(location: DuelLocation): boolean {
 function canBeSelectedFusionMaterial(session: DuelSession, material: DuelCardInstance | undefined, target: DuelCardInstance): boolean {
   if (!material) return false;
   return (
-    isMonsterLike(material) &&
+    isMonsterLike(session.state, material) &&
     isSelectedFusionMaterialLocation(material.location) &&
     material.uid !== target.uid &&
     targetAllowsFusionMaterial(session.state, target, material) &&
@@ -362,7 +363,7 @@ function canMoveUnmovedFusionMaterial(session: DuelSession, material: DuelCardIn
 }
 
 function canTrackMovedFusionMaterial(session: DuelSession, material: DuelCardInstance | undefined, target: DuelCardInstance): boolean {
-  return Boolean(material && isMonsterLike(material) && material.uid !== target.uid && targetAllowsFusionMaterial(session.state, target, material));
+  return Boolean(material && isMonsterLike(session.state, material) && material.uid !== target.uid && targetAllowsFusionMaterial(session.state, target, material));
 }
 
 function isDefaultFusionMaterialLocation(location: DuelLocation): boolean {
@@ -399,7 +400,7 @@ function ritualSummonSelectedMaterials(
   }
   for (const uid of materialUids) {
     const material = session.state.cards.find((candidate) => candidate.uid === uid);
-    const canUseMaterial = materialsAlreadyMoved ? canTrackMovedRitualMaterial(material, target) : canBeSelectedRitualMaterial(session, material, target);
+    const canUseMaterial = materialsAlreadyMoved ? canTrackMovedRitualMaterial(session, material, target) : canBeSelectedRitualMaterial(session, material, target);
     if (!canUseMaterial) {
       throw new Error(`${target.name} ritual materials are not legal`);
     }
@@ -432,7 +433,7 @@ function isSelectedRitualTargetLocation(location: DuelLocation): boolean {
 function canBeSelectedRitualMaterial(session: DuelSession, material: DuelCardInstance | undefined, target: DuelCardInstance): boolean {
   if (!material) return false;
   return (
-    isMonsterLike(material) &&
+    isMonsterLike(session.state, material) &&
     isSelectedRitualMaterialLocation(material.location) &&
     material.controller === target.controller &&
     material.uid !== target.uid &&
@@ -441,8 +442,8 @@ function canBeSelectedRitualMaterial(session: DuelSession, material: DuelCardIns
   );
 }
 
-function canTrackMovedRitualMaterial(material: DuelCardInstance | undefined, target: DuelCardInstance): boolean {
-  return Boolean(material && isMonsterLike(material) && material.uid !== target.uid && targetAllowsMaterial(target, material, "ritual"));
+function canTrackMovedRitualMaterial(session: DuelSession, material: DuelCardInstance | undefined, target: DuelCardInstance): boolean {
+  return Boolean(material && isMonsterLike(session.state, material) && material.uid !== target.uid && targetAllowsMaterial(target, material, "ritual"));
 }
 
 function isSelectedRitualMaterialLocation(location: DuelLocation): boolean {
@@ -648,7 +649,7 @@ function ritualMaterialCandidates(state: DuelState, player: PlayerId, target: Du
 
 function canBeRitualMaterial(state: DuelState, card: DuelCardInstance, target: DuelCardInstance | undefined): boolean {
   return (
-    isMonsterLike(card) &&
+    isMonsterLike(state, card) &&
     (card.location === "hand" || card.location === "monsterZone") &&
     targetAllowsMaterial(target, card, "ritual") &&
     !isMaterialUsePrevented(state, card.uid, "ritual", createMaterialCheckContext(state))
@@ -662,9 +663,9 @@ function pendulumSummonCandidates(session: DuelSession, player: PlayerId, lowSca
 }
 
 function canPendulumSummonCard(session: DuelSession, player: PlayerId, card: DuelCardInstance, lowScale: number, highScale: number): boolean {
-  if (card.controller !== player || !isPendulumMonster(card)) return false;
+  if (card.controller !== player || !isPendulumMonster(session.state, card)) return false;
   if (card.location !== "hand" && !(card.location === "extraDeck" && card.faceUp)) return false;
-  const level = card.data.level ?? 0;
+  const level = currentLevel(card, session.state);
   if (level <= lowScale || level >= highScale) return false;
   return canSpecialSummonDuelCard(session.state, card.uid, player, luaSummonTypePendulum);
 }
@@ -679,7 +680,7 @@ function pendulumScales(session: DuelSession, player: PlayerId): [number, number
 }
 
 function pendulumZoneCard(session: DuelSession, player: PlayerId, sequence: number): DuelCardInstance | undefined {
-  return session.state.cards.find((card) => card.controller === player && card.location === "spellTrapZone" && card.sequence === sequence && isPendulumCard(card));
+  return session.state.cards.find((card) => card.controller === player && card.location === "spellTrapZone" && card.sequence === sequence && isPendulumCard(session.state, card));
 }
 
 function pendulumScale(card: DuelCardInstance): number {
@@ -740,27 +741,20 @@ function createMaterialCheckContext(state: DuelState): ContinuousEffectContextFa
   });
 }
 
-function isMonsterLike(card: DuelCardInstance): boolean {
-  return (cardTypeFlags(card) & 0x1) !== 0;
+function isMonsterLike(state: DuelState, card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card, state) & 0x1) !== 0;
 }
 
 function isMainPhaseForPlayer(session: DuelSession, player: PlayerId): boolean {
   return session.state.turnPlayer === player && (session.state.phase === "main1" || session.state.phase === "main2");
 }
 
-function isPendulumMonster(card: DuelCardInstance): boolean {
-  return isMonsterLike(card) && isPendulumCard(card);
+function isPendulumMonster(state: DuelState, card: DuelCardInstance): boolean {
+  return isMonsterLike(state, card) && isPendulumCard(state, card);
 }
 
-function isPendulumCard(card: DuelCardInstance): boolean {
-  return ((card.data.typeFlags ?? 0) & 0x1000000) !== 0;
-}
-
-function cardTypeFlags(card: DuelCardInstance): number {
-  if (card.data.typeFlags !== undefined) return card.data.typeFlags;
-  if (card.kind === "spell") return 0x2;
-  if (card.kind === "trap") return 0x4;
-  return 0x1;
+function isPendulumCard(state: DuelState, card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card, state) & 0x1000000) !== 0;
 }
 
 function cardCodes(card: DuelCardInstance): string[] {

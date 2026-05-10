@@ -3,17 +3,18 @@ import { moveDuelCard } from "#duel/card-state.js";
 import { isEffectTargetSelectionPrevented, matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
 import { selectMaterialUidsForCodes } from "#duel/summon-materials.js";
+import { cardTypeFlags as instanceCardTypeFlags } from "#duel/card-stats.js";
 import { cardFieldId, pushCardTable } from "#lua/card-api.js";
 import { canLuaCardBeEffectTarget, createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
 import { installDuelLocationApi } from "#lua/duel-api/location.js";
-import { cardTypeFlags, readCardDataByCode } from "#lua/duel-api/query-card-data.js";
+import { cardTypeFlags as cardDataTypeFlags, readCardDataByCode } from "#lua/duel-api/query-card-data.js";
 import { changeTargetCard, effectiveTargetUids } from "#lua/duel-api/query-target-state.js";
 import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { findSubGroupSelection, findSumGreaterSelection, findSumSelection } from "#lua/group-selection-utils.js";
 import { uniqueUids } from "#lua/group-uid-utils.js";
 import { locationMatchesCardMask, locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
-import type { DuelCardInstance, DuelEffectContext, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelCardInstance, DuelEffectContext, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 import type { LuaEffectRecord } from "#lua/host-types.js";
 
 const { lua, to_luastring } = fengari;
@@ -200,7 +201,14 @@ function pushFusionMaterial(L: unknown, session: DuelSession, hostState?: LuaDue
     return 1;
   }
   const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
-  pushGroupTable(L, fieldGroupUids(session, player, 0x02 | 0x04, 0));
+  pushGroupTable(
+    L,
+    fieldGroupUids(session, player, 0x02 | 0x04, 0)
+      .filter((uid) => {
+        const card = session.state.cards.find((candidate) => candidate.uid === uid);
+        return Boolean(card && canUseAsFusionMaterial(session.state, card));
+      }),
+  );
   return 1;
 }
 
@@ -219,7 +227,7 @@ function pushSelectedFusionMaterial(L: unknown, session: DuelSession): number {
   const poolUids = suppliedUids.length > 0 ? suppliedUids : fieldGroupUids(session, player, 0x02 | 0x04, 0);
   const candidates = poolUids
     .map((uid) => session.state.cards.find((card) => card.uid === uid))
-    .filter((card): card is DuelCardInstance => Boolean(card && card.uid !== targetUid && (hasSuppliedMaterialGroup || card.controller === player) && canUseAsFusionMaterial(card)));
+    .filter((card): card is DuelCardInstance => Boolean(card && card.uid !== targetUid && (hasSuppliedMaterialGroup || card.controller === player) && canUseAsFusionMaterial(session.state, card)));
   pushGroupTable(L, selectFusionMaterialUids(session, candidates, target, forcedUids));
   return 1;
 }
@@ -290,7 +298,7 @@ function pushCardFromCardId(L: unknown, session: DuelSession): number {
 
 function pushCardTypeFromCode(L: unknown, session: DuelSession): number {
   const data = readCardDataByCode(L, session, 1);
-  lua.lua_pushinteger(L, cardTypeFlags(data));
+  lua.lua_pushinteger(L, cardDataTypeFlags(data));
   return 1;
 }
 
@@ -660,16 +668,16 @@ function selectFusionMaterialUids(session: DuelSession, candidates: DuelCardInst
   );
 }
 
-function canUseAsFusionMaterial(card: DuelCardInstance): boolean {
-  return isFusionMaterialLocation(card.location) && isMonsterLike(card);
+function canUseAsFusionMaterial(state: DuelState, card: DuelCardInstance): boolean {
+  return isFusionMaterialLocation(card.location) && isMonsterLike(state, card);
 }
 
 function isFusionMaterialLocation(location: DuelLocation): boolean {
   return location === "hand" || location === "monsterZone" || location === "graveyard" || location === "banished" || location === "deck" || location === "extraDeck" || location === "spellTrapZone";
 }
 
-function isMonsterLike(card: DuelCardInstance): boolean {
-  return card.kind === "monster" || (card.kind === "extra" && card.data.kind !== "spell" && card.data.kind !== "trap");
+function isMonsterLike(state: DuelState, card: DuelCardInstance): boolean {
+  return (instanceCardTypeFlags(card, state) & 0x1) !== 0;
 }
 
 function cardCodes(card: DuelCardInstance): string[] {
