@@ -1,4 +1,5 @@
 import { fusionProcedureSource } from "#lua/fusion-procedure-api.js";
+import { spiritProcedureSource } from "#lua/spirit-procedure-api.js";
 
 export const cardProcedureSource = `${fusionProcedureSource}
     aux.RitualProcedure=aux.RitualProcedure or Ritual or {}
@@ -393,26 +394,7 @@ export const cardProcedureSource = `${fusionProcedureSource}
     function Pendulum.PlayerCanGainAdditionalPendulumSummon(player,effect_flag)
       return Duel.IsTurnPlayer(player) and not Duel.IsPhase(PHASE_END)
     end
-    Spirit=Spirit or {}
-    FLAG_SPIRIT_RETURN=FLAG_SPIRIT_RETURN or 2
-    function Spirit.AddProcedure(c,...)
-      local e1=Effect.CreateEffect(c)
-      e1:SetDescription(1105)
-      e1:SetCategory(CATEGORY_TOHAND)
-      e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_F)
-      e1:SetCode(EVENT_PHASE+PHASE_END)
-      e1:SetRange(LOCATION_MZONE)
-      e1:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
-        if chk==0 then return e:GetHandler():IsAbleToHand() end
-        Duel.SetOperationInfo(0,CATEGORY_TOHAND,e:GetHandler(),1,0,0)
-      end)
-      e1:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
-        local c=e:GetHandler()
-        if c:IsRelateToEffect(e) then Duel.SendtoHand(c,nil,REASON_EFFECT) end
-      end)
-      c:RegisterEffect(e1)
-      return e1
-    end
+${spiritProcedureSource}
     Cost=Cost or {}
     __duel_detach_costs=__duel_detach_costs or setmetatable({}, {__mode="k"})
     function Cost.DetachFromSelf(count,max,op)
