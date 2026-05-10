@@ -70,7 +70,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Al
         player: 0,
         triggerBucket: "turnOptional",
         eventName: "battleDestroyed",
-        eventCardUid: counterTarget!.uid,
+        eventCardUid: alienHunter!.uid,
+        eventPlayer: 1,
         sourceUid: alienHunter!.uid,
       }),
     ]);

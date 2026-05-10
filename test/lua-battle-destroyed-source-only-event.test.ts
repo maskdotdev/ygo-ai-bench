@@ -14,7 +14,7 @@ describe("Lua source-only battle destroyed events", () => {
 
   it("binds EVENT_BATTLE_DESTROYING alias single triggers only to the destroying source card", () => {
     const messages = runBattleDestroyedSourceOnly("EVENT_BATTLE_DESTROYING", "destroying");
-    expect(messages).toEqual(expect.arrayContaining(["destroying source battle single 200/true", "destroying generic battle 200/true"]));
+    expect(messages).toEqual(expect.arrayContaining(["destroying source battle single 100/false", "destroying generic battle 100/false"]));
     expect(messages).not.toContain("destroying wrong battle single 1");
   });
 });
@@ -96,11 +96,12 @@ function runBattleDestroyedSourceOnly(eventCode: string, label: string): string[
   const rejectedSingleSource = eventCode === "EVENT_BATTLE_DESTROYING" ? target : singleWatcher;
   expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "graveyard" });
   const battleTriggers = session.state.pendingTriggers.filter((trigger) => trigger.eventName === "battleDestroyed");
+  const expectedEventCard = eventCode === "EVENT_BATTLE_DESTROYING" ? attacker : target;
   expect(battleTriggers).toHaveLength(2);
   expect(battleTriggers).toEqual(
     expect.arrayContaining([
-      expect.objectContaining({ sourceUid: expectedSource!.uid, eventCardUid: target!.uid, eventCode: 1140 }),
-      expect.objectContaining({ sourceUid: genericWatcher!.uid, eventCardUid: target!.uid, eventCode: 1140 }),
+      expect.objectContaining({ sourceUid: expectedSource!.uid, eventCardUid: expectedEventCard!.uid, eventCode: 1140 }),
+      expect.objectContaining({ sourceUid: genericWatcher!.uid, eventCardUid: expectedEventCard!.uid, eventCode: 1140 }),
     ]),
   );
   expect(battleTriggers.some((trigger) => trigger.sourceUid === rejectedSingleSource!.uid)).toBe(false);

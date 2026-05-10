@@ -1,6 +1,6 @@
 import { duelEventCode } from "#duel/event-codes.js";
 import { eventCardReasonPayload, recordDuelEvent, type DuelEventPayload } from "#duel/event-history.js";
-import { collectGroupedTriggerEffects, collectTriggerEffects } from "#duel/triggers.js";
+import { collectGroupedTriggerEffects, collectTriggerEffects, type DuelTriggerCollectOptions } from "#duel/triggers.js";
 import type { ChainLink, DuelCardInstance, DuelEffectDefinition, DuelEventName, DuelState } from "#duel/types.js";
 
 type GroupedTriggerChooser = (
@@ -38,8 +38,14 @@ export function collectDuelGroupedTriggerEffectsWithChooser(
   const triggerOptions = eventCode === undefined ? groupedOptions : { ...groupedOptions, eventCode };
   recordDuelEvent(state, eventName, eventCard, eventCode, eventRecordPayload(eventCard, groupedOptions));
   if (eventCode !== undefined) executeContinuousEvent?.(state, eventName, eventCode, uniqueEventCards, triggerOptions, continuousChainLink);
-  const chooser = (duel: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, triggerEventName: DuelEventName, triggerEventCard?: DuelCardInstance) =>
-    canChooseEffect(duel, effect, source, triggerEventName, triggerEventCard, triggerOptions);
+  const chooser = (
+    duel: DuelState,
+    effect: DuelEffectDefinition,
+    source: DuelCardInstance,
+    triggerEventName: DuelEventName,
+    triggerEventCard?: DuelCardInstance,
+    triggerPayload: DuelTriggerCollectOptions = triggerOptions,
+  ) => canChooseEffect(duel, effect, source, triggerEventName, triggerEventCard, triggerPayload);
   if (uniqueEventCards.length <= 1) collectTriggerEffects(state, eventName, chooser, eventCard, triggerOptions);
   else collectGroupedTriggerEffects(state, eventName, chooser, uniqueEventCards, triggerOptions);
 }

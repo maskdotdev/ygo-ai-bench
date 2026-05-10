@@ -14,7 +14,7 @@ describe("Lua battle destroy restore helpers", () => {
 
   it("applies restored Lua battle-destroying alias triggers through restore responses", () => {
     const result = runBattleDestroyRestore("EVENT_BATTLE_DESTROYING", "restored battle destroying");
-    expect(result.messages).toContain("restored battle destroying 200/true");
+    expect(result.messages).toContain("restored battle destroying 100/false");
   });
 });
 
@@ -66,14 +66,16 @@ function runBattleDestroyRestore(eventCode: string, message: string): { messages
   applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!);
   passBattleResponses(session);
 
+  const expectedEventCard = eventCode === "EVENT_BATTLE_DESTROYING" ? attacker : target;
+  const expectedMessage = eventCode === "EVENT_BATTLE_DESTROYING" ? `${message} 100/false` : `${message} 200/true`;
   expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "graveyard" });
   expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleDestroyed"]);
-  expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1140, eventCardUid: target!.uid });
+  expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1140, eventCardUid: expectedEventCard!.uid });
 
   const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
   expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
   expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleDestroyed"]);
-  expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1140, eventCardUid: target!.uid });
+  expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1140, eventCardUid: expectedEventCard!.uid });
   expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
   expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
   expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -105,7 +107,7 @@ function runBattleDestroyRestore(eventCode: string, message: string): { messages
   expect(staleTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
   assertLuaRestoreLegalWindow(restored, staleTrigger, 0);
   expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["battleDestroyed"]);
-  expect(restored.host.messages).not.toContain(`${message} 200/true`);
+  expect(restored.host.messages).not.toContain(expectedMessage);
   const forgedEffectTrigger = applyLuaRestoreResponse(restored, {
     ...trigger!,
     effectId: `${trigger!.effectId}-forged`,
@@ -114,7 +116,7 @@ function runBattleDestroyRestore(eventCode: string, message: string): { messages
   expect(forgedEffectTrigger.error).toContain("Response is not currently legal");
   assertLuaRestoreLegalWindow(restored, forgedEffectTrigger, 0);
   expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["battleDestroyed"]);
-  expect(restored.host.messages).not.toContain(`${message} 200/true`);
+  expect(restored.host.messages).not.toContain(expectedMessage);
 
   applyLuaRestoreAndAssert(restored, trigger!);
   const staleReplay = applyLuaRestoreResponse(restored, trigger!);

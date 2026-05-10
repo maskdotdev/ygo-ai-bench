@@ -4,7 +4,14 @@ import { eventCardReasonPayload, eventCardStatePayload } from "#duel/event-histo
 import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventCardState, DuelEventName, DuelState, PendingTrigger, PlayerId, TriggerBucket } from "#duel/types.js";
 
-export type DuelTriggerChooser = (state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, eventName: DuelEventName, eventCard?: DuelCardInstance) => boolean;
+export type DuelTriggerChooser = (
+  state: DuelState,
+  effect: DuelEffectDefinition,
+  source: DuelCardInstance,
+  eventName: DuelEventName,
+  eventCard?: DuelCardInstance,
+  options?: DuelTriggerCollectOptions,
+) => boolean;
 
 export interface DuelTriggerCollectOptions {
   eventIsLast?: boolean;
@@ -23,8 +30,13 @@ export interface DuelTriggerCollectOptions {
   eventCurrentState?: DuelEventCardState;
 }
 
+interface TriggerEventCandidate {
+  eventCard?: DuelCardInstance | undefined;
+  options: DuelTriggerCollectOptions;
+}
+
 export function collectTriggerEffects(state: DuelState, eventName: DuelEventName, canChooseEffect: DuelTriggerChooser, eventCard?: DuelCardInstance, options: DuelTriggerCollectOptions = {}): void {
-  const collected: Array<{ effect: DuelEffectDefinition; source: DuelCardInstance; index: number }> = [];
+  const collected: Array<{ effect: DuelEffectDefinition; source: DuelCardInstance; index: number; eventCard?: DuelCardInstance | undefined; options: DuelTriggerCollectOptions }> = [];
   const eventIsLast = options.eventIsLast ?? true;
   for (const [index, effect] of state.effects.entries()) {
     if (effect.event !== "trigger" || effect.triggerEvent !== eventName) continue;
@@ -34,15 +46,16 @@ export function collectTriggerEffects(state: DuelState, eventName: DuelEventName
     if (!canUseEffectCount(state, effect)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source) continue;
-    if (isBattleDestroyingSingleTrigger(effect, eventName) && battleDestroyingSourceUid(state, eventCard) !== source.uid) continue;
-    if (effect.triggerSourceOnly && eventCard?.uid !== source.uid) continue;
+    const candidate = triggerEventCandidate(state, effect, eventName, eventCard, options);
+    if (isBattleDestroyingSingleTrigger(effect, eventName) && candidate.eventCard?.uid !== source.uid) continue;
+    if (effect.triggerSourceOnly && candidate.eventCard?.uid !== source.uid) continue;
     if (!effect.range.includes(source.location)) continue;
     if (isTriggerPrevented(state, source)) continue;
-    if (!canChooseEffect(state, effect, source, eventName, eventCard)) continue;
-    collected.push({ effect, source, index });
+    if (!canChooseEffect(state, effect, source, eventName, candidate.eventCard, candidate.options)) continue;
+    collected.push({ effect, source, index, eventCard: candidate.eventCard, options: candidate.options });
   }
   collected.sort((a, b) => triggerPriority(state, a.effect) - triggerPriority(state, b.effect) || a.index - b.index);
-  for (const trigger of collected) state.pendingTriggers.push(createPendingTrigger(state, trigger.effect, trigger.source, eventName, eventCard, options));
+  for (const trigger of collected) state.pendingTriggers.push(createPendingTrigger(state, trigger.effect, trigger.source, eventName, trigger.eventCard, trigger.options));
   setWaitingForPendingTriggerBucket(state);
 }
 
@@ -54,7 +67,7 @@ export function collectGroupedTriggerEffects(state: DuelState, eventName: DuelEv
   }
   const eventUids = options.eventUids && options.eventUids.length > 0 ? options.eventUids : uniqueEventCards.map((card) => card.uid);
   const groupedOptions = { ...options, eventUids };
-  const collected: Array<{ effect: DuelEffectDefinition; source: DuelCardInstance; index: number; eventCard?: DuelCardInstance }> = [];
+  const collected: Array<{ effect: DuelEffectDefinition; source: DuelCardInstance; index: number; eventCard?: DuelCardInstance | undefined; options: DuelTriggerCollectOptions }> = [];
   const eventIsLast = groupedOptions.eventIsLast ?? true;
   for (const [index, effect] of state.effects.entries()) {
     if (effect.event !== "trigger" || effect.triggerEvent !== eventName) continue;
@@ -65,18 +78,12 @@ export function collectGroupedTriggerEffects(state: DuelState, eventName: DuelEv
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (isTriggerPrevented(state, source)) continue;
-    const eventCard =
-      isBattleDestroyingSingleTrigger(effect, eventName)
-        ? uniqueEventCards.find((card) => battleDestroyingSourceUid(state, card) === source.uid && canChooseEffect(state, effect, source, eventName, card))
-        : effect.triggerSourceOnly
-          ? uniqueEventCards.find((card) => card.uid === source.uid)
-          : firstChoosableEventCard(state, effect, source, eventName, uniqueEventCards, canChooseEffect);
-    if (!eventCard) continue;
-    if (effect.triggerSourceOnly && !canChooseEffect(state, effect, source, eventName, eventCard)) continue;
-    collected.push({ effect, source, index, eventCard });
+    const candidate = firstTriggerEventCandidate(state, effect, source, eventName, uniqueEventCards, groupedOptions, canChooseEffect);
+    if (!candidate.eventCard) continue;
+    collected.push({ effect, source, index, eventCard: candidate.eventCard, options: candidate.options });
   }
   collected.sort((a, b) => triggerPriority(state, a.effect) - triggerPriority(state, b.effect) || a.index - b.index);
-  for (const trigger of collected) state.pendingTriggers.push(createPendingTrigger(state, trigger.effect, trigger.source, eventName, trigger.eventCard, groupedOptions));
+  for (const trigger of collected) state.pendingTriggers.push(createPendingTrigger(state, trigger.effect, trigger.source, eventName, trigger.eventCard, trigger.options));
   setWaitingForPendingTriggerBucket(state);
 }
 
@@ -91,15 +98,48 @@ function uniqueCards(cards: DuelCardInstance[]): DuelCardInstance[] {
   return result;
 }
 
-function firstChoosableEventCard(
+function firstTriggerEventCandidate(
   state: DuelState,
   effect: DuelEffectDefinition,
   source: DuelCardInstance,
   eventName: DuelEventName,
   eventCards: DuelCardInstance[],
+  options: DuelTriggerCollectOptions,
   canChooseEffect: DuelTriggerChooser,
-): DuelCardInstance | undefined {
-  return eventCards.find((card) => canChooseEffect(state, effect, source, eventName, card));
+): TriggerEventCandidate {
+  for (const eventCard of eventCards) {
+    const candidate = triggerEventCandidate(state, effect, eventName, eventCard, options);
+    if (isBattleDestroyingSingleTrigger(effect, eventName) && candidate.eventCard?.uid !== source.uid) continue;
+    if (effect.triggerSourceOnly && candidate.eventCard?.uid !== source.uid) continue;
+    if (canChooseEffect(state, effect, source, eventName, candidate.eventCard, candidate.options)) return candidate;
+  }
+  return { options };
+}
+
+function triggerEventCandidate(
+  state: DuelState,
+  effect: DuelEffectDefinition,
+  eventName: DuelEventName,
+  eventCard: DuelCardInstance | undefined,
+  options: DuelTriggerCollectOptions,
+): TriggerEventCandidate {
+  if (!isBattleDestroyingTrigger(effect, eventName) || !eventCard) return { eventCard, options };
+  const destroyingUid = battleDestroyingSourceUid(state, eventCard);
+  const destroyingCard = destroyingUid === undefined ? undefined : findCard(state, destroyingUid);
+  if (!destroyingCard) return { eventCard, options };
+  return { eventCard: destroyingCard, options: battleDestroyingTriggerOptions(options, eventCard) };
+}
+
+function battleDestroyingTriggerOptions(options: DuelTriggerCollectOptions, destroyedCard: DuelCardInstance): DuelTriggerCollectOptions {
+  const reasonPayload = eventCardReasonPayload(destroyedCard);
+  return {
+    ...options,
+    ...(options.eventPlayer === undefined ? { eventPlayer: destroyedCard.controller } : {}),
+    ...(options.eventReason === undefined && reasonPayload.eventReason !== undefined ? { eventReason: reasonPayload.eventReason } : {}),
+    ...(options.eventReasonPlayer === undefined && reasonPayload.eventReasonPlayer !== undefined ? { eventReasonPlayer: reasonPayload.eventReasonPlayer } : {}),
+    ...(options.eventReasonCardUid === undefined && reasonPayload.eventReasonCardUid !== undefined ? { eventReasonCardUid: reasonPayload.eventReasonCardUid } : {}),
+    ...(options.eventReasonEffectId === undefined && reasonPayload.eventReasonEffectId !== undefined ? { eventReasonEffectId: reasonPayload.eventReasonEffectId } : {}),
+  };
 }
 
 function battleDestroyingSourceUid(state: DuelState, eventCard: DuelCardInstance | undefined): string | undefined {
@@ -112,6 +152,10 @@ function battleDestroyingSourceUid(state: DuelState, eventCard: DuelCardInstance
 
 function isBattleDestroyingSingleTrigger(effect: DuelEffectDefinition, eventName: DuelEventName): boolean {
   return eventName === "battleDestroyed" && effect.triggerCode === 1139 && ((effect.luaTypeFlags ?? 0) & 0x1) !== 0;
+}
+
+function isBattleDestroyingTrigger(effect: DuelEffectDefinition, eventName: DuelEventName): boolean {
+  return eventName === "battleDestroyed" && effect.triggerCode === 1139;
 }
 
 function triggerPriority(state: DuelState, effect: DuelEffectDefinition): number {

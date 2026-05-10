@@ -254,6 +254,80 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(getLuaRestoreLegalActions(restoredBattle, 1).some((action) => action.type === "declareAttack" && action.attackerUid === opponentTarget!.uid)).toBe(false);
   });
 
+  it("restores Hercules Base battle-destroying draw trigger", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const baseCode = "97616504";
+    const equippedAttackerCode = "601015";
+    const battleTargetCode = "601016";
+    const graveSpellCodes = ["601017", "601018", "601019"];
+    const drawCardCode = "601020";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === baseCode),
+      { code: equippedAttackerCode, name: "Hercules Base Equipped Attacker", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1800, defense: 1000 },
+      { code: battleTargetCode, name: "Hercules Base Battle Target", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      ...graveSpellCodes.map((code) => ({ code, name: `Hercules Base Grave Spell ${code}`, kind: "spell" as const, typeFlags: 0x2 })),
+      { code: drawCardCode, name: "Hercules Base Draw Card", kind: "spell" as const, typeFlags: 0x2 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 304, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [baseCode, battleTargetCode, ...graveSpellCodes, drawCardCode] }, 1: { main: [equippedAttackerCode] } });
+    startDuel(session);
+
+    const base = session.state.cards.find((card) => card.code === baseCode);
+    const equippedAttacker = session.state.cards.find((card) => card.code === equippedAttackerCode);
+    const battleTarget = session.state.cards.find((card) => card.code === battleTargetCode);
+    const drawCard = session.state.cards.find((card) => card.code === drawCardCode);
+    expect(base).toBeDefined();
+    expect(equippedAttacker).toBeDefined();
+    expect(battleTarget).toBeDefined();
+    expect(drawCard).toBeDefined();
+    moveDuelCard(session.state, base!.uid, "spellTrapZone", 0).faceUp = true;
+    base!.equippedToUid = equippedAttacker!.uid;
+    moveDuelCard(session.state, equippedAttacker!.uid, "monsterZone", 1).position = "faceUpAttack";
+    moveDuelCard(session.state, battleTarget!.uid, "monsterZone", 0).position = "faceUpAttack";
+    for (const code of graveSpellCodes) {
+      const spell = session.state.cards.find((card) => card.code === code);
+      expect(spell).toBeDefined();
+      moveDuelCard(session.state, spell!.uid, "graveyard", 0);
+    }
+    session.state.turnPlayer = 1;
+    session.state.phase = "battle";
+    session.state.waitingFor = 1;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(baseCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+
+    const restoredBattleWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restoredBattleWindow.restoreComplete, restoredBattleWindow.incompleteReasons.join("; ")).toBe(true);
+    const attack = getLuaRestoreLegalActions(restoredBattleWindow, 1).find(
+      (action) => action.type === "declareAttack" && action.attackerUid === equippedAttacker!.uid && action.targetUid === battleTarget!.uid,
+    );
+    expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredBattleWindow, 1), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredBattleWindow, attack!);
+    passRestoredBattleResponsesUntilTrigger(restoredBattleWindow);
+
+    expect(restoredBattleWindow.session.state.cards.find((card) => card.uid === battleTarget!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restoredBattleWindow.session.state.pendingTriggers).toEqual([
+      expect.objectContaining({ sourceUid: base!.uid, eventName: "battleDestroyed", eventCardUid: equippedAttacker!.uid, player: 0 }),
+    ]);
+
+    const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredBattleWindow.session), workspace, reader);
+    expect(restoredTriggerWindow.restoreComplete, restoredTriggerWindow.incompleteReasons.join("; ")).toBe(true);
+    const drawTrigger = getLuaRestoreLegalActions(restoredTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.uid === base!.uid);
+    expect(drawTrigger, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredTriggerWindow, drawTrigger!);
+    expect(restoredTriggerWindow.session.state.chain).toEqual([]);
+    expect(restoredTriggerWindow.session.state.pendingTriggers).toEqual([]);
+    expect(restoredTriggerWindow.session.state.cards.find((card) => card.uid === drawCard!.uid)).toMatchObject({ location: "hand", controller: 0 });
+    expect(restoredTriggerWindow.session.state.eventHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ eventName: "battleDestroyed", eventCode: 1140, eventCardUid: battleTarget!.uid }),
+        expect.objectContaining({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventValue: 1, eventUids: [drawCard!.uid] }),
+      ]),
+    );
+  });
+
   it("restores Hercules Base graveyard trigger target and to-Deck operation", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const baseCode = "97616504";
@@ -368,6 +442,18 @@ function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScri
     expect(++guard).toBeLessThan(10);
     const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
     const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restored, pass!);
+  }
+}
+
+function passRestoredBattleResponsesUntilTrigger(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  let guard = 0;
+  while (restored.session.state.pendingBattle && restored.session.state.pendingTriggers.length === 0) {
+    expect(++guard).toBeLessThan(20);
+    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    const passType = restored.session.state.battleStep === "damage" || restored.session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack";
+    const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === passType);
     expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restored, pass!);
   }
