@@ -66,6 +66,7 @@ The engine already has useful surfaces to build on:
 - Lua API coverage is broad enough for smoke probing, including active effect type helpers such as `GetActiveType`/`IsActiveType`, but should continue to be driven by failing real card scripts and fixture needs.
 - Xyz procedure metadata also restores non-Ex `aux.FilterBoolFunction(Card.IsRace, ...)` material filters through Melffy Mommy and `Card.IsSetCard` material filters through Gimmick Puppet Gigantes Doll.
 - Link procedure metadata also restores `Card.IsSetCard` material filters through X-Krawler Qualiark.
+- Synchro procedure metadata also restores tuner-side `Card.IsSetCard` material filters through Dragunity Knight - Gormfaobhar.
 
 ## North Star
 

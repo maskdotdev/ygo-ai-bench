@@ -1,5 +1,6 @@
 import { hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
 import { isMaterialUsePrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
+import { isSetcodeMatch } from "#lua/card-code-utils.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 type SynchroMaterialCodes = { tuner: string; nonTuners: string[] };
@@ -36,7 +37,7 @@ function targetAllowsMaterial(target: DuelCardInstance, card: DuelCardInstance):
   }
   const targetLevel = (cardTypeFlags(target) & 0x2000) !== 0 ? target.data.level ?? 0 : 0;
   const materialLevel = card.data.level ?? 0;
-  if (isTuner(card) && (!synchroTunerAttributeMatches(target, card) || !synchroTunerRaceMatches(target, card) || !synchroTunerTypeMatches(target, card))) return false;
+  if (isTuner(card) && (!synchroTunerAttributeMatches(target, card) || !synchroTunerRaceMatches(target, card) || !synchroTunerTypeMatches(target, card) || !synchroTunerSetcodeMatches(target, card))) return false;
   if (!isTuner(card) && (!synchroNonTunerAttributeMatches(target, card) || !synchroNonTunerRaceMatches(target, card) || !synchroNonTunerTypeMatches(target, card))) return false;
   return targetLevel > 0 && materialLevel > 0 && materialLevel < targetLevel;
 }
@@ -45,7 +46,7 @@ function canGenericSynchroMaterialsMatch(card: DuelCardInstance, materials: Duel
   const targetLevel = (cardTypeFlags(card) & 0x2000) !== 0 ? card.data.level ?? 0 : 0;
   if (targetLevel <= 0 || materials.length < 2) return false;
   if (!synchroMaterialCountsAllowed(card, materials)) return false;
-  if (!materials.every((material) => !isTuner(material) || (synchroTunerAttributeMatches(card, material) && synchroTunerRaceMatches(card, material) && synchroTunerTypeMatches(card, material)))) return false;
+  if (!materials.every((material) => !isTuner(material) || (synchroTunerAttributeMatches(card, material) && synchroTunerRaceMatches(card, material) && synchroTunerTypeMatches(card, material) && synchroTunerSetcodeMatches(card, material)))) return false;
   if (!materials.every((material) => isTuner(material) || (synchroNonTunerAttributeMatches(card, material) && synchroNonTunerRaceMatches(card, material) && synchroNonTunerTypeMatches(card, material)))) return false;
   return materials.reduce((total, material) => total + (material.data.level ?? 0), 0) === targetLevel;
 }
@@ -112,6 +113,10 @@ function synchroTunerRaceMatches(target: DuelCardInstance, material: DuelCardIns
 
 function synchroTunerTypeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
   return target.data.synchroTunerType === undefined || (cardTypeFlags(material) & target.data.synchroTunerType) !== 0;
+}
+
+function synchroTunerSetcodeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroTunerSetcode === undefined || (material.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.synchroTunerSetcode!, setcode));
 }
 
 function synchroNonTunerAttributeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {

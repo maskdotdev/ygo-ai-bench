@@ -134,4 +134,63 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sy
       summonType: "synchro",
     });
   });
+
+  it("restores official Synchro.AddProcedure tuner setcode filters for real extra deck summons", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const gormfaobharCode = "36556781";
+    const offSetTunerMaterialCodes = ["900000181", "900000182"];
+    const dragunityTunerMaterialCodes = ["900000183", "900000184"];
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === gormfaobharCode),
+      { code: offSetTunerMaterialCodes[0]!, name: "Off-Set Level 3 Tuner", kind: "monster" as const, typeFlags: 0x1001, level: 3, setcodes: [0x123] },
+      { code: offSetTunerMaterialCodes[1]!, name: "Level 4 Non-Tuner", kind: "monster" as const, typeFlags: 0x1, level: 4 },
+      { code: dragunityTunerMaterialCodes[0]!, name: "Dragunity Level 3 Tuner", kind: "monster" as const, typeFlags: 0x1001, level: 3, setcodes: [0x29] },
+      { code: dragunityTunerMaterialCodes[1]!, name: "Second Level 4 Non-Tuner", kind: "monster" as const, typeFlags: 0x1, level: 4 },
+    ];
+    const reader = createCardReader(cards);
+    const restoreWithMaterials = (main: string[]) => {
+      const session = createDuel({ seed: 314, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+      loadDecks(session, { 0: { main, extra: [gormfaobharCode] }, 1: { main: [] } });
+      startDuel(session);
+      const synchro = session.state.cards.find((card) => card.code === gormfaobharCode && card.location === "extraDeck");
+      expect(synchro).toBeDefined();
+      for (const code of main) {
+        const material = session.state.cards.find((card) => card.code === code && card.location === "deck");
+        expect(material).toBeDefined();
+        moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+      }
+      session.state.phase = "main1";
+      session.state.waitingFor = 0;
+      const host = createLuaScriptHost(session, workspace);
+      expect(host.loadCardScript(Number(gormfaobharCode), workspace).ok).toBe(true);
+      expect(host.registerInitialEffects()).toBeGreaterThan(0);
+      expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.data).toMatchObject({
+        synchroTunerMin: 1,
+        synchroTunerMax: 1,
+        synchroTunerSetcode: 0x29,
+        synchroNonTunerMin: 1,
+        synchroNonTunerMax: 99,
+      });
+      const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+      expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+      expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+      return { restored, synchro };
+    };
+
+    const wrongTuner = restoreWithMaterials(offSetTunerMaterialCodes);
+    expect(getLuaRestoreLegalActions(wrongTuner.restored, 0).some((action) => action.type === "synchroSummon" && action.uid === wrongTuner.synchro!.uid)).toBe(false);
+
+    const matchingTuner = restoreWithMaterials(dragunityTunerMaterialCodes);
+    const actions = getLuaRestoreLegalActions(matchingTuner.restored, 0).filter((action) => action.type === "synchroSummon" && action.uid === matchingTuner.synchro!.uid);
+    expect(actions, JSON.stringify(getLuaRestoreLegalActions(matchingTuner.restored, 0), null, 2)).toHaveLength(1);
+    const action = actions[0];
+    expect(action?.type).toBe("synchroSummon");
+    if (!action || action.type !== "synchroSummon") throw new Error("Expected Synchro Summon action");
+    const summoned = applyLuaRestoreResponse(matchingTuner.restored, action);
+    expect(summoned.ok, summoned.error).toBe(true);
+    expect(matchingTuner.restored.session.state.cards.find((card) => card.uid === matchingTuner.synchro!.uid)).toMatchObject({
+      location: "monsterZone",
+      summonType: "synchro",
+    });
+  });
 });
