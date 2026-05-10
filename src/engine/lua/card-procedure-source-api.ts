@@ -94,6 +94,7 @@ export const cardProcedureSource = `${fusionProcedureSource}
           else
             Duel.RitualSummon(rc,sg,false,params.sumpos)
             if rc:IsFacedown() then Duel.ConfirmCards(1-tp,rc) end
+            if params.stage2 then params.stage2(sg,e,tp,eg,ep,ev,re,r,rp,rc) end
           end
         end
       end
