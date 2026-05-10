@@ -258,6 +258,68 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
     expect(summoned?.overlayUids).not.toContain(effectMaterial?.uid);
   });
 
+  it("skips material locks for Lua Duel.XyzSummon default material selection", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const thunderEndCode = "698785";
+    const normalMaterialCodes = ["900000211", "900000212", "900000213"];
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === thunderEndCode),
+      ...normalMaterialCodes.map((code, index) => ({
+        code,
+        name: `Lock-Aware Level 8 Normal Material ${index + 1}`,
+        kind: "monster" as const,
+        typeFlags: 0x11,
+        level: 8,
+      })),
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 325, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: normalMaterialCodes, extra: [thunderEndCode] }, 1: { main: [] } });
+    startDuel(session);
+    const xyz = session.state.cards.find((card) => card.code === thunderEndCode && card.location === "extraDeck");
+    expect(xyz).toBeDefined();
+    for (const code of normalMaterialCodes) {
+      const material = session.state.cards.find((card) => card.code === code && card.location === "deck");
+      expect(material).toBeDefined();
+      moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+    }
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(thunderEndCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.data).toMatchObject({
+      xyzMaterialCount: 2,
+      xyzMaterialType: 0x10,
+    });
+    const result = host.loadScript(
+      `
+      local blocked=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${normalMaterialCodes[0]}),0,LOCATION_MZONE,0,1,1,nil):GetFirst()
+      local e=Effect.CreateEffect(blocked)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetCode(EFFECT_CANNOT_BE_XYZ_MATERIAL)
+      e:SetRange(LOCATION_MZONE)
+      blocked:RegisterEffect(e)
+      local xyz=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${thunderEndCode}),0,LOCATION_EXTRA,0,1,1,nil):GetFirst()
+      Debug.Message("default xyz material lock " .. Duel.XyzSummon(xyz))
+      `,
+      "thunder-end-default-xyz-material-lock.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("default xyz material lock 1");
+    const summoned = session.state.cards.find((card) => card.uid === xyz!.uid);
+    const blockedMaterial = session.state.cards.find((card) => card.code === normalMaterialCodes[0]);
+    const allowedMaterialUids = normalMaterialCodes.slice(1).map((code) => session.state.cards.find((card) => card.code === code)?.uid);
+    expect(summoned).toMatchObject({
+      location: "monsterZone",
+      summonType: "xyz",
+    });
+    expect(summoned?.overlayUids).toEqual(expect.arrayContaining(allowedMaterialUids));
+    expect(summoned?.overlayUids).toHaveLength(2);
+    expect(summoned?.overlayUids).not.toContain(blockedMaterial?.uid);
+    expect(blockedMaterial?.location).toBe("monsterZone");
+  });
+
   it("restores official Xyz.AddProcedure rank filters for real extra deck summons", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const disasterCode = "67359907";

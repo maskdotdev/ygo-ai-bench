@@ -4,28 +4,32 @@ import { isSetcodeMatch } from "#lua/card-code-utils.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 export function canLuaXyzSummonCard(session: DuelSession, card: DuelCardInstance, suppliedUids: string[]): boolean {
-  if (card.location !== "extraDeck" || !isMonsterLike(card)) return false;
+  return findLuaXyzMaterialUidSet(session, card, suppliedUids) !== undefined;
+}
+
+export function findLuaXyzMaterialUidSet(session: DuelSession, card: DuelCardInstance, suppliedUids: string[], player: PlayerId = card.controller): string[] | undefined {
+  if (card.location !== "extraDeck" || !isMonsterLike(card)) return undefined;
   const supplied = new Set(suppliedUids);
-  const materialPool = session.state.cards.filter((candidate) => candidate.controller === card.controller && candidate.location === "monsterZone" && canBeXyzMaterial(session, candidate, card));
-  if ([...supplied].some((uid) => !materialPool.some((candidate) => candidate.uid === uid))) return false;
+  const materialPool = session.state.cards.filter((candidate) => candidate.controller === player && candidate.location === "monsterZone" && canBeXyzMaterial(session, candidate, card));
+  if ([...supplied].some((uid) => !materialPool.some((candidate) => candidate.uid === uid))) return undefined;
   if (card.data.xyzMaterials?.length) {
     const count = xyzMaterialCount(card);
-    if (supplied.size > count) return false;
+    if (supplied.size > count) return undefined;
     for (const materials of cardCombinations(materialPool, count)) {
       if ([...supplied].some((uid) => !materials.some((material) => material.uid === uid))) continue;
-      if (materialCodesMatch(materials, card.data.xyzMaterials) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return true;
+      if (materialCodesMatch(materials, card.data.xyzMaterials) && hasSummonZoneAfterMaterials(session, player, materials)) return materials.map((material) => material.uid);
     }
-    return false;
+    return undefined;
   }
   const maxCount = Math.min(materialPool.length, xyzMaterialMax(card));
-  if (supplied.size > maxCount) return false;
+  if (supplied.size > maxCount) return undefined;
   for (let count = Math.max(xyzMaterialCount(card), supplied.size); count <= maxCount; count += 1) {
     for (const materials of cardCombinations(materialPool, count)) {
       if ([...supplied].some((uid) => !materials.some((material) => material.uid === uid))) continue;
-      if (canGenericXyzMaterialsMatch(card, materials) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return true;
+      if (canGenericXyzMaterialsMatch(card, materials) && hasSummonZoneAfterMaterials(session, player, materials)) return materials.map((material) => material.uid);
     }
   }
-  return false;
+  return undefined;
 }
 
 function hasSummonZoneAfterMaterials(session: DuelSession, player: PlayerId, materials: DuelCardInstance[]): boolean {
