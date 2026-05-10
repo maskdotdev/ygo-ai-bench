@@ -308,6 +308,62 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Li
     expect(levelTwoMaterial?.location).toBe("monsterZone");
   });
 
+  it("skips material locks for Lua Duel.LinkSummon default material selection", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const linkuribohCode = "41999284";
+    const lockedMaterialCode = "900000214";
+    const allowedMaterialCode = "900000215";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === linkuribohCode),
+      { code: lockedMaterialCode, name: "Locked Level 1 Link Material", kind: "monster" as const, typeFlags: 0x1, level: 1 },
+      { code: allowedMaterialCode, name: "Allowed Level 1 Link Material", kind: "monster" as const, typeFlags: 0x1, level: 1 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 326, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [lockedMaterialCode, allowedMaterialCode], extra: [linkuribohCode] }, 1: { main: [] } });
+    startDuel(session);
+    const link = session.state.cards.find((card) => card.code === linkuribohCode && card.location === "extraDeck");
+    expect(link).toBeDefined();
+    for (const code of [lockedMaterialCode, allowedMaterialCode]) {
+      const material = session.state.cards.find((card) => card.code === code && card.location === "deck");
+      expect(material).toBeDefined();
+      moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+    }
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(linkuribohCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(session.state.cards.find((card) => card.uid === link!.uid)?.data).toMatchObject({
+      linkMaterialMin: 1,
+      linkMaterialLevel: 1,
+    });
+    const result = host.loadScript(
+      `
+      local blocked=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${lockedMaterialCode}),0,LOCATION_MZONE,0,1,1,nil):GetFirst()
+      local e=Effect.CreateEffect(blocked)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetCode(EFFECT_CANNOT_BE_LINK_MATERIAL)
+      e:SetRange(LOCATION_MZONE)
+      blocked:RegisterEffect(e)
+      local link=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${linkuribohCode}),0,LOCATION_EXTRA,0,1,1,nil):GetFirst()
+      Debug.Message("default link material lock " .. Duel.LinkSummon(link))
+      `,
+      "linkuriboh-default-link-material-lock.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("default link material lock 1");
+    const summoned = session.state.cards.find((card) => card.uid === link!.uid);
+    const lockedMaterial = session.state.cards.find((card) => card.code === lockedMaterialCode);
+    const allowedMaterial = session.state.cards.find((card) => card.code === allowedMaterialCode);
+    expect(summoned).toMatchObject({
+      location: "monsterZone",
+      summonType: "link",
+      summonMaterialUids: [allowedMaterial?.uid],
+    });
+    expect(lockedMaterial?.location).toBe("monsterZone");
+  });
+
   it("restores official Link.AddProcedure minimum level filters for real extra deck summons", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const worldGearsCode = "57282724";
