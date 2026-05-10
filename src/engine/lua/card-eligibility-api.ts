@@ -67,6 +67,7 @@ function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCa
     if (!isTuner(card) && target.data.synchroNonTunerAttribute !== undefined && ((card.data.attribute ?? 0) & target.data.synchroNonTunerAttribute) === 0) return false;
     if (!isTuner(card) && target.data.synchroNonTunerRace !== undefined && ((card.data.race ?? 0) & target.data.synchroNonTunerRace) === 0) return false;
     if (!isTuner(card) && target.data.synchroNonTunerType !== undefined && (cardTypeFlags(card) & target.data.synchroNonTunerType) === 0) return false;
+    if (!isTuner(card) && target.data.synchroNonTunerSetcode !== undefined && !(card.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.synchroNonTunerSetcode!, setcode))) return false;
     return targetLevel > 0 && materialLevel > 0 && materialLevel < targetLevel;
   }
   if (kind === "xyz") {
