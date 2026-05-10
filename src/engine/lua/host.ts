@@ -197,11 +197,11 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
   }
   const blockedActiveTypeForOpponent = predicate?.match(/^closure:not-active-type-response-player:(\d+)$/);
   if (blockedActiveTypeForOpponent?.[1]) {
-    return { ...limit, allows: (effect, player, chainPlayer) => player === chainPlayer || (sourceTypeFlags(hostState, effect.sourceUid) & Number(blockedActiveTypeForOpponent[1])) === 0 };
+    return { ...limit, allows: (effect, player, chainPlayer) => player === chainPlayer || (activeTypeFlags(hostState, effect.sourceUid) & Number(blockedActiveTypeForOpponent[1])) === 0 };
   }
   const allowedActiveTypeForOpponent = predicate?.match(/^closure:active-type-response-player:(\d+)$/);
   if (allowedActiveTypeForOpponent?.[1]) {
-    return { ...limit, allows: (effect, player, chainPlayer) => player === chainPlayer || (sourceTypeFlags(hostState, effect.sourceUid) & Number(allowedActiveTypeForOpponent[1])) !== 0 };
+    return { ...limit, allows: (effect, player, chainPlayer) => player === chainPlayer || (activeTypeFlags(hostState, effect.sourceUid) & Number(allowedActiveTypeForOpponent[1])) !== 0 };
   }
   const sourceTypeNonActivateForOpponent = predicate?.match(/^closure:source-type-non-activate-response-player:(\d+)$/);
   if (sourceTypeNonActivateForOpponent?.[1]) {
@@ -211,7 +211,7 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
     return { ...limit, allows: (effect, player, chainPlayer) => player === chainPlayer || ((sourceTypeFlags(hostState, effect.sourceUid) & 0x6) !== 0 && (effectTypeFlags(hostState, effect.id) & 0x10) === 0) };
   }
   const blockedActiveType = predicate?.match(/^closure:not-active-type:(\d+)$/);
-  if (blockedActiveType?.[1]) return { ...limit, allows: (effect) => (sourceTypeFlags(hostState, effect.sourceUid) & Number(blockedActiveType[1])) === 0 };
+  if (blockedActiveType?.[1]) return { ...limit, allows: (effect) => (activeTypeFlags(hostState, effect.sourceUid) & Number(blockedActiveType[1])) === 0 };
   const responsePlayer = predicate?.match(/^closure:response-player:([01])$/);
   if (responsePlayer?.[1]) return { ...limit, allows: (_effect, player) => player === Number(responsePlayer[1]) };
   if (predicate === "closure:response-matches-chain-player") return { ...limit, allows: (_effect, player, activeChainPlayer) => player === activeChainPlayer };
@@ -292,7 +292,7 @@ function compileLuaChainLimitSource(L: unknown, encodedSource: string): number |
 }
 
 function sourceTypeFlags(hostState: LuaHostState, sourceUid: string): number {
-  return cardTypeFlags(hostState.session.state.cards.find((card) => card.uid === sourceUid));
+  return cardTypeFlags(hostState.session.state.cards.find((card) => card.uid === sourceUid), hostState.session.state);
 }
 
 function sourcePrintedTypeFlags(hostState: LuaHostState, sourceUid: string): number {
@@ -305,13 +305,7 @@ function sourcePrintedTypeFlags(hostState: LuaHostState, sourceUid: string): num
 }
 
 function activeTypeFlags(hostState: LuaHostState, sourceUid: string): number {
-  const card = hostState.session.state.cards.find((candidate) => candidate.uid === sourceUid);
-  const explicit = (card?.data.typeFlags ?? 0) & 0x7;
-  if (explicit !== 0) return explicit;
-  if (card?.kind === "spell") return 0x2;
-  if (card?.kind === "trap") return 0x4;
-  if (card?.kind === "monster" || card?.kind === "extra") return 0x1;
-  return 0;
+  return cardTypeFlags(hostState.session.state.cards.find((candidate) => candidate.uid === sourceUid), hostState.session.state) & 0x7;
 }
 
 function sourceHasSetcode(hostState: LuaHostState, sourceUid: string, requested: number): boolean {

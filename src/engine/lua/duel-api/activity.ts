@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { duelActivity, getDuelActivityCount } from "#duel/activity.js";
 import { pushCardTable } from "#lua/card-api.js";
+import { cardTypeFlags } from "#lua/card-stat-api.js";
 import { readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
 import type { DuelActivityRecord, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
@@ -138,39 +139,34 @@ function pushActivityEffectProxy(L: unknown, session: DuelSession, cardUid: stri
   lua.lua_setfield(L, -2, to_luastring("GetHandler"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushboolean(state, requested !== 0 && (activeTypeFlags(card) & requested) !== 0);
+    lua.lua_pushboolean(state, requested !== 0 && (activeTypeFlags(card, session) & requested) !== 0);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsActiveType"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushboolean(state, (activeTypeFlags(card) & 0x1) !== 0);
+    lua.lua_pushboolean(state, (activeTypeFlags(card, session) & 0x1) !== 0);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsMonsterEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushboolean(state, (activeTypeFlags(card) & 0x2) !== 0);
+    lua.lua_pushboolean(state, (activeTypeFlags(card, session) & 0x2) !== 0);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsSpellEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushboolean(state, (activeTypeFlags(card) & 0x4) !== 0);
+    lua.lua_pushboolean(state, (activeTypeFlags(card, session) & 0x4) !== 0);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsTrapEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushboolean(state, (activeTypeFlags(card) & 0x6) !== 0);
+    lua.lua_pushboolean(state, (activeTypeFlags(card, session) & 0x6) !== 0);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsSpellTrapEffect"));
 }
 
-function activeTypeFlags(card: DuelCardInstance | undefined): number {
-  const explicit = (card?.data.typeFlags ?? 0) & 0x7;
-  if (explicit !== 0) return explicit;
-  if (card?.kind === "spell") return 0x2;
-  if (card?.kind === "trap") return 0x4;
-  if (card?.kind === "monster" || card?.kind === "extra") return 0x1;
-  return 0;
+function activeTypeFlags(card: DuelCardInstance | undefined, session: DuelSession): number {
+  return cardTypeFlags(card, session.state) & 0x7;
 }
 
 function normalizePlayer(value: number): PlayerId {

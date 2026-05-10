@@ -8,6 +8,7 @@ import { knownLuaEffectTargetDescriptor } from "#lua/effect-target-descriptor.js
 import { knownLuaEffectValueDescriptor } from "#lua/effect-value-descriptor.js";
 import { locationMaskFromLocation, locationMaskFromLocations } from "#lua/effect-location-mask.js";
 import { installEffectCompatibilityApi } from "#lua/effect-compatibility-api.js";
+import { cardTypeFlags } from "#lua/card-stat-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { triggerEventFromCode } from "#lua/event-code.js";
 import { readLuaError } from "#lua/host-script-api.js";
@@ -131,12 +132,12 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
   pushEffectMethod(L, effects, "IsHasCategory", hasEffectNumberField("category"));
   pushEffectMethod(L, effects, "IsHasProperty", hasEffectNumberField("property"));
   pushEffectMethod(L, effects, "GetActiveType", (state, effect) => {
-    lua.lua_pushinteger(state, activeTypeFlags(sourceCard(session, effect)));
+    lua.lua_pushinteger(state, activeTypeFlags(sourceCard(session, effect), session));
     return 1;
   });
   pushEffectMethod(L, effects, "IsActiveType", (state, effect) => {
     const requested = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    const ownerType = activeTypeFlags(sourceCard(session, effect));
+    const ownerType = activeTypeFlags(sourceCard(session, effect), session);
     lua.lua_pushboolean(state, requested !== 0 && (ownerType & requested) !== 0);
     return 1;
   });
@@ -484,13 +485,8 @@ function sourceCard(session: DuelSession, effect: LuaEffectRecord): DuelCardInst
   return effect.sourceUid ? session.state.cards.find((candidate) => candidate.uid === effect.sourceUid) : undefined;
 }
 
-function activeTypeFlags(card: DuelCardInstance | undefined): number {
-  const explicit = (card?.data.typeFlags ?? 0) & 0x7;
-  if (explicit !== 0) return explicit;
-  if (card?.kind === "spell") return 0x2;
-  if (card?.kind === "trap") return 0x4;
-  if (card?.kind === "monster" || card?.kind === "extra") return 0x1;
-  return 0;
+function activeTypeFlags(card: DuelCardInstance | undefined, session: DuelSession): number {
+  return cardTypeFlags(card, session.state) & 0x7;
 }
 
 function setEffectFunctionField(field: "conditionRef" | "costRef" | "targetRef", hostState: LuaHostState) {
