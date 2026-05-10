@@ -268,6 +268,87 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ex
     expect(restored.session.state.cards.find((card) => card.uid === secrets!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(restored.host.messages).not.toContain("earth chant responder resolved");
   });
+
+  it("restores Ritual requirementfunc material value callbacks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const meteonisCode = "22398665";
+    const ritualTargetCode = "2231";
+    const validMaterialCode = "2232";
+    const decoyMaterialCode = "2233";
+    const responderCode = "2234";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === meteonisCode),
+      { code: ritualTargetCode, name: "Meteonis Attack Ritual Fixture", kind: "monster", typeFlags: 0x81, level: 8, attack: 2000, defense: 1800 },
+      { code: validMaterialCode, name: "Meteonis Attack Material Fixture", kind: "monster", typeFlags: 0x1, level: 1, race: 0x20, attack: 2000, defense: 0 },
+      { code: decoyMaterialCode, name: "Meteonis Low Attack Decoy Fixture", kind: "monster", typeFlags: 0x1, level: 1, race: 0x20, attack: 1000, defense: 0 },
+      { code: responderCode, name: "Meteonis Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 223, startingHandSize: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [meteonisCode, ritualTargetCode, validMaterialCode, decoyMaterialCode] }, 1: { main: [responderCode] } });
+    startDuel(session);
+
+    const meteonis = session.state.cards.find((card) => card.code === meteonisCode);
+    const ritualTarget = session.state.cards.find((card) => card.code === ritualTargetCode);
+    const validMaterial = session.state.cards.find((card) => card.code === validMaterialCode);
+    const decoyMaterial = session.state.cards.find((card) => card.code === decoyMaterialCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(meteonis).toBeDefined();
+    expect(ritualTarget).toBeDefined();
+    expect(validMaterial).toBeDefined();
+    expect(decoyMaterial).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, meteonis!.uid, "hand", 0);
+    moveDuelCard(session.state, ritualTarget!.uid, "hand", 0);
+    moveDuelCard(session.state, validMaterial!.uid, "hand", 0);
+    moveDuelCard(session.state, decoyMaterial!.uid, "hand", 0);
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(meteonisCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+
+    const activate = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === meteonis!.uid);
+    expect(activate).toBeDefined();
+    applyAndAssert(session, activate!);
+    expect(session.state.chain).toHaveLength(1);
+    expect(session.state.chain[0]).toMatchObject({
+      sourceUid: meteonis!.uid,
+      operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x12 }],
+    });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+
+    const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    const resolved = applyLuaRestoreResponse(restored, pass!);
+    expect(resolved.ok, resolved.error).toBe(true);
+
+    expect(restored.session.state.cards.find((card) => card.uid === ritualTarget!.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 0,
+      position: "faceUpAttack",
+      faceUp: true,
+      summonType: "ritual",
+      summonMaterialUids: [validMaterial!.uid],
+    });
+    expect(restored.session.state.cards.find((card) => card.uid === validMaterial!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.material | duelReason.ritual });
+    expect(restored.session.state.cards.find((card) => card.uid === decoyMaterial!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.session.state.cards.find((card) => card.uid === meteonis!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
+    expect(restored.host.messages).not.toContain("earth chant responder resolved");
+  });
 });
 
 function chainResponderScript(): string {
