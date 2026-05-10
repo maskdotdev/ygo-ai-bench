@@ -117,6 +117,7 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
     quickEvent?.eventUids,
   );
   if (effect.labelObjectUid !== undefined) ctx.effectLabelObjectUid = effect.labelObjectUid;
+  if (effect.labelObjectUids !== undefined) ctx.effectLabelObjectUids = [...effect.labelObjectUids];
   const rollback = captureDuelState(session.state);
   try {
     if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);

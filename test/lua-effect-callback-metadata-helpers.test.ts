@@ -338,6 +338,72 @@ describe("Lua effect callback metadata helpers", () => {
     expect(restored.host.messages).toContain("group label operation true/2");
   });
 
+  it("restores Lua group label objects captured by activation targets", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Chain Group Label Source", kind: "monster" },
+      { code: "200", name: "Chain Group Target A", kind: "monster" },
+      { code: "201", name: "Chain Group Target B", kind: "monster" },
+      { code: "400", name: "Chain Responder", kind: "monster" },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 458, startingHandSize: 3, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: ["100", "200", "201"] }, 1: { main: ["400"] } });
+    startDuel(session);
+
+    const source = chainLinkGroupLabelSource();
+    const host = createLuaScriptHost(session, source);
+    expect(host.loadCardScript("100", source).ok).toBe(true);
+    expect(host.loadCardScript("400", source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const sourceCard = session.state.cards.find((card) => card.code === "100");
+    expect(sourceCard).toBeDefined();
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === sourceCard!.uid);
+    expect(action, JSON.stringify(getDuelLegalActions(session, 0), null, 2)).toBeDefined();
+    applyAndAssert(session, action!);
+    expect(host.messages).toContain("chain group target 2");
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const pass = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passChain");
+    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, 1), null, 2)).toBeDefined();
+    const result = applyLuaRestoreResponse(restored, pass!);
+    expect(result.ok, result.error).toBe(true);
+    expect(restored.host.messages.some((message) => message.startsWith("chain group operation true/2/"))).toBe(true);
+  });
+
+  it("restores Lua group label objects captured by activation conditions", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Condition Group Label Source", kind: "monster" },
+      { code: "200", name: "Condition Group Target A", kind: "monster" },
+      { code: "201", name: "Condition Group Target B", kind: "monster" },
+      { code: "400", name: "Condition Chain Responder", kind: "monster" },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 459, startingHandSize: 3, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: ["100", "200", "201"] }, 1: { main: ["400"] } });
+    startDuel(session);
+
+    const source = activationConditionGroupLabelSource();
+    const host = createLuaScriptHost(session, source);
+    expect(host.loadCardScript("100", source).ok).toBe(true);
+    expect(host.loadCardScript("400", source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const sourceCard = session.state.cards.find((card) => card.code === "100");
+    expect(sourceCard).toBeDefined();
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === sourceCard!.uid);
+    expect(action, JSON.stringify(getDuelLegalActions(session, 0), null, 2)).toBeDefined();
+    applyAndAssert(session, action!);
+    expect(host.messages).toContain("condition group label 2");
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const pass = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passChain");
+    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, 1), null, 2)).toBeDefined();
+    const result = applyLuaRestoreResponse(restored, pass!);
+    expect(result.ok, result.error).toBe(true);
+    expect(restored.host.messages.some((message) => message.startsWith("condition group operation true/2/"))).toBe(true);
+  });
+
   it("lets Lua scripts read marked effect label objects", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Marked Effect Source", kind: "monster" }];
     const session = createDuel({ seed: 41, startingHandSize: 1, cardReader: createCardReader(cards) });
@@ -582,6 +648,88 @@ function groupLabelSource(): LuaScriptSource {
           e:SetOperation(function(e,tp)
             local g=e:GetLabelObject()
             Debug.Message("group label operation " .. tostring(g~=nil) .. "/" .. (g and g:GetCount() or -1))
+          end)
+          c:RegisterEffect(e)
+        end
+      `;
+    },
+  };
+}
+
+function chainLinkGroupLabelSource(): LuaScriptSource {
+  return {
+    readScript(name) {
+      if (name === "c400.lua") {
+        return `
+          local s,id=GetID()
+          function s.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetCode(EVENT_FREE_CHAIN)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("chain responder resolved") end)
+            c:RegisterEffect(e)
+          end
+        `;
+      }
+      if (name !== "c100.lua") return undefined;
+      return `
+        local s,id=GetID()
+        function s.initial_effect(c)
+          local e=Effect.CreateEffect(c)
+          e:SetType(EFFECT_TYPE_IGNITION)
+          e:SetRange(LOCATION_HAND)
+          e:SetTarget(function(e,tp)
+            local g=Duel.GetMatchingGroup(function(tc) return tc:IsCode(200) or tc:IsCode(201) end,tp,LOCATION_HAND,0,nil)
+            g:KeepAlive()
+            e:SetLabelObject(g)
+            Debug.Message("chain group target " .. g:GetCount())
+            return true
+          end)
+          e:SetOperation(function(e,tp)
+            local g=e:GetLabelObject()
+            Debug.Message("chain group operation " .. tostring(g~=nil) .. "/" .. (g and g:GetCount() or -1) .. "/" .. (g and g:GetFirst():GetCode() or -1))
+          end)
+          c:RegisterEffect(e)
+        end
+      `;
+    },
+  };
+}
+
+function activationConditionGroupLabelSource(): LuaScriptSource {
+  return {
+    readScript(name) {
+      if (name === "c400.lua") {
+        return `
+          local s,id=GetID()
+          function s.initial_effect(c)
+            local e=Effect.CreateEffect(c)
+            e:SetType(EFFECT_TYPE_QUICK_O)
+            e:SetCode(EVENT_FREE_CHAIN)
+            e:SetRange(LOCATION_HAND)
+            e:SetOperation(function(e,tp) Debug.Message("condition responder resolved") end)
+            c:RegisterEffect(e)
+          end
+        `;
+      }
+      if (name !== "c100.lua") return undefined;
+      return `
+        local s,id=GetID()
+        function s.initial_effect(c)
+          local e=Effect.CreateEffect(c)
+          e:SetType(EFFECT_TYPE_IGNITION)
+          e:SetRange(LOCATION_HAND)
+          e:SetCondition(function(e,tp)
+            local g=Duel.GetMatchingGroup(function(tc) return tc:IsCode(200) or tc:IsCode(201) end,tp,LOCATION_HAND,0,nil)
+            g:KeepAlive()
+            e:SetLabelObject(g)
+            Debug.Message("condition group label " .. g:GetCount())
+            return g:GetCount()==2
+          end)
+          e:SetOperation(function(e,tp)
+            local g=e:GetLabelObject()
+            Debug.Message("condition group operation " .. tostring(g~=nil) .. "/" .. (g and g:GetCount() or -1) .. "/" .. (g and g:GetFirst():GetCode() or -1))
           end)
           c:RegisterEffect(e)
         end

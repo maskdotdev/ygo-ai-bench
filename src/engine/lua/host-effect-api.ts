@@ -561,7 +561,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
         callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.conditionRef, true, "condition", ctx) &&
         (event !== "summonProcedure" || callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.valueRef, true, "value", ctx));
       if (result) syncDuelEffectLabelObjectUid(duelEffect, luaEffect);
-      else delete duelEffect.labelObjectUid;
+      else { delete duelEffect.labelObjectUid; delete duelEffect.labelObjectUids; }
       return result;
     },
     cost: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.costRef, true, "cost", ctx),
