@@ -525,6 +525,7 @@ export function isBattleTargetPrevented(state: DuelState, card: DuelCardInstance
     if (!source || !effect.range.includes(source.location)) continue;
     const ctx = createContext(effect, source, card);
     if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
+    if (effect.valueCardPredicate && !effect.valueCardPredicate(ctx, card)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   return false;

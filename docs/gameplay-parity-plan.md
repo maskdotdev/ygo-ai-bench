@@ -30,6 +30,7 @@ The engine already has useful surfaces to build on:
 - Damage-step timing missed timing covers `EVENT_PRE_DAMAGE_CALCULATE`/`beforeDamageCalculation`, `EVENT_DAMAGE_CALCULATING`/`damageCalculating`, and `EVENT_BATTLED`/`afterDamageCalculation` activation and decline fixtures.
 - Battle damage missed timing covers `EVENT_PRE_BATTLE_DAMAGE`/`beforeBattleDamage` and `EVENT_BATTLE_DAMAGE`/`battleDamageDealt` activation and decline fixtures with damage payloads.
 - End-of-battle timing missed timing covers `EVENT_BATTLE_END`/`battleEnded` and `EVENT_DAMAGE_STEP_END`/`damageStepEnded` activation and decline fixtures.
+- Lua battle-target locks now honor `SetValue` card predicates for `EFFECT_CANNOT_BE_BATTLE_TARGET`, with `aux.imval1` coverage proving targets immune to the locking effect remain legal attack targets before and after snapshot restore.
 - Chain activation missed timing covers `EVENT_CHAIN_ACTIVATING`/`chainActivating` and `EVENT_CHAINING`/`chaining` activation and decline fixtures.
 - Chain resolution missed timing covers `EVENT_CHAIN_SOLVING`/`chainSolving` and `EVENT_CHAIN_SOLVED`/`chainSolved` activation and decline fixtures.
 - Chain negation missed timing covers `EVENT_CHAIN_NEGATED`/`chainNegated` and `EVENT_CHAIN_DISABLED`/`chainDisabled` activation and decline fixtures.
