@@ -19,6 +19,8 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
   if (xyzRace !== undefined) card.data.xyzMaterialRace = xyzRace;
   const xyzAttribute = readXyzProcedureAttributeFilter(source);
   if (xyzAttribute !== undefined) card.data.xyzMaterialAttribute = xyzAttribute;
+  const xyzType = readXyzProcedureTypeFilter(source);
+  if (xyzType !== undefined) card.data.xyzMaterialType = xyzType;
   const linkMin = readProcedureNumberField(L, card, "link_materials", 2);
   const linkMax = readProcedureNumberField(L, card, "link_materials", 3);
   if (linkMin !== undefined) card.data.linkMaterialMin = linkMin;
@@ -39,6 +41,12 @@ function readXyzProcedureRaceFilter(source: string | undefined): number | undefi
 
 function readXyzProcedureAttributeFilter(source: string | undefined): number | undefined {
   const match = source?.match(/Xyz\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsAttribute\s*,\s*(ATTRIBUTE_[A-Z0-9_]+)\s*\)/);
+  if (!match?.[1]) return undefined;
+  return luaNumericConstants[match[1]];
+}
+
+function readXyzProcedureTypeFilter(source: string | undefined): number | undefined {
+  const match = source?.match(/Xyz\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsType\s*,\s*(TYPE_[A-Z0-9_]+)\s*\)/);
   if (!match?.[1]) return undefined;
   return luaNumericConstants[match[1]];
 }

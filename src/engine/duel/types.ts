@@ -133,6 +133,7 @@ export interface DuelCardData {
   xyzMaterialCount?: number;
   xyzMaterialRace?: number;
   xyzMaterialAttribute?: number;
+  xyzMaterialType?: number;
   linkMaterials?: string[];
   linkMaterialMin?: number;
   linkMaterialMax?: number;
