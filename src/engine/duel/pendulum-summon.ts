@@ -26,7 +26,13 @@ export function pendulumSummonActions(state: DuelState, player: PlayerId, canSum
     actions.push({ type: "pendulumSummon", player, summonUids, maxSummons: zoneCount, label: `Pendulum Summon ${summonNames}` });
   };
   if (state.players[player].pendulumSummonAvailable) pushAction(player);
-  for (const grant of pendulumSummonExtraGrants(state, player)) pushAction(grant.scalePlayer ?? player, grant);
+  for (const grant of pendulumSummonExtraGrants(state, player)) {
+    pushAction(grant.scalePlayer ?? player, grant);
+    for (const alternative of grant.scaleAlternatives ?? []) {
+      const { scaleAlternatives, ...baseGrant } = grant;
+      pushAction(alternative.scalePlayer, { ...baseGrant, ...(alternative.locationMask === undefined ? {} : { locationMask: alternative.locationMask }) });
+    }
+  }
   return actions;
 }
 

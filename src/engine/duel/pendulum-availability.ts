@@ -9,7 +9,7 @@ export function grantExtraPendulumSummons(state: DuelState, player: PlayerId, co
   const amount = Math.max(0, Math.floor(count));
   if (amount === 0) return;
   const grants = ensureExtraPendulumSummonGrants(state, player);
-  for (let index = 0; index < amount; index += 1) grants.push({ ...grant });
+  for (let index = 0; index < amount; index += 1) grants.push(cloneExtraPendulumSummonGrant(grant));
   state.players[player].extraPendulumSummons = grants.length;
 }
 
@@ -19,7 +19,7 @@ export function pendulumSummonCandidatesForAvailability(state: DuelState, player
 }
 
 export function pendulumSummonExtraGrants(state: DuelState, player: PlayerId): ExtraPendulumSummonGrant[] {
-  return extraPendulumSummonGrants(state, player).map((grant) => ({ ...grant }));
+  return extraPendulumSummonGrants(state, player).map(cloneExtraPendulumSummonGrant);
 }
 
 export function pendulumSummonCandidatesForGrant(state: DuelState, cards: DuelCardInstance[], grant: ExtraPendulumSummonGrant): DuelCardInstance[] {
@@ -57,6 +57,13 @@ function ensureExtraPendulumSummonGrants(state: DuelState, player: PlayerId): Ex
   const legacyCount = Math.max(0, Math.floor(state.players[player].extraPendulumSummons ?? 0));
   state.players[player].extraPendulumSummonGrants = Array.from({ length: legacyCount }, () => ({}));
   return state.players[player].extraPendulumSummonGrants;
+}
+
+function cloneExtraPendulumSummonGrant(grant: ExtraPendulumSummonGrant): ExtraPendulumSummonGrant {
+  return {
+    ...grant,
+    ...(grant.scaleAlternatives ? { scaleAlternatives: grant.scaleAlternatives.map((alternative) => ({ ...alternative })) } : {}),
+  };
 }
 
 function extraPendulumSummonGrants(state: DuelState, player: PlayerId): ExtraPendulumSummonGrant[] {

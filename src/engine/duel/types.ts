@@ -256,7 +256,13 @@ export interface DuelPlayerState {
 export interface ExtraPendulumSummonGrant {
   locationMask?: number;
   scalePlayer?: PlayerId;
+  scaleAlternatives?: ExtraPendulumSummonGrantScaleAlternative[];
   setcode?: number;
+}
+
+export interface ExtraPendulumSummonGrantScaleAlternative {
+  locationMask?: number;
+  scalePlayer: PlayerId;
 }
 
 export interface DuelActivityCounts {

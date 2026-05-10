@@ -563,7 +563,14 @@ function pushGrantAdditionalPendulumSummon(L: unknown, session: DuelSession, hos
   const count = Math.max(1, Math.floor(hasCount ? lua.lua_tointeger(L, 3) : second ?? 1));
   const setcode = lua.lua_isfunction(L, 4) && hostState.loadedScriptBodies ? luaSimpleSetcodeCardFilter(L, 4, { loadedScriptBodies: hostState.loadedScriptBodies }) : undefined;
   const scalePlayer = readOptionalPlayer(L, 5);
-  grantExtraPendulumSummons(session.state, player, count, { locationMask, ...(scalePlayer === undefined ? {} : { scalePlayer }), ...(setcode === undefined ? {} : { setcode }) });
+  const alternativeScalePlayer = readOptionalPlayer(L, 6);
+  const alternativeLocationMask = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : undefined;
+  grantExtraPendulumSummons(session.state, player, count, {
+    locationMask,
+    ...(scalePlayer === undefined ? {} : { scalePlayer }),
+    ...(alternativeScalePlayer === undefined ? {} : { scaleAlternatives: [{ scalePlayer: alternativeScalePlayer, ...(alternativeLocationMask === undefined ? {} : { locationMask: alternativeLocationMask }) }] }),
+    ...(setcode === undefined ? {} : { setcode }),
+  });
   return 0;
 }
 

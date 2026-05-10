@@ -398,9 +398,11 @@ export const cardProcedureSource = `${fusionProcedureSource}
     end
     function Pendulum.GrantAdditionalPendulumSummon(handler,condition,tp,locations,desc1,desc2,effect_flag)
       local player=tp or (handler and handler:GetControler()) or 0
+      locations=locations or (LOCATION_HAND|LOCATION_EXTRA)
       if effect_flag and not Pendulum.PlayerCanGainAdditionalPendulumSummon(player,effect_flag) then return end
       if effect_flag then Duel.RegisterFlagEffect(player,effect_flag,RESET_PHASE|PHASE_END,0,1) end
-      Duel.GrantAdditionalPendulumSummon(player,locations or (LOCATION_HAND|LOCATION_EXTRA),1,condition)
+      local harmonic_player=(locations&LOCATION_EXTRA)~=0 and 1-player or nil
+      Duel.GrantAdditionalPendulumSummon(player,locations,1,condition,player,harmonic_player,LOCATION_EXTRA)
     end
     function Pendulum.CreateHarmonicOscillationEffect(handler,condition,desc,effect_flag,pendulum_flag)
       local player=(handler and handler:GetControler()) or 0
