@@ -51,6 +51,43 @@ describe("Lua dynamic summon material traits", () => {
       summonMaterialUids: expect.arrayContaining([tunerUid, nonTunerUid]),
     });
   });
+
+  it("uses current traits for Lua material predicate helpers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Dynamic Predicate Material", kind: "monster", typeFlags: 0x1, level: 4, race: 0x1, attribute: 0x10 },
+      { code: "200", name: "Explicit Non-Tuner", kind: "monster", typeFlags: 0x1, level: 2 },
+      { code: "300", name: "Explicit Synchro", kind: "extra", typeFlags: 0x2001, level: 6, synchroMaterials: { tuner: "100", nonTuners: ["200"] } },
+      { code: "400", name: "Spellcaster Xyz", kind: "extra", typeFlags: 0x800001, level: 4, xyzMaterialRace: 0x2 },
+      { code: "500", name: "Dark Link", kind: "extra", typeFlags: 0x4000001, level: 2, linkMaterialAttribute: 0x20 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 103, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: ["100", "200"], extra: ["300", "400", "500"] }, 1: { main: [] } });
+    startDuel(session);
+    moveDuelCard(session.state, requireCard(session, "100", "deck").uid, "monsterZone", 0);
+    moveDuelCard(session.state, requireCard(session, "200", "deck").uid, "monsterZone", 0);
+
+    const source = { readScript: dynamicMaterialPredicateScript };
+    const host = createLuaScriptHost(session, source);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const result = host.loadScript(
+      `
+      local c100=Duel.GetFieldCard(0,LOCATION_MZONE,0)
+      local c200=Duel.GetFieldCard(0,LOCATION_MZONE,1)
+      local synchro=Duel.GetFieldCard(0,LOCATION_EXTRA,0)
+      local xyz=Duel.GetFieldCard(0,LOCATION_EXTRA,1)
+      local link=Duel.GetFieldCard(0,LOCATION_EXTRA,2)
+      Debug.Message("dynamic predicate traits " .. c100:GetType() .. "/" .. c100:GetRace() .. "/" .. c100:GetAttribute())
+      Debug.Message("dynamic material predicates " .. tostring(c100:IsCanBeSynchroMaterial(synchro)) .. "/" .. tostring(c200:IsCanBeSynchroMaterial(synchro)) .. "/" .. tostring(c100:IsCanBeXyzMaterial(xyz)) .. "/" .. tostring(c100:IsCanBeLinkMaterial(link)))
+      `,
+      "dynamic-material-predicates.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("dynamic predicate traits 4097/2/32");
+    expect(host.messages).toContain("dynamic material predicates true/true/true/true");
+  });
 });
 
 function setupDynamicSynchroFixture(seed: number): {
@@ -117,4 +154,28 @@ function dynamicSynchroScript(name: string): string | undefined {
     `;
   }
   return undefined;
+}
+
+function dynamicMaterialPredicateScript(name: string): string | undefined {
+  if (name !== "c100.lua") return undefined;
+  return `
+    c100={}
+    function c100.initial_effect(c)
+      local e0=Effect.CreateEffect(c)
+      e0:SetType(EFFECT_TYPE_SINGLE)
+      e0:SetCode(EFFECT_ADD_TYPE)
+      e0:SetValue(TYPE_TUNER)
+      c:RegisterEffect(e0)
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_SINGLE)
+      e1:SetCode(EFFECT_CHANGE_RACE)
+      e1:SetValue(RACE_SPELLCASTER)
+      c:RegisterEffect(e1)
+      local e2=Effect.CreateEffect(c)
+      e2:SetType(EFFECT_TYPE_SINGLE)
+      e2:SetCode(EFFECT_CHANGE_ATTRIBUTE)
+      e2:SetValue(ATTRIBUTE_DARK)
+      c:RegisterEffect(e2)
+    end
+  `;
 }
