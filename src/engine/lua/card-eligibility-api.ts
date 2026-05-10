@@ -4,6 +4,7 @@ import { isMaterialUsePrevented, type MaterialUseKind } from "#duel/continuous-e
 import { duelReason } from "#duel/reasons.js";
 import { isSummonTypeMaskMatch, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
 import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
+import { currentLinkMaterialCodes, currentLinkMaterialMatchesSetcode } from "#duel/card-code-state.js";
 import { isSetcodeMatch } from "#lua/card-code-utils.js";
 import { cardTypeFlags, currentAttribute, currentLevel, currentLink, currentRace, currentRank } from "#duel/card-stats.js";
 import type { DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
@@ -99,11 +100,11 @@ function targetAllowsMaterial(state: DuelState, target: DuelCardInstance | undef
     if (target.data.linkMaterialType !== undefined && (cardTypeFlags(card, state) & target.data.linkMaterialType) === 0) return false;
     if (target.data.linkMaterialRace !== undefined && (currentRace(card, state) & target.data.linkMaterialRace) === 0) return false;
     if (target.data.linkMaterialAttribute !== undefined && (currentAttribute(card, state) & target.data.linkMaterialAttribute) === 0) return false;
-    if (target.data.linkMaterialSetcode !== undefined && !(card.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.linkMaterialSetcode!, setcode))) return false;
+    if (target.data.linkMaterialSetcode !== undefined && !currentLinkMaterialMatchesSetcode(card, state, target.data.linkMaterialSetcode)) return false;
     if (target.data.linkMaterialSummonType !== undefined && !isSummonTypeMaskMatch(summonTypeMaskFromCard(card), target.data.linkMaterialSummonType)) return false;
     if (target.data.linkMaterialLevel !== undefined && currentLevel(card, state) !== target.data.linkMaterialLevel) return false;
     if (target.data.linkMaterialMinLevel !== undefined && currentLevel(card, state) < target.data.linkMaterialMinLevel) return false;
-    return !target.data.linkMaterials?.length ? currentLink(target, state) > 0 && linkMaterialRating(card, state) <= currentLink(target, state) : target.data.linkMaterials.some((code) => codes.includes(code));
+    return !target.data.linkMaterials?.length ? currentLink(target, state) > 0 && linkMaterialRating(card, state) <= currentLink(target, state) : target.data.linkMaterials.some((code) => currentLinkMaterialCodes(card, state).includes(code));
   }
   return true;
 }

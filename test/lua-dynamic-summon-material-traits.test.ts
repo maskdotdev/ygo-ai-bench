@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
@@ -87,6 +87,66 @@ describe("Lua dynamic summon material traits", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("dynamic predicate traits 4097/2/32");
     expect(host.messages).toContain("dynamic material predicates true/true/true/true");
+  });
+
+  it("uses Link-only code and setcode effects for Link material legal actions", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Dynamic Link-Code Material", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: "200", name: "Dynamic Link-Setcode Material", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: "700", name: "Named Link Target", kind: "extra", typeFlags: 0x4000001, level: 1, linkMaterials: ["900"] },
+      { code: "800", name: "Setcode Link Target", kind: "extra", typeFlags: 0x4000001, level: 1, linkMaterialSetcode: 0x321 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 105, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: ["100", "200"], extra: ["700", "800"] }, 1: { main: [] } });
+    startDuel(session);
+    const codeMaterial = requireCard(session, "100", "deck");
+    const setcodeMaterial = requireCard(session, "200", "deck");
+    const namedLink = requireCard(session, "700", "extraDeck");
+    const setcodeLink = requireCard(session, "800", "extraDeck");
+    moveDuelCard(session.state, codeMaterial.uid, "monsterZone", 0);
+    moveDuelCard(session.state, setcodeMaterial.uid, "monsterZone", 0);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = { readScript: dynamicLinkMaterialTraitScript };
+    const host = createLuaScriptHost(session, source);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+    const predicateResult = host.loadScript(
+      `
+      local c100=Duel.GetFieldCard(0,LOCATION_MZONE,0)
+      local c200=Duel.GetFieldCard(0,LOCATION_MZONE,1)
+      local named=Duel.GetFieldCard(0,LOCATION_EXTRA,0)
+      local setlink=Duel.GetFieldCard(0,LOCATION_EXTRA,1)
+      Debug.Message("dynamic link material predicates " .. tostring(c100:IsCanBeLinkMaterial(named)) .. "/" .. tostring(c200:IsCanBeLinkMaterial(setlink)))
+      `,
+      "dynamic-link-material-predicates.lua",
+    );
+    expect(predicateResult.ok, predicateResult.error).toBe(true);
+    expect(host.messages).toContain("dynamic link material predicates true/true");
+
+    const namedAction = getDuelLegalActions(session, 0).find((action) => action.type === "linkSummon" && action.uid === namedLink.uid);
+    expect(namedAction).toMatchObject({ type: "linkSummon", materialUids: [codeMaterial.uid] });
+    const setcodeAction = getDuelLegalActions(session, 0).find((action) => action.type === "linkSummon" && action.uid === setcodeLink.uid);
+    expect(setcodeAction).toMatchObject({ type: "linkSummon", materialUids: [setcodeMaterial.uid] });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    const restoredNamedAction = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "linkSummon" && action.uid === namedLink.uid);
+    expect(restoredNamedAction).toMatchObject({ type: "linkSummon", materialUids: [codeMaterial.uid] });
+    const restoredSetcodeAction = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "linkSummon" && action.uid === setcodeLink.uid);
+    expect(restoredSetcodeAction).toMatchObject({ type: "linkSummon", materialUids: [setcodeMaterial.uid] });
+    const response = applyLuaRestoreResponse(restored, restoredNamedAction!);
+    expect(response.ok, response.error).toBe(true);
+    expect(restored.session.state.cards.find((card) => card.uid === namedLink.uid)).toMatchObject({
+      location: "monsterZone",
+      summonType: "link",
+      summonMaterialUids: [codeMaterial.uid],
+    });
   });
 
   it("uses current monster type for Lua Fusion material selection and summons", () => {
@@ -216,6 +276,34 @@ function dynamicMaterialPredicateScript(name: string): string | undefined {
       c:RegisterEffect(e2)
     end
   `;
+}
+
+function dynamicLinkMaterialTraitScript(name: string): string | undefined {
+  if (name === "c100.lua") {
+    return `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_ADD_LINK_CODE)
+        e:SetValue(900)
+        c:RegisterEffect(e)
+      end
+    `;
+  }
+  if (name === "c200.lua") {
+    return `
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_ADD_LINK_SETCODE)
+        e:SetValue(0x321)
+        c:RegisterEffect(e)
+      end
+    `;
+  }
+  return undefined;
 }
 
 function dynamicRemovedMonsterMaterialScript(name: string): string | undefined {

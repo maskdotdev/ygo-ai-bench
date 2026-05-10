@@ -103,6 +103,14 @@ function currentMaskValue(card: DuelCardInstance, state: DuelState | undefined, 
   return value;
 }
 
+export function currentFiniteEffectValues(card: DuelCardInstance | undefined, state: DuelState | undefined, code: number): number[] {
+  if (!card) return [];
+  return matchingStatEffects(card, state, code)
+    .map(({ effect, ctx }) => statEffectValue(card, state, effect, ctx))
+    .filter((value): value is number => value !== undefined && Number.isFinite(value))
+    .map((value) => Math.trunc(value));
+}
+
 function finiteMaskValue(value: number | undefined): number {
   return value !== undefined && Number.isFinite(value) ? Math.trunc(value) : 0;
 }
