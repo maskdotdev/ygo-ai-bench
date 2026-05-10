@@ -87,8 +87,8 @@ export interface DuelActivationHandlers {
   hasChainResponses(state: DuelState, player: PlayerId): boolean;
   resolveChain(state: DuelState): void;
   canAttemptSpecialSummonProcedure(state: DuelState, uid: string, summonTypeCode?: number): boolean;
-  canSpecialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number): boolean;
-  specialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number): DuelCardInstance;
+  canSpecialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number, allowUnconditionalSpecialSummonCondition?: boolean): boolean;
+  specialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number, allowUnconditionalSpecialSummonCondition?: boolean): DuelCardInstance;
 }
 
 export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: string, effectId: string, handlers: DuelActivationHandlers): void {
@@ -190,10 +190,10 @@ export function specialSummonDuelByProcedure(session: DuelSession, player: Playe
     if (effect.operation) effect.operation(ctx);
     const currentSource = requireControlledCard(session.state, player, uid);
     if (!effect.range.includes(currentSource.location)) throw new Error(`${source.name} summon procedure is no longer in range`);
-    if (!handlers.canSpecialSummonCard(session.state, uid, player, summonTypeCode)) throw new Error(`${source.name} cannot be Special Summoned`);
+    if (!handlers.canSpecialSummonCard(session.state, uid, player, summonTypeCode, true)) throw new Error(`${source.name} cannot be Special Summoned`);
     const presetMaterialUids = summonTypeCode !== undefined ? [...(currentSource.summonMaterialUids ?? [])] : [];
     markEffectUsed(session.state, effect);
-    const summoned = handlers.specialSummonCard(session.state, uid, player, summonTypeCode);
+    const summoned = handlers.specialSummonCard(session.state, uid, player, summonTypeCode, true);
     if (presetMaterialUids.length > 0) summoned.summonMaterialUids = presetMaterialUids;
     markProcedureComplete(summoned);
   } catch (error) {

@@ -177,8 +177,8 @@ const activationHandlers: DuelActivationHandlers = {
   hasChainResponses,
   resolveChain,
   canAttemptSpecialSummonProcedure,
-  canSpecialSummonCard: canSpecialSummonDuelCard,
-  specialSummonCard: (state, uid, player, summonTypeCode) => specialSummonDuelCard(state, uid, player, undefined, {}, summonTypeCode),
+  canSpecialSummonCard: (state, uid, player, summonTypeCode, allowUnconditionalSpecialSummonCondition) => canSpecialSummonDuelCard(state, uid, player, summonTypeCode, undefined, allowUnconditionalSpecialSummonCondition),
+  specialSummonCard: (state, uid, player, summonTypeCode, allowUnconditionalSpecialSummonCondition) => specialSummonDuelCard(state, uid, player, undefined, {}, summonTypeCode, true, allowUnconditionalSpecialSummonCondition),
 };
 const battleContinuationHandlers: BattleContinuationHandlers = {
   additionalBattleDamagePlayers: (state, player, battleCards) => getCoreAdditionalBattleDamagePlayers(state, player, battleCards, coreBattleHandlers),
@@ -414,12 +414,12 @@ export function runScriptedDuelResponses(session: DuelSession, steps: ScriptedRe
   return runScriptedDuelResponsesWithHandlers(session, steps, { getLegalActions, applyResponse });
 }
 
-export function specialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}, summonTypeCode?: number, collectSuccess = true): DuelCardInstance {
+export function specialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}, summonTypeCode?: number, collectSuccess = true, allowUnconditionalSpecialSummonCondition = false): DuelCardInstance {
   const card = findCard(state, uid);
   if (!card) throw new Error(`Card ${uid} is not in the duel`);
   const summonController = controller ?? card.controller;
   requireZoneSpace(state, summonController, "monsterZone");
-  if (!canSpecialSummonDuelCard(state, uid, summonController, summonTypeCode, payload.eventReasonEffectId)) throw new Error(`${card.name} cannot be Special Summoned`);
+  if (!canSpecialSummonDuelCard(state, uid, summonController, summonTypeCode, payload.eventReasonEffectId, allowUnconditionalSpecialSummonCondition)) throw new Error(`${card.name} cannot be Special Summoned`);
   collectTriggerEffects(state, "specialSummoning", card);
   moveDuelCard(state, uid, "monsterZone", summonController, duelReason.summon | duelReason.specialSummon, reasonPlayer);
   if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
@@ -445,11 +445,11 @@ export function negateDuelSummon(state: DuelState, uid: string): DuelCardInstanc
   });
 }
 
-export function canSpecialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId, summonTypeCode?: number, relatedEffectId?: number): boolean {
+export function canSpecialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId, summonTypeCode?: number, relatedEffectId?: number, allowUnconditionalSpecialSummonCondition = false): boolean {
   const card = findCard(state, uid);
   if (!card || !isDuelMonsterLike(card)) return false;
   const summonController = controller ?? card.controller;
-  if (isSpecialSummonPrevented(state, summonController, createContinuousEffectContext(state), card, summonTypeCode, relatedEffectId)) return false;
+  if (isSpecialSummonPrevented(state, summonController, createContinuousEffectContext(state), card, summonTypeCode, relatedEffectId, allowUnconditionalSpecialSummonCondition)) return false;
   if (!hasZoneSpace(state, summonController, "monsterZone")) return false;
   if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card) && !isFaceDownExtraDeckSummonTypeCode(summonTypeCode)) return false;
   return canMoveDuelCardToLocation(state, uid, "monsterZone");
@@ -458,7 +458,7 @@ export function canSpecialSummonDuelCard(state: DuelState, uid: string, controll
 function canAttemptSpecialSummonProcedure(state: DuelState, uid: string, summonTypeCode?: number): boolean {
   const card = findCard(state, uid);
   if (!card || !isDuelMonsterLike(card)) return false;
-  if (isSpecialSummonPrevented(state, card.controller, createContinuousEffectContext(state), card, summonTypeCode)) return false;
+  if (isSpecialSummonPrevented(state, card.controller, createContinuousEffectContext(state), card, summonTypeCode, undefined, true)) return false;
   if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card) && !isFaceDownExtraDeckSummonTypeCode(summonTypeCode)) return false;
   return canMoveDuelCardToLocation(state, uid, "monsterZone");
 }

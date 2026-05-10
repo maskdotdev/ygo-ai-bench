@@ -140,14 +140,7 @@ export function setControlPlayerForCard(
   return player;
 }
 
-export function isSpecialSummonPrevented(
-  state: DuelState,
-  player: PlayerId,
-  createContext: ContinuousEffectContextFactory,
-  card?: DuelCardInstance,
-  summonTypeCode?: number,
-  relatedEffectId?: number,
-): boolean {
+export function isSpecialSummonPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory, card?: DuelCardInstance, summonTypeCode?: number, relatedEffectId?: number, allowUnconditionalSpecialSummonCondition = false): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 22) continue;
     const source = findCard(state, effect.sourceUid);
@@ -158,7 +151,7 @@ export function isSpecialSummonPrevented(
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   if (card && isReviveLimitSpecialSummonPrevented(state, card)) return true;
-  if (card && isSpecialSummonConditionPrevented(state, player, createContext, card, summonTypeCode, relatedEffectId)) return true;
+  if (card && isSpecialSummonConditionPrevented(state, player, createContext, card, summonTypeCode, relatedEffectId, allowUnconditionalSpecialSummonCondition)) return true;
   return false;
 }
 
@@ -171,14 +164,7 @@ function isReviveLimitSpecialSummonPrevented(state: DuelState, card: DuelCardIns
   return false;
 }
 
-function isSpecialSummonConditionPrevented(
-  state: DuelState,
-  player: PlayerId,
-  createContext: ContinuousEffectContextFactory,
-  card: DuelCardInstance,
-  summonTypeCode?: number,
-  relatedEffectId?: number,
-): boolean {
+function isSpecialSummonConditionPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory, card: DuelCardInstance, summonTypeCode?: number, relatedEffectId?: number, allowUnconditionalSpecialSummonCondition = false): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 30 || effect.sourceUid !== card.uid) continue;
     const source = findCard(state, effect.sourceUid);
@@ -187,7 +173,10 @@ function isSpecialSummonConditionPrevented(
     ctx.summonTypeCode = effectiveSpecialSummonTypeCode(summonTypeCode);
     if (relatedEffectId !== undefined) ctx.relatedEffectId = relatedEffectId;
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
-    if (!effect.valuePredicate) return true;
+    if (!effect.valuePredicate) {
+      if (allowUnconditionalSpecialSummonCondition) continue;
+      return true;
+    }
     if (!effect.valuePredicate(ctx, player)) return true;
   }
   return false;
