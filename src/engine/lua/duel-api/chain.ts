@@ -6,6 +6,7 @@ import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid, readOptionalFunctionRef, releaseOptionalFunctionRef, symbolicLocationMask } from "#lua/api-utils.js";
 import { effectiveCardCodes } from "#lua/card-code-effect-utils.js";
 import { effectiveCardSetcodes } from "#lua/card-setcode-utils.js";
+import { cardTypeFlags, currentAttack, currentAttribute, currentDefense, currentLevel, currentRace, currentRank } from "#lua/card-stat-api.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 import type { LuaEffectRecord } from "#lua/host-types.js";
 
@@ -120,12 +121,12 @@ function pushChainInfoValue(L: unknown, session: DuelSession, hostState: LuaDuel
   else if (info === 16) lua.lua_pushinteger(L, positionMaskFromPosition(source?.position));
   else if (info === 17) lua.lua_pushinteger(L, source ? Number(effectiveCardCodes(session.state, source, hostState)[0] ?? 0) : 0);
   else if (info === 18) lua.lua_pushinteger(L, source ? Number(effectiveCardCodes(session.state, source, hostState)[1] ?? 0) : 0);
-  else if (info === 20) lua.lua_pushinteger(L, source?.data.level ?? 0);
-  else if (info === 21) lua.lua_pushinteger(L, cardRank(source));
-  else if (info === 22) lua.lua_pushinteger(L, source?.data.attribute ?? 0);
-  else if (info === 23) lua.lua_pushinteger(L, source?.data.race ?? 0);
-  else if (info === 24) lua.lua_pushinteger(L, source?.data.attack ?? 0);
-  else if (info === 25) lua.lua_pushinteger(L, source?.data.defense ?? 0);
+  else if (info === 20) lua.lua_pushinteger(L, currentLevel(source, session.state));
+  else if (info === 21) lua.lua_pushinteger(L, currentRank(source, session.state));
+  else if (info === 22) lua.lua_pushinteger(L, currentAttribute(source));
+  else if (info === 23) lua.lua_pushinteger(L, currentRace(source));
+  else if (info === 24) lua.lua_pushinteger(L, currentAttack(source, session.state));
+  else if (info === 25) lua.lua_pushinteger(L, currentDefense(source, session.state));
   else if (info === 26) lua.lua_pushinteger(L, 0);
   else if (info === 27) lua.lua_pushinteger(L, source?.summonType ? locationMaskFromLocation(source.previousLocation) : 0);
   else if (info === 28) lua.lua_pushinteger(L, summonTypeMask(source));
@@ -942,10 +943,6 @@ function chainNumericId(link: DuelState["chain"][number]): number {
   return Number.isFinite(id) ? id : 0;
 }
 
-function cardRank(card: DuelCardInstance | undefined): number {
-  return card && (cardTypeFlags(card) & 0x800000) !== 0 ? card.data.level ?? 0 : 0;
-}
-
 function summonTypeMask(card: DuelCardInstance | undefined): number {
   if (card?.summonTypeCode !== undefined) return card.summonTypeCode;
   if (!card?.summonType) return 0;
@@ -960,14 +957,6 @@ function summonTypeMask(card: DuelCardInstance | undefined): number {
   if (card.summonType === "pendulum") return 0x4a000000;
   if (card.summonType === "link") return 0x4c000000;
   return 0;
-}
-
-function cardTypeFlags(card: DuelCardInstance | undefined): number {
-  if (!card) return 0;
-  if (card.data.typeFlags !== undefined) return card.data.typeFlags;
-  if (card.kind === "spell") return 0x2;
-  if (card.kind === "trap") return 0x4;
-  return 0x1;
 }
 
 function locationMaskFromLocation(location: DuelCardInstance["location"] | undefined): number {

@@ -364,24 +364,24 @@ function pushUpdateScale<EffectRecord extends LuaCardApiEffectRecord>(L: unknown
   return 1;
 }
 
-function currentAttack(card: DuelCardInstance | undefined, state?: DuelState): number {
+export function currentAttack(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (card?.assumedProperties?.[7] !== undefined) return card.assumedProperties[7];
   const updatedAttack = currentBaseAttack(card, state) + (card?.attackModifier ?? 0) + statUpdateEffectValue(card, state, 100);
   return setStatEffectValue(card, state, 102) ?? setStatEffectValue(card, state, 101) ?? updatedAttack;
 }
 
-function currentDefense(card: DuelCardInstance | undefined, state?: DuelState): number {
+export function currentDefense(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (card?.assumedProperties?.[8] !== undefined) return card.assumedProperties[8];
   const updatedDefense = currentBaseDefense(card, state) + (card?.defenseModifier ?? 0) + statUpdateEffectValue(card, state, 104);
   return setStatEffectValue(card, state, 106) ?? setStatEffectValue(card, state, 105) ?? updatedDefense;
 }
 
-function currentLevel(card: DuelCardInstance | undefined, state?: DuelState): number {
+export function currentLevel(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (card?.assumedProperties?.[3] !== undefined) return card.assumedProperties[3];
   return (card?.data.level ?? 0) + (card?.levelModifier ?? 0) + statUpdateEffectValue(card, state, 130);
 }
 
-function currentRank(card: DuelCardInstance | undefined, state?: DuelState): number {
+export function currentRank(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (card?.assumedProperties?.[4] !== undefined) return card.assumedProperties[4];
   return cardRank(card) + (card?.rankModifier ?? 0) + statUpdateEffectValue(card, state, 132);
 }
@@ -454,11 +454,11 @@ function currentLink(card: DuelCardInstance | undefined): number {
   return cardLink(card) + (card?.linkModifier ?? 0);
 }
 
-function currentRace(card: DuelCardInstance | undefined): number {
+export function currentRace(card: DuelCardInstance | undefined): number {
   return card?.assumedProperties?.[6] ?? card?.data.race ?? 0;
 }
 
-function currentAttribute(card: DuelCardInstance | undefined): number {
+export function currentAttribute(card: DuelCardInstance | undefined): number {
   return card?.assumedProperties?.[5] ?? card?.data.attribute ?? 0;
 }
 
