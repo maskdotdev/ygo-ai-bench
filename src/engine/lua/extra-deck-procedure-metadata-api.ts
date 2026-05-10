@@ -97,7 +97,7 @@ function readLinkProcedureAttributeFilter(source: string | undefined): number | 
 }
 
 function readAddProcedureConstantFilter(source: string | undefined, procedure: "Link" | "Synchro" | "Xyz", predicate: string, constantExpression: string): number | undefined {
-  const match = source?.match(new RegExp(String.raw`${procedure}\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*${escapeRegExp(predicate)}\s*,\s*(${constantExpression})\s*\)`));
+  const match = source?.match(new RegExp(String.raw`${procedure}\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunction(?:Ex)?\(\s*${escapeRegExp(predicate)}\s*,\s*(${constantExpression})\s*\)`));
   return readLuaConstantExpression(match?.[1]);
 }
 
