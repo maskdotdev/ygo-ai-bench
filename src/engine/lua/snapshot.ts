@@ -22,6 +22,7 @@ const luaStaticSingleCardRestrictionCodes = new Set([43, 44, 85]);
 const luaIndestructibleValueDescriptors = new Set(["indestructible:opponent", "indestructible:self"]);
 const luaLifePointReasonPredicateEffectCodes = new Set([80, 81]);
 const luaEffectReasonPredicateDescriptor = "value-predicate:effect-reason";
+const luaReasonMaskPredicateDescriptorPrefix = "value-predicate:reason-mask:";
 const luaResetTurnSet = 0x20000;
 const luaResetPhase = 0x40000000;
 const luaPhaseEnd = 0x200;
@@ -230,6 +231,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
         effect.luaValueDescriptor === "change-damage:effect-double" ||
         effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous" ||
         isKnownLifePointReasonPredicateEffect(effect) ||
+        isKnownIndestructibleCountReasonPredicateEffect(effect) ||
         effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
         isStaticSingleCardLuaRestriction(effect) ||
         isStaticPlayerPhaseLock(effect) ||
@@ -242,10 +244,21 @@ function isKnownLifePointReasonPredicateEffect(effect: SerializedDuelEffect): bo
   return (
     effect.code !== undefined &&
     luaLifePointReasonPredicateEffectCodes.has(effect.code) &&
-    effect.luaValueDescriptor === luaEffectReasonPredicateDescriptor &&
+    luaReasonPredicateMask(effect.luaValueDescriptor) === duelReason.effect &&
     effect.reset !== undefined &&
     effect.targetRange !== undefined &&
     hasDefaultLuaFieldRange(effect)
+  );
+}
+
+function isKnownIndestructibleCountReasonPredicateEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 47 &&
+    luaReasonPredicateMask(effect.luaValueDescriptor) !== undefined &&
+    effect.reset !== undefined &&
+    effect.targetRange === undefined &&
+    effect.luaTargetDescriptor === undefined
   );
 }
 
@@ -275,7 +288,11 @@ function hasDefaultLuaFieldRange(effect: SerializedDuelEffect): boolean {
 function isStaticSingleCardLuaRestriction(effect: SerializedDuelEffect): boolean {
   if (effect.targetRange !== undefined || effect.sourceUid === undefined || effect.range.length !== 1) return false;
   if (effect.code === 14) return effect.reset?.flags === luaTemporaryPositionLockResetFlags;
-  return effect.code !== undefined && luaStaticSingleCardRestrictionCodes.has(effect.code) && effect.reset?.flags === luaTemporaryRestrictionResetFlags;
+  return effect.code !== undefined && luaStaticSingleCardRestrictionCodes.has(effect.code) && isTemporaryRestrictionReset(effect.reset?.flags);
+}
+
+function isTemporaryRestrictionReset(flags: number | undefined): boolean {
+  return flags === luaTemporaryRestrictionResetFlags || flags === luaResetsStandardPhaseEnd;
 }
 
 function isStaticPlayerPhaseLock(effect: SerializedDuelEffect): boolean {
@@ -311,13 +328,21 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   if (effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous") {
     return { valuePredicate: (ctx) => ctx.eventReasonPlayer === otherPlayer(effect.controller) && !relatedEffectIsContinuous(ctx) };
   }
-  if (effect.luaValueDescriptor === luaEffectReasonPredicateDescriptor) {
-    return { valuePredicate: (ctx) => ((ctx.eventReason ?? 0) & duelReason.effect) !== 0 };
+  const reasonMask = luaReasonPredicateMask(effect.luaValueDescriptor);
+  if (reasonMask !== undefined) {
+    return { valuePredicate: (ctx) => ((ctx.eventReason ?? 0) & reasonMask) !== 0 };
   }
   if (effect.luaValueDescriptor !== "change-damage:effect-double") return {};
   const applyValue = (ctx: Parameters<NonNullable<DuelEffectDefinition["lifePointValue"]>>[0], _player: PlayerId, amount: number): number =>
     ((ctx.eventReason ?? 0) & duelReason.effect) !== 0 ? amount * 2 : amount;
   return { battleDamageValue: applyValue, lifePointValue: applyValue };
+}
+
+function luaReasonPredicateMask(descriptor: string | undefined): number | undefined {
+  if (descriptor === luaEffectReasonPredicateDescriptor) return duelReason.effect;
+  if (!descriptor?.startsWith(luaReasonMaskPredicateDescriptorPrefix)) return undefined;
+  const mask = Number(descriptor.slice(luaReasonMaskPredicateDescriptorPrefix.length));
+  return Number.isSafeInteger(mask) && mask > 0 ? mask : undefined;
 }
 
 function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "targetCardPredicate"> {

@@ -71,4 +71,118 @@ describe("Lua indestructible value restore", () => {
     const opponentDestroy = destroyDuelCard(restored.session.state, protectedCard!.uid, 0, duelReason.effect | duelReason.destroy, 1);
     expect(opponentDestroy).toMatchObject({ uid: protectedCard!.uid, location: "graveyard" });
   });
+
+  it("restores temporary counted indestructible reason-mask predicates", () => {
+    const cards: DuelCardData[] = [
+      { code: "300", name: "Temporary Protection Source", kind: "spell", typeFlags: 0x2 },
+      { code: "400", name: "Temporary Protected Target", kind: "monster", typeFlags: 0x1, level: 4 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 342, startingHandSize: 2, cardReader: reader });
+    loadDecks(session, { 0: { main: ["300", "400"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const target = session.state.cards.find((card) => card.code === "400");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local tc=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local e=Effect.CreateEffect(tc)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetCode(EFFECT_INDESTRUCTABLE_COUNT)
+      e:SetCountLimit(1)
+      e:SetValue(function(_,_,r) return (r&REASON_BATTLE+REASON_EFFECT)~=0 end)
+      e:SetReset(RESETS_STANDARD_PHASE_END)
+      tc:RegisterEffect(e)
+      `,
+      "temporary-counted-indestructible.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          event: "continuous",
+          code: 47,
+          sourceUid: target!.uid,
+          luaValueDescriptor: "value-predicate:reason-mask:96",
+        }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: () => undefined }, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          event: "continuous",
+          code: 47,
+          sourceUid: target!.uid,
+          luaValueDescriptor: "value-predicate:reason-mask:96",
+        }),
+      ]),
+    );
+
+    const battleDestroy = destroyDuelCard(restored.session.state, target!.uid, 0, duelReason.battle | duelReason.destroy, 1);
+    expect(battleDestroy).toMatchObject({ uid: target!.uid, location: "monsterZone" });
+    const effectDestroy = destroyDuelCard(restored.session.state, target!.uid, 0, duelReason.effect | duelReason.destroy, 1);
+    expect(effectDestroy).toMatchObject({ uid: target!.uid, location: "graveyard" });
+  });
+
+  it("restores equality-form reason-mask predicates", () => {
+    const cards: DuelCardData[] = [
+      { code: "500", name: "Battle Predicate Target A", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: "501", name: "Battle Predicate Target B", kind: "monster", typeFlags: 0x1, level: 4 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 343, startingHandSize: 2, cardReader: reader });
+    loadDecks(session, { 0: { main: ["500", "501"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const battleTarget = session.state.cards.find((card) => card.code === "500");
+    const effectTarget = session.state.cards.find((card) => card.code === "501");
+    expect(battleTarget).toBeDefined();
+    expect(effectTarget).toBeDefined();
+    moveDuelCard(session.state, battleTarget!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, effectTarget!.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local function protect(code)
+        local tc=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, code), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+        local e=Effect.CreateEffect(tc)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_INDESTRUCTABLE_COUNT)
+        e:SetCountLimit(1)
+        e:SetValue(function(_,_,r) return r&REASON_BATTLE==REASON_BATTLE end)
+        e:SetReset(RESETS_STANDARD_PHASE_END)
+        tc:RegisterEffect(e)
+      end
+      protect(500)
+      protect(501)
+      `,
+      "temporary-counted-battle-indestructible.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          event: "continuous",
+          code: 47,
+          sourceUid: battleTarget!.uid,
+          luaValueDescriptor: "value-predicate:reason-mask:32",
+        }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: () => undefined }, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const battleDestroy = destroyDuelCard(restored.session.state, battleTarget!.uid, 0, duelReason.battle | duelReason.destroy, 1);
+    expect(battleDestroy).toMatchObject({ uid: battleTarget!.uid, location: "monsterZone" });
+    const effectDestroy = destroyDuelCard(restored.session.state, effectTarget!.uid, 0, duelReason.effect | duelReason.destroy, 1);
+    expect(effectDestroy).toMatchObject({ uid: effectTarget!.uid, location: "graveyard" });
+  });
 });

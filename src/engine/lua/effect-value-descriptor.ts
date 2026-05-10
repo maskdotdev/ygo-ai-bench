@@ -10,8 +10,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
   const params = luaFunctionParams(snippet);
-  const effectReasonPredicate = effectReasonPredicateDescriptor(snippet, params);
-  if (effectReasonPredicate) return effectReasonPredicate;
+  const reasonMaskPredicate = reasonMaskPredicateDescriptor(snippet, params);
+  if (reasonMaskPredicate) return reasonMaskPredicate;
   const effectParam = params?.[0];
   const reasonPlayerParam = params?.[2];
   if (effectParam && reasonPlayerParam) {
@@ -45,13 +45,49 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   return reflectOpponentNonContinuous.test(snippet) ? "reflect-damage:opponent-non-continuous" : undefined;
 }
 
-function effectReasonPredicateDescriptor(snippet: string, params: string[] | undefined): string | undefined {
+function reasonMaskPredicateDescriptor(snippet: string, params: string[] | undefined): string | undefined {
   const reasonParam = params?.[2];
   if (!reasonParam) return undefined;
   const reason = escapeRegExp(reasonParam);
-  const effectReason = "(?:REASON_EFFECT|64)";
-  const effectReasonPredicate = new RegExp(`\\breturn\\s+\\(?\\s*${reason}\\s*&\\s*${effectReason}\\s*\\)?\\s*(?:~=|>)\\s*0\\s*(?:end\\b|$)`);
-  return effectReasonPredicate.test(snippet) ? "value-predicate:effect-reason" : undefined;
+  const maskTerm = "(?:REASON_EFFECT|64|REASON_BATTLE|32)";
+  const maskExpression = `${maskTerm}(?:\\s*(?:\\||\\+)\\s*${maskTerm})*`;
+  const condition = `${reason}\\s*&\\s*\\(?\\s*(${maskExpression})\\s*\\)?\\s*\\)?\\s*(?:(?:~=|>)\\s*0|==\\s*(${maskExpression}))`;
+  const returnPredicate = new RegExp(
+    `\\breturn\\s+\\(?\\s*${condition}\\s*\\)?\\s*(?:and\\s+(?:1|true)\\s+or\\s+(?:0|false))?\\s*(?:end\\b|$)`,
+  );
+  const returnMatch = snippet.match(returnPredicate);
+  const returnMask = reasonMaskFromMatch(returnMatch);
+  if (returnMask !== undefined) return reasonMaskDescriptor(returnMask);
+  const ifPredicate = new RegExp(`\\bif\\s+\\(?\\s*${condition}\\s*\\)?\\s+then\\b.*\\breturn\\s+(?:1|true)\\s*(?:end\\b|$)`);
+  const ifMatch = snippet.match(ifPredicate);
+  const ifMask = reasonMaskFromMatch(ifMatch);
+  return ifMask === undefined ? undefined : reasonMaskDescriptor(ifMask);
+}
+
+function reasonMaskFromMatch(match: RegExpMatchArray | null): number | undefined {
+  const expression = match?.[1] ?? match?.[2];
+  if (!expression) return undefined;
+  return reasonMaskFromExpression(expression);
+}
+
+function reasonMaskDescriptor(mask: number): string {
+  return mask === 0x40 ? "value-predicate:effect-reason" : `value-predicate:reason-mask:${mask}`;
+}
+
+function reasonMaskFromExpression(expression: string): number | undefined {
+  let mask = 0;
+  for (const part of expression.split(/\s*(?:\||\+)\s*/)) {
+    const value = reasonMaskTermValue(part.trim());
+    if (value === undefined) return undefined;
+    mask |= value;
+  }
+  return mask === 0 ? undefined : mask;
+}
+
+function reasonMaskTermValue(term: string): number | undefined {
+  if (term === "REASON_EFFECT" || term === "64") return 0x40;
+  if (term === "REASON_BATTLE" || term === "32") return 0x20;
+  return undefined;
 }
 
 function luaFunctionSourceSnippet(L: unknown, index: number, hostState: LuaHostState): string | undefined {

@@ -812,7 +812,7 @@ export function findIndestructibleEffect(state: DuelState, uid: string, reason: 
     if (effect.code === 47 && (effect.value ?? 1) <= 0) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    const ctx = createContext(effect, source, card);
+    const ctx = createContext(effect, source, card, { eventReason: reason, ...(reasonPlayer === undefined ? {} : { eventReasonPlayer: reasonPlayer }) });
     if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
     if (effect.valuePredicate && !effect.valuePredicate(ctx, reasonPlayer)) continue;
