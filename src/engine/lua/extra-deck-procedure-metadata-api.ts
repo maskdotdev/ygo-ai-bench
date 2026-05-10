@@ -56,6 +56,8 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
   if (linkAttribute !== undefined) card.data.linkMaterialAttribute = linkAttribute;
   const linkSetcode = readLinkProcedureSetcodeFilter(source);
   if (linkSetcode !== undefined) card.data.linkMaterialSetcode = linkSetcode;
+  const linkLevel = readLinkProcedureLevelFilter(source);
+  if (linkLevel !== undefined) card.data.linkMaterialLevel = linkLevel;
 }
 
 function readXyzProcedureRaceFilter(source: string | undefined): number | undefined {
@@ -122,9 +124,19 @@ function readLinkProcedureSetcodeFilter(source: string | undefined): number | un
   return readAddProcedureConstantFilter(source, "Link", "Card.IsSetCard", SET_CONSTANT_EXPRESSION);
 }
 
+function readLinkProcedureLevelFilter(source: string | undefined): number | undefined {
+  return readAddProcedureNumberFilter(source, "Link", "Card.IsLevel");
+}
+
 function readAddProcedureConstantFilter(source: string | undefined, procedure: "Link" | "Synchro" | "Xyz", predicate: string, constantExpression: string): number | undefined {
   const match = source?.match(new RegExp(String.raw`${procedure}\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunction(?:Ex)?\(\s*${escapeRegExp(predicate)}\s*,\s*(${constantExpression})\s*\)`));
   return readLuaConstantExpression(match?.[1]);
+}
+
+function readAddProcedureNumberFilter(source: string | undefined, procedure: "Link" | "Synchro" | "Xyz", predicate: string): number | undefined {
+  const match = source?.match(new RegExp(String.raw`${procedure}\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunction(?:Ex)?\(\s*${escapeRegExp(predicate)}\s*,\s*(\d+)\s*\)`));
+  const value = match?.[1] === undefined ? undefined : Number.parseInt(match[1], 10);
+  return value !== undefined && value > 0 ? value : undefined;
 }
 
 function readSynchroNonTunerConstantFilter(source: string | undefined, predicate: string, constantExpression: string): number | undefined {

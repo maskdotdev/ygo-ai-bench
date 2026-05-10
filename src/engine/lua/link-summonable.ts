@@ -60,6 +60,7 @@ function targetAllowsMaterial(target: DuelCardInstance, card: DuelCardInstance):
   if (!linkMaterialRaceMatches(target, card)) return false;
   if (!linkMaterialAttributeMatches(target, card)) return false;
   if (!linkMaterialSetcodeMatches(target, card)) return false;
+  if (!linkMaterialLevelMatches(target, card)) return false;
   return !target.data.linkMaterials?.length || target.data.linkMaterials.some((code) => cardCodes(card).includes(code));
 }
 
@@ -104,6 +105,10 @@ function linkMaterialAttributeMatches(target: DuelCardInstance, material: DuelCa
 
 function linkMaterialSetcodeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
   return target.data.linkMaterialSetcode === undefined || (material.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.linkMaterialSetcode!, setcode));
+}
+
+function linkMaterialLevelMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.linkMaterialLevel === undefined || material.data.level === target.data.linkMaterialLevel;
 }
 
 function materialCodesMatch(materials: DuelCardInstance[], requiredCodes: string[]): boolean {
