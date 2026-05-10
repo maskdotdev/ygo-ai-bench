@@ -41,6 +41,7 @@ const luaYellowAlertCode = "59277750";
 const luaRareMetalmorphCode = "12503902";
 const luaMaharaghiCode = "40695128";
 const luaHinoKaguTsuchiCode = "75745607";
+const luaGreatLongNoseCode = "2356994";
 const luaMegalithUnformedCode = "69003792";
 const luaSetMegalith = 0x138;
 const luaCategorySpecialSummon = 0x200;
@@ -433,6 +434,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownRareMetalmorphChainSolvingNegateEffect(effect) ||
         isKnownMaharaghiPredrawEffect(effect) ||
         isKnownHinoKaguTsuchiPredrawDiscardEffect(effect) ||
+        isKnownGreatLongNoseSkipBattlePhaseEffect(effect) ||
         isKnownCannotActivateSpecialSummonedMonsterEffect(effect) ||
         isKnownCannotActivateNonSpiritMonsterEffect(effect) ||
         isKnownSetcodeOrCodeTypeBattleProtectionEffect(effect) ||
@@ -566,6 +568,19 @@ function isKnownHinoKaguTsuchiPredrawDiscardEffect(effect: SerializedDuelEffect)
     effect.sourceUid !== undefined &&
     effect.controller !== undefined &&
     effect.targetRange === undefined &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
+function isKnownGreatLongNoseSkipBattlePhaseEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaGreatLongNoseCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === 183 &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
+    effect.targetRange?.[0] === 0 &&
+    effect.targetRange?.[1] === 1 &&
     hasDefaultLuaFieldRange(effect)
   );
 }
