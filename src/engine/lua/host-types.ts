@@ -58,6 +58,7 @@ export interface LuaEffectRecord {
   value?: number;
   valueDescriptor?: string;
   valueRef?: number;
+  targetDescriptor?: string;
   conditionRef?: number;
   costRef?: number;
   targetRef?: number;

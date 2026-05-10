@@ -251,6 +251,7 @@ export interface DuelEffectDefinition {
   code?: number;
   value?: number;
   luaValueDescriptor?: string;
+  luaTargetDescriptor?: string;
   triggerEvent?: DuelEventName;
   triggerCode?: number;
   triggerSourceOnly?: boolean;

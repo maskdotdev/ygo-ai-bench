@@ -4,6 +4,7 @@ import { cleanupRemovedDuelEffect } from "#duel/effect-reset.js";
 import { locationsFromMask, readCardUid, readTableNumberField } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { callLuaEffectBattleDamageValue, callLuaEffectLifePointValue, callLuaEffectStatValue, callLuaEffectValueCardPredicate, callLuaEffectValuePredicate } from "#lua/effect-value-callbacks.js";
+import { knownLuaEffectTargetDescriptor } from "#lua/effect-target-descriptor.js";
 import { knownLuaEffectValueDescriptor } from "#lua/effect-value-descriptor.js";
 import { locationMaskFromLocation, locationMaskFromLocations } from "#lua/effect-location-mask.js";
 import { installEffectCompatibilityApi } from "#lua/effect-compatibility-api.js";
@@ -277,9 +278,9 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     effects.delete(effect.id);
     return 0;
   });
-  pushEffectMethod(L, effects, "SetCondition", setEffectFunctionField("conditionRef"));
-  pushEffectMethod(L, effects, "SetCost", setEffectFunctionField("costRef"));
-  pushEffectMethod(L, effects, "SetTarget", setEffectFunctionField("targetRef"));
+  pushEffectMethod(L, effects, "SetCondition", setEffectFunctionField("conditionRef", hostState));
+  pushEffectMethod(L, effects, "SetCost", setEffectFunctionField("costRef", hostState));
+  pushEffectMethod(L, effects, "SetTarget", setEffectFunctionField("targetRef", hostState));
   pushEffectMethod(L, effects, "GetCondition", getEffectFunctionField("conditionRef"));
   pushEffectMethod(L, effects, "GetCost", getEffectFunctionField("costRef"));
   pushEffectMethod(L, effects, "GetTarget", getEffectFunctionField("targetRef"));
@@ -485,9 +486,14 @@ function activeTypeFlags(card: DuelCardInstance | undefined): number {
   return 0;
 }
 
-function setEffectFunctionField(field: "conditionRef" | "costRef" | "targetRef") {
+function setEffectFunctionField(field: "conditionRef" | "costRef" | "targetRef", hostState: LuaHostState) {
   return (state: unknown, effect: LuaEffectRecord): number => {
     if (!lua.lua_isfunction(state, 2)) return 0;
+    if (field === "targetRef") {
+      const descriptor = knownLuaEffectTargetDescriptor(state, 2, hostState);
+      if (descriptor === undefined) delete effect.targetDescriptor;
+      else effect.targetDescriptor = descriptor;
+    }
     lua.lua_pushvalue(state, 2);
     effect[field] = lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX);
     return 0;
@@ -519,6 +525,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.code === undefined ? {} : { code: luaEffect.code }),
     ...(luaEffect.value === undefined ? {} : { value: luaEffect.value }),
     ...(luaEffect.valueDescriptor === undefined ? {} : { luaValueDescriptor: luaEffect.valueDescriptor }),
+    ...(luaEffect.targetDescriptor === undefined ? {} : { luaTargetDescriptor: luaEffect.targetDescriptor }),
     ...(triggerEvent === undefined ? {} : { triggerEvent }),
     ...(triggerEvent !== undefined && shouldKeepTriggerCode(triggerEvent, luaEffect.code) ? { triggerCode: luaEffect.code } : {}),
     ...(event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEvent, luaEffect.code) ? { triggerSourceOnly: true } : {}),

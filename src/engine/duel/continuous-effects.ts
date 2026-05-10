@@ -154,6 +154,7 @@ export function isSpecialSummonPrevented(
     if (!source || !effect.range.includes(source.location)) continue;
     if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
     const ctx = createContext(effect, source, card);
+    if (card && effect.targetCardPredicate && !effect.targetCardPredicate(ctx, card)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   if (card && isReviveLimitSpecialSummonPrevented(state, card)) return true;

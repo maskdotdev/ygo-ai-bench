@@ -201,7 +201,7 @@ export const fusionProcedureSource = `
         Duel.BreakEffect()
         Duel.FusionSummon(tp,tc,backupmat,true)
       else
-        Duel.FusionSummon(tp,tc,sg)
+        Duel.FusionSummon(tp,tc,sg,false,true)
       end
       if params.stage2 then
         params.stage2(e,tc,tp,backupmat,0)

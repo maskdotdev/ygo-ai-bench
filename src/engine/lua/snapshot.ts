@@ -12,6 +12,7 @@ import type { ApplyDuelResponseResult, ChainLimit, DuelAction, DuelCardReader, D
 const luaEffectEquipLimit = 76;
 const luaEffectUnionStatus = 347;
 const luaEffectOldUnionStatus = 348;
+const luaEffectClockLizard = 51476410;
 const luaUnionStateEffectCodes = new Set([luaEffectEquipLimit, luaEffectUnionStatus, luaEffectOldUnionStatus]);
 const luaStaticSingleCardRestrictionCodes = new Set([43, 44, 85]);
 const luaResetTurnSet = 0x20000;
@@ -197,6 +198,7 @@ function restoreKnownLuaEffects(
       ...(effect.targetRange ? { targetRange: [...effect.targetRange] } : {}),
       ...(effect.hintTiming ? { hintTiming: [...effect.hintTiming] } : {}),
       ...restoredLuaValueCallbacks(effect),
+      ...restoredLuaTargetCallbacks(effect),
       operation: restoredLuaOperation(effect),
     });
     added.push(effect.registryKey);
@@ -211,6 +213,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
       effect.code === 8 ||
       effect.code === 22 ||
       effect.code === 25 ||
+      effect.code === luaEffectClockLizard ||
       effect.luaValueDescriptor === "change-damage:effect-double" ||
       effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous" ||
       effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
@@ -242,6 +245,11 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   const applyValue = (ctx: Parameters<NonNullable<DuelEffectDefinition["lifePointValue"]>>[0], _player: PlayerId, amount: number): number =>
     ((ctx.eventReason ?? 0) & duelReason.effect) !== 0 ? amount * 2 : amount;
   return { battleDamageValue: applyValue, lifePointValue: applyValue };
+}
+
+function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "targetCardPredicate"> {
+  if (effect.luaTargetDescriptor !== "special-summon-limit:non-fusion-extra") return {};
+  return { targetCardPredicate: (_ctx, card) => card.location === "extraDeck" && ((card.data.typeFlags ?? 0) & 0x40) === 0 };
 }
 
 function relatedEffectIsContinuous(ctx: Parameters<NonNullable<DuelEffectDefinition["valuePredicate"]>>[0]): boolean {
