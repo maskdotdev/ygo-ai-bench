@@ -58,6 +58,8 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
   if (linkSetcode !== undefined) card.data.linkMaterialSetcode = linkSetcode;
   const linkLevel = readLinkProcedureLevelFilter(source);
   if (linkLevel !== undefined) card.data.linkMaterialLevel = linkLevel;
+  const linkMinLevel = readLinkProcedureMinLevelFilter(source);
+  if (linkMinLevel !== undefined) card.data.linkMaterialMinLevel = linkMinLevel;
 }
 
 function readXyzProcedureRaceFilter(source: string | undefined): number | undefined {
@@ -126,6 +128,10 @@ function readLinkProcedureSetcodeFilter(source: string | undefined): number | un
 
 function readLinkProcedureLevelFilter(source: string | undefined): number | undefined {
   return readAddProcedureNumberFilter(source, "Link", "Card.IsLevel");
+}
+
+function readLinkProcedureMinLevelFilter(source: string | undefined): number | undefined {
+  return readAddProcedureNumberFilter(source, "Link", "Card.IsLevelAbove");
 }
 
 function readAddProcedureConstantFilter(source: string | undefined, procedure: "Link" | "Synchro" | "Xyz", predicate: string, constantExpression: string): number | undefined {
