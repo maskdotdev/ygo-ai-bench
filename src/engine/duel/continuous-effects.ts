@@ -44,6 +44,13 @@ interface RedirectCandidate {
 
 export type MaterialUseKind = "fusion" | "synchro" | "xyz" | "link" | "ritual";
 
+const effectFlagSetAvailable = 0x100;
+
+export function continuousEffectSourceIsActive(effect: DuelEffectDefinition, source: DuelCardInstance): boolean {
+  if (source.location !== "monsterZone" && source.location !== "spellTrapZone") return true;
+  return source.faceUp || ((effect.property ?? 0) & effectFlagSetAvailable) !== 0;
+}
+
 export function isEffectActivationPrevented(
   state: DuelState,
   player: PlayerId,
@@ -882,6 +889,7 @@ function isFieldLocation(location: DuelLocation): boolean {
 }
 
 export function continuousEffectAffectsCard(effect: DuelEffectDefinition, source: DuelCardInstance, card: DuelCardInstance): boolean {
+  if (!continuousEffectSourceIsActive(effect, source)) return false;
   if (source.uid === card.uid) return true;
   if (continuousEffectIsEquipType(effect) && source.equippedToUid === card.uid) return true;
   if (continuousEffectIsPlayerTarget(effect)) return continuousEffectTargetsPlayer(effect, source, card.controller);
@@ -899,6 +907,7 @@ export function continuousEffectAppliesToCard(effect: DuelEffectDefinition, sour
 }
 
 function continuousEffectTargetsPlayer(effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId): boolean {
+  if (!continuousEffectSourceIsActive(effect, source)) return false;
   if (!continuousEffectIsPlayerTarget(effect)) return effect.targetRange === undefined && source.controller === player;
   const [selfTarget = 0, opponentTarget = 0] = effect.targetRange ?? [1, 0];
   if (source.controller === player) return selfTarget !== 0;

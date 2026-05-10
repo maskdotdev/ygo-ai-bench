@@ -90,6 +90,7 @@ import { resolvePendingBattle, type BattleContinuationHandlers } from "#duel/bat
 import {
   isDrawPrevented,
   isCardDisabled,
+  continuousEffectSourceIsActive,
   isDeckDiscardPrevented,
   isDeckLossDefeatPrevented,
   isEffectActivationPrevented,
@@ -740,7 +741,7 @@ function executeContinuousPhaseEffects(state: DuelState, phase: DuelPhase): void
   for (const effect of [...state.effects]) {
     if (effect.event !== "continuous" || effect.code !== code || !canUseEffectCount(state, effect)) continue;
     const source = findCard(state, effect.sourceUid);
-    if (!source || !effect.range.includes(source.location)) continue;
+    if (!source || !effect.range.includes(source.location) || !continuousEffectSourceIsActive(effect, source)) continue;
     const ctx = createEffectContext(state, source, effect.controller, "phaseChanged");
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
     effect.operation(ctx);

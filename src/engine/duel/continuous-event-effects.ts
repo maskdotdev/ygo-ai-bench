@@ -1,4 +1,5 @@
 import { findCard } from "#duel/card-state.js";
+import { continuousEffectSourceIsActive } from "#duel/continuous-effects.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { createEffectContext } from "#duel/effect-context.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
@@ -13,7 +14,7 @@ export function executeContinuousEventEffects(state: DuelState, eventName: DuelE
   for (const effect of [...state.effects]) {
     if (effect.event !== "continuous" || effect.code !== eventCode || !canUseEffectCount(state, effect)) continue;
     const source = findCard(state, effect.sourceUid);
-    if (!source || !effect.range.includes(source.location)) continue;
+    if (!source || !effect.range.includes(source.location) || !continuousEffectSourceIsActive(effect, source)) continue;
     const sourceOnly = isSourceOnlyContinuousEventEffect(effect);
     const eventCard = sourceOnly ? eventCards.find((card) => card.uid === source.uid) : eventCards[0];
     if (sourceOnly && !eventCard) continue;
