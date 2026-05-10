@@ -35,8 +35,8 @@ describe("Lua normal summon field helpers", () => {
       Debug.Message("summon result " .. Duel.Summon(first, true, nil))
       Debug.Message("summon count after " .. tostring(Duel.CheckSummonedCount()))
       Debug.Message("summon operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
-      Debug.Message("summon count blocked " .. Duel.Summon(second, true, nil))
-      Debug.Message("summon blocked operated " .. Duel.GetOperatedGroup():GetCount())
+      Debug.Message("summon ignore-count result " .. Duel.Summon(second, true, nil))
+      Debug.Message("summon ignore-count operated " .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetOperatedGroup():GetFirst():GetCode())
       Debug.Message("summon nil result " .. Duel.Summon(nil, true, nil))
       Debug.Message("summon nil operated " .. Duel.GetOperatedGroup():GetCount())
       `,
@@ -47,12 +47,14 @@ describe("Lua normal summon field helpers", () => {
     expect(summonHost.messages).toContain("summon result 1");
     expect(summonHost.messages).toContain("summon count after false");
     expect(summonHost.messages).toContain("summon operated 1/100");
-    expect(summonHost.messages).toContain("summon count blocked 0");
-    expect(summonHost.messages).toContain("summon blocked operated 0");
+    expect(summonHost.messages).toContain("summon ignore-count result 1");
+    expect(summonHost.messages).toContain("summon ignore-count operated 1/200");
     expect(summonHost.messages).toContain("summon nil result 0");
     expect(summonHost.messages).toContain("summon nil operated 0");
     const summoned = summonSession.state.cards.find((card) => card.code === "100");
     expect(summoned).toMatchObject({ location: "monsterZone", position: "faceUpAttack", summonType: "normal" });
+    const ignoreCountSummoned = summonSession.state.cards.find((card) => card.code === "200");
+    expect(ignoreCountSummoned).toMatchObject({ location: "monsterZone", position: "faceUpAttack", summonType: "normal" });
 
     const countSession = createDuel({ seed: 93, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(countSession, {

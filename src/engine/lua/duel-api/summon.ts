@@ -31,7 +31,7 @@ import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelReason } from "#duel/reasons.js";
-import { tributeSetDuelCard } from "#duel/summon.js";
+import { normalSummon, tributeSetDuelCard } from "#duel/summon.js";
 import { cardTypeFlags, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
 import { cardCombinations, materialCodesMatch, type MaterialCodeMatchOptions } from "#duel/summon-materials.js";
 import { sameStringMembers } from "#duel/string-list-match.js";
@@ -147,19 +147,24 @@ function selectSummonOrSetAction(
 
 function pushBasicSummonResult(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState, type: "normalSummon" | "setMonster" | "setSpellTrap"): number {
   if (session.state.status === "ended") return pushEmptyIntegerResult(L, hostState);
-  const targetUid = readFirstCardOrGroupUid(L, type === "setSpellTrap" && lua.lua_isnumber(L, 1) ? 2 : 1);
+  const playerFirst = lua.lua_isnumber(L, 1) && readFirstCardOrGroupUid(L, 2) !== undefined;
+  const player = playerFirst ? readOptionalPlayer(L, 1) : undefined;
+  const targetUid = readFirstCardOrGroupUid(L, playerFirst ? 2 : 1);
   const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
   if (!target) {
     setOperatedUids(hostState, []);
     lua.lua_pushinteger(L, 0);
     return 1;
   }
-  const tributeUids = type === "normalSummon" || type === "setMonster" ? readCardCollectionUids(L, 3) : [];
-  const legalAction = selectBasicSummonAction(session, target, type, tributeUids);
+  const tributeUids = type === "normalSummon" || type === "setMonster" ? readCardCollectionUids(L, playerFirst ? 4 : 3) : [];
+  const ignoreCount = type === "normalSummon" && Boolean(lua.lua_toboolean(L, playerFirst ? 3 : 2));
+  const legalAction = selectBasicSummonAction(session, target, type, tributeUids, player);
   if (legalAction) markLuaOperationTimingBoundary(session, hostState);
   const result =
     legalAction
       ? applyResponse(session, legalAction)
+      : type === "normalSummon" && tributeUids.length === 0
+      ? normalSummonLuaMonster(session, target, player ?? target.controller, ignoreCount)
       : type === "setSpellTrap"
       ? setLuaSpellTrap(session, hostState, target)
       : type === "setMonster" && tributeUids.length > 0
@@ -176,12 +181,29 @@ function selectBasicSummonAction(
   target: DuelCardInstance,
   type: "normalSummon" | "setMonster" | "setSpellTrap",
   tributeUids: string[],
+  player?: PlayerId,
 ): LuaSummonOrSetAction | undefined {
-  const actions = getLegalActions(session, target.controller);
+  const actions = getLegalActions(session, player ?? target.controller);
   if (type === "normalSummon" && tributeUids.length > 0) {
     return actions.find((action): action is LuaSummonOrSetAction => action.type === "tributeSummon" && action.uid === target.uid && sameStringMembers(action.tributeUids, tributeUids));
   }
   return actions.find((action): action is LuaSummonOrSetAction => action.type === type && action.uid === target.uid);
+}
+
+function normalSummonLuaMonster(session: DuelSession, target: DuelCardInstance, player: PlayerId, ignoreCount: boolean): { ok: boolean } {
+  try {
+    normalSummon(
+      session.state,
+      player,
+      target.uid,
+      (eventName, eventCard) => collectLuaSummonEvent(session, eventName, eventCard),
+      undefined,
+      ignoreCount ? () => true : undefined,
+    );
+    return { ok: true };
+  } catch {
+    return { ok: false };
+  }
 }
 
 function setLuaMonsterWithTributes(session: DuelSession, target: DuelCardInstance, tributeUids: string[]): { ok: boolean } {
