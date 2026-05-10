@@ -187,6 +187,87 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ex
     );
     expect(restored.host.messages).not.toContain("earth chant responder resolved");
   });
+
+  it("restores Ritual forcedselection material requirements", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const secretsCode = "59514116";
+    const ritualTargetCode = "5951";
+    const decoyMaterialCode = "5952";
+    const darkMagicianCode = "46986414";
+    const responderCode = "5953";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === secretsCode),
+      { code: ritualTargetCode, name: "Secrets Ritual Fixture", kind: "monster", typeFlags: 0x81, level: 4, attack: 1800, defense: 1200 },
+      { code: decoyMaterialCode, name: "Secrets Level 4 Decoy Fixture", kind: "monster", typeFlags: 0x1, level: 4, attack: 1400, defense: 1000 },
+      { code: darkMagicianCode, name: "Dark Magician Forced Ritual Fixture", kind: "monster", typeFlags: 0x1, level: 7, attack: 2500, defense: 2100 },
+      { code: responderCode, name: "Secrets Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 595, startingHandSize: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [secretsCode, ritualTargetCode, darkMagicianCode, decoyMaterialCode] }, 1: { main: [responderCode] } });
+    startDuel(session);
+
+    const secrets = session.state.cards.find((card) => card.code === secretsCode);
+    const ritualTarget = session.state.cards.find((card) => card.code === ritualTargetCode);
+    const decoyMaterial = session.state.cards.find((card) => card.code === decoyMaterialCode);
+    const darkMagician = session.state.cards.find((card) => card.code === darkMagicianCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(secrets).toBeDefined();
+    expect(ritualTarget).toBeDefined();
+    expect(decoyMaterial).toBeDefined();
+    expect(darkMagician).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, secrets!.uid, "hand", 0);
+    moveDuelCard(session.state, ritualTarget!.uid, "hand", 0);
+    moveDuelCard(session.state, darkMagician!.uid, "hand", 0);
+    moveDuelCard(session.state, decoyMaterial!.uid, "hand", 0);
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(secretsCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+
+    const activate = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === secrets!.uid);
+    expect(activate).toBeDefined();
+    applyAndAssert(session, activate!);
+    expect(session.state.chain).toHaveLength(1);
+    expect(session.state.chain[0]).toMatchObject({
+      sourceUid: secrets!.uid,
+      operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }],
+    });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+
+    const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    const resolved = applyLuaRestoreResponse(restored, pass!);
+    expect(resolved.ok, resolved.error).toBe(true);
+
+    expect(restored.session.state.cards.find((card) => card.uid === ritualTarget!.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 0,
+      position: "faceUpAttack",
+      faceUp: true,
+      summonType: "ritual",
+      summonMaterialUids: [darkMagician!.uid],
+    });
+    expect(restored.session.state.cards.find((card) => card.uid === darkMagician!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.material | duelReason.ritual });
+    expect(restored.session.state.cards.find((card) => card.uid === decoyMaterial!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.session.state.cards.find((card) => card.uid === secrets!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
+    expect(restored.host.messages).not.toContain("earth chant responder resolved");
+  });
 });
 
 function chainResponderScript(): string {

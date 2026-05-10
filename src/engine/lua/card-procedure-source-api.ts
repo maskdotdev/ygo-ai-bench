@@ -39,10 +39,15 @@ export const cardProcedureSource = `${fusionProcedureSource}
       if params.matfilter then mg=mg:Filter(params.matfilter,nil,e,tp,ritual_c) end
       return mg
     end
+    local function ritual_selection_filter(g,e,tp,params,ritual_c,lv)
+      if params.forcedselection and not params.forcedselection(e,tp,g,ritual_c) then return false end
+      local sum=g:GetSum(ritual_material_level,ritual_c); return params.lvtype==RITPROC_GREATER and sum>=lv or sum==lv
+    end
     local function ritual_has_materials(tp,ritual_c,params,e,eg,ep,ev,re,r,rp,chk)
       local mg=ritual_material_pool(tp,ritual_c,params,e,eg,ep,ev,re,r,rp,chk)
       local lv=ritual_required_level(params,ritual_c)
       if not mg or lv<=0 then return false end
+      if params.forcedselection then return mg:CheckSubGroup(ritual_selection_filter,1,lv,e,tp,params,ritual_c,lv) end
       if params.lvtype==RITPROC_GREATER then
         return mg:CheckWithSumGreater(ritual_material_level,lv,1,lv,ritual_c)
       end
@@ -75,12 +80,7 @@ export const cardProcedureSource = `${fusionProcedureSource}
         if not rc then return end
         local mg=ritual_material_pool(tp,rc,params,e,eg,ep,ev,re,r,rp)
         local lv=ritual_required_level(params,rc)
-        local sg=nil
-        if params.lvtype==RITPROC_GREATER then
-          sg=mg:SelectWithSumGreater(tp,ritual_material_level,lv,1,lv,rc)
-        else
-          sg=mg:SelectWithSumEqual(tp,ritual_material_level,lv,1,lv,rc)
-        end
+        local sg=params.forcedselection and mg:SelectSubGroup(tp,ritual_selection_filter,false,1,lv,e,tp,params,rc,lv) or (params.lvtype==RITPROC_GREATER and mg:SelectWithSumGreater(tp,ritual_material_level,lv,1,lv,rc) or mg:SelectWithSumEqual(tp,ritual_material_level,lv,1,lv,rc))
         if sg and sg:GetCount()>0 then
           if params.customoperation then
             params.customoperation(sg:Clone(),e,tp,eg,ep,ev,re,r,rp,rc)
