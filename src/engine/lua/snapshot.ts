@@ -32,6 +32,7 @@ const luaEffectReasonPredicateDescriptor = "value-predicate:effect-reason";
 const luaReasonMaskPredicateDescriptorPrefix = "value-predicate:reason-mask:";
 const luaValueCardNotHandlerDescriptor = "value-card:not-handler";
 const luaCannotActivateSpecialSummonedMonsterDescriptor = "cannot-activate:special-summoned-monster-on-field";
+const luaCannotActivateNonSpiritMonsterDescriptor = "cannot-activate:non-spirit-monster-effect";
 const luaSourceControllerConditionDescriptor = "condition:source-controller";
 const luaSetcodeOrCodeTypeTargetDescriptorPrefix = "target:setcode-or-code-type:";
 const luaTypeTargetDescriptorPrefix = "target:type:";
@@ -45,6 +46,7 @@ const luaCategorySpecialSummon = 0x200;
 const luaLocationDeck = 0x1;
 const luaTypeMonster = 0x1;
 const luaTypeRitual = 0x80;
+const luaTypeSpirit = 0x200;
 const luaResetEvent = 0x1000;
 const luaResetTurnSet = 0x20000;
 const luaResetPhase = 0x40000000;
@@ -430,6 +432,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownRareMetalmorphChainSolvingNegateEffect(effect) ||
         isKnownMaharaghiPredrawEffect(effect) ||
         isKnownCannotActivateSpecialSummonedMonsterEffect(effect) ||
+        isKnownCannotActivateNonSpiritMonsterEffect(effect) ||
         isKnownSetcodeOrCodeTypeBattleProtectionEffect(effect) ||
         effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
         isStaticSingleCardLuaRestriction(effect) ||
@@ -473,6 +476,18 @@ function isKnownCannotActivateSpecialSummonedMonsterEffect(effect: SerializedDue
     effect.targetRange?.[0] === 1 &&
     effect.targetRange?.[1] === 0 &&
     hasDefaultLuaFieldRange(effect)
+  );
+}
+
+function isKnownCannotActivateNonSpiritMonsterEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 6 &&
+    effect.luaValueDescriptor === luaCannotActivateNonSpiritMonsterDescriptor &&
+    effect.targetRange?.[0] === 1 &&
+    effect.targetRange?.[1] === 1 &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone"
   );
 }
 
@@ -706,6 +721,9 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   if (effect.luaValueDescriptor === luaCannotActivateSpecialSummonedMonsterDescriptor) {
     return { valuePredicate: (ctx) => relatedEffectIsSpecialSummonedMonsterOnField(ctx) };
   }
+  if (effect.luaValueDescriptor === luaCannotActivateNonSpiritMonsterDescriptor) {
+    return { valuePredicate: (ctx) => relatedEffectIsNonSpiritMonsterEffect(ctx) };
+  }
   if (effect.luaValueDescriptor !== "change-damage:effect-double") return {};
   const applyValue = (ctx: Parameters<NonNullable<DuelEffectDefinition["lifePointValue"]>>[0], _player: PlayerId, amount: number): number =>
     ((ctx.eventReason ?? 0) & duelReason.effect) !== 0 ? amount * 2 : amount;
@@ -775,14 +793,12 @@ function typeTargetDescriptor(descriptor: string | undefined): number | undefine
 }
 
 function relatedEffectIsContinuous(ctx: Parameters<NonNullable<DuelEffectDefinition["valuePredicate"]>>[0]): boolean {
-  const relatedEffectId = ctx.relatedEffectId === undefined ? ctx.chainLink?.effectId : `lua-${ctx.relatedEffectId}`;
-  const relatedEffect = ctx.duel.effects.find((effect) => effect.id === relatedEffectId);
+  const relatedEffect = relatedEffectFromContext(ctx);
   return ((relatedEffect?.luaTypeFlags ?? 0) & 0x800) !== 0;
 }
 
 function relatedEffectIsSpecialSummonedMonsterOnField(ctx: Parameters<NonNullable<DuelEffectDefinition["valuePredicate"]>>[0]): boolean {
-  const relatedEffectId = ctx.relatedEffectId === undefined ? ctx.chainLink?.effectId : `lua-${ctx.relatedEffectId}`;
-  const relatedEffect = ctx.duel.effects.find((effect) => effect.id === relatedEffectId);
+  const relatedEffect = relatedEffectFromContext(ctx);
   const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid);
   return Boolean(
     handler &&
@@ -793,6 +809,18 @@ function relatedEffectIsSpecialSummonedMonsterOnField(ctx: Parameters<NonNullabl
       handler.summonType !== "tribute" &&
       handler.summonType !== "flip",
   );
+}
+
+function relatedEffectIsNonSpiritMonsterEffect(ctx: Parameters<NonNullable<DuelEffectDefinition["valuePredicate"]>>[0]): boolean {
+  const relatedEffect = relatedEffectFromContext(ctx);
+  const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid);
+  const typeFlags = cardTypeFlags(handler, ctx.duel);
+  return Boolean(handler && (typeFlags & luaTypeMonster) !== 0 && (typeFlags & luaTypeSpirit) === 0);
+}
+
+function relatedEffectFromContext(ctx: Parameters<NonNullable<DuelEffectDefinition["valuePredicate"]>>[0]): DuelEffectDefinition | undefined {
+  const relatedEffectId = ctx.relatedEffectId === undefined ? ctx.chainLink?.effectId : `lua-${ctx.relatedEffectId}`;
+  return ctx.duel.effects.find((effect) => effect.id === relatedEffectId);
 }
 
 function otherPlayer(player: PlayerId): PlayerId {

@@ -17,6 +17,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (valueCardPredicate) return valueCardPredicate;
   const specialSummonedMonsterActivationPredicate = specialSummonedMonsterActivationPredicateDescriptor(snippet, params);
   if (specialSummonedMonsterActivationPredicate) return specialSummonedMonsterActivationPredicate;
+  const nonSpiritMonsterActivationPredicate = nonSpiritMonsterActivationPredicateDescriptor(snippet, params);
+  if (nonSpiritMonsterActivationPredicate) return nonSpiritMonsterActivationPredicate;
   const effectParam = params?.[0];
   const reasonPlayerParam = params?.[2];
   if (effectParam && reasonPlayerParam) {
@@ -70,6 +72,17 @@ function specialSummonedMonsterActivationPredicateDescriptor(snippet: string, pa
   const monsterZone = `${handler}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_MZONE|4)\\s*\\)`;
   const predicate = new RegExp(`\\breturn\\s+${monsterEffect}\\s+and\\s+${specialSummoned}\\s+and\\s+${monsterZone}\\s*(?:end\\b|$)`);
   return predicate.test(snippet) ? "cannot-activate:special-summoned-monster-on-field" : undefined;
+}
+
+function nonSpiritMonsterActivationPredicateDescriptor(snippet: string, params: string[] | undefined): string | undefined {
+  const relatedEffectParam = params?.[1];
+  if (!relatedEffectParam) return undefined;
+  const relatedEffect = escapeRegExp(relatedEffectParam);
+  const handler = `${relatedEffect}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`;
+  const nonSpirit = `not\\s+${handler}\\s*:\\s*IsType\\s*\\(\\s*(?:TYPE_SPIRIT|512)\\s*\\)`;
+  const monsterEffect = `${relatedEffect}\\s*:\\s*IsMonsterEffect\\s*\\(\\s*\\)`;
+  const predicate = new RegExp(`\\breturn\\s+${nonSpirit}\\s+and\\s+${monsterEffect}\\s*(?:end\\b|$)`);
+  return predicate.test(snippet) ? "cannot-activate:non-spirit-monster-effect" : undefined;
 }
 
 function reasonMaskPredicateDescriptor(snippet: string, params: string[] | undefined): string | undefined {
