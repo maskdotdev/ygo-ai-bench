@@ -50,6 +50,8 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
   if (linkRace !== undefined) card.data.linkMaterialRace = linkRace;
   const linkAttribute = readLinkProcedureAttributeFilter(source);
   if (linkAttribute !== undefined) card.data.linkMaterialAttribute = linkAttribute;
+  const linkSetcode = readLinkProcedureSetcodeFilter(source);
+  if (linkSetcode !== undefined) card.data.linkMaterialSetcode = linkSetcode;
 }
 
 function readXyzProcedureRaceFilter(source: string | undefined): number | undefined {
@@ -102,6 +104,10 @@ function readLinkProcedureRaceFilter(source: string | undefined): number | undef
 
 function readLinkProcedureAttributeFilter(source: string | undefined): number | undefined {
   return readAddProcedureConstantFilter(source, "Link", "Card.IsAttribute", ATTRIBUTE_CONSTANT_EXPRESSION);
+}
+
+function readLinkProcedureSetcodeFilter(source: string | undefined): number | undefined {
+  return readAddProcedureConstantFilter(source, "Link", "Card.IsSetCard", SET_CONSTANT_EXPRESSION);
 }
 
 function readAddProcedureConstantFilter(source: string | undefined, procedure: "Link" | "Synchro" | "Xyz", predicate: string, constantExpression: string): number | undefined {

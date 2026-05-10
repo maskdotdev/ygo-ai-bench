@@ -147,6 +147,7 @@ export interface DuelCardData {
   linkMaterialType?: number;
   linkMaterialRace?: number;
   linkMaterialAttribute?: number;
+  linkMaterialSetcode?: number;
   ritualMaterials?: string[];
   listedNames?: string[];
   fitMonster?: string[];

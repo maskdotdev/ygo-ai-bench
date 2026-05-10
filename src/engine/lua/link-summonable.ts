@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
 import { isMaterialUsePrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { readCardUid, readGroupUids } from "#lua/api-utils.js";
+import { isSetcodeMatch } from "#lua/card-code-utils.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua } = fengari;
@@ -58,6 +59,7 @@ function targetAllowsMaterial(target: DuelCardInstance, card: DuelCardInstance):
   if (!linkMaterialTypeMatches(target, card)) return false;
   if (!linkMaterialRaceMatches(target, card)) return false;
   if (!linkMaterialAttributeMatches(target, card)) return false;
+  if (!linkMaterialSetcodeMatches(target, card)) return false;
   return !target.data.linkMaterials?.length || target.data.linkMaterials.some((code) => cardCodes(card).includes(code));
 }
 
@@ -98,6 +100,10 @@ function linkMaterialRaceMatches(target: DuelCardInstance, material: DuelCardIns
 
 function linkMaterialAttributeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
   return target.data.linkMaterialAttribute === undefined || ((material.data.attribute ?? 0) & target.data.linkMaterialAttribute) !== 0;
+}
+
+function linkMaterialSetcodeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.linkMaterialSetcode === undefined || (material.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.linkMaterialSetcode!, setcode));
 }
 
 function materialCodesMatch(materials: DuelCardInstance[], requiredCodes: string[]): boolean {
