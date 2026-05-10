@@ -16,23 +16,13 @@ export function effectiveSpecialSummonTypeCode(summonTypeCode?: number): number 
 }
 
 export function summonProcedureTypeCodeFromValue(value: number | undefined): number | undefined {
-  if (
-    value === luaSummonTypeSpecial ||
-    value === luaSummonTypeFusion ||
-    value === luaSummonTypeRitual ||
-    value === luaSummonTypeSynchro ||
-    value === luaSummonTypeXyz ||
-    value === luaSummonTypePendulum ||
-    value === luaSummonTypeLink
-  ) {
-    return value;
-  }
-  return undefined;
+  if (value === undefined || !Number.isSafeInteger(value)) return undefined;
+  return (value & luaSummonTypeSpecial) === luaSummonTypeSpecial ? value : undefined;
 }
 
 export function isFaceDownExtraDeckSummonTypeCode(summonTypeCode: number | undefined): boolean {
   const summonType = duelSummonTypeFromCode(summonTypeCode);
-  return summonType === "fusion" || summonType === "synchro" || summonType === "xyz" || summonType === "link";
+  return summonType === "fusion" || summonType === "synchro" || summonType === "xyz" || summonType === "link" || isCustomSpecialSummonTypeCode(summonTypeCode);
 }
 
 export function summonTypeCodeFromDuelSummonType(summonType: DuelSummonType): number {
@@ -74,4 +64,8 @@ export function summonTypeMaskFromCard(card: Pick<DuelCardInstance, "summonType"
 export function isSummonTypeMaskMatch(actual: number, requested: number): boolean {
   if (actual === 0 || requested === 0) return false;
   return actual === requested || (actual & requested) === requested;
+}
+
+function isCustomSpecialSummonTypeCode(summonTypeCode: number | undefined): boolean {
+  return summonTypeCode !== undefined && summonTypeCode !== luaSummonTypeSpecial && duelSummonTypeFromCode(summonTypeCode) === "special";
 }

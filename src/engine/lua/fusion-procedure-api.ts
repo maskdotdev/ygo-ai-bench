@@ -74,11 +74,16 @@ export const fusionProcedureSource = `
     e1:SetCode(EFFECT_SPSUMMON_PROC)
     e1:SetProperty(EFFECT_FLAG_UNCOPYABLE)
     e1:SetRange(LOCATION_EXTRA)
-    e1:SetValue(sumtype or SUMMON_TYPE_FUSION)
+    e1:SetValue(Fusion.ContactSummonType(sumtype))
     e1:SetCondition(Fusion.ContactCon(group,condition))
     e1:SetTarget(Fusion.ContactTg(group))
     e1:SetOperation(Fusion.ContactOp(op))
     c:RegisterEffect(e1)
+  end
+  function Fusion.ContactSummonType(sumtype)
+    if not sumtype then return SUMMON_TYPE_FUSION end
+    if sumtype<SUMMON_TYPE_SPECIAL then return SUMMON_TYPE_SPECIAL+sumtype end
+    return sumtype
   end
   function Fusion.ContactCon(f,fcon)
     return function(e,c)
