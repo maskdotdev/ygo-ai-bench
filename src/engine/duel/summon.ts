@@ -691,7 +691,7 @@ function requireLinkSummonMaterials(state: DuelState, player: PlayerId, uid: str
   const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
   if (!materials.length) throw new Error(`${card.name} Link materials are not legal`);
   if (!linkMaterialCountAllowed(card, materials.length)) throw new Error(`${card.name} Link materials are not legal`);
-  if (!materials.every((material) => linkMaterialTypeMatches(card, material) && linkMaterialRaceMatches(card, material))) throw new Error(`${card.name} Link materials are not legal`);
+  if (!materials.every((material) => linkMaterialTypeMatches(card, material) && linkMaterialRaceMatches(card, material) && linkMaterialAttributeMatches(card, material))) throw new Error(`${card.name} Link materials are not legal`);
   if (!linkMaterialCodesMatch(materials, card.data.linkMaterials)) throw new Error(`${card.name} Link materials are not legal`);
   if (!canLinkMaterialsMatchRating(materials, targetRating)) throw new Error(`${card.name} Link materials are not legal`);
   for (const material of materials) {
@@ -717,7 +717,7 @@ function findLinkMaterialUidSets(materialPool: DuelCardInstance[], card: DuelCar
   if (card.data.linkMaterials?.length) {
     for (const materials of cardCombinations(materialPool, card.data.linkMaterials.length)) {
       if (!linkMaterialCountAllowed(card, materials.length)) continue;
-      if (!materials.every((material) => linkMaterialTypeMatches(card, material) && linkMaterialRaceMatches(card, material))) continue;
+      if (!materials.every((material) => linkMaterialTypeMatches(card, material) && linkMaterialRaceMatches(card, material) && linkMaterialAttributeMatches(card, material))) continue;
       if (materialCodesMatch(materials, card.data.linkMaterials) && canLinkMaterialsMatchRating(materials, targetRating)) {
         appendMaterialUidSet(results, seen, materials.map((material) => material.uid));
       }
@@ -727,7 +727,7 @@ function findLinkMaterialUidSets(materialPool: DuelCardInstance[], card: DuelCar
   for (let count = 1; count <= materialPool.length; count += 1) {
     if (!linkMaterialCountAllowed(card, count)) continue;
     for (const materials of cardCombinations(materialPool, count)) {
-      if (!materials.every((material) => linkMaterialTypeMatches(card, material) && linkMaterialRaceMatches(card, material))) continue;
+      if (!materials.every((material) => linkMaterialTypeMatches(card, material) && linkMaterialRaceMatches(card, material) && linkMaterialAttributeMatches(card, material))) continue;
       if (canLinkMaterialsMatchRating(materials, targetRating)) appendMaterialUidSet(results, seen, materials.map((material) => material.uid));
     }
   }
@@ -854,6 +854,10 @@ function linkMaterialTypeMatches(target: DuelCardInstance, material: DuelCardIns
 
 function linkMaterialRaceMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
   return target.data.linkMaterialRace === undefined || ((material.data.race ?? 0) & target.data.linkMaterialRace) !== 0;
+}
+
+function linkMaterialAttributeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.linkMaterialAttribute === undefined || ((material.data.attribute ?? 0) & target.data.linkMaterialAttribute) !== 0;
 }
 
 function synchroMaterialCodes(card: DuelCardInstance): string[] | undefined {

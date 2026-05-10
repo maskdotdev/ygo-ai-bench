@@ -27,6 +27,8 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
   if (linkType !== undefined) card.data.linkMaterialType = linkType;
   const linkRace = readLinkProcedureRaceFilter(source);
   if (linkRace !== undefined) card.data.linkMaterialRace = linkRace;
+  const linkAttribute = readLinkProcedureAttributeFilter(source);
+  if (linkAttribute !== undefined) card.data.linkMaterialAttribute = linkAttribute;
 }
 
 function readXyzProcedureRaceFilter(source: string | undefined): number | undefined {
@@ -49,6 +51,12 @@ function readLinkProcedureTypeFilter(source: string | undefined): number | undef
 
 function readLinkProcedureRaceFilter(source: string | undefined): number | undefined {
   const match = source?.match(/Link\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsRace\s*,\s*(RACE_[A-Z0-9_]+)\s*\)/);
+  if (!match?.[1]) return undefined;
+  return luaNumericConstants[match[1]];
+}
+
+function readLinkProcedureAttributeFilter(source: string | undefined): number | undefined {
+  const match = source?.match(/Link\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsAttribute\s*,\s*(ATTRIBUTE_[A-Z0-9_]+)\s*\)/);
   if (!match?.[1]) return undefined;
   return luaNumericConstants[match[1]];
 }
