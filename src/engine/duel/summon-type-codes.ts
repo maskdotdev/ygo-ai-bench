@@ -1,5 +1,8 @@
-import type { DuelSummonType } from "#duel/types.js";
+import type { DuelCardInstance, DuelSummonType } from "#duel/types.js";
 
+export const luaSummonTypeNormal = 0x10000000;
+export const luaSummonTypeTribute = 0x11000000;
+export const luaSummonTypeFlip = 0x20000000;
 export const luaSummonTypeSpecial = 0x40000000;
 export const luaSummonTypeFusion = 0x43000000;
 export const luaSummonTypeRitual = 0x45000000;
@@ -31,4 +34,24 @@ export function duelSummonTypeFromCode(summonTypeCode?: number): DuelSummonType 
   if ((code & luaSummonTypePendulum) === luaSummonTypePendulum) return "pendulum";
   if ((code & luaSummonTypeLink) === luaSummonTypeLink) return "link";
   return "special";
+}
+
+export function summonTypeMaskFromCard(card: Pick<DuelCardInstance, "summonType" | "summonTypeCode"> | undefined): number {
+  if (card?.summonTypeCode !== undefined) return card.summonTypeCode;
+  if (!card?.summonType) return 0;
+  if (card.summonType === "normal") return luaSummonTypeNormal;
+  if (card.summonType === "tribute") return luaSummonTypeTribute;
+  if (card.summonType === "flip") return luaSummonTypeFlip;
+  if (card.summonType === "fusion") return luaSummonTypeFusion;
+  if (card.summonType === "ritual") return luaSummonTypeRitual;
+  if (card.summonType === "synchro") return luaSummonTypeSynchro;
+  if (card.summonType === "xyz") return luaSummonTypeXyz;
+  if (card.summonType === "pendulum") return luaSummonTypePendulum;
+  if (card.summonType === "link") return luaSummonTypeLink;
+  return luaSummonTypeSpecial;
+}
+
+export function isSummonTypeMaskMatch(actual: number, requested: number): boolean {
+  if (actual === 0 || requested === 0) return false;
+  return actual === requested || (actual & requested) === requested;
 }

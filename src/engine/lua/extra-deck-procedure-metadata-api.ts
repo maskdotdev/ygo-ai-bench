@@ -7,6 +7,7 @@ const { lua, to_luastring } = fengari;
 const ATTRIBUTE_CONSTANT_EXPRESSION = String.raw`ATTRIBUTE_[A-Z0-9_]+(?:\s*\|\s*ATTRIBUTE_[A-Z0-9_]+)*`;
 const RACE_CONSTANT_EXPRESSION = String.raw`RACES?_[A-Z0-9_]+(?:\s*\|\s*RACES?_[A-Z0-9_]+)*`;
 const SET_CONSTANT_EXPRESSION = String.raw`SET_[A-Z0-9_]+(?:\s*\|\s*SET_[A-Z0-9_]+)*`;
+const SUMMON_TYPE_CONSTANT_EXPRESSION = String.raw`SUMMON_TYPE_[A-Z0-9_]+(?:\s*\|\s*SUMMON_TYPE_[A-Z0-9_]+)*`;
 const TYPE_CONSTANT_EXPRESSION = String.raw`TYPE_[A-Z0-9_]+(?:\s*\|\s*TYPE_[A-Z0-9_]+)*`;
 
 export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardInstance, source?: string): void {
@@ -60,6 +61,8 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
   if (linkAttribute !== undefined) card.data.linkMaterialAttribute = linkAttribute;
   const linkSetcode = readLinkProcedureSetcodeFilter(source);
   if (linkSetcode !== undefined) card.data.linkMaterialSetcode = linkSetcode;
+  const linkSummonType = readLinkProcedureSummonTypeFilter(source);
+  if (linkSummonType !== undefined) card.data.linkMaterialSummonType = linkSummonType;
   const linkLevel = readLinkProcedureLevelFilter(source);
   if (linkLevel !== undefined) card.data.linkMaterialLevel = linkLevel;
   const linkMinLevel = readLinkProcedureMinLevelFilter(source);
@@ -136,6 +139,10 @@ function readLinkProcedureAttributeFilter(source: string | undefined): number | 
 
 function readLinkProcedureSetcodeFilter(source: string | undefined): number | undefined {
   return readAddProcedureConstantFilter(source, "Link", "Card.IsSetCard", SET_CONSTANT_EXPRESSION);
+}
+
+function readLinkProcedureSummonTypeFilter(source: string | undefined): number | undefined {
+  return readAddProcedureConstantFilter(source, "Link", "Card.IsSummonType", SUMMON_TYPE_CONSTANT_EXPRESSION);
 }
 
 function readLinkProcedureLevelFilter(source: string | undefined): number | undefined {

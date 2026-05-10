@@ -2,6 +2,7 @@ import { hasZoneSpace } from "#duel/card-state.js";
 import { canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuelCard } from "#duel/core.js";
 import { isMaterialUsePrevented, type MaterialUseKind } from "#duel/continuous-effects.js";
 import { duelReason } from "#duel/reasons.js";
+import { isSummonTypeMaskMatch, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
 import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
 import { isSetcodeMatch } from "#lua/card-code-utils.js";
 import { cardLink, cardRank, cardTypeFlags } from "#lua/card-stat-api.js";
@@ -88,6 +89,7 @@ function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCa
     if (target.data.linkMaterialRace !== undefined && ((card.data.race ?? 0) & target.data.linkMaterialRace) === 0) return false;
     if (target.data.linkMaterialAttribute !== undefined && ((card.data.attribute ?? 0) & target.data.linkMaterialAttribute) === 0) return false;
     if (target.data.linkMaterialSetcode !== undefined && !(card.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.linkMaterialSetcode!, setcode))) return false;
+    if (target.data.linkMaterialSummonType !== undefined && !isSummonTypeMaskMatch(summonTypeMaskFromCard(card), target.data.linkMaterialSummonType)) return false;
     if (target.data.linkMaterialLevel !== undefined && card.data.level !== target.data.linkMaterialLevel) return false;
     if (target.data.linkMaterialMinLevel !== undefined && (card.data.level ?? 0) < target.data.linkMaterialMinLevel) return false;
     return !target.data.linkMaterials?.length ? cardLink(target) > 0 && linkMaterialRating(card) <= cardLink(target) : target.data.linkMaterials.some((code) => codes.includes(code));

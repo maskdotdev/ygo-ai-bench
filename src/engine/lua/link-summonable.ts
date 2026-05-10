@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
 import { isMaterialUsePrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
+import { isSummonTypeMaskMatch, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
 import { readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { isSetcodeMatch } from "#lua/card-code-utils.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
@@ -60,6 +61,7 @@ function targetAllowsMaterial(target: DuelCardInstance, card: DuelCardInstance):
   if (!linkMaterialRaceMatches(target, card)) return false;
   if (!linkMaterialAttributeMatches(target, card)) return false;
   if (!linkMaterialSetcodeMatches(target, card)) return false;
+  if (!linkMaterialSummonTypeMatches(target, card)) return false;
   if (!linkMaterialLevelMatches(target, card)) return false;
   if (!linkMaterialMinLevelMatches(target, card)) return false;
   return !target.data.linkMaterials?.length || target.data.linkMaterials.some((code) => cardCodes(card).includes(code));
@@ -106,6 +108,10 @@ function linkMaterialAttributeMatches(target: DuelCardInstance, material: DuelCa
 
 function linkMaterialSetcodeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
   return target.data.linkMaterialSetcode === undefined || (material.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.linkMaterialSetcode!, setcode));
+}
+
+function linkMaterialSummonTypeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.linkMaterialSummonType === undefined || isSummonTypeMaskMatch(summonTypeMaskFromCard(material), target.data.linkMaterialSummonType);
 }
 
 function linkMaterialLevelMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {

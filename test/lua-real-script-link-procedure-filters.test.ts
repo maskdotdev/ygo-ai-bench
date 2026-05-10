@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -141,6 +141,66 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Li
     const summoned = applyLuaRestoreResponse(matchingSetcode.restored, action);
     expect(summoned.ok, summoned.error).toBe(true);
     expect(matchingSetcode.restored.session.state.cards.find((card) => card.uid === matchingSetcode.link!.uid)).toMatchObject({
+      location: "monsterZone",
+      summonType: "link",
+    });
+  });
+
+  it("restores official Link.AddProcedure summon type filters for real extra deck summons", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const claraCode = "1482001";
+    const unsummonedMaterialCode = "900000197";
+    const normalSummonedMaterialCode = "900000198";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === claraCode),
+      { code: unsummonedMaterialCode, name: "Unsummoned Link Material", kind: "monster" as const, typeFlags: 0x1, level: 4 },
+      { code: normalSummonedMaterialCode, name: "Normal Summoned Link Material", kind: "monster" as const, typeFlags: 0x1, level: 4 },
+    ];
+    const reader = createCardReader(cards);
+    const restoreWithMaterial = (code: string, normalSummoned: boolean) => {
+      const session = createDuel({ seed: 320, startingHandSize: normalSummoned ? 1 : 0, drawPerTurn: 0, cardReader: reader });
+      loadDecks(session, { 0: { main: [code], extra: [claraCode] }, 1: { main: [] } });
+      startDuel(session);
+      const link = session.state.cards.find((card) => card.code === claraCode && card.location === "extraDeck");
+      expect(link).toBeDefined();
+      const material = session.state.cards.find((card) => card.code === code && (card.location === "hand" || card.location === "deck"));
+      expect(material).toBeDefined();
+      if (normalSummoned) {
+        const summon = getDuelLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === material!.uid);
+        expect(summon).toBeDefined();
+        expect(applyResponse(session, summon!).ok).toBe(true);
+      }
+      else {
+        moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+      }
+      session.state.phase = "main2";
+      session.state.waitingFor = 0;
+      const host = createLuaScriptHost(session, workspace);
+      expect(host.loadCardScript(Number(claraCode), workspace).ok).toBe(true);
+      expect(host.registerInitialEffects()).toBeGreaterThan(0);
+      expect(session.state.cards.find((card) => card.uid === link!.uid)?.data).toMatchObject({
+        linkMaterialMin: 1,
+        linkMaterialMax: 1,
+        linkMaterialSummonType: 0x10000000,
+      });
+      const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+      expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+      expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+      return { restored, link };
+    };
+
+    const unsummonedMaterial = restoreWithMaterial(unsummonedMaterialCode, false);
+    expect(getLuaRestoreLegalActions(unsummonedMaterial.restored, 0).some((action) => action.type === "linkSummon" && action.uid === unsummonedMaterial.link!.uid)).toBe(false);
+
+    const normalSummonedMaterial = restoreWithMaterial(normalSummonedMaterialCode, true);
+    const actions = getLuaRestoreLegalActions(normalSummonedMaterial.restored, 0).filter((action) => action.type === "linkSummon" && action.uid === normalSummonedMaterial.link!.uid);
+    expect(actions, JSON.stringify(getLuaRestoreLegalActions(normalSummonedMaterial.restored, 0), null, 2)).toHaveLength(1);
+    const action = actions[0];
+    expect(action?.type).toBe("linkSummon");
+    if (!action || action.type !== "linkSummon") throw new Error("Expected Link Summon action");
+    const summoned = applyLuaRestoreResponse(normalSummonedMaterial.restored, action);
+    expect(summoned.ok, summoned.error).toBe(true);
+    expect(normalSummonedMaterial.restored.session.state.cards.find((card) => card.uid === normalSummonedMaterial.link!.uid)).toMatchObject({
       location: "monsterZone",
       summonType: "link",
     });

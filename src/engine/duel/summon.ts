@@ -4,6 +4,7 @@ import { markProcedureComplete } from "#duel/procedure-status.js";
 import { duelReason } from "#duel/reasons.js";
 import { tributeUnitCount } from "#duel/double-tribute.js";
 import { cardCombinations, cardMatchesCode, isMonsterLike, materialCodesMatch } from "#duel/summon-materials.js";
+import { isSummonTypeMaskMatch, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
 import type { DuelAction, DuelCardInstance, DuelEventName, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
 const typeGemini = 0x800;
@@ -691,7 +692,7 @@ function requireLinkSummonMaterials(state: DuelState, player: PlayerId, uid: str
   const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
   if (!materials.length) throw new Error(`${card.name} Link materials are not legal`);
   if (!linkMaterialCountAllowed(card, materials.length)) throw new Error(`${card.name} Link materials are not legal`);
-  if (!materials.every((material) => linkMaterialTypeMatches(card, material) && linkMaterialRaceMatches(card, material) && linkMaterialAttributeMatches(card, material) && linkMaterialSetcodeMatches(card, material) && linkMaterialLevelMatches(card, material) && linkMaterialMinLevelMatches(card, material))) throw new Error(`${card.name} Link materials are not legal`);
+  if (!materials.every((material) => linkMaterialTypeMatches(card, material) && linkMaterialRaceMatches(card, material) && linkMaterialAttributeMatches(card, material) && linkMaterialSetcodeMatches(card, material) && linkMaterialSummonTypeMatches(card, material) && linkMaterialLevelMatches(card, material) && linkMaterialMinLevelMatches(card, material))) throw new Error(`${card.name} Link materials are not legal`);
   if (!linkMaterialCodesMatch(materials, card.data.linkMaterials)) throw new Error(`${card.name} Link materials are not legal`);
   if (!canLinkMaterialsMatchRating(materials, targetRating)) throw new Error(`${card.name} Link materials are not legal`);
   for (const material of materials) {
@@ -717,7 +718,7 @@ function findLinkMaterialUidSets(materialPool: DuelCardInstance[], card: DuelCar
   if (card.data.linkMaterials?.length) {
     for (const materials of cardCombinations(materialPool, card.data.linkMaterials.length)) {
       if (!linkMaterialCountAllowed(card, materials.length)) continue;
-      if (!materials.every((material) => linkMaterialTypeMatches(card, material) && linkMaterialRaceMatches(card, material) && linkMaterialAttributeMatches(card, material) && linkMaterialSetcodeMatches(card, material) && linkMaterialLevelMatches(card, material) && linkMaterialMinLevelMatches(card, material))) continue;
+      if (!materials.every((material) => linkMaterialTypeMatches(card, material) && linkMaterialRaceMatches(card, material) && linkMaterialAttributeMatches(card, material) && linkMaterialSetcodeMatches(card, material) && linkMaterialSummonTypeMatches(card, material) && linkMaterialLevelMatches(card, material) && linkMaterialMinLevelMatches(card, material))) continue;
       if (materialCodesMatch(materials, card.data.linkMaterials) && canLinkMaterialsMatchRating(materials, targetRating)) {
         appendMaterialUidSet(results, seen, materials.map((material) => material.uid));
       }
@@ -727,7 +728,7 @@ function findLinkMaterialUidSets(materialPool: DuelCardInstance[], card: DuelCar
   for (let count = 1; count <= materialPool.length; count += 1) {
     if (!linkMaterialCountAllowed(card, count)) continue;
     for (const materials of cardCombinations(materialPool, count)) {
-      if (!materials.every((material) => linkMaterialTypeMatches(card, material) && linkMaterialRaceMatches(card, material) && linkMaterialAttributeMatches(card, material) && linkMaterialSetcodeMatches(card, material) && linkMaterialLevelMatches(card, material) && linkMaterialMinLevelMatches(card, material))) continue;
+      if (!materials.every((material) => linkMaterialTypeMatches(card, material) && linkMaterialRaceMatches(card, material) && linkMaterialAttributeMatches(card, material) && linkMaterialSetcodeMatches(card, material) && linkMaterialSummonTypeMatches(card, material) && linkMaterialLevelMatches(card, material) && linkMaterialMinLevelMatches(card, material))) continue;
       if (canLinkMaterialsMatchRating(materials, targetRating)) appendMaterialUidSet(results, seen, materials.map((material) => material.uid));
     }
   }
@@ -916,6 +917,10 @@ function linkMaterialAttributeMatches(target: DuelCardInstance, material: DuelCa
 
 function linkMaterialSetcodeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
   return target.data.linkMaterialSetcode === undefined || (material.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.linkMaterialSetcode!, setcode));
+}
+
+function linkMaterialSummonTypeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.linkMaterialSummonType === undefined || isSummonTypeMaskMatch(summonTypeMaskFromCard(material), target.data.linkMaterialSummonType);
 }
 
 function linkMaterialLevelMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
