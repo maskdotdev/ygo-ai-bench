@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { specialSummonDuelCard } from "#duel/core.js";
 import { getDuelFlagEffectCount, getDuelFlagEffectLabel, registerDuelFlagEffect, resetDuelFlagEffect, setDuelFlagEffectLabel } from "#duel/flags.js";
 import { pushCardTable } from "#lua/card-api.js";
+import { normalizeLuaUnsignedInteger } from "#lua/numeric-utils.js";
 import type { DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -9,7 +10,7 @@ const flagDeckMaster = 153000000;
 
 export function installDuelFlagApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
-    const mask = lua.lua_isnumber(state, 1) ? Math.trunc(lua.lua_tonumber(state, 1)) : 0;
+    const mask = lua.lua_isnumber(state, 1) ? normalizeLuaUnsignedInteger(lua.lua_tonumber(state, 1)) : 0;
     lua.lua_pushboolean(state, hasAllFlags(session.state.duelTypeFlags, mask));
     return 1;
   });
@@ -70,7 +71,7 @@ export function installDuelFlagApi(L: unknown, session: DuelSession): void {
     }
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    const reset = lua.lua_isnumber(state, 3) ? Math.trunc(lua.lua_tonumber(state, 3)) : 0;
+    const reset = lua.lua_isnumber(state, 3) ? normalizeLuaUnsignedInteger(lua.lua_tonumber(state, 3)) : 0;
     const property = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
     const resetCount = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : undefined;
     const value = lua.lua_isnumber(state, 6) ? lua.lua_tointeger(state, 6) : 0;

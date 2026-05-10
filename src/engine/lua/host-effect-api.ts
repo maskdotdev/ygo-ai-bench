@@ -12,6 +12,7 @@ import { cardTypeFlags } from "#lua/card-stat-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { triggerEventFromCode } from "#lua/event-code.js";
 import { readLuaError } from "#lua/host-script-api.js";
+import { normalizeLuaDamageModifier, normalizeLuaUnsignedInteger, toLuaSigned32 } from "#lua/numeric-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaEffectRecord, LuaHostState } from "#lua/host-types.js";
 
@@ -262,13 +263,13 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     return 0;
   });
   pushEffectMethod(L, effects, "SetReset", (state, effect) => {
-    const flags = lua.lua_isnumber(state, 2) ? Math.trunc(lua.lua_tonumber(state, 2)) : 0;
+    const flags = lua.lua_isnumber(state, 2) ? normalizeLuaUnsignedInteger(lua.lua_tonumber(state, 2)) : 0;
     const count = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : undefined;
     effect.reset = count === undefined ? { flags } : { flags, count };
     return 0;
   });
   pushEffectMethod(L, effects, "GetReset", (state, effect) => {
-    lua.lua_pushinteger(state, effect.reset?.flags ?? 0);
+    pushLuaEffectValueNumber(state, effect.reset?.flags ?? 0);
     lua.lua_pushinteger(state, effect.reset?.count ?? 0);
     return 2;
   });
@@ -385,20 +386,18 @@ export function registerLuaEffect(L: unknown, hostState: LuaHostState, id: numbe
 
 function setEffectNumberField(field: "typeFlags" | "code" | "description" | "category" | "property") {
   return (state: unknown, effect: LuaEffectRecord): number => {
-    if (lua.lua_isnumber(state, 2)) effect[field] = lua.lua_tointeger(state, 2);
+    if (lua.lua_isnumber(state, 2)) effect[field] = normalizeLuaUnsignedInteger(lua.lua_tonumber(state, 2));
     return 0;
   };
 }
 
 function readLuaEffectValueNumber(L: unknown, index: number): number {
-  const value = Math.trunc(lua.lua_tonumber(L, index));
-  if (value === -0x80000000) return 0x80000000;
-  if (value === -0x7fffffff) return 0x80000001;
-  return value;
+  return normalizeLuaDamageModifier(lua.lua_tonumber(L, index));
 }
 
 function pushLuaEffectValueNumber(L: unknown, value: number): void {
-  if (Number.isInteger(value) && value >= -0x80000000 && value <= 0x7fffffff) lua.lua_pushinteger(L, value);
+  const signed = toLuaSigned32(value);
+  if (signed !== undefined) lua.lua_pushinteger(L, signed);
   else lua.lua_pushnumber(L, value);
 }
 
@@ -422,7 +421,7 @@ function readLuaIntegerArrayField(L: unknown, tableIndex: number, fieldIndex: nu
 
 function getEffectNumberField(field: "typeFlags" | "code" | "description" | "category" | "property") {
   return (state: unknown, effect: LuaEffectRecord): number => {
-    lua.lua_pushinteger(state, effect[field] ?? 0);
+    pushLuaEffectValueNumber(state, effect[field] ?? 0);
     return 1;
   };
 }

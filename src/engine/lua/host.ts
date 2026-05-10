@@ -14,6 +14,7 @@ import { scriptFilenameForCard } from "#engine/data-loaders.js";
 import { installTypeCompatibilityApi } from "#lua/type-compatibility-api.js";
 import { installTracebackHandler, loadLuaScriptFile, readLuaError, registerLuaInitialEffectsDetailed, runLuaCardScript } from "#lua/host-script-api.js";
 import { installEffectApi, installGetIdCompatibilityApi, pushLuaEffectTable, majesticCopyLuaEffects, changeLuaChainOperation, registerLuaEffect, toDuelEffect } from "#lua/host-effect-api.js";
+import { normalizeLuaUnsignedInteger } from "#lua/numeric-utils.js";
 import type { ChainLimit, DuelCardInstance, DuelEffectDefinition, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaHostState, LuaScriptHost, LuaScriptSource } from "#lua/host-types.js";
 
@@ -117,7 +118,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
       lua.lua_getglobal(L, to_luastring(name));
       const value = lua.lua_isnumber(L, -1) ? lua.lua_tonumber(L, -1) : undefined;
       lua.lua_pop(L, 1);
-      return value;
+      return value !== undefined && Number.isInteger(value) && value < 0 ? normalizeLuaUnsignedInteger(value) : value;
     },
   };
 }

@@ -303,6 +303,7 @@ function isReleasableMonster(session: DuelSession, card: DuelCardInstance, playe
 
 function isReleaseProbeAllowed(session: DuelSession, card: DuelCardInstance, player: PlayerId): boolean {
   if (card.controller !== player) return false;
+  if (card.location !== "monsterZone" && card.location !== "banished") return false;
   if (card.kind !== "monster" && card.kind !== "extra") return false;
   return canMoveDuelCardToLocation(session.state, card.uid, "graveyard", duelReason.release | duelReason.cost);
 }

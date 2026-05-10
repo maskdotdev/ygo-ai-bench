@@ -20,6 +20,8 @@ const luaEffectFlagClientHint = 0x4000000;
 const luaUnionStateEffectCodes = new Set([luaEffectEquipLimit, luaEffectUnionStatus, luaEffectOldUnionStatus]);
 const luaStaticSingleCardRestrictionCodes = new Set([43, 44, 85]);
 const luaIndestructibleValueDescriptors = new Set(["indestructible:opponent", "indestructible:self"]);
+const luaLifePointReasonPredicateEffectCodes = new Set([80, 81]);
+const luaEffectReasonPredicateDescriptor = "value-predicate:effect-reason";
 const luaResetTurnSet = 0x20000;
 const luaResetPhase = 0x40000000;
 const luaPhaseEnd = 0x200;
@@ -227,11 +229,23 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
         isKnownIndestructibleValueEffect(effect) ||
         effect.luaValueDescriptor === "change-damage:effect-double" ||
         effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous" ||
+        isKnownLifePointReasonPredicateEffect(effect) ||
         effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
         isStaticSingleCardLuaRestriction(effect) ||
         isStaticPlayerPhaseLock(effect) ||
         (effect.code === 102 && effect.value !== undefined && effect.value !== 0 && effect.targetRange === undefined) ||
         ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 132) && effect.value !== undefined)))
+  );
+}
+
+function isKnownLifePointReasonPredicateEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.code !== undefined &&
+    luaLifePointReasonPredicateEffectCodes.has(effect.code) &&
+    effect.luaValueDescriptor === luaEffectReasonPredicateDescriptor &&
+    effect.reset !== undefined &&
+    effect.targetRange !== undefined &&
+    hasDefaultLuaFieldRange(effect)
   );
 }
 
@@ -296,6 +310,9 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   }
   if (effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous") {
     return { valuePredicate: (ctx) => ctx.eventReasonPlayer === otherPlayer(effect.controller) && !relatedEffectIsContinuous(ctx) };
+  }
+  if (effect.luaValueDescriptor === luaEffectReasonPredicateDescriptor) {
+    return { valuePredicate: (ctx) => ((ctx.eventReason ?? 0) & duelReason.effect) !== 0 };
   }
   if (effect.luaValueDescriptor !== "change-damage:effect-double") return {};
   const applyValue = (ctx: Parameters<NonNullable<DuelEffectDefinition["lifePointValue"]>>[0], _player: PlayerId, amount: number): number =>

@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { pushCardTable } from "#lua/card-api.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
+import { normalizeLuaDamageModifier } from "#lua/numeric-utils.js";
 import type { DuelCardInstance, DuelEffectContext, PlayerId } from "#duel/types.js";
 import type { LuaEffectRecord, LuaHostState } from "#lua/host-types.js";
 
@@ -116,7 +117,7 @@ export function callLuaEffectBattleDamageValue(
     const argCount = pushBattleDamageValueArgs(L, luaEffect, player, amount);
     const status = lua.lua_pcall(L, argCount, 1, 0);
     if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
-    const result = lua.lua_isnumber(L, -1) ? lua.lua_tonumber(L, -1) : undefined;
+    const result = lua.lua_isnumber(L, -1) ? normalizeLuaDamageModifier(lua.lua_tonumber(L, -1)) : undefined;
     lua.lua_pop(L, 1);
     return result;
   });
@@ -143,7 +144,7 @@ export function callLuaEffectLifePointValue(
     else lua.lua_pushnil(L);
     const status = lua.lua_pcall(L, 6, 1, 0);
     if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
-    const result = lua.lua_isnumber(L, -1) ? lua.lua_tonumber(L, -1) : undefined;
+    const result = lua.lua_isnumber(L, -1) ? normalizeLuaDamageModifier(lua.lua_tonumber(L, -1)) : undefined;
     lua.lua_pop(L, 1);
     return result;
   });

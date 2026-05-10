@@ -67,5 +67,5 @@ export function isSummonTypeMaskMatch(actual: number, requested: number): boolea
 }
 
 function isCustomSpecialSummonTypeCode(summonTypeCode: number | undefined): boolean {
-  return summonTypeCode !== undefined && summonTypeCode !== luaSummonTypeSpecial && duelSummonTypeFromCode(summonTypeCode) === "special";
+  return summonTypeCode !== undefined && summonTypeCode !== 0 && summonTypeCode !== luaSummonTypeSpecial && duelSummonTypeFromCode(summonTypeCode) === "special";
 }

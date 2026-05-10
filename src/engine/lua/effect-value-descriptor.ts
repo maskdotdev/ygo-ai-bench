@@ -10,6 +10,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
   const params = luaFunctionParams(snippet);
+  const effectReasonPredicate = effectReasonPredicateDescriptor(snippet, params);
+  if (effectReasonPredicate) return effectReasonPredicate;
   const effectParam = params?.[0];
   const reasonPlayerParam = params?.[2];
   if (effectParam && reasonPlayerParam) {
@@ -41,6 +43,15 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
     `\\breturn\\s+${relatedEffect}\\s+and\\s+not\\s+${relatedEffect}\\s*:\\s*IsHasType\\s*\\(\\s*${continuousType}\\s*\\)\\s+and\\s+${reasonPlayer}\\s*==\\s*1\\s*-\\s*${effect}\\s*:\\s*GetOwnerPlayer\\s*\\(\\s*\\)`,
   );
   return reflectOpponentNonContinuous.test(snippet) ? "reflect-damage:opponent-non-continuous" : undefined;
+}
+
+function effectReasonPredicateDescriptor(snippet: string, params: string[] | undefined): string | undefined {
+  const reasonParam = params?.[2];
+  if (!reasonParam) return undefined;
+  const reason = escapeRegExp(reasonParam);
+  const effectReason = "(?:REASON_EFFECT|64)";
+  const effectReasonPredicate = new RegExp(`\\breturn\\s+\\(?\\s*${reason}\\s*&\\s*${effectReason}\\s*\\)?\\s*(?:~=|>)\\s*0\\s*(?:end\\b|$)`);
+  return effectReasonPredicate.test(snippet) ? "value-predicate:effect-reason" : undefined;
 }
 
 function luaFunctionSourceSnippet(L: unknown, index: number, hostState: LuaHostState): string | undefined {

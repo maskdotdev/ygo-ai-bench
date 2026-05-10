@@ -87,7 +87,7 @@ describe("Lua script loading", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toEqual([
-      "rush races 67108864/268435456/2147483648.0/49664",
+      "rush races 67108864/268435456/-2147483648/49664",
       "event constants 1031/1135/1137/1211/1212",
       "counter constants 8192/65536/131072/196608/1308622848",
     ]);
@@ -119,6 +119,7 @@ describe("Lua script loading", () => {
     const result = host.loadScript(
       `
       Debug.Message("flag2 constants " .. EFFECT_FLAG2_CONTINUOUS_EQUIP .. "/" .. EFFECT_FLAG2_CHECK_SIMULTANEOUS .. "/" .. EFFECT_FLAG2_FORCE_ACTIVATE_LOCATION .. "/" .. EFFECT_FLAG2_MAJESTIC_MUST_COPY)
+      Debug.Message("reset chain bitwise " .. tostring((RESET_EVENT|RESETS_STANDARD|RESET_CHAIN)&RESET_CHAIN ~= 0))
       Debug.Message("link marker constants " .. EFFECT_CHANGE_LINKMARKER .. "/" .. EFFECT_FORCE_NORMAL_SUMMON_POSITION .. "/" .. EFFECT_FORCE_SPSUMMON_POSITION .. "/" .. EFFECT_DARKNESS_HIDE .. "/" .. EFFECT_NORMAL_SUMMON_FACEUP_DEFENSE)
       `,
       "newer-effect-constants.lua",
@@ -126,7 +127,8 @@ describe("Lua script loading", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toEqual([
-      "flag2 constants 1/4/1073741824/2147483648.0",
+      "flag2 constants 1/4/1073741824/-2147483648",
+      "reset chain bitwise true",
       "link marker constants 425/426/427/428/429",
     ]);
   });

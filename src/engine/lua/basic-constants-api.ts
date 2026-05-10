@@ -5,6 +5,7 @@ import { luaNumericConstants } from "#lua/basic-constant-data.js";
 import { luaDuelOptionNumericConstants } from "#lua/basic-duel-option-constant-data.js";
 import { luaHintOpcodeNumericConstants } from "#lua/basic-hint-opcode-constant-data.js";
 import { luaProcedureNumericConstants } from "#lua/basic-procedure-constant-data.js";
+import { toLuaSigned32 } from "#lua/numeric-utils.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -25,6 +26,7 @@ export function installConstants(L: unknown): void {
 }
 
 function pushLuaNumericConstant(L: unknown, value: number): void {
-  if (Number.isInteger(value) && value >= -0x80000000 && value <= 0x7fffffff) lua.lua_pushinteger(L, value);
+  const signed = toLuaSigned32(value);
+  if (signed !== undefined) lua.lua_pushinteger(L, signed);
   else lua.lua_pushnumber(L, value);
 }

@@ -3,6 +3,7 @@ import { moveDuelCard } from "#duel/card-state.js";
 import { getDuelFlagEffectCount, getDuelFlagEffectLabel, registerDuelFlagEffect, resetDuelFlagEffect, setDuelFlagEffectLabel } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import { readCardUid } from "#lua/api-utils.js";
+import { normalizeLuaUnsignedInteger } from "#lua/numeric-utils.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -16,7 +17,7 @@ export function installCardFlagApi(L: unknown, session: DuelSession): void {
     }
     const uid = readCardUid(state, 1);
     const code = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    const reset = lua.lua_isnumber(state, 3) ? Math.trunc(lua.lua_tonumber(state, 3)) : 0;
+    const reset = lua.lua_isnumber(state, 3) ? normalizeLuaUnsignedInteger(lua.lua_tonumber(state, 3)) : 0;
     const property = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
     const resetCount = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : undefined;
     const value = lua.lua_isnumber(state, 6) ? lua.lua_tointeger(state, 6) : 0;
