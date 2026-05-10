@@ -77,6 +77,7 @@ The engine already has useful surfaces to build on:
 - Link procedure metadata also restores `Card.IsLevelAbove` material filters through World Gears of Theurlogical Demiurgy.
 - Synchro procedure metadata also restores tuner-side `Card.IsLevel` material filters through Despian Luluwalilith.
 - Lua `Duel.SynchroSummon` default material selection now honors restored Synchro procedure tuner-level filters through The Three Brave Swordsouls.
+- Lua `Duel.SynchroSummon` default material selection now skips materials locked by `EFFECT_CANNOT_BE_SYNCHRO_MATERIAL` while using The Three Brave Swordsouls.
 - Synchro procedure metadata also restores tuner-side `Card.IsSetCard` material filters through Dragunity Knight - Gormfaobhar and non-tuner-side `Card.IsSetCard` material filters through Legendary Six Samurai - Shi En.
 
 ## North Star
