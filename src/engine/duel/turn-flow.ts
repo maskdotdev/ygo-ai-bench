@@ -52,8 +52,11 @@ export function changeDuelPhase(state: DuelState, player: PlayerId, phase: DuelP
   state.phaseActivity = false;
   handlers.collectEvent(phaseStartEventName(phase), phaseStartEventCode(phase));
   handlers.executePhaseEffects?.(phase);
-  pruneResetEffectsAfterPhase(state, phase);
-  pruneDuelFlagEffectsAfterPhase(state, phase);
+  const deferPhaseReset = phase === "end";
+  if (!deferPhaseReset) {
+    pruneResetEffectsAfterPhase(state, phase);
+    pruneDuelFlagEffectsAfterPhase(state, phase);
+  }
   if (phase === "battle") {
     state.attacksDeclared = [];
     state.attackCanceledUids = [];
@@ -64,6 +67,10 @@ export function changeDuelPhase(state: DuelState, player: PlayerId, phase: DuelP
   pushDuelLog(state, "phase", player, undefined, `Moved to ${phase}`);
   handlers.collectEvent("phaseChanged");
   handlers.collectEvent(phaseEventName(phase), phaseEventCode(phase));
+  if (deferPhaseReset) {
+    pruneResetEffectsAfterPhase(state, phase);
+    pruneDuelFlagEffectsAfterPhase(state, phase);
+  }
 }
 
 export function endDuelTurn(state: DuelState, player: PlayerId, handlers: DuelTurnFlowHandlers): void {
