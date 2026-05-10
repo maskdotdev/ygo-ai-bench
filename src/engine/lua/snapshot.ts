@@ -11,6 +11,7 @@ import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.
 import { cardFieldId } from "#duel/card-field-id.js";
 import { cardSetcodes, isSetcodeMatch } from "#lua/card-code-utils.js";
 import { isKnownUnleashYourPowerDelayedSetEffect, isKnownYellowAlertDelayedReturnEffect, unleashYourPowerDelayedSetOperation, yellowAlertDelayedReturnOperation } from "#lua/snapshot-delayed-operations.js";
+import { isKnownSwordsOfRevealingLightPhaseEndEffect, isKnownSwordsOfRevealingLightResetEffect, swordsOfRevealingLightPhaseEndCanActivate, swordsOfRevealingLightPhaseEndOperation, swordsOfRevealingLightRestoredReset } from "#lua/snapshot-swords-of-revealing-light.js";
 import { ritualSummonSelectedMaterials, type LuaDuelSummonApiHostState } from "#lua/duel-api/summon.js";
 import { luaTemporaryControlReturnDescriptor, luaTemporaryControlReturnOperation } from "#lua/duel-api/move-control.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
@@ -293,10 +294,11 @@ function restoreKnownLuaEffects(
   for (const effect of snapshotEffects) {
     if (!effect.registryKey || !registryKeys.has(effect.registryKey) || restored.has(effect.registryKey)) continue;
     if (!isKnownRestorableLuaEffect(effect, snapshotEffects)) continue;
+    const reset = restoredLuaEffectReset(session, effect);
     session.state.effects.push({
       ...effect,
       range: [...effect.range],
-      ...(effect.reset ? { reset: { ...effect.reset } } : {}),
+      ...(reset ? { reset } : {}),
       ...(effect.targetRange ? { targetRange: [...effect.targetRange] } : {}),
       ...(effect.hintTiming ? { hintTiming: [...effect.hintTiming] } : {}),
       ...restoredLuaValueCallbacks(effect),
@@ -307,6 +309,12 @@ function restoreKnownLuaEffects(
     added.push(effect.registryKey);
   }
   return added;
+}
+
+function restoredLuaEffectReset(session: DuelSession, effect: SerializedDuelEffect): DuelEffectDefinition["reset"] | undefined {
+  if (!effect.reset) return undefined;
+  if (isKnownSwordsOfRevealingLightPhaseEndEffect(effect)) return swordsOfRevealingLightRestoredReset(session, effect);
+  return { ...effect.reset };
 }
 
 function restoreKnownLuaChainOperations(session: DuelSession): void {
@@ -437,6 +445,8 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownCannotSelectBattleTargetNotHandlerEffect(effect) ||
         isKnownYellowAlertDelayedReturnEffect(effect) ||
         isKnownRareMetalmorphChainSolvingNegateEffect(effect) ||
+        isKnownSwordsOfRevealingLightPhaseEndEffect(effect) ||
+        isKnownSwordsOfRevealingLightResetEffect(effect) ||
         isKnownMaharaghiPredrawEffect(effect) ||
         isKnownHinoKaguTsuchiPredrawDiscardEffect(effect) ||
         isKnownGreatLongNoseSkipBattlePhaseEffect(effect) ||
@@ -687,6 +697,7 @@ function isStaticPlayerPhaseLock(effect: SerializedDuelEffect): boolean {
 function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[] = []): DuelEffectDefinition["operation"] {
   if (isKnownYellowAlertDelayedReturnEffect(effect)) return yellowAlertDelayedReturnOperation(effect);
   if (isKnownRareMetalmorphChainSolvingNegateEffect(effect)) return rareMetalmorphChainSolvingNegateOperation(effect);
+  if (isKnownSwordsOfRevealingLightPhaseEndEffect(effect)) return swordsOfRevealingLightPhaseEndOperation();
   if (isKnownMaharaghiPredrawEffect(effect)) return maharaghiPredrawOperation(effect);
   if (isKnownHinoKaguTsuchiPredrawDiscardEffect(effect)) return hinoKaguTsuchiPredrawDiscardOperation(effect);
   if (isKnownGeminiEndPhaseReturnEffect(effect, snapshotEffects)) return luaHandlerReturnToHandOperation(effect);
@@ -789,6 +800,9 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
 }
 
 function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "canActivate"> {
+  if (isKnownSwordsOfRevealingLightPhaseEndEffect(effect)) {
+    return { canActivate: swordsOfRevealingLightPhaseEndCanActivate(effect) };
+  }
   if (isKnownMaharaghiPredrawEffect(effect)) {
     return { canActivate: (ctx) => ctx.duel.turnPlayer === effect.controller && topDeckCards(ctx.duel, effect.controller).length > 0 };
   }
