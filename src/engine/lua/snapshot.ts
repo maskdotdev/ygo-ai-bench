@@ -4,6 +4,7 @@ import { applyResponse, getGroupedDuelLegalActions, getLegalActions, queryPublic
 import { duelReason } from "#duel/reasons.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { cardFieldId } from "#lua/card-state-api.js";
+import { cardSetcodes, isSetcodeMatch } from "#lua/card-code-utils.js";
 import { luaTemporaryControlReturnDescriptor, luaTemporaryControlReturnOperation } from "#lua/duel-api/move-control.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
@@ -15,6 +16,7 @@ const luaEffectOldUnionStatus = 348;
 const luaEffectClockLizard = 51476410;
 const luaEffectIndestructibleEffect = 41;
 const luaEffectIndestructibleBattle = 42;
+const luaEffectFlagClientHint = 0x4000000;
 const luaUnionStateEffectCodes = new Set([luaEffectEquipLimit, luaEffectUnionStatus, luaEffectOldUnionStatus]);
 const luaStaticSingleCardRestrictionCodes = new Set([43, 44, 85]);
 const luaIndestructibleValueDescriptors = new Set(["indestructible:opponent", "indestructible:self"]);
@@ -213,21 +215,23 @@ function restoreKnownLuaEffects(
 
 function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
   return (
-    effect.event === "continuous" &&
-    (effect.code === 2 ||
-      effect.code === 8 ||
-      effect.code === 22 ||
-      effect.code === 25 ||
-      effect.code === luaEffectClockLizard ||
-      (effect.code === 71 && effect.luaValueDescriptor === "cannot-be-effect-target:opponent") ||
-      isKnownIndestructibleValueEffect(effect) ||
-      effect.luaValueDescriptor === "change-damage:effect-double" ||
-      effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous" ||
-      effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
-      isStaticSingleCardLuaRestriction(effect) ||
-      isStaticPlayerPhaseLock(effect) ||
-      (effect.code === 102 && effect.value !== undefined && effect.value !== 0 && effect.targetRange === undefined) ||
-      ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 132) && effect.value !== undefined))
+    isClientHintEffect(effect) ||
+    (effect.event === "continuous" &&
+      (effect.code === 2 ||
+        effect.code === 8 ||
+        effect.code === 22 ||
+        isStaticNotSetcodeSummonRestriction(effect) ||
+        effect.code === 25 ||
+        effect.code === luaEffectClockLizard ||
+        (effect.code === 71 && effect.luaValueDescriptor === "cannot-be-effect-target:opponent") ||
+        isKnownIndestructibleValueEffect(effect) ||
+        effect.luaValueDescriptor === "change-damage:effect-double" ||
+        effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous" ||
+        effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
+        isStaticSingleCardLuaRestriction(effect) ||
+        isStaticPlayerPhaseLock(effect) ||
+        (effect.code === 102 && effect.value !== undefined && effect.value !== 0 && effect.targetRange === undefined) ||
+        ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 132) && effect.value !== undefined)))
   );
 }
 
@@ -239,6 +243,14 @@ function isKnownIndestructibleValueEffect(effect: SerializedDuelEffect): boolean
     effect.reset !== undefined &&
     (effect.targetRange === undefined || hasDefaultLuaFieldRange(effect))
   );
+}
+
+function isStaticNotSetcodeSummonRestriction(effect: SerializedDuelEffect): boolean {
+  return (effect.code === 20 || effect.code === 22) && notSetcodeTargetDescriptor(effect.luaTargetDescriptor) !== undefined;
+}
+
+function isClientHintEffect(effect: SerializedDuelEffect): boolean {
+  return effect.code === undefined && ((effect.property ?? 0) & luaEffectFlagClientHint) !== 0;
 }
 
 function hasDefaultLuaFieldRange(effect: SerializedDuelEffect): boolean {
@@ -292,8 +304,18 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
 }
 
 function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "targetCardPredicate"> {
-  if (effect.luaTargetDescriptor !== "special-summon-limit:non-fusion-extra") return {};
-  return { targetCardPredicate: (_ctx, card) => card.location === "extraDeck" && ((card.data.typeFlags ?? 0) & 0x40) === 0 };
+  if (effect.luaTargetDescriptor === "special-summon-limit:non-fusion-extra") {
+    return { targetCardPredicate: (_ctx, card) => card.location === "extraDeck" && ((card.data.typeFlags ?? 0) & 0x40) === 0 };
+  }
+  const notSetcode = notSetcodeTargetDescriptor(effect.luaTargetDescriptor);
+  if (notSetcode !== undefined) return { targetCardPredicate: (_ctx, card) => !cardSetcodes(card).some((setcode) => isSetcodeMatch(notSetcode, setcode)) };
+  return {};
+}
+
+function notSetcodeTargetDescriptor(descriptor: string | undefined): number | undefined {
+  const match = descriptor?.match(/^target:not-setcode:(\d+)$/);
+  const setcode = match?.[1] ? Number(match[1]) : undefined;
+  return setcode !== undefined && Number.isSafeInteger(setcode) && setcode > 0 ? setcode : undefined;
 }
 
 function relatedEffectIsContinuous(ctx: Parameters<NonNullable<DuelEffectDefinition["valuePredicate"]>>[0]): boolean {
