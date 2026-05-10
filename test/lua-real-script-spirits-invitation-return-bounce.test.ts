@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -163,7 +164,86 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     );
     expect(restoredInvitationChain.host.messages).not.toContain("invitation responder resolved");
   });
+
+  it("restores its Standby maintenance cost pay and destroy branches", () => {
+    const paid = setupMaintenanceDuel(8000);
+    const restoredPaid = restoreDuelWithLuaScripts(serializeDuel(paid.session), paid.source, paid.reader);
+    expect(restoredPaid.restoreComplete, restoredPaid.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredPaid.session.state.cards.find((card) => card.uid === paid.invitationUid)).toMatchObject({
+      location: "spellTrapZone",
+      faceUp: true,
+    });
+    changeRestoredPhase(restoredPaid, 0, "standby");
+    expect(restoredPaid.session.state.players[0].lifePoints).toBe(7500);
+    expect(restoredPaid.session.state.cards.find((card) => card.uid === paid.invitationUid)).toMatchObject({
+      location: "spellTrapZone",
+      faceUp: true,
+    });
+    expect(restoredPaid.session.state.eventHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          eventName: "lifePointCostPaid",
+          eventCode: 1201,
+          eventPlayer: 0,
+          eventValue: 500,
+          eventReason: duelReason.cost,
+          eventReasonPlayer: 0,
+          eventReasonCardUid: paid.invitationUid,
+        }),
+      ]),
+    );
+    const restoredAfterPaid = restoreDuelWithLuaScripts(serializeDuel(restoredPaid.session), paid.source, paid.reader);
+    expect(restoredAfterPaid.restoreComplete, restoredAfterPaid.incompleteReasons.join("; ")).toBe(true);
+
+    const unpaid = setupMaintenanceDuel(300);
+    const restoredUnpaid = restoreDuelWithLuaScripts(serializeDuel(unpaid.session), unpaid.source, unpaid.reader);
+    expect(restoredUnpaid.restoreComplete, restoredUnpaid.incompleteReasons.join("; ")).toBe(true);
+    changeRestoredPhase(restoredUnpaid, 0, "standby");
+    expect(restoredUnpaid.session.state.players[0].lifePoints).toBe(300);
+    expect(restoredUnpaid.session.state.cards.find((card) => card.uid === unpaid.invitationUid)).toMatchObject({
+      location: "graveyard",
+      previousLocation: "spellTrapZone",
+      reason: duelReason.destroy | duelReason.cost,
+    });
+    expect(restoredUnpaid.session.state.eventHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          eventName: "destroyed",
+          eventCode: 1029,
+          eventCardUid: unpaid.invitationUid,
+          eventReason: duelReason.destroy | duelReason.cost,
+          eventReasonPlayer: 0,
+        }),
+      ]),
+    );
+    const restoredAfterUnpaid = restoreDuelWithLuaScripts(serializeDuel(restoredUnpaid.session), unpaid.source, unpaid.reader);
+    expect(restoredAfterUnpaid.restoreComplete, restoredAfterUnpaid.incompleteReasons.join("; ")).toBe(true);
+  });
 });
+
+function setupMaintenanceDuel(lifePoints: number) {
+  const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+  const invitationCode = "92394653";
+  const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === invitationCode);
+  const reader = createCardReader(cards);
+  const session = createDuel({ seed: lifePoints, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+  loadDecks(session, { 0: { main: [invitationCode] }, 1: { main: [] } });
+  startDuel(session);
+
+  const invitation = session.state.cards.find((card) => card.code === invitationCode);
+  expect(invitation).toBeDefined();
+  moveDuelCard(session.state, invitation!.uid, "spellTrapZone", 0);
+  invitation!.faceUp = true;
+  invitation!.position = "faceUpAttack";
+  session.state.players[0].lifePoints = lifePoints;
+  session.state.phase = "draw";
+  session.state.waitingFor = 0;
+
+  const host = createLuaScriptHost(session, workspace);
+  expect(host.loadCardScript(Number(invitationCode), workspace).ok).toBe(true);
+  expect(host.registerInitialEffects()).toBeGreaterThan(0);
+  return { invitationUid: invitation!.uid, reader, session, source: workspace };
+}
 
 function chainResponderScript(): string {
   return `
@@ -181,7 +261,7 @@ function chainResponderScript(): string {
   `;
 }
 
-function changeRestoredPhase(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1, phase: "battle" | "main2" | "end"): void {
+function changeRestoredPhase(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1, phase: "standby" | "battle" | "main2" | "end"): void {
   const action = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "changePhase" && candidate.phase === phase);
   expect(action, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
   applyRestoredActionAndAssert(restored, action!);
