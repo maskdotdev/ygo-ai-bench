@@ -20,10 +20,11 @@ describe("Lua continuous negation and destruction effects", () => {
       { code: "200", name: "Negatable Monster", kind: "monster" },
       { code: "300", name: "Negatable Spell", kind: "spell" },
       { code: "400", name: "Hand Monster", kind: "monster" },
+      { code: "500", name: "Normal Monster", kind: "monster", typeFlags: 0x11 },
     ];
-    const session = createDuel({ seed: 50, startingHandSize: 4, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 50, startingHandSize: 5, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300", "400"] },
+      0: { main: ["100", "200", "300", "400", "500"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -31,11 +32,14 @@ describe("Lua continuous negation and destruction effects", () => {
     const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
     const monster = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
     const spell = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const normal = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
     expect(source).toBeTruthy();
     expect(monster).toBeTruthy();
     expect(spell).toBeTruthy();
+    expect(normal).toBeTruthy();
     moveDuelCard(session.state, source!.uid, "monsterZone", 0);
     moveDuelCard(session.state, monster!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, normal!.uid, "monsterZone", 0);
     moveDuelCard(session.state, spell!.uid, "spellTrapZone", 0);
 
     const host = createLuaScriptHost(session);
@@ -44,10 +48,12 @@ describe("Lua continuous negation and destruction effects", () => {
       local monster=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local spell=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_SZONE, 0, 1, 1, nil):GetFirst()
       local hand=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local normal=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 500), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       local disable_effect=Effect.CreateEffect(monster)
       Debug.Message("monster negatable " .. tostring(monster:IsNegatable()) .. "/" .. tostring(monster:IsNegatableMonster()) .. "/" .. tostring(monster:IsNegatableSpellTrap()))
       Debug.Message("spell negatable " .. tostring(spell:IsNegatable()) .. "/" .. tostring(spell:IsNegatableMonster()) .. "/" .. tostring(spell:IsNegatableSpellTrap()))
       Debug.Message("hand negatable " .. tostring(hand:IsNegatable()) .. "/" .. tostring(hand:IsNegatableMonster()) .. "/" .. tostring(hand:IsNegatableSpellTrap()))
+      Debug.Message("normal negatable " .. tostring(normal:IsNegatable()) .. "/" .. tostring(normal:IsNegatableMonster()) .. "/" .. tostring(normal:IsCanBeDisabledByEffect(disable_effect)))
       Debug.Message("disable by effect " .. tostring(monster:IsCanBeDisabledByEffect(disable_effect)) .. "/" .. tostring(spell:IsCanBeDisabledByEffect(disable_effect)) .. "/" .. tostring(hand:IsCanBeDisabledByEffect(disable_effect)))
       `,
       "negatable-before.lua",
@@ -56,6 +62,7 @@ describe("Lua continuous negation and destruction effects", () => {
     expect(host.messages).toContain("monster negatable true/true/false");
     expect(host.messages).toContain("spell negatable true/false/true");
     expect(host.messages).toContain("hand negatable false/false/false");
+    expect(host.messages).toContain("normal negatable false/false/false");
     expect(host.messages).toContain("disable by effect true/true/false");
 
     const register = host.loadScript(

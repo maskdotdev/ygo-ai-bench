@@ -61,7 +61,9 @@ export function createLuaMaterialCheckContext(state: DuelState): ContinuousEffec
 }
 
 export function isNegatableCard(state: DuelState, card: DuelCardInstance): boolean {
-  return card.faceUp && (card.location === "monsterZone" || card.location === "spellTrapZone") && !isCardDisabled(state, card, createLuaMaterialCheckContext(state));
+  if (!card.faceUp || (card.location !== "monsterZone" && card.location !== "spellTrapZone")) return false;
+  if (card.location === "monsterZone" && (cardTypeFlags(card, state) & 0x10) !== 0 && !state.effects.some((effect) => effect.sourceUid === card.uid)) return false;
+  return !isCardDisabled(state, card, createLuaMaterialCheckContext(state));
 }
 
 export function matchingLuaEffects<EffectRecord extends LuaCardApiEffectRecord>(
