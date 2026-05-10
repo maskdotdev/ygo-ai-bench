@@ -5,6 +5,8 @@ const { lua, to_luastring } = fengari;
 
 export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostState: LuaHostState): string | undefined {
   if (isNamedTableFunction(L, index, "aux", "tgoval")) return "cannot-be-effect-target:opponent";
+  if (isNamedTableFunction(L, index, "aux", "indoval")) return "indestructible:opponent";
+  if (isNamedTableFunction(L, index, "aux", "indsval")) return "indestructible:self";
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
   const params = luaFunctionParams(snippet);
@@ -15,6 +17,10 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
     const reasonPlayer = escapeRegExp(reasonPlayerParam);
     const opponentTargeting = new RegExp(`\\breturn\\s+${reasonPlayer}\\s*~=\\s*${effect}\\s*:\\s*GetHandlerPlayer\\s*\\(\\s*\\)`);
     if (opponentTargeting.test(snippet)) return "cannot-be-effect-target:opponent";
+    const opponentIndestructible = new RegExp(`\\breturn\\s+${reasonPlayer}\\s*==\\s*1\\s*-\\s*${effect}\\s*:\\s*GetHandlerPlayer\\s*\\(\\s*\\)`);
+    if (opponentIndestructible.test(snippet)) return "indestructible:opponent";
+    const selfIndestructible = new RegExp(`\\breturn\\s+${reasonPlayer}\\s*==\\s*${effect}\\s*:\\s*GetHandlerPlayer\\s*\\(\\s*\\)`);
+    if (selfIndestructible.test(snippet)) return "indestructible:self";
   }
   const amountParam = params?.[2];
   const reasonParam = params?.[3];

@@ -13,8 +13,11 @@ const luaEffectEquipLimit = 76;
 const luaEffectUnionStatus = 347;
 const luaEffectOldUnionStatus = 348;
 const luaEffectClockLizard = 51476410;
+const luaEffectIndestructibleEffect = 41;
+const luaEffectIndestructibleBattle = 42;
 const luaUnionStateEffectCodes = new Set([luaEffectEquipLimit, luaEffectUnionStatus, luaEffectOldUnionStatus]);
 const luaStaticSingleCardRestrictionCodes = new Set([43, 44, 85]);
+const luaIndestructibleValueDescriptors = new Set(["indestructible:opponent", "indestructible:self"]);
 const luaResetTurnSet = 0x20000;
 const luaResetPhase = 0x40000000;
 const luaPhaseEnd = 0x200;
@@ -215,6 +218,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
       effect.code === 25 ||
       effect.code === luaEffectClockLizard ||
       (effect.code === 71 && effect.luaValueDescriptor === "cannot-be-effect-target:opponent") ||
+      isKnownIndestructibleValueEffect(effect) ||
       effect.luaValueDescriptor === "change-damage:effect-double" ||
       effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous" ||
       effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
@@ -222,6 +226,21 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
       (effect.code === 102 && effect.value !== undefined && effect.value !== 0 && effect.targetRange === undefined) ||
       ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 132) && effect.value !== undefined))
   );
+}
+
+function isKnownIndestructibleValueEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    (effect.code === luaEffectIndestructibleEffect || effect.code === luaEffectIndestructibleBattle) &&
+    effect.luaValueDescriptor !== undefined &&
+    luaIndestructibleValueDescriptors.has(effect.luaValueDescriptor) &&
+    effect.reset !== undefined &&
+    (effect.targetRange === undefined || hasDefaultLuaFieldRange(effect))
+  );
+}
+
+function hasDefaultLuaFieldRange(effect: SerializedDuelEffect): boolean {
+  const allLocations = new Set(["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"]);
+  return effect.range.length === allLocations.size && effect.range.every((location) => allLocations.has(location));
 }
 
 function isStaticSingleCardLuaRestriction(effect: SerializedDuelEffect): boolean {
@@ -241,6 +260,12 @@ function restoredLuaOperation(effect: SerializedDuelEffect): DuelEffectDefinitio
 function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "battleDamageValue" | "lifePointValue" | "valuePredicate"> {
   if (effect.luaValueDescriptor === "cannot-be-effect-target:opponent") {
     return { valuePredicate: (_ctx, player) => player !== undefined && player !== effect.controller };
+  }
+  if (effect.luaValueDescriptor === "indestructible:opponent") {
+    return { valuePredicate: (_ctx, player) => player !== undefined && player !== effect.controller };
+  }
+  if (effect.luaValueDescriptor === "indestructible:self") {
+    return { valuePredicate: (_ctx, player) => player !== undefined && player === effect.controller };
   }
   if (effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous") {
     return { valuePredicate: (ctx) => ctx.eventReasonPlayer === otherPlayer(effect.controller) && !relatedEffectIsContinuous(ctx) };

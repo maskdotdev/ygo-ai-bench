@@ -1,0 +1,74 @@
+import { describe, expect, it } from "vitest";
+import { moveDuelCard } from "#duel/card-state.js";
+import { createDuel, destroyDuelCard, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
+import type { DuelCardData } from "#duel/types.js";
+import { createCardReader } from "#engine/data-loaders.js";
+import { createLuaScriptHost } from "#lua/host.js";
+import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+
+describe("Lua indestructible value restore", () => {
+  it("restores aux.indsval as own-player destruction protection", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Self Protection Source", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: "200", name: "Self Protected Target", kind: "monster", typeFlags: 0x1, level: 4 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 341, startingHandSize: 2, cardReader: reader });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.code === "100");
+    const protectedCard = session.state.cards.find((card) => card.code === "200");
+    expect(source).toBeDefined();
+    expect(protectedCard).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "graveyard", 0);
+    moveDuelCard(session.state, protectedCard!.uid, "monsterZone", 0).position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_FIELD)
+      e:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)
+      e:SetTargetRange(LOCATION_MZONE,0)
+      e:SetValue(aux.indsval)
+      e:SetReset(RESET_PHASE|PHASE_END)
+      Duel.RegisterEffect(e,0)
+      `,
+      "restore-indsval.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          event: "continuous",
+          code: 41,
+          controller: 0,
+          sourceUid: source!.uid,
+          luaValueDescriptor: "indestructible:self",
+        }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: () => undefined }, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          event: "continuous",
+          code: 41,
+          controller: 0,
+          sourceUid: source!.uid,
+          luaValueDescriptor: "indestructible:self",
+        }),
+      ]),
+    );
+
+    const ownDestroy = destroyDuelCard(restored.session.state, protectedCard!.uid, 0, duelReason.effect | duelReason.destroy, 0);
+    expect(ownDestroy).toMatchObject({ uid: protectedCard!.uid, location: "monsterZone" });
+    const opponentDestroy = destroyDuelCard(restored.session.state, protectedCard!.uid, 0, duelReason.effect | duelReason.destroy, 1);
+    expect(opponentDestroy).toMatchObject({ uid: protectedCard!.uid, location: "graveyard" });
+  });
+});
