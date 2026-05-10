@@ -71,6 +71,7 @@ The engine already has useful surfaces to build on:
 - Link procedure metadata also restores `Card.IsSetCard` material filters through X-Krawler Qualiark.
 - Link procedure metadata also restores `Card.IsSummonType` material filters through Clara & Rushka, the Ventriloduo.
 - Link procedure metadata also restores `Card.IsLevel` material filters through Linkuriboh.
+- Lua `Duel.LinkSummon` default material selection now honors restored Link procedure level filters through Linkuriboh.
 - Link procedure metadata also restores `Card.IsLevelAbove` material filters through World Gears of Theurlogical Demiurgy.
 - Synchro procedure metadata also restores tuner-side `Card.IsLevel` material filters through Despian Luluwalilith.
 - Lua `Duel.SynchroSummon` default material selection now honors restored Synchro procedure tuner-level filters through The Three Brave Swordsouls.

@@ -9,7 +9,11 @@ import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 const { lua } = fengari;
 
 export function canLuaLinkSummonCard(session: DuelSession, card: DuelCardInstance, requiredUids: string[], materialGroupUids: string[], min?: number, max?: number): boolean {
-  if (card.location !== "extraDeck" || !isMonsterLike(card)) return false;
+  return findLuaLinkMaterialUidSet(session, card, requiredUids, materialGroupUids, min, max) !== undefined;
+}
+
+export function findLuaLinkMaterialUidSet(session: DuelSession, card: DuelCardInstance, requiredUids: string[], materialGroupUids: string[], min?: number, max?: number): string[] | undefined {
+  if (card.location !== "extraDeck" || !isMonsterLike(card)) return undefined;
   const required = new Set(requiredUids);
   const allowed = new Set(materialGroupUids);
   const materialPool = session.state.cards.filter(
@@ -19,18 +23,18 @@ export function canLuaLinkSummonCard(session: DuelSession, card: DuelCardInstanc
       (allowed.size === 0 || allowed.has(candidate.uid)) &&
       canBeLinkMaterial(session, candidate, card),
   );
-  if ([...required].some((uid) => !materialPool.some((candidate) => candidate.uid === uid))) return false;
+  if ([...required].some((uid) => !materialPool.some((candidate) => candidate.uid === uid))) return undefined;
   const targetRating = linkRating(card);
-  if (targetRating <= 0) return false;
+  if (targetRating <= 0) return undefined;
   const minCount = Math.max(1, min ?? card.data.linkMaterialMin ?? 1, required.size);
   const maxCount = Math.min(materialPool.length, max ?? card.data.linkMaterialMax ?? Number.POSITIVE_INFINITY, targetRating);
   for (let count = minCount; count <= maxCount; count += 1) {
     for (const materials of cardCombinations(materialPool, count)) {
       if ([...required].some((uid) => !materials.some((material) => material.uid === uid))) continue;
-      if (linkMaterialCodesMatch(materials, card.data.linkMaterials) && canLinkMaterialsMatchRating(materials, targetRating) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return true;
+      if (linkMaterialCodesMatch(materials, card.data.linkMaterials) && canLinkMaterialsMatchRating(materials, targetRating) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return materials.map((material) => material.uid);
     }
   }
-  return false;
+  return undefined;
 }
 
 function hasSummonZoneAfterMaterials(session: DuelSession, player: PlayerId, materials: DuelCardInstance[]): boolean {

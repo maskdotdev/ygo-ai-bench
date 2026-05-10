@@ -258,6 +258,56 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Li
     });
   });
 
+  it("uses restored Link material filters for Lua Duel.LinkSummon default material selection", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const linkuribohCode = "41999284";
+    const levelTwoMaterialCode = "900000209";
+    const levelOneMaterialCode = "900000210";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === linkuribohCode),
+      { code: levelTwoMaterialCode, name: "Level 2 Link Material", kind: "monster" as const, typeFlags: 0x1, level: 2 },
+      { code: levelOneMaterialCode, name: "Level 1 Link Material", kind: "monster" as const, typeFlags: 0x1, level: 1 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 324, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [levelTwoMaterialCode, levelOneMaterialCode], extra: [linkuribohCode] }, 1: { main: [] } });
+    startDuel(session);
+    const link = session.state.cards.find((card) => card.code === linkuribohCode && card.location === "extraDeck");
+    expect(link).toBeDefined();
+    for (const code of [levelTwoMaterialCode, levelOneMaterialCode]) {
+      const material = session.state.cards.find((card) => card.code === code && card.location === "deck");
+      expect(material).toBeDefined();
+      moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+    }
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(linkuribohCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(session.state.cards.find((card) => card.uid === link!.uid)?.data).toMatchObject({
+      linkMaterialMin: 1,
+      linkMaterialLevel: 1,
+    });
+    const result = host.loadScript(
+      `
+      local link=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${linkuribohCode}),0,LOCATION_EXTRA,0,1,1,nil):GetFirst()
+      Debug.Message("default link level filter " .. Duel.LinkSummon(link))
+      `,
+      "linkuriboh-default-link.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("default link level filter 1");
+    const summoned = session.state.cards.find((card) => card.uid === link!.uid);
+    const levelTwoMaterial = session.state.cards.find((card) => card.code === levelTwoMaterialCode);
+    const levelOneMaterial = session.state.cards.find((card) => card.code === levelOneMaterialCode);
+    expect(summoned).toMatchObject({
+      location: "monsterZone",
+      summonType: "link",
+      summonMaterialUids: [levelOneMaterial?.uid],
+    });
+    expect(levelTwoMaterial?.location).toBe("monsterZone");
+  });
+
   it("restores official Link.AddProcedure minimum level filters for real extra deck summons", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const worldGearsCode = "57282724";
