@@ -673,7 +673,7 @@ function assertSnapshotCardData(data: unknown, path: string): void {
     if (typeof data[field] !== "string") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a string`);
   }
   if (!duelSnapshotCardKinds.has(data.kind)) throw new Error(`Malformed duel snapshot: ${path}.kind must be a card kind`);
-  for (const field of ["typeFlags", "level", "normalTributes", "normalTributeMin", "normalTributeMax", "leftScale", "rightScale", "linkMarkers", "attack", "defense", "race", "attribute", "synchroTunerMin", "synchroTunerMax", "synchroNonTunerMin", "synchroNonTunerMax", "xyzMaterialCount", "xyzMaterialRace", "linkMaterialMin", "linkMaterialMax", "linkMaterialType"] as const) {
+  for (const field of ["typeFlags", "level", "normalTributes", "normalTributeMin", "normalTributeMax", "leftScale", "rightScale", "linkMarkers", "attack", "defense", "race", "attribute", "synchroTunerMin", "synchroTunerMax", "synchroNonTunerMin", "synchroNonTunerMax", "xyzMaterialCount", "xyzMaterialRace", "xyzMaterialAttribute", "linkMaterialMin", "linkMaterialMax", "linkMaterialType"] as const) {
     if (data[field] !== undefined && typeof data[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
   }
   if (data.alias !== undefined && typeof data.alias !== "string") throw new Error(`Malformed duel snapshot: ${path}.alias must be a string`);

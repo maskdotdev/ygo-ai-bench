@@ -781,7 +781,7 @@ function synchroLevel(card: DuelCardInstance): number {
 
 function canGenericXyzMaterialsMatch(card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
   const targetRank = xyzRank(card);
-  return targetRank > 0 && materials.length === xyzMaterialCount(card) && materials.every((material) => (material.data.level ?? 0) === targetRank && xyzMaterialRaceMatches(card, material));
+  return targetRank > 0 && materials.length === xyzMaterialCount(card) && materials.every((material) => (material.data.level ?? 0) === targetRank && xyzMaterialRaceMatches(card, material) && xyzMaterialAttributeMatches(card, material));
 }
 
 function xyzRank(card: DuelCardInstance): number {
@@ -794,6 +794,10 @@ function xyzMaterialCount(card: DuelCardInstance): number {
 
 function xyzMaterialRaceMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
   return target.data.xyzMaterialRace === undefined || ((material.data.race ?? 0) & target.data.xyzMaterialRace) !== 0;
+}
+
+function xyzMaterialAttributeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.xyzMaterialAttribute === undefined || ((material.data.attribute ?? 0) & target.data.xyzMaterialAttribute) !== 0;
 }
 
 function isTuner(card: DuelCardInstance): boolean {

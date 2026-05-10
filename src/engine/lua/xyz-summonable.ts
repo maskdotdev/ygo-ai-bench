@@ -28,13 +28,14 @@ function canBeXyzMaterial(session: DuelSession, card: DuelCardInstance, target: 
 function targetAllowsMaterial(target: DuelCardInstance, card: DuelCardInstance): boolean {
   if (target.data.xyzMaterials?.length) return target.data.xyzMaterials.some((code) => cardCodes(card).includes(code));
   if (!xyzMaterialRaceMatches(target, card)) return false;
+  if (!xyzMaterialAttributeMatches(target, card)) return false;
   const targetRank = cardRank(target);
   return targetRank > 0 && (card.data.level ?? 0) === targetRank;
 }
 
 function canGenericXyzMaterialsMatch(card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
   const targetRank = cardRank(card);
-  return targetRank > 0 && materials.length === xyzMaterialCount(card) && materials.every((material) => (material.data.level ?? 0) === targetRank && xyzMaterialRaceMatches(card, material));
+  return targetRank > 0 && materials.length === xyzMaterialCount(card) && materials.every((material) => (material.data.level ?? 0) === targetRank && xyzMaterialRaceMatches(card, material) && xyzMaterialAttributeMatches(card, material));
 }
 
 function materialCodesMatch(materials: DuelCardInstance[], requiredCodes: string[]): boolean {
@@ -74,6 +75,10 @@ function xyzMaterialCount(card: DuelCardInstance): number {
 
 function xyzMaterialRaceMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
   return target.data.xyzMaterialRace === undefined || ((material.data.race ?? 0) & target.data.xyzMaterialRace) !== 0;
+}
+
+function xyzMaterialAttributeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.xyzMaterialAttribute === undefined || ((material.data.attribute ?? 0) & target.data.xyzMaterialAttribute) !== 0;
 }
 
 function cardTypeFlags(card: DuelCardInstance): number {
