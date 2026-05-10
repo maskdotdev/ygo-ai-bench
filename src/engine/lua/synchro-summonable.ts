@@ -36,6 +36,7 @@ function targetAllowsMaterial(target: DuelCardInstance, card: DuelCardInstance):
   }
   const targetLevel = (cardTypeFlags(target) & 0x2000) !== 0 ? target.data.level ?? 0 : 0;
   const materialLevel = card.data.level ?? 0;
+  if (isTuner(card) && !synchroTunerAttributeMatches(target, card)) return false;
   return targetLevel > 0 && materialLevel > 0 && materialLevel < targetLevel;
 }
 
@@ -43,6 +44,7 @@ function canGenericSynchroMaterialsMatch(card: DuelCardInstance, materials: Duel
   const targetLevel = (cardTypeFlags(card) & 0x2000) !== 0 ? card.data.level ?? 0 : 0;
   if (targetLevel <= 0 || materials.length < 2) return false;
   if (!synchroMaterialCountsAllowed(card, materials)) return false;
+  if (!materials.every((material) => !isTuner(material) || synchroTunerAttributeMatches(card, material))) return false;
   return materials.reduce((total, material) => total + (material.data.level ?? 0), 0) === targetLevel;
 }
 
@@ -96,6 +98,10 @@ function synchroMaterialCountsAllowed(card: DuelCardInstance, materials: DuelCar
   const nonTunerMin = card.data.synchroNonTunerMin ?? 1;
   const nonTunerMax = card.data.synchroNonTunerMax ?? Number.POSITIVE_INFINITY;
   return tunerCount >= tunerMin && tunerCount <= tunerMax && nonTunerCount >= nonTunerMin && nonTunerCount <= nonTunerMax;
+}
+
+function synchroTunerAttributeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroTunerAttribute === undefined || ((material.data.attribute ?? 0) & target.data.synchroTunerAttribute) !== 0;
 }
 
 function isMonsterLike(card: DuelCardInstance): boolean {

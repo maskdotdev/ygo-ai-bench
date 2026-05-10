@@ -772,6 +772,7 @@ function canGenericSynchroMaterialsMatch(card: DuelCardInstance, materials: Duel
   const targetLevel = synchroLevel(card);
   if (targetLevel <= 0 || materials.length < 2) return false;
   if (!synchroMaterialCountsAllowed(card, materials)) return false;
+  if (!materials.every((material) => !isTuner(material) || synchroTunerAttributeMatches(card, material))) return false;
   return materials.reduce((total, material) => total + (material.data.level ?? 0), 0) === targetLevel;
 }
 
@@ -816,6 +817,10 @@ function synchroMaterialCountsAllowed(card: DuelCardInstance, materials: DuelCar
   const nonTunerMin = card.data.synchroNonTunerMin ?? 1;
   const nonTunerMax = card.data.synchroNonTunerMax ?? Number.POSITIVE_INFINITY;
   return tunerCount >= tunerMin && tunerCount <= tunerMax && nonTunerCount >= nonTunerMin && nonTunerCount <= nonTunerMax;
+}
+
+function synchroTunerAttributeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.synchroTunerAttribute === undefined || ((material.data.attribute ?? 0) & target.data.synchroTunerAttribute) !== 0;
 }
 
 function linkMaterialCodesMatch(materials: DuelCardInstance[], requiredCodes: string[] | undefined): boolean {
