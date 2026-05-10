@@ -18,6 +18,7 @@ import type { ApplyDuelResponseResult, ChainLimit, ChainLink, DuelAction, DuelCa
 
 const luaEffectEquipLimit = 76;
 const luaEffectGeminiStatus = 75;
+const luaEffectAddType = 115;
 const luaEffectUnionStatus = 347;
 const luaEffectOldUnionStatus = 348;
 const luaEffectClockLizard = 51476410;
@@ -419,6 +420,8 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         effect.code === 22 ||
         isKnownGeminiStatusEffect(effect) ||
         isKnownGeminiEndPhaseReturnEffect(effect, snapshotEffects) ||
+        isKnownSpiritAddTypeEffect(effect) ||
+        isKnownGrantedSpiritEndPhaseReturnEffect(effect, snapshotEffects) ||
         isStaticNotSetcodeSummonRestriction(effect) ||
         isKnownExtraSummonCountEffect(effect) ||
         effect.code === 25 ||
@@ -468,6 +471,33 @@ function isKnownGeminiEndPhaseReturnEffect(effect: SerializedDuelEffect, snapsho
     effect.range.length === 1 &&
     effect.range[0] === "monsterZone" &&
     snapshotEffects.some((candidate) => candidate.sourceUid === effect.sourceUid && isKnownGeminiStatusEffect(candidate))
+  );
+}
+
+function isKnownSpiritAddTypeEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === luaEffectAddType &&
+    effect.value === luaTypeSpirit &&
+    effect.sourceUid !== undefined &&
+    effect.targetRange === undefined &&
+    effect.reset?.flags === luaResetEventStandard &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone"
+  );
+}
+
+function isKnownGrantedSpiritEndPhaseReturnEffect(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[]): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === luaPhaseEndEventCode &&
+    effect.sourceUid !== undefined &&
+    effect.targetRange === undefined &&
+    effect.countLimit === 1 &&
+    effect.reset?.flags === luaResetEventStandard &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone" &&
+    snapshotEffects.some((candidate) => candidate.sourceUid === effect.sourceUid && isKnownSpiritAddTypeEffect(candidate))
   );
 }
 
@@ -662,6 +692,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownMaharaghiPredrawEffect(effect)) return maharaghiPredrawOperation(effect);
   if (isKnownHinoKaguTsuchiPredrawDiscardEffect(effect)) return hinoKaguTsuchiPredrawDiscardOperation(effect);
   if (isKnownGeminiEndPhaseReturnEffect(effect, snapshotEffects)) return luaHandlerReturnToHandOperation(effect);
+  if (isKnownGrantedSpiritEndPhaseReturnEffect(effect, snapshotEffects)) return luaHandlerReturnToHandOperation(effect);
   if (effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor) {
     const returnPlayer = effect.value === 0 || effect.value === 1 ? effect.value : undefined;
     return luaTemporaryControlReturnOperation(returnPlayer);
