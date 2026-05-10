@@ -185,7 +185,7 @@ function pushIsRelateToChain<EffectRecord extends LuaCardApiEffectRecord>(
 function pushIsRelateToCard(L: unknown, session: DuelSession): number {
   const source = readCard(L, session, 1);
   const target = readCard(L, session, 2);
-  lua.lua_pushboolean(L, Boolean(source && target && isOnField(source) && isOnField(target)));
+  lua.lua_pushboolean(L, Boolean(source && target && (source.cardTargetUids?.includes(target.uid) || (isOnField(source) && isOnField(target)))));
   return 1;
 }
 

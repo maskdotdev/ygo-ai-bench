@@ -203,6 +203,7 @@ describe("Lua card relation state helpers", () => {
       Debug.Message("card target before " .. tostring(source:IsHasCardTarget(first)))
       Debug.Message("card target set " .. result_count(source:SetCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(second)))
       Debug.Message("card relation create " .. result_count(source:CreateRelation(second,RESET_EVENT+RESETS_STANDARD)) .. "/" .. tostring(source:IsHasCardTarget(second)))
+      Debug.Message("card relation related " .. tostring(source:IsRelateToCard(first)) .. "/" .. tostring(source:IsRelateToCard(second)))
       Debug.Message("card target group " .. source:GetCardTargetCount() .. "/" .. source:GetCardTarget():GetCount() .. "/" .. source:GetFirstCardTarget():GetCode())
       Debug.Message("owner target first " .. first:GetOwnerTargetCount() .. "/" .. first:GetOwnerTarget():GetCount() .. "/" .. first:GetFirstOwnerTarget():GetCode())
       source:CancelCardTarget(first)
@@ -218,6 +219,7 @@ describe("Lua card relation state helpers", () => {
       "card target before false",
       "card target set 0/true/false",
       "card relation create 0/true",
+      "card relation related true/true",
       "card target group 2/2/200",
       "owner target first 1/1/100",
       "card target cancel false/true",
