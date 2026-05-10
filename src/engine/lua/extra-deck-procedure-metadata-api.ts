@@ -15,6 +15,8 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
   if (synchroNonTunerMax !== undefined) card.data.synchroNonTunerMax = synchroNonTunerMax;
   const synchroTunerAttribute = readSynchroProcedureTunerAttributeFilter(source);
   if (synchroTunerAttribute !== undefined) card.data.synchroTunerAttribute = synchroTunerAttribute;
+  const synchroNonTunerAttribute = readSynchroProcedureNonTunerAttributeFilter(source);
+  if (synchroNonTunerAttribute !== undefined) card.data.synchroNonTunerAttribute = synchroNonTunerAttribute;
   const synchroTunerRace = readSynchroProcedureTunerRaceFilter(source);
   if (synchroTunerRace !== undefined) card.data.synchroTunerRace = synchroTunerRace;
   const synchroTunerType = readSynchroProcedureTunerTypeFilter(source);
@@ -47,6 +49,12 @@ function readXyzProcedureRaceFilter(source: string | undefined): number | undefi
 
 function readSynchroProcedureTunerAttributeFilter(source: string | undefined): number | undefined {
   const match = source?.match(/Synchro\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsAttribute\s*,\s*(ATTRIBUTE_[A-Z0-9_]+)\s*\)/);
+  if (!match?.[1]) return undefined;
+  return luaNumericConstants[match[1]];
+}
+
+function readSynchroProcedureNonTunerAttributeFilter(source: string | undefined): number | undefined {
+  const match = source?.match(/Synchro\.NonTunerEx\(\s*Card\.IsAttribute\s*,\s*(ATTRIBUTE_[A-Z0-9_]+)\s*\)/);
   if (!match?.[1]) return undefined;
   return luaNumericConstants[match[1]];
 }

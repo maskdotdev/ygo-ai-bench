@@ -765,6 +765,66 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
     });
   });
 
+  it("restores official Synchro.AddProcedure non-tuner attribute filters for real extra deck summons", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const naturiaBarkionCode = "2956282";
+    const fireMaterialCodes = ["900000121", "900000122"];
+    const earthMaterialCodes = ["900000123", "900000124"];
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === naturiaBarkionCode),
+      { code: fireMaterialCodes[0]!, name: "Earth Level 3 Tuner", kind: "monster" as const, typeFlags: 0x1001, level: 3, attribute: 0x1 },
+      { code: fireMaterialCodes[1]!, name: "Fire Level 3 Non-Tuner", kind: "monster" as const, typeFlags: 0x1, level: 3, attribute: 0x4 },
+      { code: earthMaterialCodes[0]!, name: "Second Earth Level 3 Tuner", kind: "monster" as const, typeFlags: 0x1001, level: 3, attribute: 0x1 },
+      { code: earthMaterialCodes[1]!, name: "Earth Level 3 Non-Tuner", kind: "monster" as const, typeFlags: 0x1, level: 3, attribute: 0x1 },
+    ];
+    const reader = createCardReader(cards);
+    const restoreWithMaterials = (main: string[]) => {
+      const session = createDuel({ seed: 307, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+      loadDecks(session, { 0: { main, extra: [naturiaBarkionCode] }, 1: { main: [] } });
+      startDuel(session);
+      const synchro = session.state.cards.find((card) => card.code === naturiaBarkionCode && card.location === "extraDeck");
+      expect(synchro).toBeDefined();
+      for (const code of main) {
+        const material = session.state.cards.find((card) => card.code === code && card.location === "deck");
+        expect(material).toBeDefined();
+        moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+      }
+      session.state.phase = "main1";
+      session.state.waitingFor = 0;
+      const host = createLuaScriptHost(session, workspace);
+      expect(host.loadCardScript(Number(naturiaBarkionCode), workspace).ok).toBe(true);
+      expect(host.registerInitialEffects()).toBeGreaterThan(0);
+      expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.data).toMatchObject({
+        synchroTunerMin: 1,
+        synchroTunerMax: 1,
+        synchroTunerAttribute: 0x1,
+        synchroNonTunerMin: 1,
+        synchroNonTunerMax: 99,
+        synchroNonTunerAttribute: 0x1,
+      });
+      const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+      expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+      expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+      return { restored, synchro };
+    };
+
+    const wrongNonTuner = restoreWithMaterials(fireMaterialCodes);
+    expect(getLuaRestoreLegalActions(wrongNonTuner.restored, 0).some((action) => action.type === "synchroSummon" && action.uid === wrongNonTuner.synchro!.uid)).toBe(false);
+
+    const matchingNonTuner = restoreWithMaterials(earthMaterialCodes);
+    const actions = getLuaRestoreLegalActions(matchingNonTuner.restored, 0).filter((action) => action.type === "synchroSummon" && action.uid === matchingNonTuner.synchro!.uid);
+    expect(actions, JSON.stringify(getLuaRestoreLegalActions(matchingNonTuner.restored, 0), null, 2)).toHaveLength(1);
+    const action = actions[0];
+    expect(action?.type).toBe("synchroSummon");
+    if (!action || action.type !== "synchroSummon") throw new Error("Expected Synchro Summon action");
+    const summoned = applyLuaRestoreResponse(matchingNonTuner.restored, action);
+    expect(summoned.ok, summoned.error).toBe(true);
+    expect(matchingNonTuner.restored.session.state.cards.find((card) => card.uid === matchingNonTuner.synchro!.uid)).toMatchObject({
+      location: "monsterZone",
+      summonType: "synchro",
+    });
+  });
+
   it("restores Spirit procedure End Phase return after a real Normal Summon", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const yataCode = "3078576";
