@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { readCardUid, readTableStringField } from "#lua/api-utils.js";
 import { installCardCodeAnimeApi } from "#lua/card-code-anime-api.js";
 import { cardCodes, cardSetcodes, isSetcodeMatch, listedCodes, listedCodeSetcodes, materialCodes, materialSetcodes, readRequestedCodes, readRequestedNumbers } from "#lua/card-code-utils.js";
+import { effectiveCardCode, effectiveCardCodes } from "#lua/card-code-effect-utils.js";
 import { effectiveCardSetcodes } from "#lua/card-setcode-utils.js";
 import type { DuelCardInstance, DuelSession } from "#duel/types.js";
 import type { LuaCardApiEffectRecord } from "#lua/card-api-types.js";
@@ -9,7 +10,7 @@ import type { LuaCardApiEffectRecord } from "#lua/card-api-types.js";
 const { lua, to_luastring } = fengari;
 
 export function installCardCodeApi<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: { effects: ReadonlyMap<number, EffectRecord> }): void {
-  pushNumberGetter(L, "GetCode", session, (card) => currentCode(card));
+  pushNumberGetter(L, "GetCode", session, (card) => effectiveCardCode(session.state, card, hostState));
   pushNumberGetter(L, "GetOriginalCode", session, (card) => (card ? Number(card.code) : 0));
   pushNumberGetter(L, "GetOriginalCodeRule", session, (card) => (card ? Number(card.code) : 0));
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -25,14 +26,14 @@ export function installCardCodeApi<EffectRecord extends LuaCardApiEffectRecord>(
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = readRequestedCodes(state, 2);
-    lua.lua_pushboolean(state, Boolean(card && requested.some((code) => cardCodes(card).includes(code))));
+    lua.lua_pushboolean(state, Boolean(card && requested.some((code) => effectiveCardCodes(session.state, card, hostState).includes(code))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsCode"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = readRequestedCodes(state, 2);
-    lua.lua_pushboolean(state, Boolean(card && requested.length > 0 && requested.every((code) => !cardCodes(card).includes(code))));
+    lua.lua_pushboolean(state, Boolean(card && requested.length > 0 && requested.every((code) => !effectiveCardCodes(session.state, card, hostState).includes(code))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsNotCode"));
@@ -79,7 +80,7 @@ export function installCardCodeApi<EffectRecord extends LuaCardApiEffectRecord>(
     const card = readCard(state, session);
     const firstCodeIndex = lua.lua_isnumber(state, 4) ? 4 : 2;
     const requested = readRequestedCodes(state, firstCodeIndex);
-    lua.lua_pushboolean(state, Boolean(card && requested.some((code) => cardCodes(card).includes(code))));
+    lua.lua_pushboolean(state, Boolean(card && requested.some((code) => effectiveCardCodes(session.state, card, hostState).includes(code))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsSummonCode"));
@@ -120,10 +121,6 @@ function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, g
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
-}
-
-function currentCode(card: DuelCardInstance | undefined): number {
-  return card ? card.assumedProperties?.[1] ?? Number(card.code) : 0;
 }
 
 function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefined {

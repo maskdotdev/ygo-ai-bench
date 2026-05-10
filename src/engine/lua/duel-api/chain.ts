@@ -4,6 +4,7 @@ import { pushCardTable } from "#lua/card-api.js";
 import { capturedTypeMaskDescriptor, literalActionTypeChainPlayerLimitPredicate, literalCapturedPlayerComparisonPredicate, literalFalsePredicate, literalNotMonsterWithoutLevelActiveTypePredicate, literalNotSourceOrActiveTypeAndEffectTypePredicateDescriptor, literalResponseMatchesChainPlayerOrActiveTypePredicate, literalResponseMatchesChainPlayerOrCurrentTargetCardsPredicate, literalResponseMatchesChainPlayerOrNotSourceTypePredicate, literalResponseMatchesChainPlayerOrSourceTypeNonActivatePredicate, literalStatelessSourcePredicate, literalTruePredicate } from "#lua/chain-limit-predicate-descriptors.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid, readOptionalFunctionRef, releaseOptionalFunctionRef, symbolicLocationMask } from "#lua/api-utils.js";
+import { effectiveCardCodes } from "#lua/card-code-effect-utils.js";
 import { effectiveCardSetcodes } from "#lua/card-setcode-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 import type { LuaEffectRecord } from "#lua/host-types.js";
@@ -117,8 +118,8 @@ function pushChainInfoValue(L: unknown, session: DuelSession, hostState: LuaDuel
   else if (info === 14) lua.lua_pushinteger(L, chainEffectTypeFlags(link, hostState));
   else if (info === 15 || info === 19) lua.lua_pushinteger(L, cardTypeFlags(source));
   else if (info === 16) lua.lua_pushinteger(L, positionMaskFromPosition(source?.position));
-  else if (info === 17) lua.lua_pushinteger(L, source ? Number(source.code) : 0);
-  else if (info === 18) lua.lua_pushinteger(L, source?.data.alias ? Number(source.data.alias) : 0);
+  else if (info === 17) lua.lua_pushinteger(L, source ? Number(effectiveCardCodes(session.state, source, hostState)[0] ?? 0) : 0);
+  else if (info === 18) lua.lua_pushinteger(L, source ? Number(effectiveCardCodes(session.state, source, hostState)[1] ?? 0) : 0);
   else if (info === 20) lua.lua_pushinteger(L, source?.data.level ?? 0);
   else if (info === 21) lua.lua_pushinteger(L, cardRank(source));
   else if (info === 22) lua.lua_pushinteger(L, source?.data.attribute ?? 0);
