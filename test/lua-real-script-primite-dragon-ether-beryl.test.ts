@@ -83,6 +83,67 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
       faceUp: true,
     });
   });
+
+  it("restores its self-Tribute ignition effect and sends a Normal Monster from Deck to the GY", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const etherBerylCode = "63198739";
+    const darkMagicianCode = "46986414";
+    const responderCode = "63190001";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => [etherBerylCode, darkMagicianCode].includes(card.code)),
+      { code: responderCode, name: "Ether Beryl Ignition Responder", kind: "monster", typeFlags: 0x21, level: 4 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 632, startingHandSize: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [etherBerylCode, darkMagicianCode] }, 1: { main: [responderCode] } });
+    startDuel(session);
+
+    const etherBeryl = session.state.cards.find((card) => card.code === etherBerylCode);
+    const darkMagician = session.state.cards.find((card) => card.code === darkMagicianCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(etherBeryl).toBeDefined();
+    expect(darkMagician).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, etherBeryl!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        return name === `c${responderCode}.lua` ? chainResponderScript() : workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(etherBerylCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+
+    const ignition = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === etherBeryl!.uid);
+    expect(ignition).toBeDefined();
+    applyAndAssert(session, ignition!);
+    expect(session.state.cards.find((card) => card.uid === etherBeryl!.uid)).toMatchObject({ location: "graveyard" });
+    expect(session.state.chain).toEqual([
+      expect.objectContaining({
+        sourceUid: etherBeryl!.uid,
+        operationInfos: [{ category: 0x20, targetUids: [], count: 1, player: 0, parameter: 0x1 }],
+      }),
+    ]);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    resolveRestoredChain(restored);
+
+    expect(restored.session.state.cards.find((card) => card.uid === darkMagician!.uid)).toMatchObject({
+      location: "graveyard",
+      controller: 0,
+    });
+    expect(restored.session.state.cards.find((card) => card.uid === etherBeryl!.uid)).toMatchObject({
+      location: "graveyard",
+      controller: 0,
+    });
+  });
 });
 
 function chainResponderScript(): string {
