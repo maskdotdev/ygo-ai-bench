@@ -83,10 +83,13 @@ export function endDuelTurn(state: DuelState, player: PlayerId, handlers: DuelTu
   state.turn += 1;
   state.turnPlayer = otherPlayer(player);
   handlers.collectEvent("turnEnded");
-  state.phase = "draw";
-  state.phaseActivity = false;
-  handlers.collectEvent("phaseStartDraw", phaseStartEventCode("draw"));
-  handlers.executePhaseEffects?.("draw");
+  const drawSkipped = consumeImmediateSkippedPhase(state, state.turnPlayer, "draw");
+  if (!drawSkipped) {
+    state.phase = "draw";
+    state.phaseActivity = false;
+    handlers.collectEvent("phaseStartDraw", phaseStartEventCode("draw"));
+    handlers.executePhaseEffects?.("draw");
+  }
   state.waitingFor = state.turnPlayer;
   state.attacksDeclared = [];
   state.attackCanceledUids = [];
@@ -99,11 +102,13 @@ export function endDuelTurn(state: DuelState, player: PlayerId, handlers: DuelTu
   state.players[state.turnPlayer].pendulumSummonAvailable = true;
   state.players[state.turnPlayer].extraPendulumSummons = 0;
   delete state.players[state.turnPlayer].extraPendulumSummonGrants;
-  handlers.collectEvent("preDraw");
-  if (handlers.canDraw?.(state.turnPlayer) ?? true) drawDuelCardsFromDeck(state, state.turnPlayer, state.options.drawPerTurn, "Turn draw", (drawPlayer) => handlers.canLoseByDeck?.(drawPlayer) ?? true);
-  if (state.status === "ended") return;
-  pruneResetEffectsAfterPhase(state, "draw");
-  pruneDuelFlagEffectsAfterPhase(state, "draw");
+  if (!drawSkipped) {
+    handlers.collectEvent("preDraw");
+    if (handlers.canDraw?.(state.turnPlayer) ?? true) drawDuelCardsFromDeck(state, state.turnPlayer, state.options.drawPerTurn, "Turn draw", (drawPlayer) => handlers.canLoseByDeck?.(drawPlayer) ?? true);
+    if (state.status === "ended") return;
+    pruneResetEffectsAfterPhase(state, "draw");
+    pruneDuelFlagEffectsAfterPhase(state, "draw");
+  }
   state.phase = "main1";
   state.phaseActivity = false;
   handlers.collectEvent("phaseStartMain1", phaseStartEventCode("main1"));
@@ -154,6 +159,14 @@ function consumeSkippedPhases(state: DuelState, player: PlayerId, targetPhase: D
     if (skip.player === player && skipped.has(skip.phase)) skip.remaining -= 1;
   }
   state.skippedPhases = state.skippedPhases.filter((skip) => skip.remaining > 0);
+}
+
+function consumeImmediateSkippedPhase(state: DuelState, player: PlayerId, phase: DuelPhase): boolean {
+  const skipped = state.skippedPhases.find((skip) => skip.player === player && skip.phase === phase && skip.remaining > 0);
+  if (!skipped) return false;
+  skipped.remaining -= 1;
+  state.skippedPhases = state.skippedPhases.filter((skip) => skip.remaining > 0);
+  return true;
 }
 
 function applyDeckDefeat(state: DuelState, player: PlayerId): void {

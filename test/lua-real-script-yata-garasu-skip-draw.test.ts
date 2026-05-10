@@ -1,0 +1,120 @@
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { moveDuelCard } from "#duel/card-state.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
+import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
+import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
+import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+
+const upstreamRoot = path.resolve(".upstream/ignis");
+const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
+const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const typeMonster = 0x1;
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Yata-Garasu skip draw", () => {
+  it("restores its battle-damage trigger into the opponent's next Draw Phase skip", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const yataCode = "3078576";
+    const defenderCode = "3078577";
+    const drawCode = "3078578";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === yataCode),
+      { code: defenderCode, name: "Yata-Garasu Battle Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 0, defense: 0 },
+      { code: drawCode, name: "Yata-Garasu Skipped Draw Card", kind: "monster", typeFlags: typeMonster, level: 4 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 307, startingHandSize: 0, drawPerTurn: 1, cardReader: reader });
+    loadDecks(session, { 0: { main: [yataCode] }, 1: { main: [defenderCode, drawCode] } });
+    startDuel(session);
+
+    const yata = session.state.cards.find((card) => card.code === yataCode);
+    const defender = session.state.cards.find((card) => card.code === defenderCode);
+    const drawCard = session.state.cards.find((card) => card.code === drawCode);
+    expect(yata).toBeDefined();
+    expect(defender).toBeDefined();
+    expect(drawCard).toBeDefined();
+    moveDuelCard(session.state, yata!.uid, "monsterZone", 0);
+    yata!.position = "faceUpAttack";
+    yata!.faceUp = true;
+    moveDuelCard(session.state, defender!.uid, "monsterZone", 1);
+    defender!.position = "faceUpAttack";
+    defender!.faceUp = true;
+    drawCard!.sequence = 0;
+    session.state.phase = "battle";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(yataCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+
+    const restoredSetup = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restoredSetup.restoreComplete, restoredSetup.incompleteReasons.join("; ")).toBe(true);
+    const attack = getLuaRestoreLegalActions(restoredSetup, 0).find(
+      (action) => action.type === "declareAttack" && action.attackerUid === yata!.uid && action.targetUid === defender!.uid,
+    );
+    expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredSetup, 0), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restoredSetup, attack!);
+    passBattleUntilTrigger(restoredSetup);
+    expect(restoredSetup.session.state.pendingTriggers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceUid: yata!.uid, eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 200 }),
+      ]),
+    );
+
+    const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredSetup.session), workspace, reader);
+    expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restoredTrigger, 0)).toEqual(getGroupedDuelLegalActions(restoredTrigger.session, 0));
+    const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === yata!.uid);
+    expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restoredTrigger, trigger!);
+    expect(restoredTrigger.session.state.skippedPhases).toEqual([{ player: 1, phase: "draw", remaining: 1 }]);
+
+    const restoredSkip = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), workspace, reader);
+    expect(restoredSkip.restoreComplete, restoredSkip.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredSkip.session.state.skippedPhases).toEqual([{ player: 1, phase: "draw", remaining: 1 }]);
+    moveToMain2AndEndTurn(restoredSkip.session, 0);
+
+    expect(restoredSkip.session.state).toMatchObject({ turnPlayer: 1, phase: "main1", waitingFor: 1, skippedPhases: [] });
+    expect(restoredSkip.session.state.cards.find((card) => card.uid === drawCard!.uid)).toMatchObject({ location: "deck", controller: 1 });
+    expect(restoredSkip.session.state.eventHistory).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "preDraw", eventPlayer: 1 })]),
+    );
+  });
+});
+
+function passBattleUntilTrigger(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  let guard = 0;
+  while (restored.session.state.pendingBattle && restored.session.state.pendingTriggers.length === 0) {
+    expect(++guard).toBeLessThan(20);
+    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    const passType = restored.session.state.battleStep === "damage" || restored.session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack";
+    const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === passType);
+    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restored, pass!);
+  }
+}
+
+function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: DuelAction): void {
+  const result = applyLuaRestoreResponse(restored, action);
+  expect(result.ok, result.error).toBe(true);
+  const waitingFor = restored.session.state.waitingFor;
+  if (waitingFor !== undefined) {
+    expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+    expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  }
+}
+
+function moveToMain2AndEndTurn(session: DuelSession, player: 0 | 1): void {
+  const main2 = getDuelLegalActions(session, player).find((action) => action.type === "changePhase" && action.phase === "main2");
+  expect(main2, JSON.stringify(getDuelLegalActions(session, player), null, 2)).toBeDefined();
+  let result = applyResponse(session, main2!);
+  expect(result.ok, result.error).toBe(true);
+  const endTurn = getDuelLegalActions(session, player).find((action) => action.type === "endTurn");
+  expect(endTurn, JSON.stringify(getDuelLegalActions(session, player), null, 2)).toBeDefined();
+  result = applyResponse(session, endTurn!);
+  expect(result.ok, result.error).toBe(true);
+}

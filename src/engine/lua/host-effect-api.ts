@@ -14,6 +14,7 @@ import { pushGroupTable } from "#lua/group-api.js";
 import { triggerEventFromCode } from "#lua/event-code.js";
 import { readLuaError } from "#lua/host-script-api.js";
 import { normalizeLuaDamageModifier, normalizeLuaUnsignedInteger, toLuaSigned32 } from "#lua/numeric-utils.js";
+import { materializeSkipDrawPhaseEffect } from "#lua/phase-skip-effects.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaEffectRecord, LuaHostState } from "#lua/host-types.js";
 
@@ -373,6 +374,7 @@ export function registerLuaEffect(L: unknown, hostState: LuaHostState, id: numbe
   luaEffect.ownerPlayer = player;
   const effect = toDuelEffect(source, luaEffect, L, hostState);
   if (luaEffect.range === undefined) effect.range = [...allDuelLocations];
+  if (materializeSkipDrawPhaseEffect(hostState.session, source, effect)) return true;
   registerEffect(hostState.session, effect);
   return true;
 }
