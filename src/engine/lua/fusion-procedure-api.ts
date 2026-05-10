@@ -157,6 +157,11 @@ export const fusionProcedureSource = `
     end
     return mg,check
   end
+  local function fusion_forced_material(params,e)
+    if not params.gc then return nil end
+    if type(params.gc)=="function" then return params.gc(e) end
+    return params.gc
+  end
   local function fusion_material_count_ok(params,sg,tp,tc,check)
     local count=sg and sg:GetCount() or 0
     if count<=0 then return false end
@@ -170,7 +175,7 @@ export const fusionProcedureSource = `
     if not c:IsType(TYPE_FUSION) then return false end
     if params.fusfilter and not params.fusfilter(c,tp) then return false end
     if not c:IsCanBeSpecialSummoned(e,SUMMON_TYPE_FUSION,tp,false,false) then return false end
-    local sg=Duel.SelectFusionMaterial(tp,c,mg,nil)
+    local sg=Duel.SelectFusionMaterial(tp,c,mg,fusion_forced_material(params,e))
     return fusion_material_count_ok(params,sg,tp,c,check)
   end
   function Fusion.SummonEffTG(params,...)
@@ -192,7 +197,7 @@ export const fusionProcedureSource = `
       local tc=g and g:GetFirst()
       if not tc then return end
       if params.preselect and params.preselect(e,tc)==false then return end
-      local sg=Duel.SelectFusionMaterial(tp,tc,mg,nil)
+      local sg=Duel.SelectFusionMaterial(tp,tc,mg,fusion_forced_material(params,e))
       if not fusion_material_count_ok(params,sg,tp,tc,check) then return end
       local backupmat=sg:Clone()
       if params.extraop then

@@ -212,11 +212,12 @@ function pushSelectedFusionMaterial(L: unknown, session: DuelSession): number {
   const targetUid = readCardUid(L, 2);
   const target = targetUid ? session.state.cards.find((card) => card.uid === targetUid) : undefined;
   const suppliedUids = readGroupUids(L, 3);
+  const forcedUids = readCardOrGroupUids(L, 4);
   const poolUids = suppliedUids.length > 0 ? suppliedUids : fieldGroupUids(session, player, 0x02 | 0x04, 0);
   const candidates = poolUids
     .map((uid) => session.state.cards.find((card) => card.uid === uid))
     .filter((card): card is DuelCardInstance => Boolean(card && card.uid !== targetUid && card.controller === player && canUseAsFusionMaterial(card)));
-  pushGroupTable(L, selectFusionMaterialUids(candidates, target));
+  pushGroupTable(L, selectFusionMaterialUids(candidates, target, forcedUids));
   return 1;
 }
 
@@ -620,15 +621,32 @@ function matchingCardUids(session: DuelSession, player: PlayerId, locationMask: 
     .map((card) => card.uid);
 }
 
-function selectFusionMaterialUids(candidates: DuelCardInstance[], target: DuelCardInstance | undefined): string[] {
+function selectFusionMaterialUids(candidates: DuelCardInstance[], target: DuelCardInstance | undefined, forcedUids: string[] = []): string[] {
+  const uniqueForcedUids = uniqueUids(forcedUids);
+  const forced = uniqueForcedUids
+    .map((uid) => candidates.find((card) => card.uid === uid))
+    .filter((card): card is DuelCardInstance => card !== undefined);
+  if (forced.length !== uniqueForcedUids.length) return [];
   const requiredCodes = target?.data.fusionMaterials ?? [];
-  if (!requiredCodes.length) return candidates.slice(0, Math.min(2, candidates.length)).map((card) => card.uid);
+  if (!requiredCodes.length) {
+    const selected = [...forced];
+    const desiredCount = Math.min(Math.max(2, selected.length), candidates.length);
+    for (const candidate of candidates) {
+      if (selected.includes(candidate)) continue;
+      selected.push(candidate);
+      if (selected.length >= desiredCount) break;
+    }
+    return selected.map((card) => card.uid);
+  }
   const selected: DuelCardInstance[] = [];
   for (const code of requiredCodes) {
-    const material = candidates.find((card) => !selected.includes(card) && cardCodes(card).includes(code));
+    const material =
+      forced.find((card) => !selected.includes(card) && cardCodes(card).includes(code)) ??
+      candidates.find((card) => !selected.includes(card) && cardCodes(card).includes(code));
     if (!material) return [];
     selected.push(material);
   }
+  if (forced.some((card) => !selected.includes(card))) return [];
   return selected.map((card) => card.uid);
 }
 
