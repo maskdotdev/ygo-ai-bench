@@ -365,6 +365,16 @@ function pushAuxNext(L: unknown): number {
 
 function pushSelectUnselectGroup(L: unknown): number {
   const uids = readGroupUids(L, 1);
+  if (isUpstreamSelectUnselectShape(L)) {
+    const min = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 1;
+    const max = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : min;
+    const filterRef = readOptionalFunctionRef(L, 6);
+    const selected = filterRef === undefined ? selectGroupUids(uids, min, max) : selectSubGroupWithUpstreamArgs(L, uids, filterRef, min, max) ?? [];
+    releaseOptionalFunctionRef(L, filterRef);
+    if (lua.lua_isnumber(L, 7) && lua.lua_tointeger(L, 7) === 0) lua.lua_pushboolean(L, selected.length >= Math.max(0, min));
+    else pushGroupTable(L, selected);
+    return 1;
+  }
   const min = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1;
   const max = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : min;
   const filterRef = readOptionalFunctionRef(L, 7);
@@ -372,6 +382,10 @@ function pushSelectUnselectGroup(L: unknown): number {
   releaseOptionalFunctionRef(L, filterRef);
   pushGroupTable(L, selected);
   return 1;
+}
+
+function isUpstreamSelectUnselectShape(L: unknown): boolean {
+  return lua.lua_isfunction(L, 6) || lua.lua_isnoneornil(L, 6);
 }
 
 function pushAddDrawless(L: unknown): number {
@@ -470,6 +484,12 @@ function selectSubGroup(L: unknown, uids: string[], filterRef: number, min: numb
   return findSubGroupSelection(L, uids, filterRef, boundedMin, boundedMax, argsStart, 0, []);
 }
 
+function selectSubGroupWithUpstreamArgs(L: unknown, uids: string[], filterRef: number, min: number, max: number): string[] | undefined {
+  const boundedMin = Math.max(0, min);
+  const boundedMax = Math.max(boundedMin, max > 0 ? max : uids.length);
+  return findUpstreamSubGroupSelection(L, uids, filterRef, boundedMin, boundedMax, 0, []);
+}
+
 function findSubGroupSelection(L: unknown, uids: string[], filterRef: number, min: number, max: number, argsStart: number, index: number, selected: string[]): string[] | undefined {
   if (selected.length >= min && selected.length <= max && auxGroupPredicateMatches(L, selected, filterRef, argsStart)) return [...selected];
   if (index >= uids.length || selected.length >= max) return undefined;
@@ -490,6 +510,33 @@ function auxGroupPredicateMatches(L: unknown, uids: string[], filterRef: number,
   pushGroupTable(L, uids);
   for (let index = argsStart; index <= top; index += 1) lua.lua_pushvalue(L, index);
   const status = lua.lua_pcall(L, Math.max(1, top - argsStart + 2), 1, 0);
+  if (status !== lua.LUA_OK) return false;
+  const result = lua.lua_toboolean(L, -1);
+  lua.lua_pop(L, 1);
+  return Boolean(result);
+}
+
+function findUpstreamSubGroupSelection(L: unknown, uids: string[], filterRef: number, min: number, max: number, index: number, selected: string[]): string[] | undefined {
+  if (selected.length >= min && selected.length <= max && upstreamAuxGroupPredicateMatches(L, selected, uids, filterRef)) return [...selected];
+  if (index >= uids.length || selected.length >= max) return undefined;
+  for (let nextIndex = index; nextIndex < uids.length; nextIndex += 1) {
+    const uid = uids[nextIndex];
+    if (!uid) continue;
+    selected.push(uid);
+    const found = findUpstreamSubGroupSelection(L, uids, filterRef, min, max, nextIndex + 1, selected);
+    if (found) return found;
+    selected.pop();
+  }
+  return undefined;
+}
+
+function upstreamAuxGroupPredicateMatches(L: unknown, selectedUids: string[], allUids: string[], filterRef: number): boolean {
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, filterRef);
+  pushGroupTable(L, selectedUids);
+  lua.lua_pushvalue(L, 2);
+  lua.lua_pushvalue(L, 3);
+  pushGroupTable(L, allUids);
+  const status = lua.lua_pcall(L, 4, 1, 0);
   if (status !== lua.LUA_OK) return false;
   const result = lua.lua_toboolean(L, -1);
   lua.lua_pop(L, 1);

@@ -31,7 +31,8 @@ export const auxUtilitySource = `
         if c==nil then return true end
         local tp=c:GetControler()
         local mg=Duel.GetMatchingGroup(aux.AND(Card.IsReleasable,filter),tp,0,LOCATION_MZONE,nil)
-        return aux.SelectUnselectGroup(mg,e,tp,required,required,aux.LavaCheck,0):GetCount()>0
+        local sg=aux.SelectUnselectGroup(mg,e,tp,required,required,aux.LavaCheck,0)
+        return aux.IsGroupObject(sg) and sg:GetCount()>0 or sg
       end
     end
     function aux.RemainFieldCost(e,tp,eg,ep,ev,re,r,rp,chk)

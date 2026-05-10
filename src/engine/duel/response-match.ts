@@ -27,7 +27,7 @@ export function sameAction(a: DuelAction, b: unknown): b is DuelResponse {
   ) return false;
   if (a.type === "selectOption" && response.type === "selectOption" && (a.promptId !== response.promptId || a.option !== response.option)) return false;
   if (a.type === "selectYesNo" && response.type === "selectYesNo" && (a.promptId !== response.promptId || a.yes !== response.yes)) return false;
-  if (a.type === "tributeSummon" && response.type === "tributeSummon" && !sameStringMembers(a.tributeUids, response.tributeUids)) return false;
+  if (a.type === "tributeSummon" && response.type === "tributeSummon" && (a.effectId !== response.effectId || !sameStringMembers(a.tributeUids, response.tributeUids))) return false;
   if (a.type === "tributeSet" && response.type === "tributeSet" && !sameStringMembers(a.tributeUids, response.tributeUids)) return false;
   if (a.type === "fusionSummon" && response.type === "fusionSummon" && !sameStringMembers(a.materialUids, response.materialUids)) return false;
   if (a.type === "synchroSummon" && response.type === "synchroSummon" && !sameStringMembers(a.materialUids, response.materialUids)) return false;

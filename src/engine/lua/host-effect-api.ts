@@ -19,10 +19,8 @@ import type { LuaEffectRecord, LuaHostState } from "#lua/host-types.js";
 
 const { lua, lauxlib, to_luastring } = fengari;
 const allDuelLocations: DuelLocation[] = ["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"];
-const luaEffectTypeSingle = 0x1;
-const luaResetEvent = 0x1000;
-const luaResetToField = 0x1000000;
-const luaEffectFusionSubstitute = 234;
+const luaEffectTypeSingle = 0x1, luaResetEvent = 0x1000, luaResetToField = 0x1000000;
+const luaEffectSummonProc = 32, luaEffectLimitSummonProc = 33, luaEffectSpecialSummonProc = 34, luaEffectFusionSubstitute = 234;
 export function installEffectApi(L: unknown, hostState: LuaHostState, readLuaError: (state: unknown) => string): void {
   lua.lua_newtable(L);
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -588,7 +586,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
 
 function luaEffectEvent(card: DuelCardInstance, typeFlags: number, code: number | undefined): DuelEffectDefinition["event"] {
   const triggerEvent = triggerEventFromCode(code);
-  if (code === 34) return "summonProcedure";
+  if (code === luaEffectSpecialSummonProc) return "summonProcedure";
   if (code === 1027 && (typeFlags & 0x800) !== 0) return "continuous";
   if (code === 1027 && ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0)) return "trigger";
   if (code === 1002 && (typeFlags & 0x10) !== 0 && isFastSpellTrapActivation(card)) return "quick";
@@ -777,7 +775,7 @@ function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffec
     }
     return 2;
   }
-  const appendSummonProcedureCard = luaEffect.code === 34;
+  const appendSummonProcedureCard = luaEffect.code === luaEffectSummonProc || luaEffect.code === luaEffectLimitSummonProc || luaEffect.code === luaEffectSpecialSummonProc;
   lua.lua_pushinteger(L, ctx?.player ?? card.controller);
   pushGroupTable(L, eventGroupUids);
   lua.lua_pushinteger(L, chainLink?.eventPlayer ?? chainLink?.player ?? ctx?.eventPlayer ?? ctx?.eventCard?.controller ?? ctx?.player ?? card.controller);

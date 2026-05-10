@@ -16,7 +16,7 @@ import type {
 export interface DuelResponseHandlers {
   getLegalActions(session: DuelSession, player: PlayerId): DuelAction[];
   normalSummon(state: DuelState, player: PlayerId, uid: string): void;
-  tributeSummon(state: DuelState, player: PlayerId, uid: string, tributeUids: string[]): void;
+  tributeSummon(session: DuelSession, player: PlayerId, uid: string, tributeUids: string[], effectId?: string): void;
   tributeSet(state: DuelState, player: PlayerId, uid: string, tributeUids: string[]): void;
   fusionSummon(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): void;
   synchroSummon(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): void;
@@ -81,7 +81,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function dispatchDuelResponse(session: DuelSession, response: DuelResponse, handlers: DuelResponseHandlers): void {
   if (response.type === "normalSummon") handlers.normalSummon(session.state, response.player, response.uid);
-  else if (response.type === "tributeSummon") handlers.tributeSummon(session.state, response.player, response.uid, response.tributeUids);
+  else if (response.type === "tributeSummon") handlers.tributeSummon(session, response.player, response.uid, response.tributeUids, response.effectId);
   else if (response.type === "tributeSet") handlers.tributeSet(session.state, response.player, response.uid, response.tributeUids);
   else if (response.type === "fusionSummon") handlers.fusionSummon(session.state, response.player, response.uid, response.materialUids);
   else if (response.type === "synchroSummon") handlers.synchroSummon(session.state, response.player, response.uid, response.materialUids);

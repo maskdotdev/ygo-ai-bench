@@ -1,13 +1,16 @@
-import { findCard, pushDuelLog, requireControlledCard } from "#duel/card-state.js";
+import { findCard, hasZoneSpace, moveDuelCard, pushDuelLog, requireControlledCard } from "#duel/card-state.js";
+import { recordNormalSummonActivity } from "#duel/activity.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { pruneSpentMandatoryPendingTriggers } from "#duel/pending-trigger-actions.js";
 import { otherPlayer } from "#duel/player-id.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
+import { duelReason } from "#duel/reasons.js";
 import { placeActivatedSpellTrapCard } from "#duel/spell-trap-activation.js";
 import { quickEffectEventContext } from "#duel/effect-event-context.js";
+import { createEffectContext } from "#duel/effect-context.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import { pendingTriggerBucketsForState, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
-import { summonProcedureTypeCodeFromValue } from "#duel/summon-type-codes.js";
+import { luaSummonTypeNormal, luaSummonTypeTribute, summonProcedureTypeCodeFromValue } from "#duel/summon-type-codes.js";
 import type {
   DuelCardInstance,
   DuelEffectContext,
@@ -21,6 +24,9 @@ import type {
   PlayerId,
   TriggerBucket,
 } from "#duel/types.js";
+
+const luaEffectSummonProc = 32;
+const luaEffectLimitSummonProc = 33;
 
 export interface DuelActivationHandlers {
   createEffectContext(
@@ -196,8 +202,59 @@ export function specialSummonDuelByProcedure(session: DuelSession, player: Playe
   }
 }
 
+export function normalSummonDuelByProcedure(
+  state: DuelState,
+  player: PlayerId,
+  uid: string,
+  effectId: string,
+  collectEvent: (eventName: DuelEventName, eventCard?: DuelCardInstance) => void,
+): void {
+  const effect = state.effects.find((candidate) => candidate.id === effectId && candidate.sourceUid === uid && isNormalSummonProcedureCode(candidate.code));
+  if (!effect) throw new Error(`Normal Summon procedure ${effectId} is not registered`);
+  const source = requireControlledCard(state, player, uid, "hand");
+  if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
+  if (!effect.range.includes(source.location)) throw new Error(`${source.name} summon procedure is not in range`);
+  const ctx = createEffectContext(state, source, player);
+  if (effect.canActivate && !effect.canActivate(ctx)) throw new Error(`Condition for ${effectId} is not legal`);
+  const rollback = captureDuelState(state);
+  try {
+    if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);
+    if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effectId} are not legal`);
+    effect.operation(ctx);
+    const currentSource = requireControlledCard(state, player, uid, "hand");
+    if (!hasZoneSpace(state, player, "monsterZone")) throw new Error(`${source.name} cannot be Normal Summoned`);
+    const materialUids = [...(currentSource.summonMaterialUids ?? [])];
+    collectEvent("normalSummoning", currentSource);
+    moveDuelCard(state, uid, "monsterZone", player, duelReason.summon);
+    currentSource.position = "faceUpAttack";
+    currentSource.faceUp = true;
+    currentSource.summonType = normalProcedureSummonType(effect.value);
+    currentSource.summonTypeCode = effect.value ?? (currentSource.summonType === "tribute" ? luaSummonTypeTribute : luaSummonTypeNormal);
+    currentSource.summonPlayer = player;
+    currentSource.summonPhase = state.phase;
+    currentSource.summonMaterialUids = materialUids;
+    markProcedureComplete(currentSource);
+    state.players[player].normalSummonAvailable = false;
+    recordNormalSummonActivity(state, player, currentSource);
+    markEffectUsed(state, effect);
+    pushDuelLog(state, currentSource.summonType === "tribute" ? "tributeSummon" : "normalSummon", player, currentSource.name, "Normal Summoned by Lua procedure");
+    collectEvent("normalSummoned", currentSource);
+  } catch (error) {
+    restoreDuelState(state, rollback);
+    throw error;
+  }
+}
+
 function summonProcedureTypeCode(effect: DuelEffectDefinition): number | undefined {
   return summonProcedureTypeCodeFromValue(effect.value);
+}
+
+function isNormalSummonProcedureCode(code: number | undefined): boolean {
+  return code === luaEffectSummonProc || code === luaEffectLimitSummonProc;
+}
+
+function normalProcedureSummonType(value: number | undefined): "normal" | "tribute" {
+  return value !== undefined && (value & luaSummonTypeTribute) === luaSummonTypeTribute ? "tribute" : "normal";
 }
 
 export function activateDuelPendingTrigger(session: DuelSession, player: PlayerId, triggerId: string, triggerBucket: TriggerBucket, handlers: DuelActivationHandlers): void {

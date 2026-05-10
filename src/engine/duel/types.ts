@@ -609,7 +609,7 @@ export type DuelCardReader = (code: string) => DuelCardData | undefined;
 
 export type DuelAction = (
   | { type: "normalSummon"; player: PlayerId; uid: string; label: string }
-  | { type: "tributeSummon"; player: PlayerId; uid: string; tributeUids: string[]; label: string }
+  | { type: "tributeSummon"; player: PlayerId; uid: string; tributeUids: string[]; effectId?: string; label: string }
   | { type: "tributeSet"; player: PlayerId; uid: string; tributeUids: string[]; label: string }
   | { type: "fusionSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
   | { type: "synchroSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }

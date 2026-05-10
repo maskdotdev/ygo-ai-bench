@@ -44,6 +44,7 @@ import {
   activateDuelPendingTrigger,
   declineDuelPendingTrigger,
   finishDuelPendingTriggerSelection,
+  normalSummonDuelByProcedure,
   shouldContinueTriggerSelection,
   specialSummonDuelByProcedure,
   type DuelActivationHandlers,
@@ -142,7 +143,8 @@ import { runScriptedDuelResponses as runScriptedDuelResponsesWithHandlers } from
 import { setSpellTrap } from "#duel/spell-trap.js";
 import { canActivateSpellTrapCardEffect, shouldSendActivatedSpellTrapToGraveyard } from "#duel/spell-trap-activation.js";
 import { negateCoreDuelSummon } from "#duel/summon-negation.js";
-import { duelSummonTypeFromCode, isFaceDownExtraDeckSummonTypeCode, luaSummonTypeFusion, luaSummonTypeLink, luaSummonTypePendulum, luaSummonTypeRitual, luaSummonTypeSynchro, luaSummonTypeXyz, summonProcedureTypeCodeFromValue } from "#duel/summon-type-codes.js";
+import { hasLuaLimitNormalSummonProcedure, normalSummonProcedureActions, specialSummonProcedureActions } from "#duel/summon-procedure-actions.js";
+import { duelSummonTypeFromCode, isFaceDownExtraDeckSummonTypeCode, luaSummonTypeFusion, luaSummonTypeLink, luaSummonTypePendulum, luaSummonTypeRitual, luaSummonTypeSynchro, luaSummonTypeXyz } from "#duel/summon-type-codes.js";
 import { changeDuelPhase, drawDuelCardsFromDeck, endDuelTurn, isDuelPhaseSkipped, nextAvailableDuelPhase } from "#duel/turn-flow.js";
 export { createDuel, loadDecks, startDuel, type CreateDuelOptions } from "#duel/setup.js";
 import type {
@@ -168,6 +170,7 @@ export { moveDuelCard } from "#duel/card-state.js";
 export { damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "#duel/player-life.js";
 export { queryPublicState, serializeDuel, restoreDuel } from "#duel/snapshot.js";
 export { changeDuelBattleDamage, getDuelBattleDamage } from "#duel/core-battle-damage.js";
+
 const activationHandlers: DuelActivationHandlers = {
   createEffectContext,
   pushChainLink,
@@ -219,7 +222,13 @@ const responseHandlers: DuelResponseHandlers = {
     if (card && isNormalSummonPrevented(state, player, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Normal Summoned`);
     normalSummon(state, player, uid, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), () => isNoTributeSummonAllowed(state, player));
   },
-  tributeSummon: tributeSummonDuelCard,
+  tributeSummon(session, player, uid, tributeUids, effectId) {
+    if (effectId !== undefined) {
+      normalSummonDuelByProcedure(session.state, player, uid, effectId, (eventName, eventCard) => collectTriggerEffects(session.state, eventName, eventCard));
+      return;
+    }
+    tributeSummonDuelCard(session.state, player, uid, tributeUids);
+  },
   tributeSet: tributeSetDuelCard,
   fusionSummon: fusionSummonDuelCard,
   synchroSummon: synchroSummonDuelCard,
@@ -333,6 +342,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
       if (action.type !== "normalSummon" && action.type !== "setMonster") return true;
       const card = findCard(state, action.uid);
       if (!card) return false;
+      if (hasLuaLimitNormalSummonProcedure(state, player, card)) return false;
       if (action.type === "normalSummon") return !isNormalSummonPrevented(state, player, card, createContinuousEffectContext(state));
       if (action.type === "setMonster") return !isMonsterSetPrevented(state, player, card, createContinuousEffectContext(state));
       return true;
@@ -344,20 +354,21 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     actions.push(...tributeSummonActions(state, player, hand, createReleasePredicate(state, duelReason.release | duelReason.summon)).filter((action) => {
       if (action.type !== "tributeSummon") return true;
       const card = findCard(state, action.uid);
-      return Boolean(card && !isNormalSummonPrevented(state, player, card, createContinuousEffectContext(state)));
+      return Boolean(card && !hasLuaLimitNormalSummonProcedure(state, player, card) && !isNormalSummonPrevented(state, player, card, createContinuousEffectContext(state)));
     }));
     actions.push(...tributeSetActions(state, player, hand, createReleasePredicate(state, duelReason.release | duelReason.summon)).filter((action) => {
       if (action.type !== "tributeSet") return true;
       const card = findCard(state, action.uid);
       return Boolean(card && !isMonsterSetPrevented(state, player, card, createContinuousEffectContext(state)));
     }));
+    actions.push(...normalSummonProcedureActions(state, player, (effect, source, actionPlayer) => canChooseEffect(state, effect, source, actionPlayer), (actionPlayer, card) => !isNormalSummonPrevented(state, actionPlayer, card, createContinuousEffectContext(state))));
     actions.push(...fusionSummonActions(state, player, createMaterialUsePredicate(state, "fusion")).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeFusion)));
     actions.push(...synchroSummonActions(state, player, createMaterialUsePredicate(state, "synchro")).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeSynchro)));
     actions.push(...xyzSummonActions(state, player, (uid) => !isMaterialUsePrevented(state, uid, "xyz", createContinuousEffectContext(state))).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeXyz)));
     actions.push(...linkSummonActions(state, player, createMaterialUsePredicate(state, "link")).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeLink)));
     actions.push(...ritualSummonActions(state, player, hand, createMaterialUsePredicate(state, "ritual")).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeRitual)));
     actions.push(...pendulumSummonActions(state, player, (uid) => canSpecialSummonDuelCard(state, uid, player, luaSummonTypePendulum)));
-    actions.push(...specialSummonProcedureActions(state, player));
+    actions.push(...specialSummonProcedureActions(state, player, (effect, source, actionPlayer) => canChooseEffect(state, effect, source, actionPlayer), (uid, summonTypeCode) => canAttemptSpecialSummonProcedure(state, uid, summonTypeCode)));
     if (hasZoneSpace(state, player, "spellTrapZone")) {
       for (const card of hand.filter((candidate) => candidate.kind === "spell" || candidate.kind === "trap")) {
         if (isSpellTrapSetPrevented(state, player, card, createContinuousEffectContext(state))) continue;
@@ -745,20 +756,6 @@ function getChainResponseActions(state: DuelState, player: PlayerId): DuelAction
 
 function quickEffectActions(state: DuelState, player: PlayerId): DuelAction[] {
   return getQuickEffectActions(state, player, canChooseEffect);
-}
-
-function specialSummonProcedureActions(state: DuelState, player: PlayerId): DuelAction[] {
-  const actions: DuelAction[] = [];
-  for (const effect of state.effects) {
-    if (effect.controller !== player || effect.event !== "summonProcedure") continue;
-    const source = findCard(state, effect.sourceUid);
-    if (!source || !effect.range.includes(source.location)) continue;
-    if (!canUseEffectCount(state, effect)) continue;
-    if (!canAttemptSpecialSummonProcedure(state, source.uid, summonProcedureTypeCodeFromValue(effect.value))) continue;
-    if (!canChooseEffect(state, effect, source, player)) continue;
-    actions.push({ type: "specialSummonProcedure", player, uid: source.uid, effectId: effect.id, label: `Special Summon ${source.name}` });
-  }
-  return actions;
 }
 
 function canChooseEffect(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId, eventName?: DuelEventName, eventCard?: DuelCardInstance, payload: DuelEventPayload = {}): boolean {
