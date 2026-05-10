@@ -39,6 +39,7 @@ import {
   onlyBeAttackedTargetUids,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
+import { continuousSetPosition } from "#duel/continuous-position-effects.js";
 import type { BattleDamageChangeOptions } from "#duel/core-battle-damage.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEffectContext, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
@@ -74,6 +75,7 @@ export function appendBattleActions(actions: DuelAction[], state: DuelState, pla
     if (action.type !== "declareAttack") continue;
     const attacker = findCard(state, action.attackerUid);
     if (!attacker || isAttackPrevented(state, attacker, createContext)) continue;
+    if (effectivePosition(state, attacker, createContext) !== "faceUpAttack") continue;
     if (!canPayAttackCosts(state, attacker, createContext)) continue;
     if (!isFirstAttackAllowed(firstAttackers, attacker)) continue;
     if (action.targetUid === undefined && (isDirectAttackPrevented(state, attacker, createContext) || hasMustAttackMonsterRestriction(state, attacker, createContext) || hasOnlyAttackMonsterRestriction(state, attacker, createContext))) continue;
@@ -90,6 +92,7 @@ export function canCoreDuelCardAttack(state: DuelState, uid: string, handlers: C
   const firstAttackers = firstAttackRequiredUids(state, card?.controller ?? state.turnPlayer, createContext);
   return Boolean(
     card &&
+      effectivePosition(state, card, createContext) === "faceUpAttack" &&
       isFirstAttackAllowed(firstAttackers, card) &&
       !isAttackPrevented(state, card, createContext) &&
       canPayAttackCosts(state, card, createContext) &&
@@ -108,7 +111,7 @@ export function getCoreDuelAttackTargets(state: DuelState, attackerUid: string, 
   const card = findCard(state, attackerUid);
   const createContext = handlers.createContinuousContext(state);
   const onlyTargets = onlyBeAttackedTargetUids(state, card?.controller ?? state.turnPlayer, createContext);
-  if (!card || isAttackPrevented(state, card, createContext) || !canPayAttackCosts(state, card, createContext)) return [];
+  if (!card || effectivePosition(state, card, createContext) !== "faceUpAttack" || isAttackPrevented(state, card, createContext) || !canPayAttackCosts(state, card, createContext)) return [];
   return getDuelAttackTargetsRule(
     state,
     attackerUid,
@@ -120,7 +123,7 @@ export function getCoreDuelAttackTargets(state: DuelState, attackerUid: string, 
 export function getCoreDuelAttackableTargets(state: DuelState, attackerUid: string, handlers: CoreBattleHandlers): { targets: DuelCardInstance[]; directAttack: boolean } {
   const card = findCard(state, attackerUid);
   const createContext = handlers.createContinuousContext(state);
-  if (!card || card.location !== "monsterZone" || isAttackPrevented(state, card, createContext) || !canPayAttackCosts(state, card, createContext)) return { targets: [], directAttack: false };
+  if (!card || card.location !== "monsterZone" || effectivePosition(state, card, createContext) !== "faceUpAttack" || isAttackPrevented(state, card, createContext) || !canPayAttackCosts(state, card, createContext)) return { targets: [], directAttack: false };
   if (!canDuelCardAttackRule(state, attackerUid, Number.MAX_SAFE_INTEGER)) return { targets: [], directAttack: false };
   const onlyTargets = onlyBeAttackedTargetUids(state, card.controller, createContext);
   const targets = getDuelAttackTargetsRule(
@@ -136,6 +139,7 @@ export function declareCoreDuelAttack(state: DuelState, player: PlayerId, attack
   const attacker = findCard(state, attackerUid);
   const createContext = handlers.createContinuousContext(state);
   const onlyTargets = onlyBeAttackedTargetUids(state, player, createContext);
+  if (attacker && effectivePosition(state, attacker, createContext) !== "faceUpAttack") throw new Error(`${attacker.name} cannot attack`);
   if (attacker && isAttackPrevented(state, attacker, createContext)) throw new Error(`${attacker.name} cannot attack`);
   if (attacker && !isFirstAttackAllowed(firstAttackRequiredUids(state, player, createContext), attacker)) throw new Error(`${attacker.name} cannot attack before the first attacker`);
   if (attacker && targetUid === undefined && isDirectAttackPrevented(state, attacker, createContext)) throw new Error(`${attacker.name} cannot attack directly`);
@@ -358,4 +362,8 @@ function matchingContinuousStatEffects(
 
 function continuousStatEffectValue(effect: DuelState["effects"][number], card: DuelCardInstance, ctx: DuelEffectContext): number | undefined {
   return effect.statValue?.(ctx, card) ?? effect.value;
+}
+
+function effectivePosition(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): CardPosition {
+  return continuousSetPosition(state, card, createContext) ?? card.position;
 }

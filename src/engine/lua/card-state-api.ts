@@ -2,6 +2,8 @@ import fengari from "fengari";
 import { locationMatchesCardMask, readCardUid } from "#lua/api-utils.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
 import { cardFieldId } from "#duel/card-field-id.js";
+import { continuousSetPosition } from "#duel/continuous-position-effects.js";
+import { createEffectContext } from "#duel/effect-context.js";
 import type { CardPosition, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -26,18 +28,18 @@ export function installCardStateApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("IsSequence"));
   pushNumberMatcher(L, "IsFieldID", session, (card, requested) => cardFieldId(card) === requested);
   pushNumberMatcher(L, "IsRealFieldID", session, (card, requested) => cardFieldId(card) === requested);
-  pushNumberGetter(L, "GetPosition", session, (card) => positionMaskFromPosition(card?.position));
+  pushNumberGetter(L, "GetPosition", session, (card) => positionMaskFromPosition(effectivePosition(session, card)));
   pushBooleanGetter(L, "IsFaceup", session, (card) => Boolean(card?.faceUp));
   pushBooleanGetter(L, "IsFacedown", session, (card) => Boolean(card && !card.faceUp));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requestedPosition = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    lua.lua_pushboolean(state, Boolean(card && (positionMaskFromPosition(card.position) & requestedPosition) !== 0));
+    lua.lua_pushboolean(state, Boolean(card && (positionMaskFromPosition(effectivePosition(session, card)) & requestedPosition) !== 0));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPosition"));
-  pushBooleanGetter(L, "IsAttackPos", session, (card) => Boolean(card && card.position === "faceUpAttack"));
-  pushBooleanGetter(L, "IsDefensePos", session, (card) => Boolean(card && (card.position === "faceUpDefense" || card.position === "faceDownDefense")));
+  pushBooleanGetter(L, "IsAttackPos", session, (card) => Boolean(card && effectivePosition(session, card) === "faceUpAttack"));
+  pushBooleanGetter(L, "IsDefensePos", session, (card) => Boolean(card && isDefensePosition(effectivePosition(session, card))));
   pushBooleanGetter(L, "IsPublic", session, (card) => Boolean(card && (card.faceUp || card.location === "graveyard")));
   pushBooleanGetter(L, "IsOnField", session, (card) => Boolean(card && (card.location === "monsterZone" || card.location === "spellTrapZone")));
   pushZonePredicate(L, "IsInMainMZone", session, (card) => card.location === "monsterZone" && card.sequence >= 0 && card.sequence <= 4);
@@ -127,4 +129,17 @@ function positionMaskFromPosition(position: CardPosition | undefined): number {
   if (position === "faceUpDefense") return 0x4;
   if (position === "faceDownDefense") return 0x8;
   return 0;
+}
+
+function effectivePosition(session: DuelSession, card: DuelCardInstance | undefined): CardPosition | undefined {
+  if (!card) return undefined;
+  return continuousSetPosition(
+    session.state,
+    card,
+    (effect, source, target) => createEffectContext(session.state, source, effect.controller, undefined, target, [], true),
+  ) ?? card.position;
+}
+
+function isDefensePosition(position: CardPosition | undefined): boolean {
+  return position === "faceUpDefense" || position === "faceDownDefense";
 }
