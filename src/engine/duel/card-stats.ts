@@ -68,6 +68,12 @@ export function currentLink(card: DuelCardInstance | undefined, state?: DuelStat
   return setStatEffectValue(card, state, 422) ?? setStatEffectValue(card, state, 421) ?? updatedLink;
 }
 
+export function currentLinkMarkers(card: DuelCardInstance | undefined, state?: DuelState): number {
+  if (!card) return 0;
+  if (card.assumedProperties?.[10] !== undefined) return card.assumedProperties[10];
+  return finiteMaskValue(setStatEffectValue(card, state, 425) ?? card.data.linkMarkers ?? 0);
+}
+
 export function currentLeftScale(card: DuelCardInstance | undefined, state?: DuelState): number {
   const updatedScale = (card?.data.leftScale ?? 0) + (card?.scaleModifier ?? 0) + statUpdateEffectValue(card, state, 134);
   return setStatEffectValue(card, state, 135) ?? updatedScale;

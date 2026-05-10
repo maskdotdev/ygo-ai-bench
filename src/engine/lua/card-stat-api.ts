@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { collectDuelTriggerEffects } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
-import { cardLink, cardMainTypeFlags, cardRank, cardTypeFlags, currentAttack, currentAttribute, currentBaseAttack, currentBaseDefense, currentDefense, currentLeftScale, currentLevel, currentLink, currentRace, currentRank, currentRightScale, printedCardTypeFlags } from "#duel/card-stats.js";
+import { cardLink, cardMainTypeFlags, cardRank, cardTypeFlags, currentAttack, currentAttribute, currentBaseAttack, currentBaseDefense, currentDefense, currentLeftScale, currentLevel, currentLink, currentLinkMarkers, currentRace, currentRank, currentRightScale, printedCardTypeFlags } from "#duel/card-stats.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
@@ -14,7 +14,7 @@ const { lua, to_luastring } = fengari;
 
 type LuaCardStatHostState<EffectRecord extends LuaCardApiEffectRecord> = LuaCardApiState<EffectRecord> & LuaMoveImmunityHostState<EffectRecord> & LuaOperationTimingBoundaryHostState;
 
-export { cardLink, cardMainTypeFlags, cardRank, cardTypeFlags, currentAttack, currentAttribute, currentDefense, currentLeftScale, currentLevel, currentRace, currentRank, currentRightScale, printedCardTypeFlags } from "#duel/card-stats.js";
+export { cardLink, cardMainTypeFlags, cardRank, cardTypeFlags, currentAttack, currentAttribute, currentDefense, currentLeftScale, currentLevel, currentLinkMarkers, currentRace, currentRank, currentRightScale, printedCardTypeFlags } from "#duel/card-stats.js";
 
 export function installCardStatApi<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardStatHostState<EffectRecord>): void {
   lua.lua_pushcfunction(L, (state: unknown) => pushAssumeProperty(state, session));
@@ -115,7 +115,7 @@ export function installCardStatApi<EffectRecord extends LuaCardApiEffectRecord>(
   pushNumberMatcher(L, "IsOriginalLinkAbove", session, (card, requested) => cardLink(card) >= requested);
   pushNumberMatcher(L, "IsOriginalLinkBelow", session, (card, requested) => cardLink(card) <= requested);
   pushBooleanGetter(L, "IsLinkMonster", session, (card) => currentLink(card, session.state) > 0);
-  pushNumberGetter(L, "GetLinkMarker", session, (card) => card?.assumedProperties?.[10] ?? card?.data.linkMarkers ?? 0);
+  pushNumberGetter(L, "GetLinkMarker", session, (card) => currentLinkMarkers(card, session.state));
   pushNumberGetter(L, "GetRace", session, (card) => currentRace(card, session.state));
   pushNumberGetter(L, "GetOriginalRace", session, (card) => card?.data.race ?? 0);
   pushAnyNumberMatcher(L, "IsRace", session, (card, requested) => requested.some((value) => (currentRace(card, session.state) & value) !== 0));
