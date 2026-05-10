@@ -2,7 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, destroyDuelCard, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelResponse, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -124,6 +125,76 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ri
     );
     expect(restoredDamageWindow.session.state.cards.find((card) => card.uid === defender!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredDamageWindow.session.state.cards.find((card) => card.uid === rider!.uid)).toMatchObject({ location: "spellTrapZone", equippedToUid: normalDragon!.uid });
+  });
+
+  it("restores its self-equip destroy substitute for the equipped monster", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const riderCode = "14235211";
+    const normalDragonCode = "14239";
+    const responderCode = "14240";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === riderCode),
+      { code: normalDragonCode, name: "Rider Substitute Normal Dragon", kind: "monster", typeFlags: 0x11, race: 0x2000, attribute: 0x10, level: 4, attack: 1800, defense: 1000 },
+      { code: responderCode, name: "Rider Substitute Chain Responder", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 143, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [riderCode, normalDragonCode] }, 1: { main: [responderCode] } });
+    startDuel(session);
+
+    const rider = session.state.cards.find((card) => card.code === riderCode);
+    const normalDragon = session.state.cards.find((card) => card.code === normalDragonCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(rider).toBeDefined();
+    expect(normalDragon).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, rider!.uid, "hand", 0);
+    moveDuelCard(session.state, normalDragon!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(riderCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(1);
+
+    const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restoredEquipWindow.restoreComplete, restoredEquipWindow.incompleteReasons.join("; ")).toBe(true);
+    const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === rider!.uid);
+    expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
+
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
+    expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+    resolveRestoredChain(restoredChain);
+
+    const restoredEquippedState = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
+    expect(restoredEquippedState.restoreComplete, restoredEquippedState.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredEquippedState.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceUid: rider!.uid, event: "continuous", code: 45 }),
+        expect.objectContaining({ sourceUid: rider!.uid, event: "continuous", code: 76 }),
+      ]),
+    );
+    expectLuaEquipProbe(restoredEquippedState, riderCode, normalDragonCode, "rider equip probe true/14239");
+
+    destroyDuelCard(restoredEquippedState.session.state, normalDragon!.uid, 0, duelReason.effect | duelReason.destroy, 1);
+
+    expect(restoredEquippedState.session.state.cards.find((card) => card.uid === normalDragon!.uid)).toMatchObject({ location: "monsterZone" });
+    expect(restoredEquippedState.session.state.cards.find((card) => card.uid === rider!.uid)).toMatchObject({
+      location: "graveyard",
+      reason: duelReason.effect | duelReason.destroy | duelReason.replace,
+      reasonPlayer: 0,
+    });
+    expect(restoredEquippedState.session.state.log).toContainEqual(expect.objectContaining({ action: "destroySubstitute", card: normalDragon!.name }));
   });
 });
 
