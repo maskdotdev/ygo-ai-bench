@@ -404,7 +404,7 @@ function selectedFusionMaterialsMatch(session: DuelSession, target: DuelCardInst
   return selected.length === materials.length && materialCodesMatch(selected, required, fusionMaterialMatchOptions(session.state, target));
 }
 
-function ritualSummonSelectedMaterials(
+export function ritualSummonSelectedMaterials(
   session: DuelSession,
   hostState: LuaDuelSummonApiHostState,
   target: DuelCardInstance,

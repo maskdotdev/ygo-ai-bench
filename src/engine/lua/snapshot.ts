@@ -2,17 +2,19 @@ import { findCard } from "#duel/card-state.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
-import { cardTypeFlags } from "#duel/card-stats.js";
-import { applyResponse, collectDuelGroupedTriggerEffects, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, negateDuelChainLinkObject, queryPublicState } from "#duel/core.js";
+import { cardTypeFlags, currentLevel } from "#duel/card-stats.js";
+import { applyResponse, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, negateDuelChainLinkObject, queryPublicState } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
+import { luaSummonTypeRitual } from "#duel/summon-type-codes.js";
 import { resetDuelCardEffects } from "#duel/effect-reset.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { cardFieldId } from "#duel/card-field-id.js";
 import { cardSetcodes, isSetcodeMatch } from "#lua/card-code-utils.js";
+import { ritualSummonSelectedMaterials, type LuaDuelSummonApiHostState } from "#lua/duel-api/summon.js";
 import { luaTemporaryControlReturnDescriptor, luaTemporaryControlReturnOperation } from "#lua/duel-api/move-control.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
-import type { ApplyDuelResponseResult, ChainLimit, DuelAction, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
+import type { ApplyDuelResponseResult, ChainLimit, ChainLink, DuelAction, DuelCardInstance, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
 
 const luaEffectEquipLimit = 76;
 const luaEffectGeminiStatus = 75;
@@ -37,6 +39,12 @@ const luaFaceupTypeTargetDescriptorPrefix = "target:faceup-type:";
 const luaYellowAlertCode = "59277750";
 const luaRareMetalmorphCode = "12503902";
 const luaMaharaghiCode = "40695128";
+const luaMegalithUnformedCode = "69003792";
+const luaSetMegalith = 0x138;
+const luaCategorySpecialSummon = 0x200;
+const luaLocationDeck = 0x1;
+const luaTypeMonster = 0x1;
+const luaTypeRitual = 0x80;
 const luaResetEvent = 0x1000;
 const luaResetTurnSet = 0x20000;
 const luaResetPhase = 0x40000000;
@@ -83,6 +91,7 @@ export function restoreDuelWithLuaScripts(
   restoreKnownLuaChainLimits(session, host, chainLimitRegistryKeys);
   const restoredRegistryKeys = filterRestoredLuaEffects(session, registryKeys, snapshot.state.effects);
   restoredRegistryKeys.push(...restoreKnownLuaEffects(session, registryKeys, snapshot.state.effects, restoredRegistryKeys));
+  restoreKnownLuaChainOperations(session);
   prunePendingTriggersWithoutEffects(session.state);
   const missingRegistryKeys = [...registryKeys].filter((key) => !restoredRegistryKeys.includes(key));
   const restoredChainLimitRegistryKeys = luaChainLimitRegistryKeys({ ...snapshot, state: session.state });
@@ -286,6 +295,110 @@ function restoreKnownLuaEffects(
     added.push(effect.registryKey);
   }
   return added;
+}
+
+function restoreKnownLuaChainOperations(session: DuelSession): void {
+  for (const link of session.state.chain) {
+    if (isKnownMegalithUnformedDeckRitualChainLink(session, link)) link.operationOverride = megalithUnformedDeckRitualOperation();
+  }
+}
+
+function isKnownMegalithUnformedDeckRitualChainLink(session: DuelSession, link: ChainLink): boolean {
+  const source = findCard(session.state, link.sourceUid);
+  return Boolean(
+    source?.code === luaMegalithUnformedCode &&
+      link.operationInfos?.some((info) => info.category === luaCategorySpecialSummon && info.player === link.player && info.parameter === luaLocationDeck && info.count > 0),
+  );
+}
+
+function megalithUnformedDeckRitualOperation(): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const selection = selectMegalithUnformedDeckRitual(ctx.duel, ctx.player);
+    if (!selection) return;
+    const session = { state: ctx.duel, cardReader: fallbackCardReader };
+    try {
+      ritualSummonSelectedMaterials(session, luaRestoreSummonHostState(), selection.target, selection.materialUids, false, "faceUpDefense");
+    } catch {
+      // EDOPro-style operation restore leaves the chain resolved if the selected summon is no longer legal.
+    }
+  };
+}
+
+function selectMegalithUnformedDeckRitual(
+  state: DuelSession["state"],
+  player: PlayerId,
+): { target: DuelCardInstance; materialUids: string[] } | undefined {
+  const targets = state.cards.filter((card) => isMegalithUnformedDeckRitualTarget(state, player, card)).sort((a, b) => a.sequence - b.sequence);
+  for (const target of targets) {
+    const materialUids = selectMegalithUnformedRitualMaterials(state, player, target);
+    if (materialUids) return { target, materialUids };
+  }
+  return undefined;
+}
+
+function isMegalithUnformedDeckRitualTarget(state: DuelSession["state"], player: PlayerId, card: DuelCardInstance): boolean {
+  const summonReason = duelReason.summon | duelReason.specialSummon | duelReason.ritual;
+  return (
+    card.controller === player &&
+    card.location === "deck" &&
+    (cardTypeFlags(card, state) & (luaTypeMonster | luaTypeRitual)) === (luaTypeMonster | luaTypeRitual) &&
+    currentCardMatchesSetcode(card, state, luaSetMegalith) &&
+    canPlayerSpecialSummon(state, player, card, luaSummonTypeRitual) &&
+    canMoveDuelCardToLocation(state, card.uid, "monsterZone", summonReason)
+  );
+}
+
+function selectMegalithUnformedRitualMaterials(state: DuelSession["state"], player: PlayerId, target: DuelCardInstance): string[] | undefined {
+  const requiredLevel = currentLevel(target, state) * 2;
+  if (requiredLevel <= 0) return undefined;
+  const materialCandidates = state.cards
+    .filter((card) => isMegalithUnformedRitualMaterial(state, player, target, card))
+    .sort((a, b) => luaRestoreLocationSort(a.location) - luaRestoreLocationSort(b.location) || a.sequence - b.sequence);
+  return selectExactLevelMaterials(state, materialCandidates, requiredLevel);
+}
+
+function isMegalithUnformedRitualMaterial(state: DuelSession["state"], player: PlayerId, target: DuelCardInstance, card: DuelCardInstance): boolean {
+  return (
+    card.controller === player &&
+    card.uid !== target.uid &&
+    (card.location === "hand" || card.location === "monsterZone") &&
+    (cardTypeFlags(card, state) & luaTypeMonster) !== 0 &&
+    canMoveDuelCardToLocation(state, card.uid, "graveyard", duelReason.material | duelReason.ritual)
+  );
+}
+
+function selectExactLevelMaterials(state: DuelSession["state"], candidates: DuelCardInstance[], requiredLevel: number): string[] | undefined {
+  const search = (startIndex: number, remainingLevel: number, selected: string[]): string[] | undefined => {
+    if (remainingLevel === 0) return selected.length > 0 ? [...selected] : undefined;
+    if (remainingLevel < 0) return undefined;
+    for (let index = startIndex; index < candidates.length; index += 1) {
+      const candidate = candidates[index];
+      if (!candidate) continue;
+      const level = currentLevel(candidate, state);
+      if (level <= 0) continue;
+      selected.push(candidate.uid);
+      const result = search(index + 1, remainingLevel - level, selected);
+      if (result) return result;
+      selected.pop();
+    }
+    return undefined;
+  };
+  return search(0, requiredLevel, []);
+}
+
+function luaRestoreLocationSort(location: DuelCardInstance["location"]): number {
+  if (location === "hand") return 0;
+  if (location === "monsterZone") return 1;
+  return 2;
+}
+
+function luaRestoreSummonHostState(): LuaDuelSummonApiHostState {
+  return {
+    operatedUids: [],
+    summonNegatedUids: [],
+    effects: new Map(),
+    pushEffectTable: () => {},
+  };
 }
 
 function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[] = []): boolean {
