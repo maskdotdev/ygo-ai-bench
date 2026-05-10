@@ -7,9 +7,11 @@ import { placeActivatedSpellTrapCard } from "#duel/spell-trap-activation.js";
 import { quickEffectEventContext } from "#duel/effect-event-context.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import { pendingTriggerBucketsForState, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
+import { summonProcedureTypeCodeFromValue } from "#duel/summon-type-codes.js";
 import type {
   DuelCardInstance,
   DuelEffectContext,
+  DuelEffectDefinition,
   DuelEventCardState,
   DuelEventName,
   DuelLocation,
@@ -77,9 +79,9 @@ export interface DuelActivationHandlers {
   ): void;
   hasChainResponses(state: DuelState, player: PlayerId): boolean;
   resolveChain(state: DuelState): void;
-  canAttemptSpecialSummonProcedure(state: DuelState, uid: string): boolean;
-  canSpecialSummonCard(state: DuelState, uid: string, player: PlayerId): boolean;
-  specialSummonCard(state: DuelState, uid: string, player: PlayerId): DuelCardInstance;
+  canAttemptSpecialSummonProcedure(state: DuelState, uid: string, summonTypeCode?: number): boolean;
+  canSpecialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number): boolean;
+  specialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number): DuelCardInstance;
 }
 
 export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: string, effectId: string, handlers: DuelActivationHandlers): void {
@@ -169,7 +171,8 @@ export function specialSummonDuelByProcedure(session: DuelSession, player: Playe
   const source = requireControlledCard(session.state, player, uid);
   if (!effect.range.includes(source.location)) throw new Error(`${source.name} summon procedure is not in range`);
   const ctx = handlers.createEffectContext(session.state, source, player);
-  if (!handlers.canAttemptSpecialSummonProcedure(session.state, uid)) throw new Error(`${source.name} cannot be Special Summoned`);
+  const summonTypeCode = summonProcedureTypeCode(effect);
+  if (!handlers.canAttemptSpecialSummonProcedure(session.state, uid, summonTypeCode)) throw new Error(`${source.name} cannot be Special Summoned`);
   if (effect.canActivate && !effect.canActivate(ctx)) throw new Error(`Condition for ${effectId} is not legal`);
   const rollback = captureDuelState(session.state);
   try {
@@ -178,13 +181,20 @@ export function specialSummonDuelByProcedure(session: DuelSession, player: Playe
     if (effect.operation) effect.operation(ctx);
     const currentSource = requireControlledCard(session.state, player, uid);
     if (!effect.range.includes(currentSource.location)) throw new Error(`${source.name} summon procedure is no longer in range`);
-    if (!handlers.canSpecialSummonCard(session.state, uid, player)) throw new Error(`${source.name} cannot be Special Summoned`);
+    if (!handlers.canSpecialSummonCard(session.state, uid, player, summonTypeCode)) throw new Error(`${source.name} cannot be Special Summoned`);
+    const presetMaterialUids = summonTypeCode !== undefined ? [...(currentSource.summonMaterialUids ?? [])] : [];
     markEffectUsed(session.state, effect);
-    markProcedureComplete(handlers.specialSummonCard(session.state, uid, player));
+    const summoned = handlers.specialSummonCard(session.state, uid, player, summonTypeCode);
+    if (presetMaterialUids.length > 0) summoned.summonMaterialUids = presetMaterialUids;
+    markProcedureComplete(summoned);
   } catch (error) {
     restoreDuelState(session.state, rollback);
     throw error;
   }
+}
+
+function summonProcedureTypeCode(effect: DuelEffectDefinition): number | undefined {
+  return summonProcedureTypeCodeFromValue(effect.value);
 }
 
 export function activateDuelPendingTrigger(session: DuelSession, player: PlayerId, triggerId: string, triggerBucket: TriggerBucket, handlers: DuelActivationHandlers): void {

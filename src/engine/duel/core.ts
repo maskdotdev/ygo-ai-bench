@@ -142,7 +142,7 @@ import { runScriptedDuelResponses as runScriptedDuelResponsesWithHandlers } from
 import { setSpellTrap } from "#duel/spell-trap.js";
 import { canActivateSpellTrapCardEffect, shouldSendActivatedSpellTrapToGraveyard } from "#duel/spell-trap-activation.js";
 import { negateCoreDuelSummon } from "#duel/summon-negation.js";
-import { duelSummonTypeFromCode, luaSummonTypeFusion, luaSummonTypeLink, luaSummonTypePendulum, luaSummonTypeRitual, luaSummonTypeSynchro, luaSummonTypeXyz } from "#duel/summon-type-codes.js";
+import { duelSummonTypeFromCode, isFaceDownExtraDeckSummonTypeCode, luaSummonTypeFusion, luaSummonTypeLink, luaSummonTypePendulum, luaSummonTypeRitual, luaSummonTypeSynchro, luaSummonTypeXyz, summonProcedureTypeCodeFromValue } from "#duel/summon-type-codes.js";
 import { changeDuelPhase, drawDuelCardsFromDeck, endDuelTurn, isDuelPhaseSkipped, nextAvailableDuelPhase } from "#duel/turn-flow.js";
 export { createDuel, loadDecks, startDuel, type CreateDuelOptions } from "#duel/setup.js";
 import type {
@@ -177,7 +177,7 @@ const activationHandlers: DuelActivationHandlers = {
   resolveChain,
   canAttemptSpecialSummonProcedure,
   canSpecialSummonCard: canSpecialSummonDuelCard,
-  specialSummonCard: specialSummonDuelCard,
+  specialSummonCard: (state, uid, player, summonTypeCode) => specialSummonDuelCard(state, uid, player, undefined, {}, summonTypeCode),
 };
 
 const battleContinuationHandlers: BattleContinuationHandlers = {
@@ -443,15 +443,15 @@ export function canSpecialSummonDuelCard(state: DuelState, uid: string, controll
   const summonController = controller ?? card.controller;
   if (isSpecialSummonPrevented(state, summonController, createContinuousEffectContext(state), card, summonTypeCode, relatedEffectId)) return false;
   if (!hasZoneSpace(state, summonController, "monsterZone")) return false;
-  if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card)) return false;
+  if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card) && !isFaceDownExtraDeckSummonTypeCode(summonTypeCode)) return false;
   return canMoveDuelCardToLocation(state, uid, "monsterZone");
 }
 
-function canAttemptSpecialSummonProcedure(state: DuelState, uid: string): boolean {
+function canAttemptSpecialSummonProcedure(state: DuelState, uid: string, summonTypeCode?: number): boolean {
   const card = findCard(state, uid);
   if (!card || !isDuelMonsterLike(card)) return false;
-  if (isSpecialSummonPrevented(state, card.controller, createContinuousEffectContext(state), card)) return false;
-  if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card)) return false;
+  if (isSpecialSummonPrevented(state, card.controller, createContinuousEffectContext(state), card, summonTypeCode)) return false;
+  if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card) && !isFaceDownExtraDeckSummonTypeCode(summonTypeCode)) return false;
   return canMoveDuelCardToLocation(state, uid, "monsterZone");
 }
 
@@ -757,7 +757,7 @@ function specialSummonProcedureActions(state: DuelState, player: PlayerId): Duel
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (!canUseEffectCount(state, effect)) continue;
-    if (!canAttemptSpecialSummonProcedure(state, source.uid)) continue;
+    if (!canAttemptSpecialSummonProcedure(state, source.uid, summonProcedureTypeCodeFromValue(effect.value))) continue;
     if (!canChooseEffect(state, effect, source, player)) continue;
     actions.push({ type: "specialSummonProcedure", player, uid: source.uid, effectId: effect.id, label: `Special Summon ${source.name}` });
   }

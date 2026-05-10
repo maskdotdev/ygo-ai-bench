@@ -15,6 +15,26 @@ export function effectiveSpecialSummonTypeCode(summonTypeCode?: number): number 
   return summonTypeCode && summonTypeCode !== 0 ? summonTypeCode : luaSummonTypeSpecial;
 }
 
+export function summonProcedureTypeCodeFromValue(value: number | undefined): number | undefined {
+  if (
+    value === luaSummonTypeSpecial ||
+    value === luaSummonTypeFusion ||
+    value === luaSummonTypeRitual ||
+    value === luaSummonTypeSynchro ||
+    value === luaSummonTypeXyz ||
+    value === luaSummonTypePendulum ||
+    value === luaSummonTypeLink
+  ) {
+    return value;
+  }
+  return undefined;
+}
+
+export function isFaceDownExtraDeckSummonTypeCode(summonTypeCode: number | undefined): boolean {
+  const summonType = duelSummonTypeFromCode(summonTypeCode);
+  return summonType === "fusion" || summonType === "synchro" || summonType === "xyz" || summonType === "link";
+}
+
 export function summonTypeCodeFromDuelSummonType(summonType: DuelSummonType): number {
   if (summonType === "fusion") return luaSummonTypeFusion;
   if (summonType === "ritual") return luaSummonTypeRitual;

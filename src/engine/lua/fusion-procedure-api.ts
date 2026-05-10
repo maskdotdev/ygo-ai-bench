@@ -60,8 +60,46 @@ export const fusionProcedureSource = `
     return Fusion.AddProcMixRep(c,sub,insf,f,minc,maxc,code1,code2)
   end
   function Fusion.AddContactProc(c,...)
+    local args={...}
+    local group=args[1]
+    local op=args[2]
+    local condition=args[4]
+    local sumtype=args[5]
+    local desc=args[6]
     local mt=c:GetMetatable(false)
     if mt then mt.contact_fusion_proc={...} end
+    local e1=Effect.CreateEffect(c)
+    e1:SetType(EFFECT_TYPE_FIELD)
+    e1:SetDescription(desc or 2)
+    e1:SetCode(EFFECT_SPSUMMON_PROC)
+    e1:SetProperty(EFFECT_FLAG_UNCOPYABLE)
+    e1:SetRange(LOCATION_EXTRA)
+    e1:SetValue(sumtype or SUMMON_TYPE_FUSION)
+    e1:SetCondition(Fusion.ContactCon(group,condition))
+    e1:SetTarget(Fusion.ContactTg(group))
+    e1:SetOperation(Fusion.ContactOp(op))
+    c:RegisterEffect(e1)
+  end
+  function Fusion.ContactCon(f,fcon)
+    return function(e,c)
+      if c==nil then return true end
+      if fcon and not fcon(e:GetHandlerPlayer()) then return false end
+      local m=f(e:GetHandlerPlayer())
+      local sg=Duel.SelectFusionMaterial(e:GetHandlerPlayer(),e:GetHandler(),m)
+      return sg and sg:GetCount()>0
+    end
+  end
+  function Fusion.ContactTg(f)
+    return function(e,tp,eg,ep,ev,re,r,rp)
+      local m=f(tp)
+      local sg=Duel.SelectFusionMaterial(tp,e:GetHandler(),m)
+      if sg and sg:GetCount()>0 then
+        sg:KeepAlive()
+        e:SetLabelObject(sg)
+        return true
+      end
+      return false
+    end
   end
   function Fusion.ContactOp(f)
     return function(e,tp,eg,ep,ev,re,r,rp,c)
