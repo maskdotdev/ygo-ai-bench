@@ -24,7 +24,7 @@ import {
   negateDuelSummon,
   xyzSummonDuelCard,
 } from "#duel/core.js";
-import { duelSummonTypeFromCode, luaSummonTypePendulum, luaSummonTypeRitual } from "#duel/summon-type-codes.js";
+import { duelSummonTypeFromCode, luaSummonTypeFusion, luaSummonTypePendulum, luaSummonTypeRitual } from "#duel/summon-type-codes.js";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
@@ -226,7 +226,7 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
   const player = playerFirst ? readOptionalPlayer(L, 1) ?? session.state.turnPlayer : undefined;
   const targetUid = readCardUid(L, playerFirst ? 2 : 1);
   const materialUids = playerFirst ? readCardOrGroupUids(L, 3) : readCardOrGroupUids(L, 2);
-  const materialsAlreadyMoved = summonType === "RitualSummon" && Boolean(lua.lua_toboolean(L, playerFirst ? 4 : 3));
+  const materialsAlreadyMoved = (summonType === "FusionSummon" || summonType === "RitualSummon") && Boolean(lua.lua_toboolean(L, playerFirst ? 4 : 3));
   const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
   if (!target) {
     setOperatedUids(hostState, []);
@@ -237,7 +237,13 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
     const summonPlayer = player ?? target.controller;
     const selectedMaterials = summonType === "XyzSummon" && materialUids.length === 0 ? defaultXyzMaterialUids(session, target, summonPlayer) : materialUids;
     markLuaOperationTimingBoundary(session, hostState);
-    if (summonType === "FusionSummon") fusionSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
+    if (summonType === "FusionSummon") {
+      if (materialsAlreadyMoved || selectedMaterials.some((uid) => session.state.cards.some((card) => card.uid === uid && !isDefaultFusionMaterialLocation(card.location)))) {
+        fusionSummonSelectedMaterials(session, hostState, target, selectedMaterials, summonPlayer, materialsAlreadyMoved);
+      } else {
+        fusionSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
+      }
+    }
     else if (summonType === "SynchroSummon") synchroSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
     else if (summonType === "XyzSummon") xyzSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
     else if (summonType === "LinkSummon") linkSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
@@ -263,6 +269,87 @@ function canBeXyzMaterial(card: DuelCardInstance, target: DuelCardInstance): boo
   if (target.data.xyzMaterials?.length) return target.data.xyzMaterials.some((code) => cardCodes(card).includes(code));
   const rank = (cardTypeFlags(target) & 0x800000) !== 0 ? target.data.level ?? 0 : 0;
   return rank > 0 && (card.data.level ?? 0) === rank;
+}
+
+function fusionSummonSelectedMaterials(session: DuelSession, hostState: LuaDuelSummonApiHostState, target: DuelCardInstance, materialUids: string[], summonPlayer: PlayerId, materialsAlreadyMoved = false): void {
+  if (!isMonsterLike(target) || !isSelectedFusionTargetLocation(target.location)) throw new Error(`${target.name} is not a Fusion monster in a summonable location`);
+  if (new Set(materialUids).size !== materialUids.length || materialUids.length === 0) throw new Error(`${target.name} fusion materials are not legal`);
+  const materials = materialUids.map((uid) => session.state.cards.find((candidate) => candidate.uid === uid));
+  if (
+    availableMonsterZoneCount(session, summonPlayer, materialUids) <= 0 ||
+    !canPlayerSpecialSummon(session.state, summonPlayer, target, luaSummonTypeFusion) ||
+    !canMoveDuelCardToLocation(session.state, target.uid, "monsterZone", duelReason.summon | duelReason.specialSummon | duelReason.fusion) ||
+    !selectedFusionMaterialsMatch(target, materials)
+  ) {
+    throw new Error(`${target.name} cannot be Fusion Summoned`);
+  }
+  for (const material of materials) {
+    const canUseMaterial = materialsAlreadyMoved ? canTrackMovedFusionMaterial(material, target, summonPlayer) : canBeSelectedFusionMaterial(session, material, target, summonPlayer);
+    if (!canUseMaterial) throw new Error(`${target.name} fusion materials are not legal`);
+  }
+  if (!materialsAlreadyMoved) {
+    for (const uid of materialUids) {
+      const material = session.state.cards.find((candidate) => candidate.uid === uid);
+      if (!material) continue;
+      collectLuaSummonEvent(session, "preUsedAsMaterial", material);
+      sendDuelCardToGraveyard(session.state, uid, summonPlayer, duelReason.material | duelReason.fusion, summonPlayer);
+      pushDuelLog(session.state, "fusionMaterial", summonPlayer, material.name, `Used for ${target.name}`);
+      collectLuaSummonEvent(session, "usedAsMaterial", material);
+    }
+  }
+  hostState.activeOperationMoved = true;
+  collectLuaSummonEvent(session, "specialSummoning", target);
+  moveDuelCard(session.state, target.uid, "monsterZone", summonPlayer, duelReason.summon | duelReason.specialSummon | duelReason.fusion, summonPlayer);
+  target.position = "faceUpAttack";
+  target.faceUp = true;
+  target.summonType = "fusion";
+  target.summonPlayer = summonPlayer;
+  target.summonPhase = session.state.phase;
+  target.summonMaterialUids = [...materialUids];
+  markProcedureComplete(target);
+  recordSpecialSummonActivity(session.state, summonPlayer, target);
+  pushDuelLog(session.state, "fusionSummon", summonPlayer, target.name, `Fusion Summoned with ${materialUids.length} material(s)`);
+  collectLuaSummonEvent(session, "specialSummoned", target);
+}
+
+function isSelectedFusionTargetLocation(location: DuelLocation): boolean {
+  return location === "extraDeck";
+}
+
+function canBeSelectedFusionMaterial(session: DuelSession, material: DuelCardInstance | undefined, target: DuelCardInstance, summonPlayer: PlayerId): boolean {
+  if (!material) return false;
+  return (
+    isMonsterLike(material) &&
+    isSelectedFusionMaterialLocation(material.location) &&
+    material.controller === summonPlayer &&
+    material.uid !== target.uid &&
+    targetAllowsMaterial(target, material, "fusion") &&
+    !isMaterialUsePrevented(session.state, material.uid, "fusion", createMaterialCheckContext(session.state))
+  );
+}
+
+function canTrackMovedFusionMaterial(material: DuelCardInstance | undefined, target: DuelCardInstance, summonPlayer: PlayerId): boolean {
+  return Boolean(material && isMonsterLike(material) && material.controller === summonPlayer && material.uid !== target.uid && targetAllowsMaterial(target, material, "fusion"));
+}
+
+function isDefaultFusionMaterialLocation(location: DuelLocation): boolean {
+  return location === "hand" || location === "monsterZone";
+}
+
+function isSelectedFusionMaterialLocation(location: DuelLocation): boolean {
+  return isDefaultFusionMaterialLocation(location) || location === "deck" || location === "graveyard" || location === "banished" || location === "extraDeck" || location === "spellTrapZone";
+}
+
+function selectedFusionMaterialsMatch(target: DuelCardInstance, materials: (DuelCardInstance | undefined)[]): boolean {
+  const required = target.data.fusionMaterials ?? [];
+  if (!required.length) return materials.length > 0 && materials.every((material) => material !== undefined);
+  const selected: DuelCardInstance[] = [];
+  for (const code of required) {
+    const material = materials.find((candidate): candidate is DuelCardInstance => Boolean(candidate && !selected.includes(candidate) && cardCodes(candidate).includes(code)));
+    if (!material) return false;
+    selected.push(material);
+  }
+  return selected.length === materials.length;
 }
 
 function ritualSummonSelectedMaterials(session: DuelSession, hostState: LuaDuelSummonApiHostState, target: DuelCardInstance, materialUids: string[], materialsAlreadyMoved = false): void {
@@ -569,6 +656,7 @@ function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCa
   if (!target) return true;
   if (target.uid === card.uid) return false;
   const codes = cardCodes(card);
+  if (kind === "fusion") return !target.data.fusionMaterials?.length || target.data.fusionMaterials.some((code) => codes.includes(code));
   if (kind === "ritual") return !target.data.ritualMaterials?.length || target.data.ritualMaterials.some((code) => codes.includes(code));
   return true;
 }

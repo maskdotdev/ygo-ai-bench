@@ -633,7 +633,11 @@ function selectFusionMaterialUids(candidates: DuelCardInstance[], target: DuelCa
 }
 
 function canUseAsFusionMaterial(card: DuelCardInstance): boolean {
-  return (card.location === "hand" || card.location === "monsterZone") && isMonsterLike(card);
+  return isFusionMaterialLocation(card.location) && isMonsterLike(card);
+}
+
+function isFusionMaterialLocation(location: DuelLocation): boolean {
+  return location === "hand" || location === "monsterZone" || location === "graveyard" || location === "banished" || location === "deck" || location === "extraDeck" || location === "spellTrapZone";
 }
 
 function isMonsterLike(card: DuelCardInstance): boolean {
