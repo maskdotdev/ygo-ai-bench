@@ -33,6 +33,7 @@ const luaYellowAlertCode = "59277750";
 const luaResetEvent = 0x1000;
 const luaResetTurnSet = 0x20000;
 const luaResetPhase = 0x40000000;
+const luaResetOpponentTurn = 0x20000000;
 const luaPhaseBattle = 0x80;
 const luaPhaseEnd = 0x200;
 const luaBattlePhaseEventCode = luaResetEvent | luaPhaseBattle;
@@ -247,7 +248,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
         isKnownCannotSelectBattleTargetNotHandlerEffect(effect) ||
         isKnownYellowAlertDelayedReturnEffect(effect) ||
         isKnownCannotActivateSpecialSummonedMonsterEffect(effect) ||
-        isKnownSetcodeOrCodeTypeAvoidBattleDamageEffect(effect) ||
+        isKnownSetcodeOrCodeTypeBattleProtectionEffect(effect) ||
         effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
         isStaticSingleCardLuaRestriction(effect) ||
         isStaticPlayerPhaseLock(effect) ||
@@ -268,17 +269,21 @@ function isKnownCannotActivateSpecialSummonedMonsterEffect(effect: SerializedDue
   );
 }
 
-function isKnownSetcodeOrCodeTypeAvoidBattleDamageEffect(effect: SerializedDuelEffect): boolean {
+function isKnownSetcodeOrCodeTypeBattleProtectionEffect(effect: SerializedDuelEffect): boolean {
   return (
     effect.event === "continuous" &&
-    effect.code === 201 &&
+    (effect.code === 201 || effect.code === luaEffectIndestructibleBattle) &&
     effect.value === 1 &&
     setcodeOrCodeTypeTargetDescriptor(effect.luaTargetDescriptor) !== undefined &&
-    effect.reset?.flags === luaPhaseEndResetFlags &&
+    isPhaseEndOrOpponentPhaseEndReset(effect.reset?.flags) &&
     effect.targetRange?.[0] === 4 &&
     effect.targetRange?.[1] === 0 &&
     hasDefaultLuaFieldRange(effect)
   );
+}
+
+function isPhaseEndOrOpponentPhaseEndReset(flags: number | undefined): boolean {
+  return flags === luaPhaseEndResetFlags || flags === (luaPhaseEndResetFlags | luaResetOpponentTurn);
 }
 
 function isKnownYellowAlertDelayedReturnEffect(effect: SerializedDuelEffect): boolean {
