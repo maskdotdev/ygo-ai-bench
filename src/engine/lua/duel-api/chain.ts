@@ -4,7 +4,9 @@ import { pushCardTable } from "#lua/card-api.js";
 import { capturedTypeMaskDescriptor, literalActionTypeChainPlayerLimitPredicate, literalCapturedPlayerComparisonPredicate, literalFalsePredicate, literalNotMonsterWithoutLevelActiveTypePredicate, literalNotSourceOrActiveTypeAndEffectTypePredicateDescriptor, literalResponseMatchesChainPlayerOrActiveTypePredicate, literalResponseMatchesChainPlayerOrCurrentTargetCardsPredicate, literalResponseMatchesChainPlayerOrNotSourceTypePredicate, literalResponseMatchesChainPlayerOrSourceTypeNonActivatePredicate, literalStatelessSourcePredicate, literalTruePredicate } from "#lua/chain-limit-predicate-descriptors.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid, readOptionalFunctionRef, releaseOptionalFunctionRef, symbolicLocationMask } from "#lua/api-utils.js";
+import { effectiveCardSetcodes } from "#lua/card-setcode-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelSession, DuelState, PlayerId } from "#duel/types.js";
+import type { LuaEffectRecord } from "#lua/host-types.js";
 
 const { lua, to_luastring, to_jsstring } = fengari;
 
@@ -13,6 +15,7 @@ export interface LuaDuelChainApiHostState {
   getEffectTypeFlags: (id: number) => number | undefined;
   changeChainOperation: (state: unknown, chainIndex: number, operationRef: number) => boolean;
   activeContext: DuelEffectContext | undefined;
+  effects: ReadonlyMap<number, LuaEffectRecord>;
   loadedScriptBodies?: Map<string, string>;
 }
 
@@ -126,7 +129,7 @@ function pushChainInfoValue(L: unknown, session: DuelSession, hostState: LuaDuel
   else if (info === 27) lua.lua_pushinteger(L, source?.summonType ? locationMaskFromLocation(source.previousLocation) : 0);
   else if (info === 28) lua.lua_pushinteger(L, summonTypeMask(source));
   else if (info === 29) lua.lua_pushboolean(L, Boolean(source?.summonType));
-  else if (info === 30) pushNumberArrayTable(L, source?.data.setcodes ?? []);
+  else if (info === 30) pushNumberArrayTable(L, source ? effectiveCardSetcodes(session.state, source, hostState) : []);
   else if (info === 31 && source) pushCardTable(L, source.uid);
   else lua.lua_pushnil(L);
 }

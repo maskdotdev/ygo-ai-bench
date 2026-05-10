@@ -48,7 +48,7 @@ export function installCardApi<EffectRecord extends LuaCardApiEffectRecord>(
   installCardEffectCopyApi(L, session, hostState);
   installCardEffectResetApi(L, session);
   installCardTableApi(L);
-  installCardCodeApi(L, session);
+  installCardCodeApi(L, session, hostState);
   installCardStatApi(L, session, hostState);
   installCardBattleApi(L, session, hostState);
   installCardLinkApi(L, session);

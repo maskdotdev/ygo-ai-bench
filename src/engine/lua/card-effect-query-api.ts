@@ -68,7 +68,7 @@ export function matchingLuaEffects<EffectRecord extends LuaCardApiEffectRecord>(
   state: DuelState,
   card: DuelCardInstance,
   code: number,
-  hostState: LuaCardApiState<EffectRecord>,
+  hostState: { effects: ReadonlyMap<number, EffectRecord> },
 ): EffectRecord[] {
   const matches: EffectRecord[] = [];
   const seen = new Set<number>();

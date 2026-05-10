@@ -2,11 +2,13 @@ import fengari from "fengari";
 import { readCardUid, readTableStringField } from "#lua/api-utils.js";
 import { installCardCodeAnimeApi } from "#lua/card-code-anime-api.js";
 import { cardCodes, cardSetcodes, isSetcodeMatch, listedCodes, listedCodeSetcodes, materialCodes, materialSetcodes, readRequestedCodes, readRequestedNumbers } from "#lua/card-code-utils.js";
+import { effectiveCardSetcodes } from "#lua/card-setcode-utils.js";
 import type { DuelCardInstance, DuelSession } from "#duel/types.js";
+import type { LuaCardApiEffectRecord } from "#lua/card-api-types.js";
 
 const { lua, to_luastring } = fengari;
 
-export function installCardCodeApi(L: unknown, session: DuelSession): void {
+export function installCardCodeApi<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: { effects: ReadonlyMap<number, EffectRecord> }): void {
   pushNumberGetter(L, "GetCode", session, (card) => currentCode(card));
   pushNumberGetter(L, "GetOriginalCode", session, (card) => (card ? Number(card.code) : 0));
   pushNumberGetter(L, "GetOriginalCodeRule", session, (card) => (card ? Number(card.code) : 0));
@@ -84,7 +86,7 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = readRequestedNumbers(state, 2);
-    lua.lua_pushboolean(state, Boolean(card && requested.some((wanted) => cardSetcodes(card).some((setcode) => isSetcodeMatch(wanted, setcode)))));
+    lua.lua_pushboolean(state, Boolean(card && requested.some((wanted) => effectiveCardSetcodes(session.state, card, hostState).some((setcode) => isSetcodeMatch(wanted, setcode)))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsSetCard"));
@@ -95,11 +97,11 @@ export function installCardCodeApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsOriginalSetCard"));
-  pushNumberGetter(L, "GetSetCard", session, (card) => card?.data.setcodes?.[0] ?? 0);
+  pushNumberGetter(L, "GetSetCard", session, (card) => (card ? effectiveCardSetcodes(session.state, card, hostState)[0] ?? 0 : 0));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = readRequestedNumbers(state, 2);
-    lua.lua_pushboolean(state, Boolean(card && requested.length > 0 && requested.every((wanted) => !cardSetcodes(card).some((setcode) => isSetcodeMatch(wanted, setcode)))));
+    lua.lua_pushboolean(state, Boolean(card && requested.length > 0 && requested.every((wanted) => !effectiveCardSetcodes(session.state, card, hostState).some((setcode) => isSetcodeMatch(wanted, setcode)))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsNotSetCard"));
