@@ -373,7 +373,7 @@ function pushChangePosition(L: unknown, session: DuelSession, hostState: LuaDuel
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
     if (luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) continue;
-    if (changeSpellTrapPosition(card, requestedPosition, positionMask)) {
+    if (changeSpellTrapPosition(session.state, card, requestedPosition, positionMask)) {
       changed.push(uid);
       continue;
     }

@@ -170,6 +170,8 @@ function copyCard(card: DuelCardInstance): DuelCardInstance {
     ...(card.effectRelationIds ? { effectRelationIds: [...card.effectRelationIds] } : {}),
     ...(card.cardTargetUids ? { cardTargetUids: [...card.cardTargetUids] } : {}),
     ...(card.summonMaterialUids ? { summonMaterialUids: [...card.summonMaterialUids] } : {}),
+    ...(card.previousCodes === undefined ? {} : { previousCodes: [...card.previousCodes] }),
+    ...(card.previousSetcodes === undefined ? {} : { previousSetcodes: [...card.previousSetcodes] }),
     ...(card.assumedProperties ? { assumedProperties: { ...card.assumedProperties } } : {}),
     ...(card.uniqueOnField ? { uniqueOnField: { ...card.uniqueOnField } } : {}),
   };

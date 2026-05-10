@@ -2,16 +2,14 @@ import { pruneResetEffectsAfterMove } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterMove } from "#duel/flags.js";
 import { removeAllDuelCardCounters } from "#duel/counters.js";
 import { nextDuelCardFieldId } from "#duel/card-field-id.js";
+import { currentCardCodes, currentCardSetcodes } from "#duel/card-code-state.js";
+import { cardTypeFlags, currentAttack, currentAttribute, currentDefense, currentLevel, currentLink, currentRace, currentRank } from "#duel/card-stats.js";
 import type { DuelCardInstance, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
 export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, controller?: PlayerId, reason = 0, reasonPlayer?: PlayerId): DuelCardInstance {
   const card = findCard(state, uid);
   if (!card) throw new Error(`Card ${uid} is not in the duel`);
-  card.previousLocation = card.location;
-  card.previousController = card.controller;
-  card.previousSequence = card.sequence;
-  card.previousPosition = card.position;
-  card.previousFaceUp = card.faceUp;
+  recordPreviousDuelCardState(state, card);
   card.reason = reason;
   card.reasonPlayer = reasonPlayer ?? controller ?? card.controller;
   card.turnId = state.turn;
@@ -40,6 +38,24 @@ export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, co
   pruneResetEffectsAfterMove(state, card);
   pruneDuelFlagEffectsAfterMove(state, card);
   return card;
+}
+
+export function recordPreviousDuelCardState(state: DuelState, card: DuelCardInstance): void {
+  card.previousLocation = card.location;
+  card.previousController = card.controller;
+  card.previousSequence = card.sequence;
+  card.previousPosition = card.position;
+  card.previousFaceUp = card.faceUp;
+  card.previousCodes = currentCardCodes(card, state);
+  card.previousSetcodes = currentCardSetcodes(card, state);
+  card.previousTypeFlags = cardTypeFlags(card, state);
+  card.previousAttack = currentAttack(card, state);
+  card.previousDefense = currentDefense(card, state);
+  card.previousLevel = currentLevel(card, state);
+  card.previousRank = currentRank(card, state);
+  card.previousLink = currentLink(card, state);
+  card.previousRace = currentRace(card, state);
+  card.previousAttribute = currentAttribute(card, state);
 }
 
 export function canMoveDuelCardToLocation(state: DuelState, uid: string, to: DuelLocation): boolean {

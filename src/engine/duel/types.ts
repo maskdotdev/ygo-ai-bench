@@ -186,6 +186,16 @@ export interface DuelCardInstance {
   previousSequence?: number;
   previousPosition?: CardPosition;
   previousFaceUp?: boolean;
+  previousCodes?: string[];
+  previousSetcodes?: number[];
+  previousTypeFlags?: number;
+  previousAttack?: number;
+  previousDefense?: number;
+  previousLevel?: number;
+  previousRank?: number;
+  previousLink?: number;
+  previousRace?: number;
+  previousAttribute?: number;
   battlePosition?: CardPosition;
   equippedToUid?: string;
   previousEquippedToUid?: string;

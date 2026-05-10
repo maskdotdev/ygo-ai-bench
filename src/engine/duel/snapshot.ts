@@ -560,7 +560,6 @@ function assertSnapshotCards(cards: unknown): Set<string> {
   }
   return seenUids;
 }
-
 function assertSnapshotCardReferences(card: Record<string, unknown>, path: string, locationsByUid: ReadonlyMap<string, unknown>): void {
   for (const field of ["equippedToUid", "previousEquippedToUid", "reasonCardUid"] as const) {
     const uid = card[field];
@@ -574,7 +573,6 @@ function assertSnapshotCardReferences(card: Record<string, unknown>, path: strin
     }
   }
 }
-
 function assertSnapshotEffects(effects: unknown, cardUids: ReadonlySet<string>): void {
   if (!Array.isArray(effects)) throw new Error("Malformed duel snapshot: state.effects must be an array");
   for (const [index, effect] of effects.entries()) {
@@ -635,7 +633,7 @@ function assertSnapshotOptionalCardState(card: Record<string, unknown>, path: st
   for (const field of ["fieldId", "previousSequence", "turnId", "turnCounter"] as const) {
     if (card[field] !== undefined) assertSnapshotNonNegativeInteger(card[field], `${path}.${field}`);
   }
-  for (const field of ["reason", "reasonEffectId", "customStatusMask", "summonTypeCode", "attackModifier", "defenseModifier", "levelModifier", "rankModifier", "linkModifier", "scaleModifier"] as const) {
+  for (const field of ["reason", "reasonEffectId", "customStatusMask", "summonTypeCode", "attackModifier", "defenseModifier", "levelModifier", "rankModifier", "linkModifier", "scaleModifier", "previousTypeFlags", "previousAttack", "previousDefense", "previousLevel", "previousRank", "previousLink", "previousRace", "previousAttribute"] as const) {
     if (card[field] !== undefined && typeof card[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
   }
   for (const field of ["previousFaceUp", "cancelToGrave"] as const) {
@@ -653,6 +651,8 @@ function assertSnapshotOptionalCardState(card: Record<string, unknown>, path: st
       assertSnapshotUniqueStringArray(card[field], `${path}.${field}`);
     }
   }
+  if (card.previousCodes !== undefined) assertSnapshotStringArray(card.previousCodes, `${path}.previousCodes`);
+  if (card.previousSetcodes !== undefined) assertSnapshotNumberArray(card.previousSetcodes, `${path}.previousSetcodes`);
   if (card.counters !== undefined) assertSnapshotCounterRecord(card.counters, `${path}.counters`);
   if (card.counterBuckets !== undefined) assertSnapshotCounterBuckets(card.counterBuckets, `${path}.counterBuckets`);
   if (card.assumedProperties !== undefined) assertSnapshotNumberRecord(card.assumedProperties, `${path}.assumedProperties`);
@@ -968,6 +968,8 @@ function copyCard(card: DuelCardInstance): DuelCardInstance {
     ...(card.effectRelationIds ? { effectRelationIds: [...card.effectRelationIds] } : {}),
     ...(card.cardTargetUids ? { cardTargetUids: [...card.cardTargetUids] } : {}),
     ...(card.summonMaterialUids ? { summonMaterialUids: [...card.summonMaterialUids] } : {}),
+    ...(card.previousCodes === undefined ? {} : { previousCodes: [...card.previousCodes] }),
+    ...(card.previousSetcodes === undefined ? {} : { previousSetcodes: [...card.previousSetcodes] }),
     ...(card.assumedProperties ? { assumedProperties: { ...card.assumedProperties } } : {}),
     ...(card.uniqueOnField ? { uniqueOnField: { ...card.uniqueOnField } } : {}),
   };

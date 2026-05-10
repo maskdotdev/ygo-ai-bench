@@ -1,4 +1,4 @@
-import { findCard, getCards, pushDuelLog, requireControlledCard } from "#duel/card-state.js";
+import { findCard, getCards, pushDuelLog, recordPreviousDuelCardState, requireControlledCard } from "#duel/card-state.js";
 import { duelActivity, recordAttackActivity } from "#duel/activity.js";
 import { clearBattleWindowState, currentBattleWindowKind, markBattleWindowAttackNegated, openBattleWindowState } from "#duel/battle-window-state.js";
 import { pruneResetEffectsAfterPositionChange } from "#duel/effect-reset.js";
@@ -253,11 +253,7 @@ export function changeDuelCardPositionByEffect(state: DuelState, player: PlayerI
 
 function applyDuelCardPositionChange(state: DuelState, player: PlayerId, uid: string, position: CardPosition, collectEvent: DuelBattleCallbacks["collectEvent"]): DuelCardInstance {
   const card = requireControlledCard(state, player, uid, "monsterZone");
-  card.previousLocation = card.location;
-  card.previousController = card.controller;
-  card.previousSequence = card.sequence;
-  card.previousPosition = card.position;
-  card.previousFaceUp = card.faceUp;
+  recordPreviousDuelCardState(state, card);
   card.position = position;
   card.faceUp = position !== "faceDownDefense";
   state.positionsChanged.push(card.uid);

@@ -1,4 +1,5 @@
-import type { CardPosition, DuelCardInstance } from "#duel/types.js";
+import { recordPreviousDuelCardState } from "#duel/card-state.js";
+import type { CardPosition, DuelCardInstance, DuelState } from "#duel/types.js";
 
 export type LuaMoveSnapshot = Pick<DuelCardInstance, "controller" | "location" | "sequence">;
 
@@ -23,16 +24,12 @@ export function faceupAttackOrFacedownDefensePosition(card: DuelCardInstance): C
   return undefined;
 }
 
-export function changeSpellTrapPosition(card: DuelCardInstance, requestedPosition: CardPosition, positionMask: number | undefined): boolean {
+export function changeSpellTrapPosition(state: DuelState, card: DuelCardInstance, requestedPosition: CardPosition, positionMask: number | undefined): boolean {
   if (card.location !== "spellTrapZone" || (card.kind !== "spell" && card.kind !== "trap")) return false;
   if (requestedPosition !== "faceDownDefense" && requestedPosition !== "faceDown") return false;
   if (positionMask !== undefined && (positionMask & 0x0a) === 0) return false;
   if (!card.faceUp && card.position === "faceDown") return false;
-  card.previousLocation = card.location;
-  card.previousController = card.controller;
-  card.previousSequence = card.sequence;
-  card.previousPosition = card.position;
-  card.previousFaceUp = card.faceUp;
+  recordPreviousDuelCardState(state, card);
   card.position = "faceDown";
   card.faceUp = false;
   return true;

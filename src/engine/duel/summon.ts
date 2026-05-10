@@ -1,4 +1,4 @@
-import { findCard, getCards, hasZoneSpace, moveDuelCard, pushDuelLog, requireControlledCard, requireZoneSpace } from "#duel/card-state.js";
+import { findCard, getCards, hasZoneSpace, moveDuelCard, pushDuelLog, recordPreviousDuelCardState, requireControlledCard, requireZoneSpace } from "#duel/card-state.js";
 import { duelActivity, recordFlipSummonActivity, recordNormalSetActivity, recordNormalSummonActivity, recordSpecialSummonActivity } from "#duel/activity.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import { duelReason } from "#duel/reasons.js";
@@ -52,11 +52,7 @@ export function normalSummon(state: DuelState, player: PlayerId, uid: string, co
 
 function geminiNormalSummon(state: DuelState, player: PlayerId, card: DuelCardInstance, collectEvent: DuelEventCollector): void {
   if (!canGeminiNormalSummonDuelCard(state, player, card)) throw new Error(`${card.name} cannot be Gemini Summoned`);
-  card.previousLocation = card.location;
-  card.previousController = card.controller;
-  card.previousSequence = card.sequence;
-  card.previousPosition = card.position;
-  card.previousFaceUp = card.faceUp;
+  recordPreviousDuelCardState(state, card);
   collectEvent("normalSummoning", card);
   card.summonType = "normal";
   card.summonTypeCode = summonTypeGemini;

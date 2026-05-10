@@ -1,4 +1,4 @@
-import { getCards, hasZoneSpace, moveDuelCard, pushDuelLog, resequence } from "#duel/card-state.js";
+import { getCards, hasZoneSpace, moveDuelCard, pushDuelLog, recordPreviousDuelCardState, resequence } from "#duel/card-state.js";
 import { isControlChangePrevented, setControlPlayerForCard } from "#duel/continuous-effects.js";
 import { phaseMask } from "#duel/phase-mask.js";
 import { duelReason } from "#duel/reasons.js";
@@ -35,8 +35,8 @@ export function applyLuaContinuousSetControl(session: DuelSession, target: DuelC
 export function swapLuaCardControl(session: DuelSession, left: DuelCardInstance, right: DuelCardInstance, reasonPlayer: PlayerId): void {
   const leftController = left.controller;
   const rightController = right.controller;
-  applyControlSwapCardState(left, rightController, reasonPlayer);
-  applyControlSwapCardState(right, leftController, reasonPlayer);
+  applyControlSwapCardState(session.state, left, rightController, reasonPlayer);
+  applyControlSwapCardState(session.state, right, leftController, reasonPlayer);
   resequence(session.state, leftController, left.location);
   resequence(session.state, rightController, left.location);
   resequence(session.state, leftController, right.location);
@@ -103,12 +103,8 @@ function hasControlSwapSpace(state: DuelState, left: DuelCardInstance, right: Du
   );
 }
 
-function applyControlSwapCardState(card: DuelCardInstance, controller: PlayerId, reasonPlayer: PlayerId): void {
-  card.previousLocation = card.location;
-  card.previousController = card.controller;
-  card.previousSequence = card.sequence;
-  card.previousPosition = card.position;
-  card.previousFaceUp = card.faceUp;
+function applyControlSwapCardState(state: DuelState, card: DuelCardInstance, controller: PlayerId, reasonPlayer: PlayerId): void {
+  recordPreviousDuelCardState(state, card);
   card.reason = duelReason.effect;
   card.reasonPlayer = reasonPlayer;
   card.controller = controller;

@@ -31,21 +31,22 @@ export function installCardPreviousStateApi(L: unknown, session: DuelSession, ho
   });
   lua.lua_setfield(L, -2, to_luastring("IsPreviousSequence"));
   pushNumberGetter(L, "GetPreviousPosition", session, (card) => positionMaskFromPosition(card?.previousPosition));
-  pushNumberGetter(L, "GetPreviousCode", session, (card) => (card?.previousLocation ? Number(card.code) : 0));
+  pushNumberGetter(L, "GetPreviousCode", session, (card) => (card?.previousLocation ? Number(previousCodes(card)[0] ?? 0) : 0));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    lua.lua_pushboolean(state, Boolean(card?.previousLocation && readRequestedCodes(state, 2).includes(card.code)));
+    const requestedCodes = readRequestedCodes(state, 2);
+    lua.lua_pushboolean(state, Boolean(card?.previousLocation && requestedCodes.some((code) => previousCodes(card).includes(code))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPreviousCodeOnField"));
-  pushNumberGetter(L, "GetPreviousTypeOnField", session, (card) => (card?.previousLocation ? cardTypeFlags(card) : 0));
-  pushNumberGetter(L, "GetPreviousAttackOnField", session, (card) => (card?.previousLocation ? card.data.attack ?? 0 : 0));
-  pushNumberGetter(L, "GetPreviousDefenseOnField", session, (card) => (card?.previousLocation ? card.data.defense ?? 0 : 0));
-  pushNumberGetter(L, "GetPreviousLevelOnField", session, (card) => (card?.previousLocation ? card.data.level ?? 0 : 0));
-  pushNumberGetter(L, "GetPreviousRankOnField", session, (card) => (card?.previousLocation ? cardRank(card) : 0));
-  pushNumberGetter(L, "GetPreviousLinkOnField", session, (card) => (card?.previousLocation ? cardLink(card) : 0));
-  pushNumberGetter(L, "GetPreviousRaceOnField", session, (card) => (card?.previousLocation ? card.data.race ?? 0 : 0));
-  pushNumberGetter(L, "GetPreviousAttributeOnField", session, (card) => (card?.previousLocation ? card.data.attribute ?? 0 : 0));
+  pushNumberGetter(L, "GetPreviousTypeOnField", session, (card) => (card?.previousLocation ? previousTypeFlags(card) : 0));
+  pushNumberGetter(L, "GetPreviousAttackOnField", session, (card) => (card?.previousLocation ? previousAttack(card) : 0));
+  pushNumberGetter(L, "GetPreviousDefenseOnField", session, (card) => (card?.previousLocation ? previousDefense(card) : 0));
+  pushNumberGetter(L, "GetPreviousLevelOnField", session, (card) => (card?.previousLocation ? previousLevel(card) : 0));
+  pushNumberGetter(L, "GetPreviousRankOnField", session, (card) => (card?.previousLocation ? previousRank(card) : 0));
+  pushNumberGetter(L, "GetPreviousLinkOnField", session, (card) => (card?.previousLocation ? previousLink(card) : 0));
+  pushNumberGetter(L, "GetPreviousRaceOnField", session, (card) => (card?.previousLocation ? previousRace(card) : 0));
+  pushNumberGetter(L, "GetPreviousAttributeOnField", session, (card) => (card?.previousLocation ? previousAttribute(card) : 0));
   pushBooleanGetter(L, "WasFaceup", session, (card) => Boolean(card?.previousLocation && card.previousFaceUp));
   pushBooleanGetter(L, "WasFacedown", session, (card) => Boolean(card?.previousLocation && !card.previousFaceUp));
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -74,22 +75,22 @@ export function installCardPreviousStateApi(L: unknown, session: DuelSession, ho
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requestedCodes = readRequestedCodes(state, 2);
-    lua.lua_pushboolean(state, Boolean(card?.previousLocation && requestedCodes.some((code) => cardCodes(card).includes(code))));
+    lua.lua_pushboolean(state, Boolean(card?.previousLocation && requestedCodes.some((code) => previousCodes(card).includes(code))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPreviousCode"));
-  pushAnyNumberMatcher(L, "IsPreviousTypeOnField", session, (card, requested) => Boolean(card.previousLocation && requested.some((value) => (cardTypeFlags(card) & value) !== 0)));
-  pushNumberMatcher(L, "IsPreviousAttackOnField", session, (card, requested) => Boolean(card.previousLocation && (card.data.attack ?? 0) === requested));
-  pushNumberMatcher(L, "IsPreviousDefenseOnField", session, (card, requested) => Boolean(card.previousLocation && hasDefense(card) && (card.data.defense ?? 0) === requested));
-  pushNumberMatcher(L, "IsPreviousLevelOnField", session, (card, requested) => Boolean(card.previousLocation && hasLevel(card) && (card.data.level ?? 0) === requested));
-  pushNumberMatcher(L, "IsPreviousRankOnField", session, (card, requested) => Boolean(card.previousLocation && hasRank(card) && cardRank(card) === requested));
-  pushNumberMatcher(L, "IsPreviousLinkOnField", session, (card, requested) => Boolean(card.previousLocation && cardLink(card) === requested));
-  pushAnyNumberMatcher(L, "IsPreviousRaceOnField", session, (card, requested) => Boolean(card.previousLocation && requested.some((value) => ((card.data.race ?? 0) & value) !== 0)));
-  pushAnyNumberMatcher(L, "IsPreviousAttributeOnField", session, (card, requested) => Boolean(card.previousLocation && requested.some((value) => ((card.data.attribute ?? 0) & value) !== 0)));
+  pushAnyNumberMatcher(L, "IsPreviousTypeOnField", session, (card, requested) => Boolean(card.previousLocation && requested.some((value) => (previousTypeFlags(card) & value) !== 0)));
+  pushNumberMatcher(L, "IsPreviousAttackOnField", session, (card, requested) => Boolean(card.previousLocation && previousAttack(card) === requested));
+  pushNumberMatcher(L, "IsPreviousDefenseOnField", session, (card, requested) => Boolean(card.previousLocation && hasPreviousDefense(card) && previousDefense(card) === requested));
+  pushNumberMatcher(L, "IsPreviousLevelOnField", session, (card, requested) => Boolean(card.previousLocation && hasPreviousLevel(card) && previousLevel(card) === requested));
+  pushNumberMatcher(L, "IsPreviousRankOnField", session, (card, requested) => Boolean(card.previousLocation && hasPreviousRank(card) && previousRank(card) === requested));
+  pushNumberMatcher(L, "IsPreviousLinkOnField", session, (card, requested) => Boolean(card.previousLocation && previousLink(card) === requested));
+  pushAnyNumberMatcher(L, "IsPreviousRaceOnField", session, (card, requested) => Boolean(card.previousLocation && requested.some((value) => (previousRace(card) & value) !== 0)));
+  pushAnyNumberMatcher(L, "IsPreviousAttributeOnField", session, (card, requested) => Boolean(card.previousLocation && requested.some((value) => (previousAttribute(card) & value) !== 0)));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = readRequestedNumbers(state, 2);
-    lua.lua_pushboolean(state, Boolean(card?.previousLocation && requested.some((wanted) => card.data.setcodes?.some((setcode) => isSetcodeMatch(wanted, setcode)))));
+    lua.lua_pushboolean(state, Boolean(card?.previousLocation && requested.some((wanted) => previousSetcodes(card).some((setcode) => isSetcodeMatch(wanted, setcode)))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsPreviousSetCard"));
@@ -136,16 +137,56 @@ function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefine
   return uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
 }
 
-function hasDefense(card: DuelCardInstance): boolean {
-  return (cardTypeFlags(card) & 0x1) !== 0 && (cardTypeFlags(card) & 0x4000000) === 0;
+function previousCodes(card: DuelCardInstance): string[] {
+  return card.previousCodes ?? cardCodes(card);
 }
 
-function hasLevel(card: DuelCardInstance): boolean {
-  return (cardTypeFlags(card) & 0x1) !== 0 && cardRank(card) === 0 && cardLink(card) === 0;
+function previousSetcodes(card: DuelCardInstance): number[] {
+  return card.previousSetcodes ?? card.data.setcodes ?? [];
 }
 
-function hasRank(card: DuelCardInstance): boolean {
-  return (cardTypeFlags(card) & 0x800000) !== 0;
+function previousTypeFlags(card: DuelCardInstance): number {
+  return card.previousTypeFlags ?? cardTypeFlags(card);
+}
+
+function previousAttack(card: DuelCardInstance): number {
+  return card.previousAttack ?? card.data.attack ?? 0;
+}
+
+function previousDefense(card: DuelCardInstance): number {
+  return card.previousDefense ?? card.data.defense ?? 0;
+}
+
+function previousLevel(card: DuelCardInstance): number {
+  return card.previousLevel ?? card.data.level ?? 0;
+}
+
+function previousRank(card: DuelCardInstance): number {
+  return card.previousRank ?? cardRank(card);
+}
+
+function previousLink(card: DuelCardInstance): number {
+  return card.previousLink ?? cardLink(card);
+}
+
+function previousRace(card: DuelCardInstance): number {
+  return card.previousRace ?? card.data.race ?? 0;
+}
+
+function previousAttribute(card: DuelCardInstance): number {
+  return card.previousAttribute ?? card.data.attribute ?? 0;
+}
+
+function hasPreviousDefense(card: DuelCardInstance): boolean {
+  return (previousTypeFlags(card) & 0x1) !== 0 && (previousTypeFlags(card) & 0x4000000) === 0;
+}
+
+function hasPreviousLevel(card: DuelCardInstance): boolean {
+  return (previousTypeFlags(card) & 0x1) !== 0 && (previousTypeFlags(card) & 0x800000) === 0 && (previousTypeFlags(card) & 0x4000000) === 0;
+}
+
+function hasPreviousRank(card: DuelCardInstance): boolean {
+  return (previousTypeFlags(card) & 0x800000) !== 0;
 }
 
 function locationMaskFromLocation(location: DuelCardInstance["location"] | undefined): number {
