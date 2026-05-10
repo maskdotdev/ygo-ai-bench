@@ -73,6 +73,7 @@ export interface DuelActivationHandlers {
     operationInfos?: ChainLink["operationInfos"],
     possibleOperationInfos?: ChainLink["possibleOperationInfos"],
     effectLabel?: number,
+    effectLabelObjectUid?: string,
   ): void;
   hasChainResponses(state: DuelState, player: PlayerId): boolean;
   resolveChain(state: DuelState): void;
@@ -112,6 +113,7 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
     quickEvent?.eventChainLinkId,
     quickEvent?.eventUids,
   );
+  if (effect.labelObjectUid !== undefined) ctx.effectLabelObjectUid = effect.labelObjectUid;
   const rollback = captureDuelState(session.state);
   try {
     if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);
@@ -143,6 +145,7 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
       ctx.operationInfos ?? [],
       ctx.possibleOperationInfos ?? [],
       ctx.effectLabel,
+      ctx.effectLabelObjectUid,
     );
     placeActivatedSpellTrapCard(session.state, player, source, effect);
     pushDuelLog(session.state, "activate", player, source.name, effect.id);
@@ -220,6 +223,7 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
       trigger.eventChainLinkId,
       trigger.eventUids,
     );
+    if (trigger.effectLabelObjectUid !== undefined) ctx.effectLabelObjectUid = trigger.effectLabelObjectUid;
     if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effect.id} could not be paid`);
     if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effect.id} are not legal`);
     handlers.pushChainLink(
@@ -249,6 +253,7 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
       ctx.operationInfos ?? [],
       ctx.possibleOperationInfos ?? [],
       ctx.effectLabel,
+      ctx.effectLabelObjectUid,
     );
     placeActivatedSpellTrapCard(session.state, trigger.player, source, effect);
     pushDuelLog(session.state, "trigger", trigger.player, source.name, effect.id);

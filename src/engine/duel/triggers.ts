@@ -148,6 +148,7 @@ function createPendingTrigger(state: DuelState, effect: DuelEffectDefinition, so
     ...(options.eventPreviousState === undefined ? {} : { eventPreviousState: { ...options.eventPreviousState } }),
     ...(options.eventCurrentState === undefined ? {} : { eventCurrentState: { ...options.eventCurrentState } }),
     ...(effect.triggerTiming === undefined ? {} : { eventTriggerTiming: effect.triggerTiming }),
+    ...(effect.labelObjectUid === undefined ? {} : { effectLabelObjectUid: effect.labelObjectUid }),
     ...(eventCard === undefined ? {} : { eventCardUid: eventCard.uid }),
   };
 }

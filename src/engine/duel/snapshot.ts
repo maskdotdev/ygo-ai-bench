@@ -337,6 +337,8 @@ function assertSnapshotPendingTriggers(triggers: unknown, cardUids: ReadonlySet<
     if (!snapshotTriggerBucketMatchesPlayer(trigger.triggerBucket as TriggerBucket, trigger.player as PlayerId, turnPlayer)) throw new Error(`Malformed duel snapshot: ${path}.triggerBucket must match the trigger player`);
     assertSnapshotEventPayload(trigger, path, cardUids);
     if (!cardUids.has(trigger.sourceUid as string)) throw new Error(`Malformed duel snapshot: ${path}.sourceUid must reference a card`);
+    if (trigger.effectLabelObjectUid !== undefined && typeof trigger.effectLabelObjectUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.effectLabelObjectUid must be a string`);
+    if (trigger.effectLabelObjectUid !== undefined && !cardUids.has(trigger.effectLabelObjectUid)) throw new Error(`Malformed duel snapshot: ${path}.effectLabelObjectUid must reference a card`);
   }
 }
 
@@ -422,6 +424,8 @@ function assertSnapshotChain(chain: unknown, cardUids: ReadonlySet<string>): voi
     for (const field of ["chainIndex", "activationSequence", "targetParam", "disableReason", "effectLabel"] as const) {
       if (link[field] !== undefined && typeof link[field] !== "number") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a number`);
     }
+    if (link.effectLabelObjectUid !== undefined && typeof link.effectLabelObjectUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.effectLabelObjectUid must be a string`);
+    if (link.effectLabelObjectUid !== undefined && !cardUids.has(link.effectLabelObjectUid)) throw new Error(`Malformed duel snapshot: ${path}.effectLabelObjectUid must reference a card`);
     if (link.targetUids !== undefined) {
       assertSnapshotStringArray(link.targetUids, `${path}.targetUids`);
       assertSnapshotUniqueStringArray(link.targetUids, `${path}.targetUids`);
@@ -828,7 +832,10 @@ function copySerializedEffect(effect: DuelEffectDefinition): SerializedDuelEffec
   const {
     battleDamageValue: _battleDamageValue,
     canActivate: _canActivate,
-    cost: _cost, lifePointValue: _lifePointValue, luaTypeFlags: _luaTypeFlags,
+    cost: _cost,
+    labelObjectUid: _labelObjectUid,
+    lifePointValue: _lifePointValue,
+    luaTypeFlags: _luaTypeFlags,
     operation: _operation,
     statValue: _statValue,
     target: _target,

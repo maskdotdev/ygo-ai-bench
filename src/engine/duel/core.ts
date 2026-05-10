@@ -832,6 +832,7 @@ function pushChainLink(
   operationInfos: ChainLink["operationInfos"] = [],
   possibleOperationInfos: ChainLink["possibleOperationInfos"] = [],
   effectLabel?: number,
+  effectLabelObjectUid?: string,
 ): void {
   const source = findCard(state, sourceUid);
   const chainLinkId = `chain-${state.log.length + 1}`;
@@ -865,6 +866,7 @@ function pushChainLink(
     ...(targetPlayer === undefined ? {} : { targetPlayer }),
     ...(targetParam === undefined ? {} : { targetParam }),
     ...(effectLabel === undefined ? {} : { effectLabel }),
+    ...(effectLabelObjectUid === undefined ? {} : { effectLabelObjectUid }),
   });
   if (source) {
     recordChainActivity(state, player, source, effectId);
@@ -963,6 +965,7 @@ function resolveChain(state: DuelState): void {
         link.operationInfos ? copyDuelOperationInfos(link.operationInfos) : [],
         link.possibleOperationInfos ? copyDuelOperationInfos(link.possibleOperationInfos) : [],
       );
+      if (link.effectLabelObjectUid !== undefined) ctx.effectLabelObjectUid = link.effectLabelObjectUid;
       (link.operationOverride ?? effect.operation)(ctx);
       sendResolvedActivatedSpellTrapToGraveyard(state, link, source, effect);
       collectDuelTriggerEffects(state, "chainSolved", undefined, chainPayload);
