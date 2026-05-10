@@ -2,10 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions as getDuelLegalActionGroups, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -19,7 +20,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     const darkMagicianCode = "46986414";
     const effectNormalCode = "10000010";
     const cards = workspace.readDatabaseCards("cards.cdb").filter((card) => [lordlyLodeCode, etherBerylCode, darkMagicianCode, effectNormalCode].includes(card.code));
-    const session = createDuel({ seed: 293, startingHandSize: 0, cardReader: createCardReader(cards) });
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 293, startingHandSize: 0, cardReader: reader });
     loadDecks(session, { 0: { main: [lordlyLodeCode, etherBerylCode, darkMagicianCode, effectNormalCode] }, 1: { main: [] } });
     startDuel(session);
 
@@ -33,13 +35,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(effectNormal).toBeDefined();
     moveDuelCard(session.state, lordlyLode!.uid, "hand", 0);
 
-    const host = createLuaScriptHost(session, workspace);
-    expect(host.loadCardScript(Number(lordlyLodeCode), workspace).ok).toBe(true);
-    expect(host.loadCardScript(Number(effectNormalCode), {
+    const source = {
       readScript(name: string) {
         return name === `c${effectNormalCode}.lua` ? effectNormalScript(effectNormalCode) : workspace.readScript(name);
       },
-    }).ok).toBe(true);
+    };
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(lordlyLodeCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(effectNormalCode), source).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
 
     const activateField = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === lordlyLode!.uid);
@@ -60,6 +63,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect" && action.uid === effectNormal!.uid)).toBe(true);
     session.state.cards.find((card) => card.uid === effectNormal!.uid)!.summonType = "special";
     expect(getDuelLegalActions(session, 0).some((action) => action.type === "activateEffect" && action.uid === effectNormal!.uid)).toBe(false);
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          event: "continuous",
+          code: 6,
+          sourceUid: lordlyLode!.uid,
+          luaValueDescriptor: "cannot-activate:special-summoned-monster-on-field",
+          targetRange: [1, 0],
+        }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getDuelLegalActionGroups(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(restored.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          event: "continuous",
+          code: 6,
+          sourceUid: lordlyLode!.uid,
+          luaValueDescriptor: "cannot-activate:special-summoned-monster-on-field",
+          targetRange: [1, 0],
+        }),
+      ]),
+    );
+    expect(getLuaRestoreLegalActions(restored, 0).some((action) => action.type === "activateEffect" && action.uid === effectNormal!.uid)).toBe(false);
   });
 });
 

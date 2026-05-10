@@ -1,5 +1,6 @@
 import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
+import { cardTypeFlags } from "#duel/card-stats.js";
 import { applyResponse, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
@@ -24,6 +25,7 @@ const luaLifePointReasonPredicateEffectCodes = new Set([80, 81]);
 const luaEffectReasonPredicateDescriptor = "value-predicate:effect-reason";
 const luaReasonMaskPredicateDescriptorPrefix = "value-predicate:reason-mask:";
 const luaValueCardNotHandlerDescriptor = "value-card:not-handler";
+const luaCannotActivateSpecialSummonedMonsterDescriptor = "cannot-activate:special-summoned-monster-on-field";
 const luaSourceControllerConditionDescriptor = "condition:source-controller";
 const luaYellowAlertCode = "59277750";
 const luaResetEvent = 0x1000;
@@ -242,11 +244,24 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
         isKnownIndestructibleCountReasonPredicateEffect(effect) ||
         isKnownCannotSelectBattleTargetNotHandlerEffect(effect) ||
         isKnownYellowAlertDelayedReturnEffect(effect) ||
+        isKnownCannotActivateSpecialSummonedMonsterEffect(effect) ||
         effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
         isStaticSingleCardLuaRestriction(effect) ||
         isStaticPlayerPhaseLock(effect) ||
         (effect.code === 102 && effect.value !== undefined && effect.value !== 0 && effect.targetRange === undefined) ||
         ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 132) && effect.value !== undefined)))
+  );
+}
+
+function isKnownCannotActivateSpecialSummonedMonsterEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 6 &&
+    effect.luaValueDescriptor === luaCannotActivateSpecialSummonedMonsterDescriptor &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    effect.targetRange?.[0] === 1 &&
+    effect.targetRange?.[1] === 0 &&
+    hasDefaultLuaFieldRange(effect)
   );
 }
 
@@ -388,6 +403,9 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   if (effect.luaValueDescriptor === luaValueCardNotHandlerDescriptor) {
     return { valueCardPredicate: (_ctx, card) => card.uid !== effect.sourceUid };
   }
+  if (effect.luaValueDescriptor === luaCannotActivateSpecialSummonedMonsterDescriptor) {
+    return { valuePredicate: (ctx) => relatedEffectIsSpecialSummonedMonsterOnField(ctx) };
+  }
   if (effect.luaValueDescriptor !== "change-damage:effect-double") return {};
   const applyValue = (ctx: Parameters<NonNullable<DuelEffectDefinition["lifePointValue"]>>[0], _player: PlayerId, amount: number): number =>
     ((ctx.eventReason ?? 0) & duelReason.effect) !== 0 ? amount * 2 : amount;
@@ -427,6 +445,21 @@ function relatedEffectIsContinuous(ctx: Parameters<NonNullable<DuelEffectDefinit
   const relatedEffectId = ctx.relatedEffectId === undefined ? ctx.chainLink?.effectId : `lua-${ctx.relatedEffectId}`;
   const relatedEffect = ctx.duel.effects.find((effect) => effect.id === relatedEffectId);
   return ((relatedEffect?.luaTypeFlags ?? 0) & 0x800) !== 0;
+}
+
+function relatedEffectIsSpecialSummonedMonsterOnField(ctx: Parameters<NonNullable<DuelEffectDefinition["valuePredicate"]>>[0]): boolean {
+  const relatedEffectId = ctx.relatedEffectId === undefined ? ctx.chainLink?.effectId : `lua-${ctx.relatedEffectId}`;
+  const relatedEffect = ctx.duel.effects.find((effect) => effect.id === relatedEffectId);
+  const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid);
+  return Boolean(
+    handler &&
+      (cardTypeFlags(handler, ctx.duel) & 0x1) !== 0 &&
+      handler.location === "monsterZone" &&
+      handler.summonType !== undefined &&
+      handler.summonType !== "normal" &&
+      handler.summonType !== "tribute" &&
+      handler.summonType !== "flip",
+  );
 }
 
 function otherPlayer(player: PlayerId): PlayerId {
