@@ -783,7 +783,7 @@ function synchroLevel(card: DuelCardInstance): number {
 
 function canGenericXyzMaterialsMatch(card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
   const targetRank = xyzRank(card);
-  return targetRank > 0 && materials.length === xyzMaterialCount(card) && materials.every((material) => (material.data.level ?? 0) === targetRank && xyzMaterialRaceMatches(card, material) && xyzMaterialAttributeMatches(card, material) && xyzMaterialTypeMatches(card, material));
+  return targetRank > 0 && materials.length === xyzMaterialCount(card) && materials.every((material) => (material.data.level ?? 0) === targetRank && xyzMaterialRaceMatches(card, material) && xyzMaterialAttributeMatches(card, material) && xyzMaterialTypeMatches(card, material) && xyzMaterialSetcodeMatches(card, material));
 }
 
 function xyzRank(card: DuelCardInstance): number {
@@ -804,6 +804,14 @@ function xyzMaterialAttributeMatches(target: DuelCardInstance, material: DuelCar
 
 function xyzMaterialTypeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
   return target.data.xyzMaterialType === undefined || ((material.data.typeFlags ?? 0) & target.data.xyzMaterialType) !== 0;
+}
+
+function xyzMaterialSetcodeMatches(target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return target.data.xyzMaterialSetcode === undefined || (material.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.xyzMaterialSetcode!, setcode));
+}
+
+function isSetcodeMatch(requested: number, setcode: number): boolean {
+  return (setcode & 0xfff) === (requested & 0xfff) && (setcode & requested) === requested;
 }
 
 function isTuner(card: DuelCardInstance): boolean {

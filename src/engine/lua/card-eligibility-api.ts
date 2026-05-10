@@ -3,6 +3,7 @@ import { canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuel
 import { isMaterialUsePrevented, type MaterialUseKind } from "#duel/continuous-effects.js";
 import { duelReason } from "#duel/reasons.js";
 import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
+import { isSetcodeMatch } from "#lua/card-code-utils.js";
 import { cardLink, cardRank, cardTypeFlags } from "#lua/card-stat-api.js";
 import type { DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
@@ -72,6 +73,7 @@ function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCa
     if (target.data.xyzMaterialRace !== undefined && ((card.data.race ?? 0) & target.data.xyzMaterialRace) === 0) return false;
     if (target.data.xyzMaterialAttribute !== undefined && ((card.data.attribute ?? 0) & target.data.xyzMaterialAttribute) === 0) return false;
     if (target.data.xyzMaterialType !== undefined && (cardTypeFlags(card) & target.data.xyzMaterialType) === 0) return false;
+    if (target.data.xyzMaterialSetcode !== undefined && !(card.data.setcodes ?? []).some((setcode) => isSetcodeMatch(target.data.xyzMaterialSetcode!, setcode))) return false;
     const targetRank = cardRank(target);
     const materialLevel = card.data.level ?? 0;
     const materialRank = cardRank(card);

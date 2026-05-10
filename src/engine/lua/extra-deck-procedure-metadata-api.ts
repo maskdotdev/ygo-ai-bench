@@ -1,10 +1,12 @@
 import fengari from "fengari";
+import { luaArchetypeSetcodeNumericConstants } from "#lua/basic-archetype-setcode-constant-data.js";
 import { luaNumericConstants } from "#lua/basic-constant-data.js";
 import type { DuelCardInstance } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 const ATTRIBUTE_CONSTANT_EXPRESSION = String.raw`ATTRIBUTE_[A-Z0-9_]+(?:\s*\|\s*ATTRIBUTE_[A-Z0-9_]+)*`;
 const RACE_CONSTANT_EXPRESSION = String.raw`RACES?_[A-Z0-9_]+(?:\s*\|\s*RACES?_[A-Z0-9_]+)*`;
+const SET_CONSTANT_EXPRESSION = String.raw`SET_[A-Z0-9_]+(?:\s*\|\s*SET_[A-Z0-9_]+)*`;
 const TYPE_CONSTANT_EXPRESSION = String.raw`TYPE_[A-Z0-9_]+(?:\s*\|\s*TYPE_[A-Z0-9_]+)*`;
 
 export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardInstance, source?: string): void {
@@ -36,6 +38,8 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
   if (xyzAttribute !== undefined) card.data.xyzMaterialAttribute = xyzAttribute;
   const xyzType = readXyzProcedureTypeFilter(source);
   if (xyzType !== undefined) card.data.xyzMaterialType = xyzType;
+  const xyzSetcode = readXyzProcedureSetcodeFilter(source);
+  if (xyzSetcode !== undefined) card.data.xyzMaterialSetcode = xyzSetcode;
   const linkMin = readProcedureNumberField(L, card, "link_materials", 2);
   const linkMax = readProcedureNumberField(L, card, "link_materials", 3);
   if (linkMin !== undefined) card.data.linkMaterialMin = linkMin;
@@ -84,6 +88,10 @@ function readXyzProcedureTypeFilter(source: string | undefined): number | undefi
   return readAddProcedureConstantFilter(source, "Xyz", "Card.IsType", TYPE_CONSTANT_EXPRESSION);
 }
 
+function readXyzProcedureSetcodeFilter(source: string | undefined): number | undefined {
+  return readAddProcedureConstantFilter(source, "Xyz", "Card.IsSetCard", SET_CONSTANT_EXPRESSION);
+}
+
 function readLinkProcedureTypeFilter(source: string | undefined): number | undefined {
   return readAddProcedureConstantFilter(source, "Link", "Card.IsType", TYPE_CONSTANT_EXPRESSION);
 }
@@ -110,7 +118,7 @@ function readLuaConstantExpression(expression: string | undefined): number | und
   if (!expression) return undefined;
   let value = 0;
   for (const constant of expression.split("|").map((part) => part.trim())) {
-    const numeric = luaNumericConstants[constant];
+    const numeric = luaNumericConstants[constant] ?? luaArchetypeSetcodeNumericConstants[constant];
     if (numeric === undefined) return undefined;
     value |= numeric;
   }
