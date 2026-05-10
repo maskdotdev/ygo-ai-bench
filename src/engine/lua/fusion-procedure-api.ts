@@ -99,11 +99,28 @@ export const fusionProcedureSource = `
     if handler then handler:RegisterEffect(e) end
     return e
   end
+  local function fusion_summon_eff_filter(c,e,tp,mg)
+    if not c:IsType(TYPE_FUSION) then return false end
+    if not c:IsCanBeSpecialSummoned(e,SUMMON_TYPE_FUSION,tp,false,false) then return false end
+    local sg=Duel.SelectFusionMaterial(tp,c,mg,nil)
+    return sg and sg:GetCount()>0
+  end
   function Fusion.SummonEffTG(...)
-    return function(e,tp,eg,ep,ev,re,r,rp,chk) return chk~=0 or true end
+    return function(e,tp,eg,ep,ev,re,r,rp,chk)
+      local mg=Duel.GetFusionMaterial(tp)
+      if chk==0 then return Duel.IsExistingMatchingCard(fusion_summon_eff_filter,tp,LOCATION_EXTRA,0,1,nil,e,tp,mg) end
+      Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_EXTRA)
+    end
   end
   function Fusion.SummonEffOP(...)
-    return function(e,tp,eg,ep,ev,re,r,rp) return true end
+    return function(e,tp,eg,ep,ev,re,r,rp)
+      local mg=Duel.GetFusionMaterial(tp)
+      local g=Duel.GetMatchingGroup(fusion_summon_eff_filter,tp,LOCATION_EXTRA,0,nil,e,tp,mg)
+      local tc=g and g:GetFirst()
+      if not tc then return end
+      local sg=Duel.SelectFusionMaterial(tp,tc,mg,nil)
+      if sg and sg:GetCount()>0 then Duel.FusionSummon(tp,tc,sg) end
+    end
   end
   function Fusion.OnFieldMat(filter,...)
     local funs={filter,...}
