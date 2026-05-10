@@ -5,6 +5,7 @@ import type { LuaCardApiEffectRecord } from "#lua/card-api-types.js";
 
 const luaEffectAddCode = 113;
 const luaEffectChangeCode = 114;
+const luaEffectRemoveCode = 118;
 
 export function effectiveCardCodes<EffectRecord extends LuaCardApiEffectRecord>(
   state: DuelState,
@@ -19,6 +20,10 @@ export function effectiveCardCodes<EffectRecord extends LuaCardApiEffectRecord>(
   for (const effect of matchingLuaEffects(state, card, luaEffectAddCode, hostState)) {
     const code = finiteEffectCode(effect);
     if (code !== undefined) codes.push(code);
+  }
+  for (const effect of matchingLuaEffects(state, card, luaEffectRemoveCode, hostState)) {
+    const code = finiteEffectCode(effect);
+    if (code !== undefined) codes = codes.filter((current) => current !== code);
   }
   return [...new Set(codes)];
 }

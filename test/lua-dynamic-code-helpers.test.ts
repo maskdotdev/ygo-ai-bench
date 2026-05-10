@@ -50,6 +50,22 @@ describe("Lua dynamic code helpers", () => {
     expect(restored.host.messages).toContain("dynamic code inspector resolved");
     expect(restored.host.messages).toContain("dynamic code source resolved");
   });
+
+  it("applies EFFECT_REMOVE_CODE to current code checks", () => {
+    const cards: DuelCardData[] = [
+      { code: "500", alias: "501", name: "Dynamic Remove-Code Source", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 252, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["500"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const source = { readScript: dynamicCodeScript };
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(500, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    expect(host.messages).toContain("remove code 501/false/true/true/true/false/true");
+  });
 });
 
 function dynamicCodeScript(name: string): string | undefined {
@@ -103,6 +119,24 @@ function dynamicCodeScript(name: string): string | undefined {
           Debug.Message("dynamic code inspector resolved")
         end)
         c:RegisterEffect(e)
+      end
+    `;
+  }
+  if (name === "c500.lua") {
+    return `
+      c500={}
+      function c500.initial_effect(c)
+        local e0=Effect.CreateEffect(c)
+        e0:SetType(EFFECT_TYPE_SINGLE)
+        e0:SetCode(EFFECT_ADD_CODE)
+        e0:SetValue(900)
+        c:RegisterEffect(e0)
+        local e1=Effect.CreateEffect(c)
+        e1:SetType(EFFECT_TYPE_SINGLE)
+        e1:SetCode(EFFECT_REMOVE_CODE)
+        e1:SetValue(500)
+        c:RegisterEffect(e1)
+        Debug.Message("remove code " .. c:GetCode() .. "/" .. tostring(c:IsCode(500)) .. "/" .. tostring(c:IsCode(501)) .. "/" .. tostring(c:IsCode(900)) .. "/" .. tostring(c:IsNotCode(500)) .. "/" .. tostring(c:IsOriginalCode(501)) .. "/" .. tostring(c:IsOriginalCode(500)))
       end
     `;
   }

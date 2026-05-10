@@ -48,6 +48,25 @@ describe("Lua added setcode helpers", () => {
     expect(restored.host.messages).toContain("added setcode inspector resolved");
     expect(restored.host.messages).toContain("added setcode source resolved");
   });
+
+  it("applies EFFECT_CHANGE_SETCODE and EFFECT_REMOVE_SETCODE to current setcode checks", () => {
+    const cards: DuelCardData[] = [
+      { code: "200", name: "Dynamic Change-Setcode Source", kind: "monster", setcodes: [0x123] },
+      { code: "300", name: "Dynamic Remove-Setcode Source", kind: "monster", setcodes: [0x111, 0x222] },
+    ];
+    const session = createDuel({ seed: 253, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["200", "300"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const source = { readScript: addedSetcodeScript };
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    expect(host.messages).toContain("changed setcode false/true/true/true/801");
+    expect(host.messages).toContain("removed setcode false/true/true/true/546");
+  });
 });
 
 function addedSetcodeScript(name: string): string | undefined {
@@ -89,6 +108,37 @@ function addedSetcodeScript(name: string): string | undefined {
           Debug.Message("added setcode inspector resolved")
         end)
         c:RegisterEffect(e)
+      end
+    `;
+  }
+  if (name === "c200.lua") {
+    return `
+      c200={}
+      function c200.initial_effect(c)
+        local e1=Effect.CreateEffect(c)
+        e1:SetType(EFFECT_TYPE_SINGLE)
+        e1:SetCode(EFFECT_CHANGE_SETCODE)
+        e1:SetValue(0x321)
+        c:RegisterEffect(e1)
+        local e2=Effect.CreateEffect(c)
+        e2:SetType(EFFECT_TYPE_SINGLE)
+        e2:SetCode(EFFECT_ADD_SETCODE)
+        e2:SetValue(0x654)
+        c:RegisterEffect(e2)
+        Debug.Message("changed setcode " .. tostring(c:IsSetCard(0x123)) .. "/" .. tostring(c:IsSetCard(0x321)) .. "/" .. tostring(c:IsSetCard(0x654)) .. "/" .. tostring(c:IsOriginalSetCard(0x123)) .. "/" .. c:GetSetCard())
+      end
+    `;
+  }
+  if (name === "c300.lua") {
+    return `
+      c300={}
+      function c300.initial_effect(c)
+        local e1=Effect.CreateEffect(c)
+        e1:SetType(EFFECT_TYPE_SINGLE)
+        e1:SetCode(EFFECT_REMOVE_SETCODE)
+        e1:SetValue(0x111)
+        c:RegisterEffect(e1)
+        Debug.Message("removed setcode " .. tostring(c:IsSetCard(0x111)) .. "/" .. tostring(c:IsSetCard(0x222)) .. "/" .. tostring(c:IsNotSetCard(0x111)) .. "/" .. tostring(c:IsOriginalSetCard(0x111)) .. "/" .. c:GetSetCard())
       end
     `;
   }
