@@ -22,6 +22,8 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
   if (synchroTunerAttribute !== undefined) card.data.synchroTunerAttribute = synchroTunerAttribute;
   const synchroNonTunerAttribute = readSynchroProcedureNonTunerAttributeFilter(source);
   if (synchroNonTunerAttribute !== undefined) card.data.synchroNonTunerAttribute = synchroNonTunerAttribute;
+  const synchroTunerLevel = readSynchroProcedureTunerLevelFilter(source);
+  if (synchroTunerLevel !== undefined) card.data.synchroTunerLevel = synchroTunerLevel;
   const synchroTunerRace = readSynchroProcedureTunerRaceFilter(source);
   if (synchroTunerRace !== undefined) card.data.synchroTunerRace = synchroTunerRace;
   const synchroNonTunerRace = readSynchroProcedureNonTunerRaceFilter(source);
@@ -74,6 +76,10 @@ function readSynchroProcedureTunerAttributeFilter(source: string | undefined): n
 
 function readSynchroProcedureNonTunerAttributeFilter(source: string | undefined): number | undefined {
   return readSynchroNonTunerConstantFilter(source, "Card.IsAttribute", ATTRIBUTE_CONSTANT_EXPRESSION);
+}
+
+function readSynchroProcedureTunerLevelFilter(source: string | undefined): number | undefined {
+  return readAddProcedureNumberFilter(source, "Synchro", "Card.IsLevel");
 }
 
 function readSynchroProcedureTunerRaceFilter(source: string | undefined): number | undefined {
