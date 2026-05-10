@@ -255,7 +255,7 @@ function pushClearOperationInfo(L: unknown, session: DuelSession, hostState: Lua
   for (let index = operationInfos.length - 1; index >= 0; index -= 1) {
     const candidate = operationInfos[index];
     if (!candidate || candidate.chainIndex !== chainIndex) continue;
-    if (category === undefined || candidate.category === category) operationInfos.splice(index, 1);
+    if (category === undefined || operationInfoCategoryMatches(candidate.category, category)) operationInfos.splice(index, 1);
   }
   clearContextOperationInfo(session, hostState, field, chainIndex, category);
   return 0;
@@ -265,9 +265,14 @@ function findOperationInfo(operationInfos: LuaDuelOperationInfo[], category: num
   for (let index = operationInfos.length - 1; index >= 0; index -= 1) {
     const candidate = operationInfos[index];
     if (!candidate) continue;
-    if (candidate.category === category) return candidate;
+    if (operationInfoCategoryMatches(candidate.category, category)) return candidate;
   }
   return undefined;
+}
+
+function operationInfoCategoryMatches(stored: number, requested: number): boolean {
+  if (requested === 0) return stored === 0;
+  return stored === requested || (stored & requested) === requested;
 }
 
 function operationInfoChainIndex(session: DuelSession, hostState: LuaDuelOperationApiHostState, requestedIndex: number, mode: "get" | "set"): number {
@@ -321,7 +326,10 @@ function clearDuelOperationInfo(infos: DuelOperationInfo[] | undefined, category
     infos.splice(0, infos.length);
     return;
   }
-  for (let index = infos.length - 1; index >= 0; index -= 1) if (infos[index]?.category === category) infos.splice(index, 1);
+  for (let index = infos.length - 1; index >= 0; index -= 1) {
+    const info = infos[index];
+    if (info && operationInfoCategoryMatches(info.category, category)) infos.splice(index, 1);
+  }
 }
 
 function duelOperationInfo(info: LuaDuelOperationInfo): DuelOperationInfo {
