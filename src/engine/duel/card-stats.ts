@@ -10,8 +10,9 @@ export function cardTypeFlags(card: DuelCardInstance | undefined, state?: DuelSt
 export function printedCardTypeFlags(card: DuelCardInstance | undefined): number {
   if (!card) return 0;
   if (card.data.typeFlags !== undefined) return card.data.typeFlags;
-  if (card.kind === "spell") return 0x2;
-  if (card.kind === "trap") return 0x4;
+  const printedKind = card.kind === "extra" ? card.data.kind : card.kind;
+  if (printedKind === "spell") return 0x2;
+  if (printedKind === "trap") return 0x4;
   return 0x1;
 }
 
@@ -51,12 +52,14 @@ export function currentBaseDefense(card: DuelCardInstance | undefined, state?: D
 
 export function currentLevel(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (card?.assumedProperties?.[3] !== undefined) return card.assumedProperties[3];
-  return (card?.data.level ?? 0) + (card?.levelModifier ?? 0) + statUpdateEffectValue(card, state, 130);
+  const updatedLevel = (card?.data.level ?? 0) + (card?.levelModifier ?? 0) + statUpdateEffectValue(card, state, 130);
+  return setStatEffectValue(card, state, 314) ?? setStatEffectValue(card, state, 131) ?? updatedLevel;
 }
 
 export function currentRank(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (card?.assumedProperties?.[4] !== undefined) return card.assumedProperties[4];
-  return cardRank(card) + (card?.rankModifier ?? 0) + statUpdateEffectValue(card, state, 132);
+  const updatedRank = cardRank(card) + (card?.rankModifier ?? 0) + statUpdateEffectValue(card, state, 132);
+  return setStatEffectValue(card, state, 315) ?? setStatEffectValue(card, state, 133) ?? updatedRank;
 }
 
 export function currentLink(card: DuelCardInstance | undefined): number {
@@ -64,12 +67,14 @@ export function currentLink(card: DuelCardInstance | undefined): number {
   return cardLink(card) + (card?.linkModifier ?? 0);
 }
 
-export function currentLeftScale(card: DuelCardInstance | undefined): number {
-  return (card?.data.leftScale ?? 0) + (card?.scaleModifier ?? 0);
+export function currentLeftScale(card: DuelCardInstance | undefined, state?: DuelState): number {
+  const updatedScale = (card?.data.leftScale ?? 0) + (card?.scaleModifier ?? 0) + statUpdateEffectValue(card, state, 134);
+  return setStatEffectValue(card, state, 135) ?? updatedScale;
 }
 
-export function currentRightScale(card: DuelCardInstance | undefined): number {
-  return (card?.data.rightScale ?? 0) + (card?.scaleModifier ?? 0);
+export function currentRightScale(card: DuelCardInstance | undefined, state?: DuelState): number {
+  const updatedScale = (card?.data.rightScale ?? 0) + (card?.scaleModifier ?? 0) + statUpdateEffectValue(card, state, 136);
+  return setStatEffectValue(card, state, 137) ?? updatedScale;
 }
 
 export function currentRace(card: DuelCardInstance | undefined, state?: DuelState): number {

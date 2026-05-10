@@ -65,16 +65,16 @@ export function installCardStatApi<EffectRecord extends LuaCardApiEffectRecord>(
   lua.lua_pushcfunction(L, (state: unknown) => pushUpdateLevel(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("UpdateLevel"));
   pushNumberGetter(L, "GetOriginalLevel", session, (card) => card?.data.level ?? 0);
-  pushNumberGetter(L, "GetLeftScale", session, (card) => currentLeftScale(card));
-  pushNumberGetter(L, "GetRightScale", session, (card) => currentRightScale(card));
+  pushNumberGetter(L, "GetLeftScale", session, (card) => currentLeftScale(card, session.state));
+  pushNumberGetter(L, "GetRightScale", session, (card) => currentRightScale(card, session.state));
   pushNumberGetter(L, "GetOriginalLeftScale", session, (card) => card?.data.leftScale ?? 0);
   pushNumberGetter(L, "GetOriginalRightScale", session, (card) => card?.data.rightScale ?? 0);
-  pushNumberGetter(L, "GetScale", session, (card) => cardScale(card));
+  pushNumberGetter(L, "GetScale", session, (card) => cardScale(card, session.state));
   lua.lua_pushcfunction(L, (state: unknown) => pushUpdateScale(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("UpdateScale"));
-  pushNumberMatcher(L, "IsScale", session, (card, requested) => cardScale(card) === requested);
-  pushBooleanGetter(L, "IsOddScale", session, (card) => isPendulumCardData(card) && cardScale(card) % 2 !== 0);
-  pushBooleanGetter(L, "IsEvenScale", session, (card) => isPendulumCardData(card) && cardScale(card) % 2 === 0);
+  pushNumberMatcher(L, "IsScale", session, (card, requested) => cardScale(card, session.state) === requested);
+  pushBooleanGetter(L, "IsOddScale", session, (card) => isPendulumCardData(card, session.state) && cardScale(card, session.state) % 2 !== 0);
+  pushBooleanGetter(L, "IsEvenScale", session, (card) => isPendulumCardData(card, session.state) && cardScale(card, session.state) % 2 === 0);
   pushBooleanGetter(L, "HasLevel", session, (card) => hasLevel(card, session.state));
   pushAnyNumberMatcher(L, "IsLevel", session, (card, requested) => hasLevel(card, session.state) && requested.includes(currentLevel(card, session.state)));
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -138,10 +138,10 @@ export function installCardStatApi<EffectRecord extends LuaCardApiEffectRecord>(
   pushBooleanGetter(L, "IsTrapMonster", session, (card) => Boolean(card && (cardTypeFlags(card, session.state) & 0x4) !== 0 && ((card.data.level ?? 0) > 0 || (card.data.attribute ?? 0) > 0 || (card.data.race ?? 0) > 0)));
 }
 
-export function cardScale(card: DuelCardInstance | undefined): number {
-  if (!isPendulumCardData(card)) return 0;
-  if (card.location !== "spellTrapZone") return currentLeftScale(card);
-  return card.sequence === 0 || card.sequence === 1 || card.sequence === 6 ? currentLeftScale(card) : currentRightScale(card);
+export function cardScale(card: DuelCardInstance | undefined, state?: DuelState): number {
+  if (!isPendulumCardData(card, state)) return 0;
+  if (card.location !== "spellTrapZone") return currentLeftScale(card, state);
+  return card.sequence === 0 || card.sequence === 1 || card.sequence === 6 ? currentLeftScale(card, state) : currentRightScale(card, state);
 }
 
 function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => number): void {
@@ -269,10 +269,10 @@ function pushUpdateLevel<EffectRecord extends LuaCardApiEffectRecord>(L: unknown
     lua.lua_pushinteger(L, 0);
     return 1;
   }
-  const before = currentLevel(card);
+  const before = currentLevel(card, session.state);
   if (before + amount <= 0) amount = -(before - 1);
   card.levelModifier = (card.levelModifier ?? 0) + amount;
-  const delta = currentLevel(card) - before;
+  const delta = currentLevel(card, session.state) - before;
   if (delta !== 0) {
     markLuaOperationTimingBoundary(session, hostState);
     collectStatEvent(session, hostState, "levelChanged", card);
@@ -297,10 +297,10 @@ function pushUpdateRank<EffectRecord extends LuaCardApiEffectRecord>(L: unknown,
     lua.lua_pushinteger(L, 0);
     return 1;
   }
-  const before = currentRank(card);
+  const before = currentRank(card, session.state);
   if (before + amount <= 0) amount = -(before - 1);
   card.rankModifier = (card.rankModifier ?? 0) + amount;
-  lua.lua_pushinteger(L, currentRank(card) - before);
+  lua.lua_pushinteger(L, currentRank(card, session.state) - before);
   return 1;
 }
 
@@ -329,17 +329,17 @@ function pushUpdateScale<EffectRecord extends LuaCardApiEffectRecord>(L: unknown
   }
   const card = readCard(L, session);
   let amount = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
-  if (!isPendulumCardData(card) || currentLeftScale(card) === 0 || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) {
+  if (!isPendulumCardData(card, session.state) || currentLeftScale(card, session.state) === 0 || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) {
     lua.lua_pushinteger(L, 0);
     return 1;
   }
-  const before = currentLeftScale(card);
+  const before = currentLeftScale(card, session.state);
   if (before + amount <= 0) amount = -(before - 1);
   card.scaleModifier = (card.scaleModifier ?? 0) + amount;
-  lua.lua_pushinteger(L, currentLeftScale(card) - before);
+  lua.lua_pushinteger(L, currentLeftScale(card, session.state) - before);
   return 1;
 }
 
-function isPendulumCardData(card: DuelCardInstance | undefined): card is DuelCardInstance {
-  return Boolean(card && (cardTypeFlags(card) & 0x1000000) !== 0);
+function isPendulumCardData(card: DuelCardInstance | undefined, state?: DuelState): card is DuelCardInstance {
+  return Boolean(card && (cardTypeFlags(card, state) & 0x1000000) !== 0);
 }

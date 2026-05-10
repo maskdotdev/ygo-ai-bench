@@ -674,8 +674,8 @@ function pendulumScales(session: DuelSession, player: PlayerId): [number, number
   const left = pendulumZoneCard(session, player, 0);
   const right = pendulumZoneCard(session, player, 1);
   if (!left || !right) return undefined;
-  const low = Math.min(pendulumScale(left), pendulumScale(right));
-  const high = Math.max(pendulumScale(left), pendulumScale(right));
+  const low = Math.min(pendulumScale(session, left), pendulumScale(session, right));
+  const high = Math.max(pendulumScale(session, left), pendulumScale(session, right));
   return low < high ? [low, high] : undefined;
 }
 
@@ -683,8 +683,8 @@ function pendulumZoneCard(session: DuelSession, player: PlayerId, sequence: numb
   return session.state.cards.find((card) => card.controller === player && card.location === "spellTrapZone" && card.sequence === sequence && isPendulumCard(session.state, card));
 }
 
-function pendulumScale(card: DuelCardInstance): number {
-  return card.data.leftScale === undefined ? currentRightScale(card) : currentLeftScale(card);
+function pendulumScale(session: DuelSession, card: DuelCardInstance): number {
+  return card.data.leftScale === undefined ? currentRightScale(card, session.state) : currentLeftScale(card, session.state);
 }
 
 function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCardInstance, kind: MaterialUseKind): boolean {

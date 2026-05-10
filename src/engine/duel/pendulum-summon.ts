@@ -67,8 +67,8 @@ function pendulumScales(state: DuelState, player: PlayerId): [number, number] | 
   const left = pendulumZoneCard(state, player, 0);
   const right = pendulumZoneCard(state, player, 1);
   if (!left || !right) return undefined;
-  const low = Math.min(pendulumScale(left), pendulumScale(right));
-  const high = Math.max(pendulumScale(left), pendulumScale(right));
+  const low = Math.min(pendulumScale(state, left), pendulumScale(state, right));
+  const high = Math.max(pendulumScale(state, left), pendulumScale(state, right));
   return low < high ? [low, high] : undefined;
 }
 
@@ -76,8 +76,8 @@ function pendulumZoneCard(state: DuelState, player: PlayerId, sequence: number):
   return state.cards.find((card) => card.controller === player && card.location === "spellTrapZone" && card.sequence === sequence && isPendulumCard(state, card));
 }
 
-function pendulumScale(card: DuelCardInstance): number {
-  return card.data.leftScale === undefined ? currentRightScale(card) : currentLeftScale(card);
+function pendulumScale(state: DuelState, card: DuelCardInstance): number {
+  return card.data.leftScale === undefined ? currentRightScale(card, state) : currentLeftScale(card, state);
 }
 
 function isPendulumMonster(state: DuelState, card: DuelCardInstance): boolean {
