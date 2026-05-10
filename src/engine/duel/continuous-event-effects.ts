@@ -4,9 +4,9 @@ import { createEffectContext } from "#duel/effect-context.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import type { ChainLink, DuelCardInstance, DuelEffectDefinition, DuelEventName, DuelState } from "#duel/types.js";
 
-export function executeNonChainSolvingContinuousEventEffects(state: DuelState, eventName: DuelEventName, eventCode: number, eventCards: DuelCardInstance[], payload: DuelEventPayload): void {
+export function executeNonChainSolvingContinuousEventEffects(state: DuelState, eventName: DuelEventName, eventCode: number, eventCards: DuelCardInstance[], payload: DuelEventPayload, chainLink?: ChainLink): void {
   if (eventName === "chainSolving") return;
-  executeContinuousEventEffects(state, eventName, eventCode, eventCards, payload);
+  executeContinuousEventEffects(state, eventName, eventCode, eventCards, payload, chainLink);
 }
 
 export function executeContinuousEventEffects(state: DuelState, eventName: DuelEventName, eventCode: number, eventCards: DuelCardInstance[], payload: DuelEventPayload, chainLink?: ChainLink): void {

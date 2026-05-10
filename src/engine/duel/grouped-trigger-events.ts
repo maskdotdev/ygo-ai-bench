@@ -1,7 +1,7 @@
 import { duelEventCode } from "#duel/event-codes.js";
 import { eventCardReasonPayload, recordDuelEvent, type DuelEventPayload } from "#duel/event-history.js";
 import { collectGroupedTriggerEffects, collectTriggerEffects } from "#duel/triggers.js";
-import type { DuelCardInstance, DuelEffectDefinition, DuelEventName, DuelState } from "#duel/types.js";
+import type { ChainLink, DuelCardInstance, DuelEffectDefinition, DuelEventName, DuelState } from "#duel/types.js";
 
 type GroupedTriggerChooser = (
   state: DuelState,
@@ -18,6 +18,7 @@ type ContinuousEventExecutor = (
   eventCode: number,
   eventCards: DuelCardInstance[],
   payload: DuelEventPayload,
+  chainLink?: ChainLink,
 ) => void;
 
 export function collectDuelGroupedTriggerEffectsWithChooser(
@@ -27,6 +28,7 @@ export function collectDuelGroupedTriggerEffectsWithChooser(
   options: DuelEventPayload,
   canChooseEffect: GroupedTriggerChooser,
   executeContinuousEvent?: ContinuousEventExecutor,
+  continuousChainLink?: ChainLink,
 ): void {
   const uniqueEventCards = uniqueCards(eventCards);
   const eventCard = uniqueEventCards[0];
@@ -35,7 +37,7 @@ export function collectDuelGroupedTriggerEffectsWithChooser(
   const eventCode = groupedOptions.eventCode ?? duelEventCode(eventName);
   const triggerOptions = eventCode === undefined ? groupedOptions : { ...groupedOptions, eventCode };
   recordDuelEvent(state, eventName, eventCard, eventCode, eventRecordPayload(eventCard, groupedOptions));
-  if (eventCode !== undefined) executeContinuousEvent?.(state, eventName, eventCode, uniqueEventCards, triggerOptions);
+  if (eventCode !== undefined) executeContinuousEvent?.(state, eventName, eventCode, uniqueEventCards, triggerOptions, continuousChainLink);
   const chooser = (duel: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, triggerEventName: DuelEventName, triggerEventCard?: DuelCardInstance) =>
     canChooseEffect(duel, effect, source, triggerEventName, triggerEventCard, triggerOptions);
   if (uniqueEventCards.length <= 1) collectTriggerEffects(state, eventName, chooser, eventCard, triggerOptions);

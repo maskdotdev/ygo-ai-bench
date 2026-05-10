@@ -699,7 +699,7 @@ function createReplacementEffectHandlers(state: DuelState): ReplacementEffectHan
   };
 }
 
-export function collectDuelTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance, options: DuelEventPayload = {}): void {
+export function collectDuelTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance, options: DuelEventPayload = {}, continuousChainLink?: ChainLink): void {
   collectDuelGroupedTriggerEffectsWithChooser(
     state,
     eventName,
@@ -707,10 +707,10 @@ export function collectDuelTriggerEffects(state: DuelState, eventName: DuelEvent
     options,
     (duel, effect, source, triggerEventName, triggerEventCard, payload) => canChooseEffect(duel, effect, source, effect.controller, triggerEventName, triggerEventCard, payload),
     executeNonChainSolvingContinuousEventEffects,
+    continuousChainLink,
   );
 }
-
-export function collectDuelGroupedTriggerEffects(state: DuelState, eventName: DuelEventName, eventCards: DuelCardInstance[], options: DuelEventPayload = {}): void {
+export function collectDuelGroupedTriggerEffects(state: DuelState, eventName: DuelEventName, eventCards: DuelCardInstance[], options: DuelEventPayload = {}, continuousChainLink?: ChainLink): void {
   collectDuelGroupedTriggerEffectsWithChooser(
     state,
     eventName,
@@ -718,9 +718,9 @@ export function collectDuelGroupedTriggerEffects(state: DuelState, eventName: Du
     options,
     (duel, effect, source, triggerEventName, triggerEventCard, payload) => canChooseEffect(duel, effect, source, effect.controller, triggerEventName, triggerEventCard, payload),
     executeNonChainSolvingContinuousEventEffects,
+    continuousChainLink,
   );
 }
-
 function collectBattleEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance | DuelCardInstance[], payload: DuelEventPayload = {}): void {
   Array.isArray(eventCard) ? collectDuelGroupedTriggerEffects(state, eventName, eventCard, payload) : collectDuelTriggerEffects(state, eventName, eventCard, payload);
 }
@@ -968,7 +968,7 @@ function resolveChain(state: DuelState): void {
       if (link.effectLabelObjectUid !== undefined) ctx.effectLabelObjectUid = link.effectLabelObjectUid;
       (link.operationOverride ?? effect.operation)(ctx);
       sendResolvedActivatedSpellTrapToGraveyard(state, link, source, effect);
-      collectDuelTriggerEffects(state, "chainSolved", undefined, chainPayload);
+      collectDuelTriggerEffects(state, "chainSolved", undefined, chainPayload, link);
     }
   } catch (error) {
     restoreDuelState(state, rollback);
