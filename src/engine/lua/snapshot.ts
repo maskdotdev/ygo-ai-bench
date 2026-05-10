@@ -440,7 +440,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         effect.code === luaEffectClockLizard ||
         (effect.code === 71 && effect.luaValueDescriptor === "cannot-be-effect-target:opponent") ||
         isKnownIndestructibleValueEffect(effect) ||
-        effect.luaValueDescriptor === "change-damage:effect-double" ||
+        effect.luaValueDescriptor === "change-damage:effect-double" || (effect.luaValueDescriptor === "change-damage:effect-zero" && effect.reset !== undefined) ||
         effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous" ||
         isKnownLifePointReasonPredicateEffect(effect) ||
         isKnownIndestructibleCountReasonPredicateEffect(effect) ||
@@ -798,9 +798,9 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   if (effect.luaValueDescriptor === luaCannotActivateNonSpiritMonsterDescriptor) {
     return { valuePredicate: (ctx) => relatedEffectIsNonSpiritMonsterEffect(ctx) };
   }
-  if (effect.luaValueDescriptor !== "change-damage:effect-double") return {};
+  if (effect.luaValueDescriptor !== "change-damage:effect-double" && effect.luaValueDescriptor !== "change-damage:effect-zero") return {};
   const applyValue = (ctx: Parameters<NonNullable<DuelEffectDefinition["lifePointValue"]>>[0], _player: PlayerId, amount: number): number =>
-    ((ctx.eventReason ?? 0) & duelReason.effect) !== 0 ? amount * 2 : amount;
+    ((ctx.eventReason ?? 0) & duelReason.effect) !== 0 ? (effect.luaValueDescriptor === "change-damage:effect-double" ? amount * 2 : 0) : amount;
   return { battleDamageValue: applyValue, lifePointValue: applyValue };
 }
 

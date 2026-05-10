@@ -39,6 +39,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   const effectReason = "(?:REASON_EFFECT|64)";
   const doubleEffectDamage = new RegExp(`\\breturn\\s+${reason}\\s*&\\s*${effectReason}\\s*>\\s*0\\s+and\\s+${amount}\\s*\\*\\s*2\\s+or\\s+${amount}\\b`);
   if (doubleEffectDamage.test(snippet)) return "change-damage:effect-double";
+  const zeroEffectDamage = new RegExp(`\\bif\\s+\\(?\\s*${reason}\\s*&\\s*${effectReason}\\s*\\)?\\s*(?:~=|>)\\s*0\\s+then\\s+return\\s+0\\s+else\\s+return\\s+${amount}\\s+end\\b`);
+  if (params?.[5] && zeroEffectDamage.test(snippet)) return "change-damage:effect-zero";
   const relatedEffectParam = params?.[1];
   const reflectedReasonPlayerParam = params?.[4];
   if (!effectParam || !relatedEffectParam || !reflectedReasonPlayerParam) return undefined;
