@@ -134,6 +134,7 @@ export interface DuelCardData {
   synchroNonTunerMax?: number;
   synchroNonTunerAttribute?: number;
   synchroNonTunerRace?: number;
+  synchroNonTunerType?: number;
   xyzMaterials?: string[];
   xyzMaterialCount?: number;
   xyzMaterialRace?: number;

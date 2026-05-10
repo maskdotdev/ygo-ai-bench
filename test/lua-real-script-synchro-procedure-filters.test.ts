@@ -74,4 +74,64 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sy
       summonType: "synchro",
     });
   });
+
+  it("restores official Synchro.AddProcedure non-tuner type filters for real extra deck summons", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const bladeBlasterCode = "51447164";
+    const effectMaterialCodes = ["900000141", "900000142"];
+    const synchroMaterialCodes = ["900000143", "900000144"];
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === bladeBlasterCode),
+      { code: effectMaterialCodes[0]!, name: "Synchro Level 5 Tuner", kind: "extra" as const, typeFlags: 0x3001, level: 5 },
+      { code: effectMaterialCodes[1]!, name: "Effect Level 5 Non-Tuner", kind: "monster" as const, typeFlags: 0x1, level: 5 },
+      { code: synchroMaterialCodes[0]!, name: "Second Synchro Level 5 Tuner", kind: "extra" as const, typeFlags: 0x3001, level: 5 },
+      { code: synchroMaterialCodes[1]!, name: "Synchro Level 5 Non-Tuner", kind: "extra" as const, typeFlags: 0x2001, level: 5 },
+    ];
+    const reader = createCardReader(cards);
+    const restoreWithMaterials = (main: string[]) => {
+      const session = createDuel({ seed: 309, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+      loadDecks(session, { 0: { main, extra: [bladeBlasterCode] }, 1: { main: [] } });
+      startDuel(session);
+      const synchro = session.state.cards.find((card) => card.code === bladeBlasterCode && card.location === "extraDeck");
+      expect(synchro).toBeDefined();
+      for (const code of main) {
+        const material = session.state.cards.find((card) => card.code === code && card.location === "deck");
+        expect(material).toBeDefined();
+        moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+      }
+      session.state.phase = "main1";
+      session.state.waitingFor = 0;
+      const host = createLuaScriptHost(session, workspace);
+      expect(host.loadCardScript(Number(bladeBlasterCode), workspace).ok).toBe(true);
+      expect(host.registerInitialEffects()).toBeGreaterThan(0);
+      expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.data).toMatchObject({
+        synchroTunerMin: 1,
+        synchroTunerMax: 1,
+        synchroTunerType: 0x2000,
+        synchroNonTunerMin: 1,
+        synchroNonTunerMax: 99,
+        synchroNonTunerType: 0x2000,
+      });
+      const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+      expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+      expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+      return { restored, synchro };
+    };
+
+    const wrongNonTuner = restoreWithMaterials(effectMaterialCodes);
+    expect(getLuaRestoreLegalActions(wrongNonTuner.restored, 0).some((action) => action.type === "synchroSummon" && action.uid === wrongNonTuner.synchro!.uid)).toBe(false);
+
+    const matchingNonTuner = restoreWithMaterials(synchroMaterialCodes);
+    const actions = getLuaRestoreLegalActions(matchingNonTuner.restored, 0).filter((action) => action.type === "synchroSummon" && action.uid === matchingNonTuner.synchro!.uid);
+    expect(actions, JSON.stringify(getLuaRestoreLegalActions(matchingNonTuner.restored, 0), null, 2)).toHaveLength(1);
+    const action = actions[0];
+    expect(action?.type).toBe("synchroSummon");
+    if (!action || action.type !== "synchroSummon") throw new Error("Expected Synchro Summon action");
+    const summoned = applyLuaRestoreResponse(matchingNonTuner.restored, action);
+    expect(summoned.ok, summoned.error).toBe(true);
+    expect(matchingNonTuner.restored.session.state.cards.find((card) => card.uid === matchingNonTuner.synchro!.uid)).toMatchObject({
+      location: "monsterZone",
+      summonType: "synchro",
+    });
+  });
 });
