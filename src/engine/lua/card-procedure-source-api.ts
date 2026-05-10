@@ -3,27 +3,127 @@ import { fusionProcedureSource } from "#lua/fusion-procedure-api.js";
 export const cardProcedureSource = `${fusionProcedureSource}
     aux.RitualProcedure=aux.RitualProcedure or Ritual or {}
     Ritual=aux.RitualProcedure
-    function Ritual.CreateProc(params)
-      local handler=type(params)=="table" and params.handler or params
+    local function ritual_params(params,lvtype,filter,lv,desc,extrafil,extraop,matfilter,stage2,location,forcedselection,customoperation,specificmatfilter,requirementfunc,sumpos,extratg,self)
+      if type(params)=="table" and params.__duel_uid==nil then return params end
+      if type(params)=="function" then
+        return {
+          filter=params,lvtype=lvtype,lv=filter,desc=lv,extrafil=desc,extraop=extrafil,matfilter=extraop,
+          stage2=matfilter,location=stage2,forcedselection=location,customoperation=forcedselection,
+          specificmatfilter=customoperation,requirementfunc=specificmatfilter,sumpos=requirementfunc,extratg=sumpos,self=extratg,
+        }
+      end
+      return {
+        handler=params,lvtype=lvtype,filter=filter,lv=lv,desc=desc,extrafil=extrafil,extraop=extraop,matfilter=matfilter,
+        stage2=stage2,location=location,forcedselection=forcedselection,customoperation=customoperation,
+        specificmatfilter=specificmatfilter,requirementfunc=requirementfunc,sumpos=sumpos,extratg=extratg,self=self,
+      }
+    end
+    local function ritual_target_location(params)
+      return params.location or LOCATION_HAND
+    end
+    local function ritual_required_level(params,ritual_c)
+      if type(params.lv)=="function" then return params.lv(ritual_c) or 0 end
+      if type(params.lv)=="number" then return params.lv end
+      if type(params.requirementfunc)=="function" then return params.requirementfunc(ritual_c) or 0 end
+      return ritual_c:GetLevel()
+    end
+    local function ritual_material_level(material,ritual_c)
+      return material:GetRitualLevel(ritual_c)
+    end
+    local function ritual_material_pool(tp,ritual_c,params,e)
+      local mg=Duel.GetRitualMaterial(tp,ritual_c)
+      if params.matfilter then mg=mg:Filter(params.matfilter,nil,e,tp,ritual_c) end
+      return mg
+    end
+    local function ritual_has_materials(tp,ritual_c,params,e)
+      local mg=ritual_material_pool(tp,ritual_c,params,e)
+      local lv=ritual_required_level(params,ritual_c)
+      if not mg or lv<=0 then return false end
+      if params.lvtype==RITPROC_GREATER then
+        return mg:CheckWithSumGreater(ritual_material_level,lv,1,lv,ritual_c)
+      end
+      return mg:CheckWithSumEqual(ritual_material_level,lv,1,lv,ritual_c)
+    end
+    local function ritual_filter(c,e,tp,params)
+      if not c:IsRitualMonster() then return false end
+      if params.filter and not params.filter(c) then return false end
+      if not c:IsCanBeSpecialSummoned(e,SUMMON_TYPE_RITUAL,tp,true,false) then return false end
+      return ritual_has_materials(tp,c,params,e)
+    end
+    function Ritual.Target(params,...)
+      params=ritual_params(params,...)
+      return function(e,tp,eg,ep,ev,re,r,rp,chk)
+        local location=ritual_target_location(params)
+        if chk==0 then
+          return Duel.GetLocationCount(tp,LOCATION_MZONE)>0
+            and Duel.IsExistingMatchingCard(ritual_filter,tp,location,0,1,nil,e,tp,params)
+        end
+        Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,location)
+      end
+    end
+    function Ritual.Operation(params,...)
+      params=ritual_params(params,...)
+      return function(e,tp,eg,ep,ev,re,r,rp)
+        local location=ritual_target_location(params)
+        local g=Duel.GetMatchingGroup(ritual_filter,tp,location,0,nil,e,tp,params)
+        local rc=g and g:GetFirst()
+        if not rc then return end
+        local mg=ritual_material_pool(tp,rc,params,e)
+        local lv=ritual_required_level(params,rc)
+        local sg=nil
+        if params.lvtype==RITPROC_GREATER then
+          sg=mg:SelectWithSumGreater(tp,ritual_material_level,lv,1,lv,rc)
+        else
+          sg=mg:SelectWithSumEqual(tp,ritual_material_level,lv,1,lv,rc)
+        end
+        if sg and sg:GetCount()>0 then Duel.RitualSummon(rc,sg) end
+      end
+    end
+    function Ritual.CreateProc(params,...)
+      params=ritual_params(params,...)
+      local handler=params.handler
       local e=Effect.CreateEffect(handler)
-      if type(params)=="table" and params.desc then e:SetDescription(params.desc) end
+      if params.desc then e:SetDescription(params.desc) end
       e:SetCategory(CATEGORY_SPECIAL_SUMMON)
       e:SetType(EFFECT_TYPE_ACTIVATE)
       e:SetCode(EVENT_FREE_CHAIN)
-      e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk) return chk~=0 or true end)
-      e:SetOperation(function() return true end)
+      e:SetTarget(Ritual.Target(params))
+      e:SetOperation(Ritual.Operation(params))
       return e
     end
     function Ritual.AddProc(c,...)
-      local is_table=type(c)=="table"
-      local e=Ritual.CreateProc(is_table and c or c,...)
-      local handler=is_table and c.handler or c
+      local params=ritual_params(c,...)
+      local e=Ritual.CreateProc(params)
+      local handler=params.handler
       if handler then handler:RegisterEffect(e) end
       return e
     end
-    Ritual.AddProcGreater=aux.FunctionWithNamedArgs(function(c,...)
-      return Ritual.AddProc(c,...)
+    local function ritual_code_filter(...)
+      local codes={...}
+      return function(c)
+        return #codes==0 or c:IsCode(table.unpack(codes))
+      end
+    end
+    Ritual.AddProcGreater=aux.FunctionWithNamedArgs(function(c,filter,lv,desc,extrafil,extraop,matfilter,stage2,location,forcedselection,customoperation,specificmatfilter,requirementfunc,sumpos,extratg,self)
+      return Ritual.AddProc({
+        handler=c,lvtype=RITPROC_GREATER,filter=filter,lv=lv,desc=desc,extrafil=extrafil,extraop=extraop,
+        matfilter=matfilter,stage2=stage2,location=location,forcedselection=forcedselection,customoperation=customoperation,
+        specificmatfilter=specificmatfilter,requirementfunc=requirementfunc,sumpos=sumpos,extratg=extratg,self=self,
+      })
     end,"handler","filter","lv","desc","extrafil","extraop","matfilter","stage2","location","forcedselection","customoperation","specificmatfilter","requirementfunc","sumpos","extratg","self")
+    Ritual.AddProcEqual=aux.FunctionWithNamedArgs(function(c,filter,lv,desc,extrafil,extraop,matfilter,stage2,location,forcedselection,customoperation,specificmatfilter,requirementfunc,sumpos,extratg,self)
+      return Ritual.AddProc({
+        handler=c,lvtype=RITPROC_EQUAL,filter=filter,lv=lv,desc=desc,extrafil=extrafil,extraop=extraop,
+        matfilter=matfilter,stage2=stage2,location=location,forcedselection=forcedselection,customoperation=customoperation,
+        specificmatfilter=specificmatfilter,requirementfunc=requirementfunc,sumpos=sumpos,extratg=extratg,self=self,
+      })
+    end,"handler","filter","lv","desc","extrafil","extraop","matfilter","stage2","location","forcedselection","customoperation","specificmatfilter","requirementfunc","sumpos","extratg","self")
+    function Ritual.AddProcGreaterCode(c,lv,desc,...)
+      return Ritual.AddProc({handler=c,lvtype=RITPROC_GREATER,filter=ritual_code_filter(...),lv=lv,desc=desc})
+    end
+    function Ritual.AddProcEqualCode(c,lv,desc,...)
+      return Ritual.AddProc({handler=c,lvtype=RITPROC_EQUAL,filter=ritual_code_filter(...),lv=lv,desc=desc})
+    end
     function Ritual.AddWholeLevelTribute(c,condition)
       local e=Effect.CreateEffect(c)
       e:SetType(EFFECT_TYPE_SINGLE)
