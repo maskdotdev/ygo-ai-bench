@@ -132,7 +132,7 @@ function pushCanChainAttack(L: unknown, session: DuelSession): number {
 }
 
 function canGetPiercingRush<EffectRecord extends LuaCardApiEffectRecord>(state: DuelState, card: DuelCardInstance, hostState: LuaCardApiState<EffectRecord>): boolean {
-  if ((cardTypeFlags(card) & 0x1) === 0 || !canEnterBattlePhase(state)) return false;
+  if ((cardTypeFlags(card, state) & 0x1) === 0 || !canEnterBattlePhase(state)) return false;
   if (matchingLuaEffects(state, card, 85, hostState).length > 0) return false;
   const pierceEffects = matchingLuaEffects(state, card, 203, hostState);
   return pierceEffects.length === 0 || pierceEffects.some((effect) => (effect.reset?.flags ?? 0) === 0);

@@ -5,6 +5,7 @@ import { pruneResetEffectsAfterPositionChange } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterPositionChange } from "#duel/flags.js";
 import { otherPlayer } from "#duel/player-id.js";
 import { duelReason } from "#duel/reasons.js";
+import { cardTypeFlags } from "#duel/card-stats.js";
 import { isDuelPhaseSkipped } from "#duel/turn-flow.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
@@ -223,7 +224,7 @@ export function canChangeDuelCardPosition(state: DuelState, uid: string, positio
 export function canEffectChangeDuelCardPosition(state: DuelState, uid: string, position: CardPosition): boolean {
   const card = findCard(state, uid);
   if (!card || card.location !== "monsterZone") return false;
-  if (!isMonsterLike(card)) return false;
+  if (!isMonsterLike(state, card)) return false;
   if (!isMonsterPosition(position)) return false;
   if (card.position === position) return false;
   return true;
@@ -343,13 +344,13 @@ function canAttackWithCard(state: DuelState, card: DuelCardInstance, extraAttack
   if (state.phase !== "battle") return false;
   if (isDuelPhaseSkipped(state, card.controller, "battle")) return false;
   if (card.location !== "monsterZone" || card.controller !== state.turnPlayer) return false;
-  if (!isMonsterLike(card) || !card.faceUp) return false;
+  if (!isMonsterLike(state, card) || !card.faceUp) return false;
   if (card.position !== "faceUpAttack") return false;
   return state.attacksDeclared.filter((uid) => uid === card.uid).length <= Math.max(0, extraAttacks);
 }
 
 function getAttackTargets(state: DuelState, player: PlayerId, attacker: DuelCardInstance, canAttackTarget: DuelAttackTargetPredicate = () => true): DuelCardInstance[] {
-  return getCards(state, otherPlayer(player), "monsterZone").filter((card) => canBeBattleTarget(card) && canAttackTarget(card, attacker));
+  return getCards(state, otherPlayer(player), "monsterZone").filter((card) => canBeBattleTarget(state, card) && canAttackTarget(card, attacker));
 }
 
 function resolveBattle(state: DuelState, attacker: DuelCardInstance, target: DuelCardInstance, callbacks: DuelBattleCallbacks): void {
@@ -488,12 +489,12 @@ function getBattleDefense(card: DuelCardInstance, callbacks?: DuelBattleCallback
   return Math.max(0, callbacks?.getDefenseValue?.(card) ?? card.data.defense ?? 0);
 }
 
-function isMonsterLike(card: DuelCardInstance): boolean {
-  return card.kind === "monster" || card.kind === "extra";
+function isMonsterLike(state: DuelState, card: DuelCardInstance): boolean {
+  return (cardTypeFlags(card, state) & 0x1) !== 0;
 }
 
-function canBeBattleTarget(card: DuelCardInstance): boolean {
-  return isMonsterLike(card) || (card.location === "monsterZone" && !card.faceUp);
+function canBeBattleTarget(state: DuelState, card: DuelCardInstance): boolean {
+  return isMonsterLike(state, card) || (card.location === "monsterZone" && !card.faceUp);
 }
 
 function isMonsterPosition(position: CardPosition): boolean {

@@ -121,6 +121,7 @@ export function getCoreDuelAttackableTargets(state: DuelState, attackerUid: stri
   const card = findCard(state, attackerUid);
   const createContext = handlers.createContinuousContext(state);
   if (!card || card.location !== "monsterZone" || isAttackPrevented(state, card, createContext) || !canPayAttackCosts(state, card, createContext)) return { targets: [], directAttack: false };
+  if (!canDuelCardAttackRule(state, attackerUid, Number.MAX_SAFE_INTEGER)) return { targets: [], directAttack: false };
   const onlyTargets = onlyBeAttackedTargetUids(state, card.controller, createContext);
   const targets = getDuelAttackTargetsRule(
     state,
