@@ -217,6 +217,97 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Po
     expect(restored.host.messages).not.toContain("polymerization responder resolved");
   });
 
+  it("honors Lua Fusion substitute value predicates against the Fusion target", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const polymerizationCode = "24094653";
+    const substituteCode = "2440";
+    const materialBCode = "2441";
+    const heroFusionCode = "2442";
+    const nonHeroFusionCode = "2443";
+    const missingMaterialCode = "2444";
+    const responderCode = "2445";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === polymerizationCode),
+      { code: substituteCode, name: "Lua Predicate Fusion Substitute", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: materialBCode, name: "Lua Predicate Exact Material", kind: "monster", typeFlags: 0x1, level: 4, attack: 1300, defense: 1000 },
+      {
+        code: nonHeroFusionCode,
+        name: "Lua Predicate Non-HERO Fusion",
+        kind: "extra",
+        typeFlags: 0x41,
+        level: 6,
+        attack: 2100,
+        defense: 1800,
+        fusionMaterials: [missingMaterialCode, materialBCode],
+      },
+      {
+        code: heroFusionCode,
+        name: "Lua Predicate HERO Fusion",
+        kind: "extra",
+        typeFlags: 0x41,
+        level: 6,
+        attack: 2200,
+        defense: 1800,
+        setcodes: [0x8],
+        fusionMaterials: [missingMaterialCode, materialBCode],
+      },
+      { code: responderCode, name: "Lua Predicate Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 244, startingHandSize: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [polymerizationCode, substituteCode, materialBCode], extra: [nonHeroFusionCode, heroFusionCode] }, 1: { main: [responderCode] } });
+    startDuel(session);
+
+    const polymerization = session.state.cards.find((card) => card.code === polymerizationCode);
+    const substitute = session.state.cards.find((card) => card.code === substituteCode);
+    const materialB = session.state.cards.find((card) => card.code === materialBCode);
+    const heroFusion = session.state.cards.find((card) => card.code === heroFusionCode);
+    const nonHeroFusion = session.state.cards.find((card) => card.code === nonHeroFusionCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(polymerization).toBeDefined();
+    expect(substitute).toBeDefined();
+    expect(materialB).toBeDefined();
+    expect(heroFusion).toBeDefined();
+    expect(nonHeroFusion).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, polymerization!.uid, "hand", 0);
+    moveDuelCard(session.state, substitute!.uid, "hand", 0);
+    moveDuelCard(session.state, materialB!.uid, "hand", 0);
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${substituteCode}.lua`) return targetSpecificSubstituteScript();
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(polymerizationCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(substituteCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+
+    const activate = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === polymerization!.uid);
+    expect(activate).toBeDefined();
+    applyAndAssert(session, activate!);
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    const resolved = applyLuaRestoreResponse(restored, pass!);
+    expect(resolved.ok, resolved.error).toBe(true);
+
+    expect(restored.session.state.cards.find((card) => card.uid === heroFusion!.uid)).toMatchObject({
+      location: "monsterZone",
+      summonType: "fusion",
+      summonMaterialUids: [substitute!.uid, materialB!.uid],
+    });
+    expect(restored.session.state.cards.find((card) => card.uid === nonHeroFusion!.uid)).toMatchObject({ location: "extraDeck" });
+  });
+
   it("does not allow two Fusion substitutes to replace both listed materials", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const polymerizationCode = "24094653";
@@ -270,6 +361,19 @@ function chainResponderScript(): string {
       e:SetRange(LOCATION_HAND)
       e:SetCondition(function(e,tp) return Duel.GetCurrentChain()>0 end)
       e:SetOperation(function(e,tp) Debug.Message("polymerization responder resolved") end)
+      c:RegisterEffect(e)
+    end
+  `;
+}
+
+function targetSpecificSubstituteScript(): string {
+  return `
+    local s,id=GetID()
+    function s.initial_effect(c)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetCode(EFFECT_FUSION_SUBSTITUTE)
+      e:SetValue(function(e,fc) return fc:IsSetCard(0x8) end)
       c:RegisterEffect(e)
     end
   `;
