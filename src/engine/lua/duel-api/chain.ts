@@ -117,14 +117,14 @@ function pushChainInfoValue(L: unknown, session: DuelSession, hostState: LuaDuel
   else if (info === 12) lua.lua_pushinteger(L, link.disablePlayer ?? 0);
   else if (info === 13) lua.lua_pushinteger(L, chainNumericId(link));
   else if (info === 14) lua.lua_pushinteger(L, chainEffectTypeFlags(link, hostState));
-  else if (info === 15 || info === 19) lua.lua_pushinteger(L, cardTypeFlags(source));
+  else if (info === 15 || info === 19) lua.lua_pushinteger(L, cardTypeFlags(source, session.state));
   else if (info === 16) lua.lua_pushinteger(L, positionMaskFromPosition(source?.position));
   else if (info === 17) lua.lua_pushinteger(L, source ? Number(effectiveCardCodes(session.state, source, hostState)[0] ?? 0) : 0);
   else if (info === 18) lua.lua_pushinteger(L, source ? Number(effectiveCardCodes(session.state, source, hostState)[1] ?? 0) : 0);
   else if (info === 20) lua.lua_pushinteger(L, currentLevel(source, session.state));
   else if (info === 21) lua.lua_pushinteger(L, currentRank(source, session.state));
-  else if (info === 22) lua.lua_pushinteger(L, currentAttribute(source));
-  else if (info === 23) lua.lua_pushinteger(L, currentRace(source));
+  else if (info === 22) lua.lua_pushinteger(L, currentAttribute(source, session.state));
+  else if (info === 23) lua.lua_pushinteger(L, currentRace(source, session.state));
   else if (info === 24) lua.lua_pushinteger(L, currentAttack(source, session.state));
   else if (info === 25) lua.lua_pushinteger(L, currentDefense(source, session.state));
   else if (info === 26) lua.lua_pushinteger(L, 0);

@@ -34,7 +34,7 @@ export function installCardEffectQueryApi<EffectRecord extends LuaCardApiEffectR
   lua.lua_setfield(L, -2, to_luastring("GetActivateEffect"));
   pushBooleanGetter(L, "IsNegatable", session, (card) => Boolean(card && isNegatableCard(session.state, card)));
   pushBooleanGetter(L, "IsNegatableMonster", session, (card) => Boolean(card && isMonsterLike(card) && isNegatableCard(session.state, card)));
-  pushBooleanGetter(L, "IsNegatableSpellTrap", session, (card) => Boolean(card && (cardTypeFlags(card) & 0x6) !== 0 && isNegatableCard(session.state, card)));
+  pushBooleanGetter(L, "IsNegatableSpellTrap", session, (card) => Boolean(card && (cardTypeFlags(card, session.state) & 0x6) !== 0 && isNegatableCard(session.state, card)));
 }
 
 export function createLuaMaterialCheckContext(state: DuelState): ContinuousEffectContextFactory {
