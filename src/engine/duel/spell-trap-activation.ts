@@ -3,6 +3,7 @@ import { duelReason } from "#duel/reasons.js";
 import type { DuelCardInstance, DuelEffectDefinition, DuelState, PlayerId } from "#duel/types.js";
 
 const luaEffectTypeActivate = 0x10;
+const luaEffectRemainField = 17;
 const typePendulum = 0x1000000;
 const typeContinuous = 0x20000;
 const typeEquip = 0x40000;
@@ -19,8 +20,14 @@ export function placeActivatedSpellTrapCard(state: DuelState, player: PlayerId, 
   if (source.location === "spellTrapZone") source.faceUp = true;
 }
 
-export function shouldSendActivatedSpellTrapToGraveyard(source: DuelCardInstance, effect: DuelEffectDefinition): boolean {
-  return source.location === "spellTrapZone" && !source.cancelToGrave && isSpellTrapCardActivation(source, effect) && !isPersistentSpellTrap(source);
+export function shouldSendActivatedSpellTrapToGraveyard(state: DuelState, source: DuelCardInstance, effect: DuelEffectDefinition, activationNegated = false): boolean {
+  return (
+    source.location === "spellTrapZone" &&
+    !source.cancelToGrave &&
+    isSpellTrapCardActivation(source, effect) &&
+    !isPersistentSpellTrap(source) &&
+    (activationNegated || source.cancelToGrave === false || !hasRemainFieldEffect(state, source))
+  );
 }
 
 export function canActivateSpellTrapCardEffect(state: DuelState, player: PlayerId, source: DuelCardInstance, effect: DuelEffectDefinition): boolean {
@@ -34,6 +41,10 @@ export function canActivateSpellTrapCardEffect(state: DuelState, player: PlayerI
 
 function isSpellTrapCardActivation(source: DuelCardInstance, effect: DuelEffectDefinition): boolean {
   return (source.kind === "spell" || source.kind === "trap" || isPendulumCard(source)) && ((effect.luaTypeFlags ?? 0) & luaEffectTypeActivate) !== 0;
+}
+
+function hasRemainFieldEffect(state: DuelState, source: DuelCardInstance): boolean {
+  return state.effects.some((effect) => effect.event === "continuous" && effect.code === luaEffectRemainField && effect.sourceUid === source.uid && effect.range.includes(source.location));
 }
 
 function isPersistentSpellTrap(source: DuelCardInstance): boolean {

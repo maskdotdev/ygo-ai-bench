@@ -25,11 +25,12 @@ export function installCardEquipApi<EffectRecord extends LuaCardApiEffectRecord>
   lua.lua_setfield(L, -2, to_luastring("GetEquipGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    if (!card?.equippedToUid) {
+    const equippedToUid = currentEquipTargetUid(card, hostState);
+    if (!equippedToUid) {
       lua.lua_pushnil(state);
       return 1;
     }
-    pushCardTable(state, card.equippedToUid);
+    pushCardTable(state, equippedToUid);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetEquipTarget"));
@@ -102,6 +103,13 @@ function pushEquipByEffectLimit<EffectRecord extends LuaCardApiEffectRecord>(L: 
 
 function equippedCards(session: DuelSession, uid: string): DuelCardInstance[] {
   return session.state.cards.filter((card) => card.equippedToUid === uid && card.location === "spellTrapZone");
+}
+
+function currentEquipTargetUid<EffectRecord extends LuaCardApiEffectRecord>(card: DuelCardInstance | undefined, hostState: LuaCardApiState<EffectRecord>): string | undefined {
+  if (!card) return undefined;
+  if (card.equippedToUid !== undefined) return card.equippedToUid;
+  const eventCard = hostState.activeContext?.eventCard;
+  return hostState.activeContext?.eventName === "leftField" && eventCard?.uid === card.uid && card.previousLocation === "spellTrapZone" ? card.previousEquippedToUid : undefined;
 }
 
 function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => number): void {

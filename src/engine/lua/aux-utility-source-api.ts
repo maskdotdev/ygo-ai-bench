@@ -36,7 +36,14 @@ export const auxUtilitySource = `
       end
     end
     function aux.RemainFieldCost(e,tp,eg,ep,ev,re,r,rp,chk)
-      return chk==0 or true
+      if chk==0 then return true end
+      local c=e:GetHandler()
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_SINGLE)
+      e1:SetCode(EFFECT_REMAIN_FIELD)
+      e1:SetProperty(EFFECT_FLAG_OATH)
+      e1:SetReset(RESET_CHAIN)
+      c:RegisterEffect(e1)
     end
     local set_amazement = SET_AMAZEMENT or 0x15e
     local set_attraction = SET_ATTRACTION or 0x15f

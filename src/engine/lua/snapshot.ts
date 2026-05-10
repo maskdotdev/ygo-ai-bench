@@ -20,6 +20,7 @@ import type { ApplyDuelResponseResult, ChainLimit, ChainLink, DuelAction, DuelCa
 const luaEffectEquipLimit = 76;
 const luaEffectGeminiStatus = 75;
 const luaEffectAddType = 115;
+const luaEffectRemainField = 17;
 const luaEffectUnionStatus = 347;
 const luaEffectOldUnionStatus = 348;
 const luaEffectClockLizard = 51476410;
@@ -51,6 +52,7 @@ const luaTypeMonster = 0x1;
 const luaTypeRitual = 0x80;
 const luaTypeSpirit = 0x200;
 const luaResetEvent = 0x1000;
+const luaResetChain = 0x80000000;
 const luaResetTurnSet = 0x20000;
 const luaResetPhase = 0x40000000;
 const luaResetOpponentTurn = 0x20000000;
@@ -439,6 +441,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownHinoKaguTsuchiPredrawDiscardEffect(effect) ||
         isKnownGreatLongNoseSkipBattlePhaseEffect(effect) ||
         isKnownUnleashYourPowerDelayedSetEffect(effect) ||
+        isKnownRemainFieldEffect(effect) ||
         isKnownCannotActivateSpecialSummonedMonsterEffect(effect) ||
         isKnownCannotActivateNonSpiritMonsterEffect(effect) ||
         isKnownSetcodeOrCodeTypeBattleProtectionEffect(effect) ||
@@ -459,6 +462,10 @@ function isKnownGeminiStatusEffect(effect: SerializedDuelEffect): boolean {
     effect.range.length === 1 &&
     effect.range[0] === "monsterZone"
   );
+}
+
+function isKnownRemainFieldEffect(effect: SerializedDuelEffect): boolean {
+  return effect.code === luaEffectRemainField && effect.sourceUid !== undefined && effect.reset?.flags === luaResetChain && effect.targetRange === undefined && effect.range.includes("spellTrapZone");
 }
 
 function isKnownGeminiEndPhaseReturnEffect(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[]): boolean {

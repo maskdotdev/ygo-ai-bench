@@ -986,7 +986,7 @@ function resolveChain(state: DuelState): void {
 }
 
 function sendResolvedActivatedSpellTrapToGraveyard(state: DuelState, link: ChainLink, source: DuelCardInstance | undefined, effect: DuelEffectDefinition | undefined): void {
-  if (!source || !effect || !shouldSendActivatedSpellTrapToGraveyard(source, effect)) return;
+  if (!source || !effect || !shouldSendActivatedSpellTrapToGraveyard(state, source, effect, link.negated)) return;
   sendDuelCardToGraveyard(state, source.uid, source.controller, duelReason.rule, link.player);
 }
 
