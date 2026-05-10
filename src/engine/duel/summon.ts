@@ -5,7 +5,7 @@ import { duelReason } from "#duel/reasons.js";
 import { tributeUnitCount } from "#duel/double-tribute.js";
 import { cardCombinations, cardMatchesCode, isMonsterLike, materialCodesMatch } from "#duel/summon-materials.js";
 import { isSummonTypeMaskMatch, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
-import type { DuelAction, DuelCardInstance, DuelEventName, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
+import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
 const typeGemini = 0x800;
 const summonTypeGemini = 0x12000000;
@@ -327,6 +327,7 @@ export function ritualSummonDuelCard(
   collectEvent: DuelEventCollector,
   moveMaterial: DuelMaterialMover = defaultMaterialMover(state),
   canUseMaterial: DuelMaterialPredicate = () => true,
+  position: CardPosition = "faceUpAttack",
 ): DuelCardInstance {
   const card = requireControlledCard(state, player, uid, "hand");
   const requiredMaterials = card.data.ritualMaterials ?? [];
@@ -352,8 +353,8 @@ export function ritualSummonDuelCard(
 
   collectEvent("specialSummoning", card);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon | duelReason.ritual);
-  card.position = "faceUpAttack";
-  card.faceUp = true;
+  card.position = position;
+  card.faceUp = position !== "faceDownDefense";
   card.summonType = "ritual";
   card.summonPlayer = player;
   card.summonPhase = state.phase;

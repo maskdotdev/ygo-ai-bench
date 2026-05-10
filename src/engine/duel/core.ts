@@ -555,9 +555,9 @@ export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: stri
   return linkSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state), createMaterialUsePredicate(state, "link"));
 }
 
-export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
+export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], position?: CardPosition): DuelCardInstance {
   requireTypedSpecialSummonAllowed(state, player, uid, luaSummonTypeRitual, "Ritual Summoned");
-  return ritualSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state), createMaterialUsePredicate(state, "ritual"));
+  return ritualSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state), createMaterialUsePredicate(state, "ritual"), position);
 }
 
 export function pendulumSummonDuelCards(state: DuelState, player: PlayerId, summonUids: string[]): DuelCardInstance[] {

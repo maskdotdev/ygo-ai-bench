@@ -230,8 +230,11 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
   const player = playerFirst ? readOptionalPlayer(L, 1) ?? session.state.turnPlayer : undefined;
   const targetUid = readCardUid(L, playerFirst ? 2 : 1);
   const materialUids = playerFirst ? readCardOrGroupUids(L, 3) : readCardOrGroupUids(L, 2);
-  const materialsAlreadyMoved = (summonType === "FusionSummon" || summonType === "RitualSummon") && Boolean(lua.lua_toboolean(L, playerFirst ? 4 : 3));
+  const alreadyMovedIndex = playerFirst ? 4 : 3;
+  const positionIndex = playerFirst ? 5 : 4;
+  const materialsAlreadyMoved = (summonType === "FusionSummon" || summonType === "RitualSummon") && readOptionalBoolean(L, alreadyMovedIndex);
   const fusionMaterialsMovedByEffect = summonType === "FusionSummon" && Boolean(lua.lua_toboolean(L, playerFirst ? 5 : 4));
+  const requestedPosition = summonType === "RitualSummon" ? readOptionalSummonPosition(L, positionIndex) ?? readOptionalSummonPosition(L, alreadyMovedIndex) : undefined;
   const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
   if (!target) {
     setOperatedUids(hostState, []);
@@ -262,8 +265,8 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
     else if (summonType === "SynchroSummon") synchroSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
     else if (summonType === "XyzSummon") xyzSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
     else if (summonType === "LinkSummon") linkSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
-    else if (target.data.ritualMaterials?.length) ritualSummonDuelCard(session.state, target.controller, target.uid, materialUids);
-    else ritualSummonSelectedMaterials(session, hostState, target, materialUids, materialsAlreadyMoved);
+    else if (target.data.ritualMaterials?.length) ritualSummonDuelCard(session.state, target.controller, target.uid, materialUids, requestedPosition);
+    else ritualSummonSelectedMaterials(session, hostState, target, materialUids, materialsAlreadyMoved, requestedPosition);
     if (hostState.activeContext) hostState.activeOperationMoved = true;
     setOperatedUids(hostState, [target.uid]);
     lua.lua_pushinteger(L, 1);
@@ -272,6 +275,14 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
     lua.lua_pushinteger(L, 0);
   }
   return 1;
+}
+
+function readOptionalBoolean(L: unknown, index: number): boolean {
+  return lua.lua_type(L, index) === lua.LUA_TBOOLEAN && Boolean(lua.lua_toboolean(L, index));
+}
+
+function readOptionalSummonPosition(L: unknown, index: number): CardPosition | undefined {
+  return lua.lua_isnumber(L, index) ? positionFromMask(lua.lua_tointeger(L, index)) : undefined;
 }
 
 function fusionSummonSelectedMaterials(
@@ -363,7 +374,14 @@ function selectedFusionMaterialsMatch(target: DuelCardInstance, materials: (Duel
   return selected.length === materials.length;
 }
 
-function ritualSummonSelectedMaterials(session: DuelSession, hostState: LuaDuelSummonApiHostState, target: DuelCardInstance, materialUids: string[], materialsAlreadyMoved = false): void {
+function ritualSummonSelectedMaterials(
+  session: DuelSession,
+  hostState: LuaDuelSummonApiHostState,
+  target: DuelCardInstance,
+  materialUids: string[],
+  materialsAlreadyMoved = false,
+  position: CardPosition = "faceUpAttack",
+): void {
   if (target.kind !== "monster" || !isSelectedRitualTargetLocation(target.location)) throw new Error(`${target.name} is not a ritual monster in a summonable location`);
   if (new Set(materialUids).size !== materialUids.length || materialUids.length === 0) throw new Error(`${target.name} ritual materials are not legal`);
   if (
@@ -390,8 +408,7 @@ function ritualSummonSelectedMaterials(session: DuelSession, hostState: LuaDuelS
   }
   hostState.activeOperationMoved = true;
   moveDuelCard(session.state, target.uid, "monsterZone", target.controller, duelReason.summon | duelReason.specialSummon | duelReason.ritual);
-  target.position = "faceUpAttack";
-  target.faceUp = true;
+  applySummonPosition(target, position);
   target.summonType = "ritual";
   target.summonPlayer = target.controller;
   target.summonPhase = session.state.phase;

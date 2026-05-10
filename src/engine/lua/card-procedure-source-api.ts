@@ -51,7 +51,7 @@ export const cardProcedureSource = `${fusionProcedureSource}
     local function ritual_filter(c,e,tp,params,eg,ep,ev,re,r,rp,chk)
       if not c:IsRitualMonster() then return false end
       if params.filter and not params.filter(c) then return false end
-      if not c:IsCanBeSpecialSummoned(e,SUMMON_TYPE_RITUAL,tp,true,false) then return false end
+      if not c:IsCanBeSpecialSummoned(e,SUMMON_TYPE_RITUAL,tp,true,false,params.sumpos or POS_FACEUP) then return false end
       return ritual_has_materials(tp,c,params,e,eg,ep,ev,re,r,rp,chk)
     end
     function Ritual.Target(params,...)
@@ -88,10 +88,10 @@ export const cardProcedureSource = `${fusionProcedureSource}
             rc:SetMaterial(sg)
             params.extraop(sg:Clone(),e,tp,eg,ep,ev,re,r,rp,rc)
             Duel.BreakEffect()
-            Duel.RitualSummon(rc,sg,true)
+            Duel.RitualSummon(rc,sg,true,params.sumpos)
             if params.stage2 then params.stage2(sg,e,tp,eg,ep,ev,re,r,rp,rc) end
           else
-            Duel.RitualSummon(rc,sg)
+            Duel.RitualSummon(rc,sg,false,params.sumpos)
           end
         end
       end
