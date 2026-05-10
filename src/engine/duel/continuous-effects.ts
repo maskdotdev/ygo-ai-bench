@@ -360,13 +360,13 @@ export function isBattleDamagePrevented(state: DuelState, player: PlayerId, crea
 export function isBattleDamagePreventedByCard(state: DuelState, player: PlayerId, battleCards: DuelCardInstance[], createContext: ContinuousEffectContextFactory): boolean {
   for (const card of battleCards) {
     for (const effect of state.effects) {
-      if (effect.event !== "continuous" || (effect.code !== 200 && effect.code !== 201) || effect.sourceUid !== card.uid) continue;
+      if (effect.event !== "continuous" || (effect.code !== 200 && effect.code !== 201)) continue;
       const source = findCard(state, effect.sourceUid);
       if (!source || !effect.range.includes(source.location)) continue;
       if (effect.code === 201 && player !== source.controller) continue;
       if (effect.code === 200 && effect.value !== 1 && player === source.controller) continue;
       const ctx = createContext(effect, source, card);
-      if (!effect.canActivate || effect.canActivate(ctx)) return true;
+      if (continuousEffectAppliesToCard(effect, source, card, ctx) && (!effect.canActivate || effect.canActivate(ctx))) return true;
     }
   }
   return false;
@@ -536,7 +536,7 @@ export function isBattleTargetSelectionPrevented(state: DuelState, player: Playe
     if (effect.event !== "continuous" || effect.code !== 332) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
+    if (!continuousEffectTargetsSelectionPlayer(effect, source, player)) continue;
     const ctx = createContext(effect, source, card);
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
     if (effect.valueCardPredicate && !effect.valueCardPredicate(ctx, card)) continue;
@@ -550,7 +550,7 @@ export function isEffectTargetSelectionPrevented(state: DuelState, player: Playe
     if (effect.event !== "continuous" || effect.code !== 333) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
+    if (!continuousEffectTargetsSelectionPlayer(effect, source, player)) continue;
     const ctx = createContext(effect, source, card);
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
     if (effect.valueCardPredicate && !effect.valueCardPredicate(ctx, card)) continue;
@@ -910,28 +910,25 @@ export function continuousEffectAppliesToCard(effect: DuelEffectDefinition, sour
 }
 
 function continuousEffectTargetsPlayer(effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId): boolean {
-  if (effect.targetRange === undefined && !continuousEffectIsPlayerTarget(effect)) return source.controller === player;
+  if (!continuousEffectIsPlayerTarget(effect)) return effect.targetRange === undefined && source.controller === player;
   const [selfTarget = 0, opponentTarget = 0] = effect.targetRange ?? [1, 0];
   if (source.controller === player) return selfTarget !== 0;
   return opponentTarget !== 0;
 }
 
 function continuousEffectIsPlayerTarget(effect: DuelEffectDefinition): boolean {
-  if (effect.targetRange && continuousEffectCodeUsesPlayerSelectors(effect.code) && targetRangeUsesPlayerSelectors(effect.targetRange)) return true;
+  if (effect.targetRange && targetRangeUsesPlayerSelectors(effect.targetRange)) return true;
   return ((effect.property ?? 0) & 0x800) !== 0;
 }
 
-function continuousEffectCodeUsesPlayerSelectors(code: number | undefined): boolean {
-  return code === 14 || code === 57 || code === 59 || code === 204;
+function continuousEffectTargetsSelectionPlayer(effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId): boolean {
+  const [selfTarget = 0, opponentTarget = 0] = effect.targetRange ?? [1, 0];
+  return source.controller === player ? selfTarget !== 0 : opponentTarget !== 0;
 }
 
-function targetRangeUsesPlayerSelectors([selfTarget = 0, opponentTarget = 0]: [number, number?]): boolean {
-  return isPlayerSelector(selfTarget) && isPlayerSelector(opponentTarget);
-}
+function targetRangeUsesPlayerSelectors([selfTarget = 0, opponentTarget = 0]: [number, number?]): boolean { return isPlayerSelector(selfTarget) && isPlayerSelector(opponentTarget); }
 
-function isPlayerSelector(value: number): boolean {
-  return value === 0 || value === 1;
-}
+function isPlayerSelector(value: number): boolean { return value === 0 || value === 1; }
 
 function continuousEffectTargetsCardLocation(effect: DuelEffectDefinition, source: DuelCardInstance, card: DuelCardInstance): boolean {
   const [selfMask = 0, opponentMask = 0] = effect.targetRange ?? [];

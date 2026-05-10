@@ -1,5 +1,6 @@
 import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
+import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags } from "#duel/card-stats.js";
 import { applyResponse, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
@@ -27,6 +28,7 @@ const luaReasonMaskPredicateDescriptorPrefix = "value-predicate:reason-mask:";
 const luaValueCardNotHandlerDescriptor = "value-card:not-handler";
 const luaCannotActivateSpecialSummonedMonsterDescriptor = "cannot-activate:special-summoned-monster-on-field";
 const luaSourceControllerConditionDescriptor = "condition:source-controller";
+const luaSetcodeOrCodeTypeTargetDescriptorPrefix = "target:setcode-or-code-type:";
 const luaYellowAlertCode = "59277750";
 const luaResetEvent = 0x1000;
 const luaResetTurnSet = 0x20000;
@@ -245,6 +247,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
         isKnownCannotSelectBattleTargetNotHandlerEffect(effect) ||
         isKnownYellowAlertDelayedReturnEffect(effect) ||
         isKnownCannotActivateSpecialSummonedMonsterEffect(effect) ||
+        isKnownSetcodeOrCodeTypeAvoidBattleDamageEffect(effect) ||
         effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
         isStaticSingleCardLuaRestriction(effect) ||
         isStaticPlayerPhaseLock(effect) ||
@@ -260,6 +263,19 @@ function isKnownCannotActivateSpecialSummonedMonsterEffect(effect: SerializedDue
     effect.luaValueDescriptor === luaCannotActivateSpecialSummonedMonsterDescriptor &&
     effect.reset?.flags === luaPhaseEndResetFlags &&
     effect.targetRange?.[0] === 1 &&
+    effect.targetRange?.[1] === 0 &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
+function isKnownSetcodeOrCodeTypeAvoidBattleDamageEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 201 &&
+    effect.value === 1 &&
+    setcodeOrCodeTypeTargetDescriptor(effect.luaTargetDescriptor) !== undefined &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    effect.targetRange?.[0] === 4 &&
     effect.targetRange?.[1] === 0 &&
     hasDefaultLuaFieldRange(effect)
   );
@@ -430,9 +446,24 @@ function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffe
   if (effect.luaTargetDescriptor === "special-summon-limit:non-fusion-extra") {
     return { targetCardPredicate: (_ctx, card) => card.location === "extraDeck" && ((card.data.typeFlags ?? 0) & 0x40) === 0 };
   }
+  const setcodeOrCodeType = setcodeOrCodeTypeTargetDescriptor(effect.luaTargetDescriptor);
+  if (setcodeOrCodeType !== undefined) {
+    return {
+      targetCardPredicate: (ctx, card) =>
+        currentCardMatchesSetcode(card, ctx.duel, setcodeOrCodeType.setcode) ||
+        (currentCardMatchesCode(card, ctx.duel, String(setcodeOrCodeType.code)) && (cardTypeFlags(card, ctx.duel) & setcodeOrCodeType.type) !== 0),
+    };
+  }
   const notSetcode = notSetcodeTargetDescriptor(effect.luaTargetDescriptor);
   if (notSetcode !== undefined) return { targetCardPredicate: (_ctx, card) => !cardSetcodes(card).some((setcode) => isSetcodeMatch(notSetcode, setcode)) };
   return {};
+}
+
+function setcodeOrCodeTypeTargetDescriptor(descriptor: string | undefined): { setcode: number; code: number; type: number } | undefined {
+  if (!descriptor?.startsWith(luaSetcodeOrCodeTypeTargetDescriptorPrefix)) return undefined;
+  const [setcode, code, type] = descriptor.slice(luaSetcodeOrCodeTypeTargetDescriptorPrefix.length).split(":").map(Number);
+  if (setcode === undefined || code === undefined || type === undefined) return undefined;
+  return [setcode, code, type].every((value) => Number.isSafeInteger(value) && value > 0) ? { setcode, code, type } : undefined;
 }
 
 function notSetcodeTargetDescriptor(descriptor: string | undefined): number | undefined {

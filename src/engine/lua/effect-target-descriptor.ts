@@ -2,7 +2,7 @@ import fengari from "fengari";
 import { luaFunctionParams, luaFunctionSourceSnippet } from "#lua/effect-descriptor-source.js";
 import type { LuaHostState } from "#lua/host-types.js";
 
-const { lua, to_luastring } = fengari;
+const { lua, to_jsstring, to_luastring } = fengari;
 
 export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostState: LuaHostState): string | undefined {
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
@@ -14,21 +14,50 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
     `\\breturn\\s+not\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(?:TYPE_FUSION|64)\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)`,
   );
   if (nonFusionExtra.test(snippet)) return "special-summon-limit:non-fusion-extra";
+  const setcodeOrCodeType = setcodeOrCodeTypeTargetDescriptor(L, index, snippet, card);
+  if (setcodeOrCodeType !== undefined) return setcodeOrCodeType;
   const notSetcode = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
-  const setcode = notSetcode?.[1] ? luaNumberTokenValue(L, notSetcode[1]) : undefined;
+  const setcode = notSetcode?.[1] ? luaNumberTokenValue(L, index, notSetcode[1]) : undefined;
   return setcode !== undefined && Number.isSafeInteger(setcode) && setcode > 0 ? `target:not-setcode:${setcode}` : undefined;
 }
 
 const numericOrIdentifierPattern = String.raw`(?:0x[0-9A-Fa-f]+|\d+|[A-Za-z_]\w*)`;
 
-function luaNumberTokenValue(L: unknown, token: string): number | undefined {
+function setcodeOrCodeTypeTargetDescriptor(L: unknown, index: number, snippet: string, card: string): string | undefined {
+  const cardCall = `${card}\\s*:\\s*`;
+  const setcodeCall = `${cardCall}IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`;
+  const codeCall = `${cardCall}IsCode\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`;
+  const typeCall = `${cardCall}IsType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`;
+  const match =
+    snippet.match(new RegExp(`\\breturn\\s+${setcodeCall}\\s+or\\s+\\(?\\s*${codeCall}\\s+and\\s+${typeCall}\\s*\\)?`)) ??
+    snippet.match(new RegExp(`\\breturn\\s+${setcodeCall}\\s+or\\s+\\(?\\s*${typeCall}\\s+and\\s+${codeCall}\\s*\\)?`));
+  if (!match?.[1] || !match[2] || !match[3]) return undefined;
+  const setcode = luaNumberTokenValue(L, index, match[1]);
+  const code = luaNumberTokenValue(L, index, match[2]);
+  const type = luaNumberTokenValue(L, index, match[3]);
+  return setcode !== undefined && code !== undefined && type !== undefined ? `target:setcode-or-code-type:${setcode}:${code}:${type}` : undefined;
+}
+
+function luaNumberTokenValue(L: unknown, functionIndex: number, token: string): number | undefined {
   if (/^0x[0-9A-Fa-f]+$/.test(token)) return Number.parseInt(token.slice(2), 16);
   if (/^\d+$/.test(token)) return Number(token);
   if (!/^[A-Za-z_]\w*$/.test(token)) return undefined;
   lua.lua_getglobal(L, to_luastring(token));
   const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
   lua.lua_pop(L, 1);
-  return value;
+  return value ?? luaNumberUpvalueValue(L, functionIndex, token);
+}
+
+function luaNumberUpvalueValue(L: unknown, index: number, token: string): number | undefined {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  for (let upvalueIndex = 1;; upvalueIndex += 1) {
+    const nameBytes = lua.lua_getupvalue(L, absoluteIndex, upvalueIndex);
+    if (nameBytes === null) return undefined;
+    const name = typeof nameBytes === "string" ? nameBytes : to_jsstring(nameBytes);
+    const value = name === token && lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
+    lua.lua_pop(L, 1);
+    if (value !== undefined) return value;
+  }
 }
 
 function escapeRegExp(value: string): string {
