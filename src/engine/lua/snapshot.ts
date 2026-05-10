@@ -13,6 +13,7 @@ import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import type { ApplyDuelResponseResult, ChainLimit, DuelAction, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
 
 const luaEffectEquipLimit = 76;
+const luaEffectGeminiStatus = 75;
 const luaEffectUnionStatus = 347;
 const luaEffectOldUnionStatus = 348;
 const luaEffectClockLizard = 51476410;
@@ -37,6 +38,7 @@ const luaResetOpponentTurn = 0x20000000;
 const luaPhaseBattle = 0x80;
 const luaPhaseEnd = 0x200;
 const luaBattlePhaseEventCode = luaResetEvent | luaPhaseBattle;
+const luaPhaseEndEventCode = luaResetEvent | luaPhaseEnd;
 const luaPhaseEndResetFlags = luaResetPhase | luaPhaseEnd;
 const luaResetsStandardPhaseEnd = 0x41fe1200;
 const luaResetEventStandard = luaResetEvent | 0x1fe0000;
@@ -137,10 +139,15 @@ function findRestoredLuaStateSnapshotEffect(
   snapshotEffects: SerializedDuelEffect[],
   restoredRegistryKeys: Set<string>,
 ): SerializedDuelEffect | undefined {
-  if (!isKnownLuaUnionStateEffect(session, effect)) return undefined;
+  if (!isKnownLuaUnionStateEffect(session, effect) && !isKnownLuaGeminiStateEffect(effect)) return undefined;
   return snapshotEffects.find((snapshotEffect) => {
     if (!snapshotEffect.registryKey || !registryKeys.has(snapshotEffect.registryKey) || restoredRegistryKeys.has(snapshotEffect.registryKey)) return false;
-    return snapshotEffect.sourceUid === effect.sourceUid && snapshotEffect.event === effect.event && snapshotEffect.code === effect.code && isKnownLuaUnionStateEffect(session, snapshotEffect);
+    return (
+      snapshotEffect.sourceUid === effect.sourceUid &&
+      snapshotEffect.event === effect.event &&
+      snapshotEffect.code === effect.code &&
+      (isKnownLuaUnionStateEffect(session, snapshotEffect) || isKnownLuaGeminiStateEffect(snapshotEffect))
+    );
   });
 }
 
@@ -148,6 +155,16 @@ function isKnownLuaUnionStateEffect(session: DuelSession, effect: DuelEffectDefi
   if (effect.event !== "continuous" || effect.code === undefined || !luaUnionStateEffectCodes.has(effect.code)) return false;
   const source = session.state.cards.find((card) => card.uid === effect.sourceUid);
   return Boolean(source && source.location === "spellTrapZone" && source.equippedToUid !== undefined);
+}
+
+function isKnownLuaGeminiStateEffect(effect: DuelEffectDefinition | SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    (effect.code === luaEffectGeminiStatus || effect.code === luaPhaseEndEventCode) &&
+    effect.sourceUid !== undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone"
+  );
 }
 
 function restoreKnownLuaStateEffects(
@@ -164,6 +181,16 @@ function restoreKnownLuaStateEffects(
   const equipLimitSourceUids = new Set(
     snapshotEffects
       .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && effect.code === luaEffectEquipLimit && !unionStateSourceUids.has(effect.sourceUid))
+      .map((effect) => effect.sourceUid),
+  );
+  const geminiStatusSourceUids = new Set(
+    snapshotEffects
+      .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownGeminiStatusEffect(effect))
+      .map((effect) => effect.sourceUid),
+  );
+  const geminiReturnSourceUids = new Set(
+    snapshotEffects
+      .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownGeminiEndPhaseReturnEffect(effect, snapshotEffects))
       .map((effect) => effect.sourceUid),
   );
   const results: LuaScriptLoadResult[] = [];
@@ -199,6 +226,31 @@ function restoreKnownLuaStateEffects(
     `;
     results.push(host.loadScript(script, `restore-equip-limit-${card.uid}.lua`));
   }
+  for (const sourceUid of new Set([...geminiStatusSourceUids, ...geminiReturnSourceUids])) {
+    const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
+    if (!card || card.location !== "monsterZone") continue;
+    const restoreStatus = geminiStatusSourceUids.has(sourceUid);
+    const restoreReturn = geminiReturnSourceUids.has(sourceUid);
+    const script = `
+      local c=Duel.GetFieldCard(${card.controller},LOCATION_MZONE,${card.sequence})
+      if c and c:IsFieldID(${cardFieldId(card)}) then
+        ${restoreStatus ? "c:EnableGeminiStatus()" : ""}
+        ${restoreReturn ? `
+          local e1=Effect.CreateEffect(c)
+          e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+          e1:SetCode(EVENT_PHASE+PHASE_END)
+          e1:SetRange(LOCATION_MZONE)
+          e1:SetCountLimit(1)
+          e1:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+            Duel.SendtoHand(e:GetHandler(),nil,REASON_EFFECT)
+          end)
+          e1:SetReset(RESETS_STANDARD_PHASE_END)
+          c:RegisterEffect(e1,true)
+        ` : ""}
+      end
+    `;
+    results.push(host.loadScript(script, `restore-gemini-status-${card.uid}.lua`));
+  }
   return results;
 }
 
@@ -212,7 +264,7 @@ function restoreKnownLuaEffects(
   const added: string[] = [];
   for (const effect of snapshotEffects) {
     if (!effect.registryKey || !registryKeys.has(effect.registryKey) || restored.has(effect.registryKey)) continue;
-    if (!isKnownRestorableLuaEffect(effect)) continue;
+    if (!isKnownRestorableLuaEffect(effect, snapshotEffects)) continue;
     session.state.effects.push({
       ...effect,
       range: [...effect.range],
@@ -222,20 +274,22 @@ function restoreKnownLuaEffects(
       ...restoredLuaValueCallbacks(effect),
       ...restoredLuaConditionCallbacks(effect),
       ...restoredLuaTargetCallbacks(effect),
-      operation: restoredLuaOperation(effect),
+      operation: restoredLuaOperation(effect, snapshotEffects),
     });
     added.push(effect.registryKey);
   }
   return added;
 }
 
-function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
+function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[] = []): boolean {
   return (
     isClientHintEffect(effect) ||
     (effect.event === "continuous" &&
       (effect.code === 2 ||
         effect.code === 8 ||
         effect.code === 22 ||
+        isKnownGeminiStatusEffect(effect) ||
+        isKnownGeminiEndPhaseReturnEffect(effect, snapshotEffects) ||
         isStaticNotSetcodeSummonRestriction(effect) ||
         effect.code === 25 ||
         effect.code === luaEffectClockLizard ||
@@ -254,6 +308,31 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
         isStaticPlayerPhaseLock(effect) ||
         (effect.code === 102 && effect.value !== undefined && effect.value !== 0 && effect.targetRange === undefined) ||
         ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 132) && effect.value !== undefined)))
+  );
+}
+
+function isKnownGeminiStatusEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === luaEffectGeminiStatus &&
+    effect.sourceUid !== undefined &&
+    effect.targetRange === undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone"
+  );
+}
+
+function isKnownGeminiEndPhaseReturnEffect(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[]): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === luaPhaseEndEventCode &&
+    effect.sourceUid !== undefined &&
+    effect.targetRange === undefined &&
+    effect.countLimit === 1 &&
+    effect.reset?.flags === luaResetsStandardPhaseEnd &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone" &&
+    snapshotEffects.some((candidate) => candidate.sourceUid === effect.sourceUid && isKnownGeminiStatusEffect(candidate))
   );
 }
 
@@ -377,13 +456,26 @@ function isStaticPlayerPhaseLock(effect: SerializedDuelEffect): boolean {
   );
 }
 
-function restoredLuaOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[] = []): DuelEffectDefinition["operation"] {
   if (isKnownYellowAlertDelayedReturnEffect(effect)) return yellowAlertDelayedReturnOperation(effect);
+  if (isKnownGeminiEndPhaseReturnEffect(effect, snapshotEffects)) return luaHandlerReturnToHandOperation(effect);
   if (effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor) {
     const returnPlayer = effect.value === 0 || effect.value === 1 ? effect.value : undefined;
     return luaTemporaryControlReturnOperation(returnPlayer);
   }
   return () => {};
+}
+
+function luaHandlerReturnToHandOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    try {
+      moveDuelCardWithRedirects(ctx.duel, ctx.source.uid, "hand", ctx.source.controller, duelReason.effect, ctx.player, {
+        eventReasonCardUid: effect.sourceUid,
+      });
+    } catch {
+      // EDOPro-style delayed operations ignore handlers that can no longer move.
+    }
+  };
 }
 
 function yellowAlertDelayedReturnOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
@@ -505,7 +597,7 @@ function otherPlayer(player: PlayerId): PlayerId {
 function luaScriptRegistryKeys(registryKeys: Set<string>, snapshotEffects: SerializedDuelEffect[]): Set<string> {
   const knownRestorableKeys = new Set(
     snapshotEffects
-      .filter(isKnownRestorableLuaEffect)
+      .filter((effect) => isKnownRestorableLuaEffect(effect, snapshotEffects))
       .map((effect) => effect.registryKey)
       .filter((key): key is string => Boolean(key)),
   );
