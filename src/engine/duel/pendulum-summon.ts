@@ -3,6 +3,7 @@ import { cardTypeFlags, currentCardHasEffect, currentLeftScale, currentLevel, cu
 import { pendulumAnyLevelScaleEffectCode, pendulumLevelBypassEffectCode } from "#duel/pendulum-effect-codes.js";
 import { canConsumePendulumSummon, consumePendulumSummon, hasPendulumSummonAvailable, pendulumSummonCandidatesForAvailability, pendulumSummonCandidatesForGrant, pendulumSummonExtraGrants } from "#duel/pendulum-availability.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
+import { maxSimultaneousSpecialSummonCount } from "#duel/special-summon-count.js";
 import type { DuelAction, DuelCardInstance, DuelState, ExtraPendulumSummonGrant, PlayerId } from "#duel/types.js";
 
 type PendulumSummonAction = Extract<DuelAction, { type: "pendulumSummon" }>;
@@ -14,7 +15,7 @@ interface PendulumScaleInfo {
 
 export function pendulumSummonActions(state: DuelState, player: PlayerId, canSummon: (uid: string) => boolean): PendulumSummonAction[] {
   if (!hasPendulumSummonAvailable(state, player)) return [];
-  const zoneCount = 5 - getCards(state, player, "monsterZone").length;
+  const zoneCount = maxSimultaneousSpecialSummonCount(state, player, 5 - getCards(state, player, "monsterZone").length);
   if (zoneCount <= 0) return [];
   const actions: PendulumSummonAction[] = [];
   const seenCandidateSets = new Set<string>();

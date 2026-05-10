@@ -14,6 +14,7 @@ import { getDuelFlagEffectCount } from "#duel/flags.js";
 import { hasPendulumSummonAvailable } from "#duel/pendulum-availability.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
+import { maxSimultaneousSpecialSummonCount } from "#duel/special-summon-count.js";
 import { cardTypeFlags, currentCardHasEffect, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
 import { pendulumAnyLevelScaleEffectCode, pendulumLevelBypassEffectCode } from "#duel/pendulum-effect-codes.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
@@ -28,7 +29,6 @@ import type { LuaEffectRecord } from "#lua/host-types.js";
 import type { DuelCardData, DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
-const blueEyesSpiritRestrictionCode = 69832741;
 const cardAdvanceCode = 52112003;
 const luaSummonTypeNormal = 0x10000000;
 const luaSummonTypeTribute = 0x11000000;
@@ -337,8 +337,7 @@ function canSpecialSummon(session: DuelSession, player: PlayerId, targetPlayer: 
 
 function canSpecialSummonCount(session: DuelSession, player: PlayerId, count: number): boolean {
   if (!canPlayerSpecialSummon(session.state, player)) return false;
-  if (availableMonsterZoneCount(session, player, []) < count) return false;
-  return count < 2 || matchingPlayerEffects(session.state, player, blueEyesSpiritRestrictionCode, createPlayerCheckContext(session)).length === 0;
+  return maxSimultaneousSpecialSummonCount(session.state, player, availableMonsterZoneCount(session, player, [])) >= count;
 }
 
 function canPendulumSummon(session: DuelSession, player: PlayerId): boolean {

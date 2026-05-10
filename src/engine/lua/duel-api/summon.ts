@@ -35,6 +35,7 @@ import { normalSummon, tributeSetDuelCard } from "#duel/summon.js";
 import { consumePendulumSummon, grantExtraPendulumSummons, hasPendulumSummonAvailable, pendulumSummonCandidatesForAvailability } from "#duel/pendulum-availability.js";
 import { cardTypeFlags, currentCardHasEffect, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
 import { pendulumAnyLevelScaleEffectCode, pendulumLevelBypassEffectCode } from "#duel/pendulum-effect-codes.js";
+import { maxSimultaneousSpecialSummonCount } from "#duel/special-summon-count.js";
 import { cardCombinations, materialCodesMatch, type MaterialCodeMatchOptions } from "#duel/summon-materials.js";
 import { sameStringMembers } from "#duel/string-list-match.js";
 import { setSpellTrap as setCoreSpellTrap } from "#duel/spell-trap.js";
@@ -524,7 +525,7 @@ function pushReleaseRitualMaterial(L: unknown, session: DuelSession, hostState: 
 function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
   if (session.state.status === "ended") return pushEmptyIntegerResult(L, hostState);
   const player = readOptionalPlayer(L, 1) ?? session.state.turnPlayer;
-  const zoneCount = availableMonsterZoneCount(session, player, []);
+  const zoneCount = maxSimultaneousSpecialSummonCount(session.state, player, availableMonsterZoneCount(session, player, []));
   const scales = pendulumScales(session, player);
   if (!isMainPhaseForPlayer(session, player) || !hasPendulumSummonAvailable(session.state, player) || zoneCount <= 0 || !scales) {
     setOperatedUids(hostState, []);
