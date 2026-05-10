@@ -76,6 +76,44 @@ describe("Lua dynamic Link marker effects", () => {
     expect(after.ok, after.error).toBe(true);
     expect(host.messages).toContain("after dynamic colink true/true/2/1");
   });
+
+  it("uses additive and removal Link marker effects for linked groups", () => {
+    const cards: DuelCardData[] = [
+      { code: "300", name: "Add Remove Marker Link", kind: "extra", typeFlags: 0x4000001, level: 2, linkMarkers: 0x20 },
+      { code: "401", name: "Left Pointed Monster", kind: "monster", level: 4 },
+      { code: "402", name: "Right Pointed Monster", kind: "monster", level: 4 },
+    ];
+    const session = createStartedSession(cards, { main: ["401", "402"], extra: ["300"] });
+    placeMonster(session, "401", 0);
+    placeMonster(session, "300", 1);
+    placeMonster(session, "402", 2);
+    const host = createLuaScriptHost(session, { readScript: dynamicMarkerScript });
+
+    const before = host.loadScript(
+      `
+      local source=Duel.GetFieldCard(0, LOCATION_MZONE, 1)
+      Debug.Message("before add remove markers " .. source:GetLinkMarker() .. "/" .. source:GetLinkedZone(0))
+      `,
+      "before-add-remove-markers.lua",
+    );
+    expect(before.ok, before.error).toBe(true);
+    expect(host.messages).toContain("before add remove markers 32/4");
+
+    expect(host.loadCardScript(300, { readScript: dynamicMarkerScript }).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const after = host.loadScript(
+      `
+      local left=Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      local source=Duel.GetFieldCard(0, LOCATION_MZONE, 1)
+      local right=Duel.GetFieldCard(0, LOCATION_MZONE, 2)
+      local linked_group=source:GetLinkedGroup()
+      Debug.Message("after add remove markers " .. source:GetLinkMarker() .. "/" .. source:GetLinkedZone(0) .. "/" .. linked_group:GetCount() .. "/" .. tostring(linked_group:IsContains(left)) .. "/" .. tostring(linked_group:IsContains(right)))
+      `,
+      "after-add-remove-markers.lua",
+    );
+    expect(after.ok, after.error).toBe(true);
+    expect(host.messages).toContain("after add remove markers 8/1/1/true/false");
+  });
 });
 
 function createStartedSession(cards: DuelCardData[], deck: { main: string[]; extra?: string[] }): DuelSession {
@@ -105,6 +143,23 @@ function dynamicMarkerScript(name: string): string | undefined {
         e:SetCode(EFFECT_CHANGE_LINKMARKER)
         e:SetValue(32)
         c:RegisterEffect(e)
+      end
+    `;
+  }
+  if (name === "c300.lua") {
+    return `
+      c300={}
+      function c300.initial_effect(c)
+        local e1=Effect.CreateEffect(c)
+        e1:SetType(EFFECT_TYPE_SINGLE)
+        e1:SetCode(EFFECT_ADD_LINKMARKER)
+        e1:SetValue(8)
+        c:RegisterEffect(e1)
+        local e2=Effect.CreateEffect(c)
+        e2:SetType(EFFECT_TYPE_SINGLE)
+        e2:SetCode(EFFECT_REMOVE_LINKMARKER)
+        e2:SetValue(32)
+        c:RegisterEffect(e2)
       end
     `;
   }
