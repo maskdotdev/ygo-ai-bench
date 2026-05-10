@@ -85,8 +85,6 @@ export function endDuelTurn(state: DuelState, player: PlayerId, handlers: DuelTu
   state.phaseActivity = false;
   handlers.collectEvent("phaseStartDraw", phaseStartEventCode("draw"));
   handlers.executePhaseEffects?.("draw");
-  pruneResetEffectsAfterPhase(state, "draw");
-  pruneDuelFlagEffectsAfterPhase(state, "draw");
   state.waitingFor = state.turnPlayer;
   state.attacksDeclared = [];
   state.attackCanceledUids = [];
@@ -100,6 +98,8 @@ export function endDuelTurn(state: DuelState, player: PlayerId, handlers: DuelTu
   handlers.collectEvent("preDraw");
   if (handlers.canDraw?.(state.turnPlayer) ?? true) drawDuelCardsFromDeck(state, state.turnPlayer, state.options.drawPerTurn, "Turn draw", (drawPlayer) => handlers.canLoseByDeck?.(drawPlayer) ?? true);
   if (state.status === "ended") return;
+  pruneResetEffectsAfterPhase(state, "draw");
+  pruneDuelFlagEffectsAfterPhase(state, "draw");
   state.phase = "main1";
   state.phaseActivity = false;
   handlers.collectEvent("phaseStartMain1", phaseStartEventCode("main1"));

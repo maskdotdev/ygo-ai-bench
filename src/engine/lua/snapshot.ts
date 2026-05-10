@@ -3,7 +3,7 @@ import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags } from "#duel/card-stats.js";
-import { applyResponse, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, negateDuelChainLinkObject, queryPublicState } from "#duel/core.js";
+import { applyResponse, collectDuelGroupedTriggerEffects, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, negateDuelChainLinkObject, queryPublicState } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { resetDuelCardEffects } from "#duel/effect-reset.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
@@ -36,6 +36,7 @@ const luaTypeTargetDescriptorPrefix = "target:type:";
 const luaFaceupTypeTargetDescriptorPrefix = "target:faceup-type:";
 const luaYellowAlertCode = "59277750";
 const luaRareMetalmorphCode = "12503902";
+const luaMaharaghiCode = "40695128";
 const luaResetEvent = 0x1000;
 const luaResetTurnSet = 0x20000;
 const luaResetPhase = 0x40000000;
@@ -309,6 +310,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownCannotSelectBattleTargetNotHandlerEffect(effect) ||
         isKnownYellowAlertDelayedReturnEffect(effect) ||
         isKnownRareMetalmorphChainSolvingNegateEffect(effect) ||
+        isKnownMaharaghiPredrawEffect(effect) ||
         isKnownCannotActivateSpecialSummonedMonsterEffect(effect) ||
         isKnownSetcodeOrCodeTypeBattleProtectionEffect(effect) ||
         effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
@@ -409,6 +411,18 @@ function isKnownRareMetalmorphChainSolvingNegateEffect(effect: SerializedDuelEff
   );
 }
 
+function isKnownMaharaghiPredrawEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaMaharaghiCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === 1113 &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
+    effect.targetRange === undefined &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
 function isKnownLifePointReasonPredicateEffect(effect: SerializedDuelEffect): boolean {
   return (
     effect.code !== undefined &&
@@ -483,12 +497,26 @@ function isStaticPlayerPhaseLock(effect: SerializedDuelEffect): boolean {
 function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[] = []): DuelEffectDefinition["operation"] {
   if (isKnownYellowAlertDelayedReturnEffect(effect)) return yellowAlertDelayedReturnOperation(effect);
   if (isKnownRareMetalmorphChainSolvingNegateEffect(effect)) return rareMetalmorphChainSolvingNegateOperation(effect);
+  if (isKnownMaharaghiPredrawEffect(effect)) return maharaghiPredrawOperation(effect);
   if (isKnownGeminiEndPhaseReturnEffect(effect, snapshotEffects)) return luaHandlerReturnToHandOperation(effect);
   if (effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor) {
     const returnPlayer = effect.value === 0 || effect.value === 1 ? effect.value : undefined;
     return luaTemporaryControlReturnOperation(returnPlayer);
   }
   return () => {};
+}
+
+function maharaghiPredrawOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const [topCard] = topDeckCards(ctx.duel, effect.controller);
+    if (!topCard) return;
+    collectDuelGroupedTriggerEffects(ctx.duel, "confirmed", [topCard], {
+      eventCode: 1211,
+      eventPlayer: effect.controller,
+      eventValue: 1,
+      eventUids: [topCard.uid],
+    });
+  };
 }
 
 function rareMetalmorphChainSolvingNegateOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
@@ -567,11 +595,20 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
 }
 
 function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "canActivate"> {
+  if (isKnownMaharaghiPredrawEffect(effect)) {
+    return { canActivate: (ctx) => ctx.duel.turnPlayer === effect.controller && topDeckCards(ctx.duel, effect.controller).length > 0 };
+  }
   if (effect.luaConditionDescriptor === luaSourceControllerConditionDescriptor) {
     return { canActivate: (ctx) => ctx.source.controller === effect.controller };
   }
   return {};
 }
+
+function topDeckCards(state: DuelSession["state"], player: PlayerId): DuelCardDefinitionLike[] {
+  return state.cards.filter((card) => card.controller === player && card.location === "deck").sort((a, b) => a.sequence - b.sequence);
+}
+
+type DuelCardDefinitionLike = DuelSession["state"]["cards"][number];
 
 function luaReasonPredicateMask(descriptor: string | undefined): number | undefined {
   if (descriptor === luaEffectReasonPredicateDescriptor) return duelReason.effect;
