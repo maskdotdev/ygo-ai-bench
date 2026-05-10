@@ -262,7 +262,7 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
 }
 
 function defaultXyzMaterialUids(session: DuelSession, target: DuelCardInstance, player: PlayerId): string[] {
-  const count = target.data.xyzMaterials?.length || 2;
+  const count = target.data.xyzMaterials?.length || target.data.xyzMaterialCount || 2;
   return session.state.cards.filter((card) => card.controller === player && card.location === "monsterZone" && canBeXyzMaterial(card, target)).slice(0, count).map((card) => card.uid);
 }
 

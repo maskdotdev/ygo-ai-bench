@@ -53,6 +53,56 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
     expect(restored.session.state.cards.find((card) => card.uid === wanted!.uid)).toMatchObject({ location: "spellTrapZone", faceUp: false });
   });
 
+  it("restores official Xyz.AddProcedure material counts for real extra deck summons", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const triEdgeCode = "68836428";
+    const materialCodes = ["900000001", "900000002", "900000003"];
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === triEdgeCode),
+      ...materialCodes.map((code, index) => ({
+        code,
+        name: `Level 3 Material ${index + 1}`,
+        kind: "monster" as const,
+        typeFlags: 0x1,
+        level: 3,
+      })),
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 292, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: materialCodes, extra: [triEdgeCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const triEdge = session.state.cards.find((card) => card.code === triEdgeCode && card.location === "extraDeck");
+    const materials = materialCodes.map((code) => session.state.cards.find((card) => card.code === code && card.location === "deck"));
+    expect(triEdge).toBeDefined();
+    expect(materials.every(Boolean)).toBe(true);
+    for (const material of materials) moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(triEdgeCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(session.state.cards.find((card) => card.uid === triEdge!.uid)?.data.xyzMaterialCount).toBe(3);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    const actions = getLuaRestoreLegalActions(restored, 0).filter((action) => action.type === "xyzSummon" && action.uid === triEdge!.uid);
+    expect(actions, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toHaveLength(1);
+    const action = actions[0];
+    expect(action?.type).toBe("xyzSummon");
+    if (!action || action.type !== "xyzSummon") throw new Error("Expected Xyz Summon action");
+    expect(action.materialUids).toHaveLength(3);
+    const summoned = applyLuaRestoreResponse(restored, action);
+    expect(summoned.ok, summoned.error).toBe(true);
+    expect(restored.session.state.cards.find((card) => card.uid === triEdge!.uid)).toMatchObject({
+      location: "monsterZone",
+      summonType: "xyz",
+      overlayUids: expect.arrayContaining(action.materialUids),
+    });
+  });
+
   it("restores Spirit procedure End Phase return after a real Normal Summon", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const yataCode = "3078576";

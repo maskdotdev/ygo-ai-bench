@@ -741,7 +741,7 @@ function findSynchroMaterialUidSets(materialPool: DuelCardInstance[], card: Duel
 
 function findXyzMaterialUidSets(materialPool: DuelCardInstance[], card: DuelCardInstance): string[][] {
   if (card.data.xyzMaterials?.length) return findMaterialUidSets(materialPool, card.data.xyzMaterials);
-  return cardCombinations(materialPool, 2).filter((materials) => canGenericXyzMaterialsMatch(card, materials)).map((materials) => materials.map((material) => material.uid));
+  return cardCombinations(materialPool, xyzMaterialCount(card)).filter((materials) => canGenericXyzMaterialsMatch(card, materials)).map((materials) => materials.map((material) => material.uid));
 }
 
 function findSynchroMaterialRoleUidSets(cards: DuelCardInstance[], required: SynchroMaterialCodes): string[][] {
@@ -775,11 +775,15 @@ function synchroLevel(card: DuelCardInstance): number {
 
 function canGenericXyzMaterialsMatch(card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
   const targetRank = xyzRank(card);
-  return targetRank > 0 && materials.length === 2 && materials.every((material) => (material.data.level ?? 0) === targetRank);
+  return targetRank > 0 && materials.length === xyzMaterialCount(card) && materials.every((material) => (material.data.level ?? 0) === targetRank);
 }
 
 function xyzRank(card: DuelCardInstance): number {
   return ((card.data.typeFlags ?? 0) & 0x800000) !== 0 ? card.data.level ?? 0 : 0;
+}
+
+function xyzMaterialCount(card: DuelCardInstance): number {
+  return card.data.xyzMaterialCount ?? 2;
 }
 
 function isTuner(card: DuelCardInstance): boolean {

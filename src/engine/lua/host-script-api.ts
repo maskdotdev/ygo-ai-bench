@@ -1,4 +1,5 @@
 import fengari from "fengari";
+import { applyLuaExtraDeckProcedureMetadata } from "#lua/extra-deck-procedure-metadata-api.js";
 import { applyLuaNormalTributeMetadata } from "#lua/tribute-metadata-api.js";
 import { pushCardTable } from "#lua/card-api.js";
 import type { DuelSession } from "#duel/types.js";
@@ -40,6 +41,7 @@ export function registerLuaInitialEffectsDetailed(L: unknown, session: DuelSessi
     }
     lua.lua_pop(L, 3);
     applyLuaNormalTributeMetadata(L, card);
+    applyLuaExtraDeckProcedureMetadata(L, card);
     results.push({ code: card.code, uid: card.uid, ok: true });
   }
   return results;

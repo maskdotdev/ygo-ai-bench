@@ -126,6 +126,7 @@ export interface DuelCardData {
     nonTuners: string[];
   };
   xyzMaterials?: string[];
+  xyzMaterialCount?: number;
   linkMaterials?: string[];
   ritualMaterials?: string[];
   listedNames?: string[];
