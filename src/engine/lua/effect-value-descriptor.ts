@@ -4,9 +4,18 @@ import type { LuaHostState } from "#lua/host-types.js";
 const { lua, to_luastring } = fengari;
 
 export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostState: LuaHostState): string | undefined {
+  if (isNamedTableFunction(L, index, "aux", "tgoval")) return "cannot-be-effect-target:opponent";
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
   const params = luaFunctionParams(snippet);
+  const effectParam = params?.[0];
+  const reasonPlayerParam = params?.[2];
+  if (effectParam && reasonPlayerParam) {
+    const effect = escapeRegExp(effectParam);
+    const reasonPlayer = escapeRegExp(reasonPlayerParam);
+    const opponentTargeting = new RegExp(`\\breturn\\s+${reasonPlayer}\\s*~=\\s*${effect}\\s*:\\s*GetHandlerPlayer\\s*\\(\\s*\\)`);
+    if (opponentTargeting.test(snippet)) return "cannot-be-effect-target:opponent";
+  }
   const amountParam = params?.[2];
   const reasonParam = params?.[3];
   if (!amountParam || !reasonParam) return undefined;
@@ -15,13 +24,12 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   const effectReason = "(?:REASON_EFFECT|64)";
   const doubleEffectDamage = new RegExp(`\\breturn\\s+${reason}\\s*&\\s*${effectReason}\\s*>\\s*0\\s+and\\s+${amount}\\s*\\*\\s*2\\s+or\\s+${amount}\\b`);
   if (doubleEffectDamage.test(snippet)) return "change-damage:effect-double";
-  const effectParam = params?.[0];
   const relatedEffectParam = params?.[1];
-  const reasonPlayerParam = params?.[4];
-  if (!effectParam || !relatedEffectParam || !reasonPlayerParam) return undefined;
+  const reflectedReasonPlayerParam = params?.[4];
+  if (!effectParam || !relatedEffectParam || !reflectedReasonPlayerParam) return undefined;
   const effect = escapeRegExp(effectParam);
   const relatedEffect = escapeRegExp(relatedEffectParam);
-  const reasonPlayer = escapeRegExp(reasonPlayerParam);
+  const reasonPlayer = escapeRegExp(reflectedReasonPlayerParam);
   const continuousType = "(?:EFFECT_TYPE_CONTINUOUS|2048)";
   const reflectOpponentNonContinuous = new RegExp(
     `\\breturn\\s+${relatedEffect}\\s+and\\s+not\\s+${relatedEffect}\\s*:\\s*IsHasType\\s*\\(\\s*${continuousType}\\s*\\)\\s+and\\s+${reasonPlayer}\\s*==\\s*1\\s*-\\s*${effect}\\s*:\\s*GetOwnerPlayer\\s*\\(\\s*\\)`,
@@ -77,6 +85,19 @@ function readIntegerField(L: unknown, tableIndex: number, field: string): number
   const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
   lua.lua_pop(L, 1);
   return value;
+}
+
+function isNamedTableFunction(L: unknown, index: number, tableName: string, fieldName: string): boolean {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  lua.lua_getglobal(L, to_luastring(tableName));
+  if (!lua.lua_istable(L, -1)) {
+    lua.lua_pop(L, 1);
+    return false;
+  }
+  lua.lua_getfield(L, -1, to_luastring(fieldName));
+  const same = Boolean(lua.lua_isfunction(L, -1) && lua.lua_rawequal(L, absoluteIndex, -1));
+  lua.lua_pop(L, 2);
+  return same;
 }
 
 function escapeRegExp(value: string): string {

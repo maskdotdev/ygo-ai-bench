@@ -214,6 +214,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect): boolean {
       effect.code === 22 ||
       effect.code === 25 ||
       effect.code === luaEffectClockLizard ||
+      (effect.code === 71 && effect.luaValueDescriptor === "cannot-be-effect-target:opponent") ||
       effect.luaValueDescriptor === "change-damage:effect-double" ||
       effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous" ||
       effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
@@ -238,6 +239,9 @@ function restoredLuaOperation(effect: SerializedDuelEffect): DuelEffectDefinitio
 }
 
 function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "battleDamageValue" | "lifePointValue" | "valuePredicate"> {
+  if (effect.luaValueDescriptor === "cannot-be-effect-target:opponent") {
+    return { valuePredicate: (_ctx, player) => player !== undefined && player !== effect.controller };
+  }
   if (effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous") {
     return { valuePredicate: (ctx) => ctx.eventReasonPlayer === otherPlayer(effect.controller) && !relatedEffectIsContinuous(ctx) };
   }
