@@ -305,19 +305,26 @@ function fusionSummonSelectedMaterials(
   ) {
     throw new Error(`${target.name} cannot be Fusion Summoned`);
   }
+  const pendingDefaultMaterialUids: string[] = [];
   for (const material of materials) {
-    const canUseMaterial = materialsAlreadyMoved ? canTrackMovedFusionMaterial(material, target, summonPlayer) : canBeSelectedFusionMaterial(session, material, target, summonPlayer);
-    if (!canUseMaterial) throw new Error(`${target.name} fusion materials are not legal`);
-  }
-  if (!materialsAlreadyMoved) {
-    for (const uid of materialUids) {
-      const material = session.state.cards.find((candidate) => candidate.uid === uid);
-      if (!material) continue;
-      collectLuaSummonEvent(session, "preUsedAsMaterial", material);
-      sendDuelCardToGraveyard(session.state, uid, summonPlayer, materialReason, summonPlayer);
-      pushDuelLog(session.state, "fusionMaterial", summonPlayer, material.name, `Used for ${target.name}`);
-      collectLuaSummonEvent(session, "usedAsMaterial", material);
+    if (materialsAlreadyMoved) {
+      if (canMoveUnmovedFusionMaterial(session, material, target, summonPlayer)) {
+        pendingDefaultMaterialUids.push(material.uid);
+        continue;
+      }
+      if (!canTrackMovedFusionMaterial(material, target, summonPlayer)) throw new Error(`${target.name} fusion materials are not legal`);
+      continue;
     }
+    if (!canBeSelectedFusionMaterial(session, material, target, summonPlayer)) throw new Error(`${target.name} fusion materials are not legal`);
+  }
+  const materialUidsToMove = materialsAlreadyMoved ? pendingDefaultMaterialUids : materialUids;
+  for (const uid of materialUidsToMove) {
+    const material = session.state.cards.find((candidate) => candidate.uid === uid);
+    if (!material) continue;
+    collectLuaSummonEvent(session, "preUsedAsMaterial", material);
+    sendDuelCardToGraveyard(session.state, uid, summonPlayer, materialReason, summonPlayer);
+    pushDuelLog(session.state, "fusionMaterial", summonPlayer, material.name, `Used for ${target.name}`);
+    collectLuaSummonEvent(session, "usedAsMaterial", material);
   }
   hostState.activeOperationMoved = true;
   collectLuaSummonEvent(session, "specialSummoning", target);
@@ -348,6 +355,10 @@ function canBeSelectedFusionMaterial(session: DuelSession, material: DuelCardIns
     targetAllowsMaterial(target, material, "fusion") &&
     !isMaterialUsePrevented(session.state, material.uid, "fusion", createMaterialCheckContext(session.state))
   );
+}
+
+function canMoveUnmovedFusionMaterial(session: DuelSession, material: DuelCardInstance | undefined, target: DuelCardInstance, summonPlayer: PlayerId): material is DuelCardInstance {
+  return Boolean(material && isDefaultFusionMaterialLocation(material.location) && canBeSelectedFusionMaterial(session, material, target, summonPlayer));
 }
 
 function canTrackMovedFusionMaterial(material: DuelCardInstance | undefined, target: DuelCardInstance, summonPlayer: PlayerId): boolean {
