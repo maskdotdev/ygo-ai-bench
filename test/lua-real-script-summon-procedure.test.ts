@@ -160,6 +160,66 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
     });
   });
 
+  it("restores official Synchro.AddProcedure tuner and non-tuner count ranges for real extra deck summons", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const boardeflyCode = "3966653";
+    const shortMaterialCodes = ["900000021", "900000022"];
+    const legalMaterialCodes = ["900000023", "900000024", "900000025"];
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === boardeflyCode),
+      { code: shortMaterialCodes[0]!, name: "Level 3 Tuner", kind: "monster" as const, typeFlags: 0x1001, level: 3 },
+      { code: shortMaterialCodes[1]!, name: "Level 3 Non-Tuner", kind: "monster" as const, typeFlags: 0x1, level: 3 },
+      { code: legalMaterialCodes[0]!, name: "Level 2 Tuner", kind: "monster" as const, typeFlags: 0x1001, level: 2 },
+      { code: legalMaterialCodes[1]!, name: "First Level 2 Non-Tuner", kind: "monster" as const, typeFlags: 0x1, level: 2 },
+      { code: legalMaterialCodes[2]!, name: "Second Level 2 Non-Tuner", kind: "monster" as const, typeFlags: 0x1, level: 2 },
+    ];
+    const reader = createCardReader(cards);
+    const restoreWithMaterials = (main: string[]) => {
+      const session = createDuel({ seed: 294, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+      loadDecks(session, { 0: { main, extra: [boardeflyCode] }, 1: { main: [] } });
+      startDuel(session);
+      const synchro = session.state.cards.find((card) => card.code === boardeflyCode && card.location === "extraDeck");
+      expect(synchro).toBeDefined();
+      for (const code of main) {
+        const material = session.state.cards.find((card) => card.code === code && card.location === "deck");
+        expect(material).toBeDefined();
+        moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+      }
+      session.state.phase = "main1";
+      session.state.waitingFor = 0;
+      const host = createLuaScriptHost(session, workspace);
+      expect(host.loadCardScript(Number(boardeflyCode), workspace).ok).toBe(true);
+      expect(host.registerInitialEffects()).toBeGreaterThan(0);
+      expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.data).toMatchObject({
+        synchroTunerMin: 1,
+        synchroTunerMax: 1,
+        synchroNonTunerMin: 2,
+        synchroNonTunerMax: 2,
+      });
+      const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+      expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+      expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+      return { restored, synchro };
+    };
+
+    const tooFewMaterials = restoreWithMaterials(shortMaterialCodes);
+    expect(getLuaRestoreLegalActions(tooFewMaterials.restored, 0).some((action) => action.type === "synchroSummon" && action.uid === tooFewMaterials.synchro!.uid)).toBe(false);
+
+    const exactCounts = restoreWithMaterials(legalMaterialCodes);
+    const actions = getLuaRestoreLegalActions(exactCounts.restored, 0).filter((action) => action.type === "synchroSummon" && action.uid === exactCounts.synchro!.uid);
+    expect(actions, JSON.stringify(getLuaRestoreLegalActions(exactCounts.restored, 0), null, 2)).toHaveLength(1);
+    const action = actions[0];
+    expect(action?.type).toBe("synchroSummon");
+    if (!action || action.type !== "synchroSummon") throw new Error("Expected Synchro Summon action");
+    expect(action.materialUids).toHaveLength(3);
+    const summoned = applyLuaRestoreResponse(exactCounts.restored, action);
+    expect(summoned.ok, summoned.error).toBe(true);
+    expect(exactCounts.restored.session.state.cards.find((card) => card.uid === exactCounts.synchro!.uid)).toMatchObject({
+      location: "monsterZone",
+      summonType: "synchro",
+    });
+  });
+
   it("restores Spirit procedure End Phase return after a real Normal Summon", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const yataCode = "3078576";
