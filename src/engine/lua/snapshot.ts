@@ -40,6 +40,7 @@ const luaFaceupTypeTargetDescriptorPrefix = "target:faceup-type:";
 const luaYellowAlertCode = "59277750";
 const luaRareMetalmorphCode = "12503902";
 const luaMaharaghiCode = "40695128";
+const luaHinoKaguTsuchiCode = "75745607";
 const luaMegalithUnformedCode = "69003792";
 const luaSetMegalith = 0x138;
 const luaCategorySpecialSummon = 0x200;
@@ -431,6 +432,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownYellowAlertDelayedReturnEffect(effect) ||
         isKnownRareMetalmorphChainSolvingNegateEffect(effect) ||
         isKnownMaharaghiPredrawEffect(effect) ||
+        isKnownHinoKaguTsuchiPredrawDiscardEffect(effect) ||
         isKnownCannotActivateSpecialSummonedMonsterEffect(effect) ||
         isKnownCannotActivateNonSpiritMonsterEffect(effect) ||
         isKnownSetcodeOrCodeTypeBattleProtectionEffect(effect) ||
@@ -556,6 +558,18 @@ function isKnownMaharaghiPredrawEffect(effect: SerializedDuelEffect): boolean {
   );
 }
 
+function isKnownHinoKaguTsuchiPredrawDiscardEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaHinoKaguTsuchiCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === 1113 &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
+    effect.targetRange === undefined &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
 function isKnownLifePointReasonPredicateEffect(effect: SerializedDuelEffect): boolean {
   return (
     effect.code !== undefined &&
@@ -631,6 +645,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownYellowAlertDelayedReturnEffect(effect)) return yellowAlertDelayedReturnOperation(effect);
   if (isKnownRareMetalmorphChainSolvingNegateEffect(effect)) return rareMetalmorphChainSolvingNegateOperation(effect);
   if (isKnownMaharaghiPredrawEffect(effect)) return maharaghiPredrawOperation(effect);
+  if (isKnownHinoKaguTsuchiPredrawDiscardEffect(effect)) return hinoKaguTsuchiPredrawDiscardOperation(effect);
   if (isKnownGeminiEndPhaseReturnEffect(effect, snapshotEffects)) return luaHandlerReturnToHandOperation(effect);
   if (effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor) {
     const returnPlayer = effect.value === 0 || effect.value === 1 ? effect.value : undefined;
@@ -649,6 +664,22 @@ function maharaghiPredrawOperation(effect: SerializedDuelEffect): DuelEffectDefi
       eventValue: 1,
       eventUids: [topCard.uid],
     });
+  };
+}
+
+function hinoKaguTsuchiPredrawDiscardOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const opponent = otherPlayer(effect.controller);
+    const hand = ctx.duel.cards.filter((card) => card.controller === opponent && card.location === "hand");
+    for (const card of hand) {
+      try {
+        moveDuelCardWithRedirects(ctx.duel, card.uid, "graveyard", card.controller, duelReason.effect | duelReason.discard, effect.controller, {
+          eventReasonCardUid: effect.sourceUid,
+        });
+      } catch {
+        // EDOPro-style delayed operations ignore cards that can no longer move.
+      }
+    }
   };
 }
 

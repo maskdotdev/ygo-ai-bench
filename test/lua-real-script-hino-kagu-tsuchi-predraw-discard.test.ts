@@ -1,0 +1,174 @@
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { moveDuelCard } from "#duel/card-state.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
+import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
+import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
+import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+
+const upstreamRoot = path.resolve(".upstream/ignis");
+const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
+const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const typeMonster = 0x1;
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hino-Kagu-Tsuchi predraw discard", () => {
+  it("restores its battle-damage trigger into the opponent's next Draw Phase hand discard", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const hinoCode = "75745607";
+    const defenderCode = "75745608";
+    const discardACode = "75745609";
+    const discardBCode = "75745610";
+    const drawCode = "75745611";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === hinoCode),
+      { code: defenderCode, name: "Hino Battle Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
+      { code: discardACode, name: "Hino Discard A", kind: "monster", typeFlags: typeMonster, level: 4 },
+      { code: discardBCode, name: "Hino Discard B", kind: "monster", typeFlags: typeMonster, level: 4 },
+      { code: drawCode, name: "Hino Draw After Discard", kind: "monster", typeFlags: typeMonster, level: 4 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 757, startingHandSize: 0, drawPerTurn: 1, cardReader: reader });
+    loadDecks(session, { 0: { main: [hinoCode] }, 1: { main: [defenderCode, discardACode, discardBCode, drawCode] } });
+    startDuel(session);
+
+    const hino = session.state.cards.find((card) => card.code === hinoCode);
+    const defender = session.state.cards.find((card) => card.code === defenderCode);
+    const discardA = session.state.cards.find((card) => card.code === discardACode);
+    const discardB = session.state.cards.find((card) => card.code === discardBCode);
+    const draw = session.state.cards.find((card) => card.code === drawCode);
+    expect(hino).toBeDefined();
+    expect(defender).toBeDefined();
+    expect(discardA).toBeDefined();
+    expect(discardB).toBeDefined();
+    expect(draw).toBeDefined();
+    moveDuelCard(session.state, hino!.uid, "monsterZone", 0);
+    hino!.position = "faceUpAttack";
+    hino!.faceUp = true;
+    moveDuelCard(session.state, defender!.uid, "monsterZone", 1);
+    defender!.position = "faceUpAttack";
+    defender!.faceUp = true;
+    moveDuelCard(session.state, discardA!.uid, "hand", 1);
+    moveDuelCard(session.state, discardB!.uid, "hand", 1);
+    draw!.sequence = 0;
+    session.state.phase = "battle";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(hinoCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+
+    const restoredSetup = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restoredSetup.restoreComplete, restoredSetup.incompleteReasons.join("; ")).toBe(true);
+    const attack = getLuaRestoreLegalActions(restoredSetup, 0).find(
+      (action) => action.type === "declareAttack" && action.attackerUid === hino!.uid && action.targetUid === defender!.uid,
+    );
+    expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredSetup, 0), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restoredSetup, attack!);
+    passBattleUntilTrigger(restoredSetup);
+    expect(restoredSetup.session.state.pendingTriggers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceUid: hino!.uid,
+          eventName: "battleDamageDealt",
+          eventCode: 1143,
+          eventPlayer: 1,
+          eventValue: 1800,
+        }),
+      ]),
+    );
+
+    const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredSetup.session), workspace, reader);
+    expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restoredTrigger, 0)).toEqual(getGroupedDuelLegalActions(restoredTrigger.session, 0));
+    const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === hino!.uid);
+    expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restoredTrigger, trigger!);
+
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), workspace, reader);
+    expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    drainRestoredChain(restoredChain);
+    expect(restoredChain.session.state.effects).toEqual(
+      expect.arrayContaining([expect.objectContaining({ sourceUid: hino!.uid, event: "continuous", code: 1113, controller: 0 })]),
+    );
+    expect(restoredChain.session.state.cards.find((card) => card.uid === discardA!.uid)).toMatchObject({ location: "hand", controller: 1 });
+    expect(restoredChain.session.state.cards.find((card) => card.uid === discardB!.uid)).toMatchObject({ location: "hand", controller: 1 });
+
+    const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), workspace, reader);
+    expect(restoredBattle.restoreComplete, restoredBattle.incompleteReasons.join("; ")).toBe(true);
+    passBattleResponses(restoredBattle);
+    moveToMain2AndEndTurn(restoredBattle.session, 0);
+
+    expect(restoredBattle.session.state.turnPlayer).toBe(1);
+    expect(restoredBattle.session.state.cards.find((card) => card.uid === discardA!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
+    expect(restoredBattle.session.state.cards.find((card) => card.uid === discardB!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
+    expect(restoredBattle.session.state.cards.find((card) => card.uid === draw!.uid)).toMatchObject({ location: "hand", controller: 1 });
+    expect(restoredBattle.session.state.effects).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ sourceUid: hino!.uid, event: "continuous", code: 1113, controller: 0 })]),
+    );
+    expect(restoredBattle.session.state.eventHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ eventName: "preDraw", eventCode: 1113, eventPlayer: 1, eventValue: 1 }),
+        expect.objectContaining({ eventName: "discarded", eventCode: 1018, eventCardUid: discardA!.uid }),
+        expect.objectContaining({ eventName: "discarded", eventCode: 1018, eventCardUid: discardB!.uid }),
+      ]),
+    );
+  });
+});
+
+function passBattleUntilTrigger(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  let guard = 0;
+  while (restored.session.state.pendingBattle && restored.session.state.pendingTriggers.length === 0) {
+    expect(++guard).toBeLessThan(20);
+    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    const passType = restored.session.state.battleStep === "damage" || restored.session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack";
+    const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === passType);
+    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restored, pass!);
+  }
+}
+
+function passBattleResponses(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  let guard = 0;
+  while (restored.session.state.pendingBattle) {
+    expect(++guard).toBeLessThan(20);
+    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    const passType = restored.session.state.battleStep === "damage" || restored.session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack";
+    const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === passType);
+    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restored, pass!);
+  }
+}
+
+function drainRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  while (restored.session.state.chain.length > 0) {
+    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restored, pass!);
+  }
+}
+
+function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: DuelAction): void {
+  const result = applyLuaRestoreResponse(restored, action);
+  expect(result.ok, result.error).toBe(true);
+  const waitingFor = restored.session.state.waitingFor;
+  if (waitingFor !== undefined) {
+    expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+    expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  }
+}
+
+function moveToMain2AndEndTurn(session: DuelSession, player: 0 | 1): void {
+  const main2 = getDuelLegalActions(session, player).find((action) => action.type === "changePhase" && action.phase === "main2");
+  expect(main2, JSON.stringify(getDuelLegalActions(session, player), null, 2)).toBeDefined();
+  let result = applyResponse(session, main2!);
+  expect(result.ok, result.error).toBe(true);
+  const endTurn = getDuelLegalActions(session, player).find((action) => action.type === "endTurn");
+  expect(endTurn, JSON.stringify(getDuelLegalActions(session, player), null, 2)).toBeDefined();
+  result = applyResponse(session, endTurn!);
+  expect(result.ok, result.error).toBe(true);
+}
