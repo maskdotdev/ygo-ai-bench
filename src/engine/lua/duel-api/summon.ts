@@ -265,7 +265,7 @@ function canBeXyzMaterial(card: DuelCardInstance, target: DuelCardInstance): boo
 }
 
 function ritualSummonSelectedMaterials(session: DuelSession, hostState: LuaDuelSummonApiHostState, target: DuelCardInstance, materialUids: string[]): void {
-  if (target.kind !== "monster" || target.location !== "hand") throw new Error(`${target.name} is not a ritual monster in hand`);
+  if (target.kind !== "monster" || !isSelectedRitualTargetLocation(target.location)) throw new Error(`${target.name} is not a ritual monster in a summonable location`);
   if (new Set(materialUids).size !== materialUids.length || materialUids.length === 0) throw new Error(`${target.name} ritual materials are not legal`);
   if (
     availableMonsterZoneCount(session, target.controller, materialUids) <= 0 ||
@@ -298,6 +298,10 @@ function ritualSummonSelectedMaterials(session: DuelSession, hostState: LuaDuelS
   pushDuelLog(session.state, "ritualSummon", target.controller, target.name, `Ritual Summoned with ${materialUids.length} material(s)`);
   markLuaOperationTimingBoundary(session, hostState);
   collectLuaSummonEvent(session, "specialSummoned", target);
+}
+
+function isSelectedRitualTargetLocation(location: DuelLocation): boolean {
+  return location === "hand" || location === "graveyard" || location === "deck";
 }
 
 function collectLuaSummonEvent(session: DuelSession, eventName: Parameters<typeof collectDuelTriggerEffects>[1], eventCard?: DuelCardInstance): void {
