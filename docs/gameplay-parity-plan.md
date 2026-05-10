@@ -98,6 +98,7 @@ The engine already has useful surfaces to build on:
 - Ritual helper coverage also restores real Project Ignis mixed hand-plus-Graveyard ritual materials and `extraop` Deck shuffle-back of Graveyard materials through Machine Angel Absolute Ritual.
 - Ritual helper coverage also restores real Project Ignis positional `Ritual.CreateProc` opponent-field materials, `Duel.ReleaseRitualMaterial` `extraop`, Battle Phase cost locks, and post-summon single-card stat effects through Forbidden Arts of the Gishki.
 - Spirit helper coverage now mirrors Project Ignis return markers from configured summon/flip events, skips End Phase return while `EFFECT_SPIRIT_DONOT_RETURN` applies, and restores optional return activation/decline choices while `EFFECT_SPIRIT_MAYNOT_RETURN` applies.
+- Gemini helper coverage now restores real Project Ignis Evocator Eveque second Normal Summon trigger targeting, `CATEGORY_SPECIAL_SUMMON` operation info, pending chain-response windows after snapshot restore, and targeted Graveyard Special Summon resolution.
 
 ## North Star
 
