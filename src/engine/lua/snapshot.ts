@@ -1,9 +1,11 @@
+import { findCard } from "#duel/card-state.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags } from "#duel/card-stats.js";
-import { applyResponse, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js";
+import { applyResponse, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, negateDuelChainLinkObject, queryPublicState } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
+import { resetDuelCardEffects } from "#duel/effect-reset.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { cardFieldId } from "#duel/card-field-id.js";
 import { cardSetcodes, isSetcodeMatch } from "#lua/card-code-utils.js";
@@ -31,6 +33,7 @@ const luaCannotActivateSpecialSummonedMonsterDescriptor = "cannot-activate:speci
 const luaSourceControllerConditionDescriptor = "condition:source-controller";
 const luaSetcodeOrCodeTypeTargetDescriptorPrefix = "target:setcode-or-code-type:";
 const luaYellowAlertCode = "59277750";
+const luaRareMetalmorphCode = "12503902";
 const luaResetEvent = 0x1000;
 const luaResetTurnSet = 0x20000;
 const luaResetPhase = 0x40000000;
@@ -39,6 +42,7 @@ const luaPhaseBattle = 0x80;
 const luaPhaseEnd = 0x200;
 const luaBattlePhaseEventCode = luaResetEvent | luaPhaseBattle;
 const luaPhaseEndEventCode = luaResetEvent | luaPhaseEnd;
+const luaChainSolvingEventCode = 1020;
 const luaPhaseEndResetFlags = luaResetPhase | luaPhaseEnd;
 const luaResetsStandardPhaseEnd = 0x41fe1200;
 const luaResetEventStandard = luaResetEvent | 0x1fe0000;
@@ -301,6 +305,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownIndestructibleCountReasonPredicateEffect(effect) ||
         isKnownCannotSelectBattleTargetNotHandlerEffect(effect) ||
         isKnownYellowAlertDelayedReturnEffect(effect) ||
+        isKnownRareMetalmorphChainSolvingNegateEffect(effect) ||
         isKnownCannotActivateSpecialSummonedMonsterEffect(effect) ||
         isKnownSetcodeOrCodeTypeBattleProtectionEffect(effect) ||
         effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
@@ -389,6 +394,18 @@ function isKnownCannotSelectBattleTargetNotHandlerEffect(effect: SerializedDuelE
   );
 }
 
+function isKnownRareMetalmorphChainSolvingNegateEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaRareMetalmorphCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === luaChainSolvingEventCode &&
+    effect.reset?.flags === luaResetEventStandard &&
+    effect.range.length === 1 &&
+    effect.range[0] === "spellTrapZone" &&
+    effect.targetRange === undefined
+  );
+}
+
 function isKnownLifePointReasonPredicateEffect(effect: SerializedDuelEffect): boolean {
   return (
     effect.code !== undefined &&
@@ -458,12 +475,29 @@ function isStaticPlayerPhaseLock(effect: SerializedDuelEffect): boolean {
 
 function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[] = []): DuelEffectDefinition["operation"] {
   if (isKnownYellowAlertDelayedReturnEffect(effect)) return yellowAlertDelayedReturnOperation(effect);
+  if (isKnownRareMetalmorphChainSolvingNegateEffect(effect)) return rareMetalmorphChainSolvingNegateOperation(effect);
   if (isKnownGeminiEndPhaseReturnEffect(effect, snapshotEffects)) return luaHandlerReturnToHandOperation(effect);
   if (effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor) {
     const returnPlayer = effect.value === 0 || effect.value === 1 ? effect.value : undefined;
     return luaTemporaryControlReturnOperation(returnPlayer);
   }
   return () => {};
+}
+
+function rareMetalmorphChainSolvingNegateOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const chainLink = ctx.chainLink;
+    const targetUid = ctx.source.cardTargetUids?.[0];
+    if (!chainLink || !targetUid || !chainLink.targetUids?.includes(targetUid)) return;
+    const chainSource = findCard(ctx.duel, chainLink.sourceUid);
+    if (!chainSource || !isSpellCard(chainSource)) return;
+    if (!negateDuelChainLinkObject(ctx.duel, chainLink, ctx.player, ctx.source.name)) return;
+    resetDuelCardEffects(ctx.duel, ctx.source, (candidate) => candidate.id === effect.id);
+  };
+}
+
+function isSpellCard(card: { kind: string; typeFlags?: number; data?: { typeFlags?: number } }): boolean {
+  return card.kind === "spell" || (((card.typeFlags ?? card.data?.typeFlags ?? 0) & 0x2) !== 0);
 }
 
 function luaHandlerReturnToHandOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
