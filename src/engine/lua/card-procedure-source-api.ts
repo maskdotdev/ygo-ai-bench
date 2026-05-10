@@ -65,8 +65,8 @@ export const cardProcedureSource = `${fusionProcedureSource}
       return function(e,tp,eg,ep,ev,re,r,rp,chk)
         local location=ritual_target_location(params)
         if chk==0 then
-          return Duel.GetLocationCount(tp,LOCATION_MZONE)>0
-            and Duel.IsExistingMatchingCard(ritual_filter,tp,location,0,1,nil,e,tp,params,eg,ep,ev,re,r,rp,chk)
+          local c=e:GetHandler()
+          return Duel.GetLocationCount(tp,LOCATION_MZONE)>0 and (params.self and c and c:IsLocation(location) and ritual_filter(c,e,tp,params,eg,ep,ev,re,r,rp,chk) or (not params.self and Duel.IsExistingMatchingCard(ritual_filter,tp,location,0,1,nil,e,tp,params,eg,ep,ev,re,r,rp,chk)))
         end
         if params.extratg then params.extratg(e,tp,eg,ep,ev,re,r,rp,chk) end
         Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,location)
@@ -76,9 +76,8 @@ export const cardProcedureSource = `${fusionProcedureSource}
       params=ritual_params(params,...)
       return function(e,tp,eg,ep,ev,re,r,rp)
         local location=ritual_target_location(params)
-        local g=Duel.GetMatchingGroup(ritual_filter,tp,location,0,nil,e,tp,params,eg,ep,ev,re,r,rp)
-        local rc=g and g:GetFirst()
-        if not rc then return end
+        local rc
+        if params.self then rc=e:GetHandler(); if not (rc and rc:IsLocation(location) and ritual_filter(rc,e,tp,params,eg,ep,ev,re,r,rp)) then return end else local g=Duel.GetMatchingGroup(ritual_filter,tp,location,0,nil,e,tp,params,eg,ep,ev,re,r,rp); rc=g and g:GetFirst(); if not rc then return end end
         local mg=ritual_material_pool(tp,rc,params,e,eg,ep,ev,re,r,rp)
         local lv=ritual_required_level(params,rc)
         local sg=params.forcedselection and mg:SelectSubGroup(tp,ritual_selection_filter,false,1,lv,e,tp,params,rc,lv) or (params.lvtype==RITPROC_GREATER and mg:SelectWithSumGreater(tp,ritual_material_level,lv,1,lv,params,rc) or mg:SelectWithSumEqual(tp,ritual_material_level,lv,1,lv,params,rc))

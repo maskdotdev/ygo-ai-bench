@@ -420,7 +420,7 @@ function ritualSummonSelectedMaterials(
 }
 
 function isSelectedRitualTargetLocation(location: DuelLocation): boolean {
-  return location === "hand" || location === "graveyard" || location === "deck";
+  return location === "hand" || location === "graveyard" || location === "deck" || location === "spellTrapZone";
 }
 
 function canBeSelectedRitualMaterial(session: DuelSession, material: DuelCardInstance | undefined, target: DuelCardInstance): boolean {
