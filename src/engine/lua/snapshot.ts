@@ -10,6 +10,7 @@ import { resetDuelCardEffects } from "#duel/effect-reset.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { cardFieldId } from "#duel/card-field-id.js";
 import { cardSetcodes, isSetcodeMatch } from "#lua/card-code-utils.js";
+import { isKnownUnleashYourPowerDelayedSetEffect, isKnownYellowAlertDelayedReturnEffect, unleashYourPowerDelayedSetOperation, yellowAlertDelayedReturnOperation } from "#lua/snapshot-delayed-operations.js";
 import { ritualSummonSelectedMaterials, type LuaDuelSummonApiHostState } from "#lua/duel-api/summon.js";
 import { luaTemporaryControlReturnDescriptor, luaTemporaryControlReturnOperation } from "#lua/duel-api/move-control.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
@@ -38,7 +39,6 @@ const luaSourceControllerConditionDescriptor = "condition:source-controller";
 const luaSetcodeOrCodeTypeTargetDescriptorPrefix = "target:setcode-or-code-type:";
 const luaTypeTargetDescriptorPrefix = "target:type:";
 const luaFaceupTypeTargetDescriptorPrefix = "target:faceup-type:";
-const luaYellowAlertCode = "59277750";
 const luaRareMetalmorphCode = "12503902";
 const luaMaharaghiCode = "40695128";
 const luaHinoKaguTsuchiCode = "75745607";
@@ -438,6 +438,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownMaharaghiPredrawEffect(effect) ||
         isKnownHinoKaguTsuchiPredrawDiscardEffect(effect) ||
         isKnownGreatLongNoseSkipBattlePhaseEffect(effect) ||
+        isKnownUnleashYourPowerDelayedSetEffect(effect) ||
         isKnownCannotActivateSpecialSummonedMonsterEffect(effect) ||
         isKnownCannotActivateNonSpiritMonsterEffect(effect) ||
         isKnownSetcodeOrCodeTypeBattleProtectionEffect(effect) ||
@@ -540,16 +541,6 @@ function isKnownSetcodeOrCodeTypeBattleProtectionEffect(effect: SerializedDuelEf
 
 function isPhaseEndOrOpponentPhaseEndReset(flags: number | undefined): boolean {
   return flags === luaPhaseEndResetFlags || flags === (luaPhaseEndResetFlags | luaResetOpponentTurn);
-}
-
-function isKnownYellowAlertDelayedReturnEffect(effect: SerializedDuelEffect): boolean {
-  return (
-    Boolean(effect.registryKey?.startsWith(`lua:${luaYellowAlertCode}:`)) &&
-    effect.event === "continuous" &&
-    effect.code === luaBattlePhaseEventCode &&
-    effect.label !== undefined &&
-    effect.targetRange === undefined
-  );
 }
 
 function isKnownCannotSelectBattleTargetNotHandlerEffect(effect: SerializedDuelEffect): boolean {
@@ -693,6 +684,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownHinoKaguTsuchiPredrawDiscardEffect(effect)) return hinoKaguTsuchiPredrawDiscardOperation(effect);
   if (isKnownGeminiEndPhaseReturnEffect(effect, snapshotEffects)) return luaHandlerReturnToHandOperation(effect);
   if (isKnownGrantedSpiritEndPhaseReturnEffect(effect, snapshotEffects)) return luaHandlerReturnToHandOperation(effect);
+  if (isKnownUnleashYourPowerDelayedSetEffect(effect)) return unleashYourPowerDelayedSetOperation(effect);
   if (effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor) {
     const returnPlayer = effect.value === 0 || effect.value === 1 ? effect.value : undefined;
     return luaTemporaryControlReturnOperation(returnPlayer);
@@ -753,24 +745,6 @@ function luaHandlerReturnToHandOperation(effect: SerializedDuelEffect): DuelEffe
       });
     } catch {
       // EDOPro-style delayed operations ignore handlers that can no longer move.
-    }
-  };
-}
-
-function yellowAlertDelayedReturnOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
-  return (ctx) => {
-    const fieldId = effect.label;
-    const flagCode = Number(ctx.source.code);
-    if (fieldId === undefined || !Number.isSafeInteger(flagCode)) return;
-    const targetUids = ctx.duel.flagEffects.filter((flag) => flag.ownerType === "card" && flag.code === flagCode && flag.value === fieldId).map((flag) => flag.ownerId);
-    for (const uid of [...new Set(targetUids)]) {
-      const target = ctx.duel.cards.find((card) => card.uid === uid);
-      if (!target) continue;
-      try {
-        moveDuelCardWithRedirects(ctx.duel, target.uid, "hand", target.controller, duelReason.effect, ctx.player, { eventReasonCardUid: ctx.source.uid });
-      } catch {
-        // EDOPro-style delayed operations ignore targets that can no longer move.
-      }
     }
   };
 }

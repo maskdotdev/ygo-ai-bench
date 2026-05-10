@@ -1,0 +1,80 @@
+import { changeDuelCardPosition, moveDuelCardWithRedirects } from "#duel/core.js";
+import { resetDuelCardEffects } from "#duel/effect-reset.js";
+import { duelReason } from "#duel/reasons.js";
+import type { DuelEffectDefinition, SerializedDuelEffect } from "#duel/types.js";
+
+const luaEffectGeminiStatus = 75;
+const luaBattlePhaseEventCode = 0x1000 | 0x80;
+const luaPhaseEndEventCode = 0x1000 | 0x200;
+const luaPhaseEndResetFlags = 0x40000000 | 0x200;
+const luaYellowAlertCode = "59277750";
+const luaUnleashYourPowerCode = "73567374";
+
+export function isKnownYellowAlertDelayedReturnEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaYellowAlertCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === luaBattlePhaseEventCode &&
+    effect.label !== undefined &&
+    effect.targetRange === undefined
+  );
+}
+
+export function yellowAlertDelayedReturnOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const fieldId = effect.label;
+    const flagCode = Number(ctx.source.code);
+    if (fieldId === undefined || !Number.isSafeInteger(flagCode)) return;
+    const targetUids = ctx.duel.flagEffects.filter((flag) => flag.ownerType === "card" && flag.code === flagCode && flag.value === fieldId).map((flag) => flag.ownerId);
+    for (const uid of [...new Set(targetUids)]) {
+      const target = ctx.duel.cards.find((card) => card.uid === uid);
+      if (!target) continue;
+      try {
+        moveDuelCardWithRedirects(ctx.duel, target.uid, "hand", target.controller, duelReason.effect, ctx.player, { eventReasonCardUid: ctx.source.uid });
+      } catch {
+        // EDOPro-style delayed operations ignore targets that can no longer move.
+      }
+    }
+  };
+}
+
+export function isKnownUnleashYourPowerDelayedSetEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaUnleashYourPowerCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === luaPhaseEndEventCode &&
+    effect.triggerEvent === "phaseEnd" &&
+    effect.triggerCode === luaPhaseEndEventCode &&
+    effect.sourceUid !== undefined &&
+    effect.label !== undefined &&
+    effect.targetRange === undefined &&
+    effect.countLimit === 1 &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
+export function unleashYourPowerDelayedSetOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const fieldId = effect.label;
+    if (fieldId === undefined) return;
+    const targetUids = ctx.duel.flagEffects
+      .filter((flag) => flag.ownerType === "card" && flag.code === Number(luaUnleashYourPowerCode) && flag.value === fieldId)
+      .map((flag) => flag.ownerId);
+    for (const uid of [...new Set(targetUids)]) {
+      const target = ctx.duel.cards.find((card) => card.uid === uid);
+      if (!target) continue;
+      try {
+        changeDuelCardPosition(ctx.duel, target.controller, target.uid, "faceDownDefense");
+        resetDuelCardEffects(ctx.duel, target, (candidate) => candidate.code === luaEffectGeminiStatus);
+      } catch {
+        // EDOPro-style delayed operations ignore targets that are no longer position-change legal.
+      }
+    }
+  };
+}
+
+function hasDefaultLuaFieldRange(effect: SerializedDuelEffect): boolean {
+  const allLocations = new Set(["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"]);
+  return effect.range.length === allLocations.size && effect.range.every((location) => allLocations.has(location));
+}
