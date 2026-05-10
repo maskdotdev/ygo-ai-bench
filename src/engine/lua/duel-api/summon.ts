@@ -269,6 +269,7 @@ function defaultXyzMaterialUids(session: DuelSession, target: DuelCardInstance, 
 function canBeXyzMaterial(card: DuelCardInstance, target: DuelCardInstance): boolean {
   if (!isMonsterLike(card) || card.uid === target.uid) return false;
   if (target.data.xyzMaterials?.length) return target.data.xyzMaterials.some((code) => cardCodes(card).includes(code));
+  if (target.data.xyzMaterialRace !== undefined && ((card.data.race ?? 0) & target.data.xyzMaterialRace) === 0) return false;
   const rank = (cardTypeFlags(target) & 0x800000) !== 0 ? target.data.level ?? 0 : 0;
   return rank > 0 && (card.data.level ?? 0) === rank;
 }

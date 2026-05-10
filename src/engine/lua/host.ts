@@ -92,14 +92,14 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
     },
     registerInitialEffects() {
       let count = 0;
-      for (const result of registerLuaInitialEffectsDetailed(L, session)) {
+      for (const result of registerLuaInitialEffectsDetailed(L, session, hostState.loadedScriptBodies)) {
         if (result.error) throw new Error(result.error);
         if (!result.skipped) count += 1;
       }
       return count;
     },
     registerInitialEffectsDetailed() {
-      return registerLuaInitialEffectsDetailed(L, session);
+      return registerLuaInitialEffectsDetailed(L, session, hostState.loadedScriptBodies);
     },
     runStartupEffects() {
       return runLuaStartupEffects(session);

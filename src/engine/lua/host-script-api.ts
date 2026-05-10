@@ -7,7 +7,7 @@ import type { LuaHostState, LuaInitialEffectRegistrationResult, LuaScriptLoadRes
 
 const { lua, lauxlib, to_luastring } = fengari;
 
-export function registerLuaInitialEffectsDetailed(L: unknown, session: DuelSession): LuaInitialEffectRegistrationResult[] {
+export function registerLuaInitialEffectsDetailed(L: unknown, session: DuelSession, loadedScriptBodies: ReadonlyMap<string, string> = new Map()): LuaInitialEffectRegistrationResult[] {
   const results: LuaInitialEffectRegistrationResult[] = [];
   for (const card of session.state.cards) {
     lua.lua_getglobal(L, to_luastring(`c${card.code}`));
@@ -41,7 +41,7 @@ export function registerLuaInitialEffectsDetailed(L: unknown, session: DuelSessi
     }
     lua.lua_pop(L, 3);
     applyLuaNormalTributeMetadata(L, card);
-    applyLuaExtraDeckProcedureMetadata(L, card);
+    applyLuaExtraDeckProcedureMetadata(L, card, loadedScriptBodies.get(`c${card.code}.lua`));
     results.push({ code: card.code, uid: card.uid, ok: true });
   }
   return results;

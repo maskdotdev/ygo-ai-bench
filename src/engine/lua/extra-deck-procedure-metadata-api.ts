@@ -1,9 +1,10 @@
 import fengari from "fengari";
+import { luaNumericConstants } from "#lua/basic-constant-data.js";
 import type { DuelCardInstance } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
-export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardInstance): void {
+export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardInstance, source?: string): void {
   const synchroTunerMin = readProcedureNumberField(L, card, "synchro_materials", 2);
   const synchroTunerMax = readProcedureNumberField(L, card, "synchro_materials", 3);
   const synchroNonTunerMin = readProcedureNumberField(L, card, "synchro_materials", 5);
@@ -14,10 +15,18 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
   if (synchroNonTunerMax !== undefined) card.data.synchroNonTunerMax = synchroNonTunerMax;
   const xyzCount = readProcedureNumberField(L, card, "xyz_materials", 3);
   if (xyzCount !== undefined) card.data.xyzMaterialCount = xyzCount;
+  const xyzRace = readXyzProcedureRaceFilter(source);
+  if (xyzRace !== undefined) card.data.xyzMaterialRace = xyzRace;
   const linkMin = readProcedureNumberField(L, card, "link_materials", 2);
   const linkMax = readProcedureNumberField(L, card, "link_materials", 3);
   if (linkMin !== undefined) card.data.linkMaterialMin = linkMin;
   if (linkMax !== undefined) card.data.linkMaterialMax = linkMax;
+}
+
+function readXyzProcedureRaceFilter(source: string | undefined): number | undefined {
+  const match = source?.match(/Xyz\.AddProcedure\(\s*c\s*,\s*aux\.FilterBoolFunctionEx\(\s*Card\.IsRace\s*,\s*(RACE_[A-Z0-9_]+)\s*\)/);
+  if (!match?.[1]) return undefined;
+  return luaNumericConstants[match[1]];
 }
 
 function readProcedureNumberField(L: unknown, card: DuelCardInstance, fieldName: string, index: number): number | undefined {

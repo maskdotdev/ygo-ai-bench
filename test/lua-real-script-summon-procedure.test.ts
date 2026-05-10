@@ -103,6 +103,71 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
     });
   });
 
+  it("restores official Xyz.AddProcedure race filters for real extra deck summons", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const claivesolishCode = "97453744";
+    const dragonMaterialCodes = ["900000031", "900000032"];
+    const warriorMaterialCodes = ["900000033", "900000034"];
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === claivesolishCode),
+      ...dragonMaterialCodes.map((code, index) => ({
+        code,
+        name: `Dragon Level 4 Material ${index + 1}`,
+        kind: "monster" as const,
+        typeFlags: 0x1,
+        level: 4,
+        race: 0x2000,
+      })),
+      ...warriorMaterialCodes.map((code, index) => ({
+        code,
+        name: `Warrior Level 4 Material ${index + 1}`,
+        kind: "monster" as const,
+        typeFlags: 0x1,
+        level: 4,
+        race: 0x1,
+      })),
+    ];
+    const reader = createCardReader(cards);
+    const restoreWithMaterials = (main: string[]) => {
+      const session = createDuel({ seed: 295, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+      loadDecks(session, { 0: { main, extra: [claivesolishCode] }, 1: { main: [] } });
+      startDuel(session);
+      const xyz = session.state.cards.find((card) => card.code === claivesolishCode && card.location === "extraDeck");
+      expect(xyz).toBeDefined();
+      for (const code of main) {
+        const material = session.state.cards.find((card) => card.code === code && card.location === "deck");
+        expect(material).toBeDefined();
+        moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+      }
+      session.state.phase = "main1";
+      session.state.waitingFor = 0;
+      const host = createLuaScriptHost(session, workspace);
+      expect(host.loadCardScript(Number(claivesolishCode), workspace).ok).toBe(true);
+      expect(host.registerInitialEffects()).toBeGreaterThan(0);
+      expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.data).toMatchObject({ xyzMaterialCount: 2, xyzMaterialRace: 0x1 });
+      const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+      expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+      expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+      return { restored, xyz };
+    };
+
+    const wrongRace = restoreWithMaterials(dragonMaterialCodes);
+    expect(getLuaRestoreLegalActions(wrongRace.restored, 0).some((action) => action.type === "xyzSummon" && action.uid === wrongRace.xyz!.uid)).toBe(false);
+
+    const matchingRace = restoreWithMaterials(warriorMaterialCodes);
+    const actions = getLuaRestoreLegalActions(matchingRace.restored, 0).filter((action) => action.type === "xyzSummon" && action.uid === matchingRace.xyz!.uid);
+    expect(actions, JSON.stringify(getLuaRestoreLegalActions(matchingRace.restored, 0), null, 2)).toHaveLength(1);
+    const action = actions[0];
+    expect(action?.type).toBe("xyzSummon");
+    if (!action || action.type !== "xyzSummon") throw new Error("Expected Xyz Summon action");
+    const summoned = applyLuaRestoreResponse(matchingRace.restored, action);
+    expect(summoned.ok, summoned.error).toBe(true);
+    expect(matchingRace.restored.session.state.cards.find((card) => card.uid === matchingRace.xyz!.uid)).toMatchObject({
+      location: "monsterZone",
+      summonType: "xyz",
+    });
+  });
+
   it("restores official Link.AddProcedure material count ranges for real extra deck summons", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const babaBarberCode = "67073561";
