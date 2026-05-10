@@ -4,11 +4,13 @@ import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import {
   createDuel,
+  destroyDuelCard,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   serializeDuel,
   startDuel,
 } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelResponse } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -250,6 +252,91 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredEquipState.session), source, reader);
     expect(restoredBattle.restoreComplete, restoredBattle.incompleteReasons.join("; ")).toBe(true);
     expect(getLuaRestoreLegalActions(restoredBattle, 1).some((action) => action.type === "declareAttack" && action.attackerUid === opponentTarget!.uid)).toBe(false);
+  });
+
+  it("restores Hercules Base graveyard trigger target and to-Deck operation", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const baseCode = "97616504";
+    const skyStrikerCode = "601015";
+    const offSetCode = "601016";
+    const responderCode = "601017";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === baseCode),
+      { code: skyStrikerCode, name: "Hercules Base Sky Striker Target", kind: "spell" as const, typeFlags: 0x2, setcodes: [0x115] },
+      { code: offSetCode, name: "Hercules Base Off-Set Graveyard Card", kind: "spell" as const, typeFlags: 0x2, setcodes: [0x123] },
+      { code: responderCode, name: "Hercules Base Grave Trigger Responder", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 303, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [baseCode, skyStrikerCode, offSetCode] }, 1: { main: [responderCode] } });
+    startDuel(session);
+
+    const base = session.state.cards.find((card) => card.code === baseCode);
+    const skyStriker = session.state.cards.find((card) => card.code === skyStrikerCode);
+    const offSet = session.state.cards.find((card) => card.code === offSetCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(base).toBeDefined();
+    expect(skyStriker).toBeDefined();
+    expect(offSet).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, base!.uid, "spellTrapZone", 0).faceUp = true;
+    moveDuelCard(session.state, skyStriker!.uid, "graveyard", 0);
+    moveDuelCard(session.state, offSet!.uid, "graveyard", 0);
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, source);
+    expect(host.loadCardScript(Number(baseCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(1);
+
+    destroyDuelCard(session.state, base!.uid, 0, duelReason.effect | duelReason.destroy, 0);
+    expect(session.state.cards.find((card) => card.uid === base!.uid)).toMatchObject({
+      location: "graveyard",
+      previousLocation: "spellTrapZone",
+      reason: duelReason.effect | duelReason.destroy,
+    });
+    expect(session.state.pendingTriggers).toEqual([
+      expect.objectContaining({ sourceUid: base!.uid, eventName: "sentToGraveyard", eventCardUid: base!.uid, player: 0 }),
+    ]);
+
+    const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restoredTriggerWindow.restoreComplete, restoredTriggerWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredTriggerWindow.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    const triggerAction = getLuaRestoreLegalActions(restoredTriggerWindow, 0).find(
+      (action) => action.type === "activateTrigger" && action.uid === base!.uid,
+    );
+    expect(triggerAction, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredTriggerWindow, triggerAction!);
+
+    expect(restoredTriggerWindow.session.state.chain[0]).toMatchObject({
+      sourceUid: base!.uid,
+      targetUids: [skyStriker!.uid],
+      operationInfos: [{ category: 0x10, targetUids: [skyStriker!.uid], count: 1, player: 0, parameter: 0 }],
+    });
+    expect(restoredTriggerWindow.session.state.chain[0]?.targetUids).not.toContain(offSet!.uid);
+
+    expect(getLuaRestoreLegalActions(restoredTriggerWindow, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), source, reader);
+    expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredChain.session.state.chain[0]).toMatchObject(restoredTriggerWindow.session.state.chain[0]!);
+    resolveRestoredChain(restoredChain);
+
+    expect(restoredChain.session.state.cards.find((card) => card.uid === skyStriker!.uid)).toMatchObject({ location: "deck", controller: 0 });
+    expect(restoredChain.session.state.cards.find((card) => card.uid === offSet!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
+    expect(restoredChain.session.state.cards.find((card) => card.uid === base!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
+    expect(restoredChain.host.messages).not.toContain("equip responder resolved");
+    expect(restoredChain.session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "sentToDeck", eventCode: 1013, eventCardUid: skyStriker!.uid })]),
+    );
   });
 });
 
