@@ -113,14 +113,18 @@ function canTurnSet(state: DuelState, card: DuelCardInstance): boolean {
   if (card.location !== "monsterZone" || !card.faceUp) return false;
   if (card.kind !== "monster" && card.kind !== "extra") return false;
   if ((cardTypeFlags(card) & 0x4000000) !== 0) return false;
-  return canChangeDuelCardPosition(state, card.uid, "faceDownDefense", "effect");
+  return canLuaChangePosition(state, card, "faceDownDefense");
 }
 
 function canChangePosition(state: DuelState, card: DuelCardInstance, requested: CardPosition | undefined): boolean {
-  if (requested) return canChangeDuelCardPosition(state, card.uid, requested, "effect");
-  if (card.position === "faceUpAttack") return canChangeDuelCardPosition(state, card.uid, "faceUpDefense", "effect");
-  if (card.position === "faceUpDefense" || card.position === "faceDownDefense") return canChangeDuelCardPosition(state, card.uid, "faceUpAttack", "effect");
+  if (requested) return canLuaChangePosition(state, card, requested);
+  if (card.position === "faceUpAttack") return canLuaChangePosition(state, card, "faceUpDefense");
+  if (card.position === "faceUpDefense" || card.position === "faceDownDefense") return canLuaChangePosition(state, card, "faceUpAttack");
   return false;
+}
+
+function canLuaChangePosition(state: DuelState, card: DuelCardInstance, position: CardPosition): boolean {
+  return canChangeDuelCardPosition(state, card.uid, position, "manual") && canChangeDuelCardPosition(state, card.uid, position, "effect");
 }
 
 function readCardOrGroupUids(L: unknown, index: number): string[] {
