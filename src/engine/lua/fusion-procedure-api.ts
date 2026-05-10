@@ -148,34 +148,37 @@ export const fusionProcedureSource = `
   end
   local function fusion_material_group(params,e,tp)
     local mg=Duel.GetFusionMaterial(tp)
+    local check=nil
     if params.matfilter then mg=mg:Filter(params.matfilter,nil,e,tp,0) end
     if params.extrafil then
       local ret={params.extrafil(e,tp,mg)}
       if ret[1] then mg:Merge(ret[1]) end
+      check=ret[2]
     end
-    return mg
+    return mg,check
   end
-  local function fusion_material_count_ok(params,sg)
+  local function fusion_material_count_ok(params,sg,tp,tc,check)
     local count=sg and sg:GetCount() or 0
     if count<=0 then return false end
     if params.exactcount and count~=params.exactcount then return false end
     if params.mincount and count<params.mincount then return false end
     if params.maxcount and count>params.maxcount then return false end
+    if check and not check(tp,sg,tc) then return false end
     return true
   end
-  local function fusion_summon_eff_filter(c,e,tp,mg,params)
+  local function fusion_summon_eff_filter(c,e,tp,mg,params,check)
     if not c:IsType(TYPE_FUSION) then return false end
     if params.fusfilter and not params.fusfilter(c,tp) then return false end
     if not c:IsCanBeSpecialSummoned(e,SUMMON_TYPE_FUSION,tp,false,false) then return false end
     local sg=Duel.SelectFusionMaterial(tp,c,mg,nil)
-    return fusion_material_count_ok(params,sg)
+    return fusion_material_count_ok(params,sg,tp,c,check)
   end
   function Fusion.SummonEffTG(params,...)
     params=fusion_helper_params(params,...)
     return function(e,tp,eg,ep,ev,re,r,rp,chk)
       local location=params.location or LOCATION_EXTRA
-      local mg=fusion_material_group(params,e,tp)
-      if chk==0 then return Duel.IsExistingMatchingCard(fusion_summon_eff_filter,tp,location,0,1,nil,e,tp,mg,params) end
+      local mg,check=fusion_material_group(params,e,tp)
+      if chk==0 then return Duel.IsExistingMatchingCard(fusion_summon_eff_filter,tp,location,0,1,nil,e,tp,mg,params,check) end
       Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,location)
       if params.extratg then params.extratg(e,tp,eg,ep,ev,re,r,rp,chk) end
     end
@@ -184,13 +187,13 @@ export const fusionProcedureSource = `
     params=fusion_helper_params(params,...)
     return function(e,tp,eg,ep,ev,re,r,rp)
       local location=params.location or LOCATION_EXTRA
-      local mg=fusion_material_group(params,e,tp)
-      local g=Duel.GetMatchingGroup(fusion_summon_eff_filter,tp,location,0,nil,e,tp,mg,params)
+      local mg,check=fusion_material_group(params,e,tp)
+      local g=Duel.GetMatchingGroup(fusion_summon_eff_filter,tp,location,0,nil,e,tp,mg,params,check)
       local tc=g and g:GetFirst()
       if not tc then return end
       if params.preselect and params.preselect(e,tc)==false then return end
       local sg=Duel.SelectFusionMaterial(tp,tc,mg,nil)
-      if not fusion_material_count_ok(params,sg) then return end
+      if not fusion_material_count_ok(params,sg,tp,tc,check) then return end
       local backupmat=sg:Clone()
       if params.extraop then
         tc:SetMaterial(backupmat)
