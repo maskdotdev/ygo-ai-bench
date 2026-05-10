@@ -3,7 +3,7 @@ import type { LuaHostState } from "#lua/host-types.js";
 
 const { lua, to_luastring } = fengari;
 
-export function luaFunctionSourceSnippet(L: unknown, index: number, hostState: LuaHostState): string | undefined {
+export function luaFunctionSourceSnippet(L: unknown, index: number, hostState: Pick<LuaHostState, "loadedScriptBodies">): string | undefined {
   const location = luaFunctionSourceLocation(L, index);
   if (!location) return undefined;
   const source = hostState.loadedScriptBodies.get(location.source);

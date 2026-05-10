@@ -1,3 +1,4 @@
+import { currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import type { DuelCardInstance, DuelState, ExtraPendulumSummonGrant, PlayerId } from "#duel/types.js";
 
 export function hasPendulumSummonAvailable(state: DuelState, player: PlayerId): boolean {
@@ -14,7 +15,7 @@ export function grantExtraPendulumSummons(state: DuelState, player: PlayerId, co
 
 export function pendulumSummonCandidatesForAvailability(state: DuelState, player: PlayerId, cards: DuelCardInstance[]): DuelCardInstance[] {
   if (state.players[player].pendulumSummonAvailable) return cards;
-  return cards.filter((card) => extraPendulumSummonGrants(state, player).some((grant) => extraPendulumSummonGrantMatchesCard(card, grant)));
+  return cards.filter((card) => extraPendulumSummonGrants(state, player).some((grant) => extraPendulumSummonGrantMatchesCard(state, card, grant)));
 }
 
 export function canConsumePendulumSummon(state: DuelState, player: PlayerId, cards: DuelCardInstance[]): boolean {
@@ -58,12 +59,13 @@ function extraPendulumSummonGrants(state: DuelState, player: PlayerId): ExtraPen
 
 function findExtraPendulumSummonGrantIndex(state: DuelState, player: PlayerId, cards: DuelCardInstance[]): number {
   if (cards.length === 0) return extraPendulumSummons(state, player) > 0 ? 0 : -1;
-  return extraPendulumSummonGrants(state, player).findIndex((grant) => cards.every((card) => extraPendulumSummonGrantMatchesCard(card, grant)));
+  return extraPendulumSummonGrants(state, player).findIndex((grant) => cards.every((card) => extraPendulumSummonGrantMatchesCard(state, card, grant)));
 }
 
-function extraPendulumSummonGrantMatchesCard(card: DuelCardInstance, grant: ExtraPendulumSummonGrant): boolean {
-  if (grant.locationMask === undefined) return true;
-  return (grant.locationMask & locationMaskForPendulumSource(card)) !== 0;
+function extraPendulumSummonGrantMatchesCard(state: DuelState, card: DuelCardInstance, grant: ExtraPendulumSummonGrant): boolean {
+  if (grant.locationMask !== undefined && (grant.locationMask & locationMaskForPendulumSource(card)) === 0) return false;
+  if (grant.setcode !== undefined && !currentCardMatchesSetcode(card, state, grant.setcode)) return false;
+  return true;
 }
 
 function locationMaskForPendulumSource(card: DuelCardInstance): number {

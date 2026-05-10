@@ -38,6 +38,7 @@ import { cardCombinations, materialCodesMatch, type MaterialCodeMatchOptions } f
 import { sameStringMembers } from "#duel/string-list-match.js";
 import { setSpellTrap as setCoreSpellTrap } from "#duel/spell-trap.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
+import { luaSimpleSetcodeCardFilter } from "#lua/card-filter-descriptor.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
@@ -56,6 +57,7 @@ type LuaSummonType = "FusionSummon" | "SynchroSummon" | "XyzSummon" | "LinkSummo
 type LuaSummonOrSetAction = Extract<DuelAction, { type: "normalSummon" | "tributeSummon" | "setMonster" | "setSpellTrap" }>;
 
 export interface LuaDuelSummonApiHostState extends LuaOperationTimingBoundaryHostState, LuaMoveImmunityHostState {
+  loadedScriptBodies?: Map<string, string>;
   operatedUids: string[];
   summonNegatedUids: string[];
   pendingSpecialSummonUids?: string[];
@@ -97,7 +99,7 @@ export function installDuelSummonApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("ReleaseRitualMaterial"));
   lua.lua_pushcfunction(L, (state: unknown) => pushPendulumSummon(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("PendulumSummon"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushGrantAdditionalPendulumSummon(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGrantAdditionalPendulumSummon(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GrantAdditionalPendulumSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummonStep(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("SpecialSummonStep"));
@@ -552,14 +554,15 @@ function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuel
   return 1;
 }
 
-function pushGrantAdditionalPendulumSummon(L: unknown, session: DuelSession): number {
+function pushGrantAdditionalPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
   if (session.state.status === "ended") return 0;
   const player = readOptionalPlayer(L, 1) ?? session.state.turnPlayer;
   const second = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
   const hasCount = lua.lua_isnumber(L, 3);
   const locationMask = hasCount ? second : undefined;
   const count = Math.max(1, Math.floor(hasCount ? lua.lua_tointeger(L, 3) : second ?? 1));
-  grantExtraPendulumSummons(session.state, player, count, { locationMask });
+  const setcode = lua.lua_isfunction(L, 4) && hostState.loadedScriptBodies ? luaSimpleSetcodeCardFilter(L, 4, { loadedScriptBodies: hostState.loadedScriptBodies }) : undefined;
+  grantExtraPendulumSummons(session.state, player, count, { locationMask, ...(setcode === undefined ? {} : { setcode }) });
   return 0;
 }
 
