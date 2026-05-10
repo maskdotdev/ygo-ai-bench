@@ -248,6 +248,7 @@ export interface DuelPlayerState {
   lifePoints: number;
   normalSummonAvailable: boolean;
   pendulumSummonAvailable: boolean;
+  extraPendulumSummons?: number;
   initialMainDeckSize?: number;
 }
 

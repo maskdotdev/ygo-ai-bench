@@ -1,12 +1,13 @@
 import { findCard, getCards, pushDuelLog } from "#duel/card-state.js";
 import { cardTypeFlags, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
+import { consumePendulumSummon, hasPendulumSummonAvailable } from "#duel/pendulum-availability.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelAction, DuelCardInstance, DuelState, PlayerId } from "#duel/types.js";
 
 type PendulumSummonAction = Extract<DuelAction, { type: "pendulumSummon" }>;
 
 export function pendulumSummonActions(state: DuelState, player: PlayerId, canSummon: (uid: string) => boolean): PendulumSummonAction[] {
-  if (!state.players[player].pendulumSummonAvailable) return [];
+  if (!hasPendulumSummonAvailable(state, player)) return [];
   const zoneCount = 5 - getCards(state, player, "monsterZone").length;
   const scales = pendulumScales(state, player);
   if (zoneCount <= 0 || !scales) return [];
@@ -33,7 +34,7 @@ export function pendulumSummonDuelCards(
     markProcedureComplete(card);
     summoned.push(card);
   }
-  state.players[player].pendulumSummonAvailable = false;
+  consumePendulumSummon(state, player);
   pushDuelLog(state, "pendulumSummon", player, undefined, `Pendulum Summoned ${summoned.length} monster(s)`);
   return summoned;
 }

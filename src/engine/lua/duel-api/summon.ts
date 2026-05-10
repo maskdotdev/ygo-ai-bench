@@ -32,6 +32,7 @@ import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummon, tributeSetDuelCard } from "#duel/summon.js";
+import { consumePendulumSummon, grantExtraPendulumSummons, hasPendulumSummonAvailable } from "#duel/pendulum-availability.js";
 import { cardTypeFlags, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
 import { cardCombinations, materialCodesMatch, type MaterialCodeMatchOptions } from "#duel/summon-materials.js";
 import { sameStringMembers } from "#duel/string-list-match.js";
@@ -96,6 +97,8 @@ export function installDuelSummonApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("ReleaseRitualMaterial"));
   lua.lua_pushcfunction(L, (state: unknown) => pushPendulumSummon(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("PendulumSummon"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGrantAdditionalPendulumSummon(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GrantAdditionalPendulumSummon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummonStep(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("SpecialSummonStep"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSpecialSummonComplete(state, session, hostState));
@@ -515,7 +518,7 @@ function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuel
   const player = readOptionalPlayer(L, 1) ?? session.state.turnPlayer;
   const zoneCount = availableMonsterZoneCount(session, player, []);
   const scales = pendulumScales(session, player);
-  if (!isMainPhaseForPlayer(session, player) || !session.state.players[player].pendulumSummonAvailable || zoneCount <= 0 || !scales) {
+  if (!isMainPhaseForPlayer(session, player) || !hasPendulumSummonAvailable(session.state, player) || zoneCount <= 0 || !scales) {
     setOperatedUids(hostState, []);
     lua.lua_pushinteger(L, 0);
     return 1;
@@ -538,12 +541,20 @@ function pushPendulumSummon(L: unknown, session: DuelSession, hostState: LuaDuel
     }
   }
   if (summonedUids.length > 0) {
-    session.state.players[player].pendulumSummonAvailable = false;
+    consumePendulumSummon(session.state, player);
     collectDuelGroupedTriggerEffects(session.state, "specialSummoned", summonedUids.map((uid) => session.state.cards.find((candidate) => candidate.uid === uid)).filter((card): card is DuelCardInstance => Boolean(card)), { ...payload, eventUids: summonedUids });
   }
   setOperatedUids(hostState, summonedUids);
   lua.lua_pushinteger(L, summonedUids.length);
   return 1;
+}
+
+function pushGrantAdditionalPendulumSummon(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
+  const player = readOptionalPlayer(L, 1) ?? session.state.turnPlayer;
+  const count = Math.max(1, Math.floor(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 1));
+  grantExtraPendulumSummons(session.state, player, count);
+  return 0;
 }
 
 function pushSpecialSummonStep(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {

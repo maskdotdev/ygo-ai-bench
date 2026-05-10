@@ -11,6 +11,7 @@ import {
 } from "#duel/continuous-effects.js";
 import { canRemoveDuelCounters, getDuelCardCounter, removeDuelCardCounter, removeDuelCounters } from "#duel/counters.js";
 import { getDuelFlagEffectCount } from "#duel/flags.js";
+import { hasPendulumSummonAvailable } from "#duel/pendulum-availability.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
 import { cardTypeFlags, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
@@ -335,7 +336,7 @@ function canSpecialSummonCount(session: DuelSession, player: PlayerId, count: nu
 
 function canPendulumSummon(session: DuelSession, player: PlayerId): boolean {
   if (!isMainPhaseForPlayer(session, player)) return false;
-  if (!session.state.players[player].pendulumSummonAvailable) return false;
+  if (!hasPendulumSummonAvailable(session.state, player)) return false;
   if (!canSpecialSummonCount(session, player, 1)) return false;
   if (availableMonsterZoneCount(session, player, []) <= 0) return false;
   const scales = pendulumScales(session, player);

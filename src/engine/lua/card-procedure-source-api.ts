@@ -394,6 +394,11 @@ export const cardProcedureSource = `${fusionProcedureSource}
     function Pendulum.PlayerCanGainAdditionalPendulumSummon(player,effect_flag)
       return Duel.IsTurnPlayer(player) and not Duel.IsPhase(PHASE_END)
     end
+    function Pendulum.GrantAdditionalPendulumSummon(handler,condition,tp,locations,desc1,desc2,effect_flag)
+      local player=tp or (handler and handler:GetControler()) or 0
+      if condition and not condition(handler,player,locations,effect_flag) then return end
+      Duel.GrantAdditionalPendulumSummon(player,1)
+    end
 ${spiritProcedureSource}
     Cost=Cost or {}
     __duel_detach_costs=__duel_detach_costs or setmetatable({}, {__mode="k"})
