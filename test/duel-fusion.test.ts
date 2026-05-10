@@ -192,6 +192,68 @@ describe("duel fusion summons", () => {
     expect(session.state.cards.find((card) => card.uid === otherMaterial!.uid)?.location).toBe("graveyard");
   });
 
+  it("ignores disabled field Fusion substitutes unless the substitute effect cannot be disabled", () => {
+    const session = createDuel({
+      seed: 24,
+      startingHandSize: 3,
+      cardReader: createCardReader([
+        { code: "300", name: "Exact Fusion Material", kind: "monster" },
+        { code: "700", name: "Field Fusion Substitute", kind: "monster" },
+        { code: "800", name: "Field Negation Source", kind: "monster" },
+        { code: "900", name: "Disabled Substitute Fusion", kind: "extra", fusionMaterials: ["100", "300"] },
+      ]),
+    });
+    loadDecks(session, {
+      0: { main: ["700", "300", "800"], extra: ["900"] },
+      1: { main: ["300", "300"] },
+    });
+    startDuel(session);
+    const substitute = session.state.cards.find((card) => card.code === "700");
+    const exactMaterial = session.state.cards.find((card) => card.code === "300" && card.controller === 0);
+    const negationSource = session.state.cards.find((card) => card.code === "800");
+    const fusion = session.state.cards.find((card) => card.code === "900");
+    expect(substitute).toBeTruthy();
+    expect(exactMaterial).toBeTruthy();
+    expect(negationSource).toBeTruthy();
+    expect(fusion).toBeTruthy();
+    moveDuelCard(session.state, substitute!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, negationSource!.uid, "monsterZone", 0);
+    registerEffect(session, {
+      id: "field-fusion-substitute",
+      sourceUid: substitute!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 234,
+      range: ["monsterZone"],
+      operation() {},
+    });
+    registerEffect(session, {
+      id: "field-negate-own-monsters",
+      sourceUid: negationSource!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 2,
+      range: ["monsterZone"],
+      targetRange: [0x04, 0],
+      operation() {},
+    });
+
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid)).toBe(false);
+    expect(() => fusionSummonDuelCard(session.state, 0, fusion!.uid, [substitute!.uid, exactMaterial!.uid])).toThrow("fusion materials are not legal");
+
+    const substituteEffect = session.state.effects.find((effect) => effect.id === "field-fusion-substitute");
+    expect(substituteEffect).toBeDefined();
+    substituteEffect!.property = 0x400;
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "fusionSummon" && candidate.uid === fusion!.uid);
+    expect(action).toMatchObject({ type: "fusionSummon", materialUids: [substitute!.uid, exactMaterial!.uid] });
+
+    fusionSummonDuelCard(session.state, 0, fusion!.uid, [substitute!.uid, exactMaterial!.uid]);
+
+    expect(session.state.cards.find((card) => card.uid === fusion!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
+    expect(session.state.cards.find((card) => card.uid === substitute!.uid)?.location).toBe("graveyard");
+    expect(session.state.cards.find((card) => card.uid === exactMaterial!.uid)?.location).toBe("graveyard");
+  });
+
   it("exposes each explicit Fusion material combination when multiple matching copies are legal", () => {
     const session = createDuel({
       seed: 1,
