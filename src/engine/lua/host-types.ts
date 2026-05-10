@@ -53,6 +53,7 @@ export interface LuaEffectRecord {
   };
   label?: number;
   labelObjectUid?: string;
+  labelObjectUids?: string[];
   labelObjectId?: number;
   labelObjectRef?: number;
   value?: number;

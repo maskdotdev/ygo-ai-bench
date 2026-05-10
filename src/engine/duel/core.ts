@@ -164,12 +164,10 @@ import type {
   ScriptedDuelRunResult,
   ScriptedResponseSelector,
 } from "#duel/types.js";
-
 export { moveDuelCard } from "#duel/card-state.js";
 export { damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "#duel/player-life.js";
 export { queryPublicState, serializeDuel, restoreDuel } from "#duel/snapshot.js";
 export { changeDuelBattleDamage, getDuelBattleDamage } from "#duel/core-battle-damage.js";
-
 const activationHandlers: DuelActivationHandlers = {
   createEffectContext,
   pushChainLink,
@@ -179,7 +177,6 @@ const activationHandlers: DuelActivationHandlers = {
   canSpecialSummonCard: canSpecialSummonDuelCard,
   specialSummonCard: (state, uid, player, summonTypeCode) => specialSummonDuelCard(state, uid, player, undefined, {}, summonTypeCode),
 };
-
 const battleContinuationHandlers: BattleContinuationHandlers = {
   additionalBattleDamagePlayers: (state, player, battleCards) => getCoreAdditionalBattleDamagePlayers(state, player, battleCards, coreBattleHandlers),
   battleDamagePlayer: (state, player, battleCards) => reflectedDuelBattleDamagePlayerRule(state, player, createContinuousEffectContext(state), battleCards),
@@ -833,6 +830,7 @@ function pushChainLink(
   possibleOperationInfos: ChainLink["possibleOperationInfos"] = [],
   effectLabel?: number,
   effectLabelObjectUid?: string,
+  effectLabelObjectUids?: string[],
 ): void {
   const source = findCard(state, sourceUid);
   const chainLinkId = `chain-${state.log.length + 1}`;
@@ -867,6 +865,7 @@ function pushChainLink(
     ...(targetParam === undefined ? {} : { targetParam }),
     ...(effectLabel === undefined ? {} : { effectLabel }),
     ...(effectLabelObjectUid === undefined ? {} : { effectLabelObjectUid }),
+    ...(effectLabelObjectUids === undefined ? {} : { effectLabelObjectUids: [...effectLabelObjectUids] }),
   });
   if (source) {
     recordChainActivity(state, player, source, effectId);
@@ -966,6 +965,7 @@ function resolveChain(state: DuelState): void {
         link.possibleOperationInfos ? copyDuelOperationInfos(link.possibleOperationInfos) : [],
       );
       if (link.effectLabelObjectUid !== undefined) ctx.effectLabelObjectUid = link.effectLabelObjectUid;
+      if (link.effectLabelObjectUids !== undefined) ctx.effectLabelObjectUids = [...link.effectLabelObjectUids];
       (link.operationOverride ?? effect.operation)(ctx);
       sendResolvedActivatedSpellTrapToGraveyard(state, link, source, effect);
       collectDuelTriggerEffects(state, "chainSolved", undefined, chainPayload, link);

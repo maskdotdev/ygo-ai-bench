@@ -11,7 +11,8 @@ import {
 } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
-import { createLuaScriptHost } from "#lua/host.js";
+import { createLuaScriptHost, type LuaScriptSource } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua effect callback metadata helpers", () => {
   it("stores Lua effect owner player metadata and deletes registered effects", () => {
@@ -288,6 +289,55 @@ describe("Lua effect callback metadata helpers", () => {
     expect(host.messages).toContain("label object count 1");
   });
 
+  it("restores Lua group label objects captured before trigger activation", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Group Label Source", kind: "monster" },
+      { code: "200", name: "Group Label Target A", kind: "monster" },
+      { code: "201", name: "Group Label Target B", kind: "monster" },
+      { code: "300", name: "Group Label Summon", kind: "monster" },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 457, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: ["100", "200", "201", "300"] }, 1: { main: [] } });
+    startDuel(session);
+    const sourceCard = session.state.cards.find((card) => card.code === "100");
+    const summoned = session.state.cards.find((card) => card.code === "300");
+    expect(sourceCard).toBeDefined();
+    expect(summoned).toBeDefined();
+    moveDuelCard(session.state, sourceCard!.uid, "monsterZone", 0);
+    sourceCard!.sequence = 2;
+    sourceCard!.faceUp = true;
+    sourceCard!.position = "faceUpAttack";
+    moveDuelCard(session.state, summoned!.uid, "hand", 0);
+    for (const [index, code] of ["200", "201"].entries()) {
+      const target = session.state.cards.find((card) => card.code === code);
+      expect(target).toBeDefined();
+      moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+      target!.sequence = index;
+      target!.faceUp = true;
+      target!.position = "faceUpAttack";
+    }
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = groupLabelSource();
+    const host = createLuaScriptHost(session, source);
+    expect(host.loadCardScript("100", source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const summon = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "normalSummon" && candidate.uid === summoned!.uid);
+    expect(summon, JSON.stringify(getDuelLegalActions(session, 0), null, 2)).toBeDefined();
+    applyAndAssert(session, summon!);
+    expect(host.messages).toContain("group label condition 2");
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === sourceCard!.uid);
+    expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
+    const result = applyLuaRestoreResponse(restored, trigger!);
+    expect(result.ok, result.error).toBe(true);
+    expect(restored.host.messages).toContain("group label operation true/2");
+  });
+
   it("lets Lua scripts read marked effect label objects", () => {
     const cards: DuelCardData[] = [{ code: "100", name: "Marked Effect Source", kind: "monster" }];
     const session = createDuel({ seed: 41, startingHandSize: 1, cardReader: createCardReader(cards) });
@@ -509,4 +559,33 @@ function passCurrentChain(session: ReturnType<typeof createDuel>): boolean {
   if (!pass) return false;
   applyAndAssert(session, pass);
   return true;
+}
+
+function groupLabelSource(): LuaScriptSource {
+  return {
+    readScript(name) {
+      if (name !== "c100.lua") return undefined;
+      return `
+        local s,id=GetID()
+        function s.initial_effect(c)
+          local e=Effect.CreateEffect(c)
+          e:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)
+          e:SetCode(EVENT_SUMMON_SUCCESS)
+          e:SetRange(LOCATION_MZONE)
+          e:SetCondition(function(e,tp)
+            local g=Duel.GetMatchingGroup(function(tc) return tc:IsFaceup() and (tc:IsCode(200) or tc:IsCode(201)) end,tp,LOCATION_MZONE,0,nil)
+            g:KeepAlive()
+            e:SetLabelObject(g)
+            Debug.Message("group label condition " .. g:GetCount())
+            return g:GetCount()==2
+          end)
+          e:SetOperation(function(e,tp)
+            local g=e:GetLabelObject()
+            Debug.Message("group label operation " .. tostring(g~=nil) .. "/" .. (g and g:GetCount() or -1))
+          end)
+          c:RegisterEffect(e)
+        end
+      `;
+    },
+  };
 }

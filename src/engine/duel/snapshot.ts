@@ -339,6 +339,7 @@ function assertSnapshotPendingTriggers(triggers: unknown, cardUids: ReadonlySet<
     if (!cardUids.has(trigger.sourceUid as string)) throw new Error(`Malformed duel snapshot: ${path}.sourceUid must reference a card`);
     if (trigger.effectLabelObjectUid !== undefined && typeof trigger.effectLabelObjectUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.effectLabelObjectUid must be a string`);
     if (trigger.effectLabelObjectUid !== undefined && !cardUids.has(trigger.effectLabelObjectUid)) throw new Error(`Malformed duel snapshot: ${path}.effectLabelObjectUid must reference a card`);
+    if (trigger.effectLabelObjectUids !== undefined) { assertSnapshotStringArray(trigger.effectLabelObjectUids, `${path}.effectLabelObjectUids`); assertSnapshotUniqueStringArray(trigger.effectLabelObjectUids, `${path}.effectLabelObjectUids`); assertSnapshotCardUidArray(trigger.effectLabelObjectUids, `${path}.effectLabelObjectUids`, cardUids); }
   }
 }
 
@@ -426,6 +427,7 @@ function assertSnapshotChain(chain: unknown, cardUids: ReadonlySet<string>): voi
     }
     if (link.effectLabelObjectUid !== undefined && typeof link.effectLabelObjectUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.effectLabelObjectUid must be a string`);
     if (link.effectLabelObjectUid !== undefined && !cardUids.has(link.effectLabelObjectUid)) throw new Error(`Malformed duel snapshot: ${path}.effectLabelObjectUid must reference a card`);
+    if (link.effectLabelObjectUids !== undefined) { assertSnapshotStringArray(link.effectLabelObjectUids, `${path}.effectLabelObjectUids`); assertSnapshotUniqueStringArray(link.effectLabelObjectUids, `${path}.effectLabelObjectUids`); assertSnapshotCardUidArray(link.effectLabelObjectUids, `${path}.effectLabelObjectUids`, cardUids); }
     if (link.targetUids !== undefined) {
       assertSnapshotStringArray(link.targetUids, `${path}.targetUids`);
       assertSnapshotUniqueStringArray(link.targetUids, `${path}.targetUids`);
@@ -834,6 +836,7 @@ function copySerializedEffect(effect: DuelEffectDefinition): SerializedDuelEffec
     canActivate: _canActivate,
     cost: _cost,
     labelObjectUid: _labelObjectUid,
+    labelObjectUids: _labelObjectUids,
     lifePointValue: _lifePointValue,
     luaTypeFlags: _luaTypeFlags,
     operation: _operation,
@@ -942,18 +945,14 @@ function copyOperationInfos(infos: NonNullable<DuelState["chain"][number]["opera
   return infos.map((info) => ({ ...info, targetUids: [...info.targetUids] }));
 }
 
-function copyPendingTrigger(trigger: DuelState["pendingTriggers"][number]): DuelState["pendingTriggers"][number] {
-  return copyEventPayload(trigger);
-}
-
-function copyEventRecord(event: DuelState["eventHistory"][number]): DuelState["eventHistory"][number] {
-  return copyEventPayload(event);
-}
+function copyPendingTrigger(trigger: DuelState["pendingTriggers"][number]): DuelState["pendingTriggers"][number] { return copyEventPayload(trigger); }
+function copyEventRecord(event: DuelState["eventHistory"][number]): DuelState["eventHistory"][number] { return copyEventPayload(event); }
 
 function copyEventPayload<T extends DuelState["chain"][number] | PublicChainLink | DuelState["pendingTriggers"][number] | DuelState["eventHistory"][number]>(payload: T): T {
   return {
     ...payload,
     ...(payload.eventUids === undefined ? {} : { eventUids: [...payload.eventUids] }),
+    ...("effectLabelObjectUids" in payload && payload.effectLabelObjectUids !== undefined ? { effectLabelObjectUids: [...payload.effectLabelObjectUids] } : {}),
     ...(payload.eventPreviousState === undefined ? {} : { eventPreviousState: { ...payload.eventPreviousState } }),
     ...(payload.eventCurrentState === undefined ? {} : { eventCurrentState: { ...payload.eventCurrentState } }),
   };

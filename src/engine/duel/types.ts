@@ -310,6 +310,7 @@ export interface DuelEffectDefinition {
   cost?: (ctx: DuelEffectContext) => boolean;
   target?: (ctx: DuelEffectContext) => boolean;
   labelObjectUid?: string;
+  labelObjectUids?: string[];
   operation: (ctx: DuelEffectContext) => void;
 }
 
@@ -323,7 +324,7 @@ export interface ChainLimit {
 
 export type SerializedDuelEffect = Omit<
   DuelEffectDefinition,
-  "battleDamageValue" | "canActivate" | "cost" | "labelObjectUid" | "lifePointValue" | "luaTypeFlags" | "operation" | "statValue" | "target" | "targetCardPredicate" | "valueCardPredicate" | "valuePredicate"
+  "battleDamageValue" | "canActivate" | "cost" | "labelObjectUid" | "labelObjectUids" | "lifePointValue" | "luaTypeFlags" | "operation" | "statValue" | "target" | "targetCardPredicate" | "valueCardPredicate" | "valuePredicate"
 >;
 export type SerializedChainLimit = Omit<ChainLimit, "allows" | "release">;
 
@@ -356,6 +357,7 @@ export interface DuelEffectContext {
   targetParam?: number;
   effectLabel?: number;
   effectLabelObjectUid?: string;
+  effectLabelObjectUids?: string[];
   chainLink?: ChainLink;
   log(detail: string): void;
   moveCard(uid: string, to: DuelLocation, controller?: PlayerId): DuelCardInstance;
@@ -405,6 +407,7 @@ export interface ChainLink {
   targetParam?: number;
   effectLabel?: number;
   effectLabelObjectUid?: string;
+  effectLabelObjectUids?: string[];
   negated?: boolean;
   disableReason?: number;
   disablePlayer?: PlayerId;
@@ -439,6 +442,7 @@ export interface PendingTrigger {
   eventCurrentState?: DuelEventCardState;
   eventTriggerTiming?: TriggerTiming;
   effectLabelObjectUid?: string;
+  effectLabelObjectUids?: string[];
 }
 
 export interface PendingTriggerBucketState {
@@ -779,8 +783,8 @@ interface ScriptedDuelWindowExpectationFields {
   chainPasses?: PlayerId[];
   attackPasses?: PlayerId[];
   damagePasses?: PlayerId[];
-  chain?: Array<Partial<Pick<ChainLink, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "eventReasonCardUid" | "eventReasonEffectId" | "relatedEffectId" | "eventChainDepth" | "eventChainLinkId" | "eventUids" | "eventCardUid" | "eventPreviousState" | "eventCurrentState" | "eventTriggerTiming" | "effectLabelObjectUid">>>;
-  pendingTriggers?: Array<Partial<Pick<PendingTrigger, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "triggerBucket" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "eventReasonCardUid" | "eventReasonEffectId" | "relatedEffectId" | "eventChainDepth" | "eventChainLinkId" | "eventUids" | "eventCardUid" | "eventPreviousState" | "eventCurrentState" | "eventTriggerTiming" | "effectLabelObjectUid">>>;
+  chain?: Array<Partial<Pick<ChainLink, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "eventReasonCardUid" | "eventReasonEffectId" | "relatedEffectId" | "eventChainDepth" | "eventChainLinkId" | "eventUids" | "eventCardUid" | "eventPreviousState" | "eventCurrentState" | "eventTriggerTiming" | "effectLabelObjectUid" | "effectLabelObjectUids">>>;
+  pendingTriggers?: Array<Partial<Pick<PendingTrigger, "id" | "player" | "sourceUid" | "effectId" | "eventName" | "triggerBucket" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "eventReasonCardUid" | "eventReasonEffectId" | "relatedEffectId" | "eventChainDepth" | "eventChainLinkId" | "eventUids" | "eventCardUid" | "eventPreviousState" | "eventCurrentState" | "eventTriggerTiming" | "effectLabelObjectUid" | "effectLabelObjectUids">>>;
   pendingTriggerBuckets?: Array<Partial<PendingTriggerBucketState>>;
   eventHistory?: Array<Partial<Pick<DuelEventRecord, "eventName" | "eventCode" | "eventPlayer" | "eventValue" | "eventReason" | "eventReasonPlayer" | "eventReasonCardUid" | "eventReasonEffectId" | "relatedEffectId" | "eventChainDepth" | "eventChainLinkId" | "eventUids" | "eventCardUid" | "eventPreviousState" | "eventCurrentState">>>;
   prompt?: Partial<DuelPromptState> | null;

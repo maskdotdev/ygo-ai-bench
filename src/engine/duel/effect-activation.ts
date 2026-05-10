@@ -76,6 +76,7 @@ export interface DuelActivationHandlers {
     possibleOperationInfos?: ChainLink["possibleOperationInfos"],
     effectLabel?: number,
     effectLabelObjectUid?: string,
+    effectLabelObjectUids?: string[],
   ): void;
   hasChainResponses(state: DuelState, player: PlayerId): boolean;
   resolveChain(state: DuelState): void;
@@ -148,6 +149,7 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
       ctx.possibleOperationInfos ?? [],
       ctx.effectLabel,
       ctx.effectLabelObjectUid,
+      ctx.effectLabelObjectUids,
     );
     placeActivatedSpellTrapCard(session.state, player, source, effect);
     pushDuelLog(session.state, "activate", player, source.name, effect.id);
@@ -234,6 +236,7 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
       trigger.eventUids,
     );
     if (trigger.effectLabelObjectUid !== undefined) ctx.effectLabelObjectUid = trigger.effectLabelObjectUid;
+    if (trigger.effectLabelObjectUids !== undefined) ctx.effectLabelObjectUids = [...trigger.effectLabelObjectUids];
     if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effect.id} could not be paid`);
     if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effect.id} are not legal`);
     handlers.pushChainLink(
@@ -264,6 +267,7 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
       ctx.possibleOperationInfos ?? [],
       ctx.effectLabel,
       ctx.effectLabelObjectUid,
+      ctx.effectLabelObjectUids,
     );
     placeActivatedSpellTrapCard(session.state, trigger.player, source, effect);
     pushDuelLog(session.state, "trigger", trigger.player, source.name, effect.id);
