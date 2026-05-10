@@ -8,6 +8,7 @@ import { duelReason } from "#duel/reasons.js";
 import { placeActivatedSpellTrapCard } from "#duel/spell-trap-activation.js";
 import { quickEffectEventContext } from "#duel/effect-event-context.js";
 import { createEffectContext } from "#duel/effect-context.js";
+import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import { pendingTriggerBucketsForState, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import { luaSummonTypeNormal, luaSummonTypeTribute, summonProcedureTypeCodeFromValue } from "#duel/summon-type-codes.js";
@@ -212,7 +213,7 @@ export function normalSummonDuelByProcedure(
   const effect = state.effects.find((candidate) => candidate.id === effectId && candidate.sourceUid === uid && isNormalSummonProcedureCode(candidate.code));
   if (!effect) throw new Error(`Normal Summon procedure ${effectId} is not registered`);
   const source = requireControlledCard(state, player, uid, "hand");
-  if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
+  if (!hasNormalSummonCountAvailable(state, player, source)) throw new Error("Normal Summon is not available");
   if (!effect.range.includes(source.location)) throw new Error(`${source.name} summon procedure is not in range`);
   const ctx = createEffectContext(state, source, player);
   if (effect.canActivate && !effect.canActivate(ctx)) throw new Error(`Condition for ${effectId} is not legal`);

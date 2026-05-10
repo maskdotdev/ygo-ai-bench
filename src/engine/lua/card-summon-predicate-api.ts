@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { canSpecialSummonDuelCard } from "#duel/core.js";
 import { isMonsterSetPrevented, isNormalSummonPrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
+import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
 import { positionFromMask, readTableStringField } from "#lua/api-utils.js";
 import { canSpecialSummonFromLua } from "#lua/card-eligibility-api.js";
@@ -70,7 +71,7 @@ function summonActionsForCard(session: DuelSession, card: DuelCardInstance, igno
 }
 
 function canUseNoTributeSummon(session: DuelSession, card: DuelCardInstance): boolean {
-  return session.state.players[card.controller].normalSummonAvailable && availableMonsterZoneCount(session, card.controller, []) > 0 && isNoTributePlayerAffected(session, card.controller) && !isNormalSummonPrevented(session.state, card.controller, card, createPredicateContext(session));
+  return hasNormalSummonCountAvailable(session.state, card.controller, card) && availableMonsterZoneCount(session, card.controller, []) > 0 && isNoTributePlayerAffected(session, card.controller) && !isNormalSummonPrevented(session.state, card.controller, card, createPredicateContext(session));
 }
 
 function summonPredicateActionAllowed(session: DuelSession, card: DuelCardInstance, action: DuelAction): boolean {

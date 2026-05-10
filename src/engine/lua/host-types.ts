@@ -73,6 +73,7 @@ export interface LuaHostState {
   nextEffectId: number;
   nextCopyId: number;
   effects: Map<number, LuaEffectRecord>;
+  functionDescriptors: Map<number, string>;
   usedEffectCounts: Map<string, number>;
   messages: string[];
   activeTargetUids: string[] | undefined;

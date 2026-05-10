@@ -32,6 +32,8 @@ const luaValueCardNotHandlerDescriptor = "value-card:not-handler";
 const luaCannotActivateSpecialSummonedMonsterDescriptor = "cannot-activate:special-summoned-monster-on-field";
 const luaSourceControllerConditionDescriptor = "condition:source-controller";
 const luaSetcodeOrCodeTypeTargetDescriptorPrefix = "target:setcode-or-code-type:";
+const luaTypeTargetDescriptorPrefix = "target:type:";
+const luaFaceupTypeTargetDescriptorPrefix = "target:faceup-type:";
 const luaYellowAlertCode = "59277750";
 const luaRareMetalmorphCode = "12503902";
 const luaResetEvent = 0x1000;
@@ -295,6 +297,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownGeminiStatusEffect(effect) ||
         isKnownGeminiEndPhaseReturnEffect(effect, snapshotEffects) ||
         isStaticNotSetcodeSummonRestriction(effect) ||
+        isKnownExtraSummonCountEffect(effect) ||
         effect.code === 25 ||
         effect.code === luaEffectClockLizard ||
         (effect.code === 71 && effect.luaValueDescriptor === "cannot-be-effect-target:opponent") ||
@@ -442,6 +445,10 @@ function isStaticNotSetcodeSummonRestriction(effect: SerializedDuelEffect): bool
   return (effect.code === 20 || effect.code === 22) && notSetcodeTargetDescriptor(effect.luaTargetDescriptor) !== undefined;
 }
 
+function isKnownExtraSummonCountEffect(effect: SerializedDuelEffect): boolean {
+  return effect.event === "continuous" && effect.code === 29 && effect.targetRange !== undefined && (effect.luaTargetDescriptor === undefined || typeTargetDescriptor(effect.luaTargetDescriptor) !== undefined);
+}
+
 function isClientHintEffect(effect: SerializedDuelEffect): boolean {
   return effect.code === undefined && ((effect.property ?? 0) & luaEffectFlagClientHint) !== 0;
 }
@@ -587,6 +594,8 @@ function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffe
   }
   const notSetcode = notSetcodeTargetDescriptor(effect.luaTargetDescriptor);
   if (notSetcode !== undefined) return { targetCardPredicate: (_ctx, card) => !cardSetcodes(card).some((setcode) => isSetcodeMatch(notSetcode, setcode)) };
+  const type = typeTargetDescriptor(effect.luaTargetDescriptor);
+  if (type !== undefined) return { targetCardPredicate: (ctx, card) => (cardTypeFlags(card, ctx.duel) & type) !== 0 && (!effect.luaTargetDescriptor?.startsWith(luaFaceupTypeTargetDescriptorPrefix) || card.faceUp) };
   return {};
 }
 
@@ -601,6 +610,13 @@ function notSetcodeTargetDescriptor(descriptor: string | undefined): number | un
   const match = descriptor?.match(/^target:not-setcode:(\d+)$/);
   const setcode = match?.[1] ? Number(match[1]) : undefined;
   return setcode !== undefined && Number.isSafeInteger(setcode) && setcode > 0 ? setcode : undefined;
+}
+
+function typeTargetDescriptor(descriptor: string | undefined): number | undefined {
+  const prefix = descriptor?.startsWith(luaFaceupTypeTargetDescriptorPrefix) ? luaFaceupTypeTargetDescriptorPrefix : luaTypeTargetDescriptorPrefix;
+  if (!descriptor?.startsWith(prefix)) return undefined;
+  const type = Number(descriptor.slice(prefix.length));
+  return Number.isSafeInteger(type) && type > 0 ? type : undefined;
 }
 
 function relatedEffectIsContinuous(ctx: Parameters<NonNullable<DuelEffectDefinition["valuePredicate"]>>[0]): boolean {

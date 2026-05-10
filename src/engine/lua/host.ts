@@ -29,6 +29,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
     nextEffectId: 1,
     nextCopyId: 1,
     effects: new Map(),
+    functionDescriptors: new Map(),
     usedEffectCounts: new Map(),
     messages: [],
     activeTargetUids: undefined,
@@ -70,7 +71,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
   installTypeCompatibilityApi(L);
   installConstants(L);
   installDebugApi(L, hostState.messages);
-  installAuxApi(L, readLuaError, session);
+  installAuxApi(L, readLuaError, session, hostState);
   installDuelApi(L, session, hostState);
   installEffectApi(L, hostState, readLuaError);
   installCardApi(L, session, hostState, (card, luaEffect, state) => toDuelEffect(card, luaEffect, state, hostState));

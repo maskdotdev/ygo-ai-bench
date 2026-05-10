@@ -5,6 +5,8 @@ import type { LuaHostState } from "#lua/host-types.js";
 const { lua, to_jsstring, to_luastring } = fengari;
 
 export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostState: LuaHostState): string | undefined {
+  const fixed = knownFixedFunctionDescriptor(L, index, hostState);
+  if (fixed !== undefined) return fixed;
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
   const cardParam = luaFunctionParams(snippet)?.[1];
@@ -19,6 +21,17 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notSetcode = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const setcode = notSetcode?.[1] ? luaNumberTokenValue(L, index, notSetcode[1]) : undefined;
   return setcode !== undefined && Number.isSafeInteger(setcode) && setcode > 0 ? `target:not-setcode:${setcode}` : undefined;
+}
+
+function knownFixedFunctionDescriptor(L: unknown, index: number, hostState: LuaHostState): string | undefined {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  for (const [ref, descriptor] of hostState.functionDescriptors) {
+    lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, ref);
+    const matches = Boolean(lua.lua_isfunction(L, -1) && lua.lua_rawequal(L, absoluteIndex, -1));
+    lua.lua_pop(L, 1);
+    if (matches) return descriptor;
+  }
+  return undefined;
 }
 
 const numericOrIdentifierPattern = String.raw`(?:0x[0-9A-Fa-f]+|\d+|[A-Za-z_]\w*)`;

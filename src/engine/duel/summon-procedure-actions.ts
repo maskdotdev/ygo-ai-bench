@@ -1,5 +1,6 @@
 import { findCard } from "#duel/card-state.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
+import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
 import { summonProcedureTypeCodeFromValue } from "#duel/summon-type-codes.js";
 import type { DuelAction, DuelCardInstance, DuelEffectDefinition, DuelState, PlayerId } from "#duel/types.js";
 
@@ -16,7 +17,7 @@ export function normalSummonProcedureActions(state: DuelState, player: PlayerId,
     const source = findCard(state, effect.sourceUid);
     if (!source || source.controller !== player || source.location !== "hand" || !effect.range.includes(source.location)) continue;
     if (hasNormalTributeMetadata(source)) continue;
-    if (!state.players[player].normalSummonAvailable || !canUseEffectCount(state, effect)) continue;
+    if (!hasNormalSummonCountAvailable(state, player, source) || !canUseEffectCount(state, effect)) continue;
     if (!canNormalSummon(player, source) || !canChooseEffect(effect, source, player)) continue;
     actions.push({ type: "tributeSummon", player, uid: source.uid, tributeUids: [], effectId: effect.id, label: `Tribute Summon ${source.name}` });
   }

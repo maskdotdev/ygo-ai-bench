@@ -6,6 +6,7 @@ import { tributeUnitCount } from "#duel/double-tribute.js";
 import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode, currentLinkMaterialCodes, currentLinkMaterialMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttribute, currentLevel, currentLink, currentRace, currentRank } from "#duel/card-stats.js";
+import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
 import { cardCombinations, materialCodesMatch, selectMaterialUidsForCodes, type MaterialCodeMatchOptions } from "#duel/summon-materials.js";
 import { isSummonTypeMaskMatch, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
@@ -25,16 +26,16 @@ export type DuelNormalSummonPredicate = (card: DuelCardInstance) => boolean;
 type ExtraDeckSummonType = "fusion" | "synchro" | "Xyz" | "Link";
 type SynchroMaterialCodes = { tuner: string; nonTuners: string[] };
 
-export function normalSummon(state: DuelState, player: PlayerId, uid: string, collectEvent: DuelEventCollector, canSummonWithoutTribute: DuelNormalSummonPredicate = () => false): void {
+export function normalSummon(state: DuelState, player: PlayerId, uid: string, collectEvent: DuelEventCollector, canSummonWithoutTribute: DuelNormalSummonPredicate = () => false, canUseNormalSummonCount: DuelNormalSummonPredicate = (card) => hasNormalSummonCountAvailable(state, player, card)): void {
   const fieldCard = findCard(state, uid);
   if (fieldCard?.location === "monsterZone") {
-    geminiNormalSummon(state, player, fieldCard, collectEvent);
+    geminiNormalSummon(state, player, fieldCard, collectEvent, canUseNormalSummonCount);
     return;
   }
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
   if (tributeRangeForNormalSummon(card).min > 0 && !canSummonWithoutTribute(card)) throw new Error(`${card.name} requires a Tribute Summon`);
-  if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
+  if (!canUseNormalSummonCount(card)) throw new Error("Normal Summon is not available");
   requireZoneSpace(state, player, "monsterZone");
   collectEvent("normalSummoning", card);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon);
@@ -50,8 +51,8 @@ export function normalSummon(state: DuelState, player: PlayerId, uid: string, co
   collectEvent("normalSummoned", card);
 }
 
-function geminiNormalSummon(state: DuelState, player: PlayerId, card: DuelCardInstance, collectEvent: DuelEventCollector): void {
-  if (!canGeminiNormalSummonDuelCard(state, player, card)) throw new Error(`${card.name} cannot be Gemini Summoned`);
+function geminiNormalSummon(state: DuelState, player: PlayerId, card: DuelCardInstance, collectEvent: DuelEventCollector, canUseNormalSummonCount: DuelNormalSummonPredicate): void {
+  if (!canGeminiNormalSummonDuelCard(state, player, card, canUseNormalSummonCount)) throw new Error(`${card.name} cannot be Gemini Summoned`);
   recordPreviousDuelCardState(state, card);
   collectEvent("normalSummoning", card);
   card.summonType = "normal";
@@ -66,11 +67,11 @@ function geminiNormalSummon(state: DuelState, player: PlayerId, card: DuelCardIn
   collectEvent("normalSummoned", card);
 }
 
-export function setMonster(state: DuelState, player: PlayerId, uid: string, collectEvent?: DuelEventCollector): void {
+export function setMonster(state: DuelState, player: PlayerId, uid: string, collectEvent?: DuelEventCollector, canUseNormalSummonCount: DuelNormalSummonPredicate = (card) => hasNormalSummonCountAvailable(state, player, card)): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
   if (tributeRangeForNormalSummon(card).min > 0) throw new Error(`${card.name} requires tributes to Set`);
-  if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
+  if (!canUseNormalSummonCount(card)) throw new Error("Normal Summon is not available");
   requireZoneSpace(state, player, "monsterZone");
   moveDuelCard(state, uid, "monsterZone", player, duelReason.rule);
   card.position = "faceDownDefense";
@@ -89,10 +90,11 @@ export function tributeSetDuelCard(
   moveMaterial: DuelMaterialMover = defaultMaterialMover(state),
   canReleaseMaterial: DuelMaterialPredicate = () => true,
   collectEvent?: DuelEventCollector,
+  canUseNormalSummonCount: DuelNormalSummonPredicate = (card) => hasNormalSummonCountAvailable(state, player, card),
 ): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
-  if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
+  if (!canUseNormalSummonCount(card)) throw new Error("Normal Summon is not available");
   const { uniqueTributes, tributeUnits } = validateNormalTributes(state, player, card, tributeUids, canReleaseMaterial);
   releaseNormalTributes(state, player, card, uniqueTributes, moveMaterial, `Tributed to Set ${card.name}`, collectEvent);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.rule);
@@ -117,10 +119,11 @@ export function tributeSummonDuelCard(
   collectEvent: DuelEventCollector,
   moveMaterial: DuelMaterialMover = defaultMaterialMover(state),
   canReleaseMaterial: DuelMaterialPredicate = () => true,
+  canUseNormalSummonCount: DuelNormalSummonPredicate = (card) => hasNormalSummonCountAvailable(state, player, card),
 ): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
-  if (!state.players[player].normalSummonAvailable) throw new Error("Normal Summon is not available");
+  if (!canUseNormalSummonCount(card)) throw new Error("Normal Summon is not available");
   const { uniqueTributes, tributeUnits } = validateNormalTributes(state, player, card, tributeUids, canReleaseMaterial);
   releaseNormalTributes(state, player, card, uniqueTributes, moveMaterial, `Tributed for ${card.name}`, collectEvent);
 
@@ -378,9 +381,10 @@ function collectSentToGraveyard(result: DuelMaterialMoveResult, collectEvent: Du
 }
 
 export function normalSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[], canSummonWithoutTribute: DuelNormalSummonPredicate = () => false): DuelAction[] {
-  if (!state.players[player].normalSummonAvailable || !hasZoneSpace(state, player, "monsterZone")) return [];
+  if (!hasZoneSpace(state, player, "monsterZone")) return [];
   const actions: DuelAction[] = [];
   for (const card of hand.filter((candidate) => candidate.kind === "monster")) {
+    if (!hasNormalSummonCountAvailable(state, player, card)) continue;
     const tributeRange = tributeRangeForNormalSummon(card);
     if (tributeRange.min === 0 || canSummonWithoutTribute(card)) actions.push({ type: "normalSummon", player, uid: card.uid, label: `Normal Summon ${card.name}` });
     if (tributeRange.min === 0) actions.push({ type: "setMonster", player, uid: card.uid, label: `Set ${card.name}` });
@@ -389,15 +393,14 @@ export function normalSummonActions(state: DuelState, player: PlayerId, hand: Du
 }
 
 export function geminiNormalSummonActions(state: DuelState, player: PlayerId): Extract<DuelAction, { type: "normalSummon" }>[] {
-  if (!state.players[player].normalSummonAvailable) return [];
   return getCards(state, player, "monsterZone")
     .filter((card) => canGeminiNormalSummonDuelCard(state, player, card))
     .map((card) => ({ type: "normalSummon", player, uid: card.uid, label: `Normal Summon ${card.name} again` }));
 }
 
-export function canGeminiNormalSummonDuelCard(state: DuelState, player: PlayerId, card: DuelCardInstance): boolean {
+export function canGeminiNormalSummonDuelCard(state: DuelState, player: PlayerId, card: DuelCardInstance, canUseNormalSummonCount: DuelNormalSummonPredicate = (candidate) => hasNormalSummonCountAvailable(state, player, candidate)): boolean {
   return (
-    state.players[player].normalSummonAvailable &&
+    canUseNormalSummonCount(card) &&
     card.controller === player &&
     card.location === "monsterZone" &&
     card.faceUp &&
@@ -420,10 +423,10 @@ export function tributeSetActions(state: DuelState, player: PlayerId, hand: Duel
 }
 
 function tributeNormalActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[], type: "tributeSummon" | "tributeSet", labelVerb: string, canReleaseMaterial: DuelMaterialPredicate): DuelAction[] {
-  if (!state.players[player].normalSummonAvailable) return [];
   const availableTributes = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(state, card) && canReleaseMaterial(card.uid));
   const actions: DuelAction[] = [];
   for (const card of hand.filter((candidate) => candidate.kind === "monster")) {
+    if (!hasNormalSummonCountAvailable(state, player, card)) continue;
     const tributeRange = tributeRangeForNormalSummon(card);
     if (tributeRange.max <= 0 || availableTributes.reduce((sum, material) => sum + tributeUnitCount(state, material), 0) < tributeRange.min) continue;
     for (let tributeCount = Math.max(1, tributeRange.min); tributeCount <= tributeRange.max; tributeCount += 1) {
