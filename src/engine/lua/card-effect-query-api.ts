@@ -114,26 +114,31 @@ export function canLuaCardBeEffectTarget<EffectRecord extends LuaCardApiEffectRe
   if (!card) return false;
   const immune = luaCardIsImmuneToEffect(L, session, hostState, card, targetEffect);
   if (immune) return false;
-  const targetPlayer = targetEffect ? effectOwnerPlayer(session, targetEffect) : undefined;
-  if (restoredDuelEffectPreventsTargeting(session, card, targetPlayer)) return false;
+  if (restoredDuelEffectPreventsTargeting(session, card, targetEffect)) return false;
   return !matchingLuaEffects(session.state, card, 71, hostState).some((effect) => cannotTargetEffectApplies(L, session, effect, card, targetEffect, hostState));
 }
 
-function restoredDuelEffectPreventsTargeting(session: DuelSession, card: DuelCardInstance, targetPlayer: PlayerId | undefined): boolean {
+function restoredDuelEffectPreventsTargeting(session: DuelSession, card: DuelCardInstance, targetEffect: LuaCardApiEffectRecord | undefined): boolean {
+  const targetPlayer = targetEffect ? effectOwnerPlayer(session, targetEffect) : undefined;
   for (const effect of session.state.effects) {
     if (effect.event !== "continuous" || effect.code !== 71 || effect.sourceUid !== card.uid) continue;
     const source = session.state.cards.find((candidate) => candidate.uid === effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     const ctx = createLuaMaterialCheckContext(session.state)(effect, source, card);
+    if (targetEffect) ctx.relatedEffectId = targetEffect.id;
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
     if (effect.targetCardPredicate && !effect.targetCardPredicate(ctx, card)) continue;
-    if (effect.valueCardPredicate && !effect.valueCardPredicate(ctx, card)) continue;
+    if (!luaEffectTargetingValueUsesRelatedEffectArgs(effect) && effect.valueCardPredicate && !effect.valueCardPredicate(ctx, card)) continue;
     if (effect.valuePredicate) {
       if (targetPlayer === undefined || !effect.valuePredicate(ctx, targetPlayer)) continue;
     } else if ((effect.value ?? 1) === 0) continue;
     return true;
   }
   return false;
+}
+
+function luaEffectTargetingValueUsesRelatedEffectArgs(effect: DuelEffectDefinition): boolean {
+  return effect.id.startsWith("lua-") && effect.code === 71;
 }
 
 function pushIsCanBeDisabledByEffect<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {

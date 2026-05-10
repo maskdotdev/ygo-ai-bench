@@ -8,13 +8,23 @@ import { isSetcodeMatch } from "#lua/card-code-utils.js";
 import { cardLink, cardRank, cardTypeFlags } from "#lua/card-stat-api.js";
 import type { DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
-export function canBeMaterial(state: DuelState, card: DuelCardInstance | undefined, kind: MaterialUseKind, target?: DuelCardInstance): boolean {
+export function canBeMaterial(state: DuelState, card: DuelCardInstance | undefined, kind: MaterialUseKind, target?: DuelCardInstance, reason = duelReason.material): boolean {
+  if (kind === "xyz" && (reason & duelReason.effect) !== 0) return canBeEffectXyzMaterial(state, card, target, reason);
   return Boolean(
     card &&
       isMonsterLike(card) &&
       canBeMaterialFromLocation(card.location, kind) &&
       targetAllowsMaterial(target, card, kind) &&
       !isMaterialUsePrevented(state, card.uid, kind, createLuaMaterialCheckContext(state)),
+  );
+}
+
+function canBeEffectXyzMaterial(state: DuelState, card: DuelCardInstance | undefined, target: DuelCardInstance | undefined, reason: number): boolean {
+  return Boolean(
+    card &&
+      card.uid !== target?.uid &&
+      canMoveDuelCardToLocation(state, card.uid, "overlay", reason) &&
+      !isMaterialUsePrevented(state, card.uid, "xyz", createLuaMaterialCheckContext(state)),
   );
 }
 

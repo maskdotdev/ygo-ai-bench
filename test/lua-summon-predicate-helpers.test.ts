@@ -143,6 +143,44 @@ describe("Lua summon predicate helpers", () => {
     expect(host.messages).toContain("role synchro summonable false/false/false");
   });
 
+  it("treats REASON_EFFECT Xyz material checks as effect attachment checks", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Rank Gate Xyz", kind: "extra", typeFlags: 0x800001, level: 9, xyzMaterialAttribute: 0x10 },
+      { code: "200", name: "Wrong Attribute Monster", kind: "monster", typeFlags: 0x21, level: 4, attribute: 0x20 },
+      { code: "300", name: "Attachable Spell", kind: "spell" },
+    ];
+    const session = createDuel({ seed: 242, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: [], extra: ["100"] },
+      1: { main: ["200", "300"] },
+    });
+    startDuel(session);
+
+    const xyz = session.state.cards.find((card) => card.code === "100");
+    const monster = session.state.cards.find((card) => card.code === "200");
+    const spell = session.state.cards.find((card) => card.code === "300");
+    expect(xyz).toBeDefined();
+    expect(monster).toBeDefined();
+    expect(spell).toBeDefined();
+    moveDuelCard(session.state, xyz!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, monster!.uid, "monsterZone", 1);
+    moveDuelCard(session.state, spell!.uid, "spellTrapZone", 1);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local xyz = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      local monster = Duel.GetFieldCard(1, LOCATION_MZONE, 0)
+      local spell = Duel.GetFieldCard(1, LOCATION_SZONE, 0)
+      Debug.Message("effect xyz material " .. tostring(monster:IsCanBeXyzMaterial(xyz,0,REASON_EFFECT)) .. "/" .. tostring(spell:IsCanBeXyzMaterial(xyz,0,REASON_EFFECT)) .. "/" .. tostring(monster:IsCanBeXyzMaterial(xyz,0)))
+      `,
+      "effect-xyz-material-check.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("effect xyz material true/true/false");
+  });
+
   it("checks Lua reincarnation ritual material filters", () => {
     const cards: DuelCardData[] = [
       { code: "940", name: "Reincarnation Material", kind: "monster" },

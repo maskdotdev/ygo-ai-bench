@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { hasZoneSpace } from "#duel/card-state.js";
 import { canChangeDuelCardPosition } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { MaterialUseKind } from "#duel/continuous-effects.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import { canBeMaterial } from "#lua/card-eligibility-api.js";
@@ -83,10 +84,19 @@ function pushMaterialPredicate(L: unknown, fieldName: string, session: DuelSessi
     const card = readCard(state, session);
     const targetUid = readCardUid(state, 2);
     const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
-    lua.lua_pushboolean(state, canBeMaterial(session.state, card, kind, target));
+    const reason = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : defaultMaterialReason(kind);
+    lua.lua_pushboolean(state, canBeMaterial(session.state, card, kind, target, reason));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function defaultMaterialReason(kind: MaterialUseKind): number {
+  if (kind === "fusion") return duelReason.material | duelReason.fusion;
+  if (kind === "synchro") return duelReason.material | duelReason.synchro;
+  if (kind === "xyz") return duelReason.material | duelReason.xyz;
+  if (kind === "link") return duelReason.material | duelReason.link;
+  return duelReason.material | duelReason.ritual;
 }
 
 function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined, uid: string | undefined) => boolean): void {
