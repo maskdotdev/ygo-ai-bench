@@ -125,6 +125,139 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Po
     );
     expect(restored.host.messages).not.toContain("polymerization responder resolved");
   });
+
+  it("uses a real Fusion substitute monster for one specifically listed material", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const polymerizationCode = "24094653";
+    const goddessCode = "53493204";
+    const missingMaterialCode = "2420";
+    const materialBCode = "2421";
+    const fusionCode = "2422";
+    const responderCode = "2423";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === polymerizationCode || card.code === goddessCode),
+      { code: materialBCode, name: "Substitute Fusion Material B Fixture", kind: "monster", typeFlags: 0x1, level: 4, attack: 1300, defense: 1000 },
+      {
+        code: fusionCode,
+        name: "Substitute Polymerization Fusion Fixture",
+        kind: "extra",
+        typeFlags: 0x41,
+        level: 6,
+        attack: 2200,
+        defense: 1800,
+        fusionMaterials: [missingMaterialCode, materialBCode],
+      },
+      { code: responderCode, name: "Substitute Polymerization Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 242, startingHandSize: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [polymerizationCode, goddessCode, materialBCode], extra: [fusionCode] }, 1: { main: [responderCode] } });
+    startDuel(session);
+
+    const polymerization = session.state.cards.find((card) => card.code === polymerizationCode);
+    const goddess = session.state.cards.find((card) => card.code === goddessCode);
+    const materialB = session.state.cards.find((card) => card.code === materialBCode);
+    const fusion = session.state.cards.find((card) => card.code === fusionCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(polymerization).toBeDefined();
+    expect(goddess).toBeDefined();
+    expect(materialB).toBeDefined();
+    expect(fusion).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, polymerization!.uid, "hand", 0);
+    moveDuelCard(session.state, goddess!.uid, "hand", 0);
+    moveDuelCard(session.state, materialB!.uid, "hand", 0);
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(polymerizationCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(goddessCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+
+    const activate = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === polymerization!.uid);
+    expect(activate).toBeDefined();
+    applyAndAssert(session, activate!);
+    expect(session.state.chain).toHaveLength(1);
+    expect(session.state.cards.find((card) => card.uid === fusion!.uid)).toMatchObject({ location: "extraDeck" });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
+    expect(pass).toBeDefined();
+    const resolved = applyLuaRestoreResponse(restored, pass!);
+    expect(resolved.ok, resolved.error).toBe(true);
+
+    expect(restored.session.state.cards.find((card) => card.uid === fusion!.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 0,
+      position: "faceUpAttack",
+      faceUp: true,
+      summonType: "fusion",
+      summonMaterialUids: [goddess!.uid, materialB!.uid],
+    });
+    expect(restored.session.state.cards.find((card) => card.uid === goddess!.uid)).toMatchObject({
+      location: "graveyard",
+      controller: 0,
+      reason: duelReason.effect | duelReason.material | duelReason.fusion,
+    });
+    expect(restored.session.state.cards.find((card) => card.uid === materialB!.uid)).toMatchObject({
+      location: "graveyard",
+      controller: 0,
+      reason: duelReason.effect | duelReason.material | duelReason.fusion,
+    });
+    expect(restored.host.messages).not.toContain("polymerization responder resolved");
+  });
+
+  it("does not allow two Fusion substitutes to replace both listed materials", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const polymerizationCode = "24094653";
+    const goddessCode = "53493204";
+    const missingMaterialACode = "2424";
+    const missingMaterialBCode = "2425";
+    const fusionCode = "2426";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === polymerizationCode || card.code === goddessCode),
+      {
+        code: fusionCode,
+        name: "Double Substitute Polymerization Fusion Fixture",
+        kind: "extra",
+        typeFlags: 0x41,
+        level: 6,
+        attack: 2200,
+        defense: 1800,
+        fusionMaterials: [missingMaterialACode, missingMaterialBCode],
+      },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 243, startingHandSize: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [polymerizationCode, goddessCode, goddessCode], extra: [fusionCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const polymerization = session.state.cards.find((card) => card.code === polymerizationCode);
+    const goddesses = session.state.cards.filter((card) => card.code === goddessCode);
+    expect(polymerization).toBeDefined();
+    expect(goddesses).toHaveLength(2);
+    moveDuelCard(session.state, polymerization!.uid, "hand", 0);
+    for (const goddess of goddesses) moveDuelCard(session.state, goddess.uid, "hand", 0);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(polymerizationCode), workspace).ok).toBe(true);
+    expect(host.loadCardScript(Number(goddessCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+
+    expect(getLegalActions(session, 0).some((action) => action.type === "activateEffect" && action.uid === polymerization!.uid)).toBe(false);
+  });
 });
 
 function chainResponderScript(): string {

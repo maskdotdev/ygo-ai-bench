@@ -3,7 +3,8 @@ import { duelActivity, recordFlipSummonActivity, recordNormalSetActivity, record
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import { duelReason } from "#duel/reasons.js";
 import { tributeUnitCount } from "#duel/double-tribute.js";
-import { cardCombinations, cardMatchesCode, isMonsterLike, materialCodesMatch } from "#duel/summon-materials.js";
+import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
+import { cardCombinations, cardMatchesCode, isMonsterLike, materialCodesMatch, selectMaterialUidsForCodes, type MaterialCodeMatchOptions } from "#duel/summon-materials.js";
 import { isSummonTypeMaskMatch, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
@@ -524,7 +525,8 @@ function extraDeckSummonActions(
     if (!isMonsterLike(card)) continue;
     const requiredCodes = materialCodes(card);
     if (!requiredCodes?.length) continue;
-    for (const materialUids of findSummonMaterialUidSets(state, player, materialPool, requiredCodes)) {
+    const options = type === "fusionSummon" ? fusionMaterialMatchOptions(state, card) : undefined;
+    for (const materialUids of findSummonMaterialUidSets(state, player, materialPool, requiredCodes, options)) {
       const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
       actions.push({ type, player, uid: card.uid, materialUids, label: `${label} Summon ${card.name} using ${materialNames}` });
     }
@@ -570,34 +572,33 @@ function tributeCombinations(state: DuelState, cards: DuelCardInstance[], count:
   return results;
 }
 
-function findMaterialUids(cards: DuelCardInstance[], requiredCodes: string[]): string[] | undefined {
-  const used = new Set<string>();
-  const selected: string[] = [];
-  for (const code of requiredCodes) {
-    const material = cards.find((card) => cardMatchesCode(card, code) && !used.has(card.uid));
-    if (!material) return undefined;
-    used.add(material.uid);
-    selected.push(material.uid);
-  }
-  return selected;
+function findMaterialUids(cards: DuelCardInstance[], requiredCodes: string[], options?: MaterialCodeMatchOptions): string[] | undefined {
+  return selectMaterialUidsForCodes(cards, requiredCodes, options);
 }
 
-function findMaterialUidSets(cards: DuelCardInstance[], requiredCodes: string[]): string[][] {
+function findMaterialUidSets(cards: DuelCardInstance[], requiredCodes: string[], options?: MaterialCodeMatchOptions): string[][] {
   const results: string[][] = [];
   const seen = new Set<string>();
-  const direct = findMaterialUids(cards, requiredCodes);
+  const direct = findMaterialUids(cards, requiredCodes, options);
   if (direct) appendMaterialUidSet(results, seen, direct);
   for (const materials of cardCombinations(cards, requiredCodes.length)) {
-    if (!materialCodesMatch(materials, requiredCodes)) continue;
-    const materialUids = findMaterialUids(materials, requiredCodes);
+    if (!materialCodesMatch(materials, requiredCodes, options)) continue;
+    const materialUids = findMaterialUids(materials, requiredCodes, options);
     if (!materialUids) continue;
     appendMaterialUidSet(results, seen, materialUids);
   }
   return results;
 }
 
-function findSummonMaterialUidSets(state: DuelState, player: PlayerId, cards: DuelCardInstance[], requiredCodes: string[]): string[][] {
-  return findMaterialUidSets(cards, requiredCodes).filter((materialUids) => hasSummonZoneAfterMaterials(state, player, materialUids));
+function findSummonMaterialUidSets(state: DuelState, player: PlayerId, cards: DuelCardInstance[], requiredCodes: string[], options?: MaterialCodeMatchOptions): string[][] {
+  return findMaterialUidSets(cards, requiredCodes, options).filter((materialUids) => hasSummonZoneAfterMaterials(state, player, materialUids));
+}
+
+function fusionMaterialMatchOptions(state: DuelState, target: DuelCardInstance): MaterialCodeMatchOptions {
+  return {
+    maxSubstitutes: 1,
+    canSubstitute: (material, requiredCode) => !cardMatchesCode(material, requiredCode) && canUseFusionSubstitute(state, material, target),
+  };
 }
 
 function materialUidSetKey(materialUids: string[]): string {
@@ -638,7 +639,7 @@ function requireExtraDeckSummonMaterials(
   if (!requiredMaterials?.length) throw new Error(`${card.name} does not define ${summonType} materials`);
   if (new Set(materialUids).size !== materialUids.length) throw new Error(`${card.name} ${summonType} materials must be unique`);
   const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
-  if (!materialCodesMatch(materials, requiredMaterials)) throw new Error(`${card.name} ${summonType} materials are not legal`);
+  if (!materialCodesMatch(materials, requiredMaterials, summonType === "fusion" ? fusionMaterialMatchOptions(state, card) : undefined)) throw new Error(`${card.name} ${summonType} materials are not legal`);
   for (const material of materials) {
     if (!allowedLocations.includes(material.location) || !isMonsterLike(material)) throw new Error(`${material.name} cannot be used as ${summonType} material`);
     if (!canUseMaterial(material.uid)) throw new Error(`${material.name} cannot be used as ${summonType} material`);

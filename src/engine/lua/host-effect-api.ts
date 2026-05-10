@@ -19,6 +19,7 @@ const allDuelLocations: DuelLocation[] = ["deck", "hand", "monsterZone", "spellT
 const luaEffectTypeSingle = 0x1;
 const luaResetEvent = 0x1000;
 const luaResetToField = 0x1000000;
+const luaEffectFusionSubstitute = 234;
 
 export function installEffectApi(L: unknown, hostState: LuaHostState, readLuaError: (state: unknown) => string): void {
   lua.lua_newtable(L);
@@ -665,6 +666,7 @@ function luaEffectDefaultRange(card: DuelCardInstance, luaEffect: LuaEffectRecor
   if (event === "continuous" && luaEffectIsSourceOnlyContinuousEvent(luaEffect.typeFlags, triggerEventFromCode(luaEffect.code))) return ["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"];
   if (event === "continuous" && (luaEffect.typeFlags & 0x4) !== 0) return ["spellTrapZone"];
   if (event === "continuous" && shouldSurviveLuaSingleEffectEnteringField(card, luaEffect)) return [...allDuelLocations];
+  if (event === "continuous" && luaEffect.code === luaEffectFusionSubstitute) return [...allDuelLocations];
   if (event === "continuous" && luaEffect.code === 313) return ["monsterZone"];
   if (event === "continuous" || event === "summonProcedure" || event === "trigger") return [card.location];
   if ((luaEffect.typeFlags & 0x10) !== 0 && card.kind === "spell") return ["hand", "spellTrapZone"];

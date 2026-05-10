@@ -26,11 +26,12 @@ import {
 } from "#duel/core.js";
 import { duelSummonTypeFromCode, luaSummonTypeFusion, luaSummonTypePendulum, luaSummonTypeRitual } from "#duel/summon-type-codes.js";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
+import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelReason } from "#duel/reasons.js";
 import { tributeSetDuelCard } from "#duel/summon.js";
-import { cardCombinations } from "#duel/summon-materials.js";
+import { cardCombinations, materialCodesMatch, type MaterialCodeMatchOptions } from "#duel/summon-materials.js";
 import { sameStringMembers } from "#duel/string-list-match.js";
 import { setSpellTrap as setCoreSpellTrap } from "#duel/spell-trap.js";
 import { positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
@@ -301,7 +302,7 @@ function fusionSummonSelectedMaterials(
     availableMonsterZoneCount(session, summonPlayer, materialUids) <= 0 ||
     !canPlayerSpecialSummon(session.state, summonPlayer, target, luaSummonTypeFusion) ||
     !canMoveDuelCardToLocation(session.state, target.uid, "monsterZone", duelReason.summon | duelReason.specialSummon | duelReason.fusion) ||
-    !selectedFusionMaterialsMatch(target, materials)
+    !selectedFusionMaterialsMatch(session, target, materials)
   ) {
     throw new Error(`${target.name} cannot be Fusion Summoned`);
   }
@@ -312,7 +313,7 @@ function fusionSummonSelectedMaterials(
         pendingDefaultMaterialUids.push(material.uid);
         continue;
       }
-      if (!canTrackMovedFusionMaterial(material, target)) throw new Error(`${target.name} fusion materials are not legal`);
+      if (!canTrackMovedFusionMaterial(session, material, target)) throw new Error(`${target.name} fusion materials are not legal`);
       continue;
     }
     if (!canBeSelectedFusionMaterial(session, material, target)) throw new Error(`${target.name} fusion materials are not legal`);
@@ -351,7 +352,7 @@ function canBeSelectedFusionMaterial(session: DuelSession, material: DuelCardIns
     isMonsterLike(material) &&
     isSelectedFusionMaterialLocation(material.location) &&
     material.uid !== target.uid &&
-    targetAllowsMaterial(target, material, "fusion") &&
+    targetAllowsFusionMaterial(session.state, target, material) &&
     !isMaterialUsePrevented(session.state, material.uid, "fusion", createMaterialCheckContext(session.state))
   );
 }
@@ -360,8 +361,8 @@ function canMoveUnmovedFusionMaterial(session: DuelSession, material: DuelCardIn
   return Boolean(material && isDefaultFusionMaterialLocation(material.location) && canBeSelectedFusionMaterial(session, material, target));
 }
 
-function canTrackMovedFusionMaterial(material: DuelCardInstance | undefined, target: DuelCardInstance): boolean {
-  return Boolean(material && isMonsterLike(material) && material.uid !== target.uid && targetAllowsMaterial(target, material, "fusion"));
+function canTrackMovedFusionMaterial(session: DuelSession, material: DuelCardInstance | undefined, target: DuelCardInstance): boolean {
+  return Boolean(material && isMonsterLike(material) && material.uid !== target.uid && targetAllowsFusionMaterial(session.state, target, material));
 }
 
 function isDefaultFusionMaterialLocation(location: DuelLocation): boolean {
@@ -372,16 +373,11 @@ function isSelectedFusionMaterialLocation(location: DuelLocation): boolean {
   return isDefaultFusionMaterialLocation(location) || location === "deck" || location === "graveyard" || location === "banished" || location === "extraDeck" || location === "spellTrapZone";
 }
 
-function selectedFusionMaterialsMatch(target: DuelCardInstance, materials: (DuelCardInstance | undefined)[]): boolean {
+function selectedFusionMaterialsMatch(session: DuelSession, target: DuelCardInstance, materials: (DuelCardInstance | undefined)[]): boolean {
   const required = target.data.fusionMaterials ?? [];
   if (!required.length) return materials.length > 0 && materials.every((material) => material !== undefined);
-  const selected: DuelCardInstance[] = [];
-  for (const code of required) {
-    const material = materials.find((candidate): candidate is DuelCardInstance => Boolean(candidate && !selected.includes(candidate) && cardCodes(candidate).includes(code)));
-    if (!material) return false;
-    selected.push(material);
-  }
-  return selected.length === materials.length;
+  const selected = materials.filter((material): material is DuelCardInstance => material !== undefined);
+  return selected.length === materials.length && materialCodesMatch(selected, required, fusionMaterialMatchOptions(session.state, target));
 }
 
 function ritualSummonSelectedMaterials(
@@ -697,6 +693,22 @@ function targetAllowsMaterial(target: DuelCardInstance | undefined, card: DuelCa
   if (kind === "fusion") return !target.data.fusionMaterials?.length || target.data.fusionMaterials.some((code) => codes.includes(code));
   if (kind === "ritual") return !target.data.ritualMaterials?.length || target.data.ritualMaterials.some((code) => codes.includes(code));
   return true;
+}
+
+function targetAllowsFusionMaterial(state: DuelState, target: DuelCardInstance | undefined, card: DuelCardInstance): boolean {
+  if (!target) return true;
+  if (target.uid === card.uid) return false;
+  const requiredCodes = target.data.fusionMaterials ?? [];
+  if (!requiredCodes.length) return true;
+  const codes = cardCodes(card);
+  return requiredCodes.some((code) => codes.includes(code)) || canUseFusionSubstitute(state, card, target);
+}
+
+function fusionMaterialMatchOptions(state: DuelState, target: DuelCardInstance): MaterialCodeMatchOptions {
+  return {
+    maxSubstitutes: 1,
+    canSubstitute: (material, code) => !cardCodes(material).includes(code) && canUseFusionSubstitute(state, material, target),
+  };
 }
 
 function locationSort(location: DuelLocation): number {

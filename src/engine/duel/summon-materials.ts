@@ -1,5 +1,11 @@
 import type { DuelCardInstance } from "#duel/types.js";
 
+export interface MaterialCodeMatchOptions {
+  canSubstitute?: (card: DuelCardInstance, requiredCode: string) => boolean;
+  maxSubstitutes?: number;
+  requiredUids?: readonly string[];
+}
+
 export function cardCombinations(cards: DuelCardInstance[], count: number): DuelCardInstance[][] {
   if (count === 0) return [[]];
   if (cards.length < count) return [];
@@ -12,15 +18,50 @@ export function cardCombinations(cards: DuelCardInstance[], count: number): Duel
   return results;
 }
 
-export function materialCodesMatch(materials: DuelCardInstance[], requiredCodes: string[]): boolean {
+export function materialCodesMatch(materials: DuelCardInstance[], requiredCodes: string[], options: MaterialCodeMatchOptions = {}): boolean {
   if (materials.length !== requiredCodes.length) return false;
+  return selectMaterialUidsForCodes(materials, requiredCodes, options) !== undefined;
+}
+
+export function selectMaterialUidsForCodes(cards: DuelCardInstance[], requiredCodes: string[], options: MaterialCodeMatchOptions = {}): string[] | undefined {
+  if (requiredCodes.length === 0) return [];
+  if (cards.length < requiredCodes.length) return undefined;
+  const maxSubstitutes = options.canSubstitute ? options.maxSubstitutes ?? Number.POSITIVE_INFINITY : 0;
+  const requiredUids = new Set(options.requiredUids ?? []);
+  if (requiredUids.size > requiredCodes.length) return undefined;
   const used = new Set<string>();
-  for (const code of requiredCodes) {
-    const material = materials.find((candidate) => !used.has(candidate.uid) && cardMatchesCode(candidate, code));
-    if (!material) return false;
-    used.add(material.uid);
+  return selectMaterialUids(cards, requiredCodes, options, maxSubstitutes, requiredUids, used, 0, 0);
+}
+
+function selectMaterialUids(
+  cards: DuelCardInstance[],
+  requiredCodes: string[],
+  options: MaterialCodeMatchOptions,
+  maxSubstitutes: number,
+  requiredUids: Set<string>,
+  used: Set<string>,
+  codeIndex: number,
+  substituteCount: number,
+): string[] | undefined {
+  if (codeIndex >= requiredCodes.length) {
+    return [...requiredUids].every((uid) => used.has(uid)) ? [] : undefined;
   }
-  return used.size === materials.length;
+  const code = requiredCodes[codeIndex];
+  if (!code) return undefined;
+  const exactMatches = cards.map((card) => ({ card, substitute: false })).filter(({ card }) => !used.has(card.uid) && cardMatchesCode(card, code));
+  const substituteMatches =
+    substituteCount >= maxSubstitutes
+      ? []
+      : cards
+          .map((card) => ({ card, substitute: true }))
+          .filter(({ card }) => !used.has(card.uid) && !cardMatchesCode(card, code) && Boolean(options.canSubstitute?.(card, code)));
+  for (const { card, substitute } of [...exactMatches, ...substituteMatches]) {
+    used.add(card.uid);
+    const tail = selectMaterialUids(cards, requiredCodes, options, maxSubstitutes, requiredUids, used, codeIndex + 1, substituteCount + (substitute ? 1 : 0));
+    used.delete(card.uid);
+    if (tail) return [card.uid, ...tail];
+  }
+  return undefined;
 }
 
 export function cardMatchesCode(card: DuelCardInstance, code: string): boolean {

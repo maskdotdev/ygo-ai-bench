@@ -1,6 +1,8 @@
 import fengari from "fengari";
 import { moveDuelCard } from "#duel/card-state.js";
 import { isEffectTargetSelectionPrevented, matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
+import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
+import { selectMaterialUidsForCodes } from "#duel/summon-materials.js";
 import { cardFieldId, pushCardTable } from "#lua/card-api.js";
 import { canLuaCardBeEffectTarget, createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
 import { installDuelLocationApi } from "#lua/duel-api/location.js";
@@ -218,7 +220,7 @@ function pushSelectedFusionMaterial(L: unknown, session: DuelSession): number {
   const candidates = poolUids
     .map((uid) => session.state.cards.find((card) => card.uid === uid))
     .filter((card): card is DuelCardInstance => Boolean(card && card.uid !== targetUid && (hasSuppliedMaterialGroup || card.controller === player) && canUseAsFusionMaterial(card)));
-  pushGroupTable(L, selectFusionMaterialUids(candidates, target, forcedUids));
+  pushGroupTable(L, selectFusionMaterialUids(session, candidates, target, forcedUids));
   return 1;
 }
 
@@ -622,7 +624,7 @@ function matchingCardUids(session: DuelSession, player: PlayerId, locationMask: 
     .map((card) => card.uid);
 }
 
-function selectFusionMaterialUids(candidates: DuelCardInstance[], target: DuelCardInstance | undefined, forcedUids: string[] = []): string[] {
+function selectFusionMaterialUids(session: DuelSession, candidates: DuelCardInstance[], target: DuelCardInstance | undefined, forcedUids: string[] = []): string[] {
   const uniqueForcedUids = uniqueUids(forcedUids);
   const forced = uniqueForcedUids
     .map((uid) => candidates.find((card) => card.uid === uid))
@@ -639,16 +641,14 @@ function selectFusionMaterialUids(candidates: DuelCardInstance[], target: DuelCa
     }
     return selected.map((card) => card.uid);
   }
-  const selected: DuelCardInstance[] = [];
-  for (const code of requiredCodes) {
-    const material =
-      forced.find((card) => !selected.includes(card) && cardCodes(card).includes(code)) ??
-      candidates.find((card) => !selected.includes(card) && cardCodes(card).includes(code));
-    if (!material) return [];
-    selected.push(material);
-  }
-  if (forced.some((card) => !selected.includes(card))) return [];
-  return selected.map((card) => card.uid);
+  const orderedCandidates = [...forced, ...candidates.filter((card) => !forced.includes(card))];
+  return (
+    selectMaterialUidsForCodes(orderedCandidates, requiredCodes, {
+      maxSubstitutes: 1,
+      requiredUids: uniqueForcedUids,
+      canSubstitute: (card, code) => Boolean(target && !cardCodes(card).includes(code) && canUseFusionSubstitute(session.state, card, target)),
+    }) ?? []
+  );
 }
 
 function canUseAsFusionMaterial(card: DuelCardInstance): boolean {
