@@ -24,8 +24,9 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const linkBelowExtraToken = linkBelowExtra?.[1] ?? linkBelowExtra?.[2];
   const linkBelowExtraValue = linkBelowExtraToken ? luaNumberTokenValue(L, index, linkBelowExtraToken) : undefined;
   if (linkBelowExtraValue !== undefined) return `special-summon-limit:link-below-extra:${linkBelowExtraValue}`;
-  const notNamedTypeExtra = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*Is(Fusion|Ritual|Synchro|Xyz|Pendulum|Link)Monster\\s*\\(\\s*\\)`));
-  const notNamedTypeExtraValue = notNamedTypeExtra?.[1] ? namedExtraDeckMonsterTypeValue(notNamedTypeExtra[1]) : undefined;
+  const notNamedTypeExtra = snippet.match(new RegExp(`\\breturn\\s+(?:${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*Is(Fusion|Ritual|Synchro|Xyz|Pendulum|Link)Monster\\s*\\(\\s*\\)|not\\s+${card}\\s*:\\s*Is(Fusion|Ritual|Synchro|Xyz|Pendulum|Link)Monster\\s*\\(\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\))`));
+  const notNamedTypeExtraName = notNamedTypeExtra?.[1] ?? notNamedTypeExtra?.[2];
+  const notNamedTypeExtraValue = notNamedTypeExtraName ? namedExtraDeckMonsterTypeValue(notNamedTypeExtraName) : undefined;
   if (notNamedTypeExtraValue === 0x40) return "special-summon-limit:non-fusion-extra";
   if (notNamedTypeExtraValue !== undefined) return `special-summon-limit:not-type-extra:${notNamedTypeExtraValue}`;
   const notTypeAttributeExtra = snippet.match(new RegExp(`\\breturn\\s+(?:not\\s+\\(\\s*${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)|${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+\\(\\s*${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s*\\))`));
