@@ -633,7 +633,7 @@ function luaEffectEvent(card: DuelCardInstance, luaEffect: LuaEffectRecord): Due
     code === 67 ||
     code === 68 ||
     code === 76 ||
-    code === 92 ||
+    [91, 92, 93, 94, 95].includes(code ?? -1) ||
     code === 313 ||
     code === 85 ||
     code === 235 ||
@@ -770,7 +770,7 @@ function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffec
   pushLuaEffectTable(L, luaEffect.id, hostState);
   if (legacyArgs) {
     pushCardTable(L, card.uid);
-    if (luaEffect.code === 96 && kind === "cost") { lua.lua_pushinteger(L, ctx?.player ?? card.controller); return 3; }
+    if ([91, 93, 94, 95, 96].includes(luaEffect.code ?? -1) && kind === "cost") { lua.lua_pushinteger(L, ctx?.player ?? card.controller); return 3; }
     if (luaEffect.code === 92 && kind === "cost") { lua.lua_pushinteger(L, ctx?.player ?? card.controller); lua.lua_pushinteger(L, effectiveSpecialSummonTypeCode(ctx?.summonTypeCode)); return 4; }
     return 2;
   }
@@ -897,7 +897,7 @@ function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: Lu
     applyLuaEffectContextLabelObject(L, luaEffect, ctx);
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, ref);
     const legacyArgs = secondParameterName(L, -1) === "c";
-    if (legacyArgs && ctx?.checkOnly && (kind === "cost" || kind === "target") && luaEffect.code !== 96 && luaEffect.code !== 92) {
+    if (legacyArgs && ctx?.checkOnly && (kind === "cost" || kind === "target") && ![91, 92, 93, 94, 95, 96].includes(luaEffect.code ?? -1)) {
       lua.lua_pop(L, 1);
       return fallback;
     }

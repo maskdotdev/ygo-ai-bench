@@ -4,6 +4,7 @@ import { hasReviveLimitProcedureComplete } from "#duel/procedure-status.js";
 import { duelReason } from "#duel/reasons.js";
 import { orderReplacementEffects } from "#duel/replacement-effect-order.js";
 import { isSpecialSummonCostPrevented } from "#duel/special-summon-cost.js";
+import { isSummonOrSetCostPrevented } from "#duel/summon-set-cost.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelLocation, DuelState, DuelSummonType, PlayerId } from "#duel/types.js";
 
@@ -237,19 +238,19 @@ export function isFlipSummonPrevented(state: DuelState, card: DuelCardInstance, 
     if (effect.targetCardPredicate && !effect.targetCardPredicate(ctx, card)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
-  return false;
+  return isSummonOrSetCostPrevented(state, card.controller, createContext, card, [93]);
 }
 
 export function isNormalSummonPrevented(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
-  return isSummonOrSetPrevented(state, player, card, 20, createContext);
+  return isSummonOrSetPrevented(state, player, card, 20, createContext) || isSummonOrSetCostPrevented(state, player, createContext, card, [91]);
 }
 
 export function isMonsterSetPrevented(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
-  return isSummonOrSetPrevented(state, player, card, 23, createContext);
+  return isSummonOrSetPrevented(state, player, card, 23, createContext) || isSummonOrSetCostPrevented(state, player, createContext, card, [94]);
 }
 
 export function isSpellTrapSetPrevented(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
-  return isSummonOrSetPrevented(state, player, card, 24, createContext);
+  return isSummonOrSetPrevented(state, player, card, 24, createContext) || isSummonOrSetCostPrevented(state, player, createContext, card, [95]);
 }
 
 export function isPhaseEntryPrevented(state: DuelState, player: PlayerId, phase: "battle" | "main2" | "end", createContext: ContinuousEffectContextFactory): boolean {
@@ -904,7 +905,7 @@ export function continuousEffectAppliesToCard(effect: DuelEffectDefinition, sour
   return !effect.targetCardPredicate || effect.targetCardPredicate(ctx, card);
 }
 
-function continuousEffectTargetsPlayer(effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId): boolean {
+export function continuousEffectTargetsPlayer(effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId): boolean {
   if (!continuousEffectSourceIsActive(effect, source)) return false;
   if (!continuousEffectIsPlayerTarget(effect)) return effect.targetRange === undefined && source.controller === player;
   const [selfTarget = 0, opponentTarget = 0] = effect.targetRange ?? [1, 0];
