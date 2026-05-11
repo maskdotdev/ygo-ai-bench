@@ -28,6 +28,11 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notTypeRaceExtraTypeValue = notTypeRaceExtraType ? luaNumberTokenValue(L, index, notTypeRaceExtraType) : undefined;
   const notTypeRaceExtraRaceValue = notTypeRaceExtraRace ? luaNumberTokenValue(L, index, notTypeRaceExtraRace) : undefined;
   if (notTypeRaceExtraTypeValue !== undefined && notTypeRaceExtraRaceValue !== undefined) return `special-summon-limit:not-type-race-extra:${notTypeRaceExtraTypeValue}:${notTypeRaceExtraRaceValue}`;
+  const notTypeAttributeRaceExtra = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\(\\s*${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)`));
+  const notTypeAttributeRaceExtraType = notTypeAttributeRaceExtra?.[1] ? luaNumberTokenValue(L, index, notTypeAttributeRaceExtra[1]) : undefined;
+  const notTypeAttributeRaceExtraAttribute = notTypeAttributeRaceExtra?.[2] ? luaNumberTokenValue(L, index, notTypeAttributeRaceExtra[2]) : undefined;
+  const notTypeAttributeRaceExtraRace = notTypeAttributeRaceExtra?.[3] ? luaNumberTokenValue(L, index, notTypeAttributeRaceExtra[3]) : undefined;
+  if (notTypeAttributeRaceExtraType !== undefined && notTypeAttributeRaceExtraAttribute !== undefined && notTypeAttributeRaceExtraRace !== undefined) return `special-summon-limit:not-type-attribute-race-extra:${notTypeAttributeRaceExtraType}:${notTypeAttributeRaceExtraAttribute}:${notTypeAttributeRaceExtraRace}`;
   const notType = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*Is(?:Original)?Type\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const notTypeValue = notType?.[1] ? luaNumberTokenValue(L, index, notType[1]) : undefined;
   if (notTypeValue !== undefined) return `target:not-type:${notTypeValue}`;
