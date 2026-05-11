@@ -795,6 +795,7 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   }
   if (effect.luaValueDescriptor === luaCannotActivateNonSpiritMonsterDescriptor) return { valuePredicate: (ctx) => relatedEffectIsNonSpiritMonsterEffect(ctx) };
   if (effect.luaValueDescriptor === "cannot-activate:card-activation") return { valuePredicate: (ctx) => ((relatedEffectFromContext(ctx)?.luaTypeFlags ?? 0) & 0x10) !== 0 };
+  if (effect.luaValueDescriptor === "cannot-activate:spell-card-activation" || effect.luaValueDescriptor === "cannot-activate:trap-card-activation") return { valuePredicate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); const type = effect.luaValueDescriptor === "cannot-activate:spell-card-activation" ? 0x2 : 0x4; return Boolean(handler && ((relatedEffect?.luaTypeFlags ?? 0) & 0x10) !== 0 && (cardTypeFlags(handler, ctx.duel) & type) !== 0); } };
   if (effect.luaValueDescriptor === "cannot-activate:same-code") return { valuePredicate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); return Boolean(handler && effect.label !== undefined && currentCardMatchesCode(handler, ctx.duel, String(effect.label))); } };
   if (effect.luaValueDescriptor === "cannot-activate:same-code-monster-effect") return { valuePredicate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); return Boolean(handler && (cardTypeFlags(handler, ctx.duel) & luaTypeMonster) !== 0 && effect.label !== undefined && currentCardMatchesCode(handler, ctx.duel, String(effect.label))); } };
   if (effect.luaValueDescriptor === "cannot-activate:spell-trap-effect") return { valuePredicate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); return Boolean(handler && (cardTypeFlags(handler, ctx.duel) & 0x6) !== 0); } };
@@ -817,12 +818,11 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   }
   return {};
 }
-
 function topDeckCards(state: DuelSession["state"], player: PlayerId): DuelCardDefinitionLike[] {
   return state.cards.filter((card) => card.controller === player && card.location === "deck").sort((a, b) => a.sequence - b.sequence);
 }
-
 type DuelCardDefinitionLike = DuelSession["state"]["cards"][number];
+
 function luaReasonPredicateMask(descriptor: string | undefined): number | undefined {
   if (descriptor === luaEffectReasonPredicateDescriptor) return duelReason.effect;
   if (!descriptor?.startsWith(luaReasonMaskPredicateDescriptorPrefix)) return undefined;

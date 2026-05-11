@@ -22,6 +22,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (nonSpiritMonsterActivationPredicate) return nonSpiritMonsterActivationPredicate;
   const spellTrapActivationPredicate = spellTrapActivationPredicateDescriptor(snippet, params);
   if (spellTrapActivationPredicate) return spellTrapActivationPredicate;
+  const typedCardActivationPredicate = typedCardActivationPredicateDescriptor(snippet, params);
+  if (typedCardActivationPredicate) return typedCardActivationPredicate;
   const cardActivationPredicate = cardActivationPredicateDescriptor(snippet, params);
   if (cardActivationPredicate) return cardActivationPredicate;
   const sameCodeActivationPredicate = sameCodeActivationPredicateDescriptor(snippet, params);
@@ -110,6 +112,18 @@ function cardActivationPredicateDescriptor(snippet: string, params: string[] | u
   const relatedEffect = escapeRegExp(relatedEffectParam);
   const predicate = new RegExp(`\\breturn\\s+${relatedEffect}\\s*:\\s*IsHasType\\s*\\(\\s*(?:EFFECT_TYPE_ACTIVATE|16)\\s*\\)\\s*(?:end\\b|$)`);
   return predicate.test(snippet) ? "cannot-activate:card-activation" : undefined;
+}
+
+function typedCardActivationPredicateDescriptor(snippet: string, params: string[] | undefined): string | undefined {
+  const relatedEffectParam = params?.[1];
+  if (!relatedEffectParam) return undefined;
+  const relatedEffect = escapeRegExp(relatedEffectParam);
+  const typeMethod = `${relatedEffect}\\s*:\\s*(IsSpellEffect|IsTrapEffect)\\s*\\(\\s*\\)`;
+  const cardActivation = `${relatedEffect}\\s*:\\s*IsHasType\\s*\\(\\s*(?:EFFECT_TYPE_ACTIVATE|16)\\s*\\)`;
+  const match = snippet.match(new RegExp(`\\breturn\\s+(?:${cardActivation}\\s+and\\s+${typeMethod}|${typeMethod}\\s+and\\s+${cardActivation})\\s*(?:end\\b|$)`));
+  if (match?.[1] === "IsSpellEffect" || match?.[2] === "IsSpellEffect") return "cannot-activate:spell-card-activation";
+  if (match?.[1] === "IsTrapEffect" || match?.[2] === "IsTrapEffect") return "cannot-activate:trap-card-activation";
+  return undefined;
 }
 
 function sameCodeActivationPredicateDescriptor(snippet: string, params: string[] | undefined): string | undefined {
