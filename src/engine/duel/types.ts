@@ -374,6 +374,7 @@ export interface DuelEffectContext {
   eventReasonEffectId?: number;
   relatedEffectId?: number;
   summonTypeCode?: number;
+  summonPosition?: CardPosition;
   eventChainDepth?: number;
   eventChainLinkId?: string;
   eventUids?: string[];

@@ -2,7 +2,7 @@ import fengari from "fengari";
 import { registerEffect } from "#duel/core.js";
 import { cleanupRemovedDuelEffect } from "#duel/effect-reset.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
-import { locationsFromMask, readCardUid, readGroupUids, readTableNumberField } from "#lua/api-utils.js";
+import { locationsFromMask, positionMaskFromPosition, readCardUid, readGroupUids, readTableNumberField } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { callLuaEffectBattleDamageValue, callLuaEffectLifePointValue, callLuaEffectStatValue, callLuaEffectValueCardPredicate, callLuaEffectValuePredicate } from "#lua/effect-value-callbacks.js";
 import { knownLuaEffectConditionDescriptor } from "#lua/effect-condition-descriptor.js";
@@ -19,7 +19,6 @@ import { normalizeLuaDamageModifier, normalizeLuaUnsignedInteger, toLuaSigned32 
 import { materializeSkipDrawPhaseEffect } from "#lua/phase-skip-effects.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaEffectRecord, LuaHostState } from "#lua/host-types.js";
-
 const { lua, lauxlib, to_luastring } = fengari;
 const allDuelLocations: DuelLocation[] = ["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"];
 const luaEffectTypeSingle = 0x1, luaResetEvent = 0x1000, luaResetToField = 0x1000000;
@@ -916,7 +915,7 @@ function callLuaEffectCardTargetPredicate(L: unknown, hostState: LuaHostState, l
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.targetRef);
     pushLuaEffectTable(L, luaEffect.id, hostState);
     if (luaEffect.code === 90) { pushRelatedEffectTable(L, hostState, ctx.relatedEffectId); lua.lua_pushinteger(L, ctx.player ?? card.controller); } else pushCardTable(L, card.uid);
-    if (luaEffect.code === 22) { lua.lua_pushinteger(L, ctx.eventPlayer ?? card.controller); lua.lua_pushinteger(L, effectiveSpecialSummonTypeCode(ctx.summonTypeCode)); lua.lua_pushinteger(L, 0); lua.lua_pushinteger(L, ctx.eventPlayer ?? card.controller); }
+    if (luaEffect.code === 22) { lua.lua_pushinteger(L, ctx.eventPlayer ?? card.controller); lua.lua_pushinteger(L, effectiveSpecialSummonTypeCode(ctx.summonTypeCode)); lua.lua_pushinteger(L, positionMaskFromPosition(ctx.summonPosition)); lua.lua_pushinteger(L, ctx.eventPlayer ?? card.controller); }
     const status = lua.lua_pcall(L, luaEffect.code === 22 ? 6 : luaEffect.code === 90 ? 3 : 2, 1, 0);
     if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
     const result = lua.lua_toboolean(L, -1); lua.lua_pop(L, 1); return Boolean(result);

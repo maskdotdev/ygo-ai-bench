@@ -139,3 +139,10 @@ export function positionFromMask(mask: number): CardPosition | undefined {
   if ((mask & 0x8) !== 0) return "faceDownDefense";
   return undefined;
 }
+
+export function positionMaskFromPosition(position: CardPosition | undefined): number {
+  if (position === "faceUpAttack") return 0x1;
+  if (position === "faceUpDefense") return 0x4;
+  if (position === "faceDownDefense") return 0x8;
+  return 0x1;
+}

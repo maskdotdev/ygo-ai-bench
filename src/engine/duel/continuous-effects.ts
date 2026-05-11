@@ -7,7 +7,7 @@ import { orderReplacementEffects } from "#duel/replacement-effect-order.js";
 import { isSpecialSummonCostPrevented } from "#duel/special-summon-cost.js";
 import { isSummonOrSetCostPrevented } from "#duel/summon-set-cost.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
-import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelLocation, DuelState, DuelSummonType, PlayerId } from "#duel/types.js";
+import type { CardPosition, DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelLocation, DuelState, DuelSummonType, PlayerId } from "#duel/types.js";
 
 export type ContinuousEffectContextFactory = (
   effect: DuelEffectDefinition,
@@ -142,19 +142,19 @@ export function setControlPlayerForCard(
   return player;
 }
 
-export function isSpecialSummonPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory, card?: DuelCardInstance, summonTypeCode?: number, relatedEffectId?: number, allowUnconditionalSpecialSummonCondition = false): boolean {
+export function isSpecialSummonPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory, card?: DuelCardInstance, summonTypeCode?: number, relatedEffectId?: number, allowUnconditionalSpecialSummonCondition = false, summonPosition?: CardPosition): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 22) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
-    const ctx = createContext(effect, source, card); ctx.summonTypeCode = effectiveSpecialSummonTypeCode(summonTypeCode); ctx.eventPlayer = player;
+    const ctx = createContext(effect, source, card); ctx.summonTypeCode = effectiveSpecialSummonTypeCode(summonTypeCode); if (summonPosition !== undefined) ctx.summonPosition = summonPosition; ctx.eventPlayer = player;
     if (card && effect.targetCardPredicate && !effect.targetCardPredicate(ctx, card)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   if (card && isSpecialSummonCostPrevented(state, player, createContext, card, summonTypeCode)) return true;
   if (card && isReviveLimitSpecialSummonPrevented(state, card)) return true;
-  if (card && isSpecialSummonConditionPrevented(state, player, createContext, card, summonTypeCode, relatedEffectId, allowUnconditionalSpecialSummonCondition)) return true;
+  if (card && isSpecialSummonConditionPrevented(state, player, createContext, card, summonTypeCode, relatedEffectId, allowUnconditionalSpecialSummonCondition, summonPosition)) return true;
   return false;
 }
 
@@ -167,13 +167,14 @@ function isReviveLimitSpecialSummonPrevented(state: DuelState, card: DuelCardIns
   return false;
 }
 
-function isSpecialSummonConditionPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory, card: DuelCardInstance, summonTypeCode?: number, relatedEffectId?: number, allowUnconditionalSpecialSummonCondition = false): boolean {
+function isSpecialSummonConditionPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory, card: DuelCardInstance, summonTypeCode?: number, relatedEffectId?: number, allowUnconditionalSpecialSummonCondition = false, summonPosition?: CardPosition): boolean {
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 30 || effect.sourceUid !== card.uid) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source) continue;
     const ctx = createContext(effect, source, card);
     ctx.summonTypeCode = effectiveSpecialSummonTypeCode(summonTypeCode);
+    if (summonPosition !== undefined) ctx.summonPosition = summonPosition;
     if (relatedEffectId !== undefined) ctx.relatedEffectId = relatedEffectId;
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
     if (allowUnconditionalSpecialSummonCondition) continue;

@@ -140,6 +140,8 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const effectParam = luaFunctionParams(snippet)?.[0];
   if (effectParam && new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsCode\\s*\\(\\s*${escapeRegExp(effectParam)}\\s*:\\s*GetLabel\\s*\\(\\s*\\)\\s*\\)`).test(snippet)) return "target:same-code-label";
   const summonTypeParam = luaFunctionParams(snippet)?.[3];
+  const summonPositionParam = luaFunctionParams(snippet)?.[4];
+  if (summonPositionParam && new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonPositionParam)}\\s*&\\s*(?:POS_FACEDOWN|10)\\s*\\)\\s*>\\s*0`).test(snippet)) return "target:special-summon-position-facedown";
   if (summonTypeParam) {
     const summonTypeNot = snippet.match(new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*~=\\s*(SUMMON_TYPE_SPECIAL\\s*\\+\\s*${numericOrIdentifierPattern}|${numericOrIdentifierPattern})`));
     const summonTypeMaskNot = snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*~=\\s*\\1`));

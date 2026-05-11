@@ -167,7 +167,8 @@ function pushCanSpecialSummonMonster(L: unknown, session: DuelSession): number {
   const positionMask = lua.lua_isnumber(L, 10) ? lua.lua_tointeger(L, 10) : 0x1;
   const summonType = luaSpecialSummonTypeCode(lua.lua_isnumber(L, 12) ? lua.lua_tointeger(L, 12) : playerOrSummonType !== undefined && playerOrSummonType !== 0 && playerOrSummonType !== 1 ? playerOrSummonType : 0);
   const card = syntheticSpecialSummonCard(L, targetPlayer);
-  lua.lua_pushboolean(L, Boolean(positionFromMask(positionMask)) && availableMonsterZoneCount(session, targetPlayer, []) > 0 && canPlayerSpecialSummon(session.state, targetPlayer, card, summonType));
+  const position = positionFromMask(positionMask);
+  lua.lua_pushboolean(L, Boolean(position) && availableMonsterZoneCount(session, targetPlayer, []) > 0 && canPlayerSpecialSummon(session.state, targetPlayer, card, summonType, undefined, position));
   return 1;
 }
 
@@ -329,13 +330,14 @@ function actionHasUid(action: { type: string }, uid: string): action is { type: 
 }
 
 function canSpecialSummon(session: DuelSession, player: PlayerId, targetPlayer: PlayerId, positionMask: number, uid: string | undefined): boolean {
-  if (!positionFromMask(positionMask)) return false;
+  const position = positionFromMask(positionMask);
+  if (!position) return false;
   if (availableMonsterZoneCount(session, targetPlayer, []) <= 0) return false;
   if (!uid) return canPlayerSpecialSummon(session.state, targetPlayer);
   const card = findCard(session.state, uid);
   if (!card || !isMonsterLike(card.kind)) return false;
   if (card.controller !== player && card.owner !== player) return false;
-  return canSpecialSummonDuelCard(session.state, uid, targetPlayer);
+  return canSpecialSummonDuelCard(session.state, uid, targetPlayer, undefined, undefined, false, position);
 }
 
 function canSpecialSummonCount(session: DuelSession, player: PlayerId, count: number): boolean {

@@ -6,7 +6,7 @@ import { isSummonTypeMaskMatch, summonTypeMaskFromCard } from "#duel/summon-type
 import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
 import { currentCardCodes, currentCardMatchesSetcode, currentLinkMaterialCodes, currentLinkMaterialMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttribute, currentLevel, currentLink, currentRace, currentRank } from "#duel/card-stats.js";
-import type { DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
+import type { CardPosition, DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
 export function canBeMaterial(state: DuelState, card: DuelCardInstance | undefined, kind: MaterialUseKind, target?: DuelCardInstance, reason = duelReason.material): boolean {
   if (kind === "xyz" && (reason & duelReason.effect) !== 0) return canBeEffectXyzMaterial(state, card, target, reason);
@@ -33,10 +33,10 @@ export function canMoveCardToDeckOrExtraAsCost(state: DuelState, card: DuelCardI
   return canMoveDuelCardToLocation(state, uid, destination, duelReason.cost);
 }
 
-export function canSpecialSummonFromLua(session: DuelSession, card: DuelCardInstance, player: PlayerId, summonType: number, zoneMask?: number, allowUnconditionalSpecialSummonCondition = false): boolean {
+export function canSpecialSummonFromLua(session: DuelSession, card: DuelCardInstance, player: PlayerId, summonType: number, zoneMask?: number, allowUnconditionalSpecialSummonCondition = false, summonPosition?: CardPosition): boolean {
   if (!hasAvailableMonsterZone(session, player, zoneMask)) return false;
-  if (canSpecialSummonDuelCard(session.state, card.uid, player, summonType, undefined, allowUnconditionalSpecialSummonCondition)) return true;
-  return card.location === "extraDeck" && summonType !== 0 && hasZoneSpace(session.state, player, "monsterZone") && canPlayerSpecialSummon(session.state, player, card, summonType);
+  if (canSpecialSummonDuelCard(session.state, card.uid, player, summonType, undefined, allowUnconditionalSpecialSummonCondition, summonPosition)) return true;
+  return card.location === "extraDeck" && summonType !== 0 && hasZoneSpace(session.state, player, "monsterZone") && canPlayerSpecialSummon(session.state, player, card, summonType, undefined, summonPosition);
 }
 
 export function isMonsterLike(card: DuelCardInstance, state?: DuelState): boolean {
