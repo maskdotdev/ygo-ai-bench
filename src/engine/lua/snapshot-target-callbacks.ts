@@ -63,6 +63,8 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (linkSummonCode !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4c000000 && currentCardMatchesCode(card, ctx.duel, String(linkSummonCode)) };
   const summonTypeCode = summonTypeCodeDescriptor(effect.luaTargetDescriptor);
   if (summonTypeCode !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === summonTypeCode.summonType && currentCardMatchesCode(card, ctx.duel, String(summonTypeCode.code)) };
+  const summonTypeCodeAny = summonTypeCodeAnyDescriptor(effect.luaTargetDescriptor);
+  if (summonTypeCodeAny !== undefined) return { targetCardPredicate: (ctx, card) => summonTypeCodeAny.summonTypes.includes(effectiveSpecialSummonTypeCode(ctx.summonTypeCode)) && (summonTypeCodeAny.original ? card.code === String(summonTypeCodeAny.code) : currentCardMatchesCode(card, ctx.duel, String(summonTypeCodeAny.code))) };
   const summonTypeIsAny = specialSummonTypeIsAnyTargetDescriptor(effect.luaTargetDescriptor);
   if (summonTypeIsAny !== undefined) return { targetCardPredicate: (ctx) => summonTypeIsAny.includes(effectiveSpecialSummonTypeCode(ctx.summonTypeCode)) };
   const summonTypeIs = specialSummonTypeIsTargetDescriptor(effect.luaTargetDescriptor);
@@ -144,6 +146,15 @@ function summonTypeCodeDescriptor(descriptor: string | undefined): { summonType:
   const [summonType, code] = descriptor.slice("target:summon-type-code:".length).split(":").map(Number);
   if (summonType === undefined || code === undefined) return undefined;
   return [summonType, code].every((value) => Number.isSafeInteger(value) && value > 0) ? { summonType, code } : undefined;
+}
+
+function summonTypeCodeAnyDescriptor(descriptor: string | undefined): { original: boolean; summonTypes: number[]; code: number } | undefined {
+  if (!descriptor?.startsWith("target:summon-type-code-any:")) return undefined;
+  const [mode, summonTypesText, codeText] = descriptor.slice("target:summon-type-code-any:".length).split(":");
+  const summonTypes = summonTypesText?.split(",").map(Number) ?? [];
+  const code = codeText === undefined ? undefined : Number(codeText);
+  if ((mode !== "current" && mode !== "original") || code === undefined) return undefined;
+  return summonTypes.length > 0 && [code, ...summonTypes].every((value) => Number.isSafeInteger(value) && value > 0) ? { original: mode === "original", summonTypes, code } : undefined;
 }
 
 function relatedEffectHandlerMatchesSetcode(ctx: Parameters<NonNullable<DuelEffectDefinition["targetCardPredicate"]>>[0], setcode: number): boolean {

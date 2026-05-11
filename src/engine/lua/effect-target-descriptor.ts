@@ -230,6 +230,13 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
     : undefined;
   const codeLinkSummonValue = codeLinkSummon?.[1] ? luaNumberTokenValue(L, index, codeLinkSummon[1]) : undefined;
   if (codeLinkSummonValue !== undefined) return `target:link-summon-code:${codeLinkSummonValue}`;
+  const codeSummonTypeAny = summonTypeParam
+    ? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*(IsOriginalCode|IsCode)\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierExpressionPattern})\\s*==\\s*\\3\\s+or\\s+${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierExpressionPattern})\\s*==\\s*\\4\\s*\\)`))
+    : undefined;
+  const codeSummonTypeAnyCode = codeSummonTypeAny?.[2] ? luaNumberTokenValue(L, index, codeSummonTypeAny[2]) : undefined;
+  const codeSummonTypeAnyTypes = codeSummonTypeAny?.[3] && codeSummonTypeAny[4] ? [luaSummonTypeTokenValue(L, index, codeSummonTypeAny[3]), luaSummonTypeTokenValue(L, index, codeSummonTypeAny[4])] : undefined;
+  const codeSummonTypeAnyMode = codeSummonTypeAny?.[1];
+  if (codeSummonTypeAnyMode !== undefined && codeSummonTypeAnyCode !== undefined && codeSummonTypeAnyTypes?.every((value): value is number => value !== undefined)) return `target:summon-type-code-any:${codeSummonTypeAnyMode === "IsOriginalCode" ? "original" : "current"}:${codeSummonTypeAnyTypes.join(",")}:${codeSummonTypeAnyCode}`;
   const codeSummonType = summonTypeParam
     ? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsCode\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+\\(?\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)?\\s*==\\s*\\2`))
     : undefined;
