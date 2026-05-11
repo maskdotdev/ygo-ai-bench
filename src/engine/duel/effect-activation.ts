@@ -87,9 +87,9 @@ export interface DuelActivationHandlers {
   ): void;
   hasChainResponses(state: DuelState, player: PlayerId): boolean;
   resolveChain(state: DuelState): void;
-  canAttemptSpecialSummonProcedure(state: DuelState, uid: string, summonTypeCode?: number): boolean;
-  canSpecialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number, allowUnconditionalSpecialSummonCondition?: boolean): boolean;
-  specialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number, allowUnconditionalSpecialSummonCondition?: boolean): DuelCardInstance;
+  canAttemptSpecialSummonProcedure(state: DuelState, uid: string, summonTypeCode?: number, relatedEffectId?: number): boolean;
+  canSpecialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number, allowUnconditionalSpecialSummonCondition?: boolean, relatedEffectId?: number): boolean;
+  specialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number, allowUnconditionalSpecialSummonCondition?: boolean, relatedEffectId?: number): DuelCardInstance;
 }
 
 export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: string, effectId: string, handlers: DuelActivationHandlers): void {
@@ -182,7 +182,8 @@ export function specialSummonDuelByProcedure(session: DuelSession, player: Playe
   if (!effect.range.includes(source.location)) throw new Error(`${source.name} summon procedure is not in range`);
   const ctx = handlers.createEffectContext(session.state, source, player);
   const summonTypeCode = summonProcedureTypeCode(effect);
-  if (!handlers.canAttemptSpecialSummonProcedure(session.state, uid, summonTypeCode)) throw new Error(`${source.name} cannot be Special Summoned`);
+  const relatedEffectId = luaRelatedEffectId(effect);
+  if (!handlers.canAttemptSpecialSummonProcedure(session.state, uid, summonTypeCode, relatedEffectId)) throw new Error(`${source.name} cannot be Special Summoned`);
   if (effect.canActivate && !effect.canActivate(ctx)) throw new Error(`Condition for ${effectId} is not legal`);
   const rollback = captureDuelState(session.state);
   try {
@@ -191,10 +192,10 @@ export function specialSummonDuelByProcedure(session: DuelSession, player: Playe
     if (effect.operation) effect.operation(ctx);
     const currentSource = requireControlledCard(session.state, player, uid);
     if (!effect.range.includes(currentSource.location)) throw new Error(`${source.name} summon procedure is no longer in range`);
-    if (!handlers.canSpecialSummonCard(session.state, uid, player, summonTypeCode, true)) throw new Error(`${source.name} cannot be Special Summoned`);
+    if (!handlers.canSpecialSummonCard(session.state, uid, player, summonTypeCode, true, relatedEffectId)) throw new Error(`${source.name} cannot be Special Summoned`);
     const presetMaterialUids = summonTypeCode !== undefined ? [...(currentSource.summonMaterialUids ?? [])] : [];
     markEffectUsed(session.state, effect);
-    const summoned = handlers.specialSummonCard(session.state, uid, player, summonTypeCode, true);
+    const summoned = handlers.specialSummonCard(session.state, uid, player, summonTypeCode, true, relatedEffectId);
     if (presetMaterialUids.length > 0) summoned.summonMaterialUids = presetMaterialUids;
     markProcedureComplete(summoned);
   } catch (error) {
@@ -405,6 +406,11 @@ function sameEventCardState(left: DuelEventCardState | undefined, right: DuelEve
 function sameOptionalStringList(left: string[] | undefined, right: string[] | undefined): boolean {
   if (left === undefined || right === undefined) return left === right;
   return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function luaRelatedEffectId(effect: DuelEffectDefinition): number | undefined {
+  const id = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  return Number.isFinite(id) ? id : undefined;
 }
 
 function takePendingTrigger(state: DuelState, player: PlayerId, triggerId: string, triggerBucket: TriggerBucket): DuelState["pendingTriggers"][number] {

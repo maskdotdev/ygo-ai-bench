@@ -8,7 +8,7 @@ const luaEffectLimitSummonProc = 33;
 
 type EffectChoicePredicate = (effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId) => boolean;
 type NormalSummonPredicate = (player: PlayerId, card: DuelCardInstance) => boolean;
-type SpecialSummonProcedurePredicate = (uid: string, summonTypeCode?: number) => boolean;
+type SpecialSummonProcedurePredicate = (uid: string, summonTypeCode?: number, relatedEffectId?: number) => boolean;
 
 export function normalSummonProcedureActions(state: DuelState, player: PlayerId, canChooseEffect: EffectChoicePredicate, canNormalSummon: NormalSummonPredicate): DuelAction[] {
   const actions: DuelAction[] = [];
@@ -30,7 +30,7 @@ export function specialSummonProcedureActions(state: DuelState, player: PlayerId
     if (effect.controller !== player || effect.event !== "summonProcedure") continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location) || !canUseEffectCount(state, effect)) continue;
-    if (!canAttempt(source.uid, summonProcedureTypeCodeFromValue(effect.value)) || !canChooseEffect(effect, source, player)) continue;
+    if (!canAttempt(source.uid, summonProcedureTypeCodeFromValue(effect.value), luaRelatedEffectId(effect)) || !canChooseEffect(effect, source, player)) continue;
     actions.push({ type: "specialSummonProcedure", player, uid: source.uid, effectId: effect.id, label: `Special Summon ${source.name}` });
   }
   return actions;
@@ -47,4 +47,9 @@ export function luaLimitNormalSummonProcedureValue(state: DuelState, player: Pla
 
 function hasNormalTributeMetadata(card: DuelCardInstance): boolean {
   return card.data.normalTributes !== undefined || card.data.normalTributeMin !== undefined || card.data.normalTributeMax !== undefined;
+}
+
+function luaRelatedEffectId(effect: DuelEffectDefinition): number | undefined {
+  const id = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  return Number.isFinite(id) ? id : undefined;
 }

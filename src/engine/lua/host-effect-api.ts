@@ -914,8 +914,8 @@ function callLuaEffectCardTargetPredicate(L: unknown, hostState: LuaHostState, l
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.targetRef);
     pushLuaEffectTable(L, luaEffect.id, hostState);
     if (luaEffect.code === 90) { pushRelatedEffectTable(L, hostState, ctx.relatedEffectId); lua.lua_pushinteger(L, ctx.player ?? card.controller); } else pushCardTable(L, card.uid);
-    if (luaEffect.code === 22) { lua.lua_pushinteger(L, ctx.eventPlayer ?? card.controller); lua.lua_pushinteger(L, effectiveSpecialSummonTypeCode(ctx.summonTypeCode)); lua.lua_pushinteger(L, positionMaskFromPosition(ctx.summonPosition)); lua.lua_pushinteger(L, ctx.eventPlayer ?? card.controller); pushRelatedEffectTable(L, hostState, ctx.relatedEffectId); }
-    const status = lua.lua_pcall(L, luaEffect.code === 22 ? 7 : luaEffect.code === 90 ? 3 : 2, 1, 0);
+    if (luaEffect.code === 22) { lua.lua_pushinteger(L, ctx.eventPlayer ?? card.controller); lua.lua_pushinteger(L, effectiveSpecialSummonTypeCode(ctx.summonTypeCode)); lua.lua_pushinteger(L, positionMaskFromPosition(ctx.summonPosition)); lua.lua_pushinteger(L, ctx.eventPlayer ?? card.controller); pushRelatedEffectTable(L, hostState, ctx.relatedEffectId); pushRelatedEffectTable(L, hostState, ctx.relatedEffectId); }
+    const status = lua.lua_pcall(L, luaEffect.code === 22 ? 8 : luaEffect.code === 90 ? 3 : 2, 1, 0);
     if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
     const result = lua.lua_toboolean(L, -1); lua.lua_pop(L, 1); return Boolean(result);
   });

@@ -199,6 +199,12 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
     : undefined;
   const ritualSummonNotRaceValue = ritualSummonNotRace?.[1] ? luaNumberExpressionValue(L, index, ritualSummonNotRace[1]) : undefined;
   if (ritualSummonNotRaceValue !== undefined) return `target:ritual-summon-not-race:${ritualSummonNotRaceValue}`;
+  const procedureEffectParam = luaFunctionParams(snippet)?.[7];
+  const extraSummonTypeNotOrNoProcedure = summonTypeParam && procedureEffectParam
+    ? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*~=\\s*\\1\\s+or\\s+${escapeRegExp(procedureEffectParam)}\\s*==\\s*nil\\s*\\)`))
+    : undefined;
+  const extraSummonTypeNotOrNoProcedureValue = extraSummonTypeNotOrNoProcedure?.[1] ? luaSummonTypeTokenValue(L, index, extraSummonTypeNotOrNoProcedure[1]) : undefined;
+  if (extraSummonTypeNotOrNoProcedureValue !== undefined) return `target:extra-summon-type-not-or-no-procedure:${extraSummonTypeNotOrNoProcedureValue}`;
   const extraSummonTypeNot = summonTypeParam
     ? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+\\(?\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)?\\s*~=\\s*\\1`))
     : undefined;
