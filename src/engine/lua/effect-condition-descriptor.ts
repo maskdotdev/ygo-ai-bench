@@ -34,6 +34,7 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const sourcePreviousPosition = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsPreviousPosition\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
   const sourcePreviousPositionValue = sourcePreviousPosition?.[1] ? luaNumberExpressionValue(L, index, sourcePreviousPosition[1]) : undefined;
   if (sourcePreviousPositionValue !== undefined) return `condition:source-previous-position:${sourcePreviousPositionValue}`;
+  if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsPreviousControler\s*\(\s*tp\s*\)/.test(snippet)) return "condition:source-previous-controller";
   const sourceOverlayCount = snippet.match(/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetOverlayCount\s*\(\s*\)\s*(==|~=|>|>=)\s*0\s*(?:end\b|$)/);
   if (sourceOverlayCount?.[1]) return sourceOverlayCount[1] === "==" ? "condition:source-overlay-count-zero" : "condition:source-overlay-count-positive";
   const params = luaFunctionParams(snippet);

@@ -871,6 +871,7 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   if (effect.luaConditionDescriptor?.startsWith("condition:source-summon-location:")) return { canActivate: (ctx) => Boolean(ctx.source.summonType && locationMatchesCardMask(ctx.source, Number(effect.luaConditionDescriptor?.split(":").pop()), ctx.source.previousLocation, ctx.source.previousSequence)) };
   if (effect.luaConditionDescriptor?.startsWith("condition:source-previous-location:")) return { canActivate: (ctx) => locationMatchesCardMask(ctx.source, Number(effect.luaConditionDescriptor?.split(":").pop()), ctx.source.previousLocation, ctx.source.previousSequence) };
   if (effect.luaConditionDescriptor?.startsWith("condition:source-previous-position:")) return { canActivate: (ctx) => Boolean(ctx.source.previousPosition && (positionMaskFromPosition(ctx.source.previousPosition) & Number(effect.luaConditionDescriptor?.split(":").pop())) !== 0) };
+  if (effect.luaConditionDescriptor === "condition:source-previous-controller") return { canActivate: (ctx) => ctx.source.previousController === effect.controller };
   if (effect.luaConditionDescriptor === "condition:source-overlay-count-positive") return { canActivate: (ctx) => ctx.source.overlayUids.length > 0 }; if (effect.luaConditionDescriptor === "condition:source-overlay-count-zero") return { canActivate: (ctx) => ctx.source.overlayUids.length === 0 };
   return {};
 }
@@ -915,7 +916,6 @@ function relatedEffectFromContext(ctx: Parameters<NonNullable<DuelEffectDefiniti
 function otherPlayer(player: PlayerId): PlayerId {
   return player === 0 ? 1 : 0;
 }
-
 function luaScriptRegistryKeys(registryKeys: Set<string>, snapshotEffects: SerializedDuelEffect[]): Set<string> {
   const knownRestorableKeys = new Set(
     snapshotEffects
