@@ -225,6 +225,11 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
     /\bGetMaxGroup\s*\(\s*Card\.GetLink\s*\)/.test(snippet) &&
     new RegExp(`\\breturn\\s+\\(?\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_LINK\\s*\\)?\\s*==\\s*SUMMON_TYPE_LINK\\s+and\\s+\\w+\\s+and\\s+\\w+\\s*>\\s*${card}\\s*:\\s*GetLink\\s*\\(\\s*\\)`).test(snippet)
   ) return "target:link-summon-below-field-max-link";
+  const codeLinkSummon = summonTypeParam
+    ? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsCode\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_LINK\\s*==\\s*SUMMON_TYPE_LINK`))
+    : undefined;
+  const codeLinkSummonValue = codeLinkSummon?.[1] ? luaNumberTokenValue(L, index, codeLinkSummon[1]) : undefined;
+  if (codeLinkSummonValue !== undefined) return `target:link-summon-code:${codeLinkSummonValue}`;
   if (summonTypeParam) {
     const summonTypeNot = snippet.match(new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*~=\\s*(SUMMON_TYPE_SPECIAL\\s*\\+\\s*${numericOrIdentifierPattern}|${numericOrIdentifierPattern})`));
     const summonTypeMaskIs = snippet.match(new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*==\\s*\\1`)) ?? snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*==\\s*\\1`));

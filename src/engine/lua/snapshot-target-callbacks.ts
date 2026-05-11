@@ -59,6 +59,8 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
     const maxFieldLink = ctx.duel.cards.reduce((max, candidate) => candidate.location === "monsterZone" && candidate.faceUp ? Math.max(max, currentLink(candidate, ctx.duel)) : max, 0);
     return effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4c000000 && maxFieldLink > currentLink(card, ctx.duel);
   } };
+  const linkSummonCode = linkSummonCodeDescriptor(effect.luaTargetDescriptor);
+  if (linkSummonCode !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4c000000 && currentCardMatchesCode(card, ctx.duel, String(linkSummonCode)) };
   const summonTypeIsAny = specialSummonTypeIsAnyTargetDescriptor(effect.luaTargetDescriptor);
   if (summonTypeIsAny !== undefined) return { targetCardPredicate: (ctx) => summonTypeIsAny.includes(effectiveSpecialSummonTypeCode(ctx.summonTypeCode)) };
   const summonTypeIs = specialSummonTypeIsTargetDescriptor(effect.luaTargetDescriptor);
@@ -127,6 +129,12 @@ function linkSummonLinkAboveHandlerCounterDescriptor(descriptor: string | undefi
   if (!descriptor?.startsWith("target:link-summon-link-above-handler-counter:")) return undefined;
   const counter = Number(descriptor.slice("target:link-summon-link-above-handler-counter:".length));
   return Number.isSafeInteger(counter) && counter > 0 ? counter : undefined;
+}
+
+function linkSummonCodeDescriptor(descriptor: string | undefined): number | undefined {
+  if (!descriptor?.startsWith("target:link-summon-code:")) return undefined;
+  const code = Number(descriptor.slice("target:link-summon-code:".length));
+  return Number.isSafeInteger(code) && code > 0 ? code : undefined;
 }
 
 function relatedEffectHandlerMatchesSetcode(ctx: Parameters<NonNullable<DuelEffectDefinition["targetCardPredicate"]>>[0], setcode: number): boolean {
