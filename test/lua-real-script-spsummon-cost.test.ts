@@ -14,7 +14,7 @@ const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Special Summon cost gates", () => {
-  it("restores official EFFECT_SPSUMMON_COST summon-type predicates", () => {
+  it("restores official EFFECT_SPSUMMON_COST summon-type inequality predicates", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const kochiCode = "41902352";
     const cards = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === kochiCode);
@@ -45,5 +45,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
       `, "restored-kochi-spsummon-cost.lua").ok).toBe(true);
     expect(restored.host.messages).toContain("kochi blocked false");
     expect(restored.host.messages).toContain("kochi open true");
+  });
+
+  it("restores official EFFECT_SPSUMMON_COST summon-type equality predicates", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const spiritMessageCode = "30170981";
+    const cards = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === spiritMessageCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 301, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [spiritMessageCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const spiritMessage = session.state.cards.find((card) => card.code === spiritMessageCode);
+    expect(spiritMessage).toBeDefined();
+    moveDuelCard(session.state, spiritMessage!.uid, "hand", 0);
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(spiritMessageCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    expect(session.state.effects).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 92, sourceUid: spiritMessage!.uid, luaCostDescriptor: `cost:special-summon-type-is:${luaSummonTypeSpecial + 181}` }),
+    ]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state.effects).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 92, sourceUid: spiritMessage!.uid, luaCostDescriptor: `cost:special-summon-type-is:${luaSummonTypeSpecial + 181}` }),
+    ]));
+    const restoredCost = restored.session.state.effects.find((effect) => effect.sourceUid === spiritMessage!.uid && effect.code === 92)?.cost;
+    expect(restoredCost?.({ summonTypeCode: luaSummonTypeSpecial + 181 } as never)).toBe(true);
+    expect(restoredCost?.({ summonTypeCode: luaSummonTypeSpecial + 182 } as never)).toBe(false);
   });
 });
