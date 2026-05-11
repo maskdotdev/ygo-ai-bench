@@ -75,4 +75,50 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     restored.session.state.currentAttack = { attackerUid: restoredTarget!.uid };
     expect(effect!.canActivate!(ctx)).toBe(false);
   });
+
+  it("restores local battle target opponent controller checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const sigmaCode = "42632209";
+    const targetCode = "72329844";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => [sigmaCode, targetCode].includes(card.code));
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 8242, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [targetCode], extra: [sigmaCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const sigma = session.state.cards.find((card) => card.code === sigmaCode);
+    const target = session.state.cards.find((card) => card.code === targetCode);
+    expect(sigma).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, sigma!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1);
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadCardScript(Number(sigmaCode), workspace);
+    expect(register.ok, register.error).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          luaConditionDescriptor: "condition:source-battle-target-opponent",
+          sourceUid: sigma!.uid,
+        }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredSigma = restored.session.state.cards.find((card) => card.code === sigmaCode);
+    const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === sigma!.uid && candidate.luaConditionDescriptor === "condition:source-battle-target-opponent");
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = conditionContext(restored.session.state, restoredSigma!);
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restored.session.state.currentAttack = { attackerUid: restoredSigma!.uid, targetUid: restoredTarget!.uid };
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredTarget!.controller = restoredSigma!.controller;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restored.session.state.currentAttack = { attackerUid: restoredSigma!.uid };
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
 });
