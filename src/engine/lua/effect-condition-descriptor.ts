@@ -52,6 +52,7 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   if (/\breturn\s+Duel\s*\.\s*IsMainPhase\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:main-phase";
   if (/\breturn\s+Duel\s*\.\s*IsMainPhase2\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:phase:256";
   if (/\breturn\s+Duel\s*\.\s*IsStandbyPhase\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:phase:2";
+  if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetBattleTarget\s*\(\s*\)\s*(?:~=\s*nil\s*)?(?:end\b|$)/.test(snippet)) return "condition:source-battle-target";
   const sourceStatusNot = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s*(?:end\\b|$)`));
   const sourceStatusNotValue = sourceStatusNot?.[1] ? luaNumberExpressionValue(L, index, sourceStatusNot[1]) : undefined;
   if (sourceStatusNotValue !== undefined) return `condition:source-status-not:${sourceStatusNotValue}`;
