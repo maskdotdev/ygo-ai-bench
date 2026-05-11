@@ -54,6 +54,10 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const sourceLocationReasonLocationValue = sourceLocationReason?.[1] ? luaNumberExpressionValue(L, index, sourceLocationReason[1]) : undefined;
   const sourceLocationReasonReasonValue = sourceLocationReason?.[2] ? luaNumberExpressionValue(L, index, sourceLocationReason[2]) : undefined;
   if (sourceLocationReasonLocationValue !== undefined && sourceLocationReasonReasonValue !== undefined) return `condition:source-location-reason:${sourceLocationReasonLocationValue}:${sourceLocationReasonReasonValue}`;
+  const sourceLocationReasonMask = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s+and\\s+\\(?\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetReason\\s*\\(\\s*\\)\\s*&\\s*\\(?\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)?\\s*\\)?\\s*(?:~=\\s*0|>\\s*0)`));
+  const sourceLocationReasonMaskLocationValue = sourceLocationReasonMask?.[1] ? luaNumberExpressionValue(L, index, sourceLocationReasonMask[1]) : undefined;
+  const sourceLocationReasonMaskReasonValue = sourceLocationReasonMask?.[2] ? luaNumberExpressionValue(L, index, sourceLocationReasonMask[2]) : undefined;
+  if (sourceLocationReasonMaskLocationValue !== undefined && sourceLocationReasonMaskReasonValue !== undefined) return `condition:source-location-reason:${sourceLocationReasonMaskLocationValue}:${sourceLocationReasonMaskReasonValue}`;
   const sourceReasonNot = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsReason\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
   const sourceReasonNotValue = sourceReasonNot?.[1] ? luaNumberExpressionValue(L, index, sourceReasonNot[1]) : undefined;
   if (sourceReasonNotValue !== undefined) return `condition:source-reason-not:${sourceReasonNotValue}`;
