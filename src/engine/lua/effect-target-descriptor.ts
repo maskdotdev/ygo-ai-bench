@@ -18,7 +18,10 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notTypeExtraValue = notTypeExtra?.[1] ? luaNumberTokenValue(L, index, notTypeExtra[1]) : undefined;
   if (notTypeExtraValue === 0x40) return "special-summon-limit:non-fusion-extra";
   if (notTypeExtraValue !== undefined) return `special-summon-limit:not-type-extra:${notTypeExtraValue}`;
-  if (new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsSynchroMonster\\s*\\(\\s*\\)`).test(snippet)) return `special-summon-limit:not-type-extra:${0x2000}`;
+  const notNamedTypeExtra = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*Is(Fusion|Ritual|Synchro|Xyz|Pendulum|Link)Monster\\s*\\(\\s*\\)`));
+  const notNamedTypeExtraValue = notNamedTypeExtra?.[1] ? namedExtraDeckMonsterTypeValue(notNamedTypeExtra[1]) : undefined;
+  if (notNamedTypeExtraValue === 0x40) return "special-summon-limit:non-fusion-extra";
+  if (notNamedTypeExtraValue !== undefined) return `special-summon-limit:not-type-extra:${notNamedTypeExtraValue}`;
   const notTypeAttributeExtra = snippet.match(new RegExp(`\\breturn\\s+(?:not\\s+\\(\\s*${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)|${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+\\(\\s*${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*\\))`));
   const notTypeAttributeExtraTypeToken = notTypeAttributeExtra?.[1] ?? notTypeAttributeExtra?.[4];
   const notTypeAttributeExtraAttributeToken = notTypeAttributeExtra?.[2] ?? notTypeAttributeExtra?.[3];
@@ -123,6 +126,16 @@ function luaNumberTokenValue(L: unknown, functionIndex: number, token: string): 
   const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
   lua.lua_pop(L, 1);
   return value ?? luaNumberUpvalueValue(L, functionIndex, token);
+}
+
+function namedExtraDeckMonsterTypeValue(name: string): number | undefined {
+  if (name === "Fusion") return 0x40;
+  if (name === "Ritual") return 0x80;
+  if (name === "Synchro") return 0x2000;
+  if (name === "Xyz") return 0x800000;
+  if (name === "Pendulum") return 0x1000000;
+  if (name === "Link") return 0x4000000;
+  return undefined;
 }
 
 function luaSummonTypeTokenValue(L: unknown, functionIndex: number, token: string): number | undefined {
