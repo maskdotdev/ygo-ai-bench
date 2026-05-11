@@ -189,6 +189,21 @@ export function isKnownTemporaryOpponentTurnSkipMain2Effect(effect: SerializedDu
   );
 }
 
+export function isKnownTemporaryArtifactLanceaBanishLockEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    (effect.code === 67 || effect.code === 30459350) &&
+    effect.sourceUid !== undefined &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    hasPlayerTargetFlag(effect) &&
+    targetRangeEquals(effect, 1, 1) &&
+    hasDefaultLuaFieldRange(effect) &&
+    (effect.code !== 67 || effect.value === 1)
+  );
+}
+
 function isKnownTemporaryPlayerBattleDamageAvoidEffect(effect: SerializedDuelEffect): boolean {
   return isPlainTemporaryStaticValueEffect(effect, 201) && hasPlayerTargetFlag(effect) && targetRangeEquals(effect, 1, 0);
 }
