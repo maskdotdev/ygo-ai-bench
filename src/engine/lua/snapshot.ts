@@ -771,7 +771,6 @@ function luaHandlerReturnToHandOperation(effect: SerializedDuelEffect): DuelEffe
     }
   };
 }
-
 function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "battleDamageValue" | "lifePointValue" | "valueCardPredicate" | "valuePredicate"> {
   if (effect.luaValueDescriptor === "cannot-be-effect-target:opponent") {
     return { valuePredicate: (_ctx, player) => player !== undefined && player !== effect.controller };
@@ -797,6 +796,7 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   }
   if (effect.luaValueDescriptor === luaCannotActivateNonSpiritMonsterDescriptor) return { valuePredicate: (ctx) => relatedEffectIsNonSpiritMonsterEffect(ctx) };
   if (effect.luaValueDescriptor === "cannot-activate:card-activation") return { valuePredicate: (ctx) => ((relatedEffectFromContext(ctx)?.luaTypeFlags ?? 0) & 0x10) !== 0 };
+  if (effect.luaValueDescriptor === "cannot-activate:same-code") return { valuePredicate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); return Boolean(handler && effect.label !== undefined && currentCardMatchesCode(handler, ctx.duel, String(effect.label))); } };
   if (effect.luaValueDescriptor === "cannot-activate:spell-trap-effect") return { valuePredicate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); return Boolean(handler && (cardTypeFlags(handler, ctx.duel) & 0x6) !== 0); } };
   if (effect.luaValueDescriptor?.startsWith("cannot-activate:monster-attribute-except:")) return { valuePredicate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); const attribute = Number(effect.luaValueDescriptor?.split(":").pop()); return Boolean(handler && (cardTypeFlags(handler, ctx.duel) & luaTypeMonster) !== 0 && ((handler.data.attribute ?? 0) & ~attribute) !== 0); } };
   if (effect.luaValueDescriptor !== "change-damage:effect-double" && effect.luaValueDescriptor !== "change-damage:effect-zero") return {};

@@ -24,6 +24,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (spellTrapActivationPredicate) return spellTrapActivationPredicate;
   const cardActivationPredicate = cardActivationPredicateDescriptor(snippet, params);
   if (cardActivationPredicate) return cardActivationPredicate;
+  const sameCodeActivationPredicate = sameCodeActivationPredicateDescriptor(snippet, params);
+  if (sameCodeActivationPredicate) return sameCodeActivationPredicate;
   const monsterAttributeExceptActivationPredicate = monsterAttributeExceptActivationPredicateDescriptor(L, index, snippet, params);
   if (monsterAttributeExceptActivationPredicate) return monsterAttributeExceptActivationPredicate;
   const effectParam = params?.[0];
@@ -108,6 +110,17 @@ function cardActivationPredicateDescriptor(snippet: string, params: string[] | u
   const relatedEffect = escapeRegExp(relatedEffectParam);
   const predicate = new RegExp(`\\breturn\\s+${relatedEffect}\\s*:\\s*IsHasType\\s*\\(\\s*(?:EFFECT_TYPE_ACTIVATE|16)\\s*\\)\\s*(?:end\\b|$)`);
   return predicate.test(snippet) ? "cannot-activate:card-activation" : undefined;
+}
+
+function sameCodeActivationPredicateDescriptor(snippet: string, params: string[] | undefined): string | undefined {
+  const effectParam = params?.[0];
+  const relatedEffectParam = params?.[1];
+  if (!effectParam || !relatedEffectParam) return undefined;
+  const effect = escapeRegExp(effectParam);
+  const relatedEffect = escapeRegExp(relatedEffectParam);
+  const sameCode = `${relatedEffect}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsCode\\s*\\(\\s*${effect}\\s*:\\s*GetLabel\\s*\\(\\s*\\)\\s*\\)`;
+  const predicate = new RegExp(`\\breturn\\s+(?:(?:${relatedEffect}\\s*:\\s*IsHasType\\s*\\(\\s*(?:EFFECT_TYPE_ACTIVATE|16)\\s*\\)|${relatedEffect}\\s*:\\s*IsMonsterEffect\\s*\\(\\s*\\))\\s+and\\s+)?${sameCode}\\s*(?:end\\b|$)`);
+  return predicate.test(snippet) ? "cannot-activate:same-code" : undefined;
 }
 
 function monsterAttributeExceptActivationPredicateDescriptor(L: unknown, index: number, snippet: string, params: string[] | undefined): string | undefined {
