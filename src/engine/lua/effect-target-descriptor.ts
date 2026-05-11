@@ -170,9 +170,10 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const relatedEffectParam = luaFunctionParams(snippet)?.[6];
   if (summonPositionParam && new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonPositionParam)}\\s*&\\s*(?:POS_FACEDOWN|10)\\s*\\)\\s*>\\s*0`).test(snippet)) return "target:special-summon-position-facedown";
   const pendulumSummonNotSetcode = summonTypeParam
-    ? snippet.match(new RegExp(`\\breturn\\s+(?:\\(?\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_PENDULUM\\s*\\)?\\s*==\\s*SUMMON_TYPE_PENDULUM|${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_PENDULUM\\s*==\\s*SUMMON_TYPE_PENDULUM)\\s+and\\s+not\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*\\{\\s*(${numericOrIdentifierListPattern})\\s*\\}\\s*\\)`))
+    ? snippet.match(new RegExp(`\\breturn\\s+(?:(?:\\(?\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_PENDULUM\\s*\\)?\\s*==\\s*SUMMON_TYPE_PENDULUM|${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_PENDULUM\\s*==\\s*SUMMON_TYPE_PENDULUM)\\s+and\\s+not\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(?:\\{\\s*)?(${numericOrIdentifierListPattern})(?:\\s*\\})?\\s*\\)|not\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(?:\\{\\s*)?(${numericOrIdentifierListPattern})(?:\\s*\\})?\\s*\\)\\s+and\\s+\\(?\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_PENDULUM\\s*\\)?\\s*==\\s*SUMMON_TYPE_PENDULUM)`))
     : undefined;
-  const pendulumSummonNotSetcodeValues = pendulumSummonNotSetcode?.[1] ? luaNumberListValue(L, index, pendulumSummonNotSetcode[1]) : undefined;
+  const pendulumSummonNotSetcodeToken = pendulumSummonNotSetcode?.[1] ?? pendulumSummonNotSetcode?.[2];
+  const pendulumSummonNotSetcodeValues = pendulumSummonNotSetcodeToken ? luaNumberListValue(L, index, pendulumSummonNotSetcodeToken) : undefined;
   if (pendulumSummonNotSetcodeValues?.length) return `target:pendulum-summon-not-setcode:${pendulumSummonNotSetcodeValues.join(",")}`;
   const ritualSummonNotRace = summonTypeParam
     ? snippet.match(new RegExp(`\\breturn\\s+\\(?\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_RITUAL\\s*\\)?\\s*==\\s*SUMMON_TYPE_RITUAL\\s+and\\s+not\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)`))
