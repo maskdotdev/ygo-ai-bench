@@ -39,6 +39,8 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (pendulumSummonNotSetcode !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4a000000 && !pendulumSummonNotSetcode.some((setcode) => currentCardMatchesSetcode(card, ctx.duel, setcode)) };
   const ritualSummonNotRace = ritualSummonNotRaceDescriptor(effect.luaTargetDescriptor);
   if (ritualSummonNotRace !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x45000000 && (currentRace(card, ctx.duel) & ritualSummonNotRace) === 0 };
+  const extraSummonTypeNot = extraSummonTypeNotDescriptor(effect.luaTargetDescriptor);
+  if (extraSummonTypeNot !== undefined) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && effectiveSpecialSummonTypeCode(ctx.summonTypeCode) !== extraSummonTypeNot };
   const summonTypeIsAny = specialSummonTypeIsAnyTargetDescriptor(effect.luaTargetDescriptor);
   if (summonTypeIsAny !== undefined) return { targetCardPredicate: (ctx) => summonTypeIsAny.includes(effectiveSpecialSummonTypeCode(ctx.summonTypeCode)) };
   const summonTypeIs = specialSummonTypeIsTargetDescriptor(effect.luaTargetDescriptor);
@@ -71,6 +73,12 @@ function ritualSummonNotRaceDescriptor(descriptor: string | undefined): number |
   if (!descriptor?.startsWith("target:ritual-summon-not-race:")) return undefined;
   const race = Number(descriptor.slice("target:ritual-summon-not-race:".length));
   return Number.isSafeInteger(race) && race > 0 ? race : undefined;
+}
+
+function extraSummonTypeNotDescriptor(descriptor: string | undefined): number | undefined {
+  if (!descriptor?.startsWith("target:extra-summon-type-not:")) return undefined;
+  const summonType = Number(descriptor.slice("target:extra-summon-type-not:".length));
+  return Number.isSafeInteger(summonType) && summonType > 0 ? summonType : undefined;
 }
 
 function relatedEffectHandlerMatchesSetcode(ctx: Parameters<NonNullable<DuelEffectDefinition["targetCardPredicate"]>>[0], setcode: number): boolean {

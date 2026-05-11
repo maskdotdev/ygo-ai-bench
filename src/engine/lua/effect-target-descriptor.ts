@@ -179,6 +179,11 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
     : undefined;
   const ritualSummonNotRaceValue = ritualSummonNotRace?.[1] ? luaNumberExpressionValue(L, index, ritualSummonNotRace[1]) : undefined;
   if (ritualSummonNotRaceValue !== undefined) return `target:ritual-summon-not-race:${ritualSummonNotRaceValue}`;
+  const extraSummonTypeNot = summonTypeParam
+    ? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+\\(?\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)?\\s*~=\\s*\\1`))
+    : undefined;
+  const extraSummonTypeNotValue = extraSummonTypeNot?.[1] ? luaSummonTypeTokenValue(L, index, extraSummonTypeNot[1]) : undefined;
+  if (extraSummonTypeNotValue !== undefined) return `target:extra-summon-type-not:${extraSummonTypeNotValue}`;
   const xyzSummonNotRelatedSetcode = relatedEffectParam && summonTypeParam ? snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_XYZ\\s*\\)\\s*==\\s*SUMMON_TYPE_XYZ\\s+and\\s+not\\s+${escapeRegExp(relatedEffectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`)) : undefined;
   const xyzSummonNotRelatedSetcodeValue = xyzSummonNotRelatedSetcode?.[1] ? luaNumberTokenValue(L, index, xyzSummonNotRelatedSetcode[1]) : undefined;
   if (xyzSummonNotRelatedSetcodeValue !== undefined) return `target:xyz-summon-not-related-setcode:${xyzSummonNotRelatedSetcodeValue}`;
