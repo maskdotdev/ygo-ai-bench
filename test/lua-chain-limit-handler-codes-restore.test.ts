@@ -278,14 +278,86 @@ describe("Lua multi-code handler chain-limit restore", () => {
     expect(hasLuaEffect(getLuaRestoreLegalActions(opponentRestored, 1), 1, "lua-4")).toBe(true);
     expect(hasLuaEffect(getLuaRestoreLegalActions(opponentRestored, 1), 1, "lua-6")).toBe(false);
   });
+
+  it("restores counter-activation-or-handler-code predicates from snapshots", () => {
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") {
+          return `
+            local s,id=GetID()
+            function s.initial_effect(c)
+              local e1=Effect.CreateEffect(c)
+              e1:SetType(EFFECT_TYPE_IGNITION)
+              e1:SetRange(LOCATION_HAND)
+              e1:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+                if chk==0 then return true end
+                Duel.SetChainLimitTillChainEnd(s.chlimit)
+              end)
+              e1:SetOperation(function(e,tp) Debug.Message("counter-or-code limit source resolved") end)
+              c:RegisterEffect(e1)
+
+              local e2=Effect.CreateEffect(c)
+              e2:SetType(EFFECT_TYPE_QUICK_O)
+              e2:SetRange(LOCATION_HAND)
+              e2:SetCondition(function(e,tp) return Duel.GetCurrentChain()>0 end)
+              e2:SetOperation(function(e,tp) Debug.Message("matching own-code response resolved") end)
+              c:RegisterEffect(e2)
+            end
+            function s.chlimit(re,rp,tp)
+              return (re:GetHandler():IsType(TYPE_COUNTER) and re:IsHasType(EFFECT_TYPE_ACTIVATE)) or re:GetHandler():IsCode(id)
+            end
+          `;
+        }
+        if (name === "c200.lua") return quickScript(200, "matching counter-trap activation response resolved", "EFFECT_TYPE_QUICK_O+EFFECT_TYPE_ACTIVATE");
+        if (name === "c300.lua") return quickScript(300, "blocked normal-trap activation response resolved", "EFFECT_TYPE_ACTIVATE");
+        if (name === "c400.lua") return quickScript(400, "blocked monster response resolved");
+        return undefined;
+      },
+    };
+
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 0x100004 }, { id: 300, type: 4 }, { id: 400, type: 1 }], []);
+    const session = createDuel({ seed: 23, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: ["100", "200", "300", "400"] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.loadCardScript(400, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(5);
+
+    const sourceAction = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
+    expect(sourceAction).toBeDefined();
+    const sourceResult = applyResponse(session, sourceAction!);
+    expect(sourceResult.ok, sourceResult.error).toBe(true);
+
+    const registryKey = "lua-chain-limit:100:0:chain:known:closure:counter-activate-or-handler-code:100";
+    const opponentSnapshot = serializeDuel(session);
+    expect(opponentSnapshot.state.chainLimits[0]?.registryKey).toBe(registryKey);
+    expect(hasLuaEffect(getLegalActions(session, 1), 1, "lua-4")).toBe(true);
+    expect(hasLuaEffect(getLegalActions(session, 1), 1, "lua-5")).toBe(true);
+    expect(hasLuaEffect(getLegalActions(session, 1), 1, "lua-6")).toBe(false);
+    expect(hasLuaEffect(getLegalActions(session, 1), 1, "lua-7")).toBe(false);
+
+    const opponentRestored = restoreDuelWithLuaScripts(opponentSnapshot, source, createCardReader(cards));
+    expect(opponentRestored.restoreComplete, opponentRestored.incompleteReasons.join("; ")).toBe(true);
+    expect(opponentRestored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(opponentRestored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
+    expect(getLuaRestoreLegalActionGroups(opponentRestored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(opponentRestored, 1));
+    expect(hasLuaEffect(getLuaRestoreLegalActions(opponentRestored, 1), 1, "lua-4")).toBe(true);
+    expect(hasLuaEffect(getLuaRestoreLegalActions(opponentRestored, 1), 1, "lua-5")).toBe(true);
+    expect(hasLuaEffect(getLuaRestoreLegalActions(opponentRestored, 1), 1, "lua-6")).toBe(false);
+    expect(hasLuaEffect(getLuaRestoreLegalActions(opponentRestored, 1), 1, "lua-7")).toBe(false);
+  });
 });
 
-function quickScript(code: number, message: string): string {
+function quickScript(code: number, message: string, type = "EFFECT_TYPE_QUICK_O"): string {
   return `
     local s,id=GetID()
     function s.initial_effect(c)
       local e=Effect.CreateEffect(c)
-      e:SetType(EFFECT_TYPE_QUICK_O)
+      e:SetType(${type})
       e:SetRange(LOCATION_HAND)
       e:SetCondition(function(e,tp) return Duel.GetCurrentChain()>0 end)
       e:SetOperation(function(e,tp) Debug.Message("${message}") end)

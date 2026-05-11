@@ -218,6 +218,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (literalNotMonsterLinkActiveTypePredicate(L, index, hostState)) return "closure:not-active-monster-link";
   const blockedActiveType = literalNotActiveTypePredicate(L, index, hostState);
   if (blockedActiveType !== undefined) return `closure:not-active-type:${blockedActiveType}`;
+  const counterActivationOrHandlerCode = literalCounterActivationOrHandlerCodePredicate(L, index, hostState);
+  if (counterActivationOrHandlerCode !== undefined) return `closure:counter-activate-or-handler-code:${counterActivationOrHandlerCode}`;
   const cardTableField = matchingGlobalCardTableFunctionField(L, index);
   if (cardTableField) return cardTableField;
   const handlerOnlyUid = literalCapturedHandlerOnlyCardUid(L, index, hostState);
@@ -453,19 +455,9 @@ function literalHandlerCodesPredicate(L: unknown, index: number, hostState: LuaD
   return uniqueCodes.length > 0 && uniqueCodes.every((code) => Number.isSafeInteger(code) && code > 0) ? uniqueCodes : undefined;
 }
 
-function numberTokenValue(token: string, upvalues: Map<string, number>): number | undefined {
-  if (/^\d+$/.test(token)) return Number(token);
-  if (/^[A-Za-z_]\w*$/.test(token)) return upvalues.get(token);
-  return undefined;
-}
-
-function handlerCodePredicateDescriptor(codes: number[]): string {
-  return codes.length === 1 ? `closure:handler-code:${codes[0]}` : `closure:handler-codes:${codes.join(",")}`;
-}
-
-function handlerCodeResponsePlayerPredicateDescriptor(codes: number[]): string {
-  return codes.length === 1 ? `closure:handler-code-response-player:${codes[0]}` : `closure:handler-codes-response-player:${codes.join(",")}`;
-}
+function numberTokenValue(token: string, upvalues: Map<string, number>): number | undefined { return /^\d+$/.test(token) ? Number(token) : /^[A-Za-z_]\w*$/.test(token) ? upvalues.get(token) : undefined; }
+function handlerCodePredicateDescriptor(codes: number[]): string { return codes.length === 1 ? `closure:handler-code:${codes[0]}` : `closure:handler-codes:${codes.join(",")}`; }
+function handlerCodeResponsePlayerPredicateDescriptor(codes: number[]): string { return codes.length === 1 ? `closure:handler-code-response-player:${codes[0]}` : `closure:handler-codes-response-player:${codes.join(",")}`; }
 
 function literalResponseMatchesChainPlayerOrHandlerCodesPredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number[] | undefined {
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
@@ -475,7 +467,6 @@ function literalResponseMatchesChainPlayerOrHandlerCodesPredicate(L: unknown, in
   const responsePlayerParam = params?.[1];
   const chainPlayerParam = params?.[2];
   if (!effectParam || !responsePlayerParam || !chainPlayerParam) return undefined;
-
   const returnExpression = lastReturnExpression(snippet);
   if (!returnExpression) return undefined;
   const terms = returnExpression.split(/\s+or\s+/).map((term) => trimOuterParens(term.trim())).filter(Boolean);
@@ -490,10 +481,19 @@ function literalResponseMatchesChainPlayerOrHandlerCodesPredicate(L: unknown, in
   return uniqueCodes.every((code) => Number.isSafeInteger(code) && code > 0) ? uniqueCodes : undefined;
 }
 
+function literalCounterActivationOrHandlerCodePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
+  const effectParam = luaFunctionParams(snippet)?.[0];
+  const terms = lastReturnExpression(snippet)?.split(/\s+or\s+/).map((term) => trimOuterParens(term.trim())).filter(Boolean);
+  if (!effectParam || !terms || terms.length !== 2) return undefined;
+  const effect = escapeRegExp(effectParam), counterActivate = new RegExp(`^${effect}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsType\\s*\\(\\s*(?:TYPE_COUNTER|1048576)\\s*\\)\\s+and\\s+${effect}\\s*:\\s*IsHasType\\s*\\(\\s*(?:EFFECT_TYPE_ACTIVATE|16)\\s*\\)$`);
+  const codeTerm = terms.find((term) => !counterActivate.test(term)), codes = codeTerm ? handlerCodeTermValues(codeTerm, effectParam, capturedNumberUpvalues(L, index)) : undefined;
+  return terms.some((term) => counterActivate.test(term)) && codes?.length === 1 ? codes[0] : undefined;
+}
 function responseMatchesChainPlayerTerm(term: string, responsePlayerParam: string, chainPlayerParam: string): boolean {
   const equality = term.match(/^([A-Za-z_]\w*)\s*==\s*([A-Za-z_]\w*)$/);
-  if (!equality?.[1] || !equality[2]) return false;
-  return [equality[1], equality[2]].sort().join(":") === [responsePlayerParam, chainPlayerParam].sort().join(":");
+  return Boolean(equality?.[1] && equality[2] && [equality[1], equality[2]].sort().join(":") === [responsePlayerParam, chainPlayerParam].sort().join(":"));
 }
 
 function handlerCodeTermValues(term: string, effectParam: string, upvalues: Map<string, number> | undefined): number[] | undefined {
