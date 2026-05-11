@@ -12,6 +12,10 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const cardParam = luaFunctionParams(snippet)?.[1];
   if (!cardParam) return undefined;
   const card = escapeRegExp(cardParam);
+  const notRaceDeckOrExtra = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)`));
+  const notRaceDeckOrExtraLocation = notRaceDeckOrExtra?.[1] ? luaNumberExpressionValue(L, index, notRaceDeckOrExtra[1]) : undefined;
+  const notRaceDeckOrExtraRace = notRaceDeckOrExtra?.[2] ? luaNumberExpressionValue(L, index, notRaceDeckOrExtra[2]) : undefined;
+  if (notRaceDeckOrExtraLocation === 0x41 && notRaceDeckOrExtraRace !== undefined) return `special-summon-limit:not-race-deck-or-extra:${notRaceDeckOrExtraRace}`;
   const deckOrExtra = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)(?!\\s+and\\b)`));
   const deckOrExtraValue = deckOrExtra?.[1] ? luaNumberExpressionValue(L, index, deckOrExtra[1]) : undefined;
   if (deckOrExtraValue === 0x41) return "special-summon-limit:deck-or-extra";
