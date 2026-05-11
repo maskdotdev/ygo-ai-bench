@@ -13,7 +13,7 @@ import { cardSetcodes, isSetcodeMatch } from "#lua/card-code-utils.js";
 import { bookOfEclipsePhaseEndCanActivate, bookOfEclipsePhaseEndOperation, isKnownBookOfEclipsePhaseEndEffect } from "#lua/snapshot-book-of-eclipse.js";
 import { isKnownUnleashYourPowerDelayedSetEffect, isKnownYellowAlertDelayedReturnEffect, unleashYourPowerDelayedSetOperation, yellowAlertDelayedReturnOperation } from "#lua/snapshot-delayed-operations.js";
 import { isKnownSwordsOfRevealingLightPhaseEndEffect, isKnownSwordsOfRevealingLightResetEffect, swordsOfRevealingLightPhaseEndCanActivate, swordsOfRevealingLightPhaseEndOperation, swordsOfRevealingLightRestoredReset } from "#lua/snapshot-swords-of-revealing-light.js";
-import { isKnownPlayerDamageZeroEffect, isKnownTemporaryActivationLockEffect, isKnownTemporaryBattleProtectionEffect, isKnownTemporaryCannotAttackEffect, isKnownTemporaryOpponentTurnSkipMain1Effect, isKnownTemporaryPlayerAttackAnnounceLockEffect, isKnownTemporarySelfTurnSkipBattlePhaseEffect, isKnownTemporarySummonSetLockEffect, temporaryOpponentTurnSkipMain1CanActivate, temporarySelfTurnSkipBattlePhaseCanActivate } from "#lua/snapshot-temporary-effects.js";
+import { isKnownPlayerDamageZeroEffect, isKnownTemporaryActivationLockEffect, isKnownTemporaryBattleProtectionEffect, isKnownTemporaryCannotAttackEffect, isKnownTemporaryOpponentTurnSkipMain1Effect, isKnownTemporaryPlayerAttackAnnounceLockEffect, isKnownTemporarySelfTurnCannotEndPhaseEffect, isKnownTemporarySelfTurnSkipBattlePhaseEffect, isKnownTemporarySummonSetLockEffect, temporaryOpponentTurnSkipMain1CanActivate, temporarySelfTurnSkipBattlePhaseCanActivate } from "#lua/snapshot-temporary-effects.js";
 import { assaultZoneExtraDeckReleaseValueCallbacks, assaultZoneReleaseFlagConditionCallbacks, assaultZoneReleaseFlagOperation, isAssaultZoneExtraDeckReleaseRestoreEffect } from "#lua/snapshot-assault-zone.js";
 import { ritualSummonSelectedMaterials, type LuaDuelSummonApiHostState } from "#lua/duel-api/summon.js";
 import { luaTemporaryControlReturnDescriptor, luaTemporaryControlReturnOperation } from "#lua/duel-api/move-control.js";
@@ -454,7 +454,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownBookOfEclipsePhaseEndEffect(effect) ||
         isKnownSwordsOfRevealingLightPhaseEndEffect(effect) ||
         isKnownSwordsOfRevealingLightResetEffect(effect) ||
-        isKnownTemporaryPlayerAttackAnnounceLockEffect(effect) || isKnownTemporaryCannotAttackEffect(effect) || isKnownTemporaryBattleProtectionEffect(effect) || isKnownPlayerDamageZeroEffect(effect) || isKnownTemporarySummonSetLockEffect(effect) || isKnownTemporaryActivationLockEffect(effect) || isKnownTemporarySelfTurnSkipBattlePhaseEffect(effect) || isKnownTemporaryOpponentTurnSkipMain1Effect(effect) ||
+        isKnownTemporaryPlayerAttackAnnounceLockEffect(effect) || isKnownTemporaryCannotAttackEffect(effect) || isKnownTemporaryBattleProtectionEffect(effect) || isKnownPlayerDamageZeroEffect(effect) || isKnownTemporarySummonSetLockEffect(effect) || isKnownTemporaryActivationLockEffect(effect) || isKnownTemporarySelfTurnSkipBattlePhaseEffect(effect) || isKnownTemporaryOpponentTurnSkipMain1Effect(effect) || isKnownTemporarySelfTurnCannotEndPhaseEffect(effect) ||
         isAssaultZoneExtraDeckReleaseRestoreEffect(effect) ||
         isKnownMaharaghiPredrawEffect(effect) ||
         isKnownHinoKaguTsuchiPredrawDiscardEffect(effect) ||

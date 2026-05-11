@@ -1,0 +1,92 @@
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { moveDuelCard } from "#duel/card-state.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
+import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
+import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
+import { createLuaScriptHost } from "#lua/host.js";
+import { getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+
+const upstreamRoot = path.resolve(".upstream/ignis");
+const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
+const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const setValkyrie = 0x122;
+const typeMonster = 0x1;
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mischief of the Time Goddess End Phase lock", () => {
+  it("restores its official temporary EFFECT_CANNOT_EP lock", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const mischiefCode = "92182447";
+    const valkyrieCode = "92182448";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === mischiefCode),
+      { code: valkyrieCode, name: "Mischief Valkyrie Fixture", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000, setcodes: [setValkyrie] },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 921, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [mischiefCode, valkyrieCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const mischief = requireCard(session, mischiefCode);
+    const valkyrie = requireCard(session, valkyrieCode);
+    moveDuelCard(session.state, mischief.uid, "hand", 0);
+    moveDuelCard(session.state, valkyrie.uid, "monsterZone", 0);
+    valkyrie.faceUp = true;
+    valkyrie.position = "faceUpAttack";
+    session.state.phase = "battle";
+    session.state.waitingFor = 0;
+    session.state.attacksDeclared = [valkyrie.uid];
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(mischiefCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const activate = getDuelLegalActions(session, 0).find((action) => "uid" in action && action.uid === mischief.uid);
+    expect(activate, JSON.stringify(getDuelLegalActions(session, 0), null, 2)).toBeDefined();
+    applyActionAndAssert(session, activate!);
+    passChainUntilOpen(session);
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceUid: mischief.uid,
+          code: 187,
+          controller: 0,
+          targetRange: [1, 0],
+          reset: { flags: 0x50000004 },
+        }),
+      ]),
+    );
+    session.state.effects = session.state.effects.filter((effect) => effect.sourceUid === mischief.uid && effect.code === 187);
+    session.state.phase = "main2";
+    session.state.waitingFor = 0;
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const actions = getLuaRestoreLegalActions(restored, 0);
+    expect(actions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(actions).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "changePhase", phase: "end" })]));
+    expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "endTurn" })]));
+  });
+});
+
+function requireCard(session: DuelSession, code: string) {
+  const card = session.state.cards.find((candidate) => candidate.code === code);
+  expect(card).toBeDefined();
+  return card!;
+}
+
+function passChainUntilOpen(session: DuelSession): void {
+  let guard = 0;
+  while (session.state.chain.length > 0) {
+    expect(++guard).toBeLessThan(10);
+    const player = session.state.waitingFor ?? session.state.turnPlayer;
+    applyActionAndAssert(session, getDuelLegalActions(session, player).find((action) => action.type === "passChain"));
+  }
+}
+
+function applyActionAndAssert(session: DuelSession, action: DuelAction | undefined): void {
+  expect(action, JSON.stringify(getDuelLegalActions(session, session.state.waitingFor ?? session.state.turnPlayer), null, 2)).toBeDefined();
+  const result = applyResponse(session, action!);
+  expect(result.ok, result.error).toBe(true);
+}

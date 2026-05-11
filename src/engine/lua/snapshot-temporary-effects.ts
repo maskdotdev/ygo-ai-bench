@@ -4,6 +4,7 @@ const luaEffectFlagPlayerTarget = 0x800;
 const luaLocationMonsterZone = 0x04;
 const luaPhaseEndResetFlags = 0x40000200;
 const luaSelfTurnPhaseEndResetFlags = 0x50000200;
+const luaSelfTurnMain1ResetFlags = 0x50000004;
 const luaOpponentTurnPhaseEndResetFlags = 0x60000200;
 const luaPhaseDamageResetFlags = 0x40000020;
 
@@ -105,6 +106,21 @@ export function isKnownTemporaryOpponentTurnSkipMain1Effect(effect: SerializedDu
 
 export function temporaryOpponentTurnSkipMain1CanActivate(effect: SerializedDuelEffect): DuelEffectDefinition["canActivate"] | undefined {
   return isKnownTemporaryOpponentTurnSkipMain1Effect(effect) && effect.label !== undefined ? (ctx) => ctx.duel.turn !== effect.label : undefined;
+}
+
+export function isKnownTemporarySelfTurnCannotEndPhaseEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 187 &&
+    effect.sourceUid !== undefined &&
+    effect.reset?.flags === luaSelfTurnMain1ResetFlags &&
+    effect.value === undefined &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    hasPlayerTargetFlag(effect) &&
+    targetRangeEquals(effect, 1, 0) &&
+    hasDefaultLuaFieldRange(effect)
+  );
 }
 
 function isKnownTemporaryPlayerBattleDamageAvoidEffect(effect: SerializedDuelEffect): boolean {
