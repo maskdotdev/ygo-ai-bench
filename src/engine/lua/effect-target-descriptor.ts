@@ -28,6 +28,10 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notTypeAttributeExtraType = notTypeAttributeExtraTypeToken ? luaNumberTokenValue(L, index, notTypeAttributeExtraTypeToken) : undefined;
   const notTypeAttributeExtraAttribute = notTypeAttributeExtraAttributeToken ? luaNumberTokenValue(L, index, notTypeAttributeExtraAttributeToken) : undefined;
   if (notTypeAttributeExtraType !== undefined && notTypeAttributeExtraAttribute !== undefined) return `special-summon-limit:not-type-attribute-extra:${notTypeAttributeExtraType}:${notTypeAttributeExtraAttribute}`;
+  const notNamedTypeAttributeExtra = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\(\\s*${card}\\s*:\\s*Is(Fusion|Ritual|Synchro|Xyz|Pendulum|Link)Monster\\s*\\(\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)`));
+  const notNamedTypeAttributeExtraType = notNamedTypeAttributeExtra?.[1] ? namedExtraDeckMonsterTypeValue(notNamedTypeAttributeExtra[1]) : undefined;
+  const notNamedTypeAttributeExtraAttribute = notNamedTypeAttributeExtra?.[2] ? luaNumberTokenValue(L, index, notNamedTypeAttributeExtra[2]) : undefined;
+  if (notNamedTypeAttributeExtraType !== undefined && notNamedTypeAttributeExtraAttribute !== undefined) return `special-summon-limit:not-type-attribute-extra:${notNamedTypeAttributeExtraType}:${notNamedTypeAttributeExtraAttribute}`;
   const notSynchroAttributeExtra = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+\\(\\s*${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsSynchroMonster\\s*\\(\\s*\\)\\s*\\)`));
   const notSynchroAttributeExtraAttribute = notSynchroAttributeExtra?.[1] ? luaNumberTokenValue(L, index, notSynchroAttributeExtra[1]) : undefined;
   if (notSynchroAttributeExtraAttribute !== undefined) return `special-summon-limit:not-type-attribute-extra:${0x2000}:${notSynchroAttributeExtraAttribute}`;
