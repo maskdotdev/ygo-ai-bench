@@ -663,7 +663,7 @@ function requireExtraDeckSummonMaterials(
   if (!materialCodesMatch(materials, requiredMaterials, summonType === "fusion" ? fusionMaterialMatchOptions(state, card) : currentMaterialMatchOptions(state))) throw new Error(`${card.name} ${summonType} materials are not legal`);
   for (const material of materials) {
     if (!allowedLocations.includes(material.location) || !isMonsterLike(state, material)) throw new Error(`${material.name} cannot be used as ${summonType} material`);
-    if (!canUseMaterial(material.uid)) throw new Error(`${material.name} cannot be used as ${summonType} material`);
+    if (!canUseMaterial(material.uid, card.uid)) throw new Error(`${material.name} cannot be used as ${summonType} material`);
   }
   requireSummonZoneAfterMaterials(state, player, materialUids);
   return { card, materials };

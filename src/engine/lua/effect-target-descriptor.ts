@@ -256,8 +256,10 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
     const summonTypeNotValue = summonTypeNotToken ? luaSummonTypeTokenValue(L, index, summonTypeNotToken) : undefined;
     if (summonTypeNotValue !== undefined) return `target:special-summon-type-not:${summonTypeNotValue}`;
   }
-  const notSetcode = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
-  const setcode = notSetcode?.[1] ? luaNumberTokenValue(L, index, notSetcode[1]) : undefined;
+  const notSetcode = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(?:\\{\\s*)?(${numericOrIdentifierListPattern})(?:\\s*\\})?\\s*\\)`));
+  const setcodes = notSetcode?.[1] ? luaNumberListValue(L, index, notSetcode[1]) : undefined;
+  if (setcodes !== undefined && setcodes.length > 1 && setcodes.every((setcode) => Number.isSafeInteger(setcode) && setcode > 0)) return `target:not-setcode-any:${setcodes.join(",")}`;
+  const setcode = setcodes?.[0];
   return setcode !== undefined && Number.isSafeInteger(setcode) && setcode > 0 ? `target:not-setcode:${setcode}` : undefined;
 }
 

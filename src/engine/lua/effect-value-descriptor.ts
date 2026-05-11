@@ -34,6 +34,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (monsterAttributeExceptActivationPredicate) return monsterAttributeExceptActivationPredicate;
   const cannotMaterialSummonTypes = cannotMaterialSummonTypesDescriptor(L, index, snippet);
   if (cannotMaterialSummonTypes) return cannotMaterialSummonTypes;
+  const controllerCannotMaterialSummonTypes = controllerCannotMaterialSummonTypesDescriptor(L, index, snippet, params);
+  if (controllerCannotMaterialSummonTypes) return controllerCannotMaterialSummonTypes;
   const materialTargetPredicate = materialTargetPredicateDescriptor(L, index, snippet, params);
   if (materialTargetPredicate) return materialTargetPredicate;
   const effectParam = params?.[0];
@@ -91,6 +93,23 @@ function cannotMaterialSummonTypesDescriptor(L: unknown, index: number, snippet:
   if (!/\bpairs\s*\(\s*allowed\s*\)/.test(snippet) || !/\breturn\s+false\b/.test(snippet)) return undefined;
   const values = luaNumberArrayUpvalueValue(L, index, "allowed");
   return values !== undefined ? `cannot-material:summon-types:${[...values].sort((a, b) => a - b).join(",")}` : undefined;
+}
+
+function controllerCannotMaterialSummonTypesDescriptor(L: unknown, index: number, snippet: string, params: string[] | undefined): string | undefined {
+  const effectParam = params?.[0];
+  const summonedCardParam = params?.[1];
+  const summonTypeParam = params?.[2];
+  const summonPlayerParam = params?.[3];
+  if (!effectParam || !summonedCardParam || !summonTypeParam || !summonPlayerParam) return undefined;
+  const effect = escapeRegExp(effectParam);
+  const summonedCard = escapeRegExp(summonedCardParam);
+  const summonType = escapeRegExp(summonTypeParam);
+  const summonPlayer = escapeRegExp(summonPlayerParam);
+  if (!new RegExp(`\\blocal\\s+tp\\s*=\\s*${effect}\\s*:\\s*GetHandlerPlayer\\s*\\(\\s*\\)`).test(snippet)) return undefined;
+  if (!new RegExp(`\\breturn\\s+${summonPlayer}\\s*==\\s*tp\\s+and\\s+${summonedCard}\\s*:\\s*IsControler\\s*\\(\\s*tp\\s*\\)`).test(snippet)) return undefined;
+  const cannotFilterCall = snippet.match(new RegExp(`aux\\.cannotmatfilter\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*,\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s*\\(\\s*${effect}\\s*,\\s*${summonedCard}\\s*,\\s*${summonType}\\s*,\\s*${summonPlayer}\\s*\\)`));
+  const values = cannotFilterCall?.[1] ? luaNumberListValue(L, index, cannotFilterCall[1]) : undefined;
+  return values !== undefined && values.length > 0 ? `cannot-material:controller-summon-types:${values.join(",")}` : undefined;
 }
 
 function cannotMaterialSummonTypesUpvalueDescriptor(L: unknown, index: number): string | undefined {
@@ -217,6 +236,11 @@ function luaNumberTokenValue(L: unknown, functionIndex: number, token: string): 
   const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
   lua.lua_pop(L, 1);
   return value ?? luaNumberUpvalueValue(L, functionIndex, token);
+}
+
+function luaNumberListValue(L: unknown, functionIndex: number, token: string): number[] | undefined {
+  const values = token.split(",").map((part) => luaNumberTokenValue(L, functionIndex, part.trim()));
+  return values.length > 0 && values.every((value): value is number => value !== undefined) ? values : undefined;
 }
 
 function luaNumberUpvalueValue(L: unknown, index: number, token: string): number | undefined {
