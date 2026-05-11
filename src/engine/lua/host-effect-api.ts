@@ -162,8 +162,9 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     return 0;
   });
   pushEffectMethod(L, effects, "SetLabel", (state, effect) => {
-    const label = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    effect.label = label;
+    const labels = Array.from({ length: Math.max(0, lua.lua_gettop(state) - 1) }, (_, index) => lua.lua_isnumber(state, index + 2) ? lua.lua_tointeger(state, index + 2) : 0);
+    const label = labels[0] ?? 0; effect.label = label;
+    if (labels.length > 1) effect.labels = labels; else delete effect.labels;
     if (hostState.activeLuaEffectId === effect.id && hostState.activeContext) {
       hostState.activeContext.effectLabel = label;
       if (hostState.activeContext.chainLink) hostState.activeContext.chainLink.effectLabel = label;
@@ -171,8 +172,8 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     return 0;
   });
   pushEffectMethod(L, effects, "GetLabel", (state, effect) => {
-    lua.lua_pushinteger(state, effect.label ?? 0);
-    return 1;
+    const labels = effect.labels ?? [effect.label ?? 0];
+    for (const label of labels) lua.lua_pushinteger(state, label); return labels.length;
   });
   pushEffectMethod(L, effects, "SetLabelObject", (state, effect) => {
     if (effect.labelObjectRef !== undefined) lauxlib.luaL_unref(state, lua.LUA_REGISTRYINDEX, effect.labelObjectRef);
