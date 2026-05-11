@@ -6,6 +6,7 @@ import {
   getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
+  serializeDuel,
   startDuel,
 } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
@@ -13,6 +14,7 @@ import { duelReason } from "#duel/reasons.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua continuous effects", () => {
   it("checks whether cards are immune to Lua effects", () => {
@@ -526,8 +528,7 @@ describe("Lua continuous effects", () => {
     lock!.position = "faceUpAttack";
 
     const host = createLuaScriptHost(session);
-    const result = host.loadScript(
-      `
+    const script = `
       c900={}
       function c900.initial_effect(c)
         local e=Effect.CreateEffect(c)
@@ -542,9 +543,8 @@ describe("Lua continuous effects", () => {
         end)
         c:RegisterEffect(e)
       end
-      `,
-      "synthetic-special-lock.lua",
-    );
+      `;
+    const result = host.loadScript(script, "c900.lua");
     expect(result.ok, result.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 
@@ -563,6 +563,19 @@ describe("Lua continuous effects", () => {
     expect(host.messages).toContain("synthetic opponent open true");
     expect(host.messages).toContain("synthetic bad pos false");
     expect(host.messages).toContain("synthetic lock sumtype 1073742005");
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c900.lua" ? script : undefined }, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredCheck = restored.host.loadScript(
+      `
+      Debug.Message("restored synthetic locked " .. tostring(Duel.IsPlayerCanSpecialSummonMonster(0,123,0,TYPE_MONSTER|TYPE_NORMAL,0,0,1,RACE_WARRIOR,ATTRIBUTE_LIGHT,POS_FACEUP_ATTACK,0)))
+      Debug.Message("restored synthetic custom open " .. tostring(Duel.IsPlayerCanSpecialSummonMonster(0,123,0,TYPE_MONSTER|TYPE_NORMAL,0,0,1,RACE_WARRIOR,ATTRIBUTE_LIGHT,POS_FACEUP_ATTACK,181)))
+      `,
+      "synthetic-special-restored-check.lua",
+    );
+    expect(restoredCheck.ok, restoredCheck.error).toBe(true);
+    expect(restored.host.messages).toContain("restored synthetic locked false");
+    expect(restored.host.messages).toContain("restored synthetic custom open true");
   });
 
   it("lets Lua scripts check whether cards can be special summoned", () => {

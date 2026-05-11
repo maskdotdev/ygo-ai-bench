@@ -20,9 +20,21 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   if (setcodeOrCodeType !== undefined) return setcodeOrCodeType;
   const effectParam = luaFunctionParams(snippet)?.[0];
   if (effectParam && new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsCode\\s*\\(\\s*${escapeRegExp(effectParam)}\\s*:\\s*GetLabel\\s*\\(\\s*\\)\\s*\\)`).test(snippet)) return "target:same-code-label";
+  const summonTypeParam = luaFunctionParams(snippet)?.[3];
+  if (summonTypeParam) {
+    const summonTypeNot = snippet.match(new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*~=\\s*(SUMMON_TYPE_SPECIAL\\s*\\+\\s*${numericOrIdentifierPattern}|${numericOrIdentifierPattern})`));
+    const value = summonTypeNot?.[1] ? luaSummonTypeTokenValue(L, index, summonTypeNot[1]) : undefined;
+    if (value !== undefined) return `target:special-summon-type-not:${value}`;
+  }
   const notSetcode = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const setcode = notSetcode?.[1] ? luaNumberTokenValue(L, index, notSetcode[1]) : undefined;
   return setcode !== undefined && Number.isSafeInteger(setcode) && setcode > 0 ? `target:not-setcode:${setcode}` : undefined;
+}
+
+export function specialSummonTypeNotTargetDescriptor(descriptor: string | undefined): number | undefined {
+  if (!descriptor?.startsWith("target:special-summon-type-not:")) return undefined;
+  const value = Number(descriptor.slice("target:special-summon-type-not:".length));
+  return Number.isSafeInteger(value) && value > 0 ? value : undefined;
 }
 
 function knownFixedFunctionDescriptor(L: unknown, index: number, hostState: LuaHostState): string | undefined {
@@ -61,6 +73,15 @@ function luaNumberTokenValue(L: unknown, functionIndex: number, token: string): 
   const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
   lua.lua_pop(L, 1);
   return value ?? luaNumberUpvalueValue(L, functionIndex, token);
+}
+
+function luaSummonTypeTokenValue(L: unknown, functionIndex: number, token: string): number | undefined {
+  const parts = token.split("+").map((part) => part.trim());
+  if (parts.length === 2 && parts[0] === "SUMMON_TYPE_SPECIAL" && parts[1] !== undefined) {
+    const detail = luaNumberTokenValue(L, functionIndex, parts[1]);
+    return detail === undefined ? undefined : 0x40000000 + detail;
+  }
+  return luaNumberTokenValue(L, functionIndex, token);
 }
 
 function luaNumberUpvalueValue(L: unknown, index: number, token: string): number | undefined {

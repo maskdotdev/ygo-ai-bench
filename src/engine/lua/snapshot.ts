@@ -5,7 +5,7 @@ import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-co
 import { cardTypeFlags, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
 import { applyResponse, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, negateDuelChainLinkObject, queryPublicState } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
-import { luaSummonTypeRitual } from "#duel/summon-type-codes.js";
+import { effectiveSpecialSummonTypeCode, luaSummonTypeRitual } from "#duel/summon-type-codes.js";
 import { resetDuelCardEffects } from "#duel/effect-reset.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { cardFieldId } from "#duel/card-field-id.js";
@@ -18,6 +18,7 @@ import { assaultZoneExtraDeckReleaseValueCallbacks, assaultZoneReleaseFlagCondit
 import { ritualSummonSelectedMaterials, type LuaDuelSummonApiHostState } from "#lua/duel-api/summon.js";
 import { luaTemporaryControlReturnDescriptor, luaTemporaryControlReturnOperation } from "#lua/duel-api/move-control.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
+import { specialSummonTypeNotTargetDescriptor } from "#lua/effect-target-descriptor.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import type { ApplyDuelResponseResult, ChainLimit, ChainLink, DuelAction, DuelCardInstance, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
 
@@ -839,20 +840,16 @@ function luaReasonPredicateMask(descriptor: string | undefined): number | undefi
 }
 
 function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "targetCardPredicate"> {
-  if (effect.luaTargetDescriptor === "special-summon-limit:non-fusion-extra") {
-    return { targetCardPredicate: (_ctx, card) => card.location === "extraDeck" && ((card.data.typeFlags ?? 0) & 0x40) === 0 };
-  }
+  if (effect.luaTargetDescriptor === "special-summon-limit:non-fusion-extra") return { targetCardPredicate: (_ctx, card) => card.location === "extraDeck" && ((card.data.typeFlags ?? 0) & 0x40) === 0 };
   const setcodeOrCodeType = setcodeOrCodeTypeTargetDescriptor(effect.luaTargetDescriptor);
   if (setcodeOrCodeType !== undefined) {
-    return {
-      targetCardPredicate: (ctx, card) =>
-        currentCardMatchesSetcode(card, ctx.duel, setcodeOrCodeType.setcode) ||
-        (currentCardMatchesCode(card, ctx.duel, String(setcodeOrCodeType.code)) && (cardTypeFlags(card, ctx.duel) & setcodeOrCodeType.type) !== 0),
-    };
+    return { targetCardPredicate: (ctx, card) => currentCardMatchesSetcode(card, ctx.duel, setcodeOrCodeType.setcode) || (currentCardMatchesCode(card, ctx.duel, String(setcodeOrCodeType.code)) && (cardTypeFlags(card, ctx.duel) & setcodeOrCodeType.type) !== 0) };
   }
   const notSetcode = notSetcodeTargetDescriptor(effect.luaTargetDescriptor);
   if (notSetcode !== undefined) return { targetCardPredicate: (_ctx, card) => !cardSetcodes(card).some((setcode) => isSetcodeMatch(notSetcode, setcode)) };
   if (effect.luaTargetDescriptor === "target:same-code-label") return { targetCardPredicate: (ctx, card) => effect.label !== undefined && currentCardMatchesCode(card, ctx.duel, String(effect.label)) };
+  const summonTypeNot = specialSummonTypeNotTargetDescriptor(effect.luaTargetDescriptor);
+  if (summonTypeNot !== undefined) return { targetCardPredicate: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) !== summonTypeNot };
   const type = typeTargetDescriptor(effect.luaTargetDescriptor);
   if (type !== undefined) return { targetCardPredicate: (ctx, card) => (cardTypeFlags(card, ctx.duel) & type) !== 0 && (!effect.luaTargetDescriptor?.startsWith(luaFaceupTypeTargetDescriptorPrefix) || card.faceUp) };
   return {};
