@@ -2,7 +2,8 @@ import fengari from "fengari";
 import { luaFunctionParams, luaFunctionSourceSnippet } from "#lua/effect-descriptor-source.js";
 import type { LuaHostState } from "#lua/host-types.js";
 
-const { lua, to_luastring } = fengari;
+const { lua, to_jsstring, to_luastring } = fengari;
+const numericOrIdentifierPattern = String.raw`(?:0x[0-9A-Fa-f]+|\d+|[A-Za-z_]\w*)`;
 
 export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostState: LuaHostState): string | undefined {
   if (isNamedTableFunction(L, index, "aux", "tgoval")) return "cannot-be-effect-target:opponent";
@@ -21,6 +22,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (nonSpiritMonsterActivationPredicate) return nonSpiritMonsterActivationPredicate;
   const spellTrapActivationPredicate = spellTrapActivationPredicateDescriptor(snippet, params);
   if (spellTrapActivationPredicate) return spellTrapActivationPredicate;
+  const monsterAttributeExceptActivationPredicate = monsterAttributeExceptActivationPredicateDescriptor(L, index, snippet, params);
+  if (monsterAttributeExceptActivationPredicate) return monsterAttributeExceptActivationPredicate;
   const effectParam = params?.[0];
   const reasonPlayerParam = params?.[2];
   if (effectParam && reasonPlayerParam) {
@@ -95,6 +98,37 @@ function spellTrapActivationPredicateDescriptor(snippet: string, params: string[
   const relatedEffect = escapeRegExp(relatedEffectParam);
   const predicate = new RegExp(`\\breturn\\s+${relatedEffect}\\s*:\\s*IsSpellTrapEffect\\s*\\(\\s*\\)\\s*(?:end\\b|$)`);
   return predicate.test(snippet) ? "cannot-activate:spell-trap-effect" : undefined;
+}
+
+function monsterAttributeExceptActivationPredicateDescriptor(L: unknown, index: number, snippet: string, params: string[] | undefined): string | undefined {
+  const relatedEffectParam = params?.[1];
+  if (!relatedEffectParam) return undefined;
+  const relatedEffect = escapeRegExp(relatedEffectParam);
+  const match = snippet.match(new RegExp(`\\breturn\\s+${relatedEffect}\\s*:\\s*IsMonsterEffect\\s*\\(\\s*\\)\\s+and\\s+${relatedEffect}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsAttributeExcept\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
+  const attribute = match?.[1] ? luaNumberTokenValue(L, index, match[1]) : undefined;
+  return attribute !== undefined ? `cannot-activate:monster-attribute-except:${attribute}` : undefined;
+}
+
+function luaNumberTokenValue(L: unknown, functionIndex: number, token: string): number | undefined {
+  if (/^0x[0-9A-Fa-f]+$/.test(token)) return Number.parseInt(token.slice(2), 16);
+  if (/^\d+$/.test(token)) return Number(token);
+  if (!/^[A-Za-z_]\w*$/.test(token)) return undefined;
+  lua.lua_getglobal(L, to_luastring(token));
+  const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
+  lua.lua_pop(L, 1);
+  return value ?? luaNumberUpvalueValue(L, functionIndex, token);
+}
+
+function luaNumberUpvalueValue(L: unknown, index: number, token: string): number | undefined {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  for (let upvalueIndex = 1;; upvalueIndex += 1) {
+    const nameBytes = lua.lua_getupvalue(L, absoluteIndex, upvalueIndex);
+    if (nameBytes === null) return undefined;
+    const name = typeof nameBytes === "string" ? nameBytes : to_jsstring(nameBytes);
+    const value = name === token && lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
+    lua.lua_pop(L, 1);
+    if (value !== undefined) return value;
+  }
 }
 
 function reasonMaskPredicateDescriptor(snippet: string, params: string[] | undefined): string | undefined {
