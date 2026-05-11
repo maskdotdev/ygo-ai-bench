@@ -1,4 +1,5 @@
 import { findCard } from "#duel/card-state.js";
+import { spentMonsterOnlyAttackTargetAllowed } from "#duel/continuous-attack-effects.js";
 import {
   attackActions,
   canEffectChangeDuelCardPosition as canEffectChangeDuelCardPositionRule,
@@ -270,7 +271,7 @@ function canSelectBattleTarget(state: DuelState, player: PlayerId, card: DuelCar
 }
 
 function canAttackMonsterTarget(state: DuelState, attacker: DuelCardInstance, target: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
-  return mustAttackMonsterTargetAllowed(state, attacker, target, createContext);
+  return mustAttackMonsterTargetAllowed(state, attacker, target, createContext) && spentMonsterOnlyAttackTargetAllowed(state, attacker, target, createContext);
 }
 
 function isOnlyAttackTargetAllowed(onlyTargets: Set<string>, target: DuelCardInstance): boolean {
