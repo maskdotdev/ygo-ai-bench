@@ -50,6 +50,8 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const sourceReasonMask = snippet.match(new RegExp(`\\b\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetReason\\s*\\(\\s*\\)\\s*&\\s*\\(?\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)?\\s*(?:\\)\\s*)?(?:~=\\s*0|>\\s*0)`));
   const sourceReasonMaskValue = sourceReasonMask?.[1] ? luaNumberExpressionValue(L, index, sourceReasonMask[1]) : undefined;
   if (sourceReasonMaskValue !== undefined) return `condition:source-reason:${sourceReasonMaskValue}`;
+  if (/\b\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*(?:GetReasonPlayer\s*\(\s*\)\s*~=\s*tp|GetReasonPlayer\s*\(\s*\)\s*==\s*1\s*-\s*tp|IsReasonPlayer\s*\(\s*1\s*-\s*tp\s*\))/.test(snippet)) return "condition:source-reason-player:opponent";
+  if (/\b\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*(?:GetReasonPlayer\s*\(\s*\)\s*==\s*tp|IsReasonPlayer\s*\(\s*tp\s*\))/.test(snippet)) return "condition:source-reason-player:self";
   const sourceOverlayCount = snippet.match(/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetOverlayCount\s*\(\s*\)\s*(==|~=|>|>=)\s*0\s*(?:end\b|$)/);
   if (sourceOverlayCount?.[1]) return sourceOverlayCount[1] === "==" ? "condition:source-overlay-count-zero" : "condition:source-overlay-count-positive";
   const params = luaFunctionParams(snippet);
