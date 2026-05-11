@@ -222,6 +222,8 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (cardTableField) return cardTableField;
   const handlerOnlyUid = literalCapturedHandlerOnlyCardUid(L, index, hostState);
   if (handlerOnlyUid) return `closure:card-handler:${handlerOnlyUid}`;
+  const responsePlayerHandlerExclusionUid = literalCapturedHandlerExclusionResponsePlayerCardUid(L, index, hostState);
+  if (responsePlayerHandlerExclusionUid) return `closure:card-not-handler-response-player:${responsePlayerHandlerExclusionUid}`;
   const handlerExclusionUids = literalCapturedHandlerExclusionCardUids(L, index, hostState);
   if (handlerExclusionUids?.length === 1) return `closure:card-not-handler:${handlerExclusionUids[0]}`;
   if (handlerExclusionUids && handlerExclusionUids.length > 1) return `closure:cards-not-handler:${handlerExclusionUids.map(encodeURIComponent).join(",")}`;
@@ -293,6 +295,26 @@ function matchingTableFunctionField(L: unknown, tableIndex: number, functionInde
     }
   }
   return undefined;
+}
+
+function literalCapturedHandlerExclusionResponsePlayerCardUid(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string | undefined {
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return undefined;
+  const params = luaFunctionParams(snippet);
+  const [effectParam, responsePlayerParam, chainPlayerParam] = params ?? [];
+  const returnExpression = lastReturnExpression(snippet);
+  if (!effectParam || !responsePlayerParam || !chainPlayerParam || !returnExpression) return undefined;
+  const terms = returnExpression.split(/\s+or\s+/).map((term) => trimOuterParens(term.trim())).filter(Boolean);
+  if (terms.length !== 2) return undefined;
+  const equality = terms.find((term) => responseMatchesChainPlayerTerm(term, responsePlayerParam, chainPlayerParam));
+  const exclusion = terms.find((term) => term !== equality);
+  if (!equality || !exclusion) return undefined;
+  const upvalues = capturedCardOrNilUpvalues(L, index);
+  if (!upvalues || upvalues.size !== 1) return undefined;
+  const handlerExpression = `${escapeRegExp(effectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`;
+  const capturedName = exclusion.match(new RegExp(`^(?:${handlerExpression})\\s*~=\\s*([A-Za-z_]\\w*)$`))?.[1]
+    ?? exclusion.match(new RegExp(`^([A-Za-z_]\\w*)\\s*~=\\s*(?:${handlerExpression})$`))?.[1];
+  return capturedName ? upvalues.get(capturedName) : undefined;
 }
 
 function literalCapturedHandlerExclusionCardUids(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string[] | undefined {
