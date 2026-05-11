@@ -21,7 +21,7 @@ export interface DuelMaterialMoveResult {
 }
 export type DuelMaterialMover = (uid: string, controller: PlayerId, reason: number) => DuelMaterialMoveResult;
 export type DuelOverlayMaterialMover = (uid: string, controller: PlayerId, reason: number) => DuelCardInstance;
-export type DuelMaterialPredicate = (uid: string) => boolean;
+export type DuelMaterialPredicate = (uid: string, targetUid?: string) => boolean;
 export type DuelNormalSummonPredicate = (card: DuelCardInstance) => boolean;
 type ExtraDeckSummonType = "fusion" | "synchro" | "Xyz" | "Link";
 type SynchroMaterialCodes = { tuner: string; nonTuners: string[] };
@@ -458,11 +458,12 @@ export function fusionSummonActions(state: DuelState, player: PlayerId, canUseMa
 }
 
 export function synchroSummonActions(state: DuelState, player: PlayerId, canUseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
-  const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(state, card) && canUseMaterial(card.uid));
+  const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(state, card));
   const actions: DuelAction[] = [];
   for (const card of getCards(state, player, "extraDeck")) {
     if (!isMonsterLike(state, card)) continue;
     for (const materialUids of findSynchroMaterialUidSets(state, materialPool, card)) {
+      if (materialUids.some((materialUid) => !canUseMaterial(materialUid, card.uid))) continue;
       if (!hasSummonZoneAfterMaterials(state, player, materialUids)) continue;
       const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
       actions.push({ type: "synchroSummon", player, uid: card.uid, materialUids, label: `Synchro Summon ${card.name} using ${materialNames}` });
@@ -669,7 +670,7 @@ function requireSynchroSummonMaterials(state: DuelState, player: PlayerId, uid: 
   }
   for (const material of materials) {
     if (material.location !== "monsterZone" || !isMonsterLike(state, material)) throw new Error(`${material.name} cannot be used as synchro material`);
-    if (!canUseMaterial(material.uid)) throw new Error(`${material.name} cannot be used as synchro material`);
+    if (!canUseMaterial(material.uid, card.uid)) throw new Error(`${material.name} cannot be used as synchro material`);
   }
   requireSummonZoneAfterMaterials(state, player, materialUids);
   return { card, materials };

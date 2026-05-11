@@ -606,7 +606,7 @@ function createOverlayMaterialMover(state: DuelState): DuelOverlayMaterialMover 
 }
 
 function createMaterialUsePredicate(state: DuelState, kind: "fusion" | "synchro" | "xyz" | "link" | "ritual"): DuelMaterialPredicate {
-  return (uid) => !isMaterialUsePrevented(state, uid, kind, createContinuousEffectContext(state));
+  return (uid, targetUid) => !isMaterialUsePrevented(state, uid, kind, createContinuousEffectContext(state), targetUid);
 }
 
 function createReleasePredicate(state: DuelState, reason: number): DuelMaterialPredicate {

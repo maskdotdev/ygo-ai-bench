@@ -831,14 +831,15 @@ export function isMoveToLocationPrevented(state: DuelState, uid: string, to: Due
   return false;
 }
 
-export function isMaterialUsePrevented(state: DuelState, uid: string, kind: MaterialUseKind, createContext: ContinuousEffectContextFactory): boolean {
+export function isMaterialUsePrevented(state: DuelState, uid: string, kind: MaterialUseKind, createContext: ContinuousEffectContextFactory, targetUid?: string): boolean {
   const card = findCard(state, uid);
   if (!card) return false;
+  const target = targetUid ? findCard(state, targetUid) : undefined;
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || !isCannotMaterialCodeForKind(effect.code, kind)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    const ctx = createContext(effect, source, card);
+    const ctx = Object.assign(createContext(effect, source, card), target ? { eventCard: target } : {});
     if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }

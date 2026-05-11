@@ -30,6 +30,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (sameCodeActivationPredicate) return sameCodeActivationPredicate;
   const monsterAttributeExceptActivationPredicate = monsterAttributeExceptActivationPredicateDescriptor(L, index, snippet, params);
   if (monsterAttributeExceptActivationPredicate) return monsterAttributeExceptActivationPredicate;
+  const materialTargetPredicate = materialTargetPredicateDescriptor(L, index, snippet, params);
+  if (materialTargetPredicate) return materialTargetPredicate;
   const effectParam = params?.[0];
   const reasonPlayerParam = params?.[2];
   if (effectParam && reasonPlayerParam) {
@@ -63,6 +65,15 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
     `\\breturn\\s+${relatedEffect}\\s+and\\s+not\\s+${relatedEffect}\\s*:\\s*IsHasType\\s*\\(\\s*${continuousType}\\s*\\)\\s+and\\s+${reasonPlayer}\\s*==\\s*1\\s*-\\s*${effect}\\s*:\\s*GetOwnerPlayer\\s*\\(\\s*\\)`,
   );
   return reflectOpponentNonContinuous.test(snippet) ? "reflect-damage:opponent-non-continuous" : undefined;
+}
+
+function materialTargetPredicateDescriptor(L: unknown, index: number, snippet: string, params: string[] | undefined): string | undefined {
+  const cardParam = params?.[1];
+  if (!cardParam) return undefined;
+  const card = escapeRegExp(cardParam);
+  const notSetcode = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
+  const setcode = notSetcode?.[1] ? luaNumberTokenValue(L, index, notSetcode[1]) : undefined;
+  return setcode !== undefined ? `cannot-material:target-not-setcode:${setcode}` : undefined;
 }
 
 function valueCardPredicateDescriptor(snippet: string, params: string[] | undefined): string | undefined {
