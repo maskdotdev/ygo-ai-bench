@@ -120,6 +120,7 @@ export function tributeSummonDuelCard(
   moveMaterial: DuelMaterialMover = defaultMaterialMover(state),
   canReleaseMaterial: DuelMaterialPredicate = () => true,
   canUseNormalSummonCount: DuelNormalSummonPredicate = (card) => hasNormalSummonCountAvailable(state, player, card),
+  summonTypeCode?: number,
 ): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
@@ -132,6 +133,8 @@ export function tributeSummonDuelCard(
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "tribute";
+  if (summonTypeCode !== undefined) card.summonTypeCode = summonTypeCode;
+  else delete card.summonTypeCode;
   card.summonPlayer = player;
   card.summonPhase = state.phase;
   card.summonMaterialUids = uniqueTributes;

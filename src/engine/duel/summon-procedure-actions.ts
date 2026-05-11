@@ -1,7 +1,7 @@
 import { findCard } from "#duel/card-state.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
 import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
-import { summonProcedureTypeCodeFromValue } from "#duel/summon-type-codes.js";
+import { luaSummonTypeTribute, summonProcedureTypeCodeFromValue } from "#duel/summon-type-codes.js";
 import type { DuelAction, DuelCardInstance, DuelEffectDefinition, DuelState, PlayerId } from "#duel/types.js";
 
 const luaEffectLimitSummonProc = 33;
@@ -38,6 +38,11 @@ export function specialSummonProcedureActions(state: DuelState, player: PlayerId
 
 export function hasLuaLimitNormalSummonProcedure(state: DuelState, player: PlayerId, card: DuelCardInstance): boolean {
   return !hasNormalTributeMetadata(card) && state.effects.some((effect) => effect.controller === player && effect.sourceUid === card.uid && effect.code === luaEffectLimitSummonProc && effect.range.includes(card.location));
+}
+
+export function luaLimitNormalSummonProcedureValue(state: DuelState, player: PlayerId, sourceUid: string): number | undefined {
+  const value = state.effects.find((effect) => effect.controller === player && effect.sourceUid === sourceUid && effect.code === luaEffectLimitSummonProc && effect.value !== undefined)?.value;
+  return value !== undefined && (value & luaSummonTypeTribute) === luaSummonTypeTribute ? value : undefined;
 }
 
 function hasNormalTributeMetadata(card: DuelCardInstance): boolean {

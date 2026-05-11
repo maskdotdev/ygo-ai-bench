@@ -144,7 +144,7 @@ import { runScriptedDuelResponses as runScriptedDuelResponsesWithHandlers } from
 import { setSpellTrap } from "#duel/spell-trap.js";
 import { canActivateSpellTrapCardEffect, shouldSendActivatedSpellTrapToGraveyard } from "#duel/spell-trap-activation.js";
 import { negateCoreDuelSummon } from "#duel/summon-negation.js";
-import { hasLuaLimitNormalSummonProcedure, normalSummonProcedureActions, specialSummonProcedureActions } from "#duel/summon-procedure-actions.js";
+import { hasLuaLimitNormalSummonProcedure, luaLimitNormalSummonProcedureValue, normalSummonProcedureActions, specialSummonProcedureActions } from "#duel/summon-procedure-actions.js";
 import { duelSummonTypeFromCode, isFaceDownExtraDeckSummonTypeCode, luaSummonTypeFusion, luaSummonTypeLink, luaSummonTypePendulum, luaSummonTypeRitual, luaSummonTypeSynchro, luaSummonTypeXyz } from "#duel/summon-type-codes.js";
 import { changeDuelPhase, drawDuelCardsFromDeck, endDuelTurn, isDuelPhaseSkipped, nextAvailableDuelPhase } from "#duel/turn-flow.js";
 export { createDuel, loadDecks, startDuel, type CreateDuelOptions } from "#duel/setup.js";
@@ -517,15 +517,9 @@ export function getDuelAttackCostPaid(state: DuelState): number {
 export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[]): void {
   const card = findCard(state, uid);
   if (card && isNormalSummonPrevented(state, player, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Tribute Summoned`);
-  tributeSummonDuelCardWithEvents(
-    state,
-    player,
-    uid,
-    tributeUids,
-    (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
-    createMaterialMover(state),
-    createReleasePredicate(state, duelReason.release | duelReason.summon),
-  );
+  const summonTypeCode = card ? luaLimitNormalSummonProcedureValue(state, player, card.uid) : undefined;
+  tributeSummonDuelCardWithEvents(state, player, uid, tributeUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
+    createMaterialMover(state), createReleasePredicate(state, duelReason.release | duelReason.summon), undefined, summonTypeCode);
 }
 
 export function tributeSetDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[]): void {
