@@ -25,6 +25,9 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsDefensePos\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-defense-position";
   const sourceSummonType = snippet.match(/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*Is(Ritual|Fusion|Synchro|Xyz|Pendulum|Link)Summoned\s*\(\s*\)\s*(?:end\b|$)/);
   if (sourceSummonType?.[1]) return `condition:source-summon-type:${summonTypeConditionValues[sourceSummonType[1]]}`;
+  const sourceSummonLocation = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsSummonLocation\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
+  const sourceSummonLocationValue = sourceSummonLocation?.[1] ? luaNumberExpressionValue(L, index, sourceSummonLocation[1]) : undefined;
+  if (sourceSummonLocationValue !== undefined) return `condition:source-summon-location:${sourceSummonLocationValue}`;
   const params = luaFunctionParams(snippet);
   if (params && params.length > 0) return undefined;
   const identifier = String.raw`[A-Za-z_]\w*`;
@@ -40,6 +43,18 @@ function luaNumberTokenValue(L: unknown, functionIndex: number, token: string): 
   const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
   lua.lua_pop(L, 1);
   return value ?? luaNumberUpvalueValue(L, functionIndex, token);
+}
+
+function luaNumberExpressionValue(L: unknown, functionIndex: number, token: string): number | undefined {
+  const parts = token.split(/[|+]/).map((part) => part.trim()).filter(Boolean);
+  if (parts.length === 0) return undefined;
+  let value = 0;
+  for (const part of parts) {
+    const partValue = luaNumberTokenValue(L, functionIndex, part);
+    if (partValue === undefined) return undefined;
+    value |= partValue;
+  }
+  return value;
 }
 
 function luaNumberUpvalueValue(L: unknown, index: number, token: string): number | undefined {

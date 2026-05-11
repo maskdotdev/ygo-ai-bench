@@ -18,6 +18,7 @@ import { ritualSummonSelectedMaterials, type LuaDuelSummonApiHostState } from "#
 import { luaTemporaryControlReturnDescriptor, luaTemporaryControlReturnOperation } from "#lua/duel-api/move-control.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
 import { specialSummonTypeIsCostDescriptor, specialSummonTypeNotCostDescriptor } from "#lua/effect-cost-descriptor.js";
+import { locationMatchesCardMask } from "#lua/api-utils.js";
 import { notSetcodeTargetDescriptor, restoredLuaTargetCallbacks, setcodeOrCodeTypeTargetDescriptor, typeTargetDescriptor } from "#lua/snapshot-target-callbacks.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import type { ApplyDuelResponseResult, ChainLimit, ChainLink, DuelAction, DuelCardInstance, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
@@ -867,9 +868,9 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   if (effect.luaConditionDescriptor?.startsWith("condition:equipped-target-type:")) return { canActivate: (ctx) => { const type = Number(effect.luaConditionDescriptor?.split(":").pop()); const equippedTarget = ctx.duel.cards.find((card) => card.uid === ctx.source.equippedToUid); return Boolean(equippedTarget && (cardTypeFlags(equippedTarget, ctx.duel) & type) !== 0); } };
   if (effect.luaConditionDescriptor?.startsWith("condition:equipped-target-race:")) return { canActivate: (ctx) => { const race = Number(effect.luaConditionDescriptor?.split(":").pop()); const equippedTarget = ctx.duel.cards.find((card) => card.uid === ctx.source.equippedToUid); return Boolean(equippedTarget && (currentRace(equippedTarget, ctx.duel) & race) !== 0); } };
   if (effect.luaConditionDescriptor?.startsWith("condition:source-summon-type:")) return { canActivate: (ctx) => isSummonTypeMaskMatch(summonTypeMaskFromCard(ctx.source), Number(effect.luaConditionDescriptor?.split(":").pop())) };
+  if (effect.luaConditionDescriptor?.startsWith("condition:source-summon-location:")) return { canActivate: (ctx) => Boolean(ctx.source.summonType && locationMatchesCardMask(ctx.source, Number(effect.luaConditionDescriptor?.split(":").pop()), ctx.source.previousLocation, ctx.source.previousSequence)) };
   return {};
 }
-
 function restoredLuaCostCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "cost"> { const summonTypeNot = specialSummonTypeNotCostDescriptor(effect.luaCostDescriptor); const summonTypeIs = specialSummonTypeIsCostDescriptor(effect.luaCostDescriptor); if (summonTypeNot !== undefined) return { cost: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) !== summonTypeNot }; return summonTypeIs === undefined ? {} : { cost: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === summonTypeIs }; }
 function topDeckCards(state: DuelSession["state"], player: PlayerId): DuelCardDefinitionLike[] { return state.cards.filter((card) => card.controller === player && card.location === "deck").sort((a, b) => a.sequence - b.sequence); }
 type DuelCardDefinitionLike = DuelSession["state"]["cards"][number];
@@ -984,7 +985,6 @@ function restoreKnownLuaChainLimits(session: DuelSession, host: LuaScriptHost, k
     return { ...metadata, allows: () => false };
   });
 }
-
 function luaRestoreIncompleteReasons(loadedScripts: LuaScriptLoadResult[], missingRegistryKeys: string[], missingChainLimitRegistryKeys: string[]): string[] {
   return [
     ...loadedScripts.filter((result) => !result.ok).map((result) => `script ${result.name}: ${result.error}`),
