@@ -14,7 +14,7 @@ const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fusion Draft Extra Fusion lock", () => {
-  it("restores its IsFusionMonster-based Extra Deck-only Fusion special summon lock", () => {
+  it("restores its named Fusion Extra Deck special summon lock", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const draftCode = "55158350";
     const discardCode = "900000355";
@@ -62,6 +62,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
       "fusion-draft-official-activate.lua",
     );
     expect(resolve.ok, resolve.error).toBe(true);
+    expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      luaTargetDescriptor: "special-summon-limit:non-fusion-extra",
+    });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
