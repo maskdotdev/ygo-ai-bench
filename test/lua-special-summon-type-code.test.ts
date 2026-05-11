@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createDuel, loadDecks, startDuel } from "#duel/core.js";
+import { createDuel, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { luaSummonTypeSpecial } from "#duel/summon-type-codes.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua Special Summon type codes", () => {
   it("normalizes SUMMON_WITH_* reasons into special summon type masks", () => {
@@ -103,9 +104,27 @@ describe("Lua Special Summon type codes", () => {
     );
     expect(result.ok, result.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual([expect.objectContaining({ code: 92, event: "continuous", range: ["hand"], cost: expect.any(Function) })]);
+    expect(session.state.effects).toEqual([expect.objectContaining({ code: 92, event: "continuous", range: ["hand"], luaCostDescriptor: `cost:special-summon-type-not:${luaSummonTypeSpecial + 182}`, cost: expect.any(Function) })]);
     const target = session.state.cards.find((card) => card.code === "400");
     expect(session.state.effects[0]!.sourceUid).toBe(target!.uid);
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c400.lua" ? `
+      c400={}
+      function c400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_SPSUMMON_COST)
+        e:SetCost(function(e,c,tp,sumtype)return sumtype~=SUMMON_TYPE_SPECIAL+182 end)
+        c:RegisterEffect(e)
+      end
+      ` : undefined }, createCardReader(cards));
+    expect(restored.session.state.effects).toEqual([expect.objectContaining({ code: 92, luaCostDescriptor: `cost:special-summon-type-not:${luaSummonTypeSpecial + 182}`, cost: expect.any(Function) })]);
+    expect(restored.host.loadScript(`
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("restored cost custom blocked " .. tostring(target:IsCanBeSpecialSummoned(nil,182,0,false,false,POS_FACEUP_ATTACK)))
+      Debug.Message("restored cost custom open " .. tostring(target:IsCanBeSpecialSummoned(nil,181,0,false,false,POS_FACEUP_ATTACK)))
+      `, "restored-special-summon-cost-check.lua").ok).toBe(true);
+    expect(restored.host.messages).toContain("restored cost custom blocked false");
+    expect(restored.host.messages).toContain("restored cost custom open true");
 
     const check = host.loadScript(
       `

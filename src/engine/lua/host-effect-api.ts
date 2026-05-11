@@ -6,6 +6,7 @@ import { locationsFromMask, readCardUid, readGroupUids, readTableNumberField } f
 import { pushCardTable } from "#lua/card-api.js";
 import { callLuaEffectBattleDamageValue, callLuaEffectLifePointValue, callLuaEffectStatValue, callLuaEffectValueCardPredicate, callLuaEffectValuePredicate } from "#lua/effect-value-callbacks.js";
 import { knownLuaEffectConditionDescriptor } from "#lua/effect-condition-descriptor.js";
+import { knownLuaEffectCostDescriptor } from "#lua/effect-cost-descriptor.js";
 import { knownLuaEffectTargetDescriptor } from "#lua/effect-target-descriptor.js";
 import { knownLuaEffectValueDescriptor } from "#lua/effect-value-descriptor.js";
 import { locationMaskFromLocation, locationMaskFromLocations } from "#lua/effect-location-mask.js";
@@ -488,9 +489,9 @@ function activeTypeFlags(card: DuelCardInstance | undefined, session: DuelSessio
 function setEffectFunctionField(field: "conditionRef" | "costRef" | "targetRef", hostState: LuaHostState) {
   return (state: unknown, effect: LuaEffectRecord): number => {
     if (!lua.lua_isfunction(state, 2)) return 0;
-    const conditionDescriptor = field === "conditionRef" ? knownLuaEffectConditionDescriptor(state, 2, hostState) : undefined;
-    if (field === "conditionRef" && conditionDescriptor === undefined) delete effect.conditionDescriptor;
+    const conditionDescriptor = field === "conditionRef" ? knownLuaEffectConditionDescriptor(state, 2, hostState) : undefined; if (field === "conditionRef" && conditionDescriptor === undefined) delete effect.conditionDescriptor;
     else if (conditionDescriptor !== undefined) effect.conditionDescriptor = conditionDescriptor;
+    if (field === "costRef") { const descriptor = knownLuaEffectCostDescriptor(state, 2, hostState); if (descriptor === undefined) delete effect.costDescriptor; else effect.costDescriptor = descriptor; }
     if (field === "targetRef") {
       const descriptor = knownLuaEffectTargetDescriptor(state, 2, hostState);
       if (descriptor === undefined) delete effect.targetDescriptor;
@@ -527,6 +528,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.code === undefined ? {} : { code: luaEffect.code }),
     ...(luaEffect.value === undefined ? {} : { value: luaEffect.value }),
     ...(luaEffect.conditionDescriptor === undefined ? {} : { luaConditionDescriptor: luaEffect.conditionDescriptor }),
+    ...(luaEffect.costDescriptor === undefined ? {} : { luaCostDescriptor: luaEffect.costDescriptor }),
     ...(luaEffect.valueDescriptor === undefined ? {} : { luaValueDescriptor: luaEffect.valueDescriptor }),
     ...(luaEffect.targetDescriptor === undefined ? {} : { luaTargetDescriptor: luaEffect.targetDescriptor }),
     ...(triggerEvent === undefined ? {} : { triggerEvent }),
