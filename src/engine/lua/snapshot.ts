@@ -43,6 +43,7 @@ const luaCannotActivateSpecialSummonedMonsterDescriptor = "cannot-activate:speci
 const luaCannotActivateNonSpiritMonsterDescriptor = "cannot-activate:non-spirit-monster-effect";
 const luaSourceControllerConditionDescriptor = "condition:source-controller";
 const luaNotDrawPhaseConditionDescriptor = "condition:not-draw-phase";
+const luaSourceEquippedConditionDescriptor = "condition:source-equipped";
 const luaRareMetalmorphCode = "12503902";
 const luaMaharaghiCode = "40695128";
 const luaHinoKaguTsuchiCode = "75745607";
@@ -862,6 +863,7 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   if (assaultZoneConditionCallbacks.canActivate) return assaultZoneConditionCallbacks;
   if (effect.luaConditionDescriptor === luaSourceControllerConditionDescriptor) return { canActivate: (ctx) => ctx.source.controller === effect.controller };
   if (effect.luaConditionDescriptor === luaNotDrawPhaseConditionDescriptor) return { canActivate: (ctx) => ctx.duel.phase !== "draw" };
+  if (effect.luaConditionDescriptor === luaSourceEquippedConditionDescriptor) return { canActivate: (ctx) => ctx.source.equippedToUid !== undefined };
   return {};
 }
 
