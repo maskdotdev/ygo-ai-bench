@@ -13,6 +13,7 @@ const luaFaceupTypeTargetDescriptorPrefix = "target:faceup-type:";
 
 export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "targetCardPredicate"> {
   const statusSummonLocation = statusSummonLocationDescriptor(effect.luaTargetDescriptor); if (statusSummonLocation) return { targetCardPredicate: (_ctx, card) => (targetCardStatusMask(card) & statusSummonLocation.status) !== 0 && Boolean(card.summonType && locationMatchesCardMask(card, statusSummonLocation.location, card.previousLocation, card.previousSequence)) };
+  const status = statusDescriptor(effect.luaTargetDescriptor); if (status !== undefined) return { targetCardPredicate: (_ctx, card) => (targetCardStatusMask(card) & status) !== 0 };
   const notRaceDeckOrExtra = effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-race-deck-or-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-race-deck-or-extra:".length)) : undefined;
   if (notRaceDeckOrExtra !== undefined && Number.isSafeInteger(notRaceDeckOrExtra) && notRaceDeckOrExtra > 0) return { targetCardPredicate: (ctx, card) => (card.location === "deck" || card.location === "extraDeck") && (currentRace(card, ctx.duel) & notRaceDeckOrExtra) === 0 };
   if (effect.luaTargetDescriptor === "special-summon-limit:deck-or-extra") return { targetCardPredicate: (_ctx, card) => card.location === "deck" || card.location === "extraDeck" };
@@ -124,6 +125,12 @@ function statusSummonLocationDescriptor(descriptor: string | undefined): { statu
   if (!descriptor?.startsWith("target:status-summon-location:")) return undefined;
   const [status, location] = descriptor.slice("target:status-summon-location:".length).split(":").map(Number);
   return status !== undefined && location !== undefined && [status, location].every((value) => Number.isSafeInteger(value) && value > 0) ? { status, location } : undefined;
+}
+
+function statusDescriptor(descriptor: string | undefined): number | undefined {
+  if (!descriptor?.startsWith("target:status:")) return undefined;
+  const status = Number(descriptor.slice("target:status:".length));
+  return Number.isSafeInteger(status) && status > 0 ? status : undefined;
 }
 
 function xyzSummonNotRelatedSetcodeDescriptor(descriptor: string | undefined): number | undefined {
