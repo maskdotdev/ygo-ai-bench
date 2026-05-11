@@ -865,13 +865,13 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   if (effect.luaConditionDescriptor === "condition:source-faceup") return { canActivate: (ctx) => ctx.source.faceUp === true };
   if (effect.luaConditionDescriptor === "condition:source-attack-position") return { canActivate: (ctx) => ctx.source.position === "faceUpAttack" };
   if (effect.luaConditionDescriptor === "condition:source-defense-position") return { canActivate: (ctx) => ctx.source.position === "faceUpDefense" || ctx.source.position === "faceDownDefense" };
+  if (effect.luaConditionDescriptor?.startsWith("condition:equipped-target-setcode:")) return { canActivate: (ctx) => { const setcode = Number(effect.luaConditionDescriptor?.split(":").pop()); const equippedTarget = ctx.duel.cards.find((card) => card.uid === ctx.source.equippedToUid); return Boolean(equippedTarget && currentCardMatchesSetcode(equippedTarget, ctx.duel, setcode)); } };
   return {};
 }
 
 function restoredLuaCostCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "cost"> { const summonTypeNot = specialSummonTypeNotCostDescriptor(effect.luaCostDescriptor); const summonTypeIs = specialSummonTypeIsCostDescriptor(effect.luaCostDescriptor); if (summonTypeNot !== undefined) return { cost: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) !== summonTypeNot }; return summonTypeIs === undefined ? {} : { cost: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === summonTypeIs }; }
 function topDeckCards(state: DuelSession["state"], player: PlayerId): DuelCardDefinitionLike[] { return state.cards.filter((card) => card.controller === player && card.location === "deck").sort((a, b) => a.sequence - b.sequence); }
 type DuelCardDefinitionLike = DuelSession["state"]["cards"][number];
-
 function luaReasonPredicateMask(descriptor: string | undefined): number | undefined {
   if (descriptor === luaEffectReasonPredicateDescriptor) return duelReason.effect;
   if (!descriptor?.startsWith(luaReasonMaskPredicateDescriptorPrefix)) return undefined;
