@@ -206,7 +206,9 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notOriginalTypeCurrentAttributeAttribute = notOriginalTypeCurrentAttributeAttributeToken ? luaNumberExpressionValue(L, index, notOriginalTypeCurrentAttributeAttributeToken) : undefined;
   if (notOriginalTypeCurrentAttributeType !== undefined && notOriginalTypeCurrentAttributeAttribute !== undefined) return `target:not-original-type-current-attribute:${notOriginalTypeCurrentAttributeType}:${notOriginalTypeCurrentAttributeAttribute}`;
   const notOriginalType = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsOriginalType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
-  const notOriginalTypeValue = notOriginalType?.[1] ? luaNumberTokenValue(L, index, notOriginalType[1]) : undefined;
+  const notOriginalTypeBitmask = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*GetOriginalType\\s*\\(\\s*\\)\\s*&\\s*(${numericOrIdentifierPattern})\\s*==\\s*0`));
+  const notOriginalTypeToken = notOriginalType?.[1] ?? notOriginalTypeBitmask?.[1];
+  const notOriginalTypeValue = notOriginalTypeToken ? luaNumberTokenValue(L, index, notOriginalTypeToken) : undefined;
   if (notOriginalTypeValue !== undefined) return `target:not-original-type:${notOriginalTypeValue}`;
   const originalType = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsOriginalType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)(?!\\s+(?:and|or)\\b)`));
   const originalTypeValue = originalType?.[1] ? luaNumberTokenValue(L, index, originalType[1]) : undefined;

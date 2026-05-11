@@ -726,4 +726,70 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     expect(effect!.targetCardPredicate!(ctx, level7Fusion!)).toBe(true);
     expect(effect!.targetCardPredicate!(ctx, level8Synchro!)).toBe(true);
   });
+
+  it("restores original Type bitmask Clock Lizard checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const overlayCode = "67378935";
+    const xyzCode = "67378936";
+    const fusionCode = "67378937";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === overlayCode),
+      { code: xyzCode, name: "Original Xyz Bitmask Probe", kind: "extra", typeFlags: 0x800001, race: 0x2000, attribute: 0x20, level: 4, attack: 1000, defense: 1000 },
+      { code: fusionCode, name: "Original Fusion Bitmask Probe", kind: "extra", typeFlags: 0x41, race: 0x2000, attribute: 0x20, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 673, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [overlayCode], extra: [xyzCode, fusionCode] }, 1: { main: [] } });
+    startDuel(session);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(overlayCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${overlayCode}),0,LOCATION_DECK,0,nil)
+      aux.addTempLizardCheck(c,0,c${overlayCode}.lizfilter)
+      `,
+      "overlay-network-official-original-type-bitmask-lizard.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects.find((effect) => effect.code === 51476410)).toMatchObject({
+      luaTargetDescriptor: "target:not-original-type:8388608",
+      value: 1,
+    });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const mutate = restored.host.loadScript(
+      `
+      local xyz=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${xyzCode}),0,LOCATION_EXTRA,0,nil)
+      local fusion=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${fusionCode}),0,LOCATION_EXTRA,0,nil)
+      local xyz_change=Effect.CreateEffect(xyz)
+      xyz_change:SetType(EFFECT_TYPE_SINGLE)
+      xyz_change:SetCode(EFFECT_CHANGE_TYPE)
+      xyz_change:SetValue(TYPE_FUSION)
+      xyz:RegisterEffect(xyz_change)
+      local fusion_change=Effect.CreateEffect(fusion)
+      fusion_change:SetType(EFFECT_TYPE_SINGLE)
+      fusion_change:SetCode(EFFECT_CHANGE_TYPE)
+      fusion_change:SetValue(TYPE_XYZ)
+      fusion:RegisterEffect(fusion_change)
+      `,
+      "overlay-network-current-type-mutation.lua",
+    );
+    expect(mutate.ok, mutate.error).toBe(true);
+    const effect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
+    const source = restored.session.state.cards.find((card) => card.code === overlayCode);
+    const xyz = restored.session.state.cards.find((card) => card.code === xyzCode);
+    const fusion = restored.session.state.cards.find((card) => card.code === fusionCode);
+    expect(effect?.targetCardPredicate).toBeDefined();
+    expect(source).toBeDefined();
+    expect(xyz).toBeDefined();
+    expect(fusion).toBeDefined();
+    const ctx = targetContext(restored.session.state, source!);
+    expect(effect!.targetCardPredicate!(ctx, xyz!)).toBe(false);
+    expect(effect!.targetCardPredicate!(ctx, fusion!)).toBe(true);
+  });
 });
