@@ -41,6 +41,8 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (pendulumSummonNotAttribute !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4a000000 && (currentAttribute(card, ctx.duel) & pendulumSummonNotAttribute) === 0 };
   const pendulumSummonNotRace = pendulumSummonNotRaceDescriptor(effect.luaTargetDescriptor);
   if (pendulumSummonNotRace !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4a000000 && (currentRace(card, ctx.duel) & pendulumSummonNotRace) === 0 };
+  const pendulumSummonNotSetcodeMonster = pendulumSummonNotSetcodeMonsterDescriptor(effect.luaTargetDescriptor);
+  if (pendulumSummonNotSetcodeMonster !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4a000000 && (!currentCardMatchesSetcode(card, ctx.duel, pendulumSummonNotSetcodeMonster) || (cardTypeFlags(card, ctx.duel) & 0x1) === 0) };
   const ritualSummonNotRace = ritualSummonNotRaceDescriptor(effect.luaTargetDescriptor);
   if (ritualSummonNotRace !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x45000000 && (currentRace(card, ctx.duel) & ritualSummonNotRace) === 0 };
   const extraSummonTypeNot = extraSummonTypeNotDescriptor(effect.luaTargetDescriptor);
@@ -83,6 +85,12 @@ function pendulumSummonNotRaceDescriptor(descriptor: string | undefined): number
   if (!descriptor?.startsWith("target:pendulum-summon-not-race:")) return undefined;
   const race = Number(descriptor.slice("target:pendulum-summon-not-race:".length));
   return Number.isSafeInteger(race) && race > 0 ? race : undefined;
+}
+
+function pendulumSummonNotSetcodeMonsterDescriptor(descriptor: string | undefined): number | undefined {
+  if (!descriptor?.startsWith("target:pendulum-summon-not-setcode-monster:")) return undefined;
+  const setcode = Number(descriptor.slice("target:pendulum-summon-not-setcode-monster:".length));
+  return Number.isSafeInteger(setcode) && setcode > 0 ? setcode : undefined;
 }
 
 function ritualSummonNotRaceDescriptor(descriptor: string | undefined): number | undefined {
