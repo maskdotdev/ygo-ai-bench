@@ -13,7 +13,7 @@ import { cardSetcodes, isSetcodeMatch } from "#lua/card-code-utils.js";
 import { bookOfEclipsePhaseEndCanActivate, bookOfEclipsePhaseEndOperation, isKnownBookOfEclipsePhaseEndEffect } from "#lua/snapshot-book-of-eclipse.js";
 import { isKnownUnleashYourPowerDelayedSetEffect, isKnownYellowAlertDelayedReturnEffect, unleashYourPowerDelayedSetOperation, yellowAlertDelayedReturnOperation } from "#lua/snapshot-delayed-operations.js";
 import { isKnownSwordsOfRevealingLightPhaseEndEffect, isKnownSwordsOfRevealingLightResetEffect, swordsOfRevealingLightPhaseEndCanActivate, swordsOfRevealingLightPhaseEndOperation, swordsOfRevealingLightRestoredReset } from "#lua/snapshot-swords-of-revealing-light.js";
-import { isKnownPlayerDamageZeroEffect, isKnownTemporaryBattleProtectionEffect, isKnownTemporaryPlayerAttackAnnounceLockEffect } from "#lua/snapshot-temporary-effects.js";
+import { isKnownPlayerDamageZeroEffect, isKnownTemporaryBattleProtectionEffect, isKnownTemporaryPlayerAttackAnnounceLockEffect, isKnownTemporarySummonSetLockEffect } from "#lua/snapshot-temporary-effects.js";
 import { ritualSummonSelectedMaterials, type LuaDuelSummonApiHostState } from "#lua/duel-api/summon.js";
 import { luaTemporaryControlReturnDescriptor, luaTemporaryControlReturnOperation } from "#lua/duel-api/move-control.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
@@ -450,7 +450,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownBookOfEclipsePhaseEndEffect(effect) ||
         isKnownSwordsOfRevealingLightPhaseEndEffect(effect) ||
         isKnownSwordsOfRevealingLightResetEffect(effect) ||
-        isKnownTemporaryPlayerAttackAnnounceLockEffect(effect) || isKnownTemporaryBattleProtectionEffect(effect) || isKnownPlayerDamageZeroEffect(effect) ||
+        isKnownTemporaryPlayerAttackAnnounceLockEffect(effect) || isKnownTemporaryBattleProtectionEffect(effect) || isKnownPlayerDamageZeroEffect(effect) || isKnownTemporarySummonSetLockEffect(effect) ||
         isKnownMaharaghiPredrawEffect(effect) ||
         isKnownHinoKaguTsuchiPredrawDiscardEffect(effect) ||
         isKnownGreatLongNoseSkipBattlePhaseEffect(effect) ||
