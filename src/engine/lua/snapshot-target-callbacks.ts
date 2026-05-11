@@ -13,6 +13,7 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   const notTypeExtra = effect.luaTargetDescriptor === "special-summon-limit:non-fusion-extra" ? 0x40 : effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-type-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-type-extra:".length)) : undefined; if (notTypeExtra !== undefined && Number.isSafeInteger(notTypeExtra) && notTypeExtra > 0) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && (cardTypeFlags(card, ctx.duel) & notTypeExtra) === 0 };
   const notTypeAttributeExtra = typeAttributeExtraDescriptor(effect.luaTargetDescriptor); if (notTypeAttributeExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeAttributeExtra.type) === 0 || (currentAttribute(card, ctx.duel) & notTypeAttributeExtra.attribute) === 0) };
   const notTypeRankExtra = typeRankExtraDescriptor(effect.luaTargetDescriptor); if (notTypeRankExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeRankExtra.type) === 0 || currentRank(card, ctx.duel) !== notTypeRankExtra.rank) };
+  const notTypeRankAboveExtra = typeRankAboveExtraDescriptor(effect.luaTargetDescriptor); if (notTypeRankAboveExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeRankAboveExtra.type) === 0 || currentRank(card, ctx.duel) < notTypeRankAboveExtra.rank) };
   const notTypeLevelExtra = typeLevelExtraDescriptor(effect.luaTargetDescriptor); if (notTypeLevelExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeLevelExtra.type) === 0 || currentLevel(card, ctx.duel) !== notTypeLevelExtra.level) };
   const notRaceBaseAttackExtra = raceBaseAttackExtraDescriptor(effect.luaTargetDescriptor); if (notRaceBaseAttackExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((currentRace(card, ctx.duel) & notRaceBaseAttackExtra.race) === 0 || currentBaseAttack(card, ctx.duel) > notRaceBaseAttackExtra.attack) };
   const notRaceAttackExtra = raceAttackExtraDescriptor(effect.luaTargetDescriptor); if (notRaceAttackExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((currentRace(card, ctx.duel) & notRaceAttackExtra.race) === 0 || currentAttack(card, ctx.duel) > notRaceAttackExtra.attack) };
@@ -56,6 +57,12 @@ function typeRaceExtraDescriptor(descriptor: string | undefined): { type: number
 function typeRankExtraDescriptor(descriptor: string | undefined): { type: number; rank: number } | undefined {
   if (!descriptor?.startsWith("special-summon-limit:not-type-rank-extra:")) return undefined;
   const [type, rank] = descriptor.slice("special-summon-limit:not-type-rank-extra:".length).split(":").map(Number);
+  return type !== undefined && rank !== undefined && [type, rank].every((value) => Number.isSafeInteger(value) && value > 0) ? { type, rank } : undefined;
+}
+
+function typeRankAboveExtraDescriptor(descriptor: string | undefined): { type: number; rank: number } | undefined {
+  if (!descriptor?.startsWith("special-summon-limit:not-type-rank-above-extra:")) return undefined;
+  const [type, rank] = descriptor.slice("special-summon-limit:not-type-rank-above-extra:".length).split(":").map(Number);
   return type !== undefined && rank !== undefined && [type, rank].every((value) => Number.isSafeInteger(value) && value > 0) ? { type, rank } : undefined;
 }
 
