@@ -24,6 +24,21 @@ export function isKnownTemporaryBattleProtectionEffect(effect: SerializedDuelEff
   return isKnownTemporaryPlayerBattleDamageAvoidEffect(effect) || isKnownTemporaryMonsterBattleIndestructibleEffect(effect);
 }
 
+export function isKnownTemporaryCannotAttackEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 85 &&
+    effect.sourceUid !== undefined &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    effect.value === undefined &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    !hasPlayerTargetFlag(effect) &&
+    targetRangeEquals(effect, luaLocationMonsterZone, 0) &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
 export function isKnownPlayerDamageZeroEffect(effect: SerializedDuelEffect): boolean {
   return (
     (isPlainPhaseEndStaticValueEffect(effect, 82, 0) || isPlainPhaseEndStaticValueEffect(effect, 335, 0)) &&
