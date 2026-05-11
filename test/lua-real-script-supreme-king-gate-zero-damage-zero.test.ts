@@ -1,0 +1,92 @@
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { moveDuelCard } from "#duel/card-state.js";
+import { createDuel, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import type { DuelCardData, DuelResponse } from "#duel/types.js";
+import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
+import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
+import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+
+const upstreamRoot = path.resolve(".upstream/ignis");
+const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
+const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const typeMonster = 0x1;
+const zarcCode = "13331639";
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Supreme King Gate Zero damage prevention", () => {
+  it("restores its Pendulum Zone damage-zero callback while Z-ARC is face-up", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const gateZeroCode = "96227613";
+    const fireCode = "46918794";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === gateZeroCode || card.code === fireCode),
+      { code: zarcCode, name: "Supreme King Z-ARC Fixture", kind: "monster", typeFlags: typeMonster, level: 12, attack: 4000, defense: 4000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 9622, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [gateZeroCode, zarcCode] }, 1: { main: [fireCode] } });
+    startDuel(session);
+
+    const gateZero = session.state.cards.find((card) => card.code === gateZeroCode);
+    const zarc = session.state.cards.find((card) => card.code === zarcCode);
+    const fire = session.state.cards.find((card) => card.code === fireCode);
+    expect(gateZero).toBeDefined();
+    expect(zarc).toBeDefined();
+    expect(fire).toBeDefined();
+    moveDuelCard(session.state, gateZero!.uid, "spellTrapZone", 0);
+    gateZero!.position = "faceUpAttack";
+    gateZero!.faceUp = true;
+    moveDuelCard(session.state, zarc!.uid, "monsterZone", 0);
+    zarc!.position = "faceUpAttack";
+    zarc!.faceUp = true;
+    moveDuelCard(session.state, fire!.uid, "hand", 1);
+    session.state.turnPlayer = 1;
+    session.state.phase = "main1";
+    session.state.waitingFor = 1;
+
+    const source = { readScript: (name: string) => workspace.readScript(name) };
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(gateZeroCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(fireCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state.effects).toEqual(
+      expect.arrayContaining([expect.objectContaining({ sourceUid: gateZero!.uid, code: 82, targetRange: [1, 0] })]),
+    );
+    const fireActivation = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.uid === fire!.uid);
+    expect(fireActivation, JSON.stringify(getLuaRestoreLegalActions(restored, 1), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restored, fireActivation!);
+
+    const restoredFire = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
+    expect(restoredFire.restoreComplete, restoredFire.incompleteReasons.join("; ")).toBe(true);
+    resolveRestoredChain(restoredFire);
+    expect(restoredFire.session.state.players[0].lifePoints).toBe(8000);
+    expect(restoredFire.session.state.players[1].lifePoints).toBe(7500);
+    expect(restoredFire.session.state.eventHistory).not.toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "damageDealt", eventPlayer: 0 })]));
+    expect(restoredFire.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "damageDealt", eventPlayer: 1, eventValue: 500 })]));
+  });
+});
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, response: DuelResponse): void {
+  const result = applyLuaRestoreResponse(restored, response);
+  expect(result.ok, result.error).toBe(true);
+  const waitingFor = restored.session.state.waitingFor;
+  if (waitingFor !== undefined) {
+    expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+  }
+}
+
+function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  let guard = 0;
+  while (restored.session.state.chain.length > 0) {
+    expect(++guard).toBeLessThan(10);
+    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restored, pass!);
+  }
+}
