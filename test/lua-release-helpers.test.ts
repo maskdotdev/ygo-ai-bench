@@ -562,6 +562,46 @@ describe("Lua release helpers", () => {
     expect(host.messages).toContain("release nonsum wrong player false");
   });
 
+  it("lets release cost selection include opponent extra-release materials", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Own Cost", kind: "monster" },
+      { code: "200", name: "Opponent Extra Cost", kind: "monster" },
+      { code: "300", name: "Opponent Locked Cost", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 22, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: ["200", "300"] } });
+    startDuel(session);
+    for (const card of session.state.cards.filter((candidate) => candidate.location === "hand")) {
+      moveDuelCard(session.state, card.uid, "monsterZone", card.controller);
+    }
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local extra = Duel.GetFieldCard(1, LOCATION_MZONE, 0)
+      local locked = Duel.GetFieldCard(1, LOCATION_MZONE, 1)
+      local extra_effect = Effect.CreateEffect(extra)
+      extra_effect:SetType(EFFECT_TYPE_SINGLE)
+      extra_effect:SetCode(EFFECT_EXTRA_RELEASE_NONSUM)
+      extra_effect:SetValue(1)
+      extra:RegisterEffect(extra_effect)
+      local locked_effect = Effect.CreateEffect(locked)
+      locked_effect:SetType(EFFECT_TYPE_SINGLE)
+      locked_effect:SetCode(EFFECT_EXTRA_RELEASE_NONSUM)
+      locked_effect:SetValue(0)
+      locked:RegisterEffect(locked_effect)
+      Debug.Message("extra release cost check " .. tostring(Duel.CheckReleaseGroupCost(0, aux.TRUE, 2, 2, false, nil, nil)))
+      local g = Duel.SelectReleaseGroupCost(0, aux.TRUE, 1, 3, false, nil, nil)
+      Debug.Message("extra release cost selected " .. g:GetCount() .. "/" .. tostring(g:IsContains(extra)) .. "/" .. tostring(g:IsContains(locked)))
+      `,
+      "release-cost-extra-nonsum.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("extra release cost check true");
+    expect(host.messages).toContain("extra release cost selected 2/true/false");
+  });
+
   it("lets Lua scripts collect must-be material effects", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Synchro Must Material", kind: "monster" },
