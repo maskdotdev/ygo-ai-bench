@@ -55,6 +55,9 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const sourceBattleTargetRace = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetBattleTarget\\s*\\(\\s*\\)\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s*(?:end\\b|$)`));
   const sourceBattleTargetRaceValue = sourceBattleTargetRace?.[1] ? luaNumberExpressionValue(L, index, sourceBattleTargetRace[1]) : undefined;
   if (sourceBattleTargetRaceValue !== undefined) return `condition:source-battle-target-race:${sourceBattleTargetRaceValue}`;
+  const sourceBattleTargetAttribute = snippet.match(new RegExp(`\\b\\w+\\s*:\\s*GetBattleTarget\\s*\\(\\s*\\)\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
+  const sourceBattleTargetAttributeValue = sourceBattleTargetAttribute?.[1] ? luaNumberExpressionValue(L, index, sourceBattleTargetAttribute[1]) : undefined;
+  if (sourceBattleTargetAttributeValue !== undefined) return `condition:source-battle-target-attribute:${sourceBattleTargetAttributeValue}`;
   const sourceRelateBattleTargetReason = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s+return\\s+\\1\\s*:\\s*IsRelateToBattle\\s*\\(\\s*\\)\\s+and\\s+\\1\\s*:\\s*GetBattleTarget\\s*\\(\\s*\\)\\s*:\\s*IsReason\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s*(?:end\\b|$)`));
   const sourceRelateBattleTargetReasonValue = sourceRelateBattleTargetReason?.[2] ? luaNumberExpressionValue(L, index, sourceRelateBattleTargetReason[2]) : undefined;
   if (sourceRelateBattleTargetReasonValue !== undefined) return `condition:source-relate-battle-target-reason:${sourceRelateBattleTargetReasonValue}`;
