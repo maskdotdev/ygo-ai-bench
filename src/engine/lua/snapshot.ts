@@ -5,7 +5,7 @@ import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-co
 import { cardTypeFlags, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
 import { applyResponse, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, negateDuelChainLinkObject, queryPublicState } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
-import { effectiveSpecialSummonTypeCode, luaSummonTypeRitual } from "#duel/summon-type-codes.js";
+import { effectiveSpecialSummonTypeCode, isSummonTypeMaskMatch, luaSummonTypeRitual, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
 import { resetDuelCardEffects } from "#duel/effect-reset.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { cardFieldId } from "#duel/card-field-id.js";
@@ -21,7 +21,6 @@ import { specialSummonTypeIsCostDescriptor, specialSummonTypeNotCostDescriptor }
 import { notSetcodeTargetDescriptor, restoredLuaTargetCallbacks, setcodeOrCodeTypeTargetDescriptor, typeTargetDescriptor } from "#lua/snapshot-target-callbacks.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import type { ApplyDuelResponseResult, ChainLimit, ChainLink, DuelAction, DuelCardInstance, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
-
 const luaEffectEquipLimit = 76;
 const luaEffectGeminiStatus = 75;
 const luaEffectAddType = 115;
@@ -867,6 +866,7 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   if (effect.luaConditionDescriptor?.startsWith("condition:equipped-target-setcode:")) return { canActivate: (ctx) => { const setcode = Number(effect.luaConditionDescriptor?.split(":").pop()); const equippedTarget = ctx.duel.cards.find((card) => card.uid === ctx.source.equippedToUid); return Boolean(equippedTarget && currentCardMatchesSetcode(equippedTarget, ctx.duel, setcode)); } };
   if (effect.luaConditionDescriptor?.startsWith("condition:equipped-target-type:")) return { canActivate: (ctx) => { const type = Number(effect.luaConditionDescriptor?.split(":").pop()); const equippedTarget = ctx.duel.cards.find((card) => card.uid === ctx.source.equippedToUid); return Boolean(equippedTarget && (cardTypeFlags(equippedTarget, ctx.duel) & type) !== 0); } };
   if (effect.luaConditionDescriptor?.startsWith("condition:equipped-target-race:")) return { canActivate: (ctx) => { const race = Number(effect.luaConditionDescriptor?.split(":").pop()); const equippedTarget = ctx.duel.cards.find((card) => card.uid === ctx.source.equippedToUid); return Boolean(equippedTarget && (currentRace(equippedTarget, ctx.duel) & race) !== 0); } };
+  if (effect.luaConditionDescriptor?.startsWith("condition:source-summon-type:")) return { canActivate: (ctx) => isSummonTypeMaskMatch(summonTypeMaskFromCard(ctx.source), Number(effect.luaConditionDescriptor?.split(":").pop())) };
   return {};
 }
 

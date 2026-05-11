@@ -4,6 +4,7 @@ import type { LuaHostState } from "#lua/host-types.js";
 
 const { lua, to_jsstring, to_luastring } = fengari;
 const numericOrIdentifierPattern = String.raw`(?:0x[0-9A-Fa-f]+|\d+|[A-Za-z_]\w*)`;
+const summonTypeConditionValues: Record<string, number> = { Ritual: 0x45000000, Fusion: 0x43000000, Synchro: 0x46000000, Xyz: 0x49000000, Pendulum: 0x4a000000, Link: 0x4c000000 };
 
 export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hostState: LuaHostState): string | undefined {
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
@@ -22,6 +23,8 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsFaceup\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-faceup";
   if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsAttackPos\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-attack-position";
   if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsDefensePos\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-defense-position";
+  const sourceSummonType = snippet.match(/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*Is(Ritual|Fusion|Synchro|Xyz|Pendulum|Link)Summoned\s*\(\s*\)\s*(?:end\b|$)/);
+  if (sourceSummonType?.[1]) return `condition:source-summon-type:${summonTypeConditionValues[sourceSummonType[1]]}`;
   const params = luaFunctionParams(snippet);
   if (params && params.length > 0) return undefined;
   const identifier = String.raw`[A-Za-z_]\w*`;
