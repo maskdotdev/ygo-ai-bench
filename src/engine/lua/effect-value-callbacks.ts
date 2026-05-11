@@ -67,7 +67,7 @@ export function callLuaEffectValuePredicate(
       lua.lua_pop(L, 1);
       return result;
     }
-    if (luaEffect.code === 235 || luaEffect.code === 236 || luaEffect.code === 238 || luaEffect.code === 239) {
+    if (luaEffect.code === 154 || luaEffect.code === 235 || luaEffect.code === 236 || luaEffect.code === 238 || luaEffect.code === 239) {
       hostState.pushEffectTable(L, luaEffect.id);
       if (ctx.eventCard) pushCardTable(L, ctx.eventCard.uid);
       else lua.lua_pushnil(L);

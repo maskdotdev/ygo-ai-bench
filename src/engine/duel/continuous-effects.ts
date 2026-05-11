@@ -846,15 +846,16 @@ export function isMaterialUsePrevented(state: DuelState, uid: string, kind: Mate
   return false;
 }
 
-export function isReleasePrevented(state: DuelState, uid: string, reason: number, createContext: ContinuousEffectContextFactory): boolean {
-  const card = findCard(state, uid);
-  if (!card) return false;
+export function isReleasePrevented(state: DuelState, uid: string, reason: number, createContext: ContinuousEffectContextFactory, targetUid?: string): boolean {
+  const card = findCard(state, uid); if (!card) return false;
+  const target = targetUid ? findCard(state, targetUid) : undefined;
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || !isUnreleasableCodeForReason(effect.code, reason)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    const ctx = createContext(effect, source, card);
+    const ctx = Object.assign(createContext(effect, source, card), target ? { eventCard: target } : {});
     if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
+    if (effect.valuePredicate && !effect.valuePredicate(ctx)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   return false;
@@ -992,5 +993,6 @@ function isUnreleasableCodeForReason(code: number | undefined, reason: number): 
   if (code === 43) return (reason & 0x10) !== 0;
   if (code === 44) return (reason & 0x10) === 0;
   if (code === 48) return (reason & 0x40) !== 0;
+  if (code === 154) return (reason & duelReason.summon) !== 0;
   return false;
 }

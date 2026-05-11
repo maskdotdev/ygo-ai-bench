@@ -591,7 +591,8 @@ function requireTypedSpecialSummonAllowed(state: DuelState, player: PlayerId, ui
 }
 
 function createMaterialMover(state: DuelState): DuelMaterialMover {
-  return (uid, controller, reason) => {
+  return (uid, controller, reason, targetUid) => {
+    if ((reason & duelReason.release) !== 0 && isReleasePrevented(state, uid, reason, createContinuousEffectContext(state), targetUid)) throw new Error(`Card ${uid} cannot be released`);
     const card = sendDuelCardToGraveyard(state, uid, controller, reason);
     return { card, collectedSentToGraveyard: card.location === "graveyard" };
   };
@@ -610,7 +611,7 @@ function createMaterialUsePredicate(state: DuelState, kind: "fusion" | "synchro"
 }
 
 function createReleasePredicate(state: DuelState, reason: number): DuelMaterialPredicate {
-  return (uid) => !isReleasePrevented(state, uid, reason, createContinuousEffectContext(state));
+  return (uid, targetUid) => !isReleasePrevented(state, uid, reason, createContinuousEffectContext(state), targetUid);
 }
 
 export function drawDuelCards(state: DuelState, player: PlayerId, count: number, detail = "Effect draw", payload: Pick<DuelEventPayload, "eventIsLast" | "eventReason" | "eventReasonPlayer" | "eventReasonCardUid" | "eventReasonEffectId"> = {}): number {

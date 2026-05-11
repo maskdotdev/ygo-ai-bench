@@ -19,7 +19,7 @@ export interface DuelMaterialMoveResult {
   card: DuelCardInstance;
   collectedSentToGraveyard?: boolean;
 }
-export type DuelMaterialMover = (uid: string, controller: PlayerId, reason: number) => DuelMaterialMoveResult;
+export type DuelMaterialMover = (uid: string, controller: PlayerId, reason: number, targetUid?: string) => DuelMaterialMoveResult;
 export type DuelOverlayMaterialMover = (uid: string, controller: PlayerId, reason: number, targetUid?: string) => DuelCardInstance;
 export type DuelMaterialPredicate = (uid: string, targetUid?: string) => boolean;
 export type DuelNormalSummonPredicate = (card: DuelCardInstance) => boolean;
@@ -157,7 +157,7 @@ function validateNormalTributes(
   if (tributeUnits < tributeRange.min || tributeUnits > tributeRange.max) throw new Error(`${card.name} requires ${formatTributeRange(tributeRange)} tribute(s)`);
   for (const tributeUid of uniqueTributes) {
     const tribute = requireControlledCard(state, player, tributeUid, "monsterZone");
-    if (!canReleaseMaterial(tribute.uid)) throw new Error(`${tribute.name} cannot be released`);
+    if (!canReleaseMaterial(tribute.uid, card.uid)) throw new Error(`${tribute.name} cannot be released`);
   }
   return { uniqueTributes, tributeUnits };
 }
@@ -172,7 +172,7 @@ function releaseNormalTributes(
   collectEvent?: DuelEventCollector,
 ): void {
   for (const tributeUid of uniqueTributes) {
-    const result = moveMaterial(tributeUid, player, duelReason.release | duelReason.summon);
+    const result = moveMaterial(tributeUid, player, duelReason.release | duelReason.summon, card.uid);
     pushDuelLog(state, "release", player, result.card.name, detail);
     if (collectEvent) collectSentToGraveyard(result, collectEvent);
   }
@@ -431,11 +431,11 @@ export function tributeSetActions(state: DuelState, player: PlayerId, hand: Duel
 }
 
 function tributeNormalActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[], type: "tributeSummon" | "tributeSet", labelVerb: string, canReleaseMaterial: DuelMaterialPredicate): DuelAction[] {
-  const availableTributes = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(state, card) && canReleaseMaterial(card.uid));
   const actions: DuelAction[] = [];
   for (const card of hand.filter((candidate) => candidate.kind === "monster")) {
     if (!hasNormalSummonCountAvailable(state, player, card)) continue;
     const tributeRange = tributeRangeForNormalSummon(card);
+    const availableTributes = getCards(state, player, "monsterZone").filter((material) => isMonsterLike(state, material) && canReleaseMaterial(material.uid, card.uid));
     if (tributeRange.max <= 0 || availableTributes.reduce((sum, material) => sum + tributeUnitCount(state, material), 0) < tributeRange.min) continue;
     for (let tributeCount = Math.max(1, tributeRange.min); tributeCount <= tributeRange.max; tributeCount += 1) {
       for (const tributeUids of tributeCombinations(state, availableTributes, tributeCount)) {
