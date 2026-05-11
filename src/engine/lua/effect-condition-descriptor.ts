@@ -44,6 +44,10 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const turnPlayerPhase = snippet.match(new RegExp(`\\breturn\\s+(?:(Duel\\s*\\.\\s*IsTurnPlayer\\s*\\(\\s*(tp|1\\s*-\\s*tp)\\s*\\)\\s+and\\s+Duel\\s*\\.\\s*IsPhase\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\))|(Duel\\s*\\.\\s*IsPhase\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+Duel\\s*\\.\\s*IsTurnPlayer\\s*\\(\\s*(tp|1\\s*-\\s*tp)\\s*\\)))\\s*(?:end\\b|$)`));
   const turnPlayerPhaseValue = turnPlayerPhase?.[3] ? luaNumberTokenValue(L, index, turnPlayerPhase[3]) : turnPlayerPhase?.[5] ? luaNumberTokenValue(L, index, turnPlayerPhase[5]) : undefined;
   if (turnPlayerPhase && turnPlayerPhaseValue !== undefined) return `condition:turn-player-phase:${(turnPlayerPhase[2] ?? turnPlayerPhase[6])?.startsWith("1") ? "opponent" : "self"}:${turnPlayerPhaseValue}`;
+  const exactPhase = snippet.match(new RegExp(`\\breturn\\s+Duel\\s*\\.\\s*IsPhase\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*(?:end\\b|$)`));
+  const exactPhaseValue = exactPhase?.[1] ? luaNumberTokenValue(L, index, exactPhase[1]) : undefined;
+  if (exactPhaseValue !== undefined) return `condition:phase:${exactPhaseValue}`;
+  if (/\breturn\s+Duel\s*\.\s*IsBattlePhase\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:battle-phase";
   if (/\breturn\s+Duel\s*\.\s*IsTurnPlayer\s*\(\s*tp\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:turn-player:self";
   if (/\breturn\s+Duel\s*\.\s*IsTurnPlayer\s*\(\s*1\s*-\s*tp\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:turn-player:opponent";
   const sourceSummonLocation = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsSummonLocation\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
