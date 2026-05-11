@@ -255,6 +255,12 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notRace = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`)) ?? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*GetRace\\s*\\(\\s*\\)\\s*~=\\s*(${numericOrIdentifierPattern})`));
   const notRaceValue = notRace?.[1] ? luaNumberTokenValue(L, index, notRace[1]) : undefined;
   if (notRaceValue !== undefined) return `target:not-race:${notRaceValue}`;
+  const textAttackLocal = snippet.match(new RegExp(`\\blocal\\s+([A-Za-z_]\\w*)\\s*=\\s*${card}\\s*:\\s*GetTextAttack\\s*\\(\\s*\\)`));
+  const textAttackLocalName = textAttackLocal?.[1] ? escapeRegExp(textAttackLocal[1]) : undefined;
+  const notOriginalRaceTextAttack = textAttackLocalName ? snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsOriginalRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+or\\s+${textAttackLocalName}\\s*==\\s*-2\\s+or\\s+${textAttackLocalName}\\s*>\\s*(${numericOrIdentifierPattern})`)) : undefined;
+  const notOriginalRaceTextAttackRace = notOriginalRaceTextAttack?.[1] ? luaNumberTokenValue(L, index, notOriginalRaceTextAttack[1]) : undefined;
+  const notOriginalRaceTextAttackAttack = notOriginalRaceTextAttack?.[2] ? luaNumberTokenValue(L, index, notOriginalRaceTextAttack[2]) : undefined;
+  if (notOriginalRaceTextAttackRace !== undefined && notOriginalRaceTextAttackAttack !== undefined) return `target:not-original-race-text-attack-lte:${notOriginalRaceTextAttackRace}:${notOriginalRaceTextAttackAttack}`;
   const notOriginalRace = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsOriginalRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const notOriginalRaceValue = notOriginalRace?.[1] ? luaNumberTokenValue(L, index, notOriginalRace[1]) : undefined;
   if (notOriginalRaceValue !== undefined) return `target:not-original-race:${notOriginalRaceValue}`;

@@ -42,6 +42,7 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (notOriginalAttribute !== undefined && Number.isSafeInteger(notOriginalAttribute) && notOriginalAttribute > 0) return { targetCardPredicate: (_ctx, card) => ((card.data.attribute ?? 0) & notOriginalAttribute) === 0 };
   const notOriginalRace = effect.luaTargetDescriptor?.startsWith("target:not-original-race:") ? Number(effect.luaTargetDescriptor.slice("target:not-original-race:".length)) : undefined;
   if (notOriginalRace !== undefined && Number.isSafeInteger(notOriginalRace) && notOriginalRace > 0) return { targetCardPredicate: (_ctx, card) => ((card.data.race ?? 0) & notOriginalRace) === 0 };
+  const notOriginalRaceTextAttack = originalRaceTextAttackDescriptor(effect.luaTargetDescriptor); if (notOriginalRaceTextAttack) return { targetCardPredicate: (ctx, card) => ((card.data.race ?? 0) & notOriginalRaceTextAttack.race) === 0 || currentAttack(card, ctx.duel) === -2 || currentAttack(card, ctx.duel) > notOriginalRaceTextAttack.attack };
   const notOriginalSetcode = effect.luaTargetDescriptor?.startsWith("target:not-original-setcode:") ? Number(effect.luaTargetDescriptor.slice("target:not-original-setcode:".length)) : undefined;
   if (notOriginalSetcode !== undefined && Number.isSafeInteger(notOriginalSetcode) && notOriginalSetcode > 0) return { targetCardPredicate: (_ctx, card) => !cardSetcodes(card).some((setcode) => isSetcodeMatch(notOriginalSetcode, setcode)) };
   if (notSetcodeAny !== undefined) return { targetCardPredicate: (_ctx, card) => !notSetcodeAny.some((blocked) => cardSetcodes(card).some((setcode) => isSetcodeMatch(blocked, setcode))) };
@@ -339,6 +340,12 @@ function originalAttributeRaceDescriptor(descriptor: string | undefined): { attr
   if (!descriptor?.startsWith("target:not-original-attribute-race:")) return undefined;
   const [attribute, race] = descriptor.slice("target:not-original-attribute-race:".length).split(":").map(Number);
   return attribute !== undefined && race !== undefined && [attribute, race].every((value) => Number.isSafeInteger(value) && value > 0) ? { attribute, race } : undefined;
+}
+
+function originalRaceTextAttackDescriptor(descriptor: string | undefined): { race: number; attack: number } | undefined {
+  if (!descriptor?.startsWith("target:not-original-race-text-attack-lte:")) return undefined;
+  const [race, attack] = descriptor.slice("target:not-original-race-text-attack-lte:".length).split(":").map(Number);
+  return race !== undefined && attack !== undefined && [race, attack].every((value) => Number.isSafeInteger(value) && value > 0) ? { race, attack } : undefined;
 }
 
 function originalTypeCurrentAttributeDescriptor(descriptor: string | undefined): { type: number; attribute: number } | undefined {
