@@ -18,7 +18,7 @@ import { assaultZoneExtraDeckReleaseValueCallbacks, assaultZoneReleaseFlagCondit
 import { ritualSummonSelectedMaterials, type LuaDuelSummonApiHostState } from "#lua/duel-api/summon.js";
 import { luaTemporaryControlReturnDescriptor, luaTemporaryControlReturnOperation } from "#lua/duel-api/move-control.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
-import { specialSummonTypeNotCostDescriptor } from "#lua/effect-cost-descriptor.js";
+import { specialSummonTypeIsCostDescriptor, specialSummonTypeNotCostDescriptor } from "#lua/effect-cost-descriptor.js";
 import { specialSummonTypeNotTargetDescriptor } from "#lua/effect-target-descriptor.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import type { ApplyDuelResponseResult, ChainLimit, ChainLink, DuelAction, DuelCardInstance, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
@@ -439,7 +439,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isStaticNotSetcodeSummonRestriction(effect) ||
         isKnownExtraSummonCountEffect(effect) ||
         effect.code === 25 ||
-        (effect.code === 92 && specialSummonTypeNotCostDescriptor(effect.luaCostDescriptor) !== undefined) ||
+        (effect.code === 92 && (specialSummonTypeNotCostDescriptor(effect.luaCostDescriptor) !== undefined || specialSummonTypeIsCostDescriptor(effect.luaCostDescriptor) !== undefined)) ||
         effect.code === luaEffectClockLizard ||
         (effect.code === 71 && effect.luaValueDescriptor === "cannot-be-effect-target:opponent") ||
         isKnownIndestructibleValueEffect(effect) ||
@@ -830,7 +830,7 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   return {};
 }
 
-function restoredLuaCostCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "cost"> { const summonTypeNot = specialSummonTypeNotCostDescriptor(effect.luaCostDescriptor); return summonTypeNot === undefined ? {} : { cost: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) !== summonTypeNot }; }
+function restoredLuaCostCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "cost"> { const summonTypeNot = specialSummonTypeNotCostDescriptor(effect.luaCostDescriptor); const summonTypeIs = specialSummonTypeIsCostDescriptor(effect.luaCostDescriptor); if (summonTypeNot !== undefined) return { cost: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) !== summonTypeNot }; return summonTypeIs === undefined ? {} : { cost: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === summonTypeIs }; }
 function topDeckCards(state: DuelSession["state"], player: PlayerId): DuelCardDefinitionLike[] { return state.cards.filter((card) => card.controller === player && card.location === "deck").sort((a, b) => a.sequence - b.sequence); }
 type DuelCardDefinitionLike = DuelSession["state"]["cards"][number];
 

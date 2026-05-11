@@ -10,9 +10,17 @@ export function knownLuaEffectCostDescriptor(L: unknown, index: number, hostStat
   if (!snippet) return undefined;
   const summonTypeParam = luaFunctionParams(snippet)?.[3];
   if (!summonTypeParam) return undefined;
-  const match = snippet.match(new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*~=\\s*(SUMMON_TYPE_SPECIAL\\s*\\+\\s*${numericOrIdentifierPattern}|${numericOrIdentifierPattern})`));
-  const value = match?.[1] ? luaSummonTypeTokenValue(L, match[1]) : undefined;
-  return value === undefined ? undefined : `cost:special-summon-type-not:${value}`;
+  const comparison = new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*(==|~=)\\s*(SUMMON_TYPE_SPECIAL\\s*\\+\\s*${numericOrIdentifierPattern}|${numericOrIdentifierPattern})`);
+  const match = snippet.match(comparison);
+  const value = match?.[2] ? luaSummonTypeTokenValue(L, match[2]) : undefined;
+  if (value === undefined) return undefined;
+  return match?.[1] === "==" ? `cost:special-summon-type-is:${value}` : `cost:special-summon-type-not:${value}`;
+}
+
+export function specialSummonTypeIsCostDescriptor(descriptor: string | undefined): number | undefined {
+  if (!descriptor?.startsWith("cost:special-summon-type-is:")) return undefined;
+  const value = Number(descriptor.slice("cost:special-summon-type-is:".length));
+  return Number.isSafeInteger(value) && value > 0 ? value : undefined;
 }
 
 export function specialSummonTypeNotCostDescriptor(descriptor: string | undefined): number | undefined {

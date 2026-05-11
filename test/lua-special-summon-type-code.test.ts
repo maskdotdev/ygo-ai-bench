@@ -139,4 +139,34 @@ describe("Lua Special Summon type codes", () => {
     expect(host.messages).toContain("cost custom blocked false");
     expect(host.messages).toContain("cost custom open true");
   });
+
+  it("restores EFFECT_SPSUMMON_COST equality predicates", () => {
+    const cards: DuelCardData[] = [{ code: "401", name: "Equality Cost Target", kind: "monster" }];
+    const script = `
+      c401={}
+      function c401.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_SPSUMMON_COST)
+        e:SetCost(function(e,c,tp,sumtype)return sumtype==SUMMON_TYPE_SPECIAL+181 end)
+        c:RegisterEffect(e)
+      end
+      `;
+    const session = createDuel({ seed: 181, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["401"] }, 1: { main: [] } });
+    startDuel(session);
+    const host = createLuaScriptHost(session);
+    expect(host.loadScript(script, "c401.lua").ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    expect(session.state.effects[0]).toMatchObject({ code: 92, luaCostDescriptor: `cost:special-summon-type-is:${luaSummonTypeSpecial + 181}` });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c401.lua" ? script : undefined }, createCardReader(cards));
+    expect(restored.host.loadScript(`
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 401), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("restored equality open " .. tostring(target:IsCanBeSpecialSummoned(nil,181,0,false,false,POS_FACEUP_ATTACK)))
+      Debug.Message("restored equality blocked " .. tostring(target:IsCanBeSpecialSummoned(nil,182,0,false,false,POS_FACEUP_ATTACK)))
+      `, "restored-special-summon-equality-cost-check.lua").ok).toBe(true);
+    expect(restored.host.messages).toContain("restored equality open true");
+    expect(restored.host.messages).toContain("restored equality blocked false");
+  });
 });
