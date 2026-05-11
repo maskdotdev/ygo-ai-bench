@@ -16,6 +16,9 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
     `\\breturn\\s+not\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(?:TYPE_FUSION|64)\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)`,
   );
   if (nonFusionExtra.test(snippet)) return "special-summon-limit:non-fusion-extra";
+  const notType = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*Is(?:Original)?Type\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
+  const notTypeValue = notType?.[1] ? luaNumberTokenValue(L, index, notType[1]) : undefined;
+  if (notTypeValue !== undefined) return `target:not-type:${notTypeValue}`;
   const setcodeOrCodeType = setcodeOrCodeTypeTargetDescriptor(L, index, snippet, card);
   if (setcodeOrCodeType !== undefined) return setcodeOrCodeType;
   const effectParam = luaFunctionParams(snippet)?.[0];
