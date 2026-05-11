@@ -84,7 +84,6 @@ export interface LuaSnapshotRestoreResult {
   missingChainLimitRegistryKeys: string[];
   incompleteReasons: string[];
 }
-
 export function restoreDuelWithLuaScripts(
   snapshot: SerializedDuel,
   source: LuaScriptSource,
@@ -116,7 +115,6 @@ export function getLuaRestoreLegalActions(restored: LuaSnapshotRestoreResult, pl
   if (!restored.restoreComplete) return [];
   return getLegalActions(restored.session, player);
 }
-
 export function getLuaRestoreLegalActionGroups(restored: LuaSnapshotRestoreResult, player: PlayerId): DuelLegalActionGroup[] {
   if (!restored.restoreComplete) return [];
   return getGroupedDuelLegalActions(restored.session, player);
@@ -441,6 +439,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownSetSummonCountLimitEffect(effect) ||
         isKnownExtraSummonCountEffect(effect) ||
         effect.code === 25 ||
+        (effect.code === 60 && effect.value !== undefined) ||
         (effect.code === 92 && (specialSummonTypeNotCostDescriptor(effect.luaCostDescriptor) !== undefined || specialSummonTypeIsCostDescriptor(effect.luaCostDescriptor) !== undefined)) ||
         effect.code === luaEffectClockLizard ||
         isKnownCannotBeMaterialEffect(effect) ||
@@ -864,6 +863,7 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   if (effect.luaConditionDescriptor === luaSourceControllerConditionDescriptor) return { canActivate: (ctx) => ctx.source.controller === effect.controller };
   if (effect.luaConditionDescriptor === luaNotDrawPhaseConditionDescriptor) return { canActivate: (ctx) => ctx.duel.phase !== "draw" };
   if (effect.luaConditionDescriptor === luaSourceEquippedConditionDescriptor) return { canActivate: (ctx) => ctx.source.equippedToUid !== undefined };
+  if (effect.luaConditionDescriptor === "condition:source-faceup") return { canActivate: (ctx) => ctx.source.faceUp === true };
   return {};
 }
 
