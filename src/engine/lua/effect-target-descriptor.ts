@@ -177,6 +177,10 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notAttributeExtraToken = notAttributeExtra?.[1] ?? notAttributeExtra?.[2];
   const notAttributeExtraValue = notAttributeExtraToken ? luaNumberTokenValue(L, index, notAttributeExtraToken) : undefined;
   if (notAttributeExtraValue !== undefined) return `special-summon-limit:not-attribute-extra:${notAttributeExtraValue}`;
+  const attributeExceptExtra = snippet.match(new RegExp(`\\breturn\\s+(?:${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsAttributeExcept\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)|${card}\\s*:\\s*IsAttributeExcept\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\))`));
+  const attributeExceptExtraToken = attributeExceptExtra?.[1] ?? attributeExceptExtra?.[2];
+  const attributeExceptExtraValue = attributeExceptExtraToken ? luaNumberTokenValue(L, index, attributeExceptExtraToken) : undefined;
+  if (attributeExceptExtraValue !== undefined) return `special-summon-limit:not-attribute-extra:${attributeExceptExtraValue}`;
   const notAttribute = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`)) ?? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*GetAttribute\\s*\\(\\s*\\)\\s*~=\\s*(${numericOrIdentifierPattern})`));
   const notAttributeValue = notAttribute?.[1] ? luaNumberTokenValue(L, index, notAttribute[1]) : undefined;
   if (notAttributeValue !== undefined) return `target:not-attribute:${notAttributeValue}`;
