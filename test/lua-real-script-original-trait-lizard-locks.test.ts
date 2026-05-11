@@ -792,4 +792,81 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     expect(effect!.targetCardPredicate!(ctx, xyz!)).toBe(false);
     expect(effect!.targetCardPredicate!(ctx, fusion!)).toBe(true);
   });
+
+  it("restores original Level-above and Attribute Clock Lizard checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const dragonCode = "43722862";
+    const level5WindCode = "43722863";
+    const level4WindCode = "43722864";
+    const level5DarkCode = "43722865";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === dragonCode),
+      { code: level5WindCode, name: "Original Level 5 WIND Probe", kind: "extra", typeFlags: 0x2001, race: 0x2000, attribute: 0x8, level: 5, attack: 1000, defense: 1000 },
+      { code: level4WindCode, name: "Original Level 4 WIND Probe", kind: "extra", typeFlags: 0x2001, race: 0x2000, attribute: 0x8, level: 4, attack: 1000, defense: 1000 },
+      { code: level5DarkCode, name: "Original Level 5 DARK Probe", kind: "extra", typeFlags: 0x2001, race: 0x2000, attribute: 0x20, level: 5, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 437, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [dragonCode], extra: [level5WindCode, level4WindCode, level5DarkCode] }, 1: { main: [] } });
+    startDuel(session);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(dragonCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${dragonCode}),0,LOCATION_DECK,0,nil)
+      aux.addTempLizardCheck(c,0,c${dragonCode}.lizfilter)
+      `,
+      "speedroid-dominobutterfly-official-original-level-attribute-lizard.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects.find((effect) => effect.code === 51476410)).toMatchObject({
+      luaTargetDescriptor: "target:not-original-level-above-attribute:5:8",
+      value: 1,
+    });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const mutate = restored.host.loadScript(
+      `
+      local level5_wind=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${level5WindCode}),0,LOCATION_EXTRA,0,nil)
+      local level4_wind=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${level4WindCode}),0,LOCATION_EXTRA,0,nil)
+      local level5_dark=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${level5DarkCode}),0,LOCATION_EXTRA,0,nil)
+      local dark_change=Effect.CreateEffect(level5_wind)
+      dark_change:SetType(EFFECT_TYPE_SINGLE)
+      dark_change:SetCode(EFFECT_CHANGE_ATTRIBUTE)
+      dark_change:SetValue(ATTRIBUTE_DARK)
+      level5_wind:RegisterEffect(dark_change)
+      local level_change=Effect.CreateEffect(level4_wind)
+      level_change:SetType(EFFECT_TYPE_SINGLE)
+      level_change:SetCode(EFFECT_CHANGE_LEVEL)
+      level_change:SetValue(5)
+      level4_wind:RegisterEffect(level_change)
+      local wind_change=Effect.CreateEffect(level5_dark)
+      wind_change:SetType(EFFECT_TYPE_SINGLE)
+      wind_change:SetCode(EFFECT_CHANGE_ATTRIBUTE)
+      wind_change:SetValue(ATTRIBUTE_WIND)
+      level5_dark:RegisterEffect(wind_change)
+      `,
+      "speedroid-dominobutterfly-current-level-attribute-mutation.lua",
+    );
+    expect(mutate.ok, mutate.error).toBe(true);
+    const effect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
+    const source = restored.session.state.cards.find((card) => card.code === dragonCode);
+    const level5Wind = restored.session.state.cards.find((card) => card.code === level5WindCode);
+    const level4Wind = restored.session.state.cards.find((card) => card.code === level4WindCode);
+    const level5Dark = restored.session.state.cards.find((card) => card.code === level5DarkCode);
+    expect(effect?.targetCardPredicate).toBeDefined();
+    expect(source).toBeDefined();
+    expect(level5Wind).toBeDefined();
+    expect(level4Wind).toBeDefined();
+    expect(level5Dark).toBeDefined();
+    const ctx = targetContext(restored.session.state, source!);
+    expect(effect!.targetCardPredicate!(ctx, level5Wind!)).toBe(false);
+    expect(effect!.targetCardPredicate!(ctx, level4Wind!)).toBe(true);
+    expect(effect!.targetCardPredicate!(ctx, level5Dark!)).toBe(true);
+  });
 });
