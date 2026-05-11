@@ -11,6 +11,7 @@ const luaTypeTargetDescriptorPrefix = "target:type:";
 const luaFaceupTypeTargetDescriptorPrefix = "target:faceup-type:";
 
 export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "targetCardPredicate"> {
+  if (effect.luaTargetDescriptor === "special-summon-limit:deck-or-extra") return { targetCardPredicate: (_ctx, card) => card.location === "deck" || card.location === "extraDeck" };
   if (effect.luaTargetDescriptor === "special-summon-limit:extra") return { targetCardPredicate: (_ctx, card) => card.location === "extraDeck" };
   const notTypeExtra = effect.luaTargetDescriptor === "special-summon-limit:non-fusion-extra" ? 0x40 : effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-type-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-type-extra:".length)) : undefined; if (notTypeExtra !== undefined && Number.isSafeInteger(notTypeExtra) && notTypeExtra > 0) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && (cardTypeFlags(card, ctx.duel) & notTypeExtra) === 0 };
   const linkBelowExtra = effect.luaTargetDescriptor?.startsWith("special-summon-limit:link-below-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:link-below-extra:".length)) : undefined; if (linkBelowExtra !== undefined && Number.isSafeInteger(linkBelowExtra) && linkBelowExtra > 0) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && (cardTypeFlags(card, ctx.duel) & 0x4000000) !== 0 && currentLink(card, ctx.duel) <= linkBelowExtra };
