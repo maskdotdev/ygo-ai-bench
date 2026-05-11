@@ -6,6 +6,7 @@ const luaLocationMonsterZone = 0x04;
 const luaPhaseEndResetFlags = 0x40000200;
 const luaPhaseBattleEndResetFlags = 0x40000280;
 const luaSelfTurnPhaseEndResetFlags = 0x50000200;
+const luaSelfTurnBattleResetFlags = 0x50000080;
 const luaSelfTurnMain1ResetFlags = 0x50000004;
 const luaOpponentTurnPhaseEndResetFlags = 0x60000200;
 const luaOpponentTurnMain1ResetFlags = 0x60000004;
@@ -76,7 +77,7 @@ export function isKnownTemporarySelfTurnSkipBattlePhaseEffect(effect: Serialized
     effect.event === "continuous" &&
     effect.code === 183 &&
     effect.sourceUid !== undefined &&
-    effect.reset?.flags === luaSelfTurnPhaseEndResetFlags &&
+    (effect.reset?.flags === luaSelfTurnPhaseEndResetFlags || effect.reset?.flags === luaSelfTurnBattleResetFlags) &&
     effect.value === undefined &&
     effect.luaValueDescriptor === undefined &&
     effect.luaTargetDescriptor === undefined &&
