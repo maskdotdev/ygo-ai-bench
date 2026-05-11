@@ -12,6 +12,9 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const equippedTargetSetcode = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetEquipTarget\\s*\\(\\s*\\)\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const equippedTargetSetcodeValue = equippedTargetSetcode?.[1] ? luaNumberTokenValue(L, index, equippedTargetSetcode[1]) : undefined;
   if (equippedTargetSetcodeValue !== undefined) return `condition:equipped-target-setcode:${equippedTargetSetcodeValue}`;
+  const equippedTargetType = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetEquipTarget\\s*\\(\\s*\\)\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
+  const equippedTargetTypeValue = equippedTargetType?.[1] ? luaNumberTokenValue(L, index, equippedTargetType[1]) : undefined;
+  if (equippedTargetTypeValue !== undefined) return `condition:equipped-target-type:${equippedTargetTypeValue}`;
   if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetEquipTarget\s*\(\s*\)/.test(snippet)) return "condition:source-equipped";
   if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsFaceup\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-faceup";
   if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsAttackPos\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-attack-position";
