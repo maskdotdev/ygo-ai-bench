@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { createDuel, getLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions, loadDecks, startDuel } from "#duel/core.js";
 import { setDuelPlayerLifePoints } from "#duel/player-life.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -61,5 +61,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
     expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "normalSummon", uid: summonTarget!.uid })]));
     expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "setMonster", uid: setTarget!.uid })]));
     expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "setSpellTrap", uid: spellTarget!.uid })]));
+    const setSpell = actions.find((action) => action.type === "setSpellTrap" && action.uid === spellTarget!.uid);
+    expect(setSpell).toBeDefined();
+    expect(applyResponse(session, setSpell!).ok).toBe(true);
+    expect(session.state.players[0].lifePoints).toBe(1);
   });
 });

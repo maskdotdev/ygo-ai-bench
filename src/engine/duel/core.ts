@@ -145,6 +145,7 @@ import { setSpellTrap } from "#duel/spell-trap.js";
 import { canActivateSpellTrapCardEffect, shouldSendActivatedSpellTrapToGraveyard } from "#duel/spell-trap-activation.js";
 import { negateCoreDuelSummon } from "#duel/summon-negation.js";
 import { hasLuaLimitNormalSummonProcedure, luaLimitNormalSummonProcedureValue, normalSummonProcedureActions, specialSummonProcedureActions } from "#duel/summon-procedure-actions.js";
+import { applySummonOrSetCosts } from "#duel/summon-set-cost.js";
 import { duelSummonTypeFromCode, isFaceDownExtraDeckSummonTypeCode, luaSummonTypeFusion, luaSummonTypeLink, luaSummonTypePendulum, luaSummonTypeRitual, luaSummonTypeSynchro, luaSummonTypeXyz } from "#duel/summon-type-codes.js";
 import { changeDuelPhase, drawDuelCardsFromDeck, endDuelTurn, isDuelPhaseSkipped, nextAvailableDuelPhase } from "#duel/turn-flow.js";
 export { createDuel, loadDecks, startDuel, type CreateDuelOptions } from "#duel/setup.js";
@@ -221,16 +222,25 @@ const responseHandlers: DuelResponseHandlers = {
   normalSummon(state, player, uid) {
     const card = findCard(state, uid);
     if (card && isNormalSummonPrevented(state, player, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Normal Summoned`);
+    if (card) paySummonOrSetCosts(state, player, card, [91]);
     normalSummon(state, player, uid, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), () => isNoTributeSummonAllowed(state, player));
   },
   tributeSummon(session, player, uid, tributeUids, effectId) {
     if (effectId !== undefined) {
+      const card = findCard(session.state, uid);
+      if (card) paySummonOrSetCosts(session.state, player, card, [91]);
       normalSummonDuelByProcedure(session.state, player, uid, effectId, (eventName, eventCard) => collectTriggerEffects(session.state, eventName, eventCard));
       return;
     }
+    const card = findCard(session.state, uid);
+    if (card) paySummonOrSetCosts(session.state, player, card, [91]);
     tributeSummonDuelCard(session.state, player, uid, tributeUids);
   },
-  tributeSet: tributeSetDuelCard,
+  tributeSet(state, player, uid, tributeUids) {
+    const card = findCard(state, uid);
+    if (card) paySummonOrSetCosts(state, player, card, [94]);
+    tributeSetDuelCard(state, player, uid, tributeUids);
+  },
   fusionSummon: fusionSummonDuelCard,
   synchroSummon: synchroSummonDuelCard,
   xyzSummon: xyzSummonDuelCard,
@@ -243,11 +253,13 @@ const responseHandlers: DuelResponseHandlers = {
   setMonster(state, player, uid) {
     const card = findCard(state, uid);
     if (card && isMonsterSetPrevented(state, player, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Set`);
+    if (card) paySummonOrSetCosts(state, player, card, [94]);
     setMonster(state, player, uid, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard));
   },
   setSpellTrap(state, player, uid) {
     const card = findCard(state, uid);
     if (card && isSpellTrapSetPrevented(state, player, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Set`);
+    if (card) paySummonOrSetCosts(state, player, card, [95]);
     setSpellTrap(state, player, uid, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard));
   },
   activateEffect(session, player, uid, effectId) {
@@ -271,7 +283,11 @@ const responseHandlers: DuelResponseHandlers = {
     collectDeferredChainEndedAfterDecline(session.state, declinedTrigger, () => collectTriggerEffects(session.state, "chainEnded"));
     continueAttackResponseWindow(session.state, battleContinuationHandlers);
   },
-  flipSummon: flipSummonDuelCard,
+  flipSummon(state, player, uid) {
+    const card = findCard(state, uid);
+    if (card) paySummonOrSetCosts(state, player, card, [93]);
+    flipSummonDuelCard(state, player, uid);
+  },
   changePosition: (state, player, uid, position) => changeDuelCardPosition(state, player, uid, position, "manual"),
   declareAttack: declareDuelAttack,
   changePhase(state, player, phase) {
@@ -482,37 +498,23 @@ export function sendDuelCardToGraveyard(state: DuelState, uid: string, controlle
   return sendCoreDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers);
 }
 
-export function destroyDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect | duelReason.destroy, reasonPlayer?: PlayerId, destination: DuelLocation = "graveyard"): DuelCardInstance {
-  return destroyCoreDuelCard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers, destination);
-}
+export function destroyDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect | duelReason.destroy, reasonPlayer?: PlayerId, destination: DuelLocation = "graveyard"): DuelCardInstance { return destroyCoreDuelCard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers, destination); }
 
-export function banishDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId): DuelCardInstance {
-  return banishCoreDuelCard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers);
-}
+export function banishDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId): DuelCardInstance { return banishCoreDuelCard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers); }
 
-export function moveDuelCardWithRedirects(state: DuelState, uid: string, to: DuelLocation, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance {
-  return moveCoreDuelCardWithRedirects(state, uid, to, controller, reason, reasonPlayer, coreMovementHandlers, payload);
-}
+export function moveDuelCardWithRedirects(state: DuelState, uid: string, to: DuelLocation, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance { return moveCoreDuelCardWithRedirects(state, uid, to, controller, reason, reasonPlayer, coreMovementHandlers, payload); }
 
 export function detachDuelOverlayMaterials(state: DuelState, uid: string, count: number, controller?: PlayerId, reason: number = duelReason.cost, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance[] {
   return detachCoreDuelOverlayMaterials(state, uid, count, controller, reason, coreMovementHandlers, reasonPlayer, payload);
 }
 
-export function raiseDuelEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
-  collectTriggerEffects(state, eventName, eventCard);
-}
+export function raiseDuelEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void { collectTriggerEffects(state, eventName, eventCard); }
 
-export function raiseDuelEventWithCode(state: DuelState, eventName: DuelEventName, eventCode: number, eventCard?: DuelCardInstance, payload: DuelEventPayload = {}): void {
-  collectDuelTriggerEffects(state, eventName, eventCard, { eventCode, ...payload });
-}
+export function raiseDuelEventWithCode(state: DuelState, eventName: DuelEventName, eventCode: number, eventCard?: DuelCardInstance, payload: DuelEventPayload = {}): void { collectDuelTriggerEffects(state, eventName, eventCard, { eventCode, ...payload }); }
 
-export function setDuelAttackCostPaid(state: DuelState, status: number): number {
-  return setDuelAttackCostPaidRule(state, status);
-}
+export function setDuelAttackCostPaid(state: DuelState, status: number): number { return setDuelAttackCostPaidRule(state, status); }
 
-export function getDuelAttackCostPaid(state: DuelState): number {
-  return getDuelAttackCostPaidRule(state);
-}
+export function getDuelAttackCostPaid(state: DuelState): number { return getDuelAttackCostPaidRule(state); }
 
 export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[]): void {
   const card = findCard(state, uid);
@@ -685,6 +687,8 @@ export function changeDuelCardPosition(state: DuelState, player: PlayerId, uid: 
 function createContinuousEffectContext(state: DuelState): ContinuousEffectContextFactory {
   return (effect, source, card, options) => Object.assign(createEffectContext(state, source, effect.controller, undefined, card, [], options?.checkOnly ?? true), options?.eventReason === undefined ? {} : { eventReason: options.eventReason }, options?.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: options.eventReasonPlayer }, options?.eventDestination === undefined ? {} : { eventDestination: options.eventDestination });
 }
+
+function paySummonOrSetCosts(state: DuelState, player: PlayerId, card: DuelCardInstance, codes: readonly number[]): void { applySummonOrSetCosts(state, player, createContinuousEffectContext(state), card, codes); }
 
 function canEnterDuelPhase(state: DuelState, player: PlayerId, phase: DuelPhase): boolean {
   if (phase !== "battle" && phase !== "main2" && phase !== "end") return true;
