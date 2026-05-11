@@ -86,6 +86,9 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   const levelAbove = effect.luaTargetDescriptor?.startsWith("target:level-above:") ? Number(effect.luaTargetDescriptor.slice("target:level-above:".length)) : undefined; if (levelAbove !== undefined && Number.isSafeInteger(levelAbove) && levelAbove > 0) return { targetCardPredicate: (ctx, card) => currentLevel(card, ctx.duel) >= levelAbove };
   const attackBelow = effect.luaTargetDescriptor?.startsWith("target:attack-below:") ? Number(effect.luaTargetDescriptor.slice("target:attack-below:".length)) : undefined; if (attackBelow !== undefined && Number.isSafeInteger(attackBelow) && attackBelow > 0) return { targetCardPredicate: (ctx, card) => currentAttack(card, ctx.duel) <= attackBelow };
   const notLevelOrRankAbove = effect.luaTargetDescriptor?.startsWith("target:not-level-or-rank-above:") ? Number(effect.luaTargetDescriptor.slice("target:not-level-or-rank-above:".length)) : undefined; if (notLevelOrRankAbove !== undefined && Number.isSafeInteger(notLevelOrRankAbove) && notLevelOrRankAbove > 0) return { targetCardPredicate: (ctx, card) => !(((cardTypeFlags(card, ctx.duel) & 0x1) !== 0 && currentRank(card, ctx.duel) === 0 && currentLink(card, ctx.duel) === 0 && currentLevel(card, ctx.duel) >= notLevelOrRankAbove) || currentRank(card, ctx.duel) >= notLevelOrRankAbove) };
+  const notOriginalTypeAttribute = originalTypeAttributeDescriptor(effect.luaTargetDescriptor); if (notOriginalTypeAttribute) return { targetCardPredicate: (_ctx, card) => (printedCardTypeFlags(card) & notOriginalTypeAttribute.type) === 0 || ((card.data.attribute ?? 0) & notOriginalTypeAttribute.attribute) === 0 };
+  const notOriginalTypeRace = originalTypeRaceDescriptor(effect.luaTargetDescriptor); if (notOriginalTypeRace) return { targetCardPredicate: (_ctx, card) => (printedCardTypeFlags(card) & notOriginalTypeRace.type) === 0 || ((card.data.race ?? 0) & notOriginalTypeRace.race) === 0 };
+  const notOriginalAttributeRace = originalAttributeRaceDescriptor(effect.luaTargetDescriptor); if (notOriginalAttributeRace) return { targetCardPredicate: (_ctx, card) => ((card.data.attribute ?? 0) & notOriginalAttributeRace.attribute) === 0 || ((card.data.race ?? 0) & notOriginalAttributeRace.race) === 0 };
   const notOriginalType = effect.luaTargetDescriptor?.startsWith("target:not-original-type:") ? Number(effect.luaTargetDescriptor.slice("target:not-original-type:".length)) : undefined; if (notOriginalType !== undefined && Number.isSafeInteger(notOriginalType) && notOriginalType > 0) return { targetCardPredicate: (_ctx, card) => (printedCardTypeFlags(card) & notOriginalType) === 0 };
   const notType = effect.luaTargetDescriptor?.startsWith("target:not-type:") ? Number(effect.luaTargetDescriptor.slice("target:not-type:".length)) : undefined; if (notType !== undefined && Number.isSafeInteger(notType) && notType > 0) return { targetCardPredicate: (ctx, card) => (cardTypeFlags(card, ctx.duel) & notType) === 0 };
   const type = typeTargetDescriptor(effect.luaTargetDescriptor); if (type !== undefined) return { targetCardPredicate: (ctx, card) => (cardTypeFlags(card, ctx.duel) & type) !== 0 && (!effect.luaTargetDescriptor?.startsWith(luaFaceupTypeTargetDescriptorPrefix) || card.faceUp) };
@@ -276,6 +279,24 @@ function raceAttributeDescriptor(descriptor: string | undefined): { race: number
   if (!descriptor?.startsWith("target:not-race-attribute:")) return undefined;
   const [race, attribute] = descriptor.slice("target:not-race-attribute:".length).split(":").map(Number);
   return race !== undefined && attribute !== undefined && [race, attribute].every((value) => Number.isSafeInteger(value) && value > 0) ? { race, attribute } : undefined;
+}
+
+function originalTypeAttributeDescriptor(descriptor: string | undefined): { type: number; attribute: number } | undefined {
+  if (!descriptor?.startsWith("target:not-original-type-attribute:")) return undefined;
+  const [type, attribute] = descriptor.slice("target:not-original-type-attribute:".length).split(":").map(Number);
+  return type !== undefined && attribute !== undefined && [type, attribute].every((value) => Number.isSafeInteger(value) && value > 0) ? { type, attribute } : undefined;
+}
+
+function originalTypeRaceDescriptor(descriptor: string | undefined): { type: number; race: number } | undefined {
+  if (!descriptor?.startsWith("target:not-original-type-race:")) return undefined;
+  const [type, race] = descriptor.slice("target:not-original-type-race:".length).split(":").map(Number);
+  return type !== undefined && race !== undefined && [type, race].every((value) => Number.isSafeInteger(value) && value > 0) ? { type, race } : undefined;
+}
+
+function originalAttributeRaceDescriptor(descriptor: string | undefined): { attribute: number; race: number } | undefined {
+  if (!descriptor?.startsWith("target:not-original-attribute-race:")) return undefined;
+  const [attribute, race] = descriptor.slice("target:not-original-attribute-race:".length).split(":").map(Number);
+  return attribute !== undefined && race !== undefined && [attribute, race].every((value) => Number.isSafeInteger(value) && value > 0) ? { attribute, race } : undefined;
 }
 
 export function notSetcodeTargetDescriptor(descriptor: string | undefined): number | undefined {

@@ -160,4 +160,110 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     expect(effect!.targetCardPredicate!(ctx, fire!)).toBe(false);
     expect(effect!.targetCardPredicate!(ctx, water!)).toBe(true);
   });
+
+  it("restores Crimson Gaia's original DARK Synchro Clock Lizard check", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const gaiaCode = "62991792";
+    const darkSynchroCode = "62991793";
+    const lightSynchroCode = "62991794";
+    const darkFusionCode = "62991795";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === gaiaCode),
+      { code: darkSynchroCode, name: "Original DARK Synchro Probe", kind: "extra", typeFlags: 0x2001, race: 0x2000, attribute: 0x20, level: 8, attack: 1000, defense: 1000 },
+      { code: lightSynchroCode, name: "Original LIGHT Synchro Probe", kind: "extra", typeFlags: 0x2001, race: 0x2000, attribute: 0x10, level: 8, attack: 1000, defense: 1000 },
+      { code: darkFusionCode, name: "Original DARK Fusion Probe", kind: "extra", typeFlags: 0x41, race: 0x2000, attribute: 0x20, level: 8, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 629, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [gaiaCode], extra: [darkSynchroCode, lightSynchroCode, darkFusionCode] }, 1: { main: [] } });
+    startDuel(session);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(gaiaCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${gaiaCode}),0,LOCATION_DECK,0,nil)
+      aux.addTempLizardCheck(c,0,c${gaiaCode}.lizfilter)
+      `,
+      "crimson-gaia-official-lizard-type-attribute.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects.find((effect) => effect.code === 51476410)).toMatchObject({
+      luaTargetDescriptor: "target:not-original-type-attribute:8192:32",
+      value: 1,
+    });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const effect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
+    const source = restored.session.state.cards.find((card) => card.code === gaiaCode);
+    const darkSynchro = restored.session.state.cards.find((card) => card.code === darkSynchroCode);
+    const lightSynchro = restored.session.state.cards.find((card) => card.code === lightSynchroCode);
+    const darkFusion = restored.session.state.cards.find((card) => card.code === darkFusionCode);
+    expect(effect?.targetCardPredicate).toBeDefined();
+    expect(source).toBeDefined();
+    expect(darkSynchro).toBeDefined();
+    expect(lightSynchro).toBeDefined();
+    expect(darkFusion).toBeDefined();
+    const ctx = targetContext(restored.session.state, source!);
+    expect(effect!.targetCardPredicate!(ctx, darkSynchro!)).toBe(false);
+    expect(effect!.targetCardPredicate!(ctx, lightSynchro!)).toBe(true);
+    expect(effect!.targetCardPredicate!(ctx, darkFusion!)).toBe(true);
+  });
+
+  it("restores Ashened to Endlessness's original Machine Xyz Clock Lizard check", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const ashenedCode = "38173725";
+    const machineXyzCode = "38173726";
+    const dragonXyzCode = "38173727";
+    const machineSynchroCode = "38173728";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === ashenedCode),
+      { code: machineXyzCode, name: "Original Machine Xyz Probe", kind: "extra", typeFlags: 0x800001, race: 0x20, attribute: 0x20, level: 4, attack: 1000, defense: 1000 },
+      { code: dragonXyzCode, name: "Original Dragon Xyz Probe", kind: "extra", typeFlags: 0x800001, race: 0x2000, attribute: 0x20, level: 4, attack: 1000, defense: 1000 },
+      { code: machineSynchroCode, name: "Original Machine Synchro Probe", kind: "extra", typeFlags: 0x2001, race: 0x20, attribute: 0x20, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 381, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [ashenedCode], extra: [machineXyzCode, dragonXyzCode, machineSynchroCode] }, 1: { main: [] } });
+    startDuel(session);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(ashenedCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${ashenedCode}),0,LOCATION_DECK,0,nil)
+      aux.addTempLizardCheck(c,0,c${ashenedCode}.lizfilter)
+      `,
+      "ashened-to-endlessness-official-lizard-type-race.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects.find((effect) => effect.code === 51476410)).toMatchObject({
+      luaTargetDescriptor: "target:not-original-type-race:8388608:32",
+      value: 1,
+    });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const effect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
+    const source = restored.session.state.cards.find((card) => card.code === ashenedCode);
+    const machineXyz = restored.session.state.cards.find((card) => card.code === machineXyzCode);
+    const dragonXyz = restored.session.state.cards.find((card) => card.code === dragonXyzCode);
+    const machineSynchro = restored.session.state.cards.find((card) => card.code === machineSynchroCode);
+    expect(effect?.targetCardPredicate).toBeDefined();
+    expect(source).toBeDefined();
+    expect(machineXyz).toBeDefined();
+    expect(dragonXyz).toBeDefined();
+    expect(machineSynchro).toBeDefined();
+    const ctx = targetContext(restored.session.state, source!);
+    expect(effect!.targetCardPredicate!(ctx, machineXyz!)).toBe(false);
+    expect(effect!.targetCardPredicate!(ctx, dragonXyz!)).toBe(true);
+    expect(effect!.targetCardPredicate!(ctx, machineSynchro!)).toBe(true);
+  });
 });
