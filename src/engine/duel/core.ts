@@ -144,6 +144,7 @@ import { applyDuelResponse, type DuelResponseHandlers } from "#duel/response-dis
 import { runScriptedDuelResponses as runScriptedDuelResponsesWithHandlers } from "#duel/scripted-runner.js";
 import { setSpellTrap } from "#duel/spell-trap.js";
 import { canActivateSpellTrapCardEffect, shouldSendActivatedSpellTrapToGraveyard } from "#duel/spell-trap-activation.js";
+import { applySpecialSummonCosts } from "#duel/special-summon-cost.js";
 import { negateCoreDuelSummon } from "#duel/summon-negation.js";
 import { hasLuaLimitNormalSummonProcedure, luaLimitNormalSummonProcedureValue, normalSummonProcedureActions, specialSummonProcedureActions } from "#duel/summon-procedure-actions.js";
 import { applySummonOrSetCosts } from "#duel/summon-set-cost.js";
@@ -439,6 +440,7 @@ export function specialSummonDuelCard(state: DuelState, uid: string, controller?
   const summonController = controller ?? card.controller;
   requireZoneSpace(state, summonController, "monsterZone");
   if (!canSpecialSummonDuelCard(state, uid, summonController, summonTypeCode, payload.eventReasonEffectId, allowUnconditionalSpecialSummonCondition)) throw new Error(`${card.name} cannot be Special Summoned`);
+  applySpecialSummonCosts(state, summonController, createContinuousEffectContext(state), card, summonTypeCode);
   collectTriggerEffects(state, "specialSummoning", card);
   moveDuelCard(state, uid, "monsterZone", summonController, duelReason.summon | duelReason.specialSummon, reasonPlayer);
   if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
@@ -496,9 +498,7 @@ function requireDuelMoveAllowed(state: DuelState, uid: string, to: DuelLocation,
   if (!canMoveDuelCardToLocation(state, uid, to, reason)) throw new Error(`Card ${uid} cannot move to ${to}`);
 }
 
-export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId): DuelCardInstance {
-  return sendCoreDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers);
-}
+export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId): DuelCardInstance { return sendCoreDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers); }
 
 export function destroyDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect | duelReason.destroy, reasonPlayer?: PlayerId, destination: DuelLocation = "graveyard"): DuelCardInstance { return destroyCoreDuelCard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers, destination); }
 
@@ -506,9 +506,7 @@ export function banishDuelCard(state: DuelState, uid: string, controller?: Playe
 
 export function moveDuelCardWithRedirects(state: DuelState, uid: string, to: DuelLocation, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance { return moveCoreDuelCardWithRedirects(state, uid, to, controller, reason, reasonPlayer, coreMovementHandlers, payload); }
 
-export function detachDuelOverlayMaterials(state: DuelState, uid: string, count: number, controller?: PlayerId, reason: number = duelReason.cost, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance[] {
-  return detachCoreDuelOverlayMaterials(state, uid, count, controller, reason, coreMovementHandlers, reasonPlayer, payload);
-}
+export function detachDuelOverlayMaterials(state: DuelState, uid: string, count: number, controller?: PlayerId, reason: number = duelReason.cost, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance[] { return detachCoreDuelOverlayMaterials(state, uid, count, controller, reason, coreMovementHandlers, reasonPlayer, payload); }
 
 export function raiseDuelEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void { collectTriggerEffects(state, eventName, eventCard); }
 
