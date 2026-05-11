@@ -1,6 +1,7 @@
 import type { DuelEffectDefinition, SerializedDuelEffect } from "#duel/types.js";
 
 const luaEffectFlagPlayerTarget = 0x800;
+const luaEffectFlagClientHint = 0x4000000;
 const luaLocationMonsterZone = 0x04;
 const luaPhaseEndResetFlags = 0x40000200;
 const luaPhaseBattleEndResetFlags = 0x40000280;
@@ -121,6 +122,23 @@ export function isKnownTemporarySelfTurnCannotEndPhaseEffect(effect: SerializedD
     hasPlayerTargetFlag(effect) &&
     targetRangeEquals(effect, 1, 0) &&
     hasDefaultLuaFieldRange(effect)
+  );
+}
+
+export function isKnownTemporarySameCodeActivationOathEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 6 &&
+    effect.sourceUid !== undefined &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    effect.reset.count !== undefined &&
+    effect.value === undefined &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    hasPlayerTargetFlag(effect) &&
+    targetRangeEquals(effect, 1, 0) &&
+    hasDefaultLuaFieldRange(effect) &&
+    ((effect.property ?? 0) & luaEffectFlagClientHint) !== 0
   );
 }
 
