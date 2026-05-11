@@ -17,6 +17,9 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const statusSummonLocationStatus = statusSummonLocation?.[1] ? luaNumberExpressionValue(L, index, statusSummonLocation[1]) : undefined;
   const statusSummonLocationLocation = statusSummonLocation?.[2] ? luaNumberExpressionValue(L, index, statusSummonLocation[2]) : undefined;
   if (statusSummonLocationStatus !== undefined && statusSummonLocationLocation !== undefined) return `target:status-summon-location:${statusSummonLocationStatus}:${statusSummonLocationLocation}`;
+  const notStatus = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s*(?:end\\b|$)`));
+  const notStatusValue = notStatus?.[1] ? luaNumberExpressionValue(L, index, notStatus[1]) : undefined;
+  if (notStatusValue !== undefined) return `target:not-status:${notStatusValue}`;
   const status = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s*(?:end\\b|$)`));
   const statusValue = status?.[1] ? luaNumberExpressionValue(L, index, status[1]) : undefined;
   if (statusValue !== undefined) return `target:status:${statusValue}`;
