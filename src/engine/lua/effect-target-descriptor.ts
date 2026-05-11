@@ -187,9 +187,15 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notAttribute = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`)) ?? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*GetAttribute\\s*\\(\\s*\\)\\s*~=\\s*(${numericOrIdentifierPattern})`));
   const notAttributeValue = notAttribute?.[1] ? luaNumberTokenValue(L, index, notAttribute[1]) : undefined;
   if (notAttributeValue !== undefined) return `target:not-attribute:${notAttributeValue}`;
+  const notOriginalAttribute = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsOriginalAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
+  const notOriginalAttributeValue = notOriginalAttribute?.[1] ? luaNumberTokenValue(L, index, notOriginalAttribute[1]) : undefined;
+  if (notOriginalAttributeValue !== undefined) return `target:not-original-attribute:${notOriginalAttributeValue}`;
   const notRace = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`)) ?? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*GetRace\\s*\\(\\s*\\)\\s*~=\\s*(${numericOrIdentifierPattern})`));
   const notRaceValue = notRace?.[1] ? luaNumberTokenValue(L, index, notRace[1]) : undefined;
   if (notRaceValue !== undefined) return `target:not-race:${notRaceValue}`;
+  const notOriginalRace = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsOriginalRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
+  const notOriginalRaceValue = notOriginalRace?.[1] ? luaNumberTokenValue(L, index, notOriginalRace[1]) : undefined;
+  if (notOriginalRaceValue !== undefined) return `target:not-original-race:${notOriginalRaceValue}`;
   const setcodeOrCodeType = setcodeOrCodeTypeTargetDescriptor(L, index, snippet, card);
   if (setcodeOrCodeType !== undefined) return setcodeOrCodeType;
   const notCode = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsCode\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`)) ?? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*GetCode\\s*\\(\\s*\\)\\s*~=\\s*(${numericOrIdentifierPattern})`));
