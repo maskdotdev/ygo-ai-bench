@@ -39,6 +39,8 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (pendulumSummonNotSetcode !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4a000000 && !pendulumSummonNotSetcode.some((setcode) => currentCardMatchesSetcode(card, ctx.duel, setcode)) };
   const pendulumSummonNotAttribute = pendulumSummonNotAttributeDescriptor(effect.luaTargetDescriptor);
   if (pendulumSummonNotAttribute !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4a000000 && (currentAttribute(card, ctx.duel) & pendulumSummonNotAttribute) === 0 };
+  const pendulumSummonNotRace = pendulumSummonNotRaceDescriptor(effect.luaTargetDescriptor);
+  if (pendulumSummonNotRace !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4a000000 && (currentRace(card, ctx.duel) & pendulumSummonNotRace) === 0 };
   const ritualSummonNotRace = ritualSummonNotRaceDescriptor(effect.luaTargetDescriptor);
   if (ritualSummonNotRace !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x45000000 && (currentRace(card, ctx.duel) & ritualSummonNotRace) === 0 };
   const extraSummonTypeNot = extraSummonTypeNotDescriptor(effect.luaTargetDescriptor);
@@ -75,6 +77,12 @@ function pendulumSummonNotAttributeDescriptor(descriptor: string | undefined): n
   if (!descriptor?.startsWith("target:pendulum-summon-not-attribute:")) return undefined;
   const attribute = Number(descriptor.slice("target:pendulum-summon-not-attribute:".length));
   return Number.isSafeInteger(attribute) && attribute > 0 ? attribute : undefined;
+}
+
+function pendulumSummonNotRaceDescriptor(descriptor: string | undefined): number | undefined {
+  if (!descriptor?.startsWith("target:pendulum-summon-not-race:")) return undefined;
+  const race = Number(descriptor.slice("target:pendulum-summon-not-race:".length));
+  return Number.isSafeInteger(race) && race > 0 ? race : undefined;
 }
 
 function ritualSummonNotRaceDescriptor(descriptor: string | undefined): number | undefined {
