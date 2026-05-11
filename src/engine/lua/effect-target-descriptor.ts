@@ -150,7 +150,10 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   if (summonTypeParam) {
     const summonTypeNot = snippet.match(new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*~=\\s*(SUMMON_TYPE_SPECIAL\\s*\\+\\s*${numericOrIdentifierPattern}|${numericOrIdentifierPattern})`));
     const summonTypeMaskIs = snippet.match(new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*==\\s*\\1`)) ?? snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*==\\s*\\1`));
+    const summonTypeMaskIsAny = snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*==\\s*\\1\\s+or\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*==\\s*\\2`));
     const summonTypeMaskNot = snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*~=\\s*\\1`));
+    const summonTypeIsAny = summonTypeMaskIsAny?.[1] && summonTypeMaskIsAny[2] ? [luaSummonTypeTokenValue(L, index, summonTypeMaskIsAny[1]), luaSummonTypeTokenValue(L, index, summonTypeMaskIsAny[2])] : undefined;
+    if (summonTypeIsAny?.every((value): value is number => value !== undefined)) return `target:special-summon-type-is-any:${summonTypeIsAny.join(",")}`;
     const summonTypeIsValue = summonTypeMaskIs?.[1] ? luaSummonTypeTokenValue(L, index, summonTypeMaskIs[1]) : undefined;
     if (summonTypeIsValue !== undefined) return `target:special-summon-type-is:${summonTypeIsValue}`;
     const summonTypeNotToken = summonTypeNot?.[1] ?? summonTypeMaskNot?.[1];
@@ -172,6 +175,12 @@ export function specialSummonTypeIsTargetDescriptor(descriptor: string | undefin
   if (!descriptor?.startsWith("target:special-summon-type-is:")) return undefined;
   const value = Number(descriptor.slice("target:special-summon-type-is:".length));
   return Number.isSafeInteger(value) && value > 0 ? value : undefined;
+}
+
+export function specialSummonTypeIsAnyTargetDescriptor(descriptor: string | undefined): number[] | undefined {
+  if (!descriptor?.startsWith("target:special-summon-type-is-any:")) return undefined;
+  const values = descriptor.slice("target:special-summon-type-is-any:".length).split(",").map(Number);
+  return values.length > 0 && values.every((value) => Number.isSafeInteger(value) && value > 0) ? values : undefined;
 }
 
 function knownFixedFunctionDescriptor(L: unknown, index: number, hostState: LuaHostState): string | undefined {
