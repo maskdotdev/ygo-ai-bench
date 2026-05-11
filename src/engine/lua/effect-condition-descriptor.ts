@@ -61,6 +61,9 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const sourceStatusRelateBattle = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s+return\\s+\\1\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s+and\\s+\\1\\s*:\\s*IsRelateToBattle\\s*\\(\\s*\\)\\s*(?:end\\b|$)`));
   const sourceStatusRelateBattleValue = sourceStatusRelateBattle?.[2] ? luaNumberExpressionValue(L, index, sourceStatusRelateBattle[2]) : undefined;
   if (sourceStatusRelateBattleValue !== undefined) return `condition:source-status-relate-battle:${sourceStatusRelateBattleValue}`;
+  const sourceStatusBattleTargetControl = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s+local\\s+(\\w+)\\s*=\\s*\\1\\s*:\\s*GetBattleTarget\\s*\\(\\s*\\)\\s+return\\s+\\1\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s+and\\s+\\2\\s+and\\s+\\2\\s*:\\s*IsAbleToChangeControler\\s*\\(\\s*\\)\\s*(?:end\\b|$)`));
+  const sourceStatusBattleTargetControlValue = sourceStatusBattleTargetControl?.[3] ? luaNumberExpressionValue(L, index, sourceStatusBattleTargetControl[3]) : undefined;
+  if (sourceStatusBattleTargetControlValue !== undefined) return `condition:source-status-battle-target-control:${sourceStatusBattleTargetControlValue}`;
   const sourceStatus = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
   const sourceStatusValue = sourceStatus?.[1] ? luaNumberExpressionValue(L, index, sourceStatus[1]) : undefined;
   if (sourceStatusValue !== undefined) return `condition:source-status:${sourceStatusValue}`;
