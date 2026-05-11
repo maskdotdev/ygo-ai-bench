@@ -18,6 +18,7 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notTypeExtraValue = notTypeExtra?.[1] ? luaNumberTokenValue(L, index, notTypeExtra[1]) : undefined;
   if (notTypeExtraValue === 0x40) return "special-summon-limit:non-fusion-extra";
   if (notTypeExtraValue !== undefined) return `special-summon-limit:not-type-extra:${notTypeExtraValue}`;
+  if (new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsSynchroMonster\\s*\\(\\s*\\)`).test(snippet)) return `special-summon-limit:not-type-extra:${0x2000}`;
   const notTypeAttributeExtra = snippet.match(new RegExp(`\\breturn\\s+(?:not\\s+\\(\\s*${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)|${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+\\(\\s*${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*\\))`));
   const notTypeAttributeExtraTypeToken = notTypeAttributeExtra?.[1] ?? notTypeAttributeExtra?.[4];
   const notTypeAttributeExtraAttributeToken = notTypeAttributeExtra?.[2] ?? notTypeAttributeExtra?.[3];
