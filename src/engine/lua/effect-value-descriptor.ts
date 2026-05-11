@@ -119,7 +119,9 @@ function sameCodeActivationPredicateDescriptor(snippet: string, params: string[]
   const effect = escapeRegExp(effectParam);
   const relatedEffect = escapeRegExp(relatedEffectParam);
   const sameCode = `${relatedEffect}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsCode\\s*\\(\\s*${effect}\\s*:\\s*GetLabel\\s*\\(\\s*\\)\\s*\\)`;
-  const predicate = new RegExp(`\\breturn\\s+(?:(?:${relatedEffect}\\s*:\\s*IsHasType\\s*\\(\\s*(?:EFFECT_TYPE_ACTIVATE|16)\\s*\\)|${relatedEffect}\\s*:\\s*IsMonsterEffect\\s*\\(\\s*\\))\\s+and\\s+)?${sameCode}\\s*(?:end\\b|$)`);
+  const monsterEffect = `${relatedEffect}\\s*:\\s*IsMonsterEffect\\s*\\(\\s*\\)`;
+  if (new RegExp(`\\breturn\\s+(?:${monsterEffect}\\s+and\\s+${sameCode}|${sameCode}\\s+and\\s+${monsterEffect})\\s*(?:end\\b|$)`).test(snippet)) return "cannot-activate:same-code-monster-effect";
+  const predicate = new RegExp(`\\breturn\\s+(?:${relatedEffect}\\s*:\\s*IsHasType\\s*\\(\\s*(?:EFFECT_TYPE_ACTIVATE|16)\\s*\\)\\s+and\\s+)?${sameCode}\\s*(?:end\\b|$)`);
   return predicate.test(snippet) ? "cannot-activate:same-code" : undefined;
 }
 

@@ -41,8 +41,8 @@ export function isKnownTemporaryActivationLockEffect(effect: SerializedDuelEffec
     effect.code === 6 &&
     effect.sourceUid !== undefined &&
     effect.reset?.flags === luaPhaseEndResetFlags &&
-    (effect.value === 1 || effect.luaValueDescriptor === "cannot-activate:spell-trap-effect" || effect.luaValueDescriptor === "cannot-activate:card-activation" || effect.luaValueDescriptor === "cannot-activate:same-code" || effect.luaValueDescriptor?.startsWith("cannot-activate:monster-attribute-except:") === true) &&
-    effect.luaTargetDescriptor === undefined &&
+    (effect.value === 1 || effect.luaValueDescriptor === "cannot-activate:spell-trap-effect" || effect.luaValueDescriptor === "cannot-activate:card-activation" || effect.luaValueDescriptor === "cannot-activate:same-code" || effect.luaValueDescriptor === "cannot-activate:same-code-monster-effect" || effect.luaValueDescriptor?.startsWith("cannot-activate:monster-attribute-except:") === true) &&
+    (effect.luaTargetDescriptor === undefined || effect.luaTargetDescriptor === "target:same-code-label") &&
     hasPlayerTargetFlag(effect) &&
     hasAnyPlayerTarget(effect) &&
     hasDefaultLuaFieldRange(effect)
@@ -60,7 +60,7 @@ function isPlainPlayerTargetPhaseEndEffect(effect: SerializedDuelEffect): boolea
     effect.reset?.flags === luaPhaseEndResetFlags &&
     effect.value === undefined &&
     effect.luaValueDescriptor === undefined &&
-    effect.luaTargetDescriptor === undefined &&
+    (effect.luaTargetDescriptor === undefined || effect.luaTargetDescriptor === "target:same-code-label") &&
     hasPlayerTargetFlag(effect) &&
     hasAnyPlayerTarget(effect) &&
     hasDefaultLuaFieldRange(effect)
