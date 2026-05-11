@@ -1,5 +1,6 @@
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttack, currentAttribute, currentBaseAttack, currentLevel, currentLink, currentRace, currentRank } from "#duel/card-stats.js";
+import { getDuelCardCounter } from "#duel/counters.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import { cardSetcodes, isSetcodeMatch } from "#lua/card-code-utils.js";
 import { specialSummonTypeIsAnyTargetDescriptor, specialSummonTypeIsTargetDescriptor, specialSummonTypeNotTargetDescriptor } from "#lua/effect-target-descriptor.js";
@@ -49,6 +50,11 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (extraSummonTypeNot !== undefined) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && effectiveSpecialSummonTypeCode(ctx.summonTypeCode) !== extraSummonTypeNot };
   const linkSummonLinkAbove = linkSummonLinkAboveDescriptor(effect.luaTargetDescriptor);
   if (linkSummonLinkAbove !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4c000000 && (cardTypeFlags(card, ctx.duel) & 0x4000000) !== 0 && currentLink(card, ctx.duel) >= linkSummonLinkAbove };
+  const linkSummonLinkAboveHandlerCounter = linkSummonLinkAboveHandlerCounterDescriptor(effect.luaTargetDescriptor);
+  if (linkSummonLinkAboveHandlerCounter !== undefined) return { targetCardPredicate: (ctx, card) => {
+    const source = ctx.duel.cards.find((candidate) => candidate.uid === effect.sourceUid);
+    return effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4c000000 && currentLink(card, ctx.duel) > getDuelCardCounter(source, linkSummonLinkAboveHandlerCounter);
+  } };
   const summonTypeIsAny = specialSummonTypeIsAnyTargetDescriptor(effect.luaTargetDescriptor);
   if (summonTypeIsAny !== undefined) return { targetCardPredicate: (ctx) => summonTypeIsAny.includes(effectiveSpecialSummonTypeCode(ctx.summonTypeCode)) };
   const summonTypeIs = specialSummonTypeIsTargetDescriptor(effect.luaTargetDescriptor);
@@ -111,6 +117,12 @@ function linkSummonLinkAboveDescriptor(descriptor: string | undefined): number |
   if (!descriptor?.startsWith("target:link-summon-link-above:")) return undefined;
   const link = Number(descriptor.slice("target:link-summon-link-above:".length));
   return Number.isSafeInteger(link) && link > 0 ? link : undefined;
+}
+
+function linkSummonLinkAboveHandlerCounterDescriptor(descriptor: string | undefined): number | undefined {
+  if (!descriptor?.startsWith("target:link-summon-link-above-handler-counter:")) return undefined;
+  const counter = Number(descriptor.slice("target:link-summon-link-above-handler-counter:".length));
+  return Number.isSafeInteger(counter) && counter > 0 ? counter : undefined;
 }
 
 function relatedEffectHandlerMatchesSetcode(ctx: Parameters<NonNullable<DuelEffectDefinition["targetCardPredicate"]>>[0], setcode: number): boolean {

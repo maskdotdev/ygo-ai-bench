@@ -212,6 +212,11 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const linkSummonLinkAboveToken = linkSummonLinkAbove?.[1] ?? linkSummonLinkAbove?.[2];
   const linkSummonLinkAboveValue = linkSummonLinkAboveToken ? luaNumberTokenValue(L, index, linkSummonLinkAboveToken) : undefined;
   if (linkSummonLinkAboveValue !== undefined) return `target:link-summon-link-above:${linkSummonLinkAboveValue}`;
+  const linkSummonLinkAboveHandlerCounter = summonTypeParam && effectParam
+    ? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*GetLink\\s*\\(\\s*\\)\\s*>\\s*${escapeRegExp(effectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetCounter\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+\\(?\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_LINK\\s*\\)?\\s*==\\s*SUMMON_TYPE_LINK`))
+    : undefined;
+  const linkSummonLinkAboveHandlerCounterValue = linkSummonLinkAboveHandlerCounter?.[1] ? luaNumberTokenValue(L, index, linkSummonLinkAboveHandlerCounter[1]) : undefined;
+  if (linkSummonLinkAboveHandlerCounterValue !== undefined) return `target:link-summon-link-above-handler-counter:${linkSummonLinkAboveHandlerCounterValue}`;
   if (summonTypeParam) {
     const summonTypeNot = snippet.match(new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*~=\\s*(SUMMON_TYPE_SPECIAL\\s*\\+\\s*${numericOrIdentifierPattern}|${numericOrIdentifierPattern})`));
     const summonTypeMaskIs = snippet.match(new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*==\\s*\\1`)) ?? snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*==\\s*\\1`));
