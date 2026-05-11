@@ -327,6 +327,7 @@ function luaEffectCountLimitAvailable(L: unknown, hostState: LuaDuelReleaseApiHo
 function luaExtraReleaseValueApplies(L: unknown, hostState: LuaDuelReleaseApiHostState, effect: LuaEffectRecord, player: PlayerId): boolean {
   if (effect.value !== undefined) return effect.value !== 0;
   if (effect.valueRef === undefined) return true;
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, effect.valueRef);
   hostState.pushEffectTable(L, effect.id);
   if (hostState.activeLuaEffectId !== undefined) hostState.pushEffectTable(L, hostState.activeLuaEffectId);
   else lua.lua_pushnil(L);

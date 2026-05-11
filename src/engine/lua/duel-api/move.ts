@@ -819,8 +819,8 @@ function shuffleBuckets(state: DuelState, requested: Set<string>): { cards: Duel
 
 function moveCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDuelMoveApiHostState, mover: LuaCardMover, extraReason = 0, groupedEventName?: DuelEventName, groupedLocation?: DuelLocation): string[] {
   if (session.state.status === "ended") return [];
-  const reason = readMoveReason(L, 2, extraReason);
-  const reasonPlayer = readOptionalPlayer(L, 4) ?? hostState.activeContext?.player ?? session.state.turnPlayer;
+  const releasePlayerReasonOverload = extraReason === duelReason.release && lua.lua_isnumber(L, 3);
+  const reason = readMoveReason(L, releasePlayerReasonOverload ? 3 : 2, extraReason), reasonPlayer = readOptionalPlayer(L, releasePlayerReasonOverload ? 2 : 4) ?? hostState.activeContext?.player ?? session.state.turnPlayer;
   const moved: string[] = [];
   beginLuaOperationMoveStep(session, hostState);
   const triggerStart = session.state.pendingTriggers.length;

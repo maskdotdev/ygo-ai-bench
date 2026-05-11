@@ -142,7 +142,7 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     return 1;
   });
   pushEffectMethod(L, effects, "IsActivated", (state, effect) => {
-    lua.lua_pushboolean(state, ((effect.typeFlags ?? 0) & 0x10) !== 0);
+    lua.lua_pushboolean(state, ((effect.typeFlags ?? 0) & (0x10 | 0x20 | 0x40 | 0x80 | 0x100 | 0x200 | 0x400)) !== 0);
     return 1;
   });
   pushEffectMethod(L, effects, "IsActivatable", (state, effect) => {
