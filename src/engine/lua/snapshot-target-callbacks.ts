@@ -55,6 +55,10 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
     const source = ctx.duel.cards.find((candidate) => candidate.uid === effect.sourceUid);
     return effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4c000000 && currentLink(card, ctx.duel) > getDuelCardCounter(source, linkSummonLinkAboveHandlerCounter);
   } };
+  if (effect.luaTargetDescriptor === "target:link-summon-below-field-max-link") return { targetCardPredicate: (ctx, card) => {
+    const maxFieldLink = ctx.duel.cards.reduce((max, candidate) => candidate.location === "monsterZone" && candidate.faceUp ? Math.max(max, currentLink(candidate, ctx.duel)) : max, 0);
+    return effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4c000000 && maxFieldLink > currentLink(card, ctx.duel);
+  } };
   const summonTypeIsAny = specialSummonTypeIsAnyTargetDescriptor(effect.luaTargetDescriptor);
   if (summonTypeIsAny !== undefined) return { targetCardPredicate: (ctx) => summonTypeIsAny.includes(effectiveSpecialSummonTypeCode(ctx.summonTypeCode)) };
   const summonTypeIs = specialSummonTypeIsTargetDescriptor(effect.luaTargetDescriptor);
