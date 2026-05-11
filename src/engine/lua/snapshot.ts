@@ -18,7 +18,7 @@ import { ritualSummonSelectedMaterials, type LuaDuelSummonApiHostState } from "#
 import { luaTemporaryControlReturnDescriptor, luaTemporaryControlReturnOperation } from "#lua/duel-api/move-control.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
 import { specialSummonTypeIsCostDescriptor, specialSummonTypeNotCostDescriptor } from "#lua/effect-cost-descriptor.js";
-import { locationMatchesCardMask } from "#lua/api-utils.js";
+import { locationMatchesCardMask, positionMaskFromPosition } from "#lua/api-utils.js";
 import { notSetcodeTargetDescriptor, restoredLuaTargetCallbacks, setcodeOrCodeTypeTargetDescriptor, typeTargetDescriptor } from "#lua/snapshot-target-callbacks.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import type { ApplyDuelResponseResult, ChainLimit, ChainLink, DuelAction, DuelCardInstance, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
@@ -870,6 +870,7 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   if (effect.luaConditionDescriptor?.startsWith("condition:source-summon-type:")) return { canActivate: (ctx) => isSummonTypeMaskMatch(summonTypeMaskFromCard(ctx.source), Number(effect.luaConditionDescriptor?.split(":").pop())) };
   if (effect.luaConditionDescriptor?.startsWith("condition:source-summon-location:")) return { canActivate: (ctx) => Boolean(ctx.source.summonType && locationMatchesCardMask(ctx.source, Number(effect.luaConditionDescriptor?.split(":").pop()), ctx.source.previousLocation, ctx.source.previousSequence)) };
   if (effect.luaConditionDescriptor?.startsWith("condition:source-previous-location:")) return { canActivate: (ctx) => locationMatchesCardMask(ctx.source, Number(effect.luaConditionDescriptor?.split(":").pop()), ctx.source.previousLocation, ctx.source.previousSequence) };
+  if (effect.luaConditionDescriptor?.startsWith("condition:source-previous-position:")) return { canActivate: (ctx) => Boolean(ctx.source.previousPosition && (positionMaskFromPosition(ctx.source.previousPosition) & Number(effect.luaConditionDescriptor?.split(":").pop())) !== 0) };
   if (effect.luaConditionDescriptor === "condition:source-overlay-count-positive") return { canActivate: (ctx) => ctx.source.overlayUids.length > 0 }; if (effect.luaConditionDescriptor === "condition:source-overlay-count-zero") return { canActivate: (ctx) => ctx.source.overlayUids.length === 0 };
   return {};
 }
@@ -906,7 +907,6 @@ function relatedEffectIsNonSpiritMonsterEffect(ctx: Parameters<NonNullable<DuelE
   const typeFlags = cardTypeFlags(handler, ctx.duel);
   return Boolean(handler && (typeFlags & luaTypeMonster) !== 0 && (typeFlags & luaTypeSpirit) === 0);
 }
-
 function relatedEffectFromContext(ctx: Parameters<NonNullable<DuelEffectDefinition["valuePredicate"]>>[0]): DuelEffectDefinition | undefined {
   const relatedEffectId = ctx.relatedEffectId === undefined ? ctx.chainLink?.effectId : `lua-${ctx.relatedEffectId}`;
   return ctx.duel.effects.find((effect) => effect.id === relatedEffectId || (relatedEffectId !== undefined && effect.id.startsWith(`${relatedEffectId}-`)));
