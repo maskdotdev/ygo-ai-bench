@@ -55,6 +55,9 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const sourceStatusNot = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s*(?:end\\b|$)`));
   const sourceStatusNotValue = sourceStatusNot?.[1] ? luaNumberExpressionValue(L, index, sourceStatusNot[1]) : undefined;
   if (sourceStatusNotValue !== undefined) return `condition:source-status-not:${sourceStatusNotValue}`;
+  const sourceStatusSummonType = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s+return\\s+\\1\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s+and\\s+\\1\\s*:\\s*Is(Ritual|Fusion|Synchro|Xyz|Pendulum|Link)Summoned\\s*\\(\\s*\\)\\s*(?:end\\b|$)`));
+  const sourceStatusSummonTypeValue = sourceStatusSummonType?.[2] ? luaNumberExpressionValue(L, index, sourceStatusSummonType[2]) : undefined;
+  if (sourceStatusSummonTypeValue !== undefined && sourceStatusSummonType?.[3]) return `condition:source-status-summon-type:${sourceStatusSummonTypeValue}:${summonTypeConditionValues[sourceStatusSummonType[3]]}`;
   const sourceStatus = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
   const sourceStatusValue = sourceStatus?.[1] ? luaNumberExpressionValue(L, index, sourceStatus[1]) : undefined;
   if (sourceStatusValue !== undefined) return `condition:source-status:${sourceStatusValue}`;
