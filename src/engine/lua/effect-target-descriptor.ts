@@ -174,6 +174,11 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
     : undefined;
   const pendulumSummonNotSetcodeValues = pendulumSummonNotSetcode?.[1] ? luaNumberListValue(L, index, pendulumSummonNotSetcode[1]) : undefined;
   if (pendulumSummonNotSetcodeValues?.length) return `target:pendulum-summon-not-setcode:${pendulumSummonNotSetcodeValues.join(",")}`;
+  const ritualSummonNotRace = summonTypeParam
+    ? snippet.match(new RegExp(`\\breturn\\s+\\(?\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_RITUAL\\s*\\)?\\s*==\\s*SUMMON_TYPE_RITUAL\\s+and\\s+not\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)`))
+    : undefined;
+  const ritualSummonNotRaceValue = ritualSummonNotRace?.[1] ? luaNumberExpressionValue(L, index, ritualSummonNotRace[1]) : undefined;
+  if (ritualSummonNotRaceValue !== undefined) return `target:ritual-summon-not-race:${ritualSummonNotRaceValue}`;
   const xyzSummonNotRelatedSetcode = relatedEffectParam && summonTypeParam ? snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_XYZ\\s*\\)\\s*==\\s*SUMMON_TYPE_XYZ\\s+and\\s+not\\s+${escapeRegExp(relatedEffectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`)) : undefined;
   const xyzSummonNotRelatedSetcodeValue = xyzSummonNotRelatedSetcode?.[1] ? luaNumberTokenValue(L, index, xyzSummonNotRelatedSetcode[1]) : undefined;
   if (xyzSummonNotRelatedSetcodeValue !== undefined) return `target:xyz-summon-not-related-setcode:${xyzSummonNotRelatedSetcodeValue}`;

@@ -37,6 +37,8 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (effect.luaTargetDescriptor === "target:same-code-label") return { targetCardPredicate: (ctx, card) => effect.label !== undefined && currentCardMatchesCode(card, ctx.duel, String(effect.label)) };
   const pendulumSummonNotSetcode = pendulumSummonNotSetcodeDescriptor(effect.luaTargetDescriptor);
   if (pendulumSummonNotSetcode !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4a000000 && !pendulumSummonNotSetcode.some((setcode) => currentCardMatchesSetcode(card, ctx.duel, setcode)) };
+  const ritualSummonNotRace = ritualSummonNotRaceDescriptor(effect.luaTargetDescriptor);
+  if (ritualSummonNotRace !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x45000000 && (currentRace(card, ctx.duel) & ritualSummonNotRace) === 0 };
   const summonTypeIsAny = specialSummonTypeIsAnyTargetDescriptor(effect.luaTargetDescriptor);
   if (summonTypeIsAny !== undefined) return { targetCardPredicate: (ctx) => summonTypeIsAny.includes(effectiveSpecialSummonTypeCode(ctx.summonTypeCode)) };
   const summonTypeIs = specialSummonTypeIsTargetDescriptor(effect.luaTargetDescriptor);
@@ -63,6 +65,12 @@ function pendulumSummonNotSetcodeDescriptor(descriptor: string | undefined): num
   if (!descriptor?.startsWith("target:pendulum-summon-not-setcode:")) return undefined;
   const setcodes = descriptor.slice("target:pendulum-summon-not-setcode:".length).split(",").map(Number);
   return setcodes.length > 0 && setcodes.every((setcode) => Number.isSafeInteger(setcode) && setcode > 0) ? setcodes : undefined;
+}
+
+function ritualSummonNotRaceDescriptor(descriptor: string | undefined): number | undefined {
+  if (!descriptor?.startsWith("target:ritual-summon-not-race:")) return undefined;
+  const race = Number(descriptor.slice("target:ritual-summon-not-race:".length));
+  return Number.isSafeInteger(race) && race > 0 ? race : undefined;
 }
 
 function relatedEffectHandlerMatchesSetcode(ctx: Parameters<NonNullable<DuelEffectDefinition["targetCardPredicate"]>>[0], setcode: number): boolean {
