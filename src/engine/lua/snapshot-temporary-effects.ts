@@ -3,6 +3,7 @@ import type { DuelEffectDefinition, SerializedDuelEffect } from "#duel/types.js"
 const luaEffectFlagPlayerTarget = 0x800;
 const luaLocationMonsterZone = 0x04;
 const luaPhaseEndResetFlags = 0x40000200;
+const luaPhaseBattleEndResetFlags = 0x40000280;
 const luaSelfTurnPhaseEndResetFlags = 0x50000200;
 const luaSelfTurnMain1ResetFlags = 0x50000004;
 const luaOpponentTurnPhaseEndResetFlags = 0x60000200;
@@ -59,7 +60,7 @@ export function isKnownTemporaryActivationLockEffect(effect: SerializedDuelEffec
     effect.event === "continuous" &&
     effect.code === 6 &&
     effect.sourceUid !== undefined &&
-    (effect.reset?.flags === luaPhaseEndResetFlags || effect.reset?.flags === luaPhaseDamageResetFlags) &&
+    (effect.reset?.flags === luaPhaseEndResetFlags || effect.reset?.flags === luaPhaseBattleEndResetFlags || effect.reset?.flags === luaPhaseDamageResetFlags) &&
     (effect.value === 1 || effect.luaValueDescriptor === "cannot-activate:spell-trap-effect" || effect.luaValueDescriptor === "cannot-activate:card-activation" || effect.luaValueDescriptor === "cannot-activate:spell-card-activation" || effect.luaValueDescriptor === "cannot-activate:trap-card-activation" || effect.luaValueDescriptor === "cannot-activate:same-code" || effect.luaValueDescriptor === "cannot-activate:same-code-monster-effect" || effect.luaValueDescriptor?.startsWith("cannot-activate:monster-attribute-except:") === true) &&
     (effect.luaTargetDescriptor === undefined || effect.luaTargetDescriptor === "target:same-code-label") &&
     hasPlayerTargetFlag(effect) &&
