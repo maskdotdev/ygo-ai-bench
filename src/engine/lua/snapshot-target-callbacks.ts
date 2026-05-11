@@ -47,6 +47,12 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (notSetcodeAny !== undefined) return { targetCardPredicate: (_ctx, card) => !notSetcodeAny.some((blocked) => cardSetcodes(card).some((setcode) => isSetcodeMatch(blocked, setcode))) };
   const notOriginalSetcodeAny = notOriginalSetcodeAnyTargetDescriptor(effect.luaTargetDescriptor);
   if (notOriginalSetcodeAny !== undefined) return { targetCardPredicate: (_ctx, card) => !notOriginalSetcodeAny.some((blocked) => cardSetcodes(card).some((setcode) => isSetcodeMatch(blocked, setcode))) };
+  const originalAttribute = effect.luaTargetDescriptor?.startsWith("target:original-attribute:") ? Number(effect.luaTargetDescriptor.slice("target:original-attribute:".length)) : undefined;
+  if (originalAttribute !== undefined && Number.isSafeInteger(originalAttribute) && originalAttribute > 0) return { targetCardPredicate: (_ctx, card) => ((card.data.attribute ?? 0) & originalAttribute) !== 0 };
+  const originalSetcode = effect.luaTargetDescriptor?.startsWith("target:original-setcode:") ? Number(effect.luaTargetDescriptor.slice("target:original-setcode:".length)) : undefined;
+  if (originalSetcode !== undefined && Number.isSafeInteger(originalSetcode) && originalSetcode > 0) return { targetCardPredicate: (_ctx, card) => cardSetcodes(card).some((setcode) => isSetcodeMatch(originalSetcode, setcode)) };
+  const originalSetcodeAny = originalSetcodeAnyTargetDescriptor(effect.luaTargetDescriptor);
+  if (originalSetcodeAny !== undefined) return { targetCardPredicate: (_ctx, card) => originalSetcodeAny.some((blocked) => cardSetcodes(card).some((setcode) => isSetcodeMatch(blocked, setcode))) };
   if (effect.luaTargetDescriptor === "target:same-code-label") return { targetCardPredicate: (ctx, card) => effect.label !== undefined && currentCardMatchesCode(card, ctx.duel, String(effect.label)) };
   const pendulumSummonNotSetcode = pendulumSummonNotSetcodeDescriptor(effect.luaTargetDescriptor);
   if (pendulumSummonNotSetcode !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4a000000 && !pendulumSummonNotSetcode.some((setcode) => currentCardMatchesSetcode(card, ctx.duel, setcode)) };
@@ -95,6 +101,7 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   const notOriginalTypeRank = originalTypeRankDescriptor(effect.luaTargetDescriptor); if (notOriginalTypeRank) return { targetCardPredicate: (_ctx, card) => (printedCardTypeFlags(card) & notOriginalTypeRank.type) === 0 || cardRank(card) !== notOriginalTypeRank.rank };
   const notOriginalAttributeRace = originalAttributeRaceDescriptor(effect.luaTargetDescriptor); if (notOriginalAttributeRace) return { targetCardPredicate: (_ctx, card) => ((card.data.attribute ?? 0) & notOriginalAttributeRace.attribute) === 0 || ((card.data.race ?? 0) & notOriginalAttributeRace.race) === 0 };
   const notOriginalType = effect.luaTargetDescriptor?.startsWith("target:not-original-type:") ? Number(effect.luaTargetDescriptor.slice("target:not-original-type:".length)) : undefined; if (notOriginalType !== undefined && Number.isSafeInteger(notOriginalType) && notOriginalType > 0) return { targetCardPredicate: (_ctx, card) => (printedCardTypeFlags(card) & notOriginalType) === 0 };
+  const originalType = effect.luaTargetDescriptor?.startsWith("target:original-type:") ? Number(effect.luaTargetDescriptor.slice("target:original-type:".length)) : undefined; if (originalType !== undefined && Number.isSafeInteger(originalType) && originalType > 0) return { targetCardPredicate: (_ctx, card) => (printedCardTypeFlags(card) & originalType) !== 0 };
   const notType = effect.luaTargetDescriptor?.startsWith("target:not-type:") ? Number(effect.luaTargetDescriptor.slice("target:not-type:".length)) : undefined; if (notType !== undefined && Number.isSafeInteger(notType) && notType > 0) return { targetCardPredicate: (ctx, card) => (cardTypeFlags(card, ctx.duel) & notType) === 0 };
   const type = typeTargetDescriptor(effect.luaTargetDescriptor); if (type !== undefined) return { targetCardPredicate: (ctx, card) => (cardTypeFlags(card, ctx.duel) & type) !== 0 && (!effect.luaTargetDescriptor?.startsWith(luaFaceupTypeTargetDescriptorPrefix) || card.faceUp) };
   return {};
@@ -325,6 +332,12 @@ function notSetcodeAnyTargetDescriptor(descriptor: string | undefined): number[]
 function notOriginalSetcodeAnyTargetDescriptor(descriptor: string | undefined): number[] | undefined {
   if (!descriptor?.startsWith("target:not-original-setcode-any:")) return undefined;
   const setcodes = descriptor.slice("target:not-original-setcode-any:".length).split(",").map(Number);
+  return setcodes.length > 0 && setcodes.every((setcode) => Number.isSafeInteger(setcode) && setcode > 0) ? setcodes : undefined;
+}
+
+function originalSetcodeAnyTargetDescriptor(descriptor: string | undefined): number[] | undefined {
+  if (!descriptor?.startsWith("target:original-setcode-any:")) return undefined;
+  const setcodes = descriptor.slice("target:original-setcode-any:".length).split(",").map(Number);
   return setcodes.length > 0 && setcodes.every((setcode) => Number.isSafeInteger(setcode) && setcode > 0) ? setcodes : undefined;
 }
 

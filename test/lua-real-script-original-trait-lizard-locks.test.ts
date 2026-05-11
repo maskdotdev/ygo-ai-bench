@@ -456,4 +456,138 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     expect(effect!.targetCardPredicate!(ctx, dracoslayer!)).toBe(false);
     expect(effect!.targetCardPredicate!(ctx, other!)).toBe(true);
   });
+
+  it("restores positive original DARK Clock Lizard checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const talesCode = "4398189";
+    const darkCode = "4398190";
+    const lightCode = "4398191";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === talesCode),
+      { code: darkCode, name: "Original DARK Probe", kind: "extra", typeFlags: 0x41, race: 0x1, attribute: 0x20, level: 8, attack: 1000, defense: 1000 },
+      { code: lightCode, name: "Original LIGHT Probe", kind: "extra", typeFlags: 0x41, race: 0x1, attribute: 0x10, level: 8, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 439, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [talesCode], extra: [darkCode, lightCode] }, 1: { main: [] } });
+    startDuel(session);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(talesCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${talesCode}),0,LOCATION_DECK,0,nil)
+      aux.addTempLizardCheck(c,0,function(e,c) return c:IsOriginalAttribute(ATTRIBUTE_DARK) end)
+      `,
+      "tales-of-white-forest-official-positive-original-attribute.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects.find((effect) => effect.code === 51476410)).toMatchObject({
+      luaTargetDescriptor: "target:original-attribute:32",
+      value: 1,
+    });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const mutate = restored.host.loadScript(
+      `
+      local dark=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${darkCode}),0,LOCATION_EXTRA,0,nil)
+      local light=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${lightCode}),0,LOCATION_EXTRA,0,nil)
+      local ed=Effect.CreateEffect(dark)
+      ed:SetType(EFFECT_TYPE_SINGLE)
+      ed:SetCode(EFFECT_CHANGE_ATTRIBUTE)
+      ed:SetValue(ATTRIBUTE_LIGHT)
+      dark:RegisterEffect(ed)
+      local el=Effect.CreateEffect(light)
+      el:SetType(EFFECT_TYPE_SINGLE)
+      el:SetCode(EFFECT_CHANGE_ATTRIBUTE)
+      el:SetValue(ATTRIBUTE_DARK)
+      light:RegisterEffect(el)
+      `,
+      "positive-original-attribute-current-mutation.lua",
+    );
+    expect(mutate.ok, mutate.error).toBe(true);
+    const effect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
+    const source = restored.session.state.cards.find((card) => card.code === talesCode);
+    const dark = restored.session.state.cards.find((card) => card.code === darkCode);
+    const light = restored.session.state.cards.find((card) => card.code === lightCode);
+    expect(effect?.targetCardPredicate).toBeDefined();
+    expect(source).toBeDefined();
+    expect(dark).toBeDefined();
+    expect(light).toBeDefined();
+    const ctx = targetContext(restored.session.state, source!);
+    expect(effect!.targetCardPredicate!(ctx, dark!)).toBe(true);
+    expect(effect!.targetCardPredicate!(ctx, light!)).toBe(false);
+  });
+
+  it("restores positive original setcode Clock Lizard checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const gullinCode = "7320132";
+    const aesirCode = "7320133";
+    const otherCode = "7320134";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === gullinCode),
+      { code: aesirCode, name: "Original Aesir Probe", kind: "extra", typeFlags: 0x2001, race: 0x1, attribute: 0x10, level: 8, attack: 1000, defense: 1000, setcodes: [0x4b] },
+      { code: otherCode, name: "Original Non-Aesir Probe", kind: "extra", typeFlags: 0x2001, race: 0x1, attribute: 0x10, level: 8, attack: 1000, defense: 1000, setcodes: [0x123] },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 732, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [gullinCode], extra: [aesirCode, otherCode] }, 1: { main: [] } });
+    startDuel(session);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(gullinCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${gullinCode}),0,LOCATION_DECK,0,nil)
+      aux.addTempLizardCheck(c,0,function(_,c) return c:IsOriginalSetCard(SET_AESIR) end)
+      `,
+      "gullinbursti-official-positive-original-setcode.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects.find((effect) => effect.code === 51476410)).toMatchObject({
+      luaTargetDescriptor: "target:original-setcode:75",
+      value: 1,
+    });
+  });
+
+  it("restores positive original Link Clock Lizard checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const cynetCode = "86993168";
+    const linkCode = "86993169";
+    const synchroCode = "86993170";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === cynetCode),
+      { code: linkCode, name: "Original Link Probe", kind: "extra", typeFlags: 0x4000001, race: 0x1000000, attribute: 0x20, level: 2, attack: 1000, defense: 0 },
+      { code: synchroCode, name: "Original Synchro Probe", kind: "extra", typeFlags: 0x2001, race: 0x1000000, attribute: 0x20, level: 8, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 869, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [cynetCode], extra: [linkCode, synchroCode] }, 1: { main: [] } });
+    startDuel(session);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(cynetCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${cynetCode}),0,LOCATION_DECK,0,nil)
+      aux.addTempLizardCheck(c,0,function(_,c) return c:IsOriginalType(TYPE_LINK) end)
+      `,
+      "cynet-mining-official-positive-original-type.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects.find((effect) => effect.code === 51476410)).toMatchObject({
+      luaTargetDescriptor: "target:original-type:67108864",
+      value: 1,
+    });
+  });
 });

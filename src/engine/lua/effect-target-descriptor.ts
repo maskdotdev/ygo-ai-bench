@@ -193,6 +193,9 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notOriginalType = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsOriginalType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const notOriginalTypeValue = notOriginalType?.[1] ? luaNumberTokenValue(L, index, notOriginalType[1]) : undefined;
   if (notOriginalTypeValue !== undefined) return `target:not-original-type:${notOriginalTypeValue}`;
+  const originalType = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsOriginalType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)(?!\\s+(?:and|or)\\b)`));
+  const originalTypeValue = originalType?.[1] ? luaNumberTokenValue(L, index, originalType[1]) : undefined;
+  if (originalTypeValue !== undefined) return `target:original-type:${originalTypeValue}`;
   const notType = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const notTypeValue = notType?.[1] ? luaNumberTokenValue(L, index, notType[1]) : undefined;
   if (notTypeValue !== undefined) return `target:not-type:${notTypeValue}`;
@@ -214,6 +217,9 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notOriginalAttribute = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsOriginalAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const notOriginalAttributeValue = notOriginalAttribute?.[1] ? luaNumberTokenValue(L, index, notOriginalAttribute[1]) : undefined;
   if (notOriginalAttributeValue !== undefined) return `target:not-original-attribute:${notOriginalAttributeValue}`;
+  const originalAttribute = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsOriginalAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)(?!\\s+(?:and|or)\\b)`));
+  const originalAttributeValue = originalAttribute?.[1] ? luaNumberTokenValue(L, index, originalAttribute[1]) : undefined;
+  if (originalAttributeValue !== undefined) return `target:original-attribute:${originalAttributeValue}`;
   const notRace = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`)) ?? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*GetRace\\s*\\(\\s*\\)\\s*~=\\s*(${numericOrIdentifierPattern})`));
   const notRaceValue = notRace?.[1] ? luaNumberTokenValue(L, index, notRace[1]) : undefined;
   if (notRaceValue !== undefined) return `target:not-race:${notRaceValue}`;
@@ -225,6 +231,11 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   if (notOriginalSetcodes !== undefined && notOriginalSetcodes.length > 1 && notOriginalSetcodes.every((setcode) => Number.isSafeInteger(setcode) && setcode > 0)) return `target:not-original-setcode-any:${notOriginalSetcodes.join(",")}`;
   const notOriginalSetcodeValue = notOriginalSetcodes?.[0];
   if (notOriginalSetcodeValue !== undefined && Number.isSafeInteger(notOriginalSetcodeValue) && notOriginalSetcodeValue > 0) return `target:not-original-setcode:${notOriginalSetcodeValue}`;
+  const originalSetcode = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsOriginalSetCard\\s*\\(\\s*(?:\\{\\s*)?(${numericOrIdentifierListPattern})(?:\\s*\\})?\\s*\\)(?!\\s+(?:and|or)\\b)`));
+  const originalSetcodes = originalSetcode?.[1] ? luaNumberListValue(L, index, originalSetcode[1]) : undefined;
+  if (originalSetcodes !== undefined && originalSetcodes.length > 1 && originalSetcodes.every((setcode) => Number.isSafeInteger(setcode) && setcode > 0)) return `target:original-setcode-any:${originalSetcodes.join(",")}`;
+  const originalSetcodeValue = originalSetcodes?.[0];
+  if (originalSetcodeValue !== undefined && Number.isSafeInteger(originalSetcodeValue) && originalSetcodeValue > 0) return `target:original-setcode:${originalSetcodeValue}`;
   const setcodeOrCodeType = setcodeOrCodeTypeTargetDescriptor(L, index, snippet, card);
   if (setcodeOrCodeType !== undefined) return setcodeOrCodeType;
   const notCode = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsCode\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`)) ?? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*GetCode\\s*\\(\\s*\\)\\s*~=\\s*(${numericOrIdentifierPattern})`));
