@@ -31,6 +31,7 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   if (sourceLocationValue !== undefined) return `condition:source-location:${sourceLocationValue}`;
   const sourceSummonType = snippet.match(/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*Is(Ritual|Fusion|Synchro|Xyz|Pendulum|Link)Summoned\s*\(\s*\)\s*(?:end\b|$)/);
   if (sourceSummonType?.[1]) return `condition:source-summon-type:${summonTypeConditionValues[sourceSummonType[1]]}`;
+  if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetTurnID\s*\(\s*\)\s*==\s*Duel\s*\.\s*GetTurnCount\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-turn-current";
   const sourceSummonLocation = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsSummonLocation\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
   const sourceSummonLocationValue = sourceSummonLocation?.[1] ? luaNumberExpressionValue(L, index, sourceSummonLocation[1]) : undefined;
   if (sourceSummonLocationValue !== undefined) return `condition:source-summon-location:${sourceSummonLocationValue}`;
