@@ -9,7 +9,8 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   if (fixed !== undefined) return fixed;
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
-  const cardParam = luaFunctionParams(snippet)?.[1];
+  const params = luaFunctionParams(snippet);
+  const cardParam = params?.[1] ?? (params?.length === 1 ? params[0] : undefined);
   if (!cardParam) return undefined;
   const card = escapeRegExp(cardParam);
   const notRaceDeckOrExtra = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)`));
