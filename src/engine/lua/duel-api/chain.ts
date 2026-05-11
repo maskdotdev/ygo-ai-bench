@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { addDuelChainLimit, canNegateDuelChainLinkObject, negateDuelChainLinkObject } from "#duel/core.js";
 import { pushCardTable } from "#lua/card-api.js";
-import { capturedTypeMaskDescriptor, literalActionTypeChainPlayerLimitPredicate, literalCapturedPlayerComparisonPredicate, literalFalsePredicate, literalNotMonsterWithoutLevelActiveTypePredicate, literalNotSourceOrActiveTypeAndEffectTypePredicateDescriptor, literalResponseMatchesChainPlayerOrActiveTypePredicate, literalResponseMatchesChainPlayerOrCurrentTargetCardsPredicate, literalResponseMatchesChainPlayerOrNotSourceTypePredicate, literalResponseMatchesChainPlayerOrSourceTypeNonActivatePredicate, literalStatelessSourcePredicate, literalTruePredicate } from "#lua/chain-limit-predicate-descriptors.js";
+import { capturedTypeMaskDescriptor, literalActionTypeChainPlayerLimitPredicate, literalCapturedPlayerComparisonPredicate, literalFalsePredicate, literalNotMonsterWithoutLevelActiveTypePredicate, literalNotOpponentControlledTrapPredicate, literalNotSourceOrActiveTypeAndEffectTypePredicateDescriptor, literalResponseMatchesChainPlayerOrActiveTypePredicate, literalResponseMatchesChainPlayerOrCurrentTargetCardsPredicate, literalResponseMatchesChainPlayerOrNotSourceTypePredicate, literalResponseMatchesChainPlayerOrSourceTypeNonActivatePredicate, literalStatelessSourcePredicate, literalTruePredicate } from "#lua/chain-limit-predicate-descriptors.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { readCardUid, readOptionalFunctionRef, releaseOptionalFunctionRef, symbolicLocationMask } from "#lua/api-utils.js";
 import { effectiveCardCodes } from "#lua/card-code-effect-utils.js";
@@ -220,6 +220,7 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (blockedActiveType !== undefined) return `closure:not-active-type:${blockedActiveType}`;
   const counterActivationOrHandlerCode = literalCounterActivationOrHandlerCodePredicate(L, index, hostState);
   if (counterActivationOrHandlerCode !== undefined) return `closure:counter-activate-or-handler-code:${counterActivationOrHandlerCode}`;
+  if (literalNotOpponentControlledTrapPredicate(L, index, hostState)) return "closure:not-opponent-controlled-trap";
   const cardTableField = matchingGlobalCardTableFunctionField(L, index);
   if (cardTableField) return cardTableField;
   const handlerOnlyUid = literalCapturedHandlerOnlyCardUid(L, index, hostState);
@@ -420,7 +421,6 @@ function literalHandlerCodePredicate(L: unknown, index: number, hostState: LuaDu
   const code = match?.[1] ? Number(match[1]) : undefined;
   return code !== undefined && Number.isSafeInteger(code) && code > 0 ? code : undefined;
 }
-
 function literalCapturedHandlerCodePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;

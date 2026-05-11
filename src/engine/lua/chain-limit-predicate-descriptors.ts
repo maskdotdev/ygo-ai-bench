@@ -67,6 +67,22 @@ export function literalResponseMatchesChainPlayerOrSourceTypeNonActivatePredicat
   return sourceType?.[1] ? sourceTypeNonActivationMethodMask(sourceType[1]) : undefined;
 }
 
+export function literalNotOpponentControlledTrapPredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): boolean {
+  if (hasNonEnvironmentUpvalues(L, index)) return false;
+  const snippet = luaFunctionSourceSnippet(L, index, hostState);
+  if (!snippet) return false;
+  const effectParam = luaFunctionParams(snippet)?.[0];
+  const responsePlayerParam = luaFunctionParams(snippet)?.[1];
+  const returnExpression = lastReturnExpression(snippet);
+  if (!effectParam || !responsePlayerParam || !returnExpression) return false;
+  const terms = returnExpression.split(/\s+or\s+/).map((term) => trimOuterParens(term.trim())).filter(Boolean);
+  if (terms.length !== 2) return false;
+  const handler = `${escapeRegExp(effectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`;
+  const trap = new RegExp(`^not\\s+${handler}\\s*:\\s*(?:IsTrap\\s*\\(\\s*\\)|IsType\\s*\\(\\s*(?:TYPE_TRAP|4)\\s*\\))$`);
+  const opponent = new RegExp(`^not\\s+${handler}\\s*:\\s*IsControler\\s*\\(\\s*1\\s*-\\s*${escapeRegExp(responsePlayerParam)}\\s*\\)$`);
+  return terms.some((term) => trap.test(term)) && terms.some((term) => opponent.test(term));
+}
+
 export function literalResponseMatchesChainPlayerOrNotSourceTypePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
   if (hasNonEnvironmentUpvalues(L, index)) return undefined;
   const snippet = luaFunctionSourceSnippet(L, index, hostState);

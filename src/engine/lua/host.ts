@@ -177,6 +177,7 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
   }
   const counterActivationOrHandlerCode = predicate?.match(/^closure:counter-activate-or-handler-code:(\d+)$/);
   if (counterActivationOrHandlerCode?.[1]) return { ...limit, allows: (effect) => ((sourceTypeFlags(hostState, effect.sourceUid) & 0x100000) !== 0 && (effectTypeFlags(hostState, effect.id) & 0x10) !== 0) || sourceCode(hostState, effect.sourceUid) === counterActivationOrHandlerCode[1] };
+  if (predicate === "closure:not-opponent-controlled-trap") return { ...limit, allows: (effect, player) => (sourceTypeFlags(hostState, effect.sourceUid) & 0x4) === 0 || sourceController(hostState, effect.sourceUid) !== (1 - player) };
   const handlerCode = predicate?.match(/^closure:handler-code:(\d+)$/);
   if (handlerCode?.[1]) return { ...limit, allows: (effect) => sourceCode(hostState, effect.sourceUid) === handlerCode[1] };
   const handlerCodes = predicate?.match(/^closure:handler-codes:([\d,]+)$/);
@@ -335,6 +336,10 @@ function sourceHasLevel(hostState: LuaHostState, sourceUid: string): boolean {
 
 function sourceCode(hostState: LuaHostState, sourceUid: string): string | undefined {
   return hostState.session.state.cards.find((card) => card.uid === sourceUid)?.code;
+}
+
+function sourceController(hostState: LuaHostState, sourceUid: string): PlayerId | undefined {
+  return hostState.session.state.cards.find((card) => card.uid === sourceUid)?.controller;
 }
 
 function effectTypeFlags(hostState: LuaHostState, effectId: string): number {
