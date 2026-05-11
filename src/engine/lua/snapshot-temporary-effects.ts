@@ -173,6 +173,21 @@ export function isKnownTemporaryOpponentCannotBattlePhaseEffect(effect: Serializ
   );
 }
 
+export function isKnownTemporaryOpponentTurnSkipMain2Effect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 184 &&
+    effect.sourceUid !== undefined &&
+    effect.reset?.flags === luaOpponentTurnPhaseEndResetFlags &&
+    effect.value === undefined &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    hasPlayerTargetFlag(effect) &&
+    targetRangeEquals(effect, 0, 1) &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
 function isKnownTemporaryPlayerBattleDamageAvoidEffect(effect: SerializedDuelEffect): boolean {
   return isPlainTemporaryStaticValueEffect(effect, 201) && hasPlayerTargetFlag(effect) && targetRangeEquals(effect, 1, 0);
 }
