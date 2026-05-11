@@ -26,8 +26,7 @@ const luaEffectSummonProc = 32, luaEffectLimitSummonProc = 33, luaEffectSpecialS
 export function installEffectApi(L: unknown, hostState: LuaHostState, readLuaError: (state: unknown) => string): void {
   lua.lua_newtable(L);
   lua.lua_pushcfunction(L, (state: unknown) => {
-    const id = hostState.nextEffectId;
-    hostState.nextEffectId += 1;
+    const id = nextLuaEffectId(hostState);
     const sourceUid = readCardUid(state, 1);
     hostState.effects.set(id, { id, typeFlags: 0, ...(sourceUid === undefined ? {} : { sourceUid }) });
     pushLuaEffectTable(state, id, hostState);
@@ -35,8 +34,7 @@ export function installEffectApi(L: unknown, hostState: LuaHostState, readLuaErr
   });
   lua.lua_setfield(L, -2, to_luastring("CreateEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    const id = hostState.nextEffectId;
-    hostState.nextEffectId += 1;
+    const id = nextLuaEffectId(hostState);
     hostState.effects.set(id, { id, typeFlags: 0, isGlobal: true });
     pushLuaEffectTable(state, id, hostState);
     return 1;
@@ -317,8 +315,7 @@ function pushEffectMethod(L: unknown, effects: Map<number, LuaEffectRecord>, nam
 }
 
 function cloneLuaEffectRecord(hostState: LuaHostState, effect: LuaEffectRecord): number {
-  const id = hostState.nextEffectId;
-  hostState.nextEffectId += 1;
+  const id = nextLuaEffectId(hostState);
   const { tableRef: _tableRef, ...cloneSource } = effect;
   const clone: LuaEffectRecord = { ...cloneSource, id };
   if (effect.range) clone.range = [...effect.range];
@@ -328,6 +325,8 @@ function cloneLuaEffectRecord(hostState: LuaHostState, effect: LuaEffectRecord):
   hostState.effects.set(id, clone);
   return id;
 }
+
+function nextLuaEffectId(hostState: LuaHostState): number { while (hostState.session.state.effects.some((effect) => effect.id === `lua-${hostState.nextEffectId}` || effect.id.startsWith(`lua-${hostState.nextEffectId}-`))) hostState.nextEffectId += 1; return hostState.nextEffectId++; }
 
 export function majesticCopyLuaEffects(L: unknown, hostState: LuaHostState, receiverUid: string, sourceUid: string, reset?: number): number {
   if (hostState.session.state.status === "ended") return 0;
@@ -915,8 +914,8 @@ function callLuaEffectCardTargetPredicate(L: unknown, hostState: LuaHostState, l
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.targetRef);
     pushLuaEffectTable(L, luaEffect.id, hostState);
     if (luaEffect.code === 90) { pushRelatedEffectTable(L, hostState, ctx.relatedEffectId); lua.lua_pushinteger(L, ctx.player ?? card.controller); } else pushCardTable(L, card.uid);
-    if (luaEffect.code === 22) { lua.lua_pushinteger(L, ctx.eventPlayer ?? card.controller); lua.lua_pushinteger(L, effectiveSpecialSummonTypeCode(ctx.summonTypeCode)); lua.lua_pushinteger(L, positionMaskFromPosition(ctx.summonPosition)); lua.lua_pushinteger(L, ctx.eventPlayer ?? card.controller); }
-    const status = lua.lua_pcall(L, luaEffect.code === 22 ? 6 : luaEffect.code === 90 ? 3 : 2, 1, 0);
+    if (luaEffect.code === 22) { lua.lua_pushinteger(L, ctx.eventPlayer ?? card.controller); lua.lua_pushinteger(L, effectiveSpecialSummonTypeCode(ctx.summonTypeCode)); lua.lua_pushinteger(L, positionMaskFromPosition(ctx.summonPosition)); lua.lua_pushinteger(L, ctx.eventPlayer ?? card.controller); pushRelatedEffectTable(L, hostState, ctx.relatedEffectId); }
+    const status = lua.lua_pcall(L, luaEffect.code === 22 ? 7 : luaEffect.code === 90 ? 3 : 2, 1, 0);
     if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
     const result = lua.lua_toboolean(L, -1); lua.lua_pop(L, 1); return Boolean(result);
   });

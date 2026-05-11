@@ -35,9 +35,23 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   const summonTypeNot = specialSummonTypeNotTargetDescriptor(effect.luaTargetDescriptor);
   if (summonTypeNot !== undefined) return { targetCardPredicate: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) !== summonTypeNot };
   if (effect.luaTargetDescriptor === "target:special-summon-position-facedown") return { targetCardPredicate: (ctx) => ctx.summonPosition === "faceDownDefense" };
+  const xyzSummonNotRelatedSetcode = xyzSummonNotRelatedSetcodeDescriptor(effect.luaTargetDescriptor); if (xyzSummonNotRelatedSetcode !== undefined) return { targetCardPredicate: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x49000000 && !relatedEffectHandlerMatchesSetcode(ctx, xyzSummonNotRelatedSetcode) };
   const notType = effect.luaTargetDescriptor?.startsWith("target:not-type:") ? Number(effect.luaTargetDescriptor.slice("target:not-type:".length)) : undefined; if (notType !== undefined && Number.isSafeInteger(notType) && notType > 0) return { targetCardPredicate: (ctx, card) => (cardTypeFlags(card, ctx.duel) & notType) === 0 };
   const type = typeTargetDescriptor(effect.luaTargetDescriptor); if (type !== undefined) return { targetCardPredicate: (ctx, card) => (cardTypeFlags(card, ctx.duel) & type) !== 0 && (!effect.luaTargetDescriptor?.startsWith(luaFaceupTypeTargetDescriptorPrefix) || card.faceUp) };
   return {};
+}
+
+function xyzSummonNotRelatedSetcodeDescriptor(descriptor: string | undefined): number | undefined {
+  if (!descriptor?.startsWith("target:xyz-summon-not-related-setcode:")) return undefined;
+  const setcode = Number(descriptor.slice("target:xyz-summon-not-related-setcode:".length));
+  return Number.isSafeInteger(setcode) && setcode > 0 ? setcode : undefined;
+}
+
+function relatedEffectHandlerMatchesSetcode(ctx: Parameters<NonNullable<DuelEffectDefinition["targetCardPredicate"]>>[0], setcode: number): boolean {
+  const effectId = ctx.relatedEffectId === undefined ? ctx.chainLink?.effectId : `lua-${ctx.relatedEffectId}`;
+  const relatedEffect = ctx.duel.effects.find((candidate) => candidate.id === effectId || (effectId !== undefined && candidate.id.startsWith(`${effectId}-`)));
+  const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid);
+  return Boolean(handler && currentCardMatchesSetcode(handler, ctx.duel, setcode));
 }
 
 export function setcodeOrCodeTypeTargetDescriptor(descriptor: string | undefined): { setcode: number; code: number; type: number } | undefined {

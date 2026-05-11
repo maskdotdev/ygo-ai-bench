@@ -26,7 +26,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
   const L = lauxlib.luaL_newstate();
   const hostState: LuaHostState = {
     session,
-    nextEffectId: 1,
+    nextEffectId: nextLuaEffectId(session),
     nextCopyId: 1,
     effects: new Map(),
     functionDescriptors: new Map(),
@@ -122,6 +122,10 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
       return value !== undefined && Number.isInteger(value) && value < 0 ? normalizeLuaUnsignedInteger(value) : value;
     },
   };
+}
+
+function nextLuaEffectId(session: DuelSession): number {
+  return Math.max(0, ...session.state.effects.map((effect) => Number(effect.id.match(/^lua-(\d+)/)?.[1]) || 0)) + 1;
 }
 
 function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: string, limit: ChainLimit): ChainLimit | undefined {

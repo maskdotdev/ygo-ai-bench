@@ -141,7 +141,11 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   if (effectParam && new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsCode\\s*\\(\\s*${escapeRegExp(effectParam)}\\s*:\\s*GetLabel\\s*\\(\\s*\\)\\s*\\)`).test(snippet)) return "target:same-code-label";
   const summonTypeParam = luaFunctionParams(snippet)?.[3];
   const summonPositionParam = luaFunctionParams(snippet)?.[4];
+  const relatedEffectParam = luaFunctionParams(snippet)?.[6];
   if (summonPositionParam && new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonPositionParam)}\\s*&\\s*(?:POS_FACEDOWN|10)\\s*\\)\\s*>\\s*0`).test(snippet)) return "target:special-summon-position-facedown";
+  const xyzSummonNotRelatedSetcode = relatedEffectParam && summonTypeParam ? snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_XYZ\\s*\\)\\s*==\\s*SUMMON_TYPE_XYZ\\s+and\\s+not\\s+${escapeRegExp(relatedEffectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`)) : undefined;
+  const xyzSummonNotRelatedSetcodeValue = xyzSummonNotRelatedSetcode?.[1] ? luaNumberTokenValue(L, index, xyzSummonNotRelatedSetcode[1]) : undefined;
+  if (xyzSummonNotRelatedSetcodeValue !== undefined) return `target:xyz-summon-not-related-setcode:${xyzSummonNotRelatedSetcodeValue}`;
   if (summonTypeParam) {
     const summonTypeNot = snippet.match(new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*~=\\s*(SUMMON_TYPE_SPECIAL\\s*\\+\\s*${numericOrIdentifierPattern}|${numericOrIdentifierPattern})`));
     const summonTypeMaskNot = snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*~=\\s*\\1`));
