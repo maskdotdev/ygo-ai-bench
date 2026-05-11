@@ -97,6 +97,31 @@ describe("Lua release helpers", () => {
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "500")?.location).toBe("monsterZone");
   });
 
+  it("honors Duel.Release group player and reason overload", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Release Overload", kind: "monster" }];
+    const session = createDuel({ seed: 88, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: [] } });
+    startDuel(session);
+    const material = session.state.cards.find((card) => card.code === "100");
+    expect(material).toBeDefined();
+    moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      Debug.Message("release overload " .. Duel.Release(Group.FromCards(c), 0, REASON_COST))
+      Debug.Message("release overload reason " .. tostring(c:IsReason(REASON_RELEASE)) .. "/" .. tostring(c:IsReason(REASON_COST)))
+      `,
+      "release-player-reason-overload.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("release overload 1");
+    expect(host.messages).toContain("release overload reason true/true");
+    expect(material).toMatchObject({ location: "graveyard" });
+  });
+
   it("queues Lua release triggers after cards are released", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Release Starter", kind: "monster" },

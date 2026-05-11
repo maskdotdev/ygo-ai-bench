@@ -201,8 +201,17 @@ describe("Lua procedure metadata helpers", () => {
       link_effect:SetType(EFFECT_TYPE_ACTIVATE)
       local spell_effect=Effect.CreateEffect(spell)
       spell_effect:SetType(EFFECT_TYPE_ACTIVATE)
+      local ignition=Effect.CreateEffect(low)
+      ignition:SetType(EFFECT_TYPE_IGNITION)
+      local trigger=Effect.CreateEffect(low)
+      trigger:SetType(EFFECT_TYPE_TRIGGER_O)
+      local quick=Effect.CreateEffect(low)
+      quick:SetType(EFFECT_TYPE_QUICK_O)
+      local continuous=Effect.CreateEffect(low)
+      continuous:SetType(EFFECT_TYPE_CONTINUOUS)
       local inactive=Effect.CreateEffect(low)
       Debug.Message("active type " .. tostring(low_effect:IsActiveType(TYPE_MONSTER)) .. "/" .. tostring(spell_effect:IsActiveType(TYPE_MONSTER)) .. "/" .. tostring(low_effect:IsActivated()) .. "/" .. tostring(inactive:IsActivated()))
+      Debug.Message("activated kinds " .. tostring(ignition:IsActivated()) .. "/" .. tostring(trigger:IsActivated()) .. "/" .. tostring(quick:IsActivated()) .. "/" .. tostring(continuous:IsActivated()))
       Debug.Message("qli filter " .. tostring(aux.qlifilter(e,low_effect)) .. "/" .. tostring(aux.qlifilter(e,high_effect)) .. "/" .. tostring(aux.qlifilter(e,xyz_effect)) .. "/" .. tostring(aux.qlifilter(e,link_effect)) .. "/" .. tostring(aux.qlifilter(e,spell_effect)) .. "/" .. tostring(aux.qlifilter(e,inactive)))
       `,
       "qli-filter.lua",
@@ -210,6 +219,7 @@ describe("Lua procedure metadata helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("active type true/false/true/false");
+    expect(host.messages).toContain("activated kinds true/true/true/false");
     expect(host.messages).toContain("qli filter true/false/true/false/false/false");
   });
 
