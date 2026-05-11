@@ -37,6 +37,8 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (effect.luaTargetDescriptor === "target:same-code-label") return { targetCardPredicate: (ctx, card) => effect.label !== undefined && currentCardMatchesCode(card, ctx.duel, String(effect.label)) };
   const pendulumSummonNotSetcode = pendulumSummonNotSetcodeDescriptor(effect.luaTargetDescriptor);
   if (pendulumSummonNotSetcode !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4a000000 && !pendulumSummonNotSetcode.some((setcode) => currentCardMatchesSetcode(card, ctx.duel, setcode)) };
+  const pendulumSummonNotAttribute = pendulumSummonNotAttributeDescriptor(effect.luaTargetDescriptor);
+  if (pendulumSummonNotAttribute !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4a000000 && (currentAttribute(card, ctx.duel) & pendulumSummonNotAttribute) === 0 };
   const ritualSummonNotRace = ritualSummonNotRaceDescriptor(effect.luaTargetDescriptor);
   if (ritualSummonNotRace !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x45000000 && (currentRace(card, ctx.duel) & ritualSummonNotRace) === 0 };
   const extraSummonTypeNot = extraSummonTypeNotDescriptor(effect.luaTargetDescriptor);
@@ -67,6 +69,12 @@ function pendulumSummonNotSetcodeDescriptor(descriptor: string | undefined): num
   if (!descriptor?.startsWith("target:pendulum-summon-not-setcode:")) return undefined;
   const setcodes = descriptor.slice("target:pendulum-summon-not-setcode:".length).split(",").map(Number);
   return setcodes.length > 0 && setcodes.every((setcode) => Number.isSafeInteger(setcode) && setcode > 0) ? setcodes : undefined;
+}
+
+function pendulumSummonNotAttributeDescriptor(descriptor: string | undefined): number | undefined {
+  if (!descriptor?.startsWith("target:pendulum-summon-not-attribute:")) return undefined;
+  const attribute = Number(descriptor.slice("target:pendulum-summon-not-attribute:".length));
+  return Number.isSafeInteger(attribute) && attribute > 0 ? attribute : undefined;
 }
 
 function ritualSummonNotRaceDescriptor(descriptor: string | undefined): number | undefined {
