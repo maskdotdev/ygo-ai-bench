@@ -98,7 +98,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Do
     expect(restored.session.state.cards.find((card) => card.uid === extraMaterial!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.effect | duelReason.material | duelReason.ritual });
     expect(restored.session.state.cards.find((card) => card.uid === pendulumExtra!.uid)).toMatchObject({ location: "extraDeck", faceUp: true });
     expect(restored.session.state.cards.find((card) => card.uid === dogmatikalamity!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
-    expect(restored.session.state.effects).toContainEqual(expect.objectContaining({ code: 22, event: "continuous", reset: { flags: 0x40000200 } }));
+    expect(restored.session.state.effects).toContainEqual(
+      expect.objectContaining({
+        code: 22,
+        event: "continuous",
+        luaTargetDescriptor: "special-summon-limit:extra",
+        reset: { flags: 0x40000200 },
+      }),
+    );
     expect(canSpecialSummonDuelCard(restored.session.state, pendulumExtra!.uid, 0)).toBe(false);
 
     applyAndAssert(restored.session, getLegalActions(restored.session, 0).find((action) => action.type === "endTurn")!);
