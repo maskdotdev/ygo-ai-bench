@@ -8,6 +8,7 @@ const luaPhaseBattleEndResetFlags = 0x40000280;
 const luaSelfTurnPhaseEndResetFlags = 0x50000200;
 const luaSelfTurnMain1ResetFlags = 0x50000004;
 const luaOpponentTurnPhaseEndResetFlags = 0x60000200;
+const luaOpponentTurnMain1ResetFlags = 0x60000004;
 const luaPhaseDamageResetFlags = 0x40000020;
 
 export function isKnownTemporaryPlayerAttackAnnounceLockEffect(effect: SerializedDuelEffect): boolean {
@@ -96,7 +97,7 @@ export function isKnownTemporaryOpponentTurnSkipMain1Effect(effect: SerializedDu
     effect.event === "continuous" &&
     effect.code === 182 &&
     effect.sourceUid !== undefined &&
-    effect.reset?.flags === luaOpponentTurnPhaseEndResetFlags &&
+    (effect.reset?.flags === luaOpponentTurnPhaseEndResetFlags || effect.reset?.flags === luaOpponentTurnMain1ResetFlags) &&
     effect.value === undefined &&
     effect.luaValueDescriptor === undefined &&
     effect.luaTargetDescriptor === undefined &&
