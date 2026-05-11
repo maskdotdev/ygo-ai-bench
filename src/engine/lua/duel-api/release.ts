@@ -301,14 +301,14 @@ function releasableMonsterUids(L: unknown, session: DuelSession, filterRef: numb
 
 function isReleasableMonster(L: unknown, session: DuelSession, card: DuelCardInstance, player: PlayerId, excluded: string[], includeHand = false, hostState?: LuaDuelReleaseApiHostState): boolean {
   if (excluded.includes(card.uid)) return false;
-  const opponentExtraRelease = card.controller !== player && extraReleaseNonsumApplies(L, session, card, player, hostState);
-  if ((!opponentExtraRelease && card.controller !== player) || (card.location !== "monsterZone" && (!includeHand || card.location !== "hand"))) return false;
+  const extraRelease = extraReleaseNonsumApplies(L, session, card, player, hostState);
+  if ((!extraRelease && card.controller !== player) || (card.location !== "monsterZone" && (!includeHand || card.location !== "hand") && !extraRelease)) return false;
   if (card.kind !== "monster" && card.kind !== "extra") return false;
   return canMoveDuelCardToLocation(session.state, card.uid, "graveyard", duelReason.release | duelReason.cost);
 }
 
 function extraReleaseNonsumApplies(L: unknown, session: DuelSession, card: DuelCardInstance, player: PlayerId, hostState: LuaDuelReleaseApiHostState | undefined): boolean {
-  if (!L || !hostState || card.location !== "monsterZone") return false;
+  if (!L || !hostState) return false;
   return matchingLuaEffects(session.state, card, 158, hostState).some((effect) => luaEffectCountLimitAvailable(L, hostState, effect, player) && luaExtraReleaseValueApplies(L, hostState, effect, player));
 }
 

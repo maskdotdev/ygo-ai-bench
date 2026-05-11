@@ -634,6 +634,44 @@ describe("Lua release helpers", () => {
     expect(host.messages).toContain("extra release exhausted selected 1/false");
   });
 
+  it("lets release cost selection include extra-deck extra-release materials", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Own Cost", kind: "monster" },
+      { code: "200", name: "Extra Synchro Cost", kind: "extra", typeFlags: 0x2001 },
+    ];
+    const session = createDuel({ seed: 89, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"], extra: ["200"] }, 1: { main: [] } });
+    startDuel(session);
+    const own = session.state.cards.find((card) => card.code === "100");
+    expect(own).toBeDefined();
+    moveDuelCard(session.state, own!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local extra = Duel.GetFieldCard(0, LOCATION_EXTRA, 0)
+      local extra_effect = Effect.CreateEffect(extra)
+      extra_effect:SetType(EFFECT_TYPE_FIELD)
+      extra_effect:SetCode(EFFECT_EXTRA_RELEASE_NONSUM)
+      extra_effect:SetTargetRange(LOCATION_EXTRA, 0)
+      extra_effect:SetValue(1)
+      Duel.RegisterEffect(extra_effect, 0)
+      Debug.Message("extra deck release cost check " .. tostring(Duel.CheckReleaseGroupCost(0, Card.IsSynchroMonster, 2, 2, false, nil, nil)))
+      local g = Duel.SelectReleaseGroupCost(0, Card.IsSynchroMonster, 1, 2, false, nil, nil)
+      Debug.Message("extra deck release selected " .. g:GetCount() .. "/" .. tostring(g:IsContains(extra)))
+      Debug.Message("extra deck release moved " .. Duel.Release(g, REASON_COST))
+      Debug.Message("extra deck release reason " .. tostring(extra:IsPreviousLocation(LOCATION_EXTRA)) .. "/" .. tostring(extra:IsReason(REASON_RELEASE)) .. "/" .. tostring(extra:IsReason(REASON_COST)))
+      `,
+      "release-cost-extra-deck-nonsum.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("extra deck release cost check false");
+    expect(host.messages).toContain("extra deck release selected 1/true");
+    expect(host.messages).toContain("extra deck release moved 1");
+    expect(host.messages).toContain("extra deck release reason true/true/true");
+  });
+
   it("lets Lua scripts collect must-be material effects", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Synchro Must Material", kind: "monster" },
