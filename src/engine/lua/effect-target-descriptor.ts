@@ -148,10 +148,13 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   if (xyzSummonNotRelatedSetcodeValue !== undefined) return `target:xyz-summon-not-related-setcode:${xyzSummonNotRelatedSetcodeValue}`;
   if (summonTypeParam) {
     const summonTypeNot = snippet.match(new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*~=\\s*(SUMMON_TYPE_SPECIAL\\s*\\+\\s*${numericOrIdentifierPattern}|${numericOrIdentifierPattern})`));
+    const summonTypeMaskIs = snippet.match(new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*==\\s*\\1`)) ?? snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*==\\s*\\1`));
     const summonTypeMaskNot = snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*~=\\s*\\1`));
-    const summonTypeToken = summonTypeNot?.[1] ?? summonTypeMaskNot?.[1];
-    const value = summonTypeToken ? luaSummonTypeTokenValue(L, index, summonTypeToken) : undefined;
-    if (value !== undefined) return `target:special-summon-type-not:${value}`;
+    const summonTypeIsValue = summonTypeMaskIs?.[1] ? luaSummonTypeTokenValue(L, index, summonTypeMaskIs[1]) : undefined;
+    if (summonTypeIsValue !== undefined) return `target:special-summon-type-is:${summonTypeIsValue}`;
+    const summonTypeNotToken = summonTypeNot?.[1] ?? summonTypeMaskNot?.[1];
+    const summonTypeNotValue = summonTypeNotToken ? luaSummonTypeTokenValue(L, index, summonTypeNotToken) : undefined;
+    if (summonTypeNotValue !== undefined) return `target:special-summon-type-not:${summonTypeNotValue}`;
   }
   const notSetcode = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const setcode = notSetcode?.[1] ? luaNumberTokenValue(L, index, notSetcode[1]) : undefined;
@@ -161,6 +164,12 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
 export function specialSummonTypeNotTargetDescriptor(descriptor: string | undefined): number | undefined {
   if (!descriptor?.startsWith("target:special-summon-type-not:")) return undefined;
   const value = Number(descriptor.slice("target:special-summon-type-not:".length));
+  return Number.isSafeInteger(value) && value > 0 ? value : undefined;
+}
+
+export function specialSummonTypeIsTargetDescriptor(descriptor: string | undefined): number | undefined {
+  if (!descriptor?.startsWith("target:special-summon-type-is:")) return undefined;
+  const value = Number(descriptor.slice("target:special-summon-type-is:".length));
   return Number.isSafeInteger(value) && value > 0 ? value : undefined;
 }
 
