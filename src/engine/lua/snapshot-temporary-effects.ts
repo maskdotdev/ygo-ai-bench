@@ -33,7 +33,7 @@ export function isKnownPlayerDamageZeroEffect(effect: SerializedDuelEffect): boo
 }
 
 export function isKnownTemporarySummonSetLockEffect(effect: SerializedDuelEffect): boolean {
-  return (effect.code === 20 || effect.code === 23 || effect.code === 24) && isPlainPlayerTargetPhaseEndEffect(effect);
+  return (effect.code === 20 || effect.code === 23 || effect.code === 24 || effect.code === 69) && isPlainPlayerTargetPhaseEndEffect(effect);
 }
 
 export function isKnownTemporaryActivationLockEffect(effect: SerializedDuelEffect): boolean {
