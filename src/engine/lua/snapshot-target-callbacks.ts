@@ -61,6 +61,8 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   } };
   const linkSummonCode = linkSummonCodeDescriptor(effect.luaTargetDescriptor);
   if (linkSummonCode !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4c000000 && currentCardMatchesCode(card, ctx.duel, String(linkSummonCode)) };
+  const summonTypeCode = summonTypeCodeDescriptor(effect.luaTargetDescriptor);
+  if (summonTypeCode !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === summonTypeCode.summonType && currentCardMatchesCode(card, ctx.duel, String(summonTypeCode.code)) };
   const summonTypeIsAny = specialSummonTypeIsAnyTargetDescriptor(effect.luaTargetDescriptor);
   if (summonTypeIsAny !== undefined) return { targetCardPredicate: (ctx) => summonTypeIsAny.includes(effectiveSpecialSummonTypeCode(ctx.summonTypeCode)) };
   const summonTypeIs = specialSummonTypeIsTargetDescriptor(effect.luaTargetDescriptor);
@@ -135,6 +137,13 @@ function linkSummonCodeDescriptor(descriptor: string | undefined): number | unde
   if (!descriptor?.startsWith("target:link-summon-code:")) return undefined;
   const code = Number(descriptor.slice("target:link-summon-code:".length));
   return Number.isSafeInteger(code) && code > 0 ? code : undefined;
+}
+
+function summonTypeCodeDescriptor(descriptor: string | undefined): { summonType: number; code: number } | undefined {
+  if (!descriptor?.startsWith("target:summon-type-code:")) return undefined;
+  const [summonType, code] = descriptor.slice("target:summon-type-code:".length).split(":").map(Number);
+  if (summonType === undefined || code === undefined) return undefined;
+  return [summonType, code].every((value) => Number.isSafeInteger(value) && value > 0) ? { summonType, code } : undefined;
 }
 
 function relatedEffectHandlerMatchesSetcode(ctx: Parameters<NonNullable<DuelEffectDefinition["targetCardPredicate"]>>[0], setcode: number): boolean {

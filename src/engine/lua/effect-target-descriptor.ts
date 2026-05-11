@@ -230,6 +230,12 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
     : undefined;
   const codeLinkSummonValue = codeLinkSummon?.[1] ? luaNumberTokenValue(L, index, codeLinkSummon[1]) : undefined;
   if (codeLinkSummonValue !== undefined) return `target:link-summon-code:${codeLinkSummonValue}`;
+  const codeSummonType = summonTypeParam
+    ? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsCode\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+\\(?\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)?\\s*==\\s*\\2`))
+    : undefined;
+  const codeSummonTypeCode = codeSummonType?.[1] ? luaNumberTokenValue(L, index, codeSummonType[1]) : undefined;
+  const codeSummonTypeType = codeSummonType?.[2] ? luaSummonTypeTokenValue(L, index, codeSummonType[2]) : undefined;
+  if (codeSummonTypeCode !== undefined && codeSummonTypeType !== undefined) return `target:summon-type-code:${codeSummonTypeType}:${codeSummonTypeCode}`;
   if (summonTypeParam) {
     const summonTypeNot = snippet.match(new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*~=\\s*(SUMMON_TYPE_SPECIAL\\s*\\+\\s*${numericOrIdentifierPattern}|${numericOrIdentifierPattern})`));
     const summonTypeMaskIs = snippet.match(new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*==\\s*\\1`)) ?? snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*==\\s*\\1`));
