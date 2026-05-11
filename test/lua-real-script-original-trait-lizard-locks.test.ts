@@ -337,4 +337,123 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     expect(effect!.targetCardPredicate!(ctx, rank5Xyz!)).toBe(true);
     expect(effect!.targetCardPredicate!(ctx, level4Synchro!)).toBe(true);
   });
+
+  it("restores Evil Assault's original HERO Clock Lizard check", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const evilAssaultCode = "3519195";
+    const heroCode = "3519196";
+    const nonHeroCode = "3519197";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === evilAssaultCode),
+      { code: heroCode, name: "Original HERO Probe", kind: "extra", typeFlags: 0x41, race: 0x1, attribute: 0x20, level: 8, attack: 1000, defense: 1000, setcodes: [0x8] },
+      { code: nonHeroCode, name: "Original Non-HERO Probe", kind: "extra", typeFlags: 0x41, race: 0x1, attribute: 0x20, level: 8, attack: 1000, defense: 1000, setcodes: [0x123] },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 351, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [evilAssaultCode], extra: [heroCode, nonHeroCode] }, 1: { main: [] } });
+    startDuel(session);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(evilAssaultCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${evilAssaultCode}),0,LOCATION_DECK,0,nil)
+      aux.addTempLizardCheck(c,0,function(e,c) return not c:IsOriginalSetCard(SET_HERO) end)
+      `,
+      "evil-assault-official-lizard-original-setcode.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects.find((effect) => effect.code === 51476410)).toMatchObject({
+      luaTargetDescriptor: "target:not-original-setcode:8",
+      value: 1,
+    });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const mutate = restored.host.loadScript(
+      `
+      local hero=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${heroCode}),0,LOCATION_EXTRA,0,nil)
+      local nonhero=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${nonHeroCode}),0,LOCATION_EXTRA,0,nil)
+      local eh=Effect.CreateEffect(hero)
+      eh:SetType(EFFECT_TYPE_SINGLE)
+      eh:SetCode(EFFECT_CHANGE_SETCODE)
+      eh:SetValue(0x123)
+      hero:RegisterEffect(eh)
+      local en=Effect.CreateEffect(nonhero)
+      en:SetType(EFFECT_TYPE_SINGLE)
+      en:SetCode(EFFECT_CHANGE_SETCODE)
+      en:SetValue(SET_HERO)
+      nonhero:RegisterEffect(en)
+      `,
+      "evil-assault-current-setcode-mutation.lua",
+    );
+    expect(mutate.ok, mutate.error).toBe(true);
+    const effect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
+    const source = restored.session.state.cards.find((card) => card.code === evilAssaultCode);
+    const hero = restored.session.state.cards.find((card) => card.code === heroCode);
+    const nonHero = restored.session.state.cards.find((card) => card.code === nonHeroCode);
+    expect(effect?.targetCardPredicate).toBeDefined();
+    expect(source).toBeDefined();
+    expect(hero).toBeDefined();
+    expect(nonHero).toBeDefined();
+    const ctx = targetContext(restored.session.state, source!);
+    expect(effect!.targetCardPredicate!(ctx, hero!)).toBe(false);
+    expect(effect!.targetCardPredicate!(ctx, nonHero!)).toBe(true);
+  });
+
+  it("restores multi-set original Clock Lizard checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const windCode = "66384688";
+    const majespecterCode = "66384689";
+    const dracoslayerCode = "66384690";
+    const otherCode = "66384691";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === windCode),
+      { code: majespecterCode, name: "Original Majespecter Probe", kind: "extra", typeFlags: 0x41, race: 0x1, attribute: 0x8, level: 8, attack: 1000, defense: 1000, setcodes: [0xd0] },
+      { code: dracoslayerCode, name: "Original Dracoslayer Probe", kind: "extra", typeFlags: 0x41, race: 0x1, attribute: 0x8, level: 8, attack: 1000, defense: 1000, setcodes: [0xc7] },
+      { code: otherCode, name: "Original Other Probe", kind: "extra", typeFlags: 0x41, race: 0x1, attribute: 0x8, level: 8, attack: 1000, defense: 1000, setcodes: [0x123] },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 663, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [windCode], extra: [majespecterCode, dracoslayerCode, otherCode] }, 1: { main: [] } });
+    startDuel(session);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(windCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${windCode}),0,LOCATION_DECK,0,nil)
+      aux.addTempLizardCheck(c,0,function(_,c) return not c:IsOriginalSetCard({SET_MAJESPECTER,SET_DRACOSLAYER}) end)
+      `,
+      "windwitch-chanbara-official-lizard-original-setcode-list.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects.find((effect) => effect.code === 51476410)).toMatchObject({
+      luaTargetDescriptor: "target:not-original-setcode-any:208,199",
+      value: 1,
+    });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const effect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
+    const source = restored.session.state.cards.find((card) => card.code === windCode);
+    const majespecter = restored.session.state.cards.find((card) => card.code === majespecterCode);
+    const dracoslayer = restored.session.state.cards.find((card) => card.code === dracoslayerCode);
+    const other = restored.session.state.cards.find((card) => card.code === otherCode);
+    expect(effect?.targetCardPredicate).toBeDefined();
+    expect(source).toBeDefined();
+    expect(majespecter).toBeDefined();
+    expect(dracoslayer).toBeDefined();
+    expect(other).toBeDefined();
+    const ctx = targetContext(restored.session.state, source!);
+    expect(effect!.targetCardPredicate!(ctx, majespecter!)).toBe(false);
+    expect(effect!.targetCardPredicate!(ctx, dracoslayer!)).toBe(false);
+    expect(effect!.targetCardPredicate!(ctx, other!)).toBe(true);
+  });
 });

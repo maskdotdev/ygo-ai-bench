@@ -220,6 +220,11 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notOriginalRace = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsOriginalRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const notOriginalRaceValue = notOriginalRace?.[1] ? luaNumberTokenValue(L, index, notOriginalRace[1]) : undefined;
   if (notOriginalRaceValue !== undefined) return `target:not-original-race:${notOriginalRaceValue}`;
+  const notOriginalSetcode = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsOriginalSetCard\\s*\\(\\s*(?:\\{\\s*)?(${numericOrIdentifierListPattern})(?:\\s*\\})?\\s*\\)`));
+  const notOriginalSetcodes = notOriginalSetcode?.[1] ? luaNumberListValue(L, index, notOriginalSetcode[1]) : undefined;
+  if (notOriginalSetcodes !== undefined && notOriginalSetcodes.length > 1 && notOriginalSetcodes.every((setcode) => Number.isSafeInteger(setcode) && setcode > 0)) return `target:not-original-setcode-any:${notOriginalSetcodes.join(",")}`;
+  const notOriginalSetcodeValue = notOriginalSetcodes?.[0];
+  if (notOriginalSetcodeValue !== undefined && Number.isSafeInteger(notOriginalSetcodeValue) && notOriginalSetcodeValue > 0) return `target:not-original-setcode:${notOriginalSetcodeValue}`;
   const setcodeOrCodeType = setcodeOrCodeTypeTargetDescriptor(L, index, snippet, card);
   if (setcodeOrCodeType !== undefined) return setcodeOrCodeType;
   const notCode = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsCode\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`)) ?? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*GetCode\\s*\\(\\s*\\)\\s*~=\\s*(${numericOrIdentifierPattern})`));
