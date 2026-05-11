@@ -204,6 +204,22 @@ export function isKnownTemporaryArtifactLanceaBanishLockEffect(effect: Serialize
   );
 }
 
+export function isKnownTemporaryEarthshatteringDeckGraveLockEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    (effect.code === 68 || effect.code === 56) &&
+    effect.sourceUid !== undefined &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    effect.value === undefined &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    targetRangeEquals(effect, 1, 1) &&
+    hasDefaultLuaFieldRange(effect) &&
+    (effect.code !== 68 || !hasPlayerTargetFlag(effect)) &&
+    (effect.code !== 56 || hasPlayerTargetFlag(effect))
+  );
+}
+
 function isKnownTemporaryPlayerBattleDamageAvoidEffect(effect: SerializedDuelEffect): boolean {
   return isPlainTemporaryStaticValueEffect(effect, 201) && hasPlayerTargetFlag(effect) && targetRangeEquals(effect, 1, 0);
 }
