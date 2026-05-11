@@ -43,6 +43,7 @@ const luaValueCardNotHandlerDescriptor = "value-card:not-handler";
 const luaCannotActivateSpecialSummonedMonsterDescriptor = "cannot-activate:special-summoned-monster-on-field";
 const luaCannotActivateNonSpiritMonsterDescriptor = "cannot-activate:non-spirit-monster-effect";
 const luaSourceControllerConditionDescriptor = "condition:source-controller";
+const luaNotDrawPhaseConditionDescriptor = "condition:not-draw-phase";
 const luaSetcodeOrCodeTypeTargetDescriptorPrefix = "target:setcode-or-code-type:";
 const luaTypeTargetDescriptorPrefix = "target:type:";
 const luaFaceupTypeTargetDescriptorPrefix = "target:faceup-type:";
@@ -825,9 +826,8 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   const skipMain1Condition = temporaryOpponentTurnSkipMain1CanActivate(effect); if (skipMain1Condition) return { canActivate: skipMain1Condition };
   const assaultZoneConditionCallbacks = assaultZoneReleaseFlagConditionCallbacks(effect);
   if (assaultZoneConditionCallbacks.canActivate) return assaultZoneConditionCallbacks;
-  if (effect.luaConditionDescriptor === luaSourceControllerConditionDescriptor) {
-    return { canActivate: (ctx) => ctx.source.controller === effect.controller };
-  }
+  if (effect.luaConditionDescriptor === luaSourceControllerConditionDescriptor) return { canActivate: (ctx) => ctx.source.controller === effect.controller };
+  if (effect.luaConditionDescriptor === luaNotDrawPhaseConditionDescriptor) return { canActivate: (ctx) => ctx.duel.phase !== "draw" };
   return {};
 }
 

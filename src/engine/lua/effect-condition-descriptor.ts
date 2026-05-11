@@ -4,6 +4,7 @@ import type { LuaHostState } from "#lua/host-types.js";
 export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hostState: LuaHostState): string | undefined {
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
+  if (/\breturn\s+Duel\s*\.\s*GetCurrentPhase\s*\(\s*\)\s*~=\s*PHASE_DRAW\b/.test(snippet)) return "condition:not-draw-phase";
   const params = luaFunctionParams(snippet);
   if (params && params.length > 0) return undefined;
   const identifier = String.raw`[A-Za-z_]\w*`;
