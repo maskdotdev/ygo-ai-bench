@@ -52,6 +52,10 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   if (/\breturn\s+Duel\s*\.\s*IsMainPhase\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:main-phase";
   if (/\breturn\s+Duel\s*\.\s*IsMainPhase2\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:phase:256";
   if (/\breturn\s+Duel\s*\.\s*IsStandbyPhase\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:phase:2";
+  const sourceLocationBattleTargetRace = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s+and\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetBattleTarget\\s*\\(\\s*\\)\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s*(?:end\\b|$)`));
+  const sourceLocationBattleTargetRaceLocationValue = sourceLocationBattleTargetRace?.[1] ? luaNumberExpressionValue(L, index, sourceLocationBattleTargetRace[1]) : undefined;
+  const sourceLocationBattleTargetRaceValue = sourceLocationBattleTargetRace?.[2] ? luaNumberExpressionValue(L, index, sourceLocationBattleTargetRace[2]) : undefined;
+  if (sourceLocationBattleTargetRaceLocationValue !== undefined && sourceLocationBattleTargetRaceValue !== undefined) return `condition:source-battle-target-race-source-location:${sourceLocationBattleTargetRaceValue}:${sourceLocationBattleTargetRaceLocationValue}`;
   const sourceBattleTargetRace = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetBattleTarget\\s*\\(\\s*\\)\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s*(?:end\\b|$)`));
   const sourceBattleTargetRaceValue = sourceBattleTargetRace?.[1] ? luaNumberExpressionValue(L, index, sourceBattleTargetRace[1]) : undefined;
   if (sourceBattleTargetRaceValue !== undefined) return `condition:source-battle-target-race:${sourceBattleTargetRaceValue}`;
