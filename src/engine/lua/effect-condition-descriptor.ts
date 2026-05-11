@@ -47,6 +47,10 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const sourceReason = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsReason\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
   const sourceReasonValue = sourceReason?.[1] ? luaNumberExpressionValue(L, index, sourceReason[1]) : undefined;
   if (sourceReasonValue !== undefined) return `condition:source-reason:${sourceReasonValue}`;
+  const sourceReasonAll = snippet.match(new RegExp(`\\b\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetReason\\s*\\(\\s*\\)\\s*&\\s*\\(?\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)?\\s*(?:\\)\\s*)?==\\s*\\(?\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)?`));
+  const sourceReasonAllValue = sourceReasonAll?.[1] && sourceReasonAll[2] ? luaNumberExpressionValue(L, index, sourceReasonAll[1]) : undefined;
+  const sourceReasonAllCompareValue = sourceReasonAll?.[2] ? luaNumberExpressionValue(L, index, sourceReasonAll[2]) : undefined;
+  if (sourceReasonAllValue !== undefined && sourceReasonAllValue === sourceReasonAllCompareValue) return `condition:source-reason-all:${sourceReasonAllValue}`;
   const sourceReasonMask = snippet.match(new RegExp(`\\b\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetReason\\s*\\(\\s*\\)\\s*&\\s*\\(?\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)?\\s*(?:\\)\\s*)?(?:~=\\s*0|>\\s*0)`));
   const sourceReasonMaskValue = sourceReasonMask?.[1] ? luaNumberExpressionValue(L, index, sourceReasonMask[1]) : undefined;
   if (sourceReasonMaskValue !== undefined) return `condition:source-reason:${sourceReasonMaskValue}`;
