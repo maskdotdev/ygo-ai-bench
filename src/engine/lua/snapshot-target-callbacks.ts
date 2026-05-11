@@ -15,6 +15,8 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   const notTypeRankExtra = typeRankExtraDescriptor(effect.luaTargetDescriptor); if (notTypeRankExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeRankExtra.type) === 0 || currentRank(card, ctx.duel) !== notTypeRankExtra.rank) };
   const notTypeRankAboveExtra = typeRankAboveExtraDescriptor(effect.luaTargetDescriptor); if (notTypeRankAboveExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeRankAboveExtra.type) === 0 || currentRank(card, ctx.duel) < notTypeRankAboveExtra.rank) };
   const notTypeLevelExtra = typeLevelExtraDescriptor(effect.luaTargetDescriptor); if (notTypeLevelExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeLevelExtra.type) === 0 || currentLevel(card, ctx.duel) !== notTypeLevelExtra.level) };
+  const notLevelAboveAttributeExtra = levelAboveAttributeExtraDescriptor(effect.luaTargetDescriptor); if (notLevelAboveAttributeExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && (currentLevel(card, ctx.duel) < notLevelAboveAttributeExtra.level || (currentAttribute(card, ctx.duel) & notLevelAboveAttributeExtra.attribute) === 0) };
+  const notLevelAboveRaceExtra = levelAboveRaceExtraDescriptor(effect.luaTargetDescriptor); if (notLevelAboveRaceExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && (currentLevel(card, ctx.duel) < notLevelAboveRaceExtra.level || (currentRace(card, ctx.duel) & notLevelAboveRaceExtra.race) === 0) };
   const notRaceBaseAttackExtra = raceBaseAttackExtraDescriptor(effect.luaTargetDescriptor); if (notRaceBaseAttackExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((currentRace(card, ctx.duel) & notRaceBaseAttackExtra.race) === 0 || currentBaseAttack(card, ctx.duel) > notRaceBaseAttackExtra.attack) };
   const notRaceAttackExtra = raceAttackExtraDescriptor(effect.luaTargetDescriptor); if (notRaceAttackExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((currentRace(card, ctx.duel) & notRaceAttackExtra.race) === 0 || currentAttack(card, ctx.duel) > notRaceAttackExtra.attack) };
   const notSetcodeTypeExtra = setcodeTypeExtraDescriptor(effect.luaTargetDescriptor); if (notSetcodeTypeExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && (!currentCardMatchesSetcode(card, ctx.duel, notSetcodeTypeExtra.setcode) || (cardTypeFlags(card, ctx.duel) & notSetcodeTypeExtra.type) === 0) };
@@ -70,6 +72,18 @@ function typeLevelExtraDescriptor(descriptor: string | undefined): { type: numbe
   if (!descriptor?.startsWith("special-summon-limit:not-type-level-extra:")) return undefined;
   const [type, level] = descriptor.slice("special-summon-limit:not-type-level-extra:".length).split(":").map(Number);
   return type !== undefined && level !== undefined && [type, level].every((value) => Number.isSafeInteger(value) && value > 0) ? { type, level } : undefined;
+}
+
+function levelAboveAttributeExtraDescriptor(descriptor: string | undefined): { level: number; attribute: number } | undefined {
+  if (!descriptor?.startsWith("special-summon-limit:not-level-above-attribute-extra:")) return undefined;
+  const [level, attribute] = descriptor.slice("special-summon-limit:not-level-above-attribute-extra:".length).split(":").map(Number);
+  return level !== undefined && attribute !== undefined && [level, attribute].every((value) => Number.isSafeInteger(value) && value > 0) ? { level, attribute } : undefined;
+}
+
+function levelAboveRaceExtraDescriptor(descriptor: string | undefined): { level: number; race: number } | undefined {
+  if (!descriptor?.startsWith("special-summon-limit:not-level-above-race-extra:")) return undefined;
+  const [level, race] = descriptor.slice("special-summon-limit:not-level-above-race-extra:".length).split(":").map(Number);
+  return level !== undefined && race !== undefined && [level, race].every((value) => Number.isSafeInteger(value) && value > 0) ? { level, race } : undefined;
 }
 
 function raceBaseAttackExtraDescriptor(descriptor: string | undefined): { race: number; attack: number } | undefined {
