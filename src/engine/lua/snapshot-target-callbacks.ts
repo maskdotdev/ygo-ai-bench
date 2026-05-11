@@ -2,6 +2,7 @@ import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-co
 import { cardLink, cardRank, cardTypeFlags, currentAttack, currentAttribute, currentBaseAttack, currentLevel, currentLink, currentRace, currentRank, printedCardTypeFlags } from "#duel/card-stats.js";
 import { getDuelCardCounter } from "#duel/counters.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
+import { locationMatchesCardMask } from "#lua/api-utils.js";
 import { cardSetcodes, isSetcodeMatch } from "#lua/card-code-utils.js";
 import { specialSummonTypeIsAnyTargetDescriptor, specialSummonTypeIsTargetDescriptor, specialSummonTypeNotTargetDescriptor } from "#lua/effect-target-descriptor.js";
 import type { DuelEffectDefinition, SerializedDuelEffect } from "#duel/types.js";
@@ -11,6 +12,7 @@ const luaTypeTargetDescriptorPrefix = "target:type:";
 const luaFaceupTypeTargetDescriptorPrefix = "target:faceup-type:";
 
 export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "targetCardPredicate"> {
+  const statusSummonLocation = statusSummonLocationDescriptor(effect.luaTargetDescriptor); if (statusSummonLocation) return { targetCardPredicate: (_ctx, card) => (targetCardStatusMask(card) & statusSummonLocation.status) !== 0 && Boolean(card.summonType && locationMatchesCardMask(card, statusSummonLocation.location, card.previousLocation, card.previousSequence)) };
   const notRaceDeckOrExtra = effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-race-deck-or-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-race-deck-or-extra:".length)) : undefined;
   if (notRaceDeckOrExtra !== undefined && Number.isSafeInteger(notRaceDeckOrExtra) && notRaceDeckOrExtra > 0) return { targetCardPredicate: (ctx, card) => (card.location === "deck" || card.location === "extraDeck") && (currentRace(card, ctx.duel) & notRaceDeckOrExtra) === 0 };
   if (effect.luaTargetDescriptor === "special-summon-limit:deck-or-extra") return { targetCardPredicate: (_ctx, card) => card.location === "deck" || card.location === "extraDeck" };
@@ -112,6 +114,16 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   const notType = effect.luaTargetDescriptor?.startsWith("target:not-type:") ? Number(effect.luaTargetDescriptor.slice("target:not-type:".length)) : undefined; if (notType !== undefined && Number.isSafeInteger(notType) && notType > 0) return { targetCardPredicate: (ctx, card) => (cardTypeFlags(card, ctx.duel) & notType) === 0 };
   const type = typeTargetDescriptor(effect.luaTargetDescriptor); if (type !== undefined) return { targetCardPredicate: (ctx, card) => (cardTypeFlags(card, ctx.duel) & type) !== 0 && (!effect.luaTargetDescriptor?.startsWith(luaFaceupTypeTargetDescriptorPrefix) || card.faceUp) };
   return {};
+}
+
+function targetCardStatusMask(card: Parameters<NonNullable<DuelEffectDefinition["targetCardPredicate"]>>[1]): number {
+  return (card.customStatusMask ?? 0) | (card.summonType === "normal" || card.summonType === "tribute" ? 0x800 : 0) | (card.summonType === "flip" ? 0x20000000 : 0) | (card.summonType && card.summonType !== "normal" && card.summonType !== "tribute" && card.summonType !== "flip" ? 0x40000000 : 0);
+}
+
+function statusSummonLocationDescriptor(descriptor: string | undefined): { status: number; location: number } | undefined {
+  if (!descriptor?.startsWith("target:status-summon-location:")) return undefined;
+  const [status, location] = descriptor.slice("target:status-summon-location:".length).split(":").map(Number);
+  return status !== undefined && location !== undefined && [status, location].every((value) => Number.isSafeInteger(value) && value > 0) ? { status, location } : undefined;
 }
 
 function xyzSummonNotRelatedSetcodeDescriptor(descriptor: string | undefined): number | undefined {
