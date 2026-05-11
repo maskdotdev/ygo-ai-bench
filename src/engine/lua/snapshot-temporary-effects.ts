@@ -27,7 +27,7 @@ export function isKnownPlayerDamageZeroEffect(effect: SerializedDuelEffect): boo
   return (
     (isPlainPhaseEndStaticValueEffect(effect, 82, 0) || isPlainPhaseEndStaticValueEffect(effect, 335, 0)) &&
     hasPlayerTargetFlag(effect) &&
-    targetRangeEquals(effect, 1, 1)
+    hasAnyPlayerTarget(effect)
   );
 }
 
@@ -62,6 +62,10 @@ function hasPlayerTargetFlag(effect: SerializedDuelEffect): boolean {
 
 function targetRangeEquals(effect: SerializedDuelEffect, selfTarget: number, opponentTarget: number): boolean {
   return effect.targetRange?.[0] === selfTarget && (effect.targetRange[1] ?? 0) === opponentTarget;
+}
+
+function hasAnyPlayerTarget(effect: SerializedDuelEffect): boolean {
+  return effect.targetRange?.[0] === 1 || (effect.targetRange?.[1] ?? 0) === 1;
 }
 
 function hasDefaultLuaFieldRange(effect: SerializedDuelEffect): boolean {
