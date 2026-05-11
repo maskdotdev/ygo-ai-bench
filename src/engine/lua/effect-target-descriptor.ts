@@ -211,6 +211,11 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notOriginalTypeCurrentAttributeType = notOriginalTypeCurrentAttributeTypeToken ? luaNumberTokenValue(L, index, notOriginalTypeCurrentAttributeTypeToken) : undefined;
   const notOriginalTypeCurrentAttributeAttribute = notOriginalTypeCurrentAttributeAttributeToken ? luaNumberExpressionValue(L, index, notOriginalTypeCurrentAttributeAttributeToken) : undefined;
   if (notOriginalTypeCurrentAttributeType !== undefined && notOriginalTypeCurrentAttributeAttribute !== undefined) return `target:not-original-type-current-attribute:${notOriginalTypeCurrentAttributeType}:${notOriginalTypeCurrentAttributeAttribute}`;
+  const notOriginalTypeAttributeRace = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\(\\s*${card}\\s*:\\s*IsOriginalType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*GetOriginalRace\\s*\\(\\s*\\)\\s*==\\s*(${numericOrIdentifierPattern})\\s+and\\s+${card}\\s*:\\s*IsOriginalAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*\\)`));
+  const notOriginalTypeAttributeRaceType = notOriginalTypeAttributeRace?.[1] ? luaNumberTokenValue(L, index, notOriginalTypeAttributeRace[1]) : undefined;
+  const notOriginalTypeAttributeRaceRace = notOriginalTypeAttributeRace?.[2] ? luaNumberTokenValue(L, index, notOriginalTypeAttributeRace[2]) : undefined;
+  const notOriginalTypeAttributeRaceAttribute = notOriginalTypeAttributeRace?.[3] ? luaNumberTokenValue(L, index, notOriginalTypeAttributeRace[3]) : undefined;
+  if (notOriginalTypeAttributeRaceType !== undefined && notOriginalTypeAttributeRaceAttribute !== undefined && notOriginalTypeAttributeRaceRace !== undefined) return `target:not-original-type-attribute-race:${notOriginalTypeAttributeRaceType}:${notOriginalTypeAttributeRaceAttribute}:${notOriginalTypeAttributeRaceRace}`;
   const notOriginalType = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsOriginalType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const notOriginalTypeBitmask = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*GetOriginalType\\s*\\(\\s*\\)\\s*&\\s*(${numericOrIdentifierPattern})\\s*==\\s*0`));
   const notOriginalTypeToken = notOriginalType?.[1] ?? notOriginalTypeBitmask?.[1];
