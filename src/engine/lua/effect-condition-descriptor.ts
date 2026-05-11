@@ -52,6 +52,10 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const sourcePreviousLocationMask = snippet.match(new RegExp(`\\b\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetPreviousLocation\\s*\\(\\s*\\)\\s*&\\s*(${numericOrIdentifierPattern})\\s*(?:\\)\\s*~=\\s*0|>\\s*0)`));
   const sourcePreviousLocationMaskValue = sourcePreviousLocationMask?.[1] ? luaNumberTokenValue(L, index, sourcePreviousLocationMask[1]) : undefined;
   if (sourcePreviousLocationMaskValue !== undefined) return `condition:source-previous-location:${sourcePreviousLocationMaskValue}`;
+  const sourceReasonPreviousPosition = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsReason\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s+and\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsPreviousPosition\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
+  const sourceReasonPreviousPositionReasonValue = sourceReasonPreviousPosition?.[1] ? luaNumberExpressionValue(L, index, sourceReasonPreviousPosition[1]) : undefined;
+  const sourceReasonPreviousPositionPositionValue = sourceReasonPreviousPosition?.[2] ? luaNumberExpressionValue(L, index, sourceReasonPreviousPosition[2]) : undefined;
+  if (sourceReasonPreviousPositionPositionValue !== undefined && sourceReasonPreviousPositionReasonValue !== undefined) return `condition:source-previous-position-reason:${sourceReasonPreviousPositionPositionValue}:${sourceReasonPreviousPositionReasonValue}`;
   const sourcePreviousPosition = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsPreviousPosition\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
   const sourcePreviousPositionValue = sourcePreviousPosition?.[1] ? luaNumberExpressionValue(L, index, sourcePreviousPosition[1]) : undefined;
   if (sourcePreviousPositionValue !== undefined) return `condition:source-previous-position:${sourcePreviousPositionValue}`;
