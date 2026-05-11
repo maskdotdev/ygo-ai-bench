@@ -35,6 +35,21 @@ export function isKnownTemporarySummonSetLockEffect(effect: SerializedDuelEffect
   return (effect.code === 20 || effect.code === 23) && isPlainPlayerTargetPhaseEndEffect(effect);
 }
 
+export function isKnownTemporaryActivationLockEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 6 &&
+    effect.sourceUid !== undefined &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    effect.value === 1 &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    hasPlayerTargetFlag(effect) &&
+    hasAnyPlayerTarget(effect) &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
 function isKnownTemporaryPlayerBattleDamageAvoidEffect(effect: SerializedDuelEffect): boolean {
   return isPlainTemporaryStaticValueEffect(effect, 201) && hasPlayerTargetFlag(effect) && targetRangeEquals(effect, 1, 0);
 }
