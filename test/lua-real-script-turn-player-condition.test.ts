@@ -1,0 +1,75 @@
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { moveDuelCard } from "#duel/card-state.js";
+import { createDuel, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import type { DuelCardData, DuelCardInstance, DuelEffectContext } from "#duel/types.js";
+import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
+import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
+import { createLuaScriptHost } from "#lua/host.js";
+import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+
+const upstreamRoot = path.resolve(".upstream/ignis");
+const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
+const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+
+function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
+  return {
+    duel,
+    source,
+    player: source.controller,
+    targetUids: [],
+    log: () => {},
+    moveCard: () => source,
+    negateChainLink: () => false,
+    setTargets: () => {},
+    getTargets: () => [],
+    setTargetPlayer: () => {},
+    setTargetParam: () => {},
+  };
+}
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script turn player conditions", () => {
+  it("restores standalone self and opponent turn-player checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const tirasCode = "31386180";
+    const springCode = "60600821";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === tirasCode || card.code === springCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 7311, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { extra: [tirasCode], main: [springCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const tiras = session.state.cards.find((card) => card.code === tirasCode);
+    const spring = session.state.cards.find((card) => card.code === springCode);
+    expect(tiras).toBeDefined();
+    expect(spring).toBeDefined();
+    moveDuelCard(session.state, tiras!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, spring!.uid, "spellTrapZone", 0).sequence = 5;
+
+    const host = createLuaScriptHost(session, workspace);
+    for (const code of [tirasCode, springCode]) expect(host.loadCardScript(Number(code), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ luaConditionDescriptor: "condition:turn-player:self", sourceUid: tiras!.uid, triggerEvent: "phaseEnd" }),
+        expect.objectContaining({ luaConditionDescriptor: "condition:turn-player:opponent", sourceUid: spring!.uid, triggerEvent: "phaseEnd" }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredTiras = restored.session.state.cards.find((card) => card.code === tirasCode);
+    const restoredSpring = restored.session.state.cards.find((card) => card.code === springCode);
+    const selfTurnEffect = restored.session.state.effects.find((effect) => effect.sourceUid === tiras!.uid && effect.luaConditionDescriptor === "condition:turn-player:self");
+    const opponentTurnEffect = restored.session.state.effects.find((effect) => effect.sourceUid === spring!.uid && effect.luaConditionDescriptor === "condition:turn-player:opponent");
+    expect(selfTurnEffect?.canActivate).toBeDefined();
+    expect(opponentTurnEffect?.canActivate).toBeDefined();
+    restored.session.state.turnPlayer = 0;
+    expect(selfTurnEffect!.canActivate!(targetContext(restored.session.state, restoredTiras!))).toBe(true);
+    expect(opponentTurnEffect!.canActivate!(targetContext(restored.session.state, restoredSpring!))).toBe(false);
+    restored.session.state.turnPlayer = 1;
+    expect(selfTurnEffect!.canActivate!(targetContext(restored.session.state, restoredTiras!))).toBe(false);
+    expect(opponentTurnEffect!.canActivate!(targetContext(restored.session.state, restoredSpring!))).toBe(true);
+  });
+});

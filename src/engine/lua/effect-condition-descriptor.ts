@@ -37,6 +37,8 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetTurnID\s*\(\s*\)\s*==\s*Duel\s*\.\s*GetTurnCount\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-turn-current";
   if (/\breturn\s+(?:\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetTurnID\s*\(\s*\)\s*~=\s*Duel\s*\.\s*GetTurnCount\s*\(\s*\)|Duel\s*\.\s*GetTurnCount\s*\(\s*\)\s*~=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetTurnID\s*\(\s*\))\s*(?:end\b|$)/.test(snippet)) return "condition:source-turn-not-current";
   if (/\breturn\s+Duel\s*\.\s*GetTurnCount\s*\(\s*\)\s*==\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetTurnID\s*\(\s*\)\s*\+\s*1\s*(?:end\b|$)/.test(snippet)) return "condition:source-turn-next";
+  if (/\breturn\s+Duel\s*\.\s*IsTurnPlayer\s*\(\s*tp\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:turn-player:self";
+  if (/\breturn\s+Duel\s*\.\s*IsTurnPlayer\s*\(\s*1\s*-\s*tp\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:turn-player:opponent";
   const sourceSummonLocation = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsSummonLocation\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
   const sourceSummonLocationValue = sourceSummonLocation?.[1] ? luaNumberExpressionValue(L, index, sourceSummonLocation[1]) : undefined;
   if (sourceSummonLocationValue !== undefined) return `condition:source-summon-location:${sourceSummonLocationValue}`;
