@@ -167,7 +167,7 @@ describe("Lua card counter and cost helpers", () => {
       Debug.Message("previous identity " .. g:GetPreviousCode() .. "/" .. tostring(g:IsPreviousCode(100)) .. "/" .. tostring(g:IsPreviousCode(900)) .. "/" .. tostring(g:IsPreviousCode(900,100)) .. "/" .. tostring(g:IsPreviousCode({900,100})) .. "/" .. tostring(g:IsPreviousCodeOnField(100)) .. "/" .. tostring(g:IsPreviousCodeOnField(900,100)) .. "/" .. tostring(g:IsPreviousCodeOnField({900,100})))
       Debug.Message("previous type " .. g:GetPreviousTypeOnField() .. "/" .. tostring(g:IsPreviousTypeOnField(TYPE_EFFECT)) .. "/" .. tostring(g:IsPreviousTypeOnField(TYPE_SPELL,TYPE_EFFECT)) .. "/" .. tostring(g:IsPreviousTypeOnField({TYPE_SPELL,TYPE_EFFECT})) .. "/" .. tostring(g:IsPreviousTypeOnField(TYPE_SPELL)))
       Debug.Message("previous stats " .. g:GetPreviousAttackOnField() .. "/" .. tostring(g:IsPreviousAttackOnField(1700)) .. "/" .. g:GetPreviousDefenseOnField() .. "/" .. tostring(g:IsPreviousDefenseOnField(1300)))
-      local link = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      local link = Duel.GetFieldCard(0, LOCATION_MZONE, 1)
       Duel.SendtoGrave(link, REASON_EFFECT)
       local grave_link = Duel.GetFieldCard(0, LOCATION_GRAVE, 1)
       Debug.Message("previous link defense " .. grave_link:GetPreviousDefenseOnField() .. "/" .. tostring(grave_link:IsPreviousDefenseOnField(0)) .. "/" .. tostring(grave_link:IsPreviousLevelOnField(2)) .. "/" .. tostring(grave_link:IsPreviousPosition(POS_FACEUP)) .. "/" .. tostring(grave_link:IsPreviousPosition(POS_FACEUP_ATTACK)))

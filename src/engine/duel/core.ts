@@ -761,7 +761,7 @@ function quickEffectActions(state: DuelState, player: PlayerId): DuelAction[] {
 }
 
 function canChooseEffect(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId, eventName?: DuelEventName, eventCard?: DuelCardInstance, payload: DuelEventPayload = {}): boolean {
-  if (source.location === "monsterZone" && !source.faceUp && ((effect.property ?? 0) & 0x100) === 0) return false;
+  if (source.location === "monsterZone" && !source.faceUp && ((effect.property ?? 0) & 0x100) === 0 && !(effect.event === "trigger" && effect.triggerSourceOnly === true && eventCard?.uid === source.uid && (eventName === "flipSummoning" || eventName === "monsterSet"))) return false;
   if (isEffectActivationPrevented(state, player, source, createContinuousEffectContext(state), effect)) return false;
   if (!canActivateSpellTrapCardEffect(state, player, source, effect)) return false;
   const quickEvent = eventName === undefined ? quickEffectEventContext(state, effect) : undefined;
