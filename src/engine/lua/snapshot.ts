@@ -437,6 +437,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownSpiritAddTypeEffect(effect) ||
         isKnownGrantedSpiritEndPhaseReturnEffect(effect, snapshotEffects) ||
         isStaticNotSetcodeSummonRestriction(effect) ||
+        isKnownSetSummonCountLimitEffect(effect) ||
         isKnownExtraSummonCountEffect(effect) ||
         effect.code === 25 ||
         (effect.code === 92 && (specialSummonTypeNotCostDescriptor(effect.luaCostDescriptor) !== undefined || specialSummonTypeIsCostDescriptor(effect.luaCostDescriptor) !== undefined)) ||
@@ -667,9 +668,9 @@ function isStaticNotSetcodeSummonRestriction(effect: SerializedDuelEffect): bool
   return (effect.code === 20 || effect.code === 22) && notSetcodeTargetDescriptor(effect.luaTargetDescriptor) !== undefined;
 }
 
-function isKnownExtraSummonCountEffect(effect: SerializedDuelEffect): boolean {
-  return effect.event === "continuous" && effect.code === 29 && effect.targetRange !== undefined && (effect.luaTargetDescriptor === undefined || typeTargetDescriptor(effect.luaTargetDescriptor) !== undefined);
-}
+function isKnownExtraSummonCountEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 29 && effect.targetRange !== undefined && (effect.luaTargetDescriptor === undefined || typeTargetDescriptor(effect.luaTargetDescriptor) !== undefined); }
+
+function isKnownSetSummonCountLimitEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 28 && effect.value !== undefined && effect.targetRange !== undefined && effect.reset !== undefined; }
 
 function isClientHintEffect(effect: SerializedDuelEffect): boolean {
   return effect.code === undefined && ((effect.property ?? 0) & luaEffectFlagClientHint) !== 0;

@@ -1,10 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData } from "#duel/types.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
@@ -46,9 +47,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Do
     expect(firstSummon).toBeDefined();
     expect(applyResponse(session, firstSummon!).ok).toBe(true);
 
-    const secondSummon = getLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === second!.uid);
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ code: 28, value: 2, controller: 0 })]));
+
+    const secondSummon = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "normalSummon" && action.uid === second!.uid);
     expect(secondSummon).toBeDefined();
-    expect(applyResponse(session, secondSummon!).ok).toBe(true);
-    expect(session.state.activityCounts[0].normalSummon).toBe(2);
+    expect(applyLuaRestoreResponse(restored, secondSummon!).ok).toBe(true);
+    expect(restored.session.state.activityCounts[0].normalSummon).toBe(2);
   });
 });
