@@ -2,7 +2,7 @@ import { findCard } from "#duel/card-state.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
-import { cardTypeFlags, currentLevel } from "#duel/card-stats.js";
+import { cardTypeFlags, currentLevel, currentRace } from "#duel/card-stats.js";
 import { applyResponse, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, negateDuelChainLinkObject, queryPublicState } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import { luaSummonTypeRitual } from "#duel/summon-type-codes.js";
@@ -800,7 +800,7 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   if (effect.luaValueDescriptor === "cannot-activate:same-code-monster-effect") return { valuePredicate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); return Boolean(handler && (cardTypeFlags(handler, ctx.duel) & luaTypeMonster) !== 0 && effect.label !== undefined && currentCardMatchesCode(handler, ctx.duel, String(effect.label))); } };
   if (effect.luaValueDescriptor === "cannot-activate:spell-trap-effect") return { valuePredicate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); return Boolean(handler && (cardTypeFlags(handler, ctx.duel) & 0x6) !== 0); } };
   if (effect.luaValueDescriptor?.startsWith("cannot-activate:monster-attribute-except:")) return { valuePredicate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); const attribute = Number(effect.luaValueDescriptor?.split(":").pop()); return Boolean(handler && (cardTypeFlags(handler, ctx.duel) & luaTypeMonster) !== 0 && ((handler.data.attribute ?? 0) & ~attribute) !== 0); } };
-  if (effect.luaValueDescriptor?.startsWith("cannot-material:target-not-setcode:")) return { valuePredicate: (ctx) => !ctx.eventCard || !currentCardMatchesSetcode(ctx.eventCard, ctx.duel, Number(effect.luaValueDescriptor?.split(":").pop())) };
+  if (effect.luaValueDescriptor?.startsWith("cannot-material:target-not-setcode:")) return { valuePredicate: (ctx) => !ctx.eventCard || !currentCardMatchesSetcode(ctx.eventCard, ctx.duel, Number(effect.luaValueDescriptor?.split(":").pop())) }; if (effect.luaValueDescriptor?.startsWith("cannot-material:target-not-race:")) return { valuePredicate: (ctx) => !ctx.eventCard || (currentRace(ctx.eventCard, ctx.duel) & Number(effect.luaValueDescriptor?.split(":").pop())) === 0 };
   if (effect.luaValueDescriptor !== "change-damage:effect-double" && effect.luaValueDescriptor !== "change-damage:effect-zero") return {};
   const applyValue = (ctx: Parameters<NonNullable<DuelEffectDefinition["lifePointValue"]>>[0], _player: PlayerId, amount: number): number => ((ctx.eventReason ?? 0) & duelReason.effect) !== 0 ? (effect.luaValueDescriptor === "change-damage:effect-double" ? amount * 2 : 0) : amount;
   return { battleDamageValue: applyValue, lifePointValue: applyValue };

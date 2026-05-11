@@ -556,7 +556,7 @@ export function synchroSummonDuelCard(state: DuelState, player: PlayerId, uid: s
 
 export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
   requireTypedSpecialSummonAllowed(state, player, uid, luaSummonTypeXyz, "Xyz Summoned");
-  return xyzSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createOverlayMaterialMover(state));
+  return xyzSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createOverlayMaterialMover(state), createMaterialUsePredicate(state, "xyz"));
 }
 
 export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
@@ -598,8 +598,8 @@ function createMaterialMover(state: DuelState): DuelMaterialMover {
 }
 
 function createOverlayMaterialMover(state: DuelState): DuelOverlayMaterialMover {
-  return (uid, controller, reason) => {
-    if (isMaterialUsePrevented(state, uid, "xyz", createContinuousEffectContext(state))) throw new Error(`Card ${uid} cannot be used as Xyz material`);
+  return (uid, controller, reason, targetUid) => {
+    if (isMaterialUsePrevented(state, uid, "xyz", createContinuousEffectContext(state), targetUid)) throw new Error(`Card ${uid} cannot be used as Xyz material`);
     requireDuelMoveAllowed(state, uid, "overlay", reason);
     return moveDuelCard(state, uid, "overlay", controller, reason);
   };

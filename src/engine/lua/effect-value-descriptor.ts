@@ -73,7 +73,10 @@ function materialTargetPredicateDescriptor(L: unknown, index: number, snippet: s
   const card = escapeRegExp(cardParam);
   const notSetcode = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const setcode = notSetcode?.[1] ? luaNumberTokenValue(L, index, notSetcode[1]) : undefined;
-  return setcode !== undefined ? `cannot-material:target-not-setcode:${setcode}` : undefined;
+  if (setcode !== undefined) return `cannot-material:target-not-setcode:${setcode}`;
+  const notRace = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
+  const race = notRace?.[1] ? luaNumberTokenValue(L, index, notRace[1]) : undefined;
+  return race !== undefined ? `cannot-material:target-not-race:${race}` : undefined;
 }
 
 function valueCardPredicateDescriptor(snippet: string, params: string[] | undefined): string | undefined {
