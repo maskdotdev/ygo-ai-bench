@@ -21,6 +21,9 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notType = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*Is(?:Original)?Type\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const notTypeValue = notType?.[1] ? luaNumberTokenValue(L, index, notType[1]) : undefined;
   if (notTypeValue !== undefined) return `target:not-type:${notTypeValue}`;
+  const notRace = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`)) ?? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*GetRace\\s*\\(\\s*\\)\\s*~=\\s*(${numericOrIdentifierPattern})`));
+  const notRaceValue = notRace?.[1] ? luaNumberTokenValue(L, index, notRace[1]) : undefined;
+  if (notRaceValue !== undefined) return `target:not-race:${notRaceValue}`;
   const setcodeOrCodeType = setcodeOrCodeTypeTargetDescriptor(L, index, snippet, card);
   if (setcodeOrCodeType !== undefined) return setcodeOrCodeType;
   const effectParam = luaFunctionParams(snippet)?.[0];
