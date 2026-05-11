@@ -23,9 +23,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
     const handWarriorCode = "900000310";
     const cards: DuelCardData[] = [
       ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === chimeraCode),
-      { code: machineXyzCode, name: "Chimera Machine Xyz Probe", kind: "monster", typeFlags: 0x800001, race: 0x20, level: 4, attack: 1000, defense: 1000 },
-      { code: warriorXyzCode, name: "Chimera Warrior Xyz Probe", kind: "monster", typeFlags: 0x800001, race: 0x1, level: 4, attack: 1000, defense: 1000 },
-      { code: machineFusionCode, name: "Chimera Machine Fusion Probe", kind: "monster", typeFlags: 0x41, race: 0x20, level: 4, attack: 1000, defense: 1000 },
+      { code: machineXyzCode, name: "Chimera Machine Xyz Probe", kind: "extra", typeFlags: 0x800001, race: 0x20, attribute: 0x10, level: 4, attack: 1000, defense: 1000 },
+      { code: warriorXyzCode, name: "Chimera Warrior Xyz Probe", kind: "extra", typeFlags: 0x800001, race: 0x1, attribute: 0x10, level: 4, attack: 1000, defense: 1000 },
+      { code: machineFusionCode, name: "Chimera Machine Fusion Probe", kind: "extra", typeFlags: 0x41, race: 0x20, attribute: 0x10, level: 4, attack: 1000, defense: 1000 },
       { code: handWarriorCode, name: "Chimera Hand Warrior Probe", kind: "monster", typeFlags: 0x1, race: 0x1, level: 4, attack: 1000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
@@ -56,6 +56,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
       "chimera-doll-official-thtgop.lua",
     );
     expect(resolve.ok, resolve.error).toBe(true);
+    expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      luaTargetDescriptor: "special-summon-limit:not-type-race-extra:8388608:32",
+    });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
