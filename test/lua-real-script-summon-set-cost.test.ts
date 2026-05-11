@@ -43,8 +43,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(chainEnergyCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBe(1);
+    expect(host.loadScript(`
+      c90000003={}
+      function c90000003.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_ACTIVATE)
+        e:SetCode(EVENT_FREE_CHAIN)
+        c:RegisterEffect(e)
+      end
+    `, "custom-chain-energy-activation-target.lua").ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
     expect(session.state.effects).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 90, sourceUid: source!.uid }),
       expect.objectContaining({ code: 91, sourceUid: source!.uid }),
       expect.objectContaining({ code: 94, sourceUid: source!.uid }),
       expect.objectContaining({ code: 95, sourceUid: source!.uid }),
@@ -52,18 +62,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
 
     setDuelPlayerLifePoints(session.state, 0, 500);
     let actions = getLegalActions(session, 0);
+    expect(actions).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", uid: spellTarget!.uid })]));
     expect(actions).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "normalSummon", uid: summonTarget!.uid })]));
     expect(actions).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "setMonster", uid: setTarget!.uid })]));
     expect(actions).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "setSpellTrap", uid: spellTarget!.uid })]));
 
     setDuelPlayerLifePoints(session.state, 0, 501);
     actions = getLegalActions(session, 0);
+    expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", uid: spellTarget!.uid })]));
     expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "normalSummon", uid: summonTarget!.uid })]));
     expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "setMonster", uid: setTarget!.uid })]));
     expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "setSpellTrap", uid: spellTarget!.uid })]));
-    const setSpell = actions.find((action) => action.type === "setSpellTrap" && action.uid === spellTarget!.uid);
-    expect(setSpell).toBeDefined();
-    expect(applyResponse(session, setSpell!).ok).toBe(true);
+    const activateSpell = actions.find((action) => action.type === "activateEffect" && action.uid === spellTarget!.uid);
+    expect(activateSpell).toBeDefined();
+    expect(applyResponse(session, activateSpell!).ok).toBe(true);
     expect(session.state.players[0].lifePoints).toBe(1);
   });
 });

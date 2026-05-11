@@ -50,6 +50,7 @@ import {
   type DuelActivationHandlers,
 } from "#duel/effect-activation.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
+import { applyActivationCosts } from "#duel/activation-cost.js";
 import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import {
   cancelReplayAttack,
@@ -266,6 +267,7 @@ const responseHandlers: DuelResponseHandlers = {
     const source = findCard(session.state, uid);
     const effect = session.state.effects.find((candidate) => candidate.id === effectId && candidate.sourceUid === uid);
     if (source && isEffectActivationPrevented(session.state, player, source, createContinuousEffectContext(session.state), effect)) throw new Error(`${source.name} cannot activate effects`);
+    if (source) applyActivationCosts(session.state, player, createContinuousEffectContext(session.state), source, effect);
     activateDuelEffect(session, player, uid, effectId, activationHandlers);
   },
   passChain,

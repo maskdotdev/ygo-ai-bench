@@ -1,4 +1,5 @@
 import { findCard } from "#duel/card-state.js";
+import { isActivationCostPrevented } from "#duel/activation-cost.js";
 import { otherPlayer } from "#duel/player-id.js";
 import { hasReviveLimitProcedureComplete } from "#duel/procedure-status.js";
 import { duelReason } from "#duel/reasons.js";
@@ -64,7 +65,7 @@ export function isEffectActivationPrevented(
     if (effect.valuePredicate && !effect.valuePredicate(ctx, player)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
-  return false;
+  return isActivationCostPrevented(state, player, createContext, card, activatingEffect);
 }
 
 function luaRelatedEffectId(effect: DuelEffectDefinition | undefined): number | undefined {
