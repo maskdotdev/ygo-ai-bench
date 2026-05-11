@@ -170,6 +170,9 @@ ${IDS.theDarkMagicians}
     expect(result.failure).toBe("No legal action matched type=activateEffect effectId=missing-effect");
     expect(result.divergenceGroupKey).toBe(result.legalActionGroups[0]?.key);
     expect(result.divergenceGroupLabel).toBe(result.legalActionGroups[0]?.label);
+    expect(result.divergenceActions).toEqual(result.legalActions);
+    expect(result.divergenceActions?.length).toBeGreaterThan(0);
+    expect(result.divergenceActions).not.toBe(result.legalActions);
     expect(result.sessionId).toBe(started.sessionId);
   });
 });

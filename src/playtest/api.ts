@@ -51,6 +51,7 @@ export interface ScriptedPlaytestResult extends PlaytestSnapshot {
   failure?: string;
   divergenceGroupKey?: string;
   divergenceGroupLabel?: string;
+  divergenceActions?: PlaytestAction[];
 }
 
 export function startPlaytest(options: StartPlaytestOptions): PlaytestSession {
@@ -169,6 +170,7 @@ function scriptedPlaytestResult(session: PlaytestSession, failedStep: number, fa
     failedStep,
     failure,
     ...(group === undefined ? {} : { divergenceGroupKey: group.key, divergenceGroupLabel: group.label }),
+    divergenceActions: view.legalActions.map(copyPlaytestAction),
   };
 }
 
