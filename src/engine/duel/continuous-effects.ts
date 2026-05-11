@@ -853,6 +853,7 @@ export function isReleasePrevented(state: DuelState, uid: string, reason: number
     if (effect.event !== "continuous" || !isUnreleasableCodeForReason(effect.code, reason)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
+    if (effect.code === 154 && target?.uid === source.uid) { const ctx = Object.assign(createContext(effect, source, target), { eventCard: card }); if ((!effect.valuePredicate || effect.valuePredicate(ctx)) && (!effect.canActivate || effect.canActivate(ctx))) return true; continue; }
     const ctx = Object.assign(createContext(effect, source, card), target ? { eventCard: target } : {});
     if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (effect.valuePredicate && !effect.valuePredicate(ctx)) continue;
