@@ -14,7 +14,7 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const card = escapeRegExp(cardParam);
   if (new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)(?!\\s+and\\b)`).test(snippet)) return "special-summon-limit:extra";
   const notTypeExtra = snippet.match(
-    new RegExp(`\\breturn\\s+(?:not\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)|${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\))`),
+    new RegExp(`\\breturn\\s+(?:not\\s+\\(?\\s*${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s*\\)?\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)|${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+\\(?\\s*${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s*\\)?(?!\\s*(?:and|or)\\b))`),
   );
   const notTypeExtraToken = notTypeExtra?.[1] ?? notTypeExtra?.[2];
   const notTypeExtraValue = notTypeExtraToken ? luaNumberExpressionValue(L, index, notTypeExtraToken) : undefined;
