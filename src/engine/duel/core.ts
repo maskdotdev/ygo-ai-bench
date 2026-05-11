@@ -108,6 +108,7 @@ import {
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
 import { executeContinuousEventEffects, executeNonChainSolvingContinuousEventEffects } from "#duel/continuous-event-effects.js";
+import { isTurnSkipped } from "#duel/skip-turn.js";
 export { canNegateDuelChainLink, canNegateDuelChainLinkObject, negateDuelChainLink, negateDuelChainLinkObject } from "#duel/chain-negation.js";
 import { chainLinksResolvable } from "#duel/chain-state.js";
 import {
@@ -346,6 +347,9 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     return stampDuelActions(actions, state.actionWindowId, "battle", state.actionWindowToken);
   }
   const hand = getCards(state, player, "hand");
+  if (isTurnSkipped(state, player, createContinuousEffectContext(state))) {
+    return stampDuelActions([{ type: "endTurn", player, label: "End turn" }], state.actionWindowId, "open", state.actionWindowToken);
+  }
   const currentPhaseSkipped = isDuelPhaseSkipped(state, player, state.phase) || !canEnterDuelPhase(state, player, state.phase);
   if (!currentPhaseSkipped && (state.phase === "main1" || state.phase === "main2")) {
     actions.push(...normalSummonActions(state, player, hand, () => isNoTributeSummonAllowed(state, player)).filter((action) => {

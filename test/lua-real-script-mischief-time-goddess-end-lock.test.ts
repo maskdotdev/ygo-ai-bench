@@ -152,6 +152,53 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     expect(actions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(actions).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", uid: secondMischief!.uid })]));
   });
+
+  it("restores its official opponent turn skip lock as an end-turn-only window", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const mischiefCode = "92182447";
+    const valkyrieCode = "92182448";
+    const opponentMonsterCode = "92182450";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === mischiefCode),
+      { code: valkyrieCode, name: "Mischief Valkyrie Fixture", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000, setcodes: [setValkyrie] },
+      { code: opponentMonsterCode, name: "Mischief Opponent Normal", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 924, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [mischiefCode, valkyrieCode] }, 1: { main: [opponentMonsterCode] } });
+    startDuel(session);
+
+    const mischief = requireCard(session, mischiefCode);
+    const valkyrie = requireCard(session, valkyrieCode);
+    const opponentMonster = requireCard(session, opponentMonsterCode);
+    moveDuelCard(session.state, mischief.uid, "hand", 0);
+    moveDuelCard(session.state, valkyrie.uid, "monsterZone", 0);
+    valkyrie.faceUp = true;
+    valkyrie.position = "faceUpAttack";
+    moveDuelCard(session.state, opponentMonster.uid, "hand", 1);
+    session.state.phase = "battle";
+    session.state.waitingFor = 0;
+    session.state.attacksDeclared = [valkyrie.uid];
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(mischiefCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const activate = getDuelLegalActions(session, 0).find((action) => "uid" in action && action.uid === mischief.uid);
+    expect(activate, JSON.stringify(getDuelLegalActions(session, 0), null, 2)).toBeDefined();
+    applyActionAndAssert(session, activate!);
+    passChainUntilOpen(session);
+    const skipTurn = session.state.effects.find((effect) => effect.sourceUid === mischief.uid && effect.code === 188);
+    expect(skipTurn).toMatchObject({ targetRange: [0, 1], reset: { flags: 0x60000200 } });
+    session.state.effects = session.state.effects.filter((effect) => effect === skipTurn);
+    applyActionAndAssert(session, getDuelLegalActions(session, 0).find((action) => action.type === "endTurn"));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state).toMatchObject({ turnPlayer: 1, phase: "main1", waitingFor: 1 });
+    const actions = getLuaRestoreLegalActions(restored, 1);
+    expect(actions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(actions).toEqual([expect.objectContaining({ type: "endTurn", player: 1 })]);
+  });
 });
 
 function requireCard(session: DuelSession, code: string) {
