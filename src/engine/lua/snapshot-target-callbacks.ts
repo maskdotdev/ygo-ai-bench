@@ -1,5 +1,5 @@
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
-import { cardTypeFlags, currentAttack, currentAttribute, currentBaseAttack, currentLevel, currentLink, currentRace, currentRank, printedCardTypeFlags } from "#duel/card-stats.js";
+import { cardRank, cardTypeFlags, currentAttack, currentAttribute, currentBaseAttack, currentLevel, currentLink, currentRace, currentRank, printedCardTypeFlags } from "#duel/card-stats.js";
 import { getDuelCardCounter } from "#duel/counters.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import { cardSetcodes, isSetcodeMatch } from "#lua/card-code-utils.js";
@@ -88,6 +88,7 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   const notLevelOrRankAbove = effect.luaTargetDescriptor?.startsWith("target:not-level-or-rank-above:") ? Number(effect.luaTargetDescriptor.slice("target:not-level-or-rank-above:".length)) : undefined; if (notLevelOrRankAbove !== undefined && Number.isSafeInteger(notLevelOrRankAbove) && notLevelOrRankAbove > 0) return { targetCardPredicate: (ctx, card) => !(((cardTypeFlags(card, ctx.duel) & 0x1) !== 0 && currentRank(card, ctx.duel) === 0 && currentLink(card, ctx.duel) === 0 && currentLevel(card, ctx.duel) >= notLevelOrRankAbove) || currentRank(card, ctx.duel) >= notLevelOrRankAbove) };
   const notOriginalTypeAttribute = originalTypeAttributeDescriptor(effect.luaTargetDescriptor); if (notOriginalTypeAttribute) return { targetCardPredicate: (_ctx, card) => (printedCardTypeFlags(card) & notOriginalTypeAttribute.type) === 0 || ((card.data.attribute ?? 0) & notOriginalTypeAttribute.attribute) === 0 };
   const notOriginalTypeRace = originalTypeRaceDescriptor(effect.luaTargetDescriptor); if (notOriginalTypeRace) return { targetCardPredicate: (_ctx, card) => (printedCardTypeFlags(card) & notOriginalTypeRace.type) === 0 || ((card.data.race ?? 0) & notOriginalTypeRace.race) === 0 };
+  const notOriginalTypeRank = originalTypeRankDescriptor(effect.luaTargetDescriptor); if (notOriginalTypeRank) return { targetCardPredicate: (_ctx, card) => (printedCardTypeFlags(card) & notOriginalTypeRank.type) === 0 || cardRank(card) !== notOriginalTypeRank.rank };
   const notOriginalAttributeRace = originalAttributeRaceDescriptor(effect.luaTargetDescriptor); if (notOriginalAttributeRace) return { targetCardPredicate: (_ctx, card) => ((card.data.attribute ?? 0) & notOriginalAttributeRace.attribute) === 0 || ((card.data.race ?? 0) & notOriginalAttributeRace.race) === 0 };
   const notOriginalType = effect.luaTargetDescriptor?.startsWith("target:not-original-type:") ? Number(effect.luaTargetDescriptor.slice("target:not-original-type:".length)) : undefined; if (notOriginalType !== undefined && Number.isSafeInteger(notOriginalType) && notOriginalType > 0) return { targetCardPredicate: (_ctx, card) => (printedCardTypeFlags(card) & notOriginalType) === 0 };
   const notType = effect.luaTargetDescriptor?.startsWith("target:not-type:") ? Number(effect.luaTargetDescriptor.slice("target:not-type:".length)) : undefined; if (notType !== undefined && Number.isSafeInteger(notType) && notType > 0) return { targetCardPredicate: (ctx, card) => (cardTypeFlags(card, ctx.duel) & notType) === 0 };
@@ -291,6 +292,12 @@ function originalTypeRaceDescriptor(descriptor: string | undefined): { type: num
   if (!descriptor?.startsWith("target:not-original-type-race:")) return undefined;
   const [type, race] = descriptor.slice("target:not-original-type-race:".length).split(":").map(Number);
   return type !== undefined && race !== undefined && [type, race].every((value) => Number.isSafeInteger(value) && value > 0) ? { type, race } : undefined;
+}
+
+function originalTypeRankDescriptor(descriptor: string | undefined): { type: number; rank: number } | undefined {
+  if (!descriptor?.startsWith("target:not-original-type-rank:")) return undefined;
+  const [type, rank] = descriptor.slice("target:not-original-type-rank:".length).split(":").map(Number);
+  return type !== undefined && rank !== undefined && [type, rank].every((value) => Number.isSafeInteger(value) && value > 0) ? { type, rank } : undefined;
 }
 
 function originalAttributeRaceDescriptor(descriptor: string | undefined): { attribute: number; race: number } | undefined {

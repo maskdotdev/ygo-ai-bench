@@ -266,4 +266,75 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     expect(effect!.targetCardPredicate!(ctx, dragonXyz!)).toBe(true);
     expect(effect!.targetCardPredicate!(ctx, machineSynchro!)).toBe(true);
   });
+
+  it("restores Ice Ryzeal's original Rank 4 Xyz Clock Lizard check", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const iceRyzealCode = "8633261";
+    const rank4XyzCode = "8633262";
+    const rank5XyzCode = "8633263";
+    const level4SynchroCode = "8633264";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === iceRyzealCode),
+      { code: rank4XyzCode, name: "Original Rank 4 Xyz Probe", kind: "extra", typeFlags: 0x800001, race: 0x20, attribute: 0x20, level: 4, attack: 1000, defense: 1000 },
+      { code: rank5XyzCode, name: "Original Rank 5 Xyz Probe", kind: "extra", typeFlags: 0x800001, race: 0x20, attribute: 0x20, level: 5, attack: 1000, defense: 1000 },
+      { code: level4SynchroCode, name: "Original Level 4 Synchro Probe", kind: "extra", typeFlags: 0x2001, race: 0x20, attribute: 0x20, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 863, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [iceRyzealCode], extra: [rank4XyzCode, rank5XyzCode, level4SynchroCode] }, 1: { main: [] } });
+    startDuel(session);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(iceRyzealCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${iceRyzealCode}),0,LOCATION_DECK,0,nil)
+      aux.addTempLizardCheck(c,0,function(e,c) return not (c:IsOriginalType(TYPE_XYZ) and c:IsOriginalRank(4)) end)
+      `,
+      "ice-ryzeal-official-lizard-type-rank.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects.find((effect) => effect.code === 51476410)).toMatchObject({
+      luaTargetDescriptor: "target:not-original-type-rank:8388608:4",
+      value: 1,
+    });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const mutate = restored.host.loadScript(
+      `
+      local rank4=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${rank4XyzCode}),0,LOCATION_EXTRA,0,nil)
+      local rank5=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${rank5XyzCode}),0,LOCATION_EXTRA,0,nil)
+      local e4=Effect.CreateEffect(rank4)
+      e4:SetType(EFFECT_TYPE_SINGLE)
+      e4:SetCode(EFFECT_CHANGE_RANK)
+      e4:SetValue(5)
+      rank4:RegisterEffect(e4)
+      local e5=Effect.CreateEffect(rank5)
+      e5:SetType(EFFECT_TYPE_SINGLE)
+      e5:SetCode(EFFECT_CHANGE_RANK)
+      e5:SetValue(4)
+      rank5:RegisterEffect(e5)
+      `,
+      "ice-ryzeal-current-rank-mutation.lua",
+    );
+    expect(mutate.ok, mutate.error).toBe(true);
+    const effect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
+    const source = restored.session.state.cards.find((card) => card.code === iceRyzealCode);
+    const rank4Xyz = restored.session.state.cards.find((card) => card.code === rank4XyzCode);
+    const rank5Xyz = restored.session.state.cards.find((card) => card.code === rank5XyzCode);
+    const level4Synchro = restored.session.state.cards.find((card) => card.code === level4SynchroCode);
+    expect(effect?.targetCardPredicate).toBeDefined();
+    expect(source).toBeDefined();
+    expect(rank4Xyz).toBeDefined();
+    expect(rank5Xyz).toBeDefined();
+    expect(level4Synchro).toBeDefined();
+    const ctx = targetContext(restored.session.state, source!);
+    expect(effect!.targetCardPredicate!(ctx, rank4Xyz!)).toBe(false);
+    expect(effect!.targetCardPredicate!(ctx, rank5Xyz!)).toBe(true);
+    expect(effect!.targetCardPredicate!(ctx, level4Synchro!)).toBe(true);
+  });
 });

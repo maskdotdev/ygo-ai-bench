@@ -178,6 +178,12 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notOriginalTypeRaceType = notOriginalTypeRaceTypeToken ? luaNumberTokenValue(L, index, notOriginalTypeRaceTypeToken) : undefined;
   const notOriginalTypeRaceRace = notOriginalTypeRaceRaceToken ? luaNumberTokenValue(L, index, notOriginalTypeRaceRaceToken) : undefined;
   if (notOriginalTypeRaceType !== undefined && notOriginalTypeRaceRace !== undefined) return `target:not-original-type-race:${notOriginalTypeRaceType}:${notOriginalTypeRaceRace}`;
+  const notOriginalTypeRank = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\(\\s*(?:${card}\\s*:\\s*IsOriginalType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsOriginalRank\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)|${card}\\s*:\\s*IsOriginalRank\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsOriginalType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\))\\s*\\)`));
+  const notOriginalTypeRankTypeToken = notOriginalTypeRank?.[1] ?? notOriginalTypeRank?.[4];
+  const notOriginalTypeRankRankToken = notOriginalTypeRank?.[2] ?? notOriginalTypeRank?.[3];
+  const notOriginalTypeRankType = notOriginalTypeRankTypeToken ? luaNumberTokenValue(L, index, notOriginalTypeRankTypeToken) : undefined;
+  const notOriginalTypeRankRank = notOriginalTypeRankRankToken ? luaNumberTokenValue(L, index, notOriginalTypeRankRankToken) : undefined;
+  if (notOriginalTypeRankType !== undefined && notOriginalTypeRankRank !== undefined) return `target:not-original-type-rank:${notOriginalTypeRankType}:${notOriginalTypeRankRank}`;
   const notOriginalAttributeRace = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\(\\s*(?:${card}\\s*:\\s*IsOriginalAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsOriginalRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)|${card}\\s*:\\s*IsOriginalRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsOriginalAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\))\\s*\\)`));
   const notOriginalAttributeRaceAttributeToken = notOriginalAttributeRace?.[1] ?? notOriginalAttributeRace?.[4];
   const notOriginalAttributeRaceRaceToken = notOriginalAttributeRace?.[2] ?? notOriginalAttributeRace?.[3];
