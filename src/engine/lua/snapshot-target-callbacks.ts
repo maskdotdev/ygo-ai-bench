@@ -1,5 +1,5 @@
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
-import { cardTypeFlags, currentAttribute, currentRace, currentRank } from "#duel/card-stats.js";
+import { cardTypeFlags, currentAttribute, currentLevel, currentRace, currentRank } from "#duel/card-stats.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import { cardSetcodes, isSetcodeMatch } from "#lua/card-code-utils.js";
 import { specialSummonTypeNotTargetDescriptor } from "#lua/effect-target-descriptor.js";
@@ -13,6 +13,7 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   const notTypeExtra = effect.luaTargetDescriptor === "special-summon-limit:non-fusion-extra" ? 0x40 : effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-type-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-type-extra:".length)) : undefined; if (notTypeExtra !== undefined && Number.isSafeInteger(notTypeExtra) && notTypeExtra > 0) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && (cardTypeFlags(card, ctx.duel) & notTypeExtra) === 0 };
   const notTypeAttributeExtra = typeAttributeExtraDescriptor(effect.luaTargetDescriptor); if (notTypeAttributeExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeAttributeExtra.type) === 0 || (currentAttribute(card, ctx.duel) & notTypeAttributeExtra.attribute) === 0) };
   const notTypeRankExtra = typeRankExtraDescriptor(effect.luaTargetDescriptor); if (notTypeRankExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeRankExtra.type) === 0 || currentRank(card, ctx.duel) !== notTypeRankExtra.rank) };
+  const notTypeLevelExtra = typeLevelExtraDescriptor(effect.luaTargetDescriptor); if (notTypeLevelExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeLevelExtra.type) === 0 || currentLevel(card, ctx.duel) !== notTypeLevelExtra.level) };
   const notTypeRaceExtra = typeRaceExtraDescriptor(effect.luaTargetDescriptor); if (notTypeRaceExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeRaceExtra.type) === 0 || (currentRace(card, ctx.duel) & notTypeRaceExtra.race) === 0) };
   const notTypeAttributeRaceExtra = typeAttributeRaceExtraDescriptor(effect.luaTargetDescriptor); if (notTypeAttributeRaceExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeAttributeRaceExtra.type) === 0 || (currentAttribute(card, ctx.duel) & notTypeAttributeRaceExtra.attribute) === 0 || (currentRace(card, ctx.duel) & notTypeAttributeRaceExtra.race) === 0) };
   const notAttributeRaceExtra = attributeRaceExtraDescriptor(effect.luaTargetDescriptor); if (notAttributeRaceExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((currentAttribute(card, ctx.duel) & notAttributeRaceExtra.attribute) === 0 || (currentRace(card, ctx.duel) & notAttributeRaceExtra.race) === 0) };
@@ -53,6 +54,12 @@ function typeRankExtraDescriptor(descriptor: string | undefined): { type: number
   if (!descriptor?.startsWith("special-summon-limit:not-type-rank-extra:")) return undefined;
   const [type, rank] = descriptor.slice("special-summon-limit:not-type-rank-extra:".length).split(":").map(Number);
   return type !== undefined && rank !== undefined && [type, rank].every((value) => Number.isSafeInteger(value) && value > 0) ? { type, rank } : undefined;
+}
+
+function typeLevelExtraDescriptor(descriptor: string | undefined): { type: number; level: number } | undefined {
+  if (!descriptor?.startsWith("special-summon-limit:not-type-level-extra:")) return undefined;
+  const [type, level] = descriptor.slice("special-summon-limit:not-type-level-extra:".length).split(":").map(Number);
+  return type !== undefined && level !== undefined && [type, level].every((value) => Number.isSafeInteger(value) && value > 0) ? { type, level } : undefined;
 }
 
 function typeAttributeRaceExtraDescriptor(descriptor: string | undefined): { type: number; attribute: number; race: number } | undefined {
