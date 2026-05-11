@@ -28,9 +28,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Jo
     const cards: DuelCardData[] = [
       ...workspace.readDatabaseCards("cards.cdb").filter((card) => [jokersStraightCode, queenKnightCode, kingKnightCode, jackKnightCode].includes(card.code)),
       { code: discardCode, name: "Joker's Straight Discard Probe", kind: "monster", typeFlags: 0x1, attribute: 0x10, race: 0x1, level: 4, attack: 1000, defense: 1000 },
-      { code: lightWarriorCode, name: "Joker's Straight LIGHT Warrior Probe", kind: "monster", typeFlags: 0x41, attribute: 0x10, race: 0x1, level: 4, attack: 1000, defense: 1000 },
-      { code: darkWarriorCode, name: "Joker's Straight DARK Warrior Probe", kind: "monster", typeFlags: 0x41, attribute: 0x20, race: 0x1, level: 4, attack: 1000, defense: 1000 },
-      { code: lightDragonCode, name: "Joker's Straight LIGHT Dragon Probe", kind: "monster", typeFlags: 0x41, attribute: 0x10, race: 0x2000, level: 4, attack: 1000, defense: 1000 },
+      { code: lightWarriorCode, name: "Joker's Straight LIGHT Warrior Probe", kind: "extra", typeFlags: 0x41, attribute: 0x10, race: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: darkWarriorCode, name: "Joker's Straight DARK Warrior Probe", kind: "extra", typeFlags: 0x41, attribute: 0x20, race: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: lightDragonCode, name: "Joker's Straight LIGHT Dragon Probe", kind: "extra", typeFlags: 0x41, attribute: 0x10, race: 0x2000, level: 4, attack: 1000, defense: 1000 },
       { code: handDarkWarriorCode, name: "Joker's Straight Hand DARK Warrior Probe", kind: "monster", typeFlags: 0x21, attribute: 0x20, race: 0x1, level: 4, attack: 1000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
@@ -58,6 +58,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Jo
       "jokers-straight-official-activate.lua",
     );
     expect(resolve.ok, resolve.error).toBe(true);
+    expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      luaTargetDescriptor: "special-summon-limit:not-attribute-race-extra:16:1",
+    });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
