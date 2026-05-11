@@ -234,15 +234,9 @@ const responseHandlers: DuelResponseHandlers = {
       normalSummonDuelByProcedure(session.state, player, uid, effectId, (eventName, eventCard) => collectTriggerEffects(session.state, eventName, eventCard));
       return;
     }
-    const card = findCard(session.state, uid);
-    if (card) paySummonOrSetCosts(session.state, player, card, [91]);
     tributeSummonDuelCard(session.state, player, uid, tributeUids);
   },
-  tributeSet(state, player, uid, tributeUids) {
-    const card = findCard(state, uid);
-    if (card) paySummonOrSetCosts(state, player, card, [94]);
-    tributeSetDuelCard(state, player, uid, tributeUids);
-  },
+  tributeSet: tributeSetDuelCard,
   fusionSummon: fusionSummonDuelCard,
   synchroSummon: synchroSummonDuelCard,
   xyzSummon: xyzSummonDuelCard,
@@ -286,11 +280,7 @@ const responseHandlers: DuelResponseHandlers = {
     collectDeferredChainEndedAfterDecline(session.state, declinedTrigger, () => collectTriggerEffects(session.state, "chainEnded"));
     continueAttackResponseWindow(session.state, battleContinuationHandlers);
   },
-  flipSummon(state, player, uid) {
-    const card = findCard(state, uid);
-    if (card) paySummonOrSetCosts(state, player, card, [93]);
-    flipSummonDuelCard(state, player, uid);
-  },
+  flipSummon: flipSummonDuelCard,
   changePosition: (state, player, uid, position) => changeDuelCardPosition(state, player, uid, position, "manual"),
   declareAttack: declareDuelAttack,
   changePhase(state, player, phase) {
@@ -519,6 +509,7 @@ export function getDuelAttackCostPaid(state: DuelState): number { return getDuel
 export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[]): void {
   const card = findCard(state, uid);
   if (card && isNormalSummonPrevented(state, player, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Tribute Summoned`);
+  if (card) paySummonOrSetCosts(state, player, card, [91]);
   const summonTypeCode = card ? luaLimitNormalSummonProcedureValue(state, player, card.uid) : undefined;
   tributeSummonDuelCardWithEvents(state, player, uid, tributeUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
     createMaterialMover(state), createReleasePredicate(state, duelReason.release | duelReason.summon), undefined, summonTypeCode);
@@ -527,6 +518,7 @@ export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: s
 export function tributeSetDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[]): void {
   const card = findCard(state, uid);
   if (card && isMonsterSetPrevented(state, player, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Set`);
+  if (card) paySummonOrSetCosts(state, player, card, [94]);
   tributeSetDuelCardWithEvents(state, player, uid, tributeUids,
     createMaterialMover(state),
     createReleasePredicate(state, duelReason.release | duelReason.summon),
@@ -537,6 +529,7 @@ export function tributeSetDuelCard(state: DuelState, player: PlayerId, uid: stri
 export function flipSummonDuelCard(state: DuelState, player: PlayerId, uid: string): DuelCardInstance {
   const card = findCard(state, uid);
   if (card && isFlipSummonPrevented(state, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Flip Summoned`);
+  if (card) paySummonOrSetCosts(state, player, card, [93]);
   return flipSummonDuelCardWithEvents(state, player, uid, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard));
 }
 
