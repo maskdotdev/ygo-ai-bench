@@ -52,6 +52,9 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   if (/\breturn\s+Duel\s*\.\s*IsMainPhase\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:main-phase";
   if (/\breturn\s+Duel\s*\.\s*IsMainPhase2\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:phase:256";
   if (/\breturn\s+Duel\s*\.\s*IsStandbyPhase\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:phase:2";
+  const sourceBattleTargetRace = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetBattleTarget\\s*\\(\\s*\\)\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s*(?:end\\b|$)`));
+  const sourceBattleTargetRaceValue = sourceBattleTargetRace?.[1] ? luaNumberExpressionValue(L, index, sourceBattleTargetRace[1]) : undefined;
+  if (sourceBattleTargetRaceValue !== undefined) return `condition:source-battle-target-race:${sourceBattleTargetRaceValue}`;
   if (/\breturn\s+(?:\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetBattleTarget\s*\(\s*\)\s*:\s*IsControler\s*\(\s*1\s*-\s*tp\s*\)|not\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetBattleTarget\s*\(\s*\)\s*:\s*IsControler\s*\(\s*tp\s*\))\s*(?:end\b|$)/.test(snippet)) return "condition:source-battle-target-opponent";
   if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetBattleTarget\s*\(\s*\)\s*(?:~=\s*nil\s*)?(?:end\b|$)/.test(snippet)) return "condition:source-battle-target";
   const sourceStatusNot = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s*(?:end\\b|$)`));
