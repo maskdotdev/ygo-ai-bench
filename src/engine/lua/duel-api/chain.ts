@@ -222,8 +222,9 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   if (cardTableField) return cardTableField;
   const handlerOnlyUid = literalCapturedHandlerOnlyCardUid(L, index, hostState);
   if (handlerOnlyUid) return `closure:card-handler:${handlerOnlyUid}`;
-  const responsePlayerHandlerExclusionUid = literalCapturedHandlerExclusionResponsePlayerCardUid(L, index, hostState);
-  if (responsePlayerHandlerExclusionUid) return `closure:card-not-handler-response-player:${responsePlayerHandlerExclusionUid}`;
+  const responsePlayerHandlerExclusionUids = literalCapturedHandlerExclusionResponsePlayerCardUids(L, index, hostState);
+  if (responsePlayerHandlerExclusionUids?.length === 1) return `closure:card-not-handler-response-player:${responsePlayerHandlerExclusionUids[0]}`;
+  if (responsePlayerHandlerExclusionUids && responsePlayerHandlerExclusionUids.length > 1) return `closure:cards-not-handler-response-player:${responsePlayerHandlerExclusionUids.map(encodeURIComponent).join(",")}`;
   const handlerExclusionUids = literalCapturedHandlerExclusionCardUids(L, index, hostState);
   if (handlerExclusionUids?.length === 1) return `closure:card-not-handler:${handlerExclusionUids[0]}`;
   if (handlerExclusionUids && handlerExclusionUids.length > 1) return `closure:cards-not-handler:${handlerExclusionUids.map(encodeURIComponent).join(",")}`;
@@ -281,7 +282,6 @@ function matchingGlobalCardTableFunctionField(L: unknown, index: number): string
   lua.lua_pop(L, 1);
   return undefined;
 }
-
 function matchingTableFunctionField(L: unknown, tableIndex: number, functionIndex: number): string | undefined {
   const absoluteTableIndex = lua.lua_absindex(L, tableIndex);
   lua.lua_pushnil(L);
@@ -296,12 +296,10 @@ function matchingTableFunctionField(L: unknown, tableIndex: number, functionInde
   }
   return undefined;
 }
-
-function literalCapturedHandlerExclusionResponsePlayerCardUid(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string | undefined {
+function literalCapturedHandlerExclusionResponsePlayerCardUids(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string[] | undefined {
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
-  const params = luaFunctionParams(snippet);
-  const [effectParam, responsePlayerParam, chainPlayerParam] = params ?? [];
+  const [effectParam, responsePlayerParam, chainPlayerParam] = luaFunctionParams(snippet) ?? [];
   const returnExpression = lastReturnExpression(snippet);
   if (!effectParam || !responsePlayerParam || !chainPlayerParam || !returnExpression) return undefined;
   const terms = returnExpression.split(/\s+or\s+/).map((term) => trimOuterParens(term.trim())).filter(Boolean);
@@ -310,13 +308,21 @@ function literalCapturedHandlerExclusionResponsePlayerCardUid(L: unknown, index:
   const exclusion = terms.find((term) => term !== equality);
   if (!equality || !exclusion) return undefined;
   const upvalues = capturedCardOrNilUpvalues(L, index);
-  if (!upvalues || upvalues.size !== 1) return undefined;
-  const handlerExpression = `${escapeRegExp(effectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`;
-  const capturedName = exclusion.match(new RegExp(`^(?:${handlerExpression})\\s*~=\\s*([A-Za-z_]\\w*)$`))?.[1]
-    ?? exclusion.match(new RegExp(`^([A-Za-z_]\\w*)\\s*~=\\s*(?:${handlerExpression})$`))?.[1];
-  return capturedName ? upvalues.get(capturedName) : undefined;
+  if (!upvalues || upvalues.size === 0) return undefined;
+  const handlerExpression = [
+    `${escapeRegExp(effectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`,
+    ...[...snippet.matchAll(new RegExp(`local\\s+([A-Za-z_]\\w*)\\s*=\\s*${effectParam}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`, "g"))].flatMap((match) => match[1] ? [escapeRegExp(match[1])] : []),
+  ].join("|");
+  const blockedUids = new Set<string>();
+  const comparisons = [...exclusion.matchAll(new RegExp(`(?:${handlerExpression})\\s*~=\\s*([A-Za-z_]\\w*)|([A-Za-z_]\\w*)\\s*~=\\s*(?:${handlerExpression})`, "g"))];
+  for (const comparison of comparisons) {
+    const capturedName = comparison[1] ?? comparison[2];
+    if (!capturedName || !upvalues.has(capturedName)) return undefined;
+    const uid = upvalues.get(capturedName);
+    if (uid) blockedUids.add(uid);
+  }
+  return blockedUids.size > 0 ? [...blockedUids].sort() : undefined;
 }
-
 function literalCapturedHandlerExclusionCardUids(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string[] | undefined {
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
@@ -340,7 +346,6 @@ function literalCapturedHandlerExclusionCardUids(L: unknown, index: number, host
   }
   return blockedUids.size > 0 ? [...blockedUids].sort() : undefined;
 }
-
 function literalCapturedHandlerOnlyCardUid(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string | undefined {
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
@@ -358,13 +363,11 @@ function literalCapturedHandlerOnlyCardUid(L: unknown, index: number, hostState:
   if (!capturedName) return undefined;
   return upvalues.get(capturedName);
 }
-
 function lastReturnExpression(snippet: string): string | undefined {
   const index = snippet.lastIndexOf("return ");
   if (index < 0) return undefined;
   return snippet.slice(index + "return ".length).replace(/\s*end\b.*$/, "").trim();
 }
-
 function capturedCardOrNilUpvalues(L: unknown, index: number): Map<string, string | undefined> | undefined {
   const absoluteIndex = lua.lua_absindex(L, index);
   const upvalues = new Map<string, string | undefined>();
@@ -384,7 +387,6 @@ function capturedCardOrNilUpvalues(L: unknown, index: number): Map<string, strin
   }
   return upvalues;
 }
-
 function literalTargetCardsHandlerExclusionUids(L: unknown, index: number, hostState: LuaDuelChainApiHostState): string[] | undefined {
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
@@ -403,12 +405,10 @@ function literalTargetCardsHandlerExclusionUids(L: unknown, index: number, hostS
   ].join("");
   return new RegExp(String.raw`\breturn\s+not\s+${targetGroupContainsHandler}(?:\s+end\b|$)`).test(snippet) ? targetUids : undefined;
 }
-
 function capturedHandlerCode(L: unknown, index: number): number | undefined {
   const captured = capturedSingleNumberUpvalue(L, index, isHandlerCodeUpvalueName);
   return captured !== undefined && captured > 0 ? captured : undefined;
 }
-
 function literalHandlerCodePredicate(L: unknown, index: number, hostState: LuaDuelChainApiHostState): number | undefined {
   if (hasNonEnvironmentUpvalues(L, index)) return undefined;
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
