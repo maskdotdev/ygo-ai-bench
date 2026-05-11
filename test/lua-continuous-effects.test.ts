@@ -536,6 +536,10 @@ describe("Lua continuous effects", () => {
         e:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
         e:SetRange(LOCATION_MZONE)
         e:SetTargetRange(1,0)
+        e:SetTarget(function(e,c,sump,sumtype)
+          Debug.Message("synthetic lock sumtype " .. sumtype)
+          return sumtype~=SUMMON_TYPE_SPECIAL+181
+        end)
         c:RegisterEffect(e)
       end
       `,
@@ -547,6 +551,7 @@ describe("Lua continuous effects", () => {
     const check = host.loadScript(
       `
       Debug.Message("synthetic locked " .. tostring(Duel.IsPlayerCanSpecialSummonMonster(0,123,0,TYPE_MONSTER|TYPE_NORMAL,0,0,1,RACE_WARRIOR,ATTRIBUTE_LIGHT,POS_FACEUP_ATTACK,0)))
+      Debug.Message("synthetic custom open " .. tostring(Duel.IsPlayerCanSpecialSummonMonster(0,123,0,TYPE_MONSTER|TYPE_NORMAL,0,0,1,RACE_WARRIOR,ATTRIBUTE_LIGHT,POS_FACEUP_ATTACK,181)))
       Debug.Message("synthetic opponent open " .. tostring(Duel.IsPlayerCanSpecialSummonMonster(0,123,0,TYPE_MONSTER|TYPE_NORMAL,0,0,1,RACE_WARRIOR,ATTRIBUTE_LIGHT,POS_FACEUP_ATTACK,1)))
       Debug.Message("synthetic bad pos " .. tostring(Duel.IsPlayerCanSpecialSummonMonster(0,123,0,TYPE_MONSTER|TYPE_NORMAL,0,0,1,RACE_WARRIOR,ATTRIBUTE_LIGHT,POS_FACEDOWN_ATTACK,0)))
       `,
@@ -554,8 +559,10 @@ describe("Lua continuous effects", () => {
     );
     expect(check.ok, check.error).toBe(true);
     expect(host.messages).toContain("synthetic locked false");
+    expect(host.messages).toContain("synthetic custom open true");
     expect(host.messages).toContain("synthetic opponent open true");
     expect(host.messages).toContain("synthetic bad pos false");
+    expect(host.messages).toContain("synthetic lock sumtype 1073742005");
   });
 
   it("lets Lua scripts check whether cards can be special summoned", () => {

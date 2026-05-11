@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { registerEffect } from "#duel/core.js";
 import { cleanupRemovedDuelEffect } from "#duel/effect-reset.js";
+import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import { locationsFromMask, readCardUid, readGroupUids, readTableNumberField } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { callLuaEffectBattleDamageValue, callLuaEffectLifePointValue, callLuaEffectStatValue, callLuaEffectValueCardPredicate, callLuaEffectValuePredicate } from "#lua/effect-value-callbacks.js";
@@ -913,13 +914,11 @@ function callLuaEffectCardTargetPredicate(L: unknown, hostState: LuaHostState, l
   return withLuaCallbackContext(hostState, ctx, luaEffect.id, "target", () => {
     applyLuaEffectContextLabelObject(L, luaEffect, ctx);
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.targetRef);
-    pushLuaEffectTable(L, luaEffect.id, hostState);
-    pushCardTable(L, card.uid);
-    const status = lua.lua_pcall(L, 2, 1, 0);
+    pushLuaEffectTable(L, luaEffect.id, hostState); pushCardTable(L, card.uid);
+    if (luaEffect.code === 22) { lua.lua_pushinteger(L, ctx.eventPlayer ?? card.controller); lua.lua_pushinteger(L, effectiveSpecialSummonTypeCode(ctx.summonTypeCode)); lua.lua_pushinteger(L, 0); lua.lua_pushinteger(L, ctx.eventPlayer ?? card.controller); }
+    const status = lua.lua_pcall(L, luaEffect.code === 22 ? 6 : 2, 1, 0);
     if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
-    const result = lua.lua_toboolean(L, -1);
-    lua.lua_pop(L, 1);
-    return Boolean(result);
+    const result = lua.lua_toboolean(L, -1); lua.lua_pop(L, 1); return Boolean(result);
   });
 }
 

@@ -153,7 +153,7 @@ export function isSpecialSummonPrevented(state: DuelState, player: PlayerId, cre
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
-    const ctx = createContext(effect, source, card);
+    const ctx = createContext(effect, source, card); ctx.summonTypeCode = effectiveSpecialSummonTypeCode(summonTypeCode); ctx.eventPlayer = player;
     if (card && effect.targetCardPredicate && !effect.targetCardPredicate(ctx, card)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }

@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuelCard, collectDuelGroupedTriggerEffects } from "#duel/core.js";
 import { findCard, hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
-import { luaSummonTypePendulum } from "#duel/summon-type-codes.js";
+import { luaSpecialSummonTypeCode, luaSummonTypePendulum } from "#duel/summon-type-codes.js";
 import {
   isMonsterSetPrevented,
   isNormalSummonPrevented,
@@ -161,10 +161,12 @@ function pushCanPendulumSummon(L: unknown, session: DuelSession): number {
 
 function pushCanSpecialSummonMonster(L: unknown, session: DuelSession): number {
   const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
-  const targetPlayer = normalizePlayer(lua.lua_isnumber(L, 11) ? lua.lua_tointeger(L, 11) : player);
+  const playerOrSummonType = lua.lua_isnumber(L, 11) ? lua.lua_tointeger(L, 11) : undefined;
+  const targetPlayer = normalizePlayer(playerOrSummonType === 0 || playerOrSummonType === 1 ? playerOrSummonType : player);
   const positionMask = lua.lua_isnumber(L, 10) ? lua.lua_tointeger(L, 10) : 0x1;
+  const summonType = luaSpecialSummonTypeCode(lua.lua_isnumber(L, 12) ? lua.lua_tointeger(L, 12) : playerOrSummonType !== undefined && playerOrSummonType !== 0 && playerOrSummonType !== 1 ? playerOrSummonType : 0);
   const card = syntheticSpecialSummonCard(L, targetPlayer);
-  lua.lua_pushboolean(L, Boolean(positionFromMask(positionMask)) && availableMonsterZoneCount(session, targetPlayer, []) > 0 && canPlayerSpecialSummon(session.state, targetPlayer, card));
+  lua.lua_pushboolean(L, Boolean(positionFromMask(positionMask)) && availableMonsterZoneCount(session, targetPlayer, []) > 0 && canPlayerSpecialSummon(session.state, targetPlayer, card, summonType));
   return 1;
 }
 
