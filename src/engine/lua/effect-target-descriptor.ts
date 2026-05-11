@@ -184,6 +184,12 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notOriginalTypeRankType = notOriginalTypeRankTypeToken ? luaNumberTokenValue(L, index, notOriginalTypeRankTypeToken) : undefined;
   const notOriginalTypeRankRank = notOriginalTypeRankRankToken ? luaNumberTokenValue(L, index, notOriginalTypeRankRankToken) : undefined;
   if (notOriginalTypeRankType !== undefined && notOriginalTypeRankRank !== undefined) return `target:not-original-type-rank:${notOriginalTypeRankType}:${notOriginalTypeRankRank}`;
+  const notOriginalLevelCurrentType = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\(\\s*(?:${card}\\s*:\\s*IsOriginalLevel\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)|${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsOriginalLevel\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\))\\s*\\)`));
+  const notOriginalLevelCurrentTypeLevelToken = notOriginalLevelCurrentType?.[1] ?? notOriginalLevelCurrentType?.[4];
+  const notOriginalLevelCurrentTypeTypeToken = notOriginalLevelCurrentType?.[2] ?? notOriginalLevelCurrentType?.[3];
+  const notOriginalLevelCurrentTypeLevel = notOriginalLevelCurrentTypeLevelToken ? luaNumberTokenValue(L, index, notOriginalLevelCurrentTypeLevelToken) : undefined;
+  const notOriginalLevelCurrentTypeType = notOriginalLevelCurrentTypeTypeToken ? luaNumberExpressionValue(L, index, notOriginalLevelCurrentTypeTypeToken) : undefined;
+  if (notOriginalLevelCurrentTypeLevel !== undefined && notOriginalLevelCurrentTypeType !== undefined) return `target:not-original-level-current-type:${notOriginalLevelCurrentTypeLevel}:${notOriginalLevelCurrentTypeType}`;
   const notOriginalAttributeRace = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\(\\s*(?:${card}\\s*:\\s*IsOriginalAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsOriginalRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)|${card}\\s*:\\s*IsOriginalRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsOriginalAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\))\\s*\\)`));
   const notOriginalAttributeRaceAttributeToken = notOriginalAttributeRace?.[1] ?? notOriginalAttributeRace?.[4];
   const notOriginalAttributeRaceRaceToken = notOriginalAttributeRace?.[2] ?? notOriginalAttributeRace?.[3];

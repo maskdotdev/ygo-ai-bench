@@ -661,4 +661,69 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     expect(effect!.targetCardPredicate!(ctx, fireSynchro!)).toBe(false);
     expect(effect!.targetCardPredicate!(ctx, darkFusion!)).toBe(true);
   });
+
+  it("restores Destruction Swordsman's original Level and current Type Clock Lizard check", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const swordsmanCode = "73819701";
+    const level8FusionCode = "73819702";
+    const level7FusionCode = "73819703";
+    const level8SynchroCode = "73819704";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === swordsmanCode),
+      { code: level8FusionCode, name: "Original Level 8 Fusion Probe", kind: "extra", typeFlags: 0x41, race: 0x2000, attribute: 0x10, level: 8, attack: 1000, defense: 1000 },
+      { code: level7FusionCode, name: "Original Level 7 Fusion Probe", kind: "extra", typeFlags: 0x41, race: 0x2000, attribute: 0x10, level: 7, attack: 1000, defense: 1000 },
+      { code: level8SynchroCode, name: "Original Level 8 Synchro Probe", kind: "extra", typeFlags: 0x2001, race: 0x2000, attribute: 0x10, level: 8, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 738, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [swordsmanCode], extra: [level8FusionCode, level7FusionCode, level8SynchroCode] }, 1: { main: [] } });
+    startDuel(session);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(swordsmanCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${swordsmanCode}),0,LOCATION_DECK,0,nil)
+      aux.addTempLizardCheck(c,0,function(e,c) return not (c:IsOriginalLevel(8) and c:IsType(TYPE_FUSION|TYPE_SYNCHRO)) end)
+      `,
+      "destruction-swordsman-official-original-level-current-type-lizard.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects.find((effect) => effect.code === 51476410)).toMatchObject({
+      luaTargetDescriptor: "target:not-original-level-current-type:8:8256",
+      value: 1,
+    });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const mutate = restored.host.loadScript(
+      `
+      local level8_synchro=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${level8SynchroCode}),0,LOCATION_EXTRA,0,nil)
+      local type_change=Effect.CreateEffect(level8_synchro)
+      type_change:SetType(EFFECT_TYPE_SINGLE)
+      type_change:SetCode(EFFECT_CHANGE_TYPE)
+      type_change:SetValue(TYPE_XYZ)
+      level8_synchro:RegisterEffect(type_change)
+      `,
+      "destruction-swordsman-current-type-mutation.lua",
+    );
+    expect(mutate.ok, mutate.error).toBe(true);
+    const effect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
+    const source = restored.session.state.cards.find((card) => card.code === swordsmanCode);
+    const level8Fusion = restored.session.state.cards.find((card) => card.code === level8FusionCode);
+    const level7Fusion = restored.session.state.cards.find((card) => card.code === level7FusionCode);
+    const level8Synchro = restored.session.state.cards.find((card) => card.code === level8SynchroCode);
+    expect(effect?.targetCardPredicate).toBeDefined();
+    expect(source).toBeDefined();
+    expect(level8Fusion).toBeDefined();
+    expect(level7Fusion).toBeDefined();
+    expect(level8Synchro).toBeDefined();
+    const ctx = targetContext(restored.session.state, source!);
+    expect(effect!.targetCardPredicate!(ctx, level8Fusion!)).toBe(false);
+    expect(effect!.targetCardPredicate!(ctx, level7Fusion!)).toBe(true);
+    expect(effect!.targetCardPredicate!(ctx, level8Synchro!)).toBe(true);
+  });
 });
