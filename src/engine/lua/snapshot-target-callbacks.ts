@@ -25,6 +25,7 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   const notSetcodeExtra = setcodeExtraDescriptor(effect.luaTargetDescriptor); if (notSetcodeExtra !== undefined) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && !currentCardMatchesSetcode(card, ctx.duel, notSetcodeExtra) };
   const notTypeRaceExtra = typeRaceExtraDescriptor(effect.luaTargetDescriptor); if (notTypeRaceExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeRaceExtra.type) === 0 || (currentRace(card, ctx.duel) & notTypeRaceExtra.race) === 0) };
   const notTypeAttributeRaceExtra = typeAttributeRaceExtraDescriptor(effect.luaTargetDescriptor); if (notTypeAttributeRaceExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeAttributeRaceExtra.type) === 0 || (currentAttribute(card, ctx.duel) & notTypeAttributeRaceExtra.attribute) === 0 || (currentRace(card, ctx.duel) & notTypeAttributeRaceExtra.race) === 0) };
+  const notRaceTypeOrSetcode = raceTypeOrSetcodeDescriptor(effect.luaTargetDescriptor); if (notRaceTypeOrSetcode) return { targetCardPredicate: (ctx, card) => !currentCardMatchesSetcode(card, ctx.duel, notRaceTypeOrSetcode.setcode) && ((currentRace(card, ctx.duel) & notRaceTypeOrSetcode.race) === 0 || (cardTypeFlags(card, ctx.duel) & notRaceTypeOrSetcode.type) === 0) };
   const notAttributeRaceExtra = attributeRaceExtraDescriptor(effect.luaTargetDescriptor); if (notAttributeRaceExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((currentAttribute(card, ctx.duel) & notAttributeRaceExtra.attribute) === 0 || (currentRace(card, ctx.duel) & notAttributeRaceExtra.race) === 0) };
   const setcodeOrCodeType = setcodeOrCodeTypeTargetDescriptor(effect.luaTargetDescriptor);
   if (setcodeOrCodeType !== undefined) {
@@ -142,6 +143,12 @@ function attributeRaceExtraDescriptor(descriptor: string | undefined): { attribu
   if (!descriptor?.startsWith("special-summon-limit:not-attribute-race-extra:")) return undefined;
   const [attribute, race] = descriptor.slice("special-summon-limit:not-attribute-race-extra:".length).split(":").map(Number);
   return attribute !== undefined && race !== undefined && [attribute, race].every((value) => Number.isSafeInteger(value) && value > 0) ? { attribute, race } : undefined;
+}
+
+function raceTypeOrSetcodeDescriptor(descriptor: string | undefined): { race: number; type: number; setcode: number } | undefined {
+  if (!descriptor?.startsWith("target:not-race-type-or-setcode:")) return undefined;
+  const [race, type, setcode] = descriptor.slice("target:not-race-type-or-setcode:".length).split(":").map(Number);
+  return race !== undefined && type !== undefined && setcode !== undefined && [race, type, setcode].every((value) => Number.isSafeInteger(value) && value > 0) ? { race, type, setcode } : undefined;
 }
 
 export function notSetcodeTargetDescriptor(descriptor: string | undefined): number | undefined {
