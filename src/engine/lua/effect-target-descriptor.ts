@@ -142,7 +142,9 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const summonTypeParam = luaFunctionParams(snippet)?.[3];
   if (summonTypeParam) {
     const summonTypeNot = snippet.match(new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*~=\\s*(SUMMON_TYPE_SPECIAL\\s*\\+\\s*${numericOrIdentifierPattern}|${numericOrIdentifierPattern})`));
-    const value = summonTypeNot?.[1] ? luaSummonTypeTokenValue(L, index, summonTypeNot[1]) : undefined;
+    const summonTypeMaskNot = snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*~=\\s*\\1`));
+    const summonTypeToken = summonTypeNot?.[1] ?? summonTypeMaskNot?.[1];
+    const value = summonTypeToken ? luaSummonTypeTokenValue(L, index, summonTypeToken) : undefined;
     if (value !== undefined) return `target:special-summon-type-not:${value}`;
   }
   const notSetcode = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
