@@ -218,15 +218,15 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     return 1;
   });
   pushEffectMethod(L, effects, "SetTargetRange", (state, effect) => {
-    const selfRange = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    const opponentRange = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : undefined;
-    effect.targetRange = opponentRange === undefined ? [selfRange] : [selfRange, opponentRange];
+    const selfRange = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0; const opponentRange = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : undefined; effect.targetRange = opponentRange === undefined ? [selfRange] : [selfRange, opponentRange];
+    return 0;
+  });
+  pushEffectMethod(L, effects, "SetAbsoluteRange", (state, effect) => {
+    const referencePlayer = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : effectController(session, effect); const referenceRange = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0; const otherRange = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0; effect.targetRange = referencePlayer === effectController(session, effect) ? [referenceRange, otherRange] : [otherRange, referenceRange];
     return 0;
   });
   pushEffectMethod(L, effects, "GetTargetRange", (state, effect) => {
-    lua.lua_pushinteger(state, effect.targetRange?.[0] ?? 0);
-    lua.lua_pushinteger(state, effect.targetRange?.[1] ?? 0);
-    return 2;
+    lua.lua_pushinteger(state, effect.targetRange?.[0] ?? 0); lua.lua_pushinteger(state, effect.targetRange?.[1] ?? 0); return 2;
   });
   pushEffectMethod(L, effects, "SetRange", (state, effect) => {
     const firstRange = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;

@@ -434,6 +434,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownSpiritAddTypeEffect(effect) ||
         isKnownGrantedSpiritEndPhaseReturnEffect(effect, snapshotEffects) ||
         isStaticNotSetcodeSummonRestriction(effect) ||
+        isKnownSetcodeTypeExtraSummonRestriction(effect) ||
         isKnownSetSummonCountLimitEffect(effect) ||
         isKnownExtraSummonCountEffect(effect) ||
         effect.code === 25 ||
@@ -465,7 +466,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isStaticSingleCardLuaRestriction(effect) ||
         isStaticPlayerPhaseLock(effect) ||
         (effect.code === 102 && effect.value !== undefined && effect.value !== 0 && effect.targetRange === undefined) ||
-        ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 132 || effect.code === 314) && effect.value !== undefined)))
+        ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 131 || effect.code === 132 || effect.code === 314) && effect.value !== undefined)))
   );
 }
 
@@ -663,6 +664,20 @@ function isKnownIndestructibleValueEffect(effect: SerializedDuelEffect): boolean
 
 function isStaticNotSetcodeSummonRestriction(effect: SerializedDuelEffect): boolean {
   return (effect.code === 20 || effect.code === 22) && notSetcodeTargetDescriptor(effect.luaTargetDescriptor) !== undefined;
+}
+
+function isKnownSetcodeTypeExtraSummonRestriction(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 22 &&
+    effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-setcode-type-extra:") === true &&
+    effect.sourceUid !== undefined &&
+    effect.reset?.flags === luaResetEventStandard &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone" &&
+    effect.targetRange?.[0] === 1 &&
+    (effect.targetRange[1] ?? 0) === 0
+  );
 }
 
 function isKnownExtraSummonCountEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 29 && effect.targetRange !== undefined && (effect.luaTargetDescriptor === undefined || typeTargetDescriptor(effect.luaTargetDescriptor) !== undefined); }
