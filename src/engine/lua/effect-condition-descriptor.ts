@@ -58,6 +58,9 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const sourceStatusSummonType = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s+return\\s+\\1\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s+and\\s+\\1\\s*:\\s*Is(Ritual|Fusion|Synchro|Xyz|Pendulum|Link)Summoned\\s*\\(\\s*\\)\\s*(?:end\\b|$)`));
   const sourceStatusSummonTypeValue = sourceStatusSummonType?.[2] ? luaNumberExpressionValue(L, index, sourceStatusSummonType[2]) : undefined;
   if (sourceStatusSummonTypeValue !== undefined && sourceStatusSummonType?.[3]) return `condition:source-status-summon-type:${sourceStatusSummonTypeValue}:${summonTypeConditionValues[sourceStatusSummonType[3]]}`;
+  const sourceStatusRelateBattle = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s+return\\s+\\1\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s+and\\s+\\1\\s*:\\s*IsRelateToBattle\\s*\\(\\s*\\)\\s*(?:end\\b|$)`));
+  const sourceStatusRelateBattleValue = sourceStatusRelateBattle?.[2] ? luaNumberExpressionValue(L, index, sourceStatusRelateBattle[2]) : undefined;
+  if (sourceStatusRelateBattleValue !== undefined) return `condition:source-status-relate-battle:${sourceStatusRelateBattleValue}`;
   const sourceStatus = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
   const sourceStatusValue = sourceStatus?.[1] ? luaNumberExpressionValue(L, index, sourceStatus[1]) : undefined;
   if (sourceStatusValue !== undefined) return `condition:source-status:${sourceStatusValue}`;
