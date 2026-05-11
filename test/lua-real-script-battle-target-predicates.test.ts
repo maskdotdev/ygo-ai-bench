@@ -14,6 +14,50 @@ const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script battle target predicates", () => {
+  it("restores battle-target type predicates", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const devourerCode = "98336111";
+    const fusionCode = "8198620";
+    const nonFusionCode = "56921677";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => [devourerCode, fusionCode, nonFusionCode].includes(card.code));
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 8222, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [devourerCode, nonFusionCode], extra: [fusionCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const devourer = session.state.cards.find((card) => card.code === devourerCode);
+    const fusion = session.state.cards.find((card) => card.code === fusionCode);
+    const nonFusion = session.state.cards.find((card) => card.code === nonFusionCode);
+    expect(devourer).toBeDefined();
+    expect(fusion).toBeDefined();
+    expect(nonFusion).toBeDefined();
+    moveDuelCard(session.state, devourer!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, fusion!.uid, "monsterZone", 1);
+    moveDuelCard(session.state, nonFusion!.uid, "monsterZone", 1);
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(devourerCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 102, luaTargetDescriptor: "target:source-battle-target-type:64", sourceUid: devourer!.uid }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredDevourer = restored.session.state.cards.find((card) => card.code === devourerCode);
+    const restoredFusion = restored.session.state.cards.find((card) => card.code === fusionCode);
+    const restoredNonFusion = restored.session.state.cards.find((card) => card.code === nonFusionCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === devourer!.uid && candidate.luaTargetDescriptor === "target:source-battle-target-type:64");
+    expect(effect?.targetCardPredicate).toBeDefined();
+    restored.session.state.currentAttack = { attackerUid: restoredDevourer!.uid, targetUid: restoredFusion!.uid };
+    expect(effect!.targetCardPredicate!({ duel: restored.session.state } as never, restoredFusion!)).toBe(true);
+    expect(effect!.targetCardPredicate!({ duel: restored.session.state } as never, restoredDevourer!)).toBe(false);
+    restored.session.state.currentAttack = { attackerUid: restoredDevourer!.uid, targetUid: restoredNonFusion!.uid };
+    expect(effect!.targetCardPredicate!({ duel: restored.session.state } as never, restoredNonFusion!)).toBe(false);
+  });
+
   it("restores handler and battle-target field predicates", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const reflectionCode = "63947968";
