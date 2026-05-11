@@ -19,6 +19,10 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notTypeExtraValue = notTypeExtraToken ? luaNumberExpressionValue(L, index, notTypeExtraToken) : undefined;
   if (notTypeExtraValue === 0x40) return "special-summon-limit:non-fusion-extra";
   if (notTypeExtraValue !== undefined) return `special-summon-limit:not-type-extra:${notTypeExtraValue}`;
+  const linkBelowExtra = snippet.match(new RegExp(`\\breturn\\s+(?:${card}\\s*:\\s*IsLinkBelow\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)|${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLinkBelow\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\))`));
+  const linkBelowExtraToken = linkBelowExtra?.[1] ?? linkBelowExtra?.[2];
+  const linkBelowExtraValue = linkBelowExtraToken ? luaNumberTokenValue(L, index, linkBelowExtraToken) : undefined;
+  if (linkBelowExtraValue !== undefined) return `special-summon-limit:link-below-extra:${linkBelowExtraValue}`;
   const notNamedTypeExtra = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*Is(Fusion|Ritual|Synchro|Xyz|Pendulum|Link)Monster\\s*\\(\\s*\\)`));
   const notNamedTypeExtraValue = notNamedTypeExtra?.[1] ? namedExtraDeckMonsterTypeValue(notNamedTypeExtra[1]) : undefined;
   if (notNamedTypeExtraValue === 0x40) return "special-summon-limit:non-fusion-extra";

@@ -1,5 +1,5 @@
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
-import { cardTypeFlags, currentAttack, currentAttribute, currentBaseAttack, currentLevel, currentRace, currentRank } from "#duel/card-stats.js";
+import { cardTypeFlags, currentAttack, currentAttribute, currentBaseAttack, currentLevel, currentLink, currentRace, currentRank } from "#duel/card-stats.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import { cardSetcodes, isSetcodeMatch } from "#lua/card-code-utils.js";
 import { specialSummonTypeNotTargetDescriptor } from "#lua/effect-target-descriptor.js";
@@ -11,6 +11,7 @@ const luaFaceupTypeTargetDescriptorPrefix = "target:faceup-type:";
 
 export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "targetCardPredicate"> {
   const notTypeExtra = effect.luaTargetDescriptor === "special-summon-limit:non-fusion-extra" ? 0x40 : effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-type-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-type-extra:".length)) : undefined; if (notTypeExtra !== undefined && Number.isSafeInteger(notTypeExtra) && notTypeExtra > 0) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && (cardTypeFlags(card, ctx.duel) & notTypeExtra) === 0 };
+  const linkBelowExtra = effect.luaTargetDescriptor?.startsWith("special-summon-limit:link-below-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:link-below-extra:".length)) : undefined; if (linkBelowExtra !== undefined && Number.isSafeInteger(linkBelowExtra) && linkBelowExtra > 0) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && (cardTypeFlags(card, ctx.duel) & 0x4000000) !== 0 && currentLink(card, ctx.duel) <= linkBelowExtra };
   const notTypeAttributeExtra = typeAttributeExtraDescriptor(effect.luaTargetDescriptor); if (notTypeAttributeExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeAttributeExtra.type) === 0 || (currentAttribute(card, ctx.duel) & notTypeAttributeExtra.attribute) === 0) };
   const notTypeRankExtra = typeRankExtraDescriptor(effect.luaTargetDescriptor); if (notTypeRankExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeRankExtra.type) === 0 || currentRank(card, ctx.duel) !== notTypeRankExtra.rank) };
   const notTypeRankAboveExtra = typeRankAboveExtraDescriptor(effect.luaTargetDescriptor); if (notTypeRankAboveExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeRankAboveExtra.type) === 0 || currentRank(card, ctx.duel) < notTypeRankAboveExtra.rank) };
