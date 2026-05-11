@@ -54,6 +54,7 @@ const luaLocationDeck = 0x1;
 const luaTypeMonster = 0x1;
 const luaTypeRitual = 0x80;
 const luaTypeSpirit = 0x200;
+const luaTypeTuner = 0x1000;
 const luaResetEvent = 0x1000;
 const luaResetChain = 0x80000000;
 const luaResetTurnSet = 0x20000;
@@ -432,6 +433,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownGeminiStatusEffect(effect) ||
         isKnownGeminiEndPhaseReturnEffect(effect, snapshotEffects) ||
         isKnownSpiritAddTypeEffect(effect) ||
+        isKnownTemporaryTunerAddTypeEffect(effect) ||
         isKnownGrantedSpiritEndPhaseReturnEffect(effect, snapshotEffects) ||
         isStaticNotSetcodeSummonRestriction(effect) ||
         isKnownSetcodeTypeExtraSummonRestriction(effect) ||
@@ -504,6 +506,19 @@ function isKnownSpiritAddTypeEffect(effect: SerializedDuelEffect): boolean {
     effect.event === "continuous" &&
     effect.code === luaEffectAddType &&
     effect.value === luaTypeSpirit &&
+    effect.sourceUid !== undefined &&
+    effect.targetRange === undefined &&
+    effect.reset?.flags === luaResetEventStandard &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone"
+  );
+}
+
+function isKnownTemporaryTunerAddTypeEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === luaEffectAddType &&
+    effect.value === luaTypeTuner &&
     effect.sourceUid !== undefined &&
     effect.targetRange === undefined &&
     effect.reset?.flags === luaResetEventStandard &&
