@@ -13,9 +13,10 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   if (!cardParam) return undefined;
   const card = escapeRegExp(cardParam);
   const notTypeExtra = snippet.match(
-    new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)`),
+    new RegExp(`\\breturn\\s+(?:not\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)|${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\))`),
   );
-  const notTypeExtraValue = notTypeExtra?.[1] ? luaNumberTokenValue(L, index, notTypeExtra[1]) : undefined;
+  const notTypeExtraToken = notTypeExtra?.[1] ?? notTypeExtra?.[2];
+  const notTypeExtraValue = notTypeExtraToken ? luaNumberExpressionValue(L, index, notTypeExtraToken) : undefined;
   if (notTypeExtraValue === 0x40) return "special-summon-limit:non-fusion-extra";
   if (notTypeExtraValue !== undefined) return `special-summon-limit:not-type-extra:${notTypeExtraValue}`;
   const notNamedTypeExtra = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*Is(Fusion|Ritual|Synchro|Xyz|Pendulum|Link)Monster\\s*\\(\\s*\\)`));
@@ -106,6 +107,7 @@ function knownFixedFunctionDescriptor(L: unknown, index: number, hostState: LuaH
 }
 
 const numericOrIdentifierPattern = String.raw`(?:0x[0-9A-Fa-f]+|\d+|[A-Za-z_]\w*)`;
+const numericOrIdentifierExpressionPattern = String.raw`${numericOrIdentifierPattern}(?:\s*[|+]\s*${numericOrIdentifierPattern})*`;
 
 function setcodeOrCodeTypeTargetDescriptor(L: unknown, index: number, snippet: string, card: string): string | undefined {
   const cardCall = `${card}\\s*:\\s*`;
@@ -130,6 +132,18 @@ function luaNumberTokenValue(L: unknown, functionIndex: number, token: string): 
   const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
   lua.lua_pop(L, 1);
   return value ?? luaNumberUpvalueValue(L, functionIndex, token);
+}
+
+function luaNumberExpressionValue(L: unknown, functionIndex: number, token: string): number | undefined {
+  const parts = token.split(/[|+]/).map((part) => part.trim()).filter(Boolean);
+  if (parts.length === 0) return undefined;
+  let value = 0;
+  for (const part of parts) {
+    const partValue = luaNumberTokenValue(L, functionIndex, part);
+    if (partValue === undefined) return undefined;
+    value |= partValue;
+  }
+  return value;
 }
 
 function namedExtraDeckMonsterTypeValue(name: string): number | undefined {
