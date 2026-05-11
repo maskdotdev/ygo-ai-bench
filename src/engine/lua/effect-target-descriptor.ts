@@ -41,6 +41,12 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notTypeLevelExtraType = notTypeLevelExtraTypeToken ? luaNumberExpressionValue(L, index, notTypeLevelExtraTypeToken) : undefined;
   const notTypeLevelExtraLevel = notTypeLevelExtraLevelToken ? luaNumberTokenValue(L, index, notTypeLevelExtraLevelToken) : undefined;
   if (notTypeLevelExtraType !== undefined && notTypeLevelExtraLevel !== undefined) return `special-summon-limit:not-type-level-extra:${notTypeLevelExtraType}:${notTypeLevelExtraLevel}`;
+  const notRaceBaseAttackExtra = snippet.match(new RegExp(`\\breturn\\s+(?:${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+\\(\\s*${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*GetBaseAttack\\s*\\(\\s*\\)\\s*<=\\s*(${numericOrIdentifierPattern})\\s*\\)|not\\s+\\(\\s*${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*GetBaseAttack\\s*\\(\\s*\\)\\s*<=\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\))`));
+  const notRaceBaseAttackExtraRaceToken = notRaceBaseAttackExtra?.[1] ?? notRaceBaseAttackExtra?.[3];
+  const notRaceBaseAttackExtraAttackToken = notRaceBaseAttackExtra?.[2] ?? notRaceBaseAttackExtra?.[4];
+  const notRaceBaseAttackExtraRace = notRaceBaseAttackExtraRaceToken ? luaNumberExpressionValue(L, index, notRaceBaseAttackExtraRaceToken) : undefined;
+  const notRaceBaseAttackExtraAttack = notRaceBaseAttackExtraAttackToken ? luaNumberTokenValue(L, index, notRaceBaseAttackExtraAttackToken) : undefined;
+  if (notRaceBaseAttackExtraRace !== undefined && notRaceBaseAttackExtraAttack !== undefined) return `special-summon-limit:not-race-base-attack-lte-extra:${notRaceBaseAttackExtraRace}:${notRaceBaseAttackExtraAttack}`;
   const notNamedTypeAttributeExtra = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\(\\s*${card}\\s*:\\s*Is(Fusion|Ritual|Synchro|Xyz|Pendulum|Link)Monster\\s*\\(\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)`));
   const notNamedTypeAttributeExtraType = notNamedTypeAttributeExtra?.[1] ? namedExtraDeckMonsterTypeValue(notNamedTypeAttributeExtra[1]) : undefined;
   const notNamedTypeAttributeExtraAttribute = notNamedTypeAttributeExtra?.[2] ? luaNumberTokenValue(L, index, notNamedTypeAttributeExtra[2]) : undefined;
