@@ -795,9 +795,8 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   if (effect.luaValueDescriptor === luaCannotActivateSpecialSummonedMonsterDescriptor) {
     return { valuePredicate: (ctx) => relatedEffectIsSpecialSummonedMonsterOnField(ctx) };
   }
-  if (effect.luaValueDescriptor === luaCannotActivateNonSpiritMonsterDescriptor) {
-    return { valuePredicate: (ctx) => relatedEffectIsNonSpiritMonsterEffect(ctx) };
-  }
+  if (effect.luaValueDescriptor === luaCannotActivateNonSpiritMonsterDescriptor) return { valuePredicate: (ctx) => relatedEffectIsNonSpiritMonsterEffect(ctx) };
+  if (effect.luaValueDescriptor === "cannot-activate:spell-trap-effect") return { valuePredicate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); return Boolean(handler && (cardTypeFlags(handler, ctx.duel) & 0x6) !== 0); } };
   if (effect.luaValueDescriptor !== "change-damage:effect-double" && effect.luaValueDescriptor !== "change-damage:effect-zero") return {};
   const applyValue = (ctx: Parameters<NonNullable<DuelEffectDefinition["lifePointValue"]>>[0], _player: PlayerId, amount: number): number =>
     ((ctx.eventReason ?? 0) & duelReason.effect) !== 0 ? (effect.luaValueDescriptor === "change-damage:effect-double" ? amount * 2 : 0) : amount;
@@ -898,7 +897,7 @@ function relatedEffectIsNonSpiritMonsterEffect(ctx: Parameters<NonNullable<DuelE
 
 function relatedEffectFromContext(ctx: Parameters<NonNullable<DuelEffectDefinition["valuePredicate"]>>[0]): DuelEffectDefinition | undefined {
   const relatedEffectId = ctx.relatedEffectId === undefined ? ctx.chainLink?.effectId : `lua-${ctx.relatedEffectId}`;
-  return ctx.duel.effects.find((effect) => effect.id === relatedEffectId);
+  return ctx.duel.effects.find((effect) => effect.id === relatedEffectId || (relatedEffectId !== undefined && effect.id.startsWith(`${relatedEffectId}-`)));
 }
 
 function otherPlayer(player: PlayerId): PlayerId {

@@ -32,7 +32,7 @@ export function isKnownPlayerDamageZeroEffect(effect: SerializedDuelEffect): boo
 }
 
 export function isKnownTemporarySummonSetLockEffect(effect: SerializedDuelEffect): boolean {
-  return (effect.code === 20 || effect.code === 23) && isPlainPlayerTargetPhaseEndEffect(effect);
+  return (effect.code === 20 || effect.code === 23 || effect.code === 24) && isPlainPlayerTargetPhaseEndEffect(effect);
 }
 
 export function isKnownTemporaryActivationLockEffect(effect: SerializedDuelEffect): boolean {
@@ -41,8 +41,7 @@ export function isKnownTemporaryActivationLockEffect(effect: SerializedDuelEffec
     effect.code === 6 &&
     effect.sourceUid !== undefined &&
     effect.reset?.flags === luaPhaseEndResetFlags &&
-    effect.value === 1 &&
-    effect.luaValueDescriptor === undefined &&
+    (effect.value === 1 || effect.luaValueDescriptor === "cannot-activate:spell-trap-effect") &&
     effect.luaTargetDescriptor === undefined &&
     hasPlayerTargetFlag(effect) &&
     hasAnyPlayerTarget(effect) &&
@@ -63,7 +62,7 @@ function isPlainPlayerTargetPhaseEndEffect(effect: SerializedDuelEffect): boolea
     effect.luaValueDescriptor === undefined &&
     effect.luaTargetDescriptor === undefined &&
     hasPlayerTargetFlag(effect) &&
-    targetRangeEquals(effect, 1, 0) &&
+    hasAnyPlayerTarget(effect) &&
     hasDefaultLuaFieldRange(effect)
   );
 }

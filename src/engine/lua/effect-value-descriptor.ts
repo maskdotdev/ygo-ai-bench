@@ -19,6 +19,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (specialSummonedMonsterActivationPredicate) return specialSummonedMonsterActivationPredicate;
   const nonSpiritMonsterActivationPredicate = nonSpiritMonsterActivationPredicateDescriptor(snippet, params);
   if (nonSpiritMonsterActivationPredicate) return nonSpiritMonsterActivationPredicate;
+  const spellTrapActivationPredicate = spellTrapActivationPredicateDescriptor(snippet, params);
+  if (spellTrapActivationPredicate) return spellTrapActivationPredicate;
   const effectParam = params?.[0];
   const reasonPlayerParam = params?.[2];
   if (effectParam && reasonPlayerParam) {
@@ -85,6 +87,14 @@ function nonSpiritMonsterActivationPredicateDescriptor(snippet: string, params: 
   const monsterEffect = `${relatedEffect}\\s*:\\s*IsMonsterEffect\\s*\\(\\s*\\)`;
   const predicate = new RegExp(`\\breturn\\s+${nonSpirit}\\s+and\\s+${monsterEffect}\\s*(?:end\\b|$)`);
   return predicate.test(snippet) ? "cannot-activate:non-spirit-monster-effect" : undefined;
+}
+
+function spellTrapActivationPredicateDescriptor(snippet: string, params: string[] | undefined): string | undefined {
+  const relatedEffectParam = params?.[1];
+  if (!relatedEffectParam) return undefined;
+  const relatedEffect = escapeRegExp(relatedEffectParam);
+  const predicate = new RegExp(`\\breturn\\s+${relatedEffect}\\s*:\\s*IsSpellTrapEffect\\s*\\(\\s*\\)\\s*(?:end\\b|$)`);
+  return predicate.test(snippet) ? "cannot-activate:spell-trap-effect" : undefined;
 }
 
 function reasonMaskPredicateDescriptor(snippet: string, params: string[] | undefined): string | undefined {
