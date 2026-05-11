@@ -277,13 +277,19 @@ function pushFieldCard(L: unknown, session: DuelSession): number {
   const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
   const locationMask = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   const sequence = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
-  const uid = matchingCardUids(session, player, locationMask)[sequence];
-  if (!uid) {
+  const card = fieldLocationMaskUsesExactSequence(locationMask)
+    ? session.state.cards.find((candidate) => candidate.controller === player && candidate.sequence === sequence && locationMatchesCardMask(candidate, locationMask))
+    : session.state.cards.find((candidate) => candidate.uid === matchingCardUids(session, player, locationMask)[sequence]);
+  if (!card) {
     lua.lua_pushnil(L);
     return 1;
   }
-  pushCardTable(L, uid);
+  pushCardTable(L, card.uid);
   return 1;
+}
+
+function fieldLocationMaskUsesExactSequence(locationMask: number): boolean {
+  return (locationMask & (0x04 | 0x08 | 0x100 | 0x200 | 0x400 | 0x800 | 0x1000)) !== 0;
 }
 
 function pushCardFromCardId(L: unknown, session: DuelSession): number {

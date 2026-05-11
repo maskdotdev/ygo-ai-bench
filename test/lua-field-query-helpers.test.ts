@@ -98,6 +98,38 @@ describe("Lua field and query helpers", () => {
     expect(restoredHost.messages).toContain("field id restored true/100");
   });
 
+  it("uses exact field-zone sequence for Duel.GetFieldCard", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Left Field Card", kind: "monster" },
+      { code: "200", name: "Center Field Card", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 241, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const left = session.state.cards.find((card) => card.code === "100")!;
+    const center = session.state.cards.find((card) => card.code === "200")!;
+    moveDuelCard(session.state, left.uid, "monsterZone", 0).sequence = 0;
+    moveDuelCard(session.state, center.uid, "monsterZone", 0).sequence = 2;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local left=Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      local empty=Duel.GetFieldCard(0, LOCATION_MZONE, 1)
+      local center=Duel.GetFieldCard(0, LOCATION_MZONE, 2)
+      Debug.Message("field exact sequence " .. left:GetCode() .. "/" .. tostring(empty==nil) .. "/" .. center:GetCode())
+      `,
+      "field-card-exact-sequence.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("field exact sequence 100/true/200");
+  });
+
   it("lets Lua scripts read static card data by code", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Static Monster", kind: "monster", typeFlags: 0x21, setcodes: [0x123, 0x456] },
