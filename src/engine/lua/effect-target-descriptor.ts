@@ -12,6 +12,7 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const cardParam = luaFunctionParams(snippet)?.[1];
   if (!cardParam) return undefined;
   const card = escapeRegExp(cardParam);
+  if (new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)(?!\\s+and\\b)`).test(snippet)) return "special-summon-limit:extra";
   const notTypeExtra = snippet.match(
     new RegExp(`\\breturn\\s+(?:not\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)|${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\))`),
   );
