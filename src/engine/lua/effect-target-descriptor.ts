@@ -22,6 +22,12 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notTypeAttributeExtraType = notTypeAttributeExtra?.[1] ? luaNumberTokenValue(L, index, notTypeAttributeExtra[1]) : undefined;
   const notTypeAttributeExtraAttribute = notTypeAttributeExtra?.[2] ? luaNumberTokenValue(L, index, notTypeAttributeExtra[2]) : undefined;
   if (notTypeAttributeExtraType !== undefined && notTypeAttributeExtraAttribute !== undefined) return `special-summon-limit:not-type-attribute-extra:${notTypeAttributeExtraType}:${notTypeAttributeExtraAttribute}`;
+  const notTypeRaceExtra = snippet.match(new RegExp(`\\breturn\\s+(?:${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+\\(\\s*${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*\\)|not\\s+\\(\\s*${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\))`));
+  const notTypeRaceExtraType = notTypeRaceExtra?.[1] ?? notTypeRaceExtra?.[3];
+  const notTypeRaceExtraRace = notTypeRaceExtra?.[2] ?? notTypeRaceExtra?.[4];
+  const notTypeRaceExtraTypeValue = notTypeRaceExtraType ? luaNumberTokenValue(L, index, notTypeRaceExtraType) : undefined;
+  const notTypeRaceExtraRaceValue = notTypeRaceExtraRace ? luaNumberTokenValue(L, index, notTypeRaceExtraRace) : undefined;
+  if (notTypeRaceExtraTypeValue !== undefined && notTypeRaceExtraRaceValue !== undefined) return `special-summon-limit:not-type-race-extra:${notTypeRaceExtraTypeValue}:${notTypeRaceExtraRaceValue}`;
   const notType = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*Is(?:Original)?Type\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const notTypeValue = notType?.[1] ? luaNumberTokenValue(L, index, notType[1]) : undefined;
   if (notTypeValue !== undefined) return `target:not-type:${notTypeValue}`;
