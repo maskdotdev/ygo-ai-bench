@@ -180,8 +180,8 @@ function isSpecialSummonConditionPrevented(state: DuelState, player: PlayerId, c
     ctx.summonTypeCode = effectiveSpecialSummonTypeCode(summonTypeCode);
     if (relatedEffectId !== undefined) ctx.relatedEffectId = relatedEffectId;
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    if (allowUnconditionalSpecialSummonCondition) continue;
     if (!effect.valuePredicate) {
-      if (allowUnconditionalSpecialSummonCondition) continue;
       return true;
     }
     if (!effect.valuePredicate(ctx, player)) return true;

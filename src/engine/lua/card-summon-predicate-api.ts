@@ -31,9 +31,10 @@ function pushCanBeSpecialSummoned(L: unknown, session: DuelSession): number {
   const card = readCard(L, session);
   const summonType = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
   const player = readSpecialSummonTargetPlayer(L, card);
+  const ignoreSummonCondition = lua.lua_toboolean(L, 5);
   const positionMask = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : 0x1;
   const zoneMask = lua.lua_isnumber(L, 9) ? lua.lua_tointeger(L, 9) : undefined;
-  lua.lua_pushboolean(L, Boolean(positionFromMask(positionMask) && card && player !== undefined && canSpecialSummonFromLua(session, card, player, summonType, zoneMask)));
+  lua.lua_pushboolean(L, Boolean(positionFromMask(positionMask) && card && player !== undefined && canSpecialSummonFromLua(session, card, player, summonType, zoneMask, ignoreSummonCondition)));
   return 1;
 }
 

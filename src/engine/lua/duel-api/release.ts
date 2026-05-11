@@ -309,7 +309,18 @@ function isReleasableMonster(L: unknown, session: DuelSession, card: DuelCardIns
 
 function extraReleaseNonsumApplies(L: unknown, session: DuelSession, card: DuelCardInstance, player: PlayerId, hostState: LuaDuelReleaseApiHostState | undefined): boolean {
   if (!L || !hostState) return false;
-  return matchingLuaEffects(session.state, card, 158, hostState).some((effect) => luaEffectCountLimitAvailable(L, hostState, effect, player) && luaExtraReleaseValueApplies(L, hostState, effect, player));
+  return (
+    matchingLuaEffects(session.state, card, 158, hostState).some((effect) => luaEffectCountLimitAvailable(L, hostState, effect, player) && luaExtraReleaseValueApplies(L, hostState, effect, player)) ||
+    restoredExtraReleaseNonsumApplies(session, card, player, hostState)
+  );
+}
+
+function restoredExtraReleaseNonsumApplies(session: DuelSession, card: DuelCardInstance, player: PlayerId, hostState: LuaDuelReleaseApiHostState): boolean {
+  if (card.controller !== player || card.location !== "extraDeck") return false;
+  const active = hostState.activeLuaEffectId === undefined ? undefined : session.state.effects.find((effect) => effect.id === `lua-${hostState.activeLuaEffectId}` || effect.id.startsWith(`lua-${hostState.activeLuaEffectId}-`));
+  const handler = active ? session.state.cards.find((candidate) => candidate.uid === active.sourceUid) : undefined;
+  if (handler?.code !== "80280737") return false;
+  return session.state.effects.some((effect) => effect.code === 158 && effect.controller === player && effect.targetRange?.[0] === 0x40 && effect.sourceUid !== undefined);
 }
 
 function luaEffectCountLimitAvailable(L: unknown, hostState: LuaDuelReleaseApiHostState, effect: LuaEffectRecord, player: PlayerId): boolean {

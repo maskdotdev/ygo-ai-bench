@@ -827,6 +827,39 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("revive limit proper result 1");
   });
 
+  it("lets Lua card-effect special summons ignore unconditional summon conditions", () => {
+    const cards: DuelCardData[] = [{ code: "900", name: "Condition Locked Monster", kind: "monster" }];
+    const session = createDuel({ seed: 172, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["900"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local locked=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_DECK, 0, 1, 1, nil):GetFirst()
+      local e=Effect.CreateEffect(locked)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetCode(EFFECT_SPSUMMON_CONDITION)
+      e:SetValue(aux.FALSE)
+      locked:RegisterEffect(e)
+      Debug.Message("condition locked can " .. tostring(locked:IsCanBeSpecialSummoned(nil,0,0,false,false,POS_FACEUP_ATTACK)))
+      Debug.Message("condition ignored can " .. tostring(locked:IsCanBeSpecialSummoned(nil,0,0,true,false,POS_FACEUP_ATTACK)))
+      Debug.Message("condition locked summon " .. Duel.SpecialSummon(locked,0,0,0,false,false,POS_FACEUP_ATTACK))
+      Debug.Message("condition ignored summon " .. Duel.SpecialSummon(locked,0,0,0,true,false,POS_FACEUP_ATTACK))
+      `,
+      "ignore-unconditional-special-summon-condition.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("condition locked can false");
+    expect(host.messages).toContain("condition ignored can true");
+    expect(host.messages).toContain("condition locked summon 0");
+    expect(host.messages).toContain("condition ignored summon 1");
+  });
+
   it("requires CompleteProcedure for Lua effect Special Summons to satisfy revive limits", () => {
     const cards: DuelCardData[] = [
       { code: "900", name: "No Complete Procedure Fusion", kind: "extra", fusionMaterials: ["100", "200"] },

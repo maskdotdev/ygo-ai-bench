@@ -217,10 +217,10 @@ function pushSpecialSummon(L: unknown, session: DuelSession, hostState: LuaDuelM
   const uids = readCardOrGroupUids(L, 1);
   const summonType = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   const targetPlayer = readOptionalPlayer(L, 4);
+  const ignoreSummonCondition = lua.lua_toboolean(L, 5);
   const requestedPosition = lua.lua_isnumber(L, 7) ? positionFromMask(lua.lua_tointeger(L, 7)) : undefined;
   const zoneMask = lua.lua_isnumber(L, 8) ? lua.lua_tointeger(L, 8) : undefined;
-  const moved: string[] = [];
-  const summonedCards: DuelCardInstance[] = [];
+  const moved: string[] = [], summonedCards: DuelCardInstance[] = [];
   let successPayload: DuelEventPayload | undefined;
   beginLuaOperationMoveStep(session, hostState);
   for (const uid of uids) {
@@ -233,7 +233,7 @@ function pushSpecialSummon(L: unknown, session: DuelSession, hostState: LuaDuelM
       const reasonPlayer = hostState.activeContext?.player ?? player;
       const payload = luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer);
       const presetMaterialUids = summonType !== 0 ? [...(card.summonMaterialUids ?? [])] : [];
-      const summoned = specialSummonDuelCard(session.state, uid, player, reasonPlayer, payload, summonType, false);
+      const summoned = specialSummonDuelCard(session.state, uid, player, reasonPlayer, payload, summonType, false, ignoreSummonCondition);
       if (presetMaterialUids.length > 0) summoned.summonMaterialUids = presetMaterialUids;
       if (requestedPosition) applyLuaMovePosition(summoned, requestedPosition);
       applyMonsterZoneMask(session, summoned, player, zoneMask);

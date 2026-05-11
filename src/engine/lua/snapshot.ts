@@ -14,6 +14,7 @@ import { bookOfEclipsePhaseEndCanActivate, bookOfEclipsePhaseEndOperation, isKno
 import { isKnownUnleashYourPowerDelayedSetEffect, isKnownYellowAlertDelayedReturnEffect, unleashYourPowerDelayedSetOperation, yellowAlertDelayedReturnOperation } from "#lua/snapshot-delayed-operations.js";
 import { isKnownSwordsOfRevealingLightPhaseEndEffect, isKnownSwordsOfRevealingLightResetEffect, swordsOfRevealingLightPhaseEndCanActivate, swordsOfRevealingLightPhaseEndOperation, swordsOfRevealingLightRestoredReset } from "#lua/snapshot-swords-of-revealing-light.js";
 import { isKnownPlayerDamageZeroEffect, isKnownTemporaryActivationLockEffect, isKnownTemporaryBattleProtectionEffect, isKnownTemporaryCannotAttackEffect, isKnownTemporaryPlayerAttackAnnounceLockEffect, isKnownTemporarySummonSetLockEffect } from "#lua/snapshot-temporary-effects.js";
+import { assaultZoneExtraDeckReleaseValueCallbacks, assaultZoneReleaseFlagConditionCallbacks, assaultZoneReleaseFlagOperation, isAssaultZoneExtraDeckReleaseRestoreEffect } from "#lua/snapshot-assault-zone.js";
 import { ritualSummonSelectedMaterials, type LuaDuelSummonApiHostState } from "#lua/duel-api/summon.js";
 import { luaTemporaryControlReturnDescriptor, luaTemporaryControlReturnOperation } from "#lua/duel-api/move-control.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
@@ -450,6 +451,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownSwordsOfRevealingLightPhaseEndEffect(effect) ||
         isKnownSwordsOfRevealingLightResetEffect(effect) ||
         isKnownTemporaryPlayerAttackAnnounceLockEffect(effect) || isKnownTemporaryCannotAttackEffect(effect) || isKnownTemporaryBattleProtectionEffect(effect) || isKnownPlayerDamageZeroEffect(effect) || isKnownTemporarySummonSetLockEffect(effect) || isKnownTemporaryActivationLockEffect(effect) ||
+        isAssaultZoneExtraDeckReleaseRestoreEffect(effect) ||
         isKnownMaharaghiPredrawEffect(effect) ||
         isKnownHinoKaguTsuchiPredrawDiscardEffect(effect) ||
         isKnownGreatLongNoseSkipBattlePhaseEffect(effect) ||
@@ -704,6 +706,8 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownSwordsOfRevealingLightPhaseEndEffect(effect)) return swordsOfRevealingLightPhaseEndOperation();
   if (isKnownMaharaghiPredrawEffect(effect)) return maharaghiPredrawOperation(effect);
   if (isKnownHinoKaguTsuchiPredrawDiscardEffect(effect)) return hinoKaguTsuchiPredrawDiscardOperation(effect);
+  const assaultZoneOperation = assaultZoneReleaseFlagOperation(effect);
+  if (assaultZoneOperation) return assaultZoneOperation;
   if (isKnownGeminiEndPhaseReturnEffect(effect, snapshotEffects)) return luaHandlerReturnToHandOperation(effect);
   if (isKnownGrantedSpiritEndPhaseReturnEffect(effect, snapshotEffects)) return luaHandlerReturnToHandOperation(effect);
   if (isKnownUnleashYourPowerDelayedSetEffect(effect)) return unleashYourPowerDelayedSetOperation(effect);
@@ -783,6 +787,8 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   if (effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous") {
     return { valuePredicate: (ctx) => ctx.eventReasonPlayer === otherPlayer(effect.controller) && !relatedEffectIsContinuous(ctx) };
   }
+  const assaultZoneValueCallbacks = assaultZoneExtraDeckReleaseValueCallbacks(effect);
+  if (assaultZoneValueCallbacks.valuePredicate) return assaultZoneValueCallbacks;
   const reasonMask = luaReasonPredicateMask(effect.luaValueDescriptor);
   if (reasonMask !== undefined) {
     return { valuePredicate: (ctx) => ((ctx.eventReason ?? 0) & reasonMask) !== 0 };
@@ -813,6 +819,8 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   if (isKnownMaharaghiPredrawEffect(effect)) {
     return { canActivate: (ctx) => ctx.duel.turnPlayer === effect.controller && topDeckCards(ctx.duel, effect.controller).length > 0 };
   }
+  const assaultZoneConditionCallbacks = assaultZoneReleaseFlagConditionCallbacks(effect);
+  if (assaultZoneConditionCallbacks.canActivate) return assaultZoneConditionCallbacks;
   if (effect.luaConditionDescriptor === luaSourceControllerConditionDescriptor) {
     return { canActivate: (ctx) => ctx.source.controller === effect.controller };
   }
@@ -915,13 +923,8 @@ function luaScriptRegistryKeys(registryKeys: Set<string>, snapshotEffects: Seria
   return new Set([...registryKeys].filter((key) => !knownRestorableKeys.has(key)));
 }
 
-function luaRegistryKeys(snapshot: SerializedDuel): Set<string> {
-  return new Set(snapshot.state.effects.map((effect) => effect.registryKey).filter((key): key is string => Boolean(key?.startsWith("lua:"))));
-}
-
-function luaChainLimitRegistryKeys(snapshot: SerializedDuel): string[] {
-  return snapshot.state.chainLimits.map((limit) => limit.registryKey).filter((key): key is string => Boolean(key?.startsWith("lua-chain-limit:")));
-}
+function luaRegistryKeys(snapshot: SerializedDuel): Set<string> { return new Set(snapshot.state.effects.map((effect) => effect.registryKey).filter((key): key is string => Boolean(key?.startsWith("lua:")))); }
+function luaChainLimitRegistryKeys(snapshot: SerializedDuel): string[] { return snapshot.state.chainLimits.map((limit) => limit.registryKey).filter((key): key is string => Boolean(key?.startsWith("lua-chain-limit:"))); }
 
 function luaDenyChainLimitRegistry(keys: string[]): Record<string, (limit: ChainLimit) => ChainLimit> {
   return Object.fromEntries(keys.map((key) => [key, knownLuaChainLimitRestoreFactory(key) ?? ((limit: ChainLimit): ChainLimit => {
@@ -986,15 +989,10 @@ function luaRestoreIncompleteReasons(loadedScripts: LuaScriptLoadResult[], missi
   ];
 }
 
-function luaRestoreIncompleteError(restored: LuaSnapshotRestoreResult): string {
-  return restored.incompleteReasons.length === 0 ? "Lua snapshot restore is incomplete" : `Lua snapshot restore is incomplete: ${restored.incompleteReasons.join("; ")}`;
-}
+function luaRestoreIncompleteError(restored: LuaSnapshotRestoreResult): string { return restored.incompleteReasons.length === 0 ? "Lua snapshot restore is incomplete" : `Lua snapshot restore is incomplete: ${restored.incompleteReasons.join("; ")}`; }
 
 function luaRegistryCardCodes(registryKeys: Set<string>, chainLimitRegistryKeys: string[] = []): Set<string> {
   const codes = new Set<string>();
-  for (const key of [...registryKeys, ...chainLimitRegistryKeys]) {
-    const [, code] = key.split(":");
-    if (code && /^\d+$/.test(code)) codes.add(code);
-  }
+  for (const key of [...registryKeys, ...chainLimitRegistryKeys]) { const [, code] = key.split(":"); if (code && /^\d+$/.test(code)) codes.add(code); }
   return codes;
 }
