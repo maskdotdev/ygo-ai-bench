@@ -13,23 +13,23 @@ const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Stellarnova Bonds Extra Xyz lock", () => {
-  it("restores its IsXyzMonster-based Extra Deck-only Xyz special summon lock", () => {
+  it("restores its named Xyz Extra Deck special summon lock", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const bondsCode = "69678646";
-    const xyzCode = "900000351";
-    const fusionCode = "900000352";
-    const synchroCode = "900000353";
-    const handCode = "900000354";
+    const xyzCode = "69678647";
+    const fusionCode = "69678648";
+    const synchroCode = "69678649";
+    const deckCode = "69678650";
     const cards: DuelCardData[] = [
       ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === bondsCode),
-      { code: xyzCode, name: "Stellarnova Bonds Xyz Probe", kind: "monster", typeFlags: 0x800001, attribute: 0x10, level: 4, attack: 1000, defense: 1000 },
-      { code: fusionCode, name: "Stellarnova Bonds Fusion Probe", kind: "monster", typeFlags: 0x41, attribute: 0x10, level: 4, attack: 1000, defense: 1000 },
-      { code: synchroCode, name: "Stellarnova Bonds Synchro Probe", kind: "monster", typeFlags: 0x2001, attribute: 0x10, level: 4, attack: 1000, defense: 1000 },
-      { code: handCode, name: "Stellarnova Bonds Hand Probe", kind: "monster", typeFlags: 0x1, attribute: 0x10, level: 4, attack: 1000, defense: 1000 },
+      { code: xyzCode, name: "Stellarnova Bonds Xyz Probe", kind: "extra", typeFlags: 0x800001, race: 0x2000, attribute: 0x10, level: 4, attack: 1000, defense: 1000 },
+      { code: fusionCode, name: "Stellarnova Bonds Fusion Probe", kind: "extra", typeFlags: 0x41, race: 0x2000, attribute: 0x10, level: 4, attack: 1000, defense: 1000 },
+      { code: synchroCode, name: "Stellarnova Bonds Synchro Probe", kind: "extra", typeFlags: 0x2001, race: 0x2000, attribute: 0x10, level: 4, attack: 1000, defense: 1000 },
+      { code: deckCode, name: "Stellarnova Bonds Deck Probe", kind: "monster", typeFlags: 0x1, race: 0x2000, attribute: 0x10, level: 4, attack: 1000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 696, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
-    loadDecks(session, { 0: { main: [bondsCode, handCode], extra: [xyzCode, fusionCode, synchroCode] }, 1: { main: [] } });
+    loadDecks(session, { 0: { main: [bondsCode, deckCode], extra: [xyzCode, fusionCode, synchroCode] }, 1: { main: [] } });
     startDuel(session);
     session.state.phase = "main1";
     session.state.waitingFor = 0;
@@ -47,6 +47,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script St
       "stellarnova-bonds-official-effop.lua",
     );
     expect(resolve.ok, resolve.error).toBe(true);
+    expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      luaTargetDescriptor: "special-summon-limit:not-type-extra:8388608",
+    });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -55,11 +58,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script St
       local xyz=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${xyzCode}),0,LOCATION_EXTRA,0,nil)
       local fusion=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${fusionCode}),0,LOCATION_EXTRA,0,nil)
       local synchro=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${synchroCode}),0,LOCATION_EXTRA,0,nil)
-      local hand=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${handCode}),0,LOCATION_DECK,0,nil)
+      local deck=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${deckCode}),0,LOCATION_DECK,0,nil)
       Debug.Message("stellarnova fusion special " .. Duel.SpecialSummon(fusion,SUMMON_TYPE_FUSION,0,0,false,false,POS_FACEUP_ATTACK))
       Debug.Message("stellarnova synchro special " .. Duel.SpecialSummon(synchro,SUMMON_TYPE_SYNCHRO,0,0,false,false,POS_FACEUP_ATTACK))
       Debug.Message("stellarnova xyz special " .. Duel.SpecialSummon(xyz,SUMMON_TYPE_XYZ,0,0,false,false,POS_FACEUP_ATTACK))
-      Debug.Message("stellarnova deck special " .. Duel.SpecialSummon(hand,0,0,0,false,false,POS_FACEUP_ATTACK))
+      Debug.Message("stellarnova deck special " .. Duel.SpecialSummon(deck,0,0,0,false,false,POS_FACEUP_ATTACK))
       `,
       "stellarnova-bonds-extra-xyz-lock-probe.lua",
     );
