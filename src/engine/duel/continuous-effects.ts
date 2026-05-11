@@ -6,7 +6,7 @@ import { duelReason } from "#duel/reasons.js";
 import { orderReplacementEffects } from "#duel/replacement-effect-order.js";
 import { isSpecialSummonCostPrevented } from "#duel/special-summon-cost.js";
 import { isSummonOrSetCostPrevented } from "#duel/summon-set-cost.js";
-import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
+import { effectiveSpecialSummonTypeCode, summonTypeCodeFromDuelSummonType } from "#duel/summon-type-codes.js";
 import type { CardPosition, DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelLocation, DuelState, DuelSummonType, PlayerId } from "#duel/types.js";
 
 export type ContinuousEffectContextFactory = (
@@ -838,7 +838,9 @@ export function isMaterialUsePrevented(state: DuelState, uid: string, kind: Mate
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     const ctx = Object.assign(createContext(effect, source, card), target ? { eventCard: target } : {});
+    ctx.summonTypeCode = summonTypeCodeFromDuelSummonType(kind);
     if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
+    if (effect.valuePredicate && !effect.valuePredicate(ctx)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   return false;

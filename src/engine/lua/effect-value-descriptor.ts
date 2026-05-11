@@ -9,6 +9,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (isNamedTableFunction(L, index, "aux", "tgoval")) return "cannot-be-effect-target:opponent";
   if (isNamedTableFunction(L, index, "aux", "indoval")) return "indestructible:opponent";
   if (isNamedTableFunction(L, index, "aux", "indsval")) return "indestructible:self";
+  const cannotMaterialSummonTypesFromUpvalues = cannotMaterialSummonTypesUpvalueDescriptor(L, index);
+  if (cannotMaterialSummonTypesFromUpvalues) return cannotMaterialSummonTypesFromUpvalues;
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
   const params = luaFunctionParams(snippet);
@@ -30,6 +32,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (sameCodeActivationPredicate) return sameCodeActivationPredicate;
   const monsterAttributeExceptActivationPredicate = monsterAttributeExceptActivationPredicateDescriptor(L, index, snippet, params);
   if (monsterAttributeExceptActivationPredicate) return monsterAttributeExceptActivationPredicate;
+  const cannotMaterialSummonTypes = cannotMaterialSummonTypesDescriptor(L, index, snippet);
+  if (cannotMaterialSummonTypes) return cannotMaterialSummonTypes;
   const materialTargetPredicate = materialTargetPredicateDescriptor(L, index, snippet, params);
   if (materialTargetPredicate) return materialTargetPredicate;
   const effectParam = params?.[0];
@@ -80,6 +84,46 @@ function materialTargetPredicateDescriptor(L: unknown, index: number, snippet: s
   const notAttribute = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const attribute = notAttribute?.[1] ? luaNumberTokenValue(L, index, notAttribute[1]) : undefined;
   return attribute !== undefined ? `cannot-material:target-not-attribute:${attribute}` : undefined;
+}
+
+function cannotMaterialSummonTypesDescriptor(L: unknown, index: number, snippet: string): string | undefined {
+  if (!/\blocal\s+sum\s*=\s*total\s*&\s*sumtype\b/.test(snippet)) return undefined;
+  if (!/\bpairs\s*\(\s*allowed\s*\)/.test(snippet) || !/\breturn\s+false\b/.test(snippet)) return undefined;
+  const values = luaNumberArrayUpvalueValue(L, index, "allowed");
+  return values !== undefined ? `cannot-material:summon-types:${[...values].sort((a, b) => a - b).join(",")}` : undefined;
+}
+
+function cannotMaterialSummonTypesUpvalueDescriptor(L: unknown, index: number): string | undefined {
+  if (luaNumberUpvalueValue(L, index, "total") === undefined) return undefined;
+  const values = luaNumberArrayUpvalueValue(L, index, "allowed");
+  return values !== undefined ? `cannot-material:summon-types:${[...values].sort((a, b) => a - b).join(",")}` : undefined;
+}
+
+function luaNumberArrayUpvalueValue(L: unknown, index: number, token: string): number[] | undefined {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  for (let upvalueIndex = 1;; upvalueIndex += 1) {
+    const nameBytes = lua.lua_getupvalue(L, absoluteIndex, upvalueIndex);
+    if (nameBytes === null) return undefined;
+    const name = typeof nameBytes === "string" ? nameBytes : to_jsstring(nameBytes);
+    const values = name === token && lua.lua_istable(L, -1) ? luaNumberArrayFromTable(L, -1) : undefined;
+    lua.lua_pop(L, 1);
+    if (values !== undefined) return values;
+  }
+}
+
+function luaNumberArrayFromTable(L: unknown, index: number): number[] | undefined {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  const values: number[] = [];
+  lua.lua_pushnil(L);
+  while (lua.lua_next(L, absoluteIndex) !== 0) {
+    if (!lua.lua_isnumber(L, -1)) {
+      lua.lua_pop(L, 2);
+      return undefined;
+    }
+    values.push(lua.lua_tointeger(L, -1));
+    lua.lua_pop(L, 1);
+  }
+  return values.length > 0 ? values : undefined;
 }
 
 function valueCardPredicateDescriptor(snippet: string, params: string[] | undefined): string | undefined {

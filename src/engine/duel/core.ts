@@ -378,7 +378,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     actions.push(...normalSummonProcedureActions(state, player, (effect, source, actionPlayer) => canChooseEffect(state, effect, source, actionPlayer), (actionPlayer, card) => !isNormalSummonPrevented(state, actionPlayer, card, createContinuousEffectContext(state))));
     actions.push(...fusionSummonActions(state, player, createMaterialUsePredicate(state, "fusion")).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeFusion)));
     actions.push(...synchroSummonActions(state, player, createMaterialUsePredicate(state, "synchro")).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeSynchro)));
-    actions.push(...xyzSummonActions(state, player, (uid) => !isMaterialUsePrevented(state, uid, "xyz", createContinuousEffectContext(state))).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeXyz)));
+    actions.push(...xyzSummonActions(state, player, createMaterialUsePredicate(state, "xyz")).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeXyz)));
     actions.push(...linkSummonActions(state, player, createMaterialUsePredicate(state, "link")).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeLink)));
     actions.push(...ritualSummonActions(state, player, hand, createMaterialUsePredicate(state, "ritual")).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeRitual)));
     actions.push(...pendulumSummonActions(state, player, (uid) => canSpecialSummonDuelCard(state, uid, player, luaSummonTypePendulum)));

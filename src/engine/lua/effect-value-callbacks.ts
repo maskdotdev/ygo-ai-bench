@@ -67,11 +67,15 @@ export function callLuaEffectValuePredicate(
       lua.lua_pop(L, 1);
       return result;
     }
-    if (luaEffect.code === 154 || luaEffect.code === 235 || luaEffect.code === 236 || luaEffect.code === 238 || luaEffect.code === 239) {
+    if (luaEffect.code === 154 || luaEffect.code === 235 || luaEffect.code === 236 || luaEffect.code === 238 || luaEffect.code === 239 || luaEffect.code === 248) {
       hostState.pushEffectTable(L, luaEffect.id);
       if (ctx.eventCard) pushCardTable(L, ctx.eventCard.uid);
       else lua.lua_pushnil(L);
-      const status = lua.lua_pcall(L, 2, 1, 0);
+      if (luaEffect.code === 248) {
+        lua.lua_pushinteger(L, effectiveSpecialSummonTypeCode(ctx.summonTypeCode));
+        lua.lua_pushinteger(L, ctx.player ?? card.controller);
+      }
+      const status = lua.lua_pcall(L, luaEffect.code === 248 ? 4 : 2, 1, 0);
       if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
       const result = lua.lua_isnil(L, -1) ? true : Boolean(lua.lua_toboolean(L, -1));
       lua.lua_pop(L, 1);
