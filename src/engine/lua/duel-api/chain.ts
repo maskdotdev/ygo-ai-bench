@@ -202,7 +202,7 @@ function knownLuaChainLimitPredicate(L: unknown, index: number, hostState: LuaDu
   const blockedSourceOrActiveEffectType = literalNotSourceOrActiveTypeAndEffectTypePredicateDescriptor(L, index, hostState);
   if (blockedSourceOrActiveEffectType) return blockedSourceOrActiveEffectType;
   const currentTargetHandlerExclusionUids = literalResponseMatchesChainPlayerOrCurrentTargetCardsPredicate(L, index, hostState);
-  if (currentTargetHandlerExclusionUids) return `closure:target-cards-not-handler:${currentTargetHandlerExclusionUids.map(encodeURIComponent).join(",")}`;
+  if (currentTargetHandlerExclusionUids) return `closure:target-cards-not-handler-response-player:${currentTargetHandlerExclusionUids.map(encodeURIComponent).join(",")}`;
   if (literalNotMonsterWithoutLevelActiveTypePredicate(L, index, hostState)) return "closure:not-monster-without-level";
   const blockedEffectTypeForOpponent = literalResponseMatchesChainPlayerOrNotEffectTypePredicate(L, index, hostState);
   if (blockedEffectTypeForOpponent !== undefined) return `closure:not-effect-type-response-player:${blockedEffectTypeForOpponent}`;

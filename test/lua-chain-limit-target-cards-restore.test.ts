@@ -126,7 +126,7 @@ describe("Lua target-card chain-limit restore", () => {
 
     const blockedUid = session.state.cards.find((card) => card.code === "300")?.uid;
     expect(blockedUid).toBeDefined();
-    const registryKey = `lua-chain-limit:100:0:link:known:closure:target-cards-not-handler:${encodeURIComponent(blockedUid!)}`;
+    const registryKey = `lua-chain-limit:100:0:link:known:closure:target-cards-not-handler-response-player:${encodeURIComponent(blockedUid!)}`;
     const opponentSnapshot = serializeDuel(session);
     expect(opponentSnapshot.state.chain[0]?.targetUids).toEqual([blockedUid]);
     expect(opponentSnapshot.state.chainLimits[0]?.registryKey).toBe(registryKey);
@@ -143,6 +143,10 @@ describe("Lua target-card chain-limit restore", () => {
     const passResult = applyResponse(session, opponentPass!);
     expect(passResult.ok, passResult.error).toBe(true);
     expect(hasLuaEffect(getLegalActions(session, 0), 0, "lua-2")).toBe(true);
+
+    const handoffRestored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expectRestoredChainLimit(handoffRestored, registryKey);
+    expect(hasGroupedLuaEffect(handoffRestored, 0, "lua-2")).toBe(true);
   });
 });
 
