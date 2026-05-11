@@ -479,14 +479,14 @@ function literalResponseMatchesChainPlayerOrHandlerCodesPredicate(L: unknown, in
   const returnExpression = lastReturnExpression(snippet);
   if (!returnExpression) return undefined;
   const terms = returnExpression.split(/\s+or\s+/).map((term) => trimOuterParens(term.trim())).filter(Boolean);
-  if (terms.length !== 2) return undefined;
+  if (terms.length < 2) return undefined;
   const equality = terms.find((term) => responseMatchesChainPlayerTerm(term, responsePlayerParam, chainPlayerParam));
-  const codeTerm = terms.find((term) => term !== equality);
-  if (!equality || !codeTerm) return undefined;
-
-  const codes = handlerCodeTermValues(codeTerm, effectParam, capturedNumberUpvalues(L, index));
-  if (!codes || codes.length === 0) return undefined;
-  const uniqueCodes = [...new Set(codes)].sort((a, b) => a - b);
+  const codeTerms = terms.filter((term) => term !== equality);
+  if (!equality || codeTerms.length === 0) return undefined;
+  const upvalues = capturedNumberUpvalues(L, index);
+  const codes = codeTerms.flatMap((term) => handlerCodeTermValues(term, effectParam, upvalues) ?? [undefined]);
+  if (codes.length === 0 || codes.some((code) => code === undefined)) return undefined;
+  const uniqueCodes = [...new Set(codes)].filter((code): code is number => code !== undefined).sort((a, b) => a - b);
   return uniqueCodes.every((code) => Number.isSafeInteger(code) && code > 0) ? uniqueCodes : undefined;
 }
 
