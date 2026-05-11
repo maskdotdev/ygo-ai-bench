@@ -309,7 +309,19 @@ function isReleasableMonster(L: unknown, session: DuelSession, card: DuelCardIns
 
 function extraReleaseNonsumApplies(L: unknown, session: DuelSession, card: DuelCardInstance, player: PlayerId, hostState: LuaDuelReleaseApiHostState | undefined): boolean {
   if (!L || !hostState || card.location !== "monsterZone") return false;
-  return matchingLuaEffects(session.state, card, 158, hostState).some((effect) => luaExtraReleaseValueApplies(L, hostState, effect, player));
+  return matchingLuaEffects(session.state, card, 158, hostState).some((effect) => luaEffectCountLimitAvailable(L, hostState, effect, player) && luaExtraReleaseValueApplies(L, hostState, effect, player));
+}
+
+function luaEffectCountLimitAvailable(L: unknown, hostState: LuaDuelReleaseApiHostState, effect: LuaEffectRecord, player: PlayerId): boolean {
+  hostState.pushEffectTable(L, effect.id);
+  lua.lua_getfield(L, -1, to_luastring("CheckCountLimit"));
+  lua.lua_pushvalue(L, -2);
+  lua.lua_pushinteger(L, player);
+  const status = lua.lua_pcall(L, 2, 1, 0);
+  if (status !== lua.LUA_OK) { lua.lua_pop(L, 2); return false; }
+  const result = Boolean(lua.lua_toboolean(L, -1));
+  lua.lua_pop(L, 2);
+  return result;
 }
 
 function luaExtraReleaseValueApplies(L: unknown, hostState: LuaDuelReleaseApiHostState, effect: LuaEffectRecord, player: PlayerId): boolean {

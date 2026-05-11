@@ -583,6 +583,7 @@ describe("Lua release helpers", () => {
       local extra_effect = Effect.CreateEffect(extra)
       extra_effect:SetType(EFFECT_TYPE_SINGLE)
       extra_effect:SetCode(EFFECT_EXTRA_RELEASE_NONSUM)
+      extra_effect:SetCountLimit(1)
       extra_effect:SetValue(1)
       extra:RegisterEffect(extra_effect)
       local locked_effect = Effect.CreateEffect(locked)
@@ -593,6 +594,10 @@ describe("Lua release helpers", () => {
       Debug.Message("extra release cost check " .. tostring(Duel.CheckReleaseGroupCost(0, aux.TRUE, 2, 2, false, nil, nil)))
       local g = Duel.SelectReleaseGroupCost(0, aux.TRUE, 1, 3, false, nil, nil)
       Debug.Message("extra release cost selected " .. g:GetCount() .. "/" .. tostring(g:IsContains(extra)) .. "/" .. tostring(g:IsContains(locked)))
+      extra_effect:UseCountLimit(0)
+      Debug.Message("extra release exhausted check " .. tostring(Duel.CheckReleaseGroupCost(0, aux.TRUE, 2, 2, false, nil, nil)))
+      local exhausted = Duel.SelectReleaseGroupCost(0, aux.TRUE, 1, 3, false, nil, nil)
+      Debug.Message("extra release exhausted selected " .. exhausted:GetCount() .. "/" .. tostring(exhausted:IsContains(extra)))
       `,
       "release-cost-extra-nonsum.lua",
     );
@@ -600,6 +605,8 @@ describe("Lua release helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("extra release cost check true");
     expect(host.messages).toContain("extra release cost selected 2/true/false");
+    expect(host.messages).toContain("extra release exhausted check false");
+    expect(host.messages).toContain("extra release exhausted selected 1/false");
   });
 
   it("lets Lua scripts collect must-be material effects", () => {
