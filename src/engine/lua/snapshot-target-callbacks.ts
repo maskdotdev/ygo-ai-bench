@@ -96,6 +96,7 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   const levelAbove = effect.luaTargetDescriptor?.startsWith("target:level-above:") ? Number(effect.luaTargetDescriptor.slice("target:level-above:".length)) : undefined; if (levelAbove !== undefined && Number.isSafeInteger(levelAbove) && levelAbove > 0) return { targetCardPredicate: (ctx, card) => currentLevel(card, ctx.duel) >= levelAbove };
   const attackBelow = effect.luaTargetDescriptor?.startsWith("target:attack-below:") ? Number(effect.luaTargetDescriptor.slice("target:attack-below:".length)) : undefined; if (attackBelow !== undefined && Number.isSafeInteger(attackBelow) && attackBelow > 0) return { targetCardPredicate: (ctx, card) => currentAttack(card, ctx.duel) <= attackBelow };
   const notLinkBelow = effect.luaTargetDescriptor?.startsWith("target:not-link-below:") ? Number(effect.luaTargetDescriptor.slice("target:not-link-below:".length)) : undefined; if (notLinkBelow !== undefined && Number.isSafeInteger(notLinkBelow) && notLinkBelow > 0) return { targetCardPredicate: (ctx, card) => currentLink(card, ctx.duel) > notLinkBelow };
+  const notLevelAboveRace = levelAboveRaceDescriptor(effect.luaTargetDescriptor); if (notLevelAboveRace) return { targetCardPredicate: (ctx, card) => currentLevel(card, ctx.duel) < notLevelAboveRace.level || (currentRace(card, ctx.duel) & notLevelAboveRace.race) === 0 };
   const notLevelOrRankAbove = effect.luaTargetDescriptor?.startsWith("target:not-level-or-rank-above:") ? Number(effect.luaTargetDescriptor.slice("target:not-level-or-rank-above:".length)) : undefined; if (notLevelOrRankAbove !== undefined && Number.isSafeInteger(notLevelOrRankAbove) && notLevelOrRankAbove > 0) return { targetCardPredicate: (ctx, card) => !(((cardTypeFlags(card, ctx.duel) & 0x1) !== 0 && currentRank(card, ctx.duel) === 0 && currentLink(card, ctx.duel) === 0 && currentLevel(card, ctx.duel) >= notLevelOrRankAbove) || currentRank(card, ctx.duel) >= notLevelOrRankAbove) };
   const notOriginalTypeAttribute = originalTypeAttributeDescriptor(effect.luaTargetDescriptor); if (notOriginalTypeAttribute) return { targetCardPredicate: (_ctx, card) => (printedCardTypeFlags(card) & notOriginalTypeAttribute.type) === 0 || ((card.data.attribute ?? 0) & notOriginalTypeAttribute.attribute) === 0 };
   const notOriginalTypeRace = originalTypeRaceDescriptor(effect.luaTargetDescriptor); if (notOriginalTypeRace) return { targetCardPredicate: (_ctx, card) => (printedCardTypeFlags(card) & notOriginalTypeRace.type) === 0 || ((card.data.race ?? 0) & notOriginalTypeRace.race) === 0 };
@@ -164,6 +165,12 @@ function linkSummonLinkAboveDescriptor(descriptor: string | undefined): number |
   if (!descriptor?.startsWith("target:link-summon-link-above:")) return undefined;
   const link = Number(descriptor.slice("target:link-summon-link-above:".length));
   return Number.isSafeInteger(link) && link > 0 ? link : undefined;
+}
+
+function levelAboveRaceDescriptor(descriptor: string | undefined): { level: number; race: number } | undefined {
+  if (!descriptor?.startsWith("target:not-level-above-race:")) return undefined;
+  const [level, race] = descriptor.slice("target:not-level-above-race:".length).split(":").map(Number);
+  return level !== undefined && race !== undefined && [level, race].every((value) => Number.isSafeInteger(value) && value > 0) ? { level, race } : undefined;
 }
 
 function linkSummonLinkAboveHandlerCounterDescriptor(descriptor: string | undefined): number | undefined {

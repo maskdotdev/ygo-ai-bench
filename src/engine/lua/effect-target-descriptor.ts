@@ -166,6 +166,10 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notLinkBelow = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsLinkBelow\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const notLinkBelowValue = notLinkBelow?.[1] ? luaNumberTokenValue(L, index, notLinkBelow[1]) : undefined;
   if (notLinkBelowValue !== undefined) return `target:not-link-below:${notLinkBelowValue}`;
+  const notLevelAboveRace = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\(\\s*${card}\\s*:\\s*IsLevelAbove\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s*\\)`));
+  const notLevelAboveRaceLevel = notLevelAboveRace?.[1] ? luaNumberTokenValue(L, index, notLevelAboveRace[1]) : undefined;
+  const notLevelAboveRaceRace = notLevelAboveRace?.[2] ? luaNumberExpressionValue(L, index, notLevelAboveRace[2]) : undefined;
+  if (notLevelAboveRaceLevel !== undefined && notLevelAboveRaceRace !== undefined) return `target:not-level-above-race:${notLevelAboveRaceLevel}:${notLevelAboveRaceRace}`;
   const notLevelOrRankAbove = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\(\\s*${card}\\s*:\\s*IsLevelAbove\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+or\\s+${card}\\s*:\\s*IsRankAbove\\s*\\(\\s*\\1\\s*\\)\\s*\\)`));
   const notLevelOrRankAboveValue = notLevelOrRankAbove?.[1] ? luaNumberTokenValue(L, index, notLevelOrRankAbove[1]) : undefined;
   if (notLevelOrRankAboveValue !== undefined) return `target:not-level-or-rank-above:${notLevelOrRankAboveValue}`;
