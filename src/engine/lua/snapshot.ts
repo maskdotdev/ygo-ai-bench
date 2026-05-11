@@ -663,7 +663,7 @@ function isKnownIndestructibleValueEffect(effect: SerializedDuelEffect): boolean
 }
 
 function isStaticNotSetcodeSummonRestriction(effect: SerializedDuelEffect): boolean {
-  return (effect.code === 20 || effect.code === 22) && notSetcodeTargetDescriptor(effect.luaTargetDescriptor) !== undefined;
+  return (effect.code === 20 || effect.code === 22) && (notSetcodeTargetDescriptor(effect.luaTargetDescriptor) !== undefined || effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-setcode-extra:") === true);
 }
 
 function isKnownSetcodeTypeExtraSummonRestriction(effect: SerializedDuelEffect): boolean {

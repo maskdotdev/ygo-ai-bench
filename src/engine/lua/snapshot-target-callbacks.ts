@@ -20,6 +20,7 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   const notRaceBaseAttackExtra = raceBaseAttackExtraDescriptor(effect.luaTargetDescriptor); if (notRaceBaseAttackExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((currentRace(card, ctx.duel) & notRaceBaseAttackExtra.race) === 0 || currentBaseAttack(card, ctx.duel) > notRaceBaseAttackExtra.attack) };
   const notRaceAttackExtra = raceAttackExtraDescriptor(effect.luaTargetDescriptor); if (notRaceAttackExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((currentRace(card, ctx.duel) & notRaceAttackExtra.race) === 0 || currentAttack(card, ctx.duel) > notRaceAttackExtra.attack) };
   const notSetcodeTypeExtra = setcodeTypeExtraDescriptor(effect.luaTargetDescriptor); if (notSetcodeTypeExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && (!currentCardMatchesSetcode(card, ctx.duel, notSetcodeTypeExtra.setcode) || (cardTypeFlags(card, ctx.duel) & notSetcodeTypeExtra.type) === 0) };
+  const notSetcodeExtra = setcodeExtraDescriptor(effect.luaTargetDescriptor); if (notSetcodeExtra !== undefined) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && !currentCardMatchesSetcode(card, ctx.duel, notSetcodeExtra) };
   const notTypeRaceExtra = typeRaceExtraDescriptor(effect.luaTargetDescriptor); if (notTypeRaceExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeRaceExtra.type) === 0 || (currentRace(card, ctx.duel) & notTypeRaceExtra.race) === 0) };
   const notTypeAttributeRaceExtra = typeAttributeRaceExtraDescriptor(effect.luaTargetDescriptor); if (notTypeAttributeRaceExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeAttributeRaceExtra.type) === 0 || (currentAttribute(card, ctx.duel) & notTypeAttributeRaceExtra.attribute) === 0 || (currentRace(card, ctx.duel) & notTypeAttributeRaceExtra.race) === 0) };
   const notAttributeRaceExtra = attributeRaceExtraDescriptor(effect.luaTargetDescriptor); if (notAttributeRaceExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((currentAttribute(card, ctx.duel) & notAttributeRaceExtra.attribute) === 0 || (currentRace(card, ctx.duel) & notAttributeRaceExtra.race) === 0) };
@@ -102,6 +103,12 @@ function setcodeTypeExtraDescriptor(descriptor: string | undefined): { setcode: 
   if (!descriptor?.startsWith("special-summon-limit:not-setcode-type-extra:")) return undefined;
   const [setcode, type] = descriptor.slice("special-summon-limit:not-setcode-type-extra:".length).split(":").map(Number);
   return setcode !== undefined && type !== undefined && [setcode, type].every((value) => Number.isSafeInteger(value) && value > 0) ? { setcode, type } : undefined;
+}
+
+function setcodeExtraDescriptor(descriptor: string | undefined): number | undefined {
+  if (!descriptor?.startsWith("special-summon-limit:not-setcode-extra:")) return undefined;
+  const setcode = Number(descriptor.slice("special-summon-limit:not-setcode-extra:".length));
+  return Number.isSafeInteger(setcode) && setcode > 0 ? setcode : undefined;
 }
 
 function typeAttributeRaceExtraDescriptor(descriptor: string | undefined): { type: number; attribute: number; race: number } | undefined {

@@ -77,6 +77,10 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notSetcodeTypeExtraSetcode = notSetcodeTypeExtraSetcodeToken ? luaNumberExpressionValue(L, index, notSetcodeTypeExtraSetcodeToken) : undefined;
   const notSetcodeTypeExtraType = notSetcodeTypeExtraTypeToken ? luaNumberExpressionValue(L, index, notSetcodeTypeExtraTypeToken) : undefined;
   if (notSetcodeTypeExtraSetcode !== undefined && notSetcodeTypeExtraType !== undefined) return `special-summon-limit:not-setcode-type-extra:${notSetcodeTypeExtraSetcode}:${notSetcodeTypeExtraType}`;
+  const notSetcodeExtra = snippet.match(new RegExp(`\\breturn\\s+(?:${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)|not\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\))`));
+  const notSetcodeExtraToken = notSetcodeExtra?.[1] ?? notSetcodeExtra?.[2];
+  const notSetcodeExtraValue = notSetcodeExtraToken ? luaNumberExpressionValue(L, index, notSetcodeExtraToken) : undefined;
+  if (notSetcodeExtraValue !== undefined) return `special-summon-limit:not-setcode-extra:${notSetcodeExtraValue}`;
   const notNamedTypeAttributeExtra = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\(\\s*${card}\\s*:\\s*Is(Fusion|Ritual|Synchro|Xyz|Pendulum|Link)Monster\\s*\\(\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)`));
   const notNamedTypeAttributeExtraType = notNamedTypeAttributeExtra?.[1] ? namedExtraDeckMonsterTypeValue(notNamedTypeAttributeExtra[1]) : undefined;
   const notNamedTypeAttributeExtraAttribute = notNamedTypeAttributeExtra?.[2] ? luaNumberTokenValue(L, index, notNamedTypeAttributeExtra[2]) : undefined;
