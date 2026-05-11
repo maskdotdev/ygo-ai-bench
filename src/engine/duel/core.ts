@@ -346,7 +346,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     return stampDuelActions(actions, state.actionWindowId, "battle", state.actionWindowToken);
   }
   const hand = getCards(state, player, "hand");
-  const currentPhaseSkipped = isDuelPhaseSkipped(state, player, state.phase);
+  const currentPhaseSkipped = isDuelPhaseSkipped(state, player, state.phase) || !canEnterDuelPhase(state, player, state.phase);
   if (!currentPhaseSkipped && (state.phase === "main1" || state.phase === "main2")) {
     actions.push(...normalSummonActions(state, player, hand, () => isNoTributeSummonAllowed(state, player)).filter((action) => {
       if (action.type !== "normalSummon" && action.type !== "setMonster") return true;
@@ -684,7 +684,7 @@ function createContinuousEffectContext(state: DuelState): ContinuousEffectContex
 function paySummonOrSetCosts(state: DuelState, player: PlayerId, card: DuelCardInstance, codes: readonly number[]): void { applySummonOrSetCosts(state, player, createContinuousEffectContext(state), card, codes); }
 
 function canEnterDuelPhase(state: DuelState, player: PlayerId, phase: DuelPhase): boolean {
-  if (phase !== "battle" && phase !== "main2" && phase !== "end") return true;
+  if (phase !== "main1" && phase !== "battle" && phase !== "main2" && phase !== "end") return true;
   return !isPhaseEntryPrevented(state, player, phase, createContinuousEffectContext(state));
 }
 

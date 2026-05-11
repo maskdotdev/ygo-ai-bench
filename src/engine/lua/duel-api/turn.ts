@@ -137,7 +137,7 @@ function isAbleToEnterBattlePhase(state: DuelState): boolean {
 }
 
 function canEnterPhase(state: DuelState, phase: DuelPhase): boolean {
-  if (phase !== "battle" && phase !== "main2" && phase !== "end") return true;
+  if (phase !== "main1" && phase !== "battle" && phase !== "main2" && phase !== "end") return true;
   return !isPhaseEntryPrevented(state, state.turnPlayer, phase, createContinuousPhaseContext(state));
 }
 

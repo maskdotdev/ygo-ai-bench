@@ -254,8 +254,8 @@ export function isSpellTrapSetPrevented(state: DuelState, player: PlayerId, card
   return isSummonOrSetPrevented(state, player, card, 24, createContext) || isSummonOrSetCostPrevented(state, player, createContext, card, [95]);
 }
 
-export function isPhaseEntryPrevented(state: DuelState, player: PlayerId, phase: "battle" | "main2" | "end", createContext: ContinuousEffectContextFactory): boolean {
-  const codes = phase === "battle" ? [183, 185] : phase === "main2" ? [184, 186] : [189, 187];
+export function isPhaseEntryPrevented(state: DuelState, player: PlayerId, phase: "main1" | "battle" | "main2" | "end", createContext: ContinuousEffectContextFactory): boolean {
+  const codes = phase === "main1" ? [182] : phase === "battle" ? [183, 185] : phase === "main2" ? [184, 186] : [189, 187];
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || !codes.includes(effect.code ?? -1)) continue;
     const source = findCard(state, effect.sourceUid);
