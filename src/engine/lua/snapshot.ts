@@ -869,6 +869,7 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   if (effect.luaConditionDescriptor?.startsWith("condition:equipped-target-race:")) return { canActivate: (ctx) => { const race = Number(effect.luaConditionDescriptor?.split(":").pop()); const equippedTarget = ctx.duel.cards.find((card) => card.uid === ctx.source.equippedToUid); return Boolean(equippedTarget && (currentRace(equippedTarget, ctx.duel) & race) !== 0); } };
   if (effect.luaConditionDescriptor?.startsWith("condition:source-summon-type:")) return { canActivate: (ctx) => isSummonTypeMaskMatch(summonTypeMaskFromCard(ctx.source), Number(effect.luaConditionDescriptor?.split(":").pop())) };
   if (effect.luaConditionDescriptor?.startsWith("condition:source-summon-location:")) return { canActivate: (ctx) => Boolean(ctx.source.summonType && locationMatchesCardMask(ctx.source, Number(effect.luaConditionDescriptor?.split(":").pop()), ctx.source.previousLocation, ctx.source.previousSequence)) };
+  if (effect.luaConditionDescriptor === "condition:source-overlay-count-positive") return { canActivate: (ctx) => ctx.source.overlayUids.length > 0 }; if (effect.luaConditionDescriptor === "condition:source-overlay-count-zero") return { canActivate: (ctx) => ctx.source.overlayUids.length === 0 };
   return {};
 }
 function restoredLuaCostCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "cost"> { const summonTypeNot = specialSummonTypeNotCostDescriptor(effect.luaCostDescriptor); const summonTypeIs = specialSummonTypeIsCostDescriptor(effect.luaCostDescriptor); if (summonTypeNot !== undefined) return { cost: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) !== summonTypeNot }; return summonTypeIs === undefined ? {} : { cost: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === summonTypeIs }; }
@@ -885,7 +886,6 @@ function relatedEffectIsContinuous(ctx: Parameters<NonNullable<DuelEffectDefinit
   const relatedEffect = relatedEffectFromContext(ctx);
   return ((relatedEffect?.luaTypeFlags ?? 0) & 0x800) !== 0;
 }
-
 function relatedEffectIsSpecialSummonedMonsterOnField(ctx: Parameters<NonNullable<DuelEffectDefinition["valuePredicate"]>>[0]): boolean {
   const relatedEffect = relatedEffectFromContext(ctx);
   const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid);

@@ -28,6 +28,8 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const sourceSummonLocation = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsSummonLocation\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
   const sourceSummonLocationValue = sourceSummonLocation?.[1] ? luaNumberExpressionValue(L, index, sourceSummonLocation[1]) : undefined;
   if (sourceSummonLocationValue !== undefined) return `condition:source-summon-location:${sourceSummonLocationValue}`;
+  const sourceOverlayCount = snippet.match(/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetOverlayCount\s*\(\s*\)\s*(==|~=|>|>=)\s*0\s*(?:end\b|$)/);
+  if (sourceOverlayCount?.[1]) return sourceOverlayCount[1] === "==" ? "condition:source-overlay-count-zero" : "condition:source-overlay-count-positive";
   const params = luaFunctionParams(snippet);
   if (params && params.length > 0) return undefined;
   const identifier = String.raw`[A-Za-z_]\w*`;
