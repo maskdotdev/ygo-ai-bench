@@ -3,16 +3,9 @@ import { otherPlayer } from "#duel/player-id.js";
 import { hasReviveLimitProcedureComplete } from "#duel/procedure-status.js";
 import { duelReason } from "#duel/reasons.js";
 import { orderReplacementEffects } from "#duel/replacement-effect-order.js";
+import { isSpecialSummonCostPrevented } from "#duel/special-summon-cost.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
-import type {
-  DuelCardInstance,
-  DuelEffectContext,
-  DuelEffectDefinition,
-  DuelLocation,
-  DuelState,
-  DuelSummonType,
-  PlayerId,
-} from "#duel/types.js";
+import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelLocation, DuelState, DuelSummonType, PlayerId } from "#duel/types.js";
 
 export type ContinuousEffectContextFactory = (
   effect: DuelEffectDefinition,
@@ -157,6 +150,7 @@ export function isSpecialSummonPrevented(state: DuelState, player: PlayerId, cre
     if (card && effect.targetCardPredicate && !effect.targetCardPredicate(ctx, card)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
+  if (card && isSpecialSummonCostPrevented(state, player, createContext, card, summonTypeCode)) return true;
   if (card && isReviveLimitSpecialSummonPrevented(state, card)) return true;
   if (card && isSpecialSummonConditionPrevented(state, player, createContext, card, summonTypeCode, relatedEffectId, allowUnconditionalSpecialSummonCondition)) return true;
   return false;

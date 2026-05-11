@@ -77,4 +77,47 @@ describe("Lua Special Summon type codes", () => {
     const target = session.state.cards.find((card) => card.code === "300");
     expect(target).toMatchObject({ location: "monsterZone", summonType: "special", summonTypeCode: luaSummonTypeSpecial + 123 });
   });
+
+  it("checks EFFECT_SPSUMMON_COST against normalized custom summon types", () => {
+    const cards: DuelCardData[] = [{ code: "400", name: "Custom Cost Target", kind: "monster" }];
+    const session = createDuel({ seed: 182, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["400"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      c400={}
+      function c400.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_SPSUMMON_COST)
+        e:SetCost(function(e,c,tp,sumtype)
+          Debug.Message("spsummon cost " .. tp .. "/" .. sumtype)
+          return sumtype~=SUMMON_TYPE_SPECIAL+182
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "c400.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    expect(session.state.effects).toEqual([expect.objectContaining({ code: 92, event: "continuous", range: ["hand"], cost: expect.any(Function) })]);
+    const target = session.state.cards.find((card) => card.code === "400");
+    expect(session.state.effects[0]!.sourceUid).toBe(target!.uid);
+
+    const check = host.loadScript(
+      `
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      Debug.Message("cost custom blocked " .. tostring(target:IsCanBeSpecialSummoned(nil,182,0,false,false,POS_FACEUP_ATTACK)))
+      Debug.Message("cost custom open " .. tostring(target:IsCanBeSpecialSummoned(nil,181,0,false,false,POS_FACEUP_ATTACK)))
+      `,
+      "special-summon-cost-check.lua",
+    );
+    expect(check.ok, check.error).toBe(true);
+    expect(host.messages).toContain(`spsummon cost 0/${luaSummonTypeSpecial + 182}`);
+    expect(host.messages).toContain("cost custom blocked false");
+    expect(host.messages).toContain("cost custom open true");
+  });
 });
