@@ -633,6 +633,7 @@ describe("duel trigger buckets", () => {
       windowId: group.windowId,
       windowKind: group.windowKind,
       triggerBucket: group.triggerBucket,
+      triggerOrderPrompt: group.triggerOrderPrompt,
       effectIds: group.actions.map((action) => "effectId" in action ? action.effectId : undefined),
     }))).toEqual([
       {
@@ -640,6 +641,7 @@ describe("duel trigger buckets", () => {
         windowId: queryPublicState(restored).actionWindowId,
         windowKind: "triggerBucket",
         triggerBucket: { triggerBucket: "turnOptional", player: 0, triggerIds: queryPublicState(restored).triggerOrderPrompt!.triggerIds },
+        triggerOrderPrompt: queryPublicState(restored).triggerOrderPrompt,
         effectIds: ["first-restored-turn-optional", "second-restored-turn-optional"],
       },
       {
@@ -647,6 +649,7 @@ describe("duel trigger buckets", () => {
         windowId: queryPublicState(restored).actionWindowId,
         windowKind: "triggerBucket",
         triggerBucket: { triggerBucket: "turnOptional", player: 0, triggerIds: queryPublicState(restored).triggerOrderPrompt!.triggerIds },
+        triggerOrderPrompt: queryPublicState(restored).triggerOrderPrompt,
         effectIds: ["first-restored-turn-optional", "second-restored-turn-optional"],
       },
     ]);

@@ -1,5 +1,5 @@
 import { copyDuelAction } from "#duel/action-copy.js";
-import type { DuelAction, DuelActionWindowKind, PendingTriggerBucketState } from "#duel/types.js";
+import type { DuelAction, DuelActionWindowKind, PendingTriggerBucketState, TriggerOrderPromptState } from "#duel/types.js";
 
 export interface DuelLegalActionGroup {
   key: string;
@@ -8,6 +8,7 @@ export interface DuelLegalActionGroup {
   windowKind?: DuelActionWindowKind;
   windowToken?: string;
   triggerBucket?: PendingTriggerBucketState;
+  triggerOrderPrompt?: TriggerOrderPromptState;
   actions: DuelAction[];
 }
 
@@ -19,7 +20,14 @@ export function groupDuelLegalActions(actions: DuelAction[]): DuelLegalActionGro
     const key = `${action.windowId ?? "none"}:${windowKey}:${actionKey}${triggerBucketGroupKey(action)}`;
     const existing = groups.get(key);
     if (existing) {
-      if ((action.type === "activateTrigger" || action.type === "declineTrigger") && existing.triggerBucket) existing.triggerBucket.triggerIds.push(action.triggerId);
+      if ((action.type === "activateTrigger" || action.type === "declineTrigger") && existing.triggerBucket) {
+        existing.triggerBucket.triggerIds.push(action.triggerId);
+        if (existing.triggerOrderPrompt) existing.triggerOrderPrompt.triggerIds.push(action.triggerId);
+        else {
+          const prompt = triggerOrderPromptState(action, existing.triggerBucket);
+          if (prompt) existing.triggerOrderPrompt = prompt;
+        }
+      }
       existing.actions.push(copyDuelAction(action));
     }
     else {
@@ -50,6 +58,17 @@ function triggerBucketGroupState(action: DuelAction): { triggerBucket: PendingTr
       player: action.player,
       triggerIds: [action.triggerId],
     },
+  };
+}
+
+function triggerOrderPromptState(action: DuelAction, bucket: PendingTriggerBucketState): TriggerOrderPromptState | undefined {
+  if ((action.type !== "activateTrigger" && action.type !== "declineTrigger") || action.windowId === undefined || bucket.triggerIds.length < 2) return undefined;
+  return {
+    id: `${action.windowId}:${bucket.triggerBucket}:${bucket.player}`,
+    type: "orderTriggers",
+    player: bucket.player,
+    triggerBucket: bucket.triggerBucket,
+    triggerIds: [...bucket.triggerIds],
   };
 }
 
