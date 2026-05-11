@@ -3,6 +3,7 @@ import { canSpecialSummonDuelCard } from "#duel/core.js";
 import { isMonsterSetPrevented, isNormalSummonPrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
+import { luaSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import { positionFromMask, readTableStringField } from "#lua/api-utils.js";
 import { canSpecialSummonFromLua } from "#lua/card-eligibility-api.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
@@ -29,7 +30,7 @@ export function installCardSummonPredicateApi(L: unknown, session: DuelSession):
 
 function pushCanBeSpecialSummoned(L: unknown, session: DuelSession): number {
   const card = readCard(L, session);
-  const summonType = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
+  const summonType = luaSpecialSummonTypeCode(lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0);
   const player = readSpecialSummonTargetPlayer(L, card);
   const ignoreSummonCondition = lua.lua_toboolean(L, 5);
   const positionMask = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : 0x1;

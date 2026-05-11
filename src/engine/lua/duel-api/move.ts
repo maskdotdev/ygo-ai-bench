@@ -17,7 +17,7 @@ import {
   specialSummonDuelCard,
 } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
-import { duelSummonTypeFromCode } from "#duel/summon-type-codes.js";
+import { duelSummonTypeFromCode, luaSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import { locationsFromMask, positionFromMask, readCardUid } from "#lua/api-utils.js";
 import { moveDeckCardToBottom, moveDeckCardToTop } from "#lua/duel-api/deck-order.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
@@ -215,7 +215,7 @@ function pushRemove(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiH
 }
 function pushSpecialSummon(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
   const uids = readCardOrGroupUids(L, 1);
-  const summonType = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
+  const summonType = luaSpecialSummonTypeCode(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0);
   const targetPlayer = readOptionalPlayer(L, 4);
   const ignoreSummonCondition = lua.lua_toboolean(L, 5);
   const requestedPosition = lua.lua_isnumber(L, 7) ? positionFromMask(lua.lua_tointeger(L, 7)) : undefined;

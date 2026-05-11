@@ -15,6 +15,10 @@ export function effectiveSpecialSummonTypeCode(summonTypeCode?: number): number 
   return summonTypeCode && summonTypeCode !== 0 ? summonTypeCode : luaSummonTypeSpecial;
 }
 
+export function luaSpecialSummonTypeCode(summonTypeCode: number): number {
+  return summonTypeCode !== 0 && summonTypeCode < luaSummonTypeSpecial ? luaSummonTypeSpecial + summonTypeCode : summonTypeCode;
+}
+
 export function summonProcedureTypeCodeFromValue(value: number | undefined): number | undefined {
   if (value === undefined || !Number.isSafeInteger(value)) return undefined;
   return (value & luaSummonTypeSpecial) === luaSummonTypeSpecial ? value : undefined;

@@ -24,7 +24,7 @@ import {
   negateDuelSummon,
   xyzSummonDuelCard,
 } from "#duel/core.js";
-import { duelSummonTypeFromCode, luaSummonTypeFusion, luaSummonTypePendulum, luaSummonTypeRitual } from "#duel/summon-type-codes.js";
+import { duelSummonTypeFromCode, luaSpecialSummonTypeCode, luaSummonTypeFusion, luaSummonTypePendulum, luaSummonTypeRitual } from "#duel/summon-type-codes.js";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
 import { currentCardCodes, currentCardMatchesCode } from "#duel/card-code-state.js";
 import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
@@ -586,7 +586,7 @@ function pushGrantAdditionalPendulumSummon(L: unknown, session: DuelSession, hos
 function pushSpecialSummonStep(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
   if (session.state.status === "ended") return pushEmptyBooleanResult(L, hostState);
   const uid = readCardUid(L, 1);
-  const summonType = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
+  const summonType = luaSpecialSummonTypeCode(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0);
   const target = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
   const targetPlayer = readOptionalPlayer(L, 4) ?? target?.controller;
   const requestedPosition = lua.lua_isnumber(L, 7) ? positionFromMask(lua.lua_tointeger(L, 7)) : undefined;
