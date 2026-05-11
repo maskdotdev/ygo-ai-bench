@@ -1,0 +1,85 @@
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { moveDuelCard } from "#duel/card-state.js";
+import { applyResponse, createDuel, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import type { DuelCardData } from "#duel/types.js";
+import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
+import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
+import { createLuaScriptHost } from "#lua/host.js";
+import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+
+const upstreamRoot = path.resolve(".upstream/ignis");
+const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
+const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cation Extra LIGHT Xyz lock", () => {
+  it("restores its Location-first Attribute-then-Type Extra Deck-only LIGHT Xyz special summon lock", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const cationCode = "21291696";
+    const lightXyzCode = "900000326";
+    const darkXyzCode = "900000327";
+    const lightFusionCode = "900000328";
+    const handDarkCode = "900000329";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === cationCode),
+      { code: lightXyzCode, name: "Cation LIGHT Xyz Probe", kind: "monster", typeFlags: 0x800001, attribute: 0x10, level: 4, attack: 1000, defense: 1000 },
+      { code: darkXyzCode, name: "Cation DARK Xyz Probe", kind: "monster", typeFlags: 0x800001, attribute: 0x20, level: 4, attack: 1000, defense: 1000 },
+      { code: lightFusionCode, name: "Cation LIGHT Fusion Probe", kind: "monster", typeFlags: 0x41, attribute: 0x10, level: 4, attack: 1000, defense: 1000 },
+      { code: handDarkCode, name: "Cation Hand DARK Probe", kind: "monster", typeFlags: 0x1, attribute: 0x20, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 212, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [cationCode, handDarkCode], extra: [lightXyzCode, darkXyzCode, lightFusionCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const cation = session.state.cards.find((card) => card.code === cationCode);
+    const handDark = session.state.cards.find((card) => card.code === handDarkCode);
+    expect(cation).toBeDefined();
+    expect(handDark).toBeDefined();
+    moveDuelCard(session.state, cation!.uid, "monsterZone", 0);
+    cation!.position = "faceUpAttack";
+    cation!.faceUp = true;
+    moveDuelCard(session.state, handDark!.uid, "hand", 0);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(cationCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const resolve = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${cationCode}),0,LOCATION_MZONE,0,nil)
+      local e=Effect.CreateEffect(c)
+      c${cationCode}.thop(e,0,nil,0,0,nil,0,0)
+      `,
+      "cation-official-thop.lua",
+    );
+    expect(resolve.ok, resolve.error).toBe(true);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const probe = restored.host.loadScript(
+      `
+      local light_xyz=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${lightXyzCode}),0,LOCATION_EXTRA,0,nil)
+      local dark_xyz=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${darkXyzCode}),0,LOCATION_EXTRA,0,nil)
+      local light_fusion=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${lightFusionCode}),0,LOCATION_EXTRA,0,nil)
+      local hand_dark=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${handDarkCode}),0,LOCATION_HAND,0,nil)
+      Debug.Message("cation dark xyz special " .. Duel.SpecialSummon(dark_xyz,SUMMON_TYPE_XYZ,0,0,false,false,POS_FACEUP_ATTACK))
+      Debug.Message("cation light fusion special " .. Duel.SpecialSummon(light_fusion,SUMMON_TYPE_FUSION,0,0,false,false,POS_FACEUP_ATTACK))
+      Debug.Message("cation light xyz special " .. Duel.SpecialSummon(light_xyz,SUMMON_TYPE_XYZ,0,0,false,false,POS_FACEUP_ATTACK))
+      Debug.Message("cation hand dark special " .. Duel.SpecialSummon(hand_dark,0,0,0,false,false,POS_FACEUP_ATTACK))
+      `,
+      "cation-extra-light-xyz-lock-probe.lua",
+    );
+    expect(probe.ok, probe.error).toBe(true);
+    expect(restored.host.messages).toEqual(
+      expect.arrayContaining(["cation dark xyz special 0", "cation light fusion special 0", "cation light xyz special 1", "cation hand dark special 1"]),
+    );
+
+    const endTurn = getLegalActions(restored.session, 0).find((action) => action.type === "endTurn");
+    expect(endTurn).toBeDefined();
+    const ended = applyResponse(restored.session, endTurn!);
+    expect(ended.ok, ended.error).toBe(true);
+  });
+});
