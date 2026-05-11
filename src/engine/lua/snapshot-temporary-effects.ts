@@ -41,7 +41,7 @@ export function isKnownTemporaryActivationLockEffect(effect: SerializedDuelEffec
     effect.code === 6 &&
     effect.sourceUid !== undefined &&
     effect.reset?.flags === luaPhaseEndResetFlags &&
-    (effect.value === 1 || effect.luaValueDescriptor === "cannot-activate:spell-trap-effect" || effect.luaValueDescriptor?.startsWith("cannot-activate:monster-attribute-except:") === true) &&
+    (effect.value === 1 || effect.luaValueDescriptor === "cannot-activate:spell-trap-effect" || effect.luaValueDescriptor === "cannot-activate:card-activation" || effect.luaValueDescriptor?.startsWith("cannot-activate:monster-attribute-except:") === true) &&
     effect.luaTargetDescriptor === undefined &&
     hasPlayerTargetFlag(effect) &&
     hasAnyPlayerTarget(effect) &&
