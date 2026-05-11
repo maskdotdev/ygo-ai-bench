@@ -47,6 +47,8 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (ritualSummonNotRace !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x45000000 && (currentRace(card, ctx.duel) & ritualSummonNotRace) === 0 };
   const extraSummonTypeNot = extraSummonTypeNotDescriptor(effect.luaTargetDescriptor);
   if (extraSummonTypeNot !== undefined) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && effectiveSpecialSummonTypeCode(ctx.summonTypeCode) !== extraSummonTypeNot };
+  const linkSummonLinkAbove = linkSummonLinkAboveDescriptor(effect.luaTargetDescriptor);
+  if (linkSummonLinkAbove !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4c000000 && (cardTypeFlags(card, ctx.duel) & 0x4000000) !== 0 && currentLink(card, ctx.duel) >= linkSummonLinkAbove };
   const summonTypeIsAny = specialSummonTypeIsAnyTargetDescriptor(effect.luaTargetDescriptor);
   if (summonTypeIsAny !== undefined) return { targetCardPredicate: (ctx) => summonTypeIsAny.includes(effectiveSpecialSummonTypeCode(ctx.summonTypeCode)) };
   const summonTypeIs = specialSummonTypeIsTargetDescriptor(effect.luaTargetDescriptor);
@@ -103,6 +105,12 @@ function extraSummonTypeNotDescriptor(descriptor: string | undefined): number | 
   if (!descriptor?.startsWith("target:extra-summon-type-not:")) return undefined;
   const summonType = Number(descriptor.slice("target:extra-summon-type-not:".length));
   return Number.isSafeInteger(summonType) && summonType > 0 ? summonType : undefined;
+}
+
+function linkSummonLinkAboveDescriptor(descriptor: string | undefined): number | undefined {
+  if (!descriptor?.startsWith("target:link-summon-link-above:")) return undefined;
+  const link = Number(descriptor.slice("target:link-summon-link-above:".length));
+  return Number.isSafeInteger(link) && link > 0 ? link : undefined;
 }
 
 function relatedEffectHandlerMatchesSetcode(ctx: Parameters<NonNullable<DuelEffectDefinition["targetCardPredicate"]>>[0], setcode: number): boolean {

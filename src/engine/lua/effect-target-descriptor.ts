@@ -206,6 +206,12 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const xyzSummonNotRelatedSetcode = relatedEffectParam && summonTypeParam ? snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_XYZ\\s*\\)\\s*==\\s*SUMMON_TYPE_XYZ\\s+and\\s+not\\s+${escapeRegExp(relatedEffectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`)) : undefined;
   const xyzSummonNotRelatedSetcodeValue = xyzSummonNotRelatedSetcode?.[1] ? luaNumberTokenValue(L, index, xyzSummonNotRelatedSetcode[1]) : undefined;
   if (xyzSummonNotRelatedSetcodeValue !== undefined) return `target:xyz-summon-not-related-setcode:${xyzSummonNotRelatedSetcodeValue}`;
+  const linkSummonLinkAbove = summonTypeParam
+    ? snippet.match(new RegExp(`\\breturn\\s+(?:${card}\\s*:\\s*IsLinkAbove\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLinkMonster\\s*\\(\\s*\\)\\s+and\\s+\\(?\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_LINK\\s*\\)?\\s*==\\s*SUMMON_TYPE_LINK|${card}\\s*:\\s*IsLinkMonster\\s*\\(\\s*\\)\\s+and\\s+${card}\\s*:\\s*GetLink\\s*\\(\\s*\\)\\s*>=\\s*(${numericOrIdentifierPattern})\\s+and\\s+\\(?\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_LINK\\s*\\)?\\s*==\\s*SUMMON_TYPE_LINK)`))
+    : undefined;
+  const linkSummonLinkAboveToken = linkSummonLinkAbove?.[1] ?? linkSummonLinkAbove?.[2];
+  const linkSummonLinkAboveValue = linkSummonLinkAboveToken ? luaNumberTokenValue(L, index, linkSummonLinkAboveToken) : undefined;
+  if (linkSummonLinkAboveValue !== undefined) return `target:link-summon-link-above:${linkSummonLinkAboveValue}`;
   if (summonTypeParam) {
     const summonTypeNot = snippet.match(new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*~=\\s*(SUMMON_TYPE_SPECIAL\\s*\\+\\s*${numericOrIdentifierPattern}|${numericOrIdentifierPattern})`));
     const summonTypeMaskIs = snippet.match(new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*==\\s*\\1`)) ?? snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*==\\s*\\1`));
