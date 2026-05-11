@@ -169,6 +169,11 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const summonPositionParam = luaFunctionParams(snippet)?.[4];
   const relatedEffectParam = luaFunctionParams(snippet)?.[6];
   if (summonPositionParam && new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonPositionParam)}\\s*&\\s*(?:POS_FACEDOWN|10)\\s*\\)\\s*>\\s*0`).test(snippet)) return "target:special-summon-position-facedown";
+  const pendulumSummonNotSetcode = summonTypeParam
+    ? snippet.match(new RegExp(`\\breturn\\s+(?:\\(?\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_PENDULUM\\s*\\)?\\s*==\\s*SUMMON_TYPE_PENDULUM|${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_PENDULUM\\s*==\\s*SUMMON_TYPE_PENDULUM)\\s+and\\s+not\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*\\{\\s*(${numericOrIdentifierListPattern})\\s*\\}\\s*\\)`))
+    : undefined;
+  const pendulumSummonNotSetcodeValues = pendulumSummonNotSetcode?.[1] ? luaNumberListValue(L, index, pendulumSummonNotSetcode[1]) : undefined;
+  if (pendulumSummonNotSetcodeValues?.length) return `target:pendulum-summon-not-setcode:${pendulumSummonNotSetcodeValues.join(",")}`;
   const xyzSummonNotRelatedSetcode = relatedEffectParam && summonTypeParam ? snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${escapeRegExp(summonTypeParam)}\\s*&\\s*SUMMON_TYPE_XYZ\\s*\\)\\s*==\\s*SUMMON_TYPE_XYZ\\s+and\\s+not\\s+${escapeRegExp(relatedEffectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`)) : undefined;
   const xyzSummonNotRelatedSetcodeValue = xyzSummonNotRelatedSetcode?.[1] ? luaNumberTokenValue(L, index, xyzSummonNotRelatedSetcode[1]) : undefined;
   if (xyzSummonNotRelatedSetcodeValue !== undefined) return `target:xyz-summon-not-related-setcode:${xyzSummonNotRelatedSetcodeValue}`;
@@ -220,6 +225,7 @@ function knownFixedFunctionDescriptor(L: unknown, index: number, hostState: LuaH
 }
 
 const numericOrIdentifierPattern = String.raw`(?:0x[0-9A-Fa-f]+|\d+|[A-Za-z_]\w*)`;
+const numericOrIdentifierListPattern = String.raw`${numericOrIdentifierPattern}(?:\s*,\s*${numericOrIdentifierPattern})*`;
 const numericOrIdentifierExpressionPattern = String.raw`${numericOrIdentifierPattern}(?:\s*[|+]\s*${numericOrIdentifierPattern})*`;
 
 function setcodeOrCodeTypeTargetDescriptor(L: unknown, index: number, snippet: string, card: string): string | undefined {
@@ -257,6 +263,11 @@ function luaNumberExpressionValue(L: unknown, functionIndex: number, token: stri
     value |= partValue;
   }
   return value;
+}
+
+function luaNumberListValue(L: unknown, functionIndex: number, token: string): number[] | undefined {
+  const values = token.split(",").map((part) => luaNumberTokenValue(L, functionIndex, part.trim()));
+  return values.length > 0 && values.every((value): value is number => value !== undefined) ? values : undefined;
 }
 
 function namedExtraDeckMonsterTypeValue(name: string): number | undefined {

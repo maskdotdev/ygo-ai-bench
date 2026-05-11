@@ -35,6 +35,8 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   const notSetcode = notSetcodeTargetDescriptor(effect.luaTargetDescriptor); const notRaceExtra = effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-race-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-race-extra:".length)) : undefined; const notAttributeExtra = effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-attribute-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-attribute-extra:".length)) : undefined; const notAttribute = effect.luaTargetDescriptor?.startsWith("target:not-attribute:") ? Number(effect.luaTargetDescriptor.slice("target:not-attribute:".length)) : undefined; const notRace = effect.luaTargetDescriptor?.startsWith("target:not-race:") ? Number(effect.luaTargetDescriptor.slice("target:not-race:".length)) : undefined; const notCode = effect.luaTargetDescriptor?.startsWith("target:not-code:") ? Number(effect.luaTargetDescriptor.slice("target:not-code:".length)) : undefined;
   if (notSetcode !== undefined) return { targetCardPredicate: (_ctx, card) => !cardSetcodes(card).some((setcode) => isSetcodeMatch(notSetcode, setcode)) }; if (notRaceExtra !== undefined && Number.isSafeInteger(notRaceExtra) && notRaceExtra > 0) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && (currentRace(card, ctx.duel) & notRaceExtra) === 0 }; if (notAttributeExtra !== undefined && Number.isSafeInteger(notAttributeExtra) && notAttributeExtra > 0) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && (currentAttribute(card, ctx.duel) & notAttributeExtra) === 0 }; if (notAttribute !== undefined && Number.isSafeInteger(notAttribute) && notAttribute > 0) return { targetCardPredicate: (ctx, card) => (currentAttribute(card, ctx.duel) & notAttribute) === 0 }; if (notRace !== undefined && Number.isSafeInteger(notRace) && notRace > 0) return { targetCardPredicate: (ctx, card) => (currentRace(card, ctx.duel) & notRace) === 0 }; if (notCode !== undefined && Number.isSafeInteger(notCode) && notCode > 0) return { targetCardPredicate: (ctx, card) => !currentCardMatchesCode(card, ctx.duel, String(notCode)) };
   if (effect.luaTargetDescriptor === "target:same-code-label") return { targetCardPredicate: (ctx, card) => effect.label !== undefined && currentCardMatchesCode(card, ctx.duel, String(effect.label)) };
+  const pendulumSummonNotSetcode = pendulumSummonNotSetcodeDescriptor(effect.luaTargetDescriptor);
+  if (pendulumSummonNotSetcode !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4a000000 && !pendulumSummonNotSetcode.some((setcode) => currentCardMatchesSetcode(card, ctx.duel, setcode)) };
   const summonTypeIsAny = specialSummonTypeIsAnyTargetDescriptor(effect.luaTargetDescriptor);
   if (summonTypeIsAny !== undefined) return { targetCardPredicate: (ctx) => summonTypeIsAny.includes(effectiveSpecialSummonTypeCode(ctx.summonTypeCode)) };
   const summonTypeIs = specialSummonTypeIsTargetDescriptor(effect.luaTargetDescriptor);
@@ -55,6 +57,12 @@ function xyzSummonNotRelatedSetcodeDescriptor(descriptor: string | undefined): n
   if (!descriptor?.startsWith("target:xyz-summon-not-related-setcode:")) return undefined;
   const setcode = Number(descriptor.slice("target:xyz-summon-not-related-setcode:".length));
   return Number.isSafeInteger(setcode) && setcode > 0 ? setcode : undefined;
+}
+
+function pendulumSummonNotSetcodeDescriptor(descriptor: string | undefined): number[] | undefined {
+  if (!descriptor?.startsWith("target:pendulum-summon-not-setcode:")) return undefined;
+  const setcodes = descriptor.slice("target:pendulum-summon-not-setcode:".length).split(",").map(Number);
+  return setcodes.length > 0 && setcodes.every((setcode) => Number.isSafeInteger(setcode) && setcode > 0) ? setcodes : undefined;
 }
 
 function relatedEffectHandlerMatchesSetcode(ctx: Parameters<NonNullable<DuelEffectDefinition["targetCardPredicate"]>>[0], setcode: number): boolean {
