@@ -100,6 +100,7 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   const notOriginalTypeRace = originalTypeRaceDescriptor(effect.luaTargetDescriptor); if (notOriginalTypeRace) return { targetCardPredicate: (_ctx, card) => (printedCardTypeFlags(card) & notOriginalTypeRace.type) === 0 || ((card.data.race ?? 0) & notOriginalTypeRace.race) === 0 };
   const notOriginalTypeRank = originalTypeRankDescriptor(effect.luaTargetDescriptor); if (notOriginalTypeRank) return { targetCardPredicate: (_ctx, card) => (printedCardTypeFlags(card) & notOriginalTypeRank.type) === 0 || cardRank(card) !== notOriginalTypeRank.rank };
   const notOriginalAttributeRace = originalAttributeRaceDescriptor(effect.luaTargetDescriptor); if (notOriginalAttributeRace) return { targetCardPredicate: (_ctx, card) => ((card.data.attribute ?? 0) & notOriginalAttributeRace.attribute) === 0 || ((card.data.race ?? 0) & notOriginalAttributeRace.race) === 0 };
+  const notOriginalTypeCurrentAttribute = originalTypeCurrentAttributeDescriptor(effect.luaTargetDescriptor); if (notOriginalTypeCurrentAttribute) return { targetCardPredicate: (ctx, card) => (printedCardTypeFlags(card) & notOriginalTypeCurrentAttribute.type) === 0 || (currentAttribute(card, ctx.duel) & notOriginalTypeCurrentAttribute.attribute) === 0 };
   const notOriginalType = effect.luaTargetDescriptor?.startsWith("target:not-original-type:") ? Number(effect.luaTargetDescriptor.slice("target:not-original-type:".length)) : undefined; if (notOriginalType !== undefined && Number.isSafeInteger(notOriginalType) && notOriginalType > 0) return { targetCardPredicate: (_ctx, card) => (printedCardTypeFlags(card) & notOriginalType) === 0 };
   const originalType = effect.luaTargetDescriptor?.startsWith("target:original-type:") ? Number(effect.luaTargetDescriptor.slice("target:original-type:".length)) : undefined; if (originalType !== undefined && Number.isSafeInteger(originalType) && originalType > 0) return { targetCardPredicate: (_ctx, card) => (printedCardTypeFlags(card) & originalType) !== 0 };
   const notType = effect.luaTargetDescriptor?.startsWith("target:not-type:") ? Number(effect.luaTargetDescriptor.slice("target:not-type:".length)) : undefined; if (notType !== undefined && Number.isSafeInteger(notType) && notType > 0) return { targetCardPredicate: (ctx, card) => (cardTypeFlags(card, ctx.duel) & notType) === 0 };
@@ -315,6 +316,12 @@ function originalAttributeRaceDescriptor(descriptor: string | undefined): { attr
   if (!descriptor?.startsWith("target:not-original-attribute-race:")) return undefined;
   const [attribute, race] = descriptor.slice("target:not-original-attribute-race:".length).split(":").map(Number);
   return attribute !== undefined && race !== undefined && [attribute, race].every((value) => Number.isSafeInteger(value) && value > 0) ? { attribute, race } : undefined;
+}
+
+function originalTypeCurrentAttributeDescriptor(descriptor: string | undefined): { type: number; attribute: number } | undefined {
+  if (!descriptor?.startsWith("target:not-original-type-current-attribute:")) return undefined;
+  const [type, attribute] = descriptor.slice("target:not-original-type-current-attribute:".length).split(":").map(Number);
+  return type !== undefined && attribute !== undefined && [type, attribute].every((value) => Number.isSafeInteger(value) && value > 0) ? { type, attribute } : undefined;
 }
 
 export function notSetcodeTargetDescriptor(descriptor: string | undefined): number | undefined {

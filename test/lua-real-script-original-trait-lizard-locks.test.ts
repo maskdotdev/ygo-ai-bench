@@ -590,4 +590,75 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
       value: 1,
     });
   });
+
+  it("restores mixed original Synchro and current LIGHT/DARK Clock Lizard checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const lancerCode = "3806388";
+    const lightSynchroCode = "3806389";
+    const fireSynchroCode = "3806390";
+    const darkFusionCode = "3806391";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === lancerCode),
+      { code: lightSynchroCode, name: "Original LIGHT Synchro Probe", kind: "extra", typeFlags: 0x2001, race: 0x2000, attribute: 0x10, level: 8, attack: 1000, defense: 1000 },
+      { code: fireSynchroCode, name: "Original FIRE Synchro Probe", kind: "extra", typeFlags: 0x2001, race: 0x2000, attribute: 0x4, level: 8, attack: 1000, defense: 1000 },
+      { code: darkFusionCode, name: "Original DARK Fusion Probe", kind: "extra", typeFlags: 0x41, race: 0x2000, attribute: 0x20, level: 8, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 380, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [lancerCode], extra: [lightSynchroCode, fireSynchroCode, darkFusionCode] }, 1: { main: [] } });
+    startDuel(session);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(lancerCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${lancerCode}),0,LOCATION_DECK,0,nil)
+      aux.addTempLizardCheck(c,0,c${lancerCode}.lizfilter)
+      `,
+      "chaos-lancer-official-mixed-original-current-lizard.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects.find((effect) => effect.code === 51476410)).toMatchObject({
+      luaTargetDescriptor: "target:not-original-type-current-attribute:8192:48",
+      value: 1,
+    });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const mutate = restored.host.loadScript(
+      `
+      local light_synchro=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${lightSynchroCode}),0,LOCATION_EXTRA,0,nil)
+      local fire_synchro=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${fireSynchroCode}),0,LOCATION_EXTRA,0,nil)
+      local light_change=Effect.CreateEffect(light_synchro)
+      light_change:SetType(EFFECT_TYPE_SINGLE)
+      light_change:SetCode(EFFECT_CHANGE_ATTRIBUTE)
+      light_change:SetValue(ATTRIBUTE_FIRE)
+      light_synchro:RegisterEffect(light_change)
+      local fire_change=Effect.CreateEffect(fire_synchro)
+      fire_change:SetType(EFFECT_TYPE_SINGLE)
+      fire_change:SetCode(EFFECT_CHANGE_ATTRIBUTE)
+      fire_change:SetValue(ATTRIBUTE_DARK)
+      fire_synchro:RegisterEffect(fire_change)
+      `,
+      "chaos-lancer-current-attribute-mutation.lua",
+    );
+    expect(mutate.ok, mutate.error).toBe(true);
+    const effect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
+    const source = restored.session.state.cards.find((card) => card.code === lancerCode);
+    const lightSynchro = restored.session.state.cards.find((card) => card.code === lightSynchroCode);
+    const fireSynchro = restored.session.state.cards.find((card) => card.code === fireSynchroCode);
+    const darkFusion = restored.session.state.cards.find((card) => card.code === darkFusionCode);
+    expect(effect?.targetCardPredicate).toBeDefined();
+    expect(source).toBeDefined();
+    expect(lightSynchro).toBeDefined();
+    expect(fireSynchro).toBeDefined();
+    expect(darkFusion).toBeDefined();
+    const ctx = targetContext(restored.session.state, source!);
+    expect(effect!.targetCardPredicate!(ctx, lightSynchro!)).toBe(true);
+    expect(effect!.targetCardPredicate!(ctx, fireSynchro!)).toBe(false);
+    expect(effect!.targetCardPredicate!(ctx, darkFusion!)).toBe(true);
+  });
 });

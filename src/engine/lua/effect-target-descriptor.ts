@@ -190,6 +190,12 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notOriginalAttributeRaceAttribute = notOriginalAttributeRaceAttributeToken ? luaNumberTokenValue(L, index, notOriginalAttributeRaceAttributeToken) : undefined;
   const notOriginalAttributeRaceRace = notOriginalAttributeRaceRaceToken ? luaNumberTokenValue(L, index, notOriginalAttributeRaceRaceToken) : undefined;
   if (notOriginalAttributeRaceAttribute !== undefined && notOriginalAttributeRaceRace !== undefined) return `target:not-original-attribute-race:${notOriginalAttributeRaceAttribute}:${notOriginalAttributeRaceRace}`;
+  const notOriginalTypeCurrentAttribute = snippet.match(new RegExp(`\\breturn\\s+(?:not\\s+${card}\\s*:\\s*IsOriginalType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+or\\s+not\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)|not\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+or\\s+not\\s+${card}\\s*:\\s*IsOriginalType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\))`));
+  const notOriginalTypeCurrentAttributeTypeToken = notOriginalTypeCurrentAttribute?.[1] ?? notOriginalTypeCurrentAttribute?.[4];
+  const notOriginalTypeCurrentAttributeAttributeToken = notOriginalTypeCurrentAttribute?.[2] ?? notOriginalTypeCurrentAttribute?.[3];
+  const notOriginalTypeCurrentAttributeType = notOriginalTypeCurrentAttributeTypeToken ? luaNumberTokenValue(L, index, notOriginalTypeCurrentAttributeTypeToken) : undefined;
+  const notOriginalTypeCurrentAttributeAttribute = notOriginalTypeCurrentAttributeAttributeToken ? luaNumberExpressionValue(L, index, notOriginalTypeCurrentAttributeAttributeToken) : undefined;
+  if (notOriginalTypeCurrentAttributeType !== undefined && notOriginalTypeCurrentAttributeAttribute !== undefined) return `target:not-original-type-current-attribute:${notOriginalTypeCurrentAttributeType}:${notOriginalTypeCurrentAttributeAttribute}`;
   const notOriginalType = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsOriginalType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const notOriginalTypeValue = notOriginalType?.[1] ? luaNumberTokenValue(L, index, notOriginalType[1]) : undefined;
   if (notOriginalTypeValue !== undefined) return `target:not-original-type:${notOriginalTypeValue}`;
