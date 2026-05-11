@@ -36,6 +36,10 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notTypeAttributeRaceExtraAttribute = notTypeAttributeRaceExtra?.[2] ? luaNumberTokenValue(L, index, notTypeAttributeRaceExtra[2]) : undefined;
   const notTypeAttributeRaceExtraRace = notTypeAttributeRaceExtra?.[3] ? luaNumberTokenValue(L, index, notTypeAttributeRaceExtra[3]) : undefined;
   if (notTypeAttributeRaceExtraType !== undefined && notTypeAttributeRaceExtraAttribute !== undefined && notTypeAttributeRaceExtraRace !== undefined) return `special-summon-limit:not-type-attribute-race-extra:${notTypeAttributeRaceExtraType}:${notTypeAttributeRaceExtraAttribute}:${notTypeAttributeRaceExtraRace}`;
+  const notAttributeRaceExtra = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\(\\s*${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)`));
+  const notAttributeRaceExtraAttribute = notAttributeRaceExtra?.[1] ? luaNumberTokenValue(L, index, notAttributeRaceExtra[1]) : undefined;
+  const notAttributeRaceExtraRace = notAttributeRaceExtra?.[2] ? luaNumberTokenValue(L, index, notAttributeRaceExtra[2]) : undefined;
+  if (notAttributeRaceExtraAttribute !== undefined && notAttributeRaceExtraRace !== undefined) return `special-summon-limit:not-attribute-race-extra:${notAttributeRaceExtraAttribute}:${notAttributeRaceExtraRace}`;
   const notType = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*Is(?:Original)?Type\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const notTypeValue = notType?.[1] ? luaNumberTokenValue(L, index, notType[1]) : undefined;
   if (notTypeValue !== undefined) return `target:not-type:${notTypeValue}`;
