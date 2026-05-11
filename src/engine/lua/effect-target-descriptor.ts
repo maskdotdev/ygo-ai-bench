@@ -12,10 +12,12 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const cardParam = luaFunctionParams(snippet)?.[1];
   if (!cardParam) return undefined;
   const card = escapeRegExp(cardParam);
-  const nonFusionExtra = new RegExp(
-    `\\breturn\\s+not\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(?:TYPE_FUSION|64)\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)`,
+  const notTypeExtra = snippet.match(
+    new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(?:LOCATION_EXTRA|64)\\s*\\)`),
   );
-  if (nonFusionExtra.test(snippet)) return "special-summon-limit:non-fusion-extra";
+  const notTypeExtraValue = notTypeExtra?.[1] ? luaNumberTokenValue(L, index, notTypeExtra[1]) : undefined;
+  if (notTypeExtraValue === 0x40) return "special-summon-limit:non-fusion-extra";
+  if (notTypeExtraValue !== undefined) return `special-summon-limit:not-type-extra:${notTypeExtraValue}`;
   const notType = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*Is(?:Original)?Type\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const notTypeValue = notType?.[1] ? luaNumberTokenValue(L, index, notType[1]) : undefined;
   if (notTypeValue !== undefined) return `target:not-type:${notTypeValue}`;
