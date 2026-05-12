@@ -74,6 +74,10 @@ function getReasonPlayer(session: DuelSession, hostState: LuaDuelEffectApiHostSt
 }
 
 function pushReasonEffect(L: unknown, session: DuelSession, hostState: LuaDuelEffectApiHostState): number {
+  if (hostState.activeContext?.eventReasonEffectId !== undefined) {
+    hostState.pushEffectTable(L, hostState.activeContext.eventReasonEffectId);
+    return 1;
+  }
   const effectId = (hostState.activeContext?.chainLink ?? session.state.chain[session.state.chain.length - 1])?.effectId;
   const id = Number(effectId?.match(/^lua-(\d+)/)?.[1]);
   if (Number.isFinite(id)) hostState.pushEffectTable(L, id);

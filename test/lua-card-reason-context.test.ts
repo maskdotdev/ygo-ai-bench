@@ -64,4 +64,47 @@ describe("Lua card reason context", () => {
     expect(effect!.canActivate!(ctx)).toBe(false);
     expect(effect!.canActivate!({ ...ctx, eventCard: source!, eventReasonCardUid: reasonCard!.uid, eventReasonEffectId })).toBe(true);
   });
+
+  it("uses active event reason effect metadata for Duel.GetReasonEffect", () => {
+    const session = createDuel({ seed: 9922, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.code === "100");
+    expect(source).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_MZONE,0,nil)
+      local reason_effect=nil
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_SINGLE)
+      e1:SetCode(EFFECT_UPDATE_ATTACK)
+      e1:SetCondition(function(e)
+        return Duel.GetReasonEffect()==reason_effect
+      end)
+      e1:SetValue(100)
+      c:RegisterEffect(e1)
+      local e2=Effect.CreateEffect(c)
+      e2:SetType(EFFECT_TYPE_SINGLE)
+      e2:SetCode(EFFECT_UPDATE_DEFENSE)
+      e2:SetValue(100)
+      reason_effect=e2
+      c:RegisterEffect(e2)
+      `,
+      "duel-reason-effect-context.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    const checkedEffect = session.state.effects.find((candidate) => candidate.sourceUid === source!.uid && candidate.code === 100);
+    const reasonEffect = session.state.effects.find((candidate) => candidate.sourceUid === source!.uid && candidate.code === 104);
+    expect(checkedEffect?.canActivate).toBeDefined();
+    expect(reasonEffect).toBeDefined();
+    const ctx = effectContext(session.state, source!);
+    const eventReasonEffectId = Number(reasonEffect!.id.match(/^lua-(\d+)/)?.[1]);
+
+    expect(checkedEffect!.canActivate!(ctx)).toBe(false);
+    expect(checkedEffect!.canActivate!({ ...ctx, eventReasonEffectId })).toBe(true);
+  });
 });
