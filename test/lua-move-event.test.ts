@@ -95,8 +95,9 @@ describe("Lua move events", () => {
             e:SetType(EFFECT_TYPE_TRIGGER_O)
             e:SetCode(EVENT_MOVE)
             e:SetRange(LOCATION_HAND)
-            e:SetOperation(function(e,tp,eg)
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("restored move trigger " .. eg:GetFirst():GetCode())
+              Debug.Message("restored move reason " .. tostring(r==REASON_EFFECT) .. "/" .. tostring(rp==0) .. "/" .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(e)
           end
@@ -122,14 +123,17 @@ describe("Lua move events", () => {
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();
     applyAndAssert(session, action!);
+    const starter = session.state.cards.find((card) => card.code === "100");
+    expect(starter).toBeDefined();
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["moved"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1030, eventCardUid: target!.uid, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
     const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(originalTrigger).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["moved"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1030, eventCardUid: target!.uid });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1030, eventCardUid: target!.uid, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -149,9 +153,11 @@ describe("Lua move events", () => {
     expect(originalTriggerPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["moved"]);
     expect(restored.host.messages).not.toContain("restored move trigger 200");
+    expect(restored.host.messages).not.toContain("restored move reason true/true/true");
 
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored move trigger 200");
+    expect(restored.host.messages).toContain("restored move reason true/true/true");
   });
 
   it.each([
