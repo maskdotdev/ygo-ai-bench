@@ -6,6 +6,79 @@ import { createLuaScriptHost } from "#lua/host.js";
 import type { DuelCardData, DuelSession } from "#duel/types.js";
 
 describe("Lua equip reason source", () => {
+  it("preserves active Lua reason source metadata for equip-driven control changes", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Equip Control Reason Source", kind: "monster", typeFlags: 0x21 },
+      { code: "200", name: "Equip Control Reason Target", kind: "monster", typeFlags: 0x21 },
+      { code: "500", name: "Equip Control Reason Spell", kind: "spell", typeFlags: 0x40002 },
+      { code: "700", name: "Equip Control Reason Watcher", kind: "monster", typeFlags: 0x21 },
+    ];
+    const session = createDuel({ seed: 124, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "500", "700"] }, 1: { main: ["200"] } });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "100");
+    const target = session.state.cards.find((card) => card.code === "200");
+    expect(source).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1);
+    target!.position = "faceUpAttack";
+    target!.faceUp = true;
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          local target=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 200), tp, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+          local equip=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 500), tp, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+          local control=Effect.CreateEffect(equip)
+          control:SetType(EFFECT_TYPE_EQUIP)
+          control:SetCode(EFFECT_SET_CONTROL)
+          control:SetValue(tp)
+          equip:RegisterEffect(control)
+          Debug.Message("equip control reason result " .. tostring(Duel.Equip(tp, equip, target)))
+          Debug.Message("equip control reason source " .. tostring(target:GetReasonCard()==c) .. "/" .. tostring(target:GetReasonEffect()==source_effect))
+        end)
+        source_effect=e
+        c:RegisterEffect(e)
+      end
+      c700={}
+      function c700.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_CONTROL_CHANGED)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          local changed=eg:GetFirst()
+          Debug.Message("equip control event reason source " .. tostring(changed:GetReasonCard():IsCode(100)) .. "/" .. tostring(changed:GetReasonEffect()==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "equip-control-reason-source.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    expect(host.messages).toContain("equip control reason result true");
+    expect(host.messages).toContain("equip control reason source true/true");
+    expect(target).toMatchObject({ controller: 0, reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "controlChanged", eventCardUid: target!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain("equip control event reason source true/true");
+  });
+
   it("preserves active Lua reason source metadata for Duel.Equip", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Duel Equip Reason Source", kind: "monster", typeFlags: 0x21 },

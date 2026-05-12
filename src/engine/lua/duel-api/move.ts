@@ -277,12 +277,13 @@ function pushEquip(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHo
   }
   beginLuaOperationMoveStep(session, hostState);
   try {
-    moveDuelCard(session.state, equipUid, "spellTrapZone", player, duelReason.effect, hostState.activeContext?.player ?? player);
+    const reasonPlayer = hostState.activeContext?.player ?? player, payload = luaEffectReasonPayload(hostState, duelReason.effect, reasonPlayer);
+    moveDuelCard(session.state, equipUid, "spellTrapZone", player, duelReason.effect, reasonPlayer);
     assignReasonCard(equipCard, hostState);
     bindLuaEquipTarget(equipCard, target);
     pushDuelLog(session.state, "equip", player, equipCard.name, `Equipped to ${target.name}`);
     collectLuaMoveEvent(session, "equipped", equipCard);
-    if (applyLuaContinuousSetControl(session, target, hostState.activeContext?.player ?? player)) collectLuaMoveEvent(session, "controlChanged", target);
+    if (applyLuaContinuousSetControl(session, target, reasonPlayer, payload)) collectLuaMoveEvent(session, "controlChanged", target);
     setOperatedUids(hostState, [equipUid]);
     finishLuaOperationMoveStep(hostState, true);
     lua.lua_pushboolean(L, true);
@@ -918,9 +919,7 @@ export function markLuaOperationTimingBoundary(session: DuelSession, hostState: 
   setWaitingForPendingTriggerBucket(session.state);
 }
 
-function beginLuaOperationMoveStep(session: DuelSession, hostState: LuaDuelMoveApiHostState): void {
-  markLuaOperationTimingBoundary(session, hostState);
-}
+function beginLuaOperationMoveStep(session: DuelSession, hostState: LuaDuelMoveApiHostState): void { markLuaOperationTimingBoundary(session, hostState); }
 
 function finishLuaOperationMoveStep(hostState: LuaDuelMoveApiHostState, moved: boolean): void {
   if (hostState.activeContext && moved) hostState.activeOperationMoved = true;

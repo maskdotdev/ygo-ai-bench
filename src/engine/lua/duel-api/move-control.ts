@@ -4,6 +4,7 @@ import { phaseMask } from "#duel/phase-mask.js";
 import { duelReason } from "#duel/reasons.js";
 import { resetEvent, resetLeave, resetPhase } from "#duel/reset-flags.js";
 import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
+import type { DuelEventPayload } from "#duel/event-history.js";
 import type { DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelPhase, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
 export const luaTemporaryControlReturnDescriptor = "temporary-control-return";
@@ -20,13 +21,15 @@ export function canLuaSwapControlPair(state: DuelState, left: DuelCardInstance, 
   return hasControlSwapSpace(state, left, right);
 }
 
-export function applyLuaContinuousSetControl(session: DuelSession, target: DuelCardInstance, reasonPlayer: PlayerId): boolean {
+export function applyLuaContinuousSetControl(session: DuelSession, target: DuelCardInstance, reasonPlayer: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): boolean {
   if (target.location !== "monsterZone" && target.location !== "spellTrapZone") return false;
   const targetPlayer = setControlPlayerForCard(session.state, target, createLuaMaterialCheckContext(session.state));
   if (targetPlayer === undefined || target.controller === targetPlayer) return false;
   if (!hasZoneSpace(session.state, targetPlayer, target.location)) return false;
   const previousController = target.controller;
   moveDuelCard(session.state, target.uid, target.location, targetPlayer, duelReason.effect, reasonPlayer);
+  if (payload.eventReasonCardUid !== undefined) target.reasonCardUid = payload.eventReasonCardUid;
+  if (payload.eventReasonEffectId !== undefined) target.reasonEffectId = payload.eventReasonEffectId;
   resequence(session.state, previousController, target.location);
   pushDuelLog(session.state, "control", targetPlayer, target.name, `Took control from player ${previousController}`);
   return true;
