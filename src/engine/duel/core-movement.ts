@@ -40,12 +40,13 @@ export function sendCoreDuelCardToGraveyard(
   reason: number,
   reasonPlayer: PlayerId | undefined,
   handlers: CoreMovementHandlers,
+  payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {},
 ): DuelCardInstance {
   if ((reason & duelReason.release) !== 0 && isReleasePrevented(state, uid, reason, handlers.createContinuousContext(state))) throw new Error(`Card ${uid} cannot be released`);
   const replacementHandlers = handlers.createReplacementHandlers(state);
-  const replacement = applyReleaseReplacement(state, uid, controller, reason, reasonPlayer, replacementHandlers);
+  const replacement = applyReleaseReplacement(state, uid, controller, reason, reasonPlayer, replacementHandlers, payload);
   if (replacement) return replacement;
-  const sendReplacement = applySendReplacement(state, uid, controller, reason, reasonPlayer, replacementHandlers);
+  const sendReplacement = applySendReplacement(state, uid, controller, reason, reasonPlayer, replacementHandlers, payload);
   if (sendReplacement) return sendReplacement;
   const createContext = handlers.createContinuousContext(state);
   const callbackRedirect = applyToGraveCallbackRedirect(state, uid, controller, reason, reasonPlayer, handlers);
@@ -73,13 +74,14 @@ export function destroyCoreDuelCard(
   reasonPlayer: PlayerId | undefined,
   handlers: CoreMovementHandlers,
   destination: DuelLocation = "graveyard",
+  payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {},
 ): DuelCardInstance {
   const replacementHandlers = handlers.createReplacementHandlers(state);
   const indestructible = applyDestroyPrevention(state, uid, controller, reason, reasonPlayer, replacementHandlers);
   if (indestructible) return indestructible;
-  const substituteMatches = findApplicableDestroySubstitutes(state, uid, reason, reasonPlayer, replacementHandlers);
+  const substituteMatches = findApplicableDestroySubstitutes(state, uid, reason, reasonPlayer, replacementHandlers, payload);
   if (substituteMatches.length > 0) return applyDestroySubstitutes(state, uid, controller, substituteMatches, handlers);
-  const replacement = applyDestroyReplacement(state, uid, controller, reason, reasonPlayer, replacementHandlers);
+  const replacement = applyDestroyReplacement(state, uid, controller, reason, reasonPlayer, replacementHandlers, payload);
   if (replacement) return replacement;
   const target = findCard(state, uid);
   if (!target) throw new Error(`Card ${uid} is not in the duel`);

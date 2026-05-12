@@ -32,7 +32,7 @@ import { installDuelOverlayApi, removeOverlayReference } from "#lua/duel-api/ove
 import { applyMonsterZoneMask, hasOpenMonsterZone } from "#lua/monster-zone-mask.js";
 import type { CardPosition, DuelCardInstance, DuelEffectContext, DuelEventName, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 const { lua, to_luastring } = fengari;
-type LuaCardMover = (state: DuelState, uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId) => DuelCardInstance;
+type LuaCardMover = (state: DuelState, uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId, payload?: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId">) => DuelCardInstance;
 
 export interface LuaOperationTimingBoundaryHostState {
   activeContext?: DuelEffectContext | undefined;
@@ -51,7 +51,7 @@ export interface LuaDuelMoveApiHostState extends LuaMoveImmunityHostState {
 export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): void {
   lua.lua_pushcfunction(L, (state: unknown) => pushSendToGenericLocation(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("Sendto"));
-  pushMoveHelper(L, "SendtoGrave", session, hostState, (state, uid, controller, reason, reasonPlayer) => sendDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer));
+  pushMoveHelper(L, "SendtoGrave", session, hostState, (state, uid, controller, reason, reasonPlayer, payload) => sendDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer, payload));
   pushDestroyHelper(L, session, hostState, {
     beginMoveStep: beginLuaOperationMoveStep,
     finishMoveStep: finishLuaOperationMoveStep,
@@ -63,7 +63,7 @@ export function installDuelMoveApi(L: unknown, session: DuelSession, hostState: 
   lua.lua_setfield(L, -2, to_luastring("Remove"));
   lua.lua_pushcfunction(L, (state: unknown) => pushRemoveCards(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("RemoveCards"));
-  pushMoveHelper(L, "Release", session, hostState, (state, uid, controller, reason, reasonPlayer) => sendDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer), duelReason.release);
+  pushMoveHelper(L, "Release", session, hostState, (state, uid, controller, reason, reasonPlayer, payload) => sendDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer, payload), duelReason.release);
   pushMoveToLocationHelper(L, "SendtoHand", session, hostState, "hand", 3);
   pushMoveToLocationHelper(L, "SendtoDeck", session, hostState, "deck", 4);
   pushMoveToLocationHelper(L, "SendtoExtraP", session, hostState, "extraDeck", 3);
@@ -164,7 +164,7 @@ function moveGenericDuelCardToLocation(
   reasonPlayer: PlayerId,
   payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId">,
 ): DuelCardInstance {
-  if (location === "graveyard") return sendDuelCardToGraveyard(session.state, uid, controller, reason, reasonPlayer);
+  if (location === "graveyard") return sendDuelCardToGraveyard(session.state, uid, controller, reason, reasonPlayer, payload);
   if (location === "banished") return banishDuelCard(session.state, uid, controller, reason, reasonPlayer);
   return moveDuelCardWithRedirects(session.state, uid, location, controller, reason, reasonPlayer, payload);
 }
@@ -830,7 +830,7 @@ function moveCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDuelMov
     if (luaMoveBlockedByImmunity(L, session, hostState, card, reason)) continue;
     const before = movementSnapshot(card);
     try {
-      const result = mover(session.state, uid, card.controller, reason, reasonPlayer);
+      const result = mover(session.state, uid, card.controller, reason, reasonPlayer, luaEffectReasonPayload(hostState, reason ?? 0, reasonPlayer));
       assignReasonCard(result, hostState);
       if (didMove(result, before)) moved.push(uid);
     } catch {

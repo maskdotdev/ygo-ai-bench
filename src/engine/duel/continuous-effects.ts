@@ -18,6 +18,7 @@ export type ContinuousEffectContextFactory = (
     eventReason?: number;
     eventReasonPlayer?: PlayerId;
     eventDestination?: DuelLocation;
+    eventReasonCardUid?: string; eventReasonEffectId?: number;
   },
 ) => DuelEffectContext;
 

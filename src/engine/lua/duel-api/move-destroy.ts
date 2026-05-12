@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { collectDuelTriggerEffects, destroyDuelCard } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
+import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { luaMoveBlockedByImmunity, type LuaMoveImmunityHostState } from "#lua/duel-api/move-immunity.js";
 import { didMove, movementSnapshot } from "#lua/duel-api/move-card-state.js";
 import { readCardOrGroupUids, readMoveReason, readOptionalPlayer, readSingleDestination } from "#lua/duel-api/move-readers.js";
@@ -49,7 +50,7 @@ function destroyCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDest
     }
     const before = movementSnapshot(card);
     try {
-      const result = destroyDuelCard(session.state, uid, card.controller, reason, reasonPlayer, destination);
+      const result = destroyDuelCard(session.state, uid, card.controller, reason, reasonPlayer, destination, luaEffectReasonPayload(hostState, reason ?? duelReason.destroy, reasonPlayer));
       helpers.assignReasonCard(result, hostState);
       if (didMove(result, before)) moved.push(uid);
     } catch {

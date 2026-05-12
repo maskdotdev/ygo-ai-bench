@@ -492,9 +492,9 @@ function requireDuelMoveAllowed(state: DuelState, uid: string, to: DuelLocation,
   if (!canMoveDuelCardToLocation(state, uid, to, reason)) throw new Error(`Card ${uid} cannot move to ${to}`);
 }
 
-export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId): DuelCardInstance { return sendCoreDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers); }
+export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance { return sendCoreDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers, payload); }
 
-export function destroyDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect | duelReason.destroy, reasonPlayer?: PlayerId, destination: DuelLocation = "graveyard"): DuelCardInstance { return destroyCoreDuelCard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers, destination); }
+export function destroyDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect | duelReason.destroy, reasonPlayer?: PlayerId, destination: DuelLocation = "graveyard", payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance { return destroyCoreDuelCard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers, destination, payload); }
 
 export function banishDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId): DuelCardInstance { return banishCoreDuelCard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers); }
 
@@ -682,7 +682,7 @@ export function changeDuelCardPosition(state: DuelState, player: PlayerId, uid: 
 }
 
 function createContinuousEffectContext(state: DuelState): ContinuousEffectContextFactory {
-  return (effect, source, card, options) => Object.assign(createEffectContext(state, source, effect.controller, undefined, card, [], options?.checkOnly ?? true), options?.eventReason === undefined ? {} : { eventReason: options.eventReason }, options?.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: options.eventReasonPlayer }, options?.eventDestination === undefined ? {} : { eventDestination: options.eventDestination });
+  return (effect, source, card, options) => Object.assign(createEffectContext(state, source, effect.controller, undefined, card, [], options?.checkOnly ?? true), options?.eventReason === undefined ? {} : { eventReason: options.eventReason }, options?.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: options.eventReasonPlayer }, options?.eventDestination === undefined ? {} : { eventDestination: options.eventDestination }, options?.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: options.eventReasonCardUid }, options?.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: options.eventReasonEffectId });
 }
 
 function paySummonOrSetCosts(state: DuelState, player: PlayerId, card: DuelCardInstance, codes: readonly number[]): void { applySummonOrSetCosts(state, player, createContinuousEffectContext(state), card, codes); }
@@ -695,8 +695,8 @@ function canEnterDuelPhase(state: DuelState, player: PlayerId, phase: DuelPhase)
 function createReplacementEffectHandlers(state: DuelState): ReplacementEffectHandlers {
   return {
     createContinuousContext: createContinuousEffectContext(state),
-    createReplacementContext(effect, source, card, checkOnly, reason, destination, reasonPlayer) {
-      return Object.assign(createEffectContext(state, source, effect.controller, undefined, card, [], checkOnly), { eventReason: reason, eventReasonPlayer: reasonPlayer ?? card.controller, eventDestination: destination });
+    createReplacementContext(effect, source, card, checkOnly, reason, destination, reasonPlayer, payload = {}) {
+      return Object.assign(createEffectContext(state, source, effect.controller, undefined, card, [], checkOnly), { eventReason: reason, eventReasonPlayer: reasonPlayer ?? card.controller, eventDestination: destination }, payload.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: payload.eventReasonCardUid }, payload.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: payload.eventReasonEffectId });
     },
     log(action, player, cardName, detail) {
       pushDuelLog(state, action, player, cardName, detail);
