@@ -262,7 +262,8 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const sourceLocationReasonMaskReasonValue = sourceLocationReasonMask?.[2] ? luaNumberExpressionValue(L, index, sourceLocationReasonMask[2]) : undefined;
   if (sourceLocationReasonMaskLocationValue !== undefined && sourceLocationReasonMaskReasonValue !== undefined) return `condition:source-location-reason:${sourceLocationReasonMaskLocationValue}:${sourceLocationReasonMaskReasonValue}`;
   const sourceReasonNot = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsReason\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
-  const sourceReasonNotValue = sourceReasonNot?.[1] ? luaNumberExpressionValue(L, index, sourceReasonNot[1]) : undefined;
+  const localSourceReasonNot = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s+return\\s+not\\s+\\1\\s*:\\s*IsReason\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
+  const sourceReasonNotValue = sourceReasonNot?.[1] ? luaNumberExpressionValue(L, index, sourceReasonNot[1]) : localSourceReasonNot?.[2] ? luaNumberExpressionValue(L, index, localSourceReasonNot[2]) : undefined;
   if (sourceReasonNotValue !== undefined) return `condition:source-reason-not:${sourceReasonNotValue}`;
   const sourceDoubleReason = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s+return\\s+\\1\\s*:\\s*IsReason\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s+and\\s+\\1\\s*:\\s*IsReason\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
   const sourceDoubleReasonValue = sourceDoubleReason?.[2] && sourceDoubleReason[3] ? luaNumberExpressionValue(L, index, `${sourceDoubleReason[2]}|${sourceDoubleReason[3]}`) : undefined;
