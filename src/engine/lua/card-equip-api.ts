@@ -9,6 +9,7 @@ import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary } from "#lua/duel-api/move.js";
 import { pushCardTable } from "#lua/card-table-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
+import type { DuelEventPayload } from "#duel/event-history.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
 
@@ -68,14 +69,17 @@ function pushEquipByEffectAndLimitRegister<EffectRecord extends LuaCardApiEffect
   }
   try {
     markLuaOperationTimingBoundary(session, hostState);
-    moveDuelCard(session.state, equip.uid, "spellTrapZone", player, duelReason.effect, player);
+    const reasonPlayer = hostState.activeContext?.player ?? player;
+    const payload = luaEffectReasonPayload(hostState, duelReason.effect, reasonPlayer);
+    moveDuelCard(session.state, equip.uid, "spellTrapZone", player, duelReason.effect, reasonPlayer);
+    applyReasonPayload(equip, payload);
     equip.equippedToUid = target.uid;
     delete equip.previousEquippedToUid;
     equip.position = "faceUpAttack";
     equip.faceUp = true;
     if (code !== undefined) registerDuelFlagEffect(session.state, { ownerType: "card", ownerId: equip.uid }, code, 0x1fe0000, 0, 0);
     pushDuelLog(session.state, "equip", player, equip.name, `Equipped to ${target.name}`);
-    collectDuelTriggerEffects(session.state, "equipped", equip, luaEffectReasonPayload(hostState, duelReason.effect, hostState.activeContext?.player ?? player));
+    collectDuelTriggerEffects(session.state, "equipped", equip, payload);
     if (hostState.activeContext) hostState.activeOperationMoved = true;
     setOperatedUids(hostState, [equip.uid]);
     lua.lua_pushboolean(L, true);
@@ -85,6 +89,11 @@ function pushEquipByEffectAndLimitRegister<EffectRecord extends LuaCardApiEffect
     lua.lua_pushboolean(L, false);
     return 1;
   }
+}
+
+function applyReasonPayload(card: DuelCardInstance, payload: DuelEventPayload): void {
+  if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
+  if (payload.eventReasonEffectId !== undefined) card.reasonEffectId = payload.eventReasonEffectId;
 }
 
 function pushEquipByEffectLimit<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
