@@ -144,8 +144,9 @@ describe("Lua LP restore helpers", () => {
             e:SetType(EFFECT_TYPE_TRIGGER_O)
             e:SetCode(EVENT_RECOVER)
             e:SetRange(LOCATION_HAND)
-            e:SetOperation(function(e,tp,eg,ep,ev)
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("restored recover trigger " .. ep .. "/" .. ev .. "/" .. Duel.GetLP(0))
+              Debug.Message("restored recover reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(e)
           end
@@ -171,12 +172,14 @@ describe("Lua LP restore helpers", () => {
     expect(host.messages).toContain("recover applied 900");
     expect(session.state.players[0].lifePoints).toBe(7400);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["recoveredLifePoints"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1112, eventPlayer: 0, eventValue: 900 });
+    const starter = session.state.cards.find((card) => card.code === "100");
+    expect(starter).toBeDefined();
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1112, eventPlayer: 0, eventValue: 900, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["recoveredLifePoints"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1112, eventPlayer: 0, eventValue: 900 });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1112, eventPlayer: 0, eventValue: 900, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -198,6 +201,7 @@ describe("Lua LP restore helpers", () => {
 
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored recover trigger 0/900/7400");
+    expect(restored.host.messages).toContain("restored recover reason effect true");
     const staleReplay = applyLuaRestoreResponse(restored, trigger!);
     expect(staleReplay.ok).toBe(false);
     expect(staleReplay.error).toContain("Response is not currently legal");
@@ -347,8 +351,9 @@ describe("Lua LP restore helpers", () => {
             e:SetType(EFFECT_TYPE_TRIGGER_O)
             e:SetCode(EVENT_PAY_LPCOST)
             e:SetRange(LOCATION_HAND)
-            e:SetOperation(function(e,tp,eg,ep,ev)
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("restored cost trigger " .. ep .. "/" .. ev .. "/" .. Duel.GetLP(0))
+              Debug.Message("restored cost reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(e)
           end
@@ -373,12 +378,14 @@ describe("Lua LP restore helpers", () => {
     expect(host.messages).toContain("cost paid 7400");
     expect(session.state.players[0].lifePoints).toBe(7400);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["lifePointCostPaid"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1201, eventPlayer: 0, eventValue: 600 });
+    const starter = session.state.cards.find((card) => card.code === "100");
+    expect(starter).toBeDefined();
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1201, eventPlayer: 0, eventValue: 600, eventReason: 0x80, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["lifePointCostPaid"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1201, eventPlayer: 0, eventValue: 600 });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1201, eventPlayer: 0, eventValue: 600, eventReason: 0x80, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -400,6 +407,7 @@ describe("Lua LP restore helpers", () => {
 
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored cost trigger 0/600/7400");
+    expect(restored.host.messages).toContain("restored cost reason effect true");
     const staleReplay = applyLuaRestoreResponse(restored, trigger!);
     expect(staleReplay.ok).toBe(false);
     expect(staleReplay.error).toContain("Response is not currently legal");
