@@ -28,7 +28,7 @@ import type { DuelCardInstance, DuelEventName, DuelLocation, DuelState, PlayerId
 
 export interface CoreMovementHandlers {
   canMoveCardToLocation(state: DuelState, uid: string, to: DuelLocation, reason: number): boolean;
-  collectTrigger(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void;
+  collectTrigger(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance, options?: DuelEventPayload): void;
   createContinuousContext(state: DuelState): ContinuousEffectContextFactory;
   createReplacementHandlers(state: DuelState): ReplacementEffectHandlers;
 }
@@ -87,13 +87,15 @@ export function destroyCoreDuelCard(
   if (replacement) return replacement;
   const target = findCard(state, uid);
   if (!target) throw new Error(`Card ${uid} is not in the duel`);
-  handlers.collectTrigger(state, "destroying", target);
+  const destroyPayload = { eventReason: reason, eventReasonPlayer: reasonPlayer ?? target.controller, ...payload };
+  handlers.collectTrigger(state, "destroying", target, destroyPayload);
   const createContext = handlers.createContinuousContext(state);
   const battleRedirectLocation = (reason & duelReason.battle) !== 0 ? battleDestroyRedirectLocation(state, uid, createContext) : undefined;
   if (battleRedirectLocation && battleRedirectLocation.location !== "graveyard") {
     const moveReason = reason | duelReason.redirect;
     requireCoreDuelMoveAllowed(state, uid, battleRedirectLocation.location, moveReason, handlers);
     const { card, lostTargetEquipUids, controlReturnTargetUids } = moveDuelCardWithLostTargetCapture(state, uid, battleRedirectLocation.location, controller, moveReason, reasonPlayer, createContext);
+    assignReasonPayload(card, payload);
     applyRedirectDeckSequence(state, card, battleRedirectLocation);
     pushDuelLog(state, "destroy", card.controller, card.name, `Destroyed and moved to ${battleRedirectLocation.location}`);
     collectLeaveFieldTriggers(state, card, handlers);
@@ -110,6 +112,7 @@ export function destroyCoreDuelCard(
     const moveReason = redirectLocation ? reason | duelReason.redirect : reason;
     requireCoreDuelMoveAllowed(state, uid, moveDestination, moveReason, handlers);
     const { card, lostTargetEquipUids, controlReturnTargetUids } = moveDuelCardWithLostTargetCapture(state, uid, moveDestination, controller, moveReason, reasonPlayer, createContext);
+    assignReasonPayload(card, payload);
     applyRedirectDeckSequence(state, card, redirectLocation);
     pushDuelLog(state, "destroy", card.controller, card.name, `Destroyed and moved to ${moveDestination}`);
     collectLeaveFieldTriggers(state, card, handlers);
@@ -122,11 +125,13 @@ export function destroyCoreDuelCard(
   }
   const callbackRedirect = applyToGraveCallbackRedirect(state, uid, controller, reason, reasonPlayer, handlers);
   if (callbackRedirect) {
+    assignReasonPayload(callbackRedirect, payload);
     handlers.collectTrigger(state, "destroyed", callbackRedirect);
     return callbackRedirect;
   }
   requireCoreDuelMoveAllowed(state, uid, "graveyard", reason, handlers);
   const { card, lostTargetEquipUids, controlReturnTargetUids } = moveDuelCardWithLostTargetCapture(state, uid, "graveyard", controller, reason, reasonPlayer, createContext);
+  assignReasonPayload(card, payload);
   pushDuelLog(state, "destroy", card.controller, card.name, "Destroyed");
   collectLeaveFieldTriggers(state, card, handlers);
   collectLeaveGraveyardTriggers(state, card, handlers);
@@ -135,6 +140,11 @@ export function destroyCoreDuelCard(
   handlers.collectTrigger(state, "sentToGraveyard", card);
   applyPostMoveSideEffects(state, lostTargetEquipUids, controlReturnTargetUids, handlers);
   return card;
+}
+
+function assignReasonPayload(card: DuelCardInstance, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId">): void {
+  if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
+  if (payload.eventReasonEffectId !== undefined) card.reasonEffectId = payload.eventReasonEffectId;
 }
 
 function applyDestroySubstitutes(

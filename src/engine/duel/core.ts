@@ -215,7 +215,7 @@ const coreBattleHandlers: CoreBattleHandlers = {
 
 const coreMovementHandlers: CoreMovementHandlers = {
   canMoveCardToLocation: canMoveDuelCardToLocation,
-  collectTrigger: (state, eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
+  collectTrigger: (state, eventName, eventCard, options) => collectTriggerEffects(state, eventName, eventCard, options),
   createContinuousContext: createContinuousEffectContext,
   createReplacementHandlers: createReplacementEffectHandlers,
 };
@@ -729,8 +729,8 @@ export function collectDuelGroupedTriggerEffects(state: DuelState, eventName: Du
 function collectBattleEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance | DuelCardInstance[], payload: DuelEventPayload = {}): void {
   Array.isArray(eventCard) ? collectDuelGroupedTriggerEffects(state, eventName, eventCard, payload) : collectDuelTriggerEffects(state, eventName, eventCard, payload);
 }
-function collectTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance): void {
-  collectDuelTriggerEffects(state, eventName, eventCard);
+function collectTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance, options?: DuelEventPayload): void {
+  collectDuelTriggerEffects(state, eventName, eventCard, options);
 }
 function executeContinuousPhaseEffects(state: DuelState, phase: DuelPhase): void {
   const code = 0x1000 | phaseMask(phase);

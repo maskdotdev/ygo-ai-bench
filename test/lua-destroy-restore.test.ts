@@ -38,8 +38,9 @@ describe("Lua destroy restore helpers", () => {
             e:SetType(EFFECT_TYPE_TRIGGER_O)
             e:SetCode(EVENT_DESTROY)
             e:SetRange(LOCATION_HAND)
-            e:SetOperation(function(e,tp,eg)
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("restored destroying trigger " .. eg:GetFirst():GetCode())
+              Debug.Message("restored destroying reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(e)
           end
@@ -66,15 +67,21 @@ describe("Lua destroy restore helpers", () => {
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
     applyAndAssert(session, action!);
+    const starter = session.state.cards.find((card) => card.code === "100");
+    expect(starter).toBeDefined();
     const destroyed = session.state.cards.find((card) => card.code === "200");
     expect(destroyed).toMatchObject({ location: "graveyard", controller: 1 });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toContain("destroying");
-    expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventCode: 1010, eventCardUid: destroyed!.uid }));
+    expect(session.state.pendingTriggers).toContainEqual(
+      expect.objectContaining({ eventCode: 1010, eventCardUid: destroyed!.uid, eventReason: 0x41, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 }),
+    );
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toContain("destroying");
-    expect(restored.session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventCode: 1010, eventCardUid: destroyed!.uid }));
+    expect(restored.session.state.pendingTriggers).toContainEqual(
+      expect.objectContaining({ eventCode: 1010, eventCardUid: destroyed!.uid, eventReason: 0x41, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 }),
+    );
     expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
     expect(queryPublicState(restored.session).triggerOrderPrompt).toEqual(queryPublicState(session).triggerOrderPrompt);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
@@ -98,6 +105,7 @@ describe("Lua destroy restore helpers", () => {
 
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored destroying trigger 200");
+    expect(restored.host.messages).toContain("restored destroying reason effect true");
     const staleReplay = applyLuaRestoreResponse(restored, trigger!);
     expect(staleReplay.ok).toBe(false);
     expect(staleReplay.error).toContain("Response is not currently legal");
@@ -138,8 +146,9 @@ describe("Lua destroy restore helpers", () => {
             e:SetType(EFFECT_TYPE_TRIGGER_O)
             e:SetCode(EVENT_DESTROYED)
             e:SetRange(LOCATION_HAND)
-            e:SetOperation(function(e,tp,eg)
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("restored destroyed trigger " .. eg:GetFirst():GetCode())
+              Debug.Message("restored destroyed reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(e)
           end
@@ -166,15 +175,21 @@ describe("Lua destroy restore helpers", () => {
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
     applyAndAssert(session, action!);
+    const starter = session.state.cards.find((card) => card.code === "100");
+    expect(starter).toBeDefined();
     const destroyed = session.state.cards.find((card) => card.code === "200");
     expect(destroyed).toMatchObject({ location: "graveyard", controller: 1 });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toContain("destroyed");
-    expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventCode: 1029, eventCardUid: destroyed!.uid }));
+    expect(session.state.pendingTriggers).toContainEqual(
+      expect.objectContaining({ eventCode: 1029, eventCardUid: destroyed!.uid, eventReason: 0x41, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 }),
+    );
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toContain("destroyed");
-    expect(restored.session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventCode: 1029, eventCardUid: destroyed!.uid }));
+    expect(restored.session.state.pendingTriggers).toContainEqual(
+      expect.objectContaining({ eventCode: 1029, eventCardUid: destroyed!.uid, eventReason: 0x41, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 }),
+    );
     expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
     expect(queryPublicState(restored.session).triggerOrderPrompt).toEqual(queryPublicState(session).triggerOrderPrompt);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
@@ -198,6 +213,7 @@ describe("Lua destroy restore helpers", () => {
 
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored destroyed trigger 200");
+    expect(restored.host.messages).toContain("restored destroyed reason effect true");
     const staleReplay = applyLuaRestoreResponse(restored, trigger!);
     expect(staleReplay.ok).toBe(false);
     expect(staleReplay.error).toContain("Response is not currently legal");
