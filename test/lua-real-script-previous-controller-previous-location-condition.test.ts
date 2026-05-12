@@ -31,6 +31,65 @@ function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInsta
 }
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script previous controller previous location condition", () => {
+  it("restores comma-local previous-controller previous-location checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const darkTinkerCode = "76614003";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === darkTinkerCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 7662, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [darkTinkerCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const darkTinker = session.state.cards.find((card) => card.code === darkTinkerCode);
+    expect(darkTinker).toBeDefined();
+    moveDuelCard(session.state, darkTinker!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, darkTinker!.uid, "graveyard", 0);
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${darkTinkerCode}),0,LOCATION_GRAVE,0,nil)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+      e:SetCondition(function(e)
+        local c,tp=e:GetHandler(),e:GetHandlerPlayer()
+        return c:IsPreviousControler(tp) and c:IsPreviousLocation(LOCATION_ONFIELD)
+      end)
+      e:SetValue(aux.tgoval)
+      c:RegisterEffect(e)
+      `,
+      "dark-tinker-comma-local-previous-controller-location-condition.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    const descriptor = `condition:source-previous-controller-previous-location:${locationOnField}`;
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          luaConditionDescriptor: descriptor,
+          luaValueDescriptor: "cannot-be-effect-target:opponent",
+          sourceUid: darkTinker!.uid,
+        }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredDarkTinker = restored.session.state.cards.find((card) => card.code === darkTinkerCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === darkTinker!.uid && candidate.luaConditionDescriptor === descriptor);
+    expect(effect).toMatchObject({ luaValueDescriptor: "cannot-be-effect-target:opponent" });
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = conditionContext(restored.session.state, restoredDarkTinker!);
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredDarkTinker!.previousLocation = "spellTrapZone";
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredDarkTinker!.previousLocation = "deck";
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restoredDarkTinker!.previousLocation = "monsterZone";
+    restoredDarkTinker!.previousController = 1;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
+
   it("restores previous-controller previous-location checks", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const darkTinkerCode = "76614003";
