@@ -74,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     restoredMinar!.reasonPlayer = 1;
     restoredMinar!.reason = duelReason.discard;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventReason: discardEffectReason })).toBe(true);
     restoredMinar!.reason = discardEffectReason;
     restoredMinar!.previousLocation = "deck";
     expect(effect!.canActivate!(ctx)).toBe(false);

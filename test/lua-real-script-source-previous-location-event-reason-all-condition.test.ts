@@ -70,6 +70,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredKahkki!.reason = duelReason.discard;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventReason: discardEffectReason })).toBe(true);
     restoredKahkki!.reason = duelReason.effect;
     expect(effect!.canActivate!(ctx)).toBe(false);
     restoredKahkki!.reason = discardEffectReason;

@@ -69,6 +69,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredGanashia!.reason = duelReason.effect;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventReason: duelReason.discard })).toBe(true);
     restoredGanashia!.reason = duelReason.discard;
     restoredGanashia!.previousLocation = "deck";
     expect(effect!.canActivate!(ctx)).toBe(false);

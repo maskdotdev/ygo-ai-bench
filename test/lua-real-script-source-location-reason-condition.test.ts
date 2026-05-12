@@ -92,6 +92,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
       expect(effect.canActivate!(ctx)).toBe(true);
       restoredPanzer!.reason = duelReason.effect;
       expect(effect.canActivate!(ctx)).toBe(false);
+      expect(effect.canActivate!({ ...ctx, eventReason: duelReason.battle })).toBe(true);
       restoredPanzer!.reason = duelReason.battle;
       moveDuelCard(restored.session.state, restoredPanzer!.uid, "hand", 0);
       expect(effect.canActivate!(ctx)).toBe(false);

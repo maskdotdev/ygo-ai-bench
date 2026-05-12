@@ -84,6 +84,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(restoredEffect!.canActivate!(ctx)).toBe(true);
     restoredPanzer!.reason = duelReason.effect | duelReason.battle;
     expect(restoredEffect!.canActivate!(ctx)).toBe(false);
+    expect(restoredEffect!.canActivate!({ ...ctx, eventReason: duelReason.effect })).toBe(true);
     restoredPanzer!.reason = duelReason.effect;
     restoredPanzer!.previousLocation = "hand";
     expect(restoredEffect!.canActivate!(ctx)).toBe(false);
