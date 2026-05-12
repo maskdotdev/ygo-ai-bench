@@ -107,8 +107,9 @@ describe("Lua become-target events", () => {
             e:SetType(EFFECT_TYPE_TRIGGER_O)
             e:SetCode(EVENT_BECOME_TARGET)
             e:SetRange(LOCATION_HAND)
-            e:SetOperation(function(e,tp,eg)
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("restored become target trigger " .. eg:GetFirst():GetCode())
+              Debug.Message("restored become target reason " .. tostring(r==0x400) .. "/" .. tostring(rp==0))
             end)
             c:RegisterEffect(e)
           end
@@ -132,15 +133,22 @@ describe("Lua become-target events", () => {
     expect(host.messages).toContain("restored target effect resolved 200");
 
     const target = session.state.cards.find((card) => card.code === "200");
+    const starter = session.state.cards.find((card) => card.code === "100");
     expect(target).toBeDefined();
+    expect(starter).toBeDefined();
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["becameTarget"]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1028, eventCardUid: target!.uid, eventReason: 0x400, eventReasonPlayer: 0 });
+    expect(session.state.pendingTriggers[0]).not.toHaveProperty("eventReasonCardUid");
+    expect(session.state.pendingTriggers[0]).not.toHaveProperty("eventReasonEffectId");
     const originalTrigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(originalTrigger).toBeDefined();
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["becameTarget"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1028, eventCardUid: target!.uid });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1028, eventCardUid: target!.uid, eventReason: 0x400, eventReasonPlayer: 0 });
+    expect(restored.session.state.pendingTriggers[0]).not.toHaveProperty("eventReasonCardUid");
+    expect(restored.session.state.pendingTriggers[0]).not.toHaveProperty("eventReasonEffectId");
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -152,8 +160,10 @@ describe("Lua become-target events", () => {
     expect(originalTriggerPreapply.error).toContain("Response is not currently legal");
     assertPublicRestoreMetadata(restored, originalTriggerPreapply);
     expect(originalTriggerPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(restored.host.messages).not.toContain("restored become target reason true/true");
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored become target trigger 200");
+    expect(restored.host.messages).toContain("restored become target reason true/true");
   });
 
   it("makes Lua optional when become-target triggers miss timing after later event boundaries", () => {
