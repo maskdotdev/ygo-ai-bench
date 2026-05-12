@@ -6,6 +6,72 @@ import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua return-to-grave events", () => {
+  it("preserves active Lua reason source metadata for return-to-grave triggers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Return Reason Source", kind: "monster" },
+      { code: "200", name: "Return Reason Target", kind: "monster" },
+      { code: "300", name: "Return Reason Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 289, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "300"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          local tc=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 200), tp, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+          Duel.Remove(tc, POS_FACEUP, REASON_EFFECT+REASON_TEMPORARY)
+          Duel.ReturnToGrave(tc)
+          Debug.Message("return reason source " .. tostring(tc:GetReasonCard()==c) .. "/" .. tostring(tc:GetReasonEffect()==source_effect))
+        end)
+        source_effect=e
+        c:RegisterEffect(e)
+      end
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_RETURN_TO_GRAVE)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          local returned=eg:GetFirst()
+          Debug.Message("return event reason source " .. tostring(returned:GetReasonCard():IsCode(100)) .. "/" .. tostring(returned:GetReasonEffect()==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "return-to-grave-reason-source.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const source = session.state.cards.find((card) => card.code === "100");
+    const target = session.state.cards.find((card) => card.code === "200");
+    const watcher = session.state.cards.find((card) => card.code === "300");
+    expect(source).toBeDefined();
+    expect(target).toBeDefined();
+    expect(watcher).toBeDefined();
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    expect(host.messages).toContain("return reason source true/true");
+    expect(session.state.pendingTriggers).toContainEqual(
+      expect.objectContaining({ eventName: "returnedToGraveyard", eventCardUid: target!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }),
+    );
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === watcher!.uid);
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain("return event reason source true/true");
+  });
+
   it("queues return-to-grave triggers when Lua returns a banished card to the Graveyard", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Return Source", kind: "monster" },
