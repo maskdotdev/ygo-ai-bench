@@ -83,6 +83,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     restoredMikorange!.previousController = 0;
     restoredMikorange!.reason = duelReason.effect;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventReason: duelReason.destroy })).toBe(true);
   });
 
   it("restores destroyed-by-opponent previous-controller checks", () => {
@@ -170,6 +171,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     restoredNova!.reasonPlayer = 1;
     restoredNova!.reason = duelReason.destroy;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventReason: duelReason.effect })).toBe(true);
   });
 
   it("restores local-handler opponent reason previous-controller checks", () => {

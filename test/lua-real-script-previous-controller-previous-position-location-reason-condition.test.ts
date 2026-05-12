@@ -90,6 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     restoredGigastone!.previousLocation = "monsterZone";
     restoredGigastone!.reason = duelReason.battle;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventReason: duelReason.destroy })).toBe(true);
   });
 
   it("restores previous-controller previous-position previous-location reason checks", () => {

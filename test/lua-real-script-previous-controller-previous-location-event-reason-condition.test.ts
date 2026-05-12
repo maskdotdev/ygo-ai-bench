@@ -70,6 +70,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredCupidVolley!.reason = duelReason.effect;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventReason: duelReason.destroy })).toBe(true);
     restoredCupidVolley!.reason = duelReason.destroy;
     restoredCupidVolley!.previousLocation = "hand";
     expect(effect!.canActivate!(ctx)).toBe(false);

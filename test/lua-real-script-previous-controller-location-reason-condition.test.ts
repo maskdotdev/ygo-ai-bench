@@ -83,6 +83,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     restoredDefender!.previousController = 0;
     restoredDefender!.reason = duelReason.effect;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventReason: duelReason.battle })).toBe(true);
   });
 
   it("restores previous-controller current-location battle-reason checks", () => {

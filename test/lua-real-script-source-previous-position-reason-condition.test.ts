@@ -77,6 +77,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(restoredEffect!.canActivate!(ctx)).toBe(true);
     restoredGiantKozaky!.reason = duelReason.battle;
     expect(restoredEffect!.canActivate!(ctx)).toBe(false);
+    expect(restoredEffect!.canActivate!({ ...ctx, eventReason: duelReason.destroy })).toBe(true);
     restoredGiantKozaky!.reason = duelReason.destroy;
     restoredGiantKozaky!.previousPosition = "faceDownDefense";
     expect(restoredEffect!.canActivate!(ctx)).toBe(false);

@@ -79,6 +79,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredWisp!.reason = duelReason.effect;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventReason: duelReason.battle })).toBe(true);
     restoredWisp!.reason = duelReason.battle;
     restoredWisp!.location = "monsterZone";
     expect(effect!.canActivate!(ctx)).toBe(false);
