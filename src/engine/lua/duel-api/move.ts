@@ -539,7 +539,7 @@ function pushActivateFieldSpell(L: unknown, session: DuelSession, hostState: Lua
     return 1;
   }
 
-  const moved = moveDuelCardWithRedirects(session.state, uid, "spellTrapZone", targetPlayer, duelReason.rule, activatingPlayer);
+  const moved = moveDuelCardWithRedirects(session.state, uid, "spellTrapZone", targetPlayer, duelReason.rule, activatingPlayer, luaEffectReasonPayload(hostState, duelReason.rule, activatingPlayer));
   moved.position = "faceUpAttack";
   moved.faceUp = true;
   finishLuaOperationMoveStep(hostState, true);

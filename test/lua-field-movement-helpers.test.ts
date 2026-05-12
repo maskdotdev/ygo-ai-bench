@@ -140,6 +140,71 @@ describe("Lua field movement helpers", () => {
     expect(host.messages).toContain("return field event reason source true/true");
   });
 
+  it("preserves active Lua reason source metadata for ActivateFieldSpell move events", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "ActivateFieldSpell Reason Source", kind: "monster" },
+      { code: "200", name: "ActivateFieldSpell Reason Target", kind: "spell", typeFlags: 0x80002 },
+      { code: "300", name: "ActivateFieldSpell Reason Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 292, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "300"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          local target=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 200), tp, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+          Duel.ActivateFieldSpell(target, nil, tp)
+          Debug.Message("activate field spell reason source " .. tostring(target:GetReasonCard()==c) .. "/" .. tostring(target:GetReasonEffect()==source_effect))
+        end)
+        source_effect=e
+        c:RegisterEffect(e)
+      end
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_MOVE)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          local moved=eg:GetFirst()
+          Debug.Message("activate field spell event reason source " .. tostring(moved:GetReasonCard():IsCode(100)) .. "/" .. tostring(moved:GetReasonEffect()==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "activate-field-spell-reason-source.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const source = session.state.cards.find((card) => card.code === "100");
+    const target = session.state.cards.find((card) => card.code === "200");
+    const watcher = session.state.cards.find((card) => card.code === "300");
+    expect(source).toBeDefined();
+    expect(target).toBeDefined();
+    expect(watcher).toBeDefined();
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    expect(host.messages).toContain("activate field spell reason source true/true");
+    expect(session.state.pendingTriggers).toContainEqual(
+      expect.objectContaining({ eventName: "moved", eventCardUid: target!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }),
+    );
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === watcher!.uid);
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain("activate field spell event reason source true/true");
+  });
+
   it("lets Lua scripts move cards onto field zones", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Field Filler A", kind: "monster" },
