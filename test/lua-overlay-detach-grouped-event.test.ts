@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData, DuelSession } from "#duel/types.js";
 
 describe("Lua overlay detach grouped events", () => {
@@ -88,17 +89,19 @@ describe("Lua overlay detach grouped events", () => {
 
   it("collects one grouped detach and grave event for Card.RemoveOverlayCard", () => {
     const fixture = createOverlayDetachFixture();
-    const loaded = fixture.host.loadScript(
-      `
-      local xyz=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 920), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
-      ${registerGroupedWatchers()}
-      Debug.Message("card detach grouped " .. xyz:RemoveOverlayCard(0, 2, 2, REASON_EFFECT))
-      `,
-      "card-overlay-detach-grouped-event.lua",
-    );
-    expect(loaded.ok, loaded.error).toBe(true);
+    const sourceScripts = createGroupedDetachScripts("card", "local xyz=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 920), tp, LOCATION_MZONE, 0, 1, 1, nil):GetFirst() return xyz:RemoveOverlayCard(tp, 2, 2, REASON_EFFECT)");
+    for (const code of [300, 301, 920]) {
+      const loaded = fixture.host.loadCardScript(code, sourceScripts);
+      expect(loaded.ok, loaded.error).toBe(true);
+    }
+    expect(fixture.host.registerInitialEffects()).toBe(3);
 
-    assertGroupedDetach(fixture.session, fixture.host, "card detach grouped 2");
+    const detachWatcher = fixture.session.state.cards.find((card) => card.code === "300");
+    const detachAction = getDuelLegalActions(fixture.session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === detachWatcher!.uid);
+    expect(detachAction).toBeDefined();
+    applyAndAssert(fixture.session, detachAction!);
+
+    assertGroupedDetach(fixture.session, fixture.host, "card detach grouped 2", { sourceScripts, cards: fixture.cards });
   });
 
   it("collects one grouped detach and grave event for Duel.RemoveOverlayCard", () => {
@@ -138,7 +141,7 @@ function createOverlayDetachFixture() {
     xyz!.overlayUids.push(material!.uid);
   }
 
-  return { session, host: createLuaScriptHost(session) };
+  return { session, host: createLuaScriptHost(session), cards };
 }
 
 function registerGroupedWatchers(): string {
@@ -166,9 +169,63 @@ function registerGroupedWatchers(): string {
   `;
 }
 
-function assertGroupedDetach(session: DuelSession, host: ReturnType<typeof createLuaScriptHost>, message: string): void {
+function createGroupedDetachScripts(label: string, detachCall: string): { readScript(name: string): string | undefined } {
+  return {
+    readScript(name: string) {
+      if (name === "c300.lua") return `
+      c300={}
+      function c300.initial_effect(c)
+      local detach=Effect.CreateEffect(c)
+      detach:SetType(EFFECT_TYPE_IGNITION)
+      detach:SetRange(LOCATION_HAND)
+      detach:SetOperation(function(e,tp)
+        Debug.Message("${label} detach grouped " .. (function() ${detachCall} end)())
+      end)
+      c:RegisterEffect(detach)
+
+      local detach_effect=Effect.CreateEffect(c)
+      detach_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      detach_effect:SetCode(EVENT_DETACH_MATERIAL)
+      detach_effect:SetRange(LOCATION_HAND)
+      detach_effect:SetOperation(function(e,tp,eg)
+        Debug.Message("detach group " .. eg:GetCount())
+      end)
+      c:RegisterEffect(detach_effect)
+      end
+      `;
+      if (name === "c301.lua") return `
+      c301={}
+      function c301.initial_effect(c)
+      local grave_effect=Effect.CreateEffect(c)
+      grave_effect:SetType(EFFECT_TYPE_TRIGGER_O)
+      grave_effect:SetCode(EVENT_TO_GRAVE)
+      grave_effect:SetRange(LOCATION_HAND)
+      grave_effect:SetOperation(function(e,tp,eg)
+        Debug.Message("grave group " .. eg:GetCount())
+      end)
+      c:RegisterEffect(grave_effect)
+      end
+      `;
+      if (name === "c920.lua") return `
+      c920={}
+      function c920.initial_effect(c)
+      end
+      `;
+      return undefined;
+    },
+  };
+}
+
+function assertGroupedDetach(
+  session: DuelSession,
+  host: ReturnType<typeof createLuaScriptHost>,
+  message: string,
+  restore?: { sourceScripts: { readScript(name: string): string | undefined }; cards: DuelCardData[] },
+): void {
   const first = session.state.cards.find((card) => card.code === "100");
   const second = session.state.cards.find((card) => card.code === "101");
+  const detachWatcher = session.state.cards.find((card) => card.code === "300");
+  const graveWatcher = session.state.cards.find((card) => card.code === "301");
   expect(host.messages).toContain(message);
   expect(first).toMatchObject({ location: "graveyard" });
   expect(second).toMatchObject({ location: "graveyard" });
@@ -181,13 +238,41 @@ function assertGroupedDetach(session: DuelSession, host: ReturnType<typeof creat
     ]),
   );
 
+  if (restore) {
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), restore.sourceScripts, createCardReader(restore.cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state.pendingTriggers).toHaveLength(2);
+    for (const trigger of restored.session.state.pendingTriggers) expect(trigger.eventUids).toEqual([first!.uid, second!.uid]);
+    expect(restored.session.state.pendingTriggers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceUid: graveWatcher!.uid, eventName: "sentToGraveyard", eventCardUid: first!.uid }),
+        expect.objectContaining({ sourceUid: detachWatcher!.uid, eventName: "detachedMaterial", eventCardUid: first!.uid }),
+      ]),
+    );
+    activateAllRestoredTriggers(restored);
+    expect(restored.host.messages).toEqual(expect.arrayContaining(["detach group 2", "grave group 2"]));
+  }
+
+  activateAllTriggers(session);
+  expect(host.messages).toEqual(expect.arrayContaining(["detach group 2", "grave group 2"]));
+}
+
+function activateAllTriggers(session: DuelSession): void {
   for (;;) {
     const player = session.state.waitingFor ?? 0;
     const trigger = getDuelLegalActions(session, player).find((candidate) => candidate.type === "activateTrigger");
     if (!trigger) break;
     applyAndAssert(session, trigger);
   }
-  expect(host.messages).toEqual(expect.arrayContaining(["detach group 2", "grave group 2"]));
+}
+
+function activateAllRestoredTriggers(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  for (;;) {
+    const player = restored.session.state.waitingFor ?? 0;
+    const trigger = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "activateTrigger");
+    if (!trigger) break;
+    applyLuaRestoreAndAssert(restored, trigger);
+  }
 }
 
 function applyAndAssert(session: DuelSession, action: Parameters<typeof applyResponse>[1]) {
@@ -196,5 +281,15 @@ function applyAndAssert(session: DuelSession, action: Parameters<typeof applyRes
   expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, response.state.waitingFor!));
+  expect(queryPublicState(restored.session)).toEqual(response.state);
   return response;
 }
