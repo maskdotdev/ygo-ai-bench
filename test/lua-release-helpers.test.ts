@@ -221,8 +221,9 @@ describe("Lua release helpers", () => {
             e:SetType(EFFECT_TYPE_TRIGGER_O)
             e:SetCode(EVENT_RELEASE)
             e:SetRange(LOCATION_HAND)
-            e:SetOperation(function(e,tp,eg)
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("restored release trigger " .. eg:GetFirst():GetCode())
+              Debug.Message("restored release reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(e)
           end
@@ -256,12 +257,12 @@ describe("Lua release helpers", () => {
     expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "graveyard" });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["released"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1017, eventCardUid: target!.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1017, eventCardUid: target!.uid, eventReason: 0x82, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["released"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1017, eventCardUid: target!.uid });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1017, eventCardUid: target!.uid, eventReason: 0x82, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
     expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
     expect(queryPublicState(restored.session).triggerOrderPrompt).toEqual(queryPublicState(session).triggerOrderPrompt);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getLegalActions(restored.session, 0));
@@ -283,6 +284,7 @@ describe("Lua release helpers", () => {
 
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored release trigger 200");
+    expect(restored.host.messages).toContain("restored release reason effect true");
   });
 
   it("makes Lua optional when release triggers miss timing after later event boundaries", () => {
