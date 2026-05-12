@@ -31,6 +31,75 @@ function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance
 }
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Checksum Dragon position indestructible", () => {
+  it("restores local-handler Attack Position and Defense Position predicates", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const checksumDragonCode = "94136469";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === checksumDragonCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 942, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [checksumDragonCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const checksumDragon = session.state.cards.find((card) => card.code === checksumDragonCode);
+    expect(checksumDragon).toBeDefined();
+    moveDuelCard(session.state, checksumDragon!.uid, "monsterZone", 0);
+    checksumDragon!.faceUp = true;
+    checksumDragon!.position = "faceUpAttack";
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${checksumDragonCode}),0,LOCATION_MZONE,0,nil)
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_SINGLE)
+      e1:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+      e1:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+      e1:SetRange(LOCATION_MZONE)
+      e1:SetCondition(function(e)
+        local c=e:GetHandler()
+        return c:IsAttackPos()
+      end)
+      e1:SetValue(aux.tgoval)
+      c:RegisterEffect(e1)
+      local e2=Effect.CreateEffect(c)
+      e2:SetType(EFFECT_TYPE_SINGLE)
+      e2:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+      e2:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+      e2:SetRange(LOCATION_MZONE)
+      e2:SetCondition(function(e)
+        local c=e:GetHandler()
+        return c:IsDefensePos()
+      end)
+      e2:SetValue(aux.tgoval)
+      c:RegisterEffect(e2)
+      `,
+      "checksum-dragon-official-local-position-indestructible.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ event: "continuous", code: 71, luaConditionDescriptor: "condition:source-attack-position" }),
+        expect.objectContaining({ event: "continuous", code: 71, luaConditionDescriptor: "condition:source-defense-position" }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredDragon = restored.session.state.cards.find((card) => card.code === checksumDragonCode);
+    const attackEffect = restored.session.state.effects.find((effect) => effect.sourceUid === checksumDragon!.uid && effect.code === 71 && effect.luaConditionDescriptor === "condition:source-attack-position");
+    const defenseEffect = restored.session.state.effects.find((effect) => effect.sourceUid === checksumDragon!.uid && effect.code === 71 && effect.luaConditionDescriptor === "condition:source-defense-position");
+    expect(attackEffect?.canActivate).toBeDefined();
+    expect(defenseEffect?.canActivate).toBeDefined();
+    const ctx = targetContext(restored.session.state, restoredDragon!);
+    expect(attackEffect!.canActivate!(ctx)).toBe(true);
+    expect(defenseEffect!.canActivate!(ctx)).toBe(false);
+    restoredDragon!.position = "faceUpDefense";
+    expect(attackEffect!.canActivate!(ctx)).toBe(false);
+    expect(defenseEffect!.canActivate!(ctx)).toBe(true);
+    restoredDragon!.position = "faceDownDefense";
+    expect(defenseEffect!.canActivate!(ctx)).toBe(true);
+  });
+
   it("restores its Attack Position-only battle indestructible effect", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const checksumDragonCode = "94136469";

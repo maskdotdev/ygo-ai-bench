@@ -20,9 +20,9 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const equippedTargetRaceValue = equippedTargetRace?.[2] ? luaNumberTokenValue(L, index, equippedTargetRace[2]) : undefined;
   if (equippedTargetRaceValue !== undefined) return `condition:equipped-target-race:${equippedTargetRaceValue}`;
   if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetEquipTarget\s*\(\s*\)/.test(snippet)) return "condition:source-equipped";
-  if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsFaceup\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-faceup";
-  if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsAttackPos\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-attack-position";
-  if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsDefensePos\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-defense-position";
+  if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsFaceup\s*\(\s*\)\s*(?:end\b|$)/.test(snippet) || /\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s+return\s+\1\s*:\s*IsFaceup\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-faceup";
+  if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsAttackPos\s*\(\s*\)\s*(?:end\b|$)/.test(snippet) || /\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s+return\s+\1\s*:\s*IsAttackPos\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-attack-position";
+  if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsDefensePos\s*\(\s*\)\s*(?:end\b|$)/.test(snippet) || /\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s+return\s+\1\s*:\s*IsDefensePos\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-defense-position";
   const sourceLocationNot = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s*(?:end\\b|$)`));
   const localSourceLocationNot = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s+return\\s+not\\s+\\1\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s*(?:end\\b|$)`));
   const sourceLocationNotValue = sourceLocationNot?.[1] ? luaNumberExpressionValue(L, index, sourceLocationNot[1]) : localSourceLocationNot?.[2] ? luaNumberExpressionValue(L, index, localSourceLocationNot[2]) : undefined;
