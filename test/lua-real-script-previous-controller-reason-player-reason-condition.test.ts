@@ -223,4 +223,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     restoredFalcon!.reason = duelReason.effect;
     expect(effect!.canActivate!(ctx)).toBe(false);
   });
+
+  it("restores local-handler GetReasonPlayer opponent reason checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const mikorangeCode = "47077318";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === mikorangeCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 4707, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [mikorangeCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const mikorange = session.state.cards.find((card) => card.code === mikorangeCode);
+    expect(mikorange).toBeDefined();
+    moveDuelCard(session.state, mikorange!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, mikorange!.uid, "graveyard", 0, duelReason.destroy, 1);
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadCardScript(Number(mikorangeCode), workspace);
+    expect(register.ok, register.error).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const descriptor = `condition:source-previous-controller-reason-player-reason:${duelReason.destroy}:opponent`;
+    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: mikorange!.uid })]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredMikorange = restored.session.state.cards.find((card) => card.code === mikorangeCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === mikorange!.uid && candidate.luaConditionDescriptor === descriptor);
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = conditionContext(restored.session.state, restoredMikorange!);
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredMikorange!.reasonPlayer = 0;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restoredMikorange!.reasonPlayer = 1;
+    restoredMikorange!.reason = duelReason.effect;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
 });
