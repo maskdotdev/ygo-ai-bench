@@ -166,6 +166,69 @@ describe("Lua SendtoGrave grouped events", () => {
     expect(host.messages).toEqual(expect.arrayContaining(["operation first group 2", "operation second group 2", "operation generic group 2"]));
     expect(host.messages).not.toContain("operation generic group 1");
   });
+
+  it("preserves active Lua reason source metadata for send-to-grave triggers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Grave Source", kind: "monster" },
+      { code: "200", name: "Reason Grave Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 102, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          source_effect=e
+          local target=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode,200), tp, LOCATION_HAND, 0, 1, 1, nil)
+          Debug.Message("reason grave count " .. Duel.SendtoGrave(target, REASON_EFFECT))
+          local tc=target:GetFirst()
+          Debug.Message("grave reason source " .. tostring(tc:GetReasonCard()==c) .. "/" .. tostring(tc:GetReasonEffect()==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_TO_GRAVE)
+        e:SetRange(LOCATION_GRAVE)
+        e:SetOperation(function(e,tp,eg)
+          local c=e:GetHandler()
+          local rc=c:GetReasonCard()
+          local re=c:GetReasonEffect()
+          Debug.Message("grave event reason source " .. tostring(rc and rc:IsCode(100)) .. "/" .. tostring(re==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "send-to-grave-reason-source-event.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    const source = session.state.cards.find((card) => card.code === "100");
+    const target = session.state.cards.find((card) => card.code === "200");
+    expect(host.messages).toContain("reason grave count 1");
+    expect(host.messages).toContain("grave reason source true/true");
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToGraveyard", eventCardUid: target!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 });
+
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain("grave event reason source true/true");
+  });
 });
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
