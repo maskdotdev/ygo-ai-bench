@@ -199,11 +199,25 @@ describe("Lua deck and graveyard swap grouped events", () => {
         end)
         c:RegisterEffect(e)
       end
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_TO_DECK)
+        e:SetRange(LOCATION_DECK)
+        e:SetOperation(function(e,tp,eg)
+          local handler=e:GetHandler()
+          local rc=handler:GetReasonCard()
+          local re=handler:GetReasonEffect()
+          Debug.Message("swap deck reason source " .. tostring(rc and rc:IsCode(100)) .. "/" .. tostring(re==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
       `,
       "swap-deck-grave-reason-source-event.lua",
     );
     expect(loaded.ok, loaded.error).toBe(true);
-    expect(host.registerInitialEffects()).toBe(2);
+    expect(host.registerInitialEffects()).toBe(3);
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
     expect(action).toBeDefined();
@@ -211,10 +225,14 @@ describe("Lua deck and graveyard swap grouped events", () => {
 
     expect(host.messages).toContain("swap reason operated 2");
     expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: deckTarget!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
-    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
-    expect(trigger).toBeDefined();
-    applyAndAssert(session, trigger!);
+    expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "sentToDeck", eventCardUid: graveTarget!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
+    for (;;) {
+      const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+      if (!trigger) break;
+      applyAndAssert(session, trigger);
+    }
     expect(host.messages).toContain("swap reason source true/true");
+    expect(host.messages).toContain("swap deck reason source true/true");
   });
 });
 
