@@ -68,12 +68,21 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
       end)
       e2:SetValue(aux.tgoval)
       c:RegisterEffect(e2)
+      local e3=Effect.CreateEffect(c)
+      e3:SetType(EFFECT_TYPE_SINGLE)
+      e3:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+      e3:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+      e3:SetRange(LOCATION_MZONE)
+      e3:SetCondition(function(e,tp) return e:GetHandler():GetControler()==tp end)
+      e3:SetValue(aux.tgoval)
+      c:RegisterEffect(e3)
       `,
       "source-controller-condition.lua",
     );
     expect(register.ok, register.error).toBe(true);
     expect(session.state.effects.filter((effect) => effect.code === 71)).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({ luaConditionDescriptor: "condition:source-controller" }),
         expect.objectContaining({ luaConditionDescriptor: "condition:source-controller" }),
         expect.objectContaining({ luaConditionDescriptor: "condition:source-controller" }),
       ]),
@@ -83,7 +92,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     const restoredSource = restored.session.state.cards.find((card) => card.code === sourceCode);
     const effects = restored.session.state.effects.filter((effect) => effect.sourceUid === source!.uid && effect.code === 71 && effect.luaConditionDescriptor === "condition:source-controller");
-    expect(effects).toHaveLength(2);
+    expect(effects).toHaveLength(3);
     const ctx = targetContext(restored.session.state, restoredSource!);
     expect(effects.every((effect) => effect.canActivate?.(ctx) === true)).toBe(true);
     restoredSource!.controller = 1;
