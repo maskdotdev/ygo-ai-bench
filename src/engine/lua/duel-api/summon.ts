@@ -18,13 +18,12 @@ import {
   linkSummonDuelCard,
   ritualSummonDuelCard,
   sendDuelCardToGraveyard,
-  synchroSummonDuelCard,
   getLegalActions,
   moveDuelCard,
   negateDuelSummon,
   xyzSummonDuelCard,
 } from "#duel/core.js";
-import { duelSummonTypeFromCode, luaSpecialSummonTypeCode, luaSummonTypeFusion, luaSummonTypePendulum, luaSummonTypeRitual } from "#duel/summon-type-codes.js";
+import { duelSummonTypeFromCode, luaSpecialSummonTypeCode, luaSummonTypeFusion, luaSummonTypePendulum, luaSummonTypeRitual, luaSummonTypeSynchro } from "#duel/summon-type-codes.js";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
 import { currentCardCodes, currentCardMatchesCode } from "#duel/card-code-state.js";
 import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
@@ -295,7 +294,7 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
       const materialReason = duelReason.material | duelReason.fusion | (materialsAlreadyMoved && !fusionMaterialsMovedByEffect ? 0 : duelReason.effect);
       fusionSummonSelectedMaterials(session, hostState, target, selectedMaterials, summonPlayer, materialsAlreadyMoved, materialReason);
     }
-    else if (summonType === "SynchroSummon") synchroSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
+    else if (summonType === "SynchroSummon") synchroSummonSelectedMaterials(session, hostState, target, selectedMaterials, summonPlayer);
     else if (summonType === "XyzSummon") xyzSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
     else if (summonType === "LinkSummon") linkSummonDuelCard(session.state, summonPlayer, target.uid, selectedMaterials);
     else if (target.data.ritualMaterials?.length) ritualSummonDuelCard(session.state, target.controller, target.uid, materialUids, requestedPosition);
@@ -381,6 +380,49 @@ function fusionSummonSelectedMaterials(
 function applyReasonPayload(card: DuelCardInstance, payload: DuelEventPayload): void {
   if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
   if (payload.eventReasonEffectId !== undefined) card.reasonEffectId = payload.eventReasonEffectId;
+}
+
+function synchroSummonSelectedMaterials(
+  session: DuelSession,
+  hostState: LuaDuelSummonApiHostState,
+  target: DuelCardInstance,
+  materialUids: string[],
+  summonPlayer: PlayerId,
+): void {
+  const legalMaterialUids = findLuaSynchroMaterialUidSet(session, target, materialUids);
+  if (!legalMaterialUids || !sameStringMembers(legalMaterialUids, materialUids)) throw new Error(`${target.name} synchro materials are not legal`);
+  if (
+    availableMonsterZoneCount(session, summonPlayer, materialUids) <= 0 ||
+    !canPlayerSpecialSummon(session.state, summonPlayer, target, luaSummonTypeSynchro) ||
+    !canMoveDuelCardToLocation(session.state, target.uid, "monsterZone", duelReason.summon | duelReason.specialSummon | duelReason.synchro)
+  ) {
+    throw new Error(`${target.name} cannot be Synchro Summoned`);
+  }
+  const reasonPlayer = hostState.activeContext?.player ?? summonPlayer;
+  const materialReason = duelReason.material | duelReason.synchro;
+  const materialPayload = luaEffectReasonPayload(hostState, materialReason, reasonPlayer);
+  for (const uid of materialUids) {
+    const material = session.state.cards.find((candidate) => candidate.uid === uid);
+    if (!material) continue;
+    collectLuaSummonEvent(session, "preUsedAsMaterial", material);
+    sendDuelCardToGraveyard(session.state, uid, summonPlayer, materialReason, reasonPlayer, materialPayload);
+    pushDuelLog(session.state, "synchroMaterial", summonPlayer, material.name, `Used for ${target.name}`);
+    collectLuaSummonEvent(session, "usedAsMaterial", material);
+  }
+  const summonPayload = luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon | duelReason.synchro, reasonPlayer);
+  collectDuelTriggerEffects(session.state, "specialSummoning", target, summonPayload);
+  moveDuelCard(session.state, target.uid, "monsterZone", summonPlayer, duelReason.summon | duelReason.specialSummon | duelReason.synchro, reasonPlayer);
+  applyReasonPayload(target, summonPayload);
+  target.position = "faceUpAttack";
+  target.faceUp = true;
+  target.summonType = "synchro";
+  target.summonPlayer = summonPlayer;
+  target.summonPhase = session.state.phase;
+  target.summonMaterialUids = [...materialUids];
+  markProcedureComplete(target);
+  recordSpecialSummonActivity(session.state, summonPlayer, target);
+  pushDuelLog(session.state, "synchroSummon", summonPlayer, target.name, `Synchro Summoned with ${materialUids.length} material(s)`);
+  collectDuelTriggerEffects(session.state, "specialSummoned", target, summonPayload);
 }
 
 function isSelectedFusionTargetLocation(location: DuelLocation): boolean {
