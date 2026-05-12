@@ -61,6 +61,68 @@ describe("Lua discard grouped events", () => {
 
     assertGroupedDiscard(session, host, "hand discarded 2", "graveyard", ["hand discard first group 2", "hand discard second group 2", "hand discard generic group 2/2"]);
   });
+
+  it("preserves active Lua reason source metadata for deck discard triggers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Discard Source", kind: "monster", typeFlags: 0x21 },
+      { code: "200", name: "Discarded Deck Target", kind: "monster", typeFlags: 0x21 },
+    ];
+    const session = createDuel({ seed: 123, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "100");
+    const target = session.state.cards.find((card) => card.code === "200");
+    expect(source).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "hand", 0);
+    target!.sequence = 0;
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Debug.Message("reason deck discarded " .. Duel.DiscardDeck(tp, 1, REASON_EFFECT+REASON_DISCARD))
+        end)
+        source_effect=e
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_DISCARD)
+        e:SetRange(LOCATION_GRAVE)
+        e:SetOperation(function(e,tp,eg)
+          local c=e:GetHandler()
+          local rc=c:GetReasonCard()
+          local re=c:GetReasonEffect()
+          Debug.Message("discard reason source " .. tostring(rc and rc:IsCode(100)) .. "/" .. tostring(re==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "discard-deck-reason-source-event.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    expect(host.messages).toContain("reason deck discarded 1");
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "discarded", eventCardUid: target!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 });
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain("discard reason source true/true");
+  });
 });
 
 function registerGroupedTrigger(eventCode: string, sourceRange: string, label: string): string {

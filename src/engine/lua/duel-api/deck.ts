@@ -260,6 +260,8 @@ function pushSortDeckSegment(L: unknown, session: DuelSession, hostState: LuaDue
 
 function discardDeckCards(session: DuelSession, hostState: LuaDuelDeckApiHostState, player: PlayerId, count: number, reason: number): string[] {
   if (!canDuelPlayerDiscardDeck(session.state, player, 0)) return [];
+  const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
+  const payload = luaEffectReasonPayload(hostState, reason, reasonPlayer);
   const discarded: string[] = [];
   let triggerStart = session.state.pendingTriggers.length;
   for (const uid of topDeckUids(session, player, count)) {
@@ -268,7 +270,7 @@ function discardDeckCards(session: DuelSession, hostState: LuaDuelDeckApiHostSta
         markLuaOperationTimingBoundary(session, hostState);
         triggerStart = session.state.pendingTriggers.length;
       }
-      sendDuelCardToGraveyard(session.state, uid, player, reason);
+      sendDuelCardToGraveyard(session.state, uid, player, reason, reasonPlayer, payload);
       discarded.push(uid);
     } catch {
       // EDOPro-style helpers report moved cards; illegal moves simply fail.
@@ -291,6 +293,8 @@ function discardHandCards(session: DuelSession, hostState: LuaDuelDeckApiHostSta
   const selected = matchingCardUidsWithFilter(L, session, filterRef, player, 0x02, 0, undefined, readFilterArgs(L, 6)).slice(0, max);
   releaseOptionalFunctionRef(L, filterRef);
   if (selected.length < min) return [];
+  const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
+  const payload = luaEffectReasonPayload(hostState, reason, reasonPlayer);
   const discarded: string[] = [];
   let triggerStart = session.state.pendingTriggers.length;
   for (const uid of selected) {
@@ -299,7 +303,7 @@ function discardHandCards(session: DuelSession, hostState: LuaDuelDeckApiHostSta
         markLuaOperationTimingBoundary(session, hostState);
         triggerStart = session.state.pendingTriggers.length;
       }
-      sendDuelCardToGraveyard(session.state, uid, player, reason);
+      sendDuelCardToGraveyard(session.state, uid, player, reason, reasonPlayer, payload);
       discarded.push(uid);
     } catch {
       // EDOPro-style helpers report moved cards; illegal moves simply fail.

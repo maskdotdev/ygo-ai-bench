@@ -56,6 +56,8 @@ export function sendCoreDuelCardToGraveyard(
   if (redirectLocation && redirectLocation.location !== "graveyard") return moveCoreDuelCardToRedirectedLocation(state, uid, redirectLocation, controller, reason, reasonPlayer, handlers);
   requireCoreDuelMoveAllowed(state, uid, "graveyard", reason, handlers);
   const { card, lostTargetEquipUids, controlReturnTargetUids } = moveDuelCardWithLostTargetCapture(state, uid, "graveyard", controller, reason, reasonPlayer, createContext);
+  if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
+  if (payload.eventReasonEffectId !== undefined) card.reasonEffectId = payload.eventReasonEffectId;
   pushDuelLog(state, "sendToGraveyard", card.controller, card.name, "Sent to the Graveyard");
   collectLeaveFieldTriggers(state, card, handlers);
   collectLeaveGraveyardTriggers(state, card, handlers);
