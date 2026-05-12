@@ -97,6 +97,7 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   if (sourceStatusValue !== undefined) return `condition:source-status:${sourceStatusValue}`;
   if (/\breturn\s+Duel\s*\.\s*IsTurnPlayer\s*\(\s*tp\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:turn-player:self";
   if (/\breturn\s+Duel\s*\.\s*IsTurnPlayer\s*\(\s*1\s*-\s*tp\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:turn-player:opponent";
+  if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsControler\s*\(\s*tp\s*\)\s*(?:end\b|$)/.test(snippet) || /\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s+return\s+\1\s*:\s*IsControler\s*\(\s*tp\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-controller";
   const sourceSummonLocation = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsSummonLocation\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
   const sourceSummonLocationValue = sourceSummonLocation?.[1] ? luaNumberExpressionValue(L, index, sourceSummonLocation[1]) : undefined;
   if (sourceSummonLocationValue !== undefined) return `condition:source-summon-location:${sourceSummonLocationValue}`;
