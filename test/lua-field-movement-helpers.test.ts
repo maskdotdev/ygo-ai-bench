@@ -1,11 +1,76 @@
 import { describe, expect, it } from "vitest";
-import { createDuel, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua field movement helpers", () => {
+  it("preserves active Lua reason source metadata for MoveToField move events", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "MoveToField Reason Source", kind: "monster" },
+      { code: "200", name: "MoveToField Reason Target", kind: "monster" },
+      { code: "300", name: "MoveToField Reason Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 290, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "300"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          local target=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 200), tp, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+          Duel.MoveToField(target, tp, tp, LOCATION_MZONE, POS_FACEUP_ATTACK, true)
+          Debug.Message("move field reason source " .. tostring(target:GetReasonCard()==c) .. "/" .. tostring(target:GetReasonEffect()==source_effect))
+        end)
+        source_effect=e
+        c:RegisterEffect(e)
+      end
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_MOVE)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          local moved=eg:GetFirst()
+          Debug.Message("move field event reason source " .. tostring(moved:GetReasonCard():IsCode(100)) .. "/" .. tostring(moved:GetReasonEffect()==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "move-to-field-reason-source.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const source = session.state.cards.find((card) => card.code === "100");
+    const target = session.state.cards.find((card) => card.code === "200");
+    const watcher = session.state.cards.find((card) => card.code === "300");
+    expect(source).toBeDefined();
+    expect(target).toBeDefined();
+    expect(watcher).toBeDefined();
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    expect(host.messages).toContain("move field reason source true/true");
+    expect(session.state.pendingTriggers).toContainEqual(
+      expect.objectContaining({ eventName: "moved", eventCardUid: target!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }),
+    );
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === watcher!.uid);
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain("move field event reason source true/true");
+  });
+
   it("lets Lua scripts move cards onto field zones", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Field Filler A", kind: "monster" },
@@ -267,3 +332,12 @@ describe("Lua field movement helpers", () => {
     expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ controller: 0, location: "spellTrapZone", sequence: 0, position: "faceDownDefense", faceUp: false });
   });
 });
+
+function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
+  const response = applyResponse(session, action);
+  expect(response.ok).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
