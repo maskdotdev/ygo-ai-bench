@@ -8,6 +8,7 @@ import { luaMoveBlockedByImmunity } from "#lua/duel-api/move-immunity.js";
 import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
 import type { DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 import { markLuaOperationTimingBoundary, regroupLuaOperationEvent, type LuaDuelMoveApiHostState } from "#lua/duel-api/move.js";
+import type { DuelEventPayload } from "#duel/event-history.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -39,6 +40,8 @@ function pushOverlay(L: unknown, session: DuelSession, hostState: LuaDuelMoveApi
   }
 
   const moved: string[] = [];
+  const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
+  const payload = luaEffectReasonPayload(hostState, duelReason.effect, reasonPlayer);
   for (const uid of readCardOrGroupUids(L, 2)) {
     if (uid === target.uid || target.overlayUids.includes(uid)) continue;
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
@@ -46,7 +49,8 @@ function pushOverlay(L: unknown, session: DuelSession, hostState: LuaDuelMoveApi
     try {
       const attachedUids = [...card.overlayUids];
       removeOverlayReference(session.state, uid);
-      moveDuelCard(session.state, uid, "overlay", target.controller, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer);
+      moveDuelCard(session.state, uid, "overlay", target.controller, duelReason.effect, reasonPlayer);
+      applyReasonPayload(card, payload);
       card.overlayUids = [];
       target.overlayUids.push(uid);
       moved.push(uid);
@@ -55,7 +59,8 @@ function pushOverlay(L: unknown, session: DuelSession, hostState: LuaDuelMoveApi
         const attached = session.state.cards.find((candidate) => candidate.uid === attachedUid);
         if (!attached || !canMoveDuelCardToLocation(session.state, attachedUid, "overlay", duelReason.effect) || luaMoveBlockedByImmunity(L, session, hostState, attached, duelReason.effect)) continue;
         removeOverlayReference(session.state, attachedUid);
-        moveDuelCard(session.state, attachedUid, "overlay", target.controller, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer);
+        moveDuelCard(session.state, attachedUid, "overlay", target.controller, duelReason.effect, reasonPlayer);
+        applyReasonPayload(attached, payload);
         target.overlayUids.push(attachedUid);
         moved.push(attachedUid);
       }
@@ -67,6 +72,11 @@ function pushOverlay(L: unknown, session: DuelSession, hostState: LuaDuelMoveApi
   setOperatedUids(hostState, moved);
   if (moved.length > 0) pushDuelLog(session.state, "overlay", target.controller, target.name, `Attached ${moved.length} material(s)`);
   return 0;
+}
+
+function applyReasonPayload(card: DuelCardInstance, payload: DuelEventPayload): void {
+  if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
+  if (payload.eventReasonEffectId !== undefined) card.reasonEffectId = payload.eventReasonEffectId;
 }
 
 function pushRemoveOverlayCard(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {

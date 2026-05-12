@@ -478,6 +478,60 @@ describe("Lua overlay and pendulum movement helpers", () => {
     expect(session.state.cards.find((card) => card.controller === 0 && card.code === "300")?.location).toBe("overlay");
   });
 
+  it("preserves active Lua reason source metadata on attached overlay materials", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Overlay Source", kind: "monster", typeFlags: 0x21 },
+      { code: "200", name: "Overlay Reason Material", kind: "monster", typeFlags: 0x21 },
+      { code: "920", name: "Overlay Reason Xyz", kind: "extra" },
+    ];
+    const session = createDuel({ seed: 312, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "200"], extra: ["920"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "100");
+    const material = session.state.cards.find((card) => card.code === "200");
+    const xyz = session.state.cards.find((card) => card.code === "920");
+    expect(source).toBeDefined();
+    expect(material).toBeDefined();
+    expect(xyz).toBeDefined();
+    moveDuelCard(session.state, xyz!.uid, "monsterZone", 0);
+    xyz!.faceUp = true;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local source_effect=nil
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          local xyz=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 920), tp, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+          local material=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 200), tp, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+          Duel.Overlay(xyz, material)
+          local attached=xyz:GetOverlayGroup():GetFirst()
+          Debug.Message("overlay reason source " .. tostring(attached:GetReasonCard()==c) .. "/" .. tostring(attached:GetReasonEffect()==source_effect))
+        end)
+        source_effect=e
+        c:RegisterEffect(e)
+      end
+      `,
+      "overlay-attach-reason-source.lua",
+    );
+    expect(result.ok, result.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    expect(host.messages).toContain("overlay reason source true/true");
+    expect(material).toMatchObject({ location: "overlay", reasonCardUid: source!.uid, reasonEffectId: 1 });
+  });
+
   it("keeps overlay helpers from mutating ended duels", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Ended Overlay Material", kind: "monster" },
