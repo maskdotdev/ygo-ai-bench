@@ -38,9 +38,10 @@ describe("Lua position restore helpers", () => {
             e:SetType(EFFECT_TYPE_TRIGGER_O)
             e:SetCode(EVENT_CHANGE_POS)
             e:SetRange(LOCATION_HAND)
-            e:SetOperation(function(e,tp,eg)
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               local tc=eg:GetFirst()
               Debug.Message("restored position trigger " .. tc:GetCode() .. "/" .. tc:GetPosition())
+              Debug.Message("restored position reason " .. tostring(r==REASON_EFFECT) .. "/" .. tostring(rp==0) .. "/" .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(e)
           end
@@ -72,15 +73,17 @@ describe("Lua position restore helpers", () => {
     expect(action).toBeDefined();
     applyAndAssert(session, action!);
     expect(host.messages).toContain("position changed 1");
+    const starter = session.state.cards.find((card) => card.code === "100");
+    expect(starter).toBeDefined();
     const target = session.state.cards.find((card) => card.code === "200");
     expect(target).toMatchObject({ position: "faceUpDefense", faceUp: true });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["positionChanged"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1016, eventCardUid: target!.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1016, eventCardUid: target!.uid, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["positionChanged"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1016, eventCardUid: target!.uid });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1016, eventCardUid: target!.uid, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -99,9 +102,11 @@ describe("Lua position restore helpers", () => {
     assertLuaRestoreLegalWindow(restored, staleTrigger, staleTrigger.state.waitingFor!);
     expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["positionChanged"]);
     expect(restored.host.messages).not.toContain("restored position trigger 200/4");
+    expect(restored.host.messages).not.toContain("restored position reason true/true/true");
 
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored position trigger 200/4");
+    expect(restored.host.messages).toContain("restored position reason true/true/true");
     const staleReplay = applyLuaRestoreResponse(restored, trigger!);
     expect(staleReplay.ok).toBe(false);
     expect(staleReplay.error).toContain("Response is not currently legal");
