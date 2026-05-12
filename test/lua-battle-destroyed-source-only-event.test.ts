@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData, DuelSession } from "#duel/types.js";
 
 describe("Lua source-only battle destroyed events", () => {
@@ -46,24 +47,24 @@ function runBattleDestroyedSourceOnly(eventCode: string, label: string): string[
   const sourceRange = eventCode === "EVENT_BATTLE_DESTROYING" ? "LOCATION_MZONE" : "LOCATION_GRAVE";
   const wrongCard = eventCode === "EVENT_BATTLE_DESTROYING" ? "target" : "single_watcher";
   const wrongRange = eventCode === "EVENT_BATTLE_DESTROYING" ? "LOCATION_GRAVE" : "LOCATION_HAND";
-  const loaded = host.loadScript(
-    `
-    local attacker=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
-    local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
-    local generic_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-    local single_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 301), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-
-    local source_trigger=Effect.CreateEffect(${sourceCard})
-    source_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
-    source_trigger:SetCode(${eventCode})
-    source_trigger:SetRange(${sourceRange})
-    source_trigger:SetOperation(function(e,tp,eg)
-      local tc=eg:GetFirst()
-      Debug.Message("${label} source battle single " .. tc:GetCode() .. "/" .. tostring(tc:IsBattleDestroyed()))
-    end)
-    ${sourceCard}:RegisterEffect(source_trigger)
-
-    local generic_trigger=Effect.CreateEffect(generic_watcher)
+  const source = {
+    readScript(name: string) {
+      if (name === "c100.lua") return `
+    c100={}
+    function c100.initial_effect(c)
+    ${eventCode === "EVENT_BATTLE_DESTROYING" ? sourceTriggerScript("c", eventCode, sourceRange, label) : ""}
+    end
+    `;
+      if (name === "c200.lua") return `
+    c200={}
+    function c200.initial_effect(c)
+    ${eventCode === "EVENT_BATTLE_DESTROYED" ? sourceTriggerScript("c", eventCode, sourceRange, label) : wrongTriggerScript("c", eventCode, wrongRange, label)}
+    end
+    `;
+      if (name === "c300.lua") return `
+    c300={}
+    function c300.initial_effect(c)
+    local generic_trigger=Effect.CreateEffect(c)
     generic_trigger:SetType(EFFECT_TYPE_TRIGGER_O)
     generic_trigger:SetCode(${eventCode})
     generic_trigger:SetRange(LOCATION_HAND)
@@ -71,20 +72,25 @@ function runBattleDestroyedSourceOnly(eventCode: string, label: string): string[
       local tc=eg:GetFirst()
       Debug.Message("${label} generic battle " .. tc:GetCode() .. "/" .. tostring(tc:IsBattleDestroyed()))
     end)
-    generic_watcher:RegisterEffect(generic_trigger)
-
-    local wrong_single=Effect.CreateEffect(${wrongCard})
-    wrong_single:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
-    wrong_single:SetCode(${eventCode})
-    wrong_single:SetRange(${wrongRange})
-    wrong_single:SetOperation(function(e,tp,eg)
-      Debug.Message("${label} wrong battle single " .. eg:GetCount())
-    end)
-    ${wrongCard}:RegisterEffect(wrong_single)
-    `,
-    `battle-destroyed-source-only-${label}.lua`,
-  );
-  expect(loaded.ok, loaded.error).toBe(true);
+    c:RegisterEffect(generic_trigger)
+    end
+    `;
+      if (name === "c301.lua") return `
+    c301={}
+    function c301.initial_effect(c)
+    ${eventCode === "EVENT_BATTLE_DESTROYED" ? wrongTriggerScript("c", eventCode, wrongRange, label) : ""}
+    end
+    `;
+      return undefined;
+    },
+  };
+  for (const code of [100, 200, 300, 301]) {
+    const loaded = host.loadCardScript(code, source);
+    expect(loaded.ok, loaded.error).toBe(true);
+  }
+  expect(host.registerInitialEffects()).toBe(4);
+  expect(sourceCard).toBeDefined();
+  expect(wrongCard).toBeDefined();
 
   applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "battle")!);
   applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "declareAttack" && candidate.targetUid === target!.uid)!);
@@ -106,13 +112,67 @@ function runBattleDestroyedSourceOnly(eventCode: string, label: string): string[
   );
   expect(battleTriggers.some((trigger) => trigger.sourceUid === rejectedSingleSource!.uid)).toBe(false);
 
+  const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+  expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+  const restoredBattleTriggers = restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "battleDestroyed");
+  expect(restoredBattleTriggers).toHaveLength(2);
+  expect(restoredBattleTriggers).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ sourceUid: expectedSource!.uid, eventCardUid: expectedEventCard!.uid, eventCode: 1140 }),
+      expect.objectContaining({ sourceUid: genericWatcher!.uid, eventCardUid: expectedEventCard!.uid, eventCode: 1140 }),
+    ]),
+  );
+  expect(restoredBattleTriggers.some((trigger) => trigger.sourceUid === rejectedSingleSource!.uid)).toBe(false);
+  activateAllRestoredTriggers(restored);
+
+  activateAllTriggers(session);
+  expect(restored.host.messages).toEqual(expect.arrayContaining(host.messages.filter((message) => message.startsWith(`${label} `))));
+  return host.messages;
+}
+
+function sourceTriggerScript(card: string, eventCode: string, range: string, label: string): string {
+  return `
+    local source_trigger=Effect.CreateEffect(${card})
+    source_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+    source_trigger:SetCode(${eventCode})
+    source_trigger:SetRange(${range})
+    source_trigger:SetOperation(function(e,tp,eg)
+      local tc=eg:GetFirst()
+      Debug.Message("${label} source battle single " .. tc:GetCode() .. "/" .. tostring(tc:IsBattleDestroyed()))
+    end)
+    ${card}:RegisterEffect(source_trigger)
+  `;
+}
+
+function wrongTriggerScript(card: string, eventCode: string, range: string, label: string): string {
+  return `
+    local wrong_single=Effect.CreateEffect(${card})
+    wrong_single:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+    wrong_single:SetCode(${eventCode})
+    wrong_single:SetRange(${range})
+    wrong_single:SetOperation(function(e,tp,eg)
+      Debug.Message("${label} wrong battle single " .. eg:GetCount())
+    end)
+    ${card}:RegisterEffect(wrong_single)
+  `;
+}
+
+function activateAllTriggers(session: DuelSession): void {
   for (;;) {
     const player = session.state.waitingFor ?? 0;
     const trigger = getDuelLegalActions(session, player).find((candidate) => candidate.type === "activateTrigger");
     if (!trigger) break;
     applyAndAssert(session, trigger);
   }
-  return host.messages;
+}
+
+function activateAllRestoredTriggers(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  for (;;) {
+    const player = restored.session.state.waitingFor ?? 0;
+    const trigger = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "activateTrigger");
+    if (!trigger) break;
+    applyLuaRestoreAndAssert(restored, trigger);
+  }
 }
 
 function passBattleResponses(session: DuelSession): void {
@@ -131,5 +191,15 @@ function applyAndAssert(session: DuelSession, action: Parameters<typeof applyRes
   expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, response.state.waitingFor!));
+  expect(queryPublicState(restored.session)).toEqual(response.state);
   return response;
 }
