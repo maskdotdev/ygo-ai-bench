@@ -12,6 +12,7 @@ import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const locationOnField = 0x0c;
 
 function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
   return {
@@ -92,6 +93,65 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     restoredFeline!.previousLocation = "graveyard";
     expect(restoredEffect!.canActivate!(ctx)).toBe(false);
     delete restoredFeline!.previousLocation;
+    expect(restoredEffect!.canActivate!(ctx)).toBe(false);
+  });
+
+  it("restores local source previous-location checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const gatchiriCode = "82257671";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === gatchiriCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 8225, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [gatchiriCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const gatchiri = session.state.cards.find((card) => card.code === gatchiriCode);
+    expect(gatchiri).toBeDefined();
+    moveDuelCard(session.state, gatchiri!.uid, "monsterZone", 0);
+    gatchiri!.faceUp = true;
+    gatchiri!.position = "faceUpAttack";
+    gatchiri!.previousLocation = "monsterZone";
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${gatchiriCode}),0,LOCATION_MZONE,0,nil)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+      e:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+      e:SetRange(LOCATION_MZONE)
+      e:SetCondition(function(e)
+        local c=e:GetHandler()
+        return c:IsPreviousLocation(LOCATION_ONFIELD)
+      end)
+      e:SetValue(aux.tgoval)
+      c:RegisterEffect(e)
+      `,
+      "gatchiri-official-local-previous-location-condition.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    const descriptor = `condition:source-previous-location:${locationOnField}`;
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 71,
+          luaConditionDescriptor: descriptor,
+          luaValueDescriptor: "cannot-be-effect-target:opponent",
+          range: ["monsterZone"],
+        }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredGatchiri = restored.session.state.cards.find((card) => card.code === gatchiriCode);
+    const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === gatchiri!.uid && effect.code === 71);
+    expect(restoredEffect).toMatchObject({ luaConditionDescriptor: descriptor });
+    expect(restoredEffect?.canActivate).toBeDefined();
+    const ctx = targetContext(restored.session.state, restoredGatchiri!);
+    expect(restoredEffect!.canActivate!(ctx)).toBe(true);
+    restoredGatchiri!.previousLocation = "hand";
     expect(restoredEffect!.canActivate!(ctx)).toBe(false);
   });
 });
