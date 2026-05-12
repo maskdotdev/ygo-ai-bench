@@ -31,6 +31,59 @@ function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInsta
 }
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script previous controller reason player reason condition", () => {
+  it("restores comma-local GetReasonPlayer opponent reason previous-controller checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const mikorangeCode = "47077318";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === mikorangeCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 4710, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [mikorangeCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const mikorange = session.state.cards.find((card) => card.code === mikorangeCode);
+    expect(mikorange).toBeDefined();
+    moveDuelCard(session.state, mikorange!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, mikorange!.uid, "graveyard", 0, duelReason.destroy, 1);
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${mikorangeCode}),0,LOCATION_GRAVE,0,nil)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+      e:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+      e:SetRange(LOCATION_GRAVE)
+      e:SetCondition(function(e,tp)
+        local c,p=e:GetHandler(),e:GetHandlerPlayer()
+        return c:IsReason(REASON_DESTROY) and c:GetReasonPlayer()~=tp and c:IsPreviousControler(tp)
+      end)
+      e:SetValue(aux.tgoval)
+      c:RegisterEffect(e)
+      `,
+      "mikorange-comma-local-previous-controller-reason-player-reason-condition.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    const descriptor = `condition:source-previous-controller-reason-player-reason:${duelReason.destroy}:opponent`;
+    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: mikorange!.uid })]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredMikorange = restored.session.state.cards.find((card) => card.code === mikorangeCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === mikorange!.uid && candidate.luaConditionDescriptor === descriptor);
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = conditionContext(restored.session.state, restoredMikorange!);
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredMikorange!.reasonPlayer = 0;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restoredMikorange!.reasonPlayer = 1;
+    restoredMikorange!.previousController = 1;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restoredMikorange!.previousController = 0;
+    restoredMikorange!.reason = duelReason.effect;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
+
   it("restores destroyed-by-opponent previous-controller checks", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const messengelatoCode = "52404456";
