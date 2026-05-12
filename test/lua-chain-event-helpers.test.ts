@@ -436,6 +436,63 @@ describe("Lua chain event helpers", () => {
     expect(session.state.log).toContainEqual(expect.objectContaining({ action: "adjust", detail: "Readjust" }));
   });
 
+  it("preserves active Lua reason source metadata for readjust triggers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Readjust Reason Source", kind: "monster" },
+      { code: "200", name: "Readjust Reason Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 286, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "100");
+    const watcher = session.state.cards.find((card) => card.code === "200");
+    expect(source).toBeDefined();
+    expect(watcher).toBeDefined();
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Duel.Readjust()
+          Debug.Message("readjust reason queued")
+        end)
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_ADJUST)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Debug.Message("readjust reason resolved")
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "readjust-reason-source.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    expect(host.messages).toContain("readjust reason queued");
+    expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "adjust", eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
+    expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "adjust", sourceUid: watcher!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === watcher!.uid);
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain("readjust reason resolved");
+  });
+
   it("makes earlier Lua optional when triggers miss timing at readjust boundaries", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Readjust Boundary Source", kind: "monster" },
