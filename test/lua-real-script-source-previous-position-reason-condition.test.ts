@@ -31,6 +31,57 @@ function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance
 }
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script source previous position and reason condition", () => {
+  it("restores comma-local source IsReason and IsPreviousPosition checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const giantKozakyCode = "58185394";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === giantKozakyCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 5820, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [giantKozakyCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const giantKozaky = session.state.cards.find((card) => card.code === giantKozakyCode);
+    expect(giantKozaky).toBeDefined();
+    moveDuelCard(session.state, giantKozaky!.uid, "monsterZone", 0);
+    giantKozaky!.position = "faceUpAttack";
+    moveDuelCard(session.state, giantKozaky!.uid, "graveyard", 0, duelReason.destroy);
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${giantKozakyCode}),0,LOCATION_GRAVE,0,nil)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+      e:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+      e:SetRange(LOCATION_GRAVE)
+      e:SetCondition(function(e)
+        local c,tp=e:GetHandler(),e:GetHandlerPlayer()
+        return c:IsReason(REASON_DESTROY) and c:IsPreviousPosition(POS_FACEUP)
+      end)
+      e:SetValue(aux.tgoval)
+      c:RegisterEffect(e)
+      `,
+      "giant-kozaky-comma-local-source-previous-position-reason-condition.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    const descriptor = `condition:source-previous-position-reason:5:${duelReason.destroy}`;
+    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ code: 71, luaConditionDescriptor: descriptor, sourceUid: giantKozaky!.uid })]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredGiantKozaky = restored.session.state.cards.find((card) => card.code === giantKozakyCode);
+    const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === giantKozaky!.uid && effect.luaConditionDescriptor === descriptor);
+    expect(restoredEffect?.canActivate).toBeDefined();
+    const ctx = targetContext(restored.session.state, restoredGiantKozaky!);
+    expect(restoredEffect!.canActivate!(ctx)).toBe(true);
+    restoredGiantKozaky!.reason = duelReason.battle;
+    expect(restoredEffect!.canActivate!(ctx)).toBe(false);
+    restoredGiantKozaky!.reason = duelReason.destroy;
+    restoredGiantKozaky!.previousPosition = "faceDownDefense";
+    expect(restoredEffect!.canActivate!(ctx)).toBe(false);
+  });
+
   it("restores compound source IsReason and IsPreviousPosition checks", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const panzerDragonCode = "72959823";
