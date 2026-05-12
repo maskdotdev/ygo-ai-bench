@@ -112,6 +112,7 @@ describe("Lua counter events", () => {
             e:SetRange(LOCATION_HAND)
             e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("restored add counter trigger " .. eg:GetFirst():GetCode() .. "/" .. r .. "/" .. rp)
+              Debug.Message("restored add counter reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(e)
           end
@@ -160,6 +161,7 @@ describe("Lua counter events", () => {
     assertPublicRestoreMetadata(restored, originalTriggerPreapply);
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored add counter trigger 200/64/0");
+    expect(restored.host.messages).toContain("restored add counter reason effect true");
   });
 
   it("makes earlier Lua optional when triggers miss timing at card counter-add boundaries", () => {
@@ -475,6 +477,7 @@ describe("Lua counter events", () => {
             e:SetRange(LOCATION_HAND)
             e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("restored remove counter trigger " .. eg:GetFirst():GetCode() .. "/" .. r .. "/" .. rp)
+              Debug.Message("restored remove counter reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(e)
           end
@@ -520,6 +523,7 @@ describe("Lua counter events", () => {
     assertPublicRestoreMetadata(restored, originalTriggerPreapply);
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored remove counter trigger 200/64/0");
+    expect(restored.host.messages).toContain("restored remove counter reason effect true");
   });
 
   it("makes earlier Lua optional when triggers miss timing at counter removal boundaries", () => {
