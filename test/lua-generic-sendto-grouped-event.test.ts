@@ -250,6 +250,81 @@ describe("Lua generic Sendto grouped events", () => {
     expect(host.messages).toContain(`generic ${label} event reason source true/true`);
     expect(host.messages).toContain(`generic ${label} single reason source true/true`);
   });
+
+  it.each([
+    { label: "helper", call: "Duel.SendtoExtraP(target, tp, REASON_EFFECT)", seed: 118 },
+    { label: "generic", call: "Duel.Sendto(target, LOCATION_EXTRA, REASON_EFFECT, POS_FACEDOWN_DEFENSE)", seed: 119 },
+  ])("preserves active Lua reason source metadata for $label extra-deck sends", ({ label, call, seed }) => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: `Extra ${label} Source`, kind: "monster" },
+      { code: "300", name: `Extra ${label} Watcher`, kind: "monster" },
+      { code: "900", name: `Extra ${label} Target`, kind: "monster" },
+    ];
+    const session = createDuel({ seed, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "300"], extra: ["900"] }, 1: { main: [] } });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.code === "900");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "graveyard", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      local starter=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local move=Effect.CreateEffect(starter)
+      move:SetType(EFFECT_TYPE_IGNITION)
+      move:SetRange(LOCATION_HAND)
+      move:SetOperation(function(e,tp)
+        source_effect=e
+        Debug.Message("extra ${label} reason count " .. ${call})
+        Debug.Message("extra ${label} reason source " .. tostring(target:GetReasonCard()==starter) .. "/" .. tostring(target:GetReasonEffect()==source_effect))
+      end)
+      starter:RegisterEffect(move)
+
+      local trigger=Effect.CreateEffect(watcher)
+      trigger:SetType(EFFECT_TYPE_TRIGGER_O)
+      trigger:SetCode(EVENT_TO_DECK)
+      trigger:SetRange(LOCATION_HAND)
+      trigger:SetOperation(function(e,tp,eg)
+        local moved=eg:GetFirst()
+        Debug.Message("extra ${label} event reason source " .. tostring(moved:GetReasonCard():IsCode(100)) .. "/" .. tostring(moved:GetReasonEffect()==source_effect))
+      end)
+      watcher:RegisterEffect(trigger)
+
+      local single=Effect.CreateEffect(target)
+      single:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+      single:SetCode(EVENT_TO_DECK)
+      single:SetRange(LOCATION_EXTRA)
+      single:SetOperation(function(e,tp,eg)
+        Debug.Message("extra ${label} single reason source " .. tostring(e:GetHandler():GetReasonCard():IsCode(100)) .. "/" .. tostring(e:GetHandler():GetReasonEffect()==source_effect))
+      end)
+      target:RegisterEffect(single)
+      `,
+      `extra-${label}-reason-source.lua`,
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    const source = session.state.cards.find((card) => card.code === "100");
+    expect(host.messages).toContain(`extra ${label} reason count 1`);
+    expect(host.messages).toContain(`extra ${label} reason source true/true`);
+    expect(session.state.pendingTriggers).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "sentToDeck", eventCode: 1013, eventCardUid: target!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 })]));
+
+    for (;;) {
+      const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+      if (!trigger) break;
+      applyAndAssert(session, trigger);
+    }
+    expect(host.messages).toContain(`extra ${label} event reason source true/true`);
+    expect(host.messages).toContain(`extra ${label} single reason source true/true`);
+  });
 });
 
 function registerGroupedTrigger(eventCode: string, sourceRange: string, label: string): string {
