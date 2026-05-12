@@ -49,6 +49,7 @@ describe("Lua chain-solving events", () => {
         end)
         e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
           Debug.Message("chain solving resolved " .. tp .. "/" .. ep .. "/" .. ev .. "/" .. rp)
+          Debug.Message("chain solving related effect " .. tostring(re~=nil and re:GetHandler():IsCode(100)))
         end)
         c:RegisterEffect(e)
       end
@@ -114,9 +115,9 @@ describe("Lua chain-solving events", () => {
     expect(host.messages).not.toContain("unexpected response");
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["chainSolving"]);
     const chainSolvingTrigger = session.state.pendingTriggers[0]!;
-    expect(chainSolvingTrigger).toMatchObject({ eventCode: 1020, eventPlayer: 0, eventValue: 1, eventChainDepth: 1, eventReasonPlayer: 0 });
+    expect(chainSolvingTrigger).toMatchObject({ eventCode: 1020, eventPlayer: 0, eventValue: 1, eventChainDepth: 1, eventReasonPlayer: 0, relatedEffectId: 1 });
     expect(chainSolvingTrigger.eventChainLinkId).toMatch(/^chain-/);
-    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "chainSolving", eventCode: 1020, eventPlayer: 0, eventValue: 1, eventChainDepth: 1, eventChainLinkId: chainSolvingTrigger.eventChainLinkId, eventReasonPlayer: 0 })]));
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "chainSolving", eventCode: 1020, eventPlayer: 0, eventValue: 1, eventChainDepth: 1, eventChainLinkId: chainSolvingTrigger.eventChainLinkId, eventReasonPlayer: 0, relatedEffectId: 1 })]));
     expect(session.state.eventHistory.map((event) => event.eventName)).toEqual(["chainActivating", "chaining", "chainSolving", "chainSolved"]);
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -137,6 +138,7 @@ describe("Lua chain-solving events", () => {
       applyLuaRestoreAndAssert(restored, chainPass!);
     }
     expect(restored.host.messages).toContain("chain solving resolved 0/0/1/0");
+    expect(restored.host.messages).toContain("chain solving related effect true");
   });
 });
 
