@@ -98,6 +98,7 @@ describe("Lua break-effect events", () => {
             e:SetRange(LOCATION_HAND)
             e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("restored break trigger " .. tp .. "/" .. r .. "/" .. rp)
+              Debug.Message("restored break reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(e)
           end
@@ -156,6 +157,7 @@ describe("Lua break-effect events", () => {
     expect(originalTriggerPreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored break trigger 0/64/0");
+    expect(restored.host.messages).toContain("restored break reason effect true");
   });
 
   it("makes earlier Lua optional when triggers miss timing at BreakEffect boundaries", () => {
