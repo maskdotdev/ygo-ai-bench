@@ -2,11 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -20,7 +21,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     const calledBy = workspace.readDatabaseCards("cards.cdb").find((card) => card.code === calledByCode);
     expect(calledBy).toBeDefined();
     const cards: DuelCardData[] = [calledBy!, { code: sameCodeMonster, name: "Same-Code Monster", kind: "monster", typeFlags: 0x21 }];
-    const session = createDuel({ seed: 294, startingHandSize: 0, cardReader: createCardReader(cards) });
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 294, startingHandSize: 0, cardReader: reader });
     loadDecks(session, { 0: { main: [calledByCode, sameCodeMonster] }, 1: { main: [sameCodeMonster] } });
     startDuel(session);
 
@@ -34,13 +36,15 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     moveDuelCard(session.state, activeMonster!.uid, "hand", 0);
     moveDuelCard(session.state, graveyardMonster!.uid, "graveyard", 1);
 
-    const host = createLuaScriptHost(session, workspace);
-    expect(host.loadCardScript(Number(calledByCode), workspace).ok).toBe(true);
-    expect(host.loadCardScript(Number(sameCodeMonster), {
+    const source = {
       readScript(name: string) {
         return name === `c${sameCodeMonster}.lua` ? sameCodeMonsterScript(sameCodeMonster) : workspace.readScript(name);
       },
-    }).ok).toBe(true);
+    };
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(calledByCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(sameCodeMonster), source).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(3);
 
     const calledByAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === calledByCard!.uid);
@@ -49,6 +53,22 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     expect(calledByResolved.ok, calledByResolved.error).toBe(true);
     expect(session.state.cards.find((card) => card.uid === graveyardMonster!.uid)).toMatchObject({ location: "banished" });
     expect(session.state.cards.find((card) => card.uid === calledByCard!.uid)).toMatchObject({ location: "graveyard" });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state.cards.find((card) => card.uid === graveyardMonster!.uid)).toMatchObject({ location: "banished" });
+    expect(restored.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 2, sourceUid: calledByCard!.uid }),
+        expect.objectContaining({ code: 1020, sourceUid: calledByCard!.uid }),
+      ]),
+    );
+    const restoredSameCodeAction = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.uid === activeMonster!.uid);
+    expect(restoredSameCodeAction).toBeDefined();
+    const restoredSameCodeResolved = applyLuaRestoreResponse(restored, restoredSameCodeAction!);
+    expect(restoredSameCodeResolved.ok, restoredSameCodeResolved.error).toBe(true);
+    expect(restored.host.messages).not.toContain("same-code monster resolved");
+    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "chainDisabled" })]));
 
     const sameCodeAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === activeMonster!.uid);
     expect(sameCodeAction).toBeDefined();

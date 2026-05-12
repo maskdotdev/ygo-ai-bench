@@ -3,10 +3,9 @@ import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
-import { applyResponse, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, negateDuelChainLinkObject, queryPublicState } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
+import { applyResponse, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
 import { duelReason } from "#duel/reasons.js";
 import { effectiveSpecialSummonTypeCode, isSummonTypeMaskMatch, luaSummonTypeRitual, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
-import { resetDuelCardEffects } from "#duel/effect-reset.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { cardFieldId } from "#duel/card-field-id.js";
 import { bookOfEclipsePhaseEndCanActivate, bookOfEclipsePhaseEndOperation, isKnownBookOfEclipsePhaseEndEffect } from "#lua/snapshot-book-of-eclipse.js";
@@ -14,6 +13,7 @@ import { isKnownUnleashYourPowerDelayedSetEffect, isKnownYellowAlertDelayedRetur
 import { isKnownSwordsOfRevealingLightPhaseEndEffect, isKnownSwordsOfRevealingLightResetEffect, swordsOfRevealingLightPhaseEndCanActivate, swordsOfRevealingLightPhaseEndOperation, swordsOfRevealingLightRestoredReset } from "#lua/snapshot-swords-of-revealing-light.js";
 import { isKnownPlayerDamageZeroEffect, isKnownTemporaryActivationLockEffect, isKnownTemporaryArtifactLanceaBanishLockEffect, isKnownTemporaryBattleProtectionEffect, isKnownTemporaryCannotAttackEffect, isKnownTemporaryEarthshatteringDeckGraveLockEffect, isKnownTemporaryOpponentCannotBattlePhaseEffect, isKnownTemporaryOpponentTurnSkipMain1Effect, isKnownTemporaryOpponentTurnSkipMain2Effect, isKnownTemporaryOpponentTurnSkipTurnEffect, isKnownTemporaryPlayerAttackAnnounceLockEffect, isKnownTemporarySameCodeActivationOathEffect, isKnownTemporarySelfTurnCannotEndPhaseEffect, isKnownTemporarySelfTurnSkipBattlePhaseEffect, isKnownTemporarySummonSetLockEffect, temporaryOpponentTurnSkipMain1CanActivate, temporarySelfTurnSkipBattlePhaseCanActivate } from "#lua/snapshot-temporary-effects.js";
 import { assaultZoneExtraDeckReleaseValueCallbacks, assaultZoneReleaseFlagConditionCallbacks, assaultZoneReleaseFlagOperation, isAssaultZoneExtraDeckReleaseRestoreEffect } from "#lua/snapshot-assault-zone.js";
+import { calledByTheGraveChainSolvingNegateOperation, isKnownCalledByTheGraveChainSolvingNegateEffect, isKnownRareMetalmorphChainSolvingNegateEffect, rareMetalmorphChainSolvingNegateOperation } from "#lua/snapshot-chain-solving-effects.js";
 import { ritualSummonSelectedMaterials, type LuaDuelSummonApiHostState } from "#lua/duel-api/summon.js";
 import { luaTemporaryControlReturnDescriptor, luaTemporaryControlReturnOperation } from "#lua/duel-api/move-control.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
@@ -44,7 +44,6 @@ const luaCannotActivateNonSpiritMonsterDescriptor = "cannot-activate:non-spirit-
 const luaSourceControllerConditionDescriptor = "condition:source-controller";
 const luaNotDrawPhaseConditionDescriptor = "condition:not-draw-phase";
 const luaSourceEquippedConditionDescriptor = "condition:source-equipped";
-const luaRareMetalmorphCode = "12503902";
 const luaMaharaghiCode = "40695128";
 const luaHinoKaguTsuchiCode = "75745607";
 const luaGreatLongNoseCode = "2356994";
@@ -65,7 +64,6 @@ const luaPhaseBattle = 0x80;
 const luaPhaseEnd = 0x200;
 const luaBattlePhaseEventCode = luaResetEvent | luaPhaseBattle;
 const luaPhaseEndEventCode = luaResetEvent | luaPhaseEnd;
-const luaChainSolvingEventCode = 1020;
 const luaPhaseEndResetFlags = luaResetPhase | luaPhaseEnd;
 const luaResetsStandardPhaseEnd = 0x41fe1200;
 const luaResetEventStandard = luaResetEvent | 0x1fe0000;
@@ -449,6 +447,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownIndestructibleCountReasonPredicateEffect(effect) ||
         isKnownCannotSelectBattleTargetNotHandlerEffect(effect) ||
         isKnownYellowAlertDelayedReturnEffect(effect) ||
+        isKnownCalledByTheGraveChainSolvingNegateEffect(effect) ||
         isKnownRareMetalmorphChainSolvingNegateEffect(effect) ||
         isKnownBookOfEclipsePhaseEndEffect(effect) ||
         isKnownSwordsOfRevealingLightPhaseEndEffect(effect) ||
@@ -597,18 +596,6 @@ function isKnownCannotSelectBattleTargetNotHandlerEffect(effect: SerializedDuelE
   );
 }
 
-function isKnownRareMetalmorphChainSolvingNegateEffect(effect: SerializedDuelEffect): boolean {
-  return (
-    Boolean(effect.registryKey?.startsWith(`lua:${luaRareMetalmorphCode}:`)) &&
-    effect.event === "continuous" &&
-    effect.code === luaChainSolvingEventCode &&
-    effect.reset?.flags === luaResetEventStandard &&
-    effect.range.length === 1 &&
-    effect.range[0] === "spellTrapZone" &&
-    effect.targetRange === undefined
-  );
-}
-
 function isKnownMaharaghiPredrawEffect(effect: SerializedDuelEffect): boolean {
   return (
     Boolean(effect.registryKey?.startsWith(`lua:${luaMaharaghiCode}:`)) &&
@@ -733,6 +720,7 @@ function isStaticPlayerPhaseLock(effect: SerializedDuelEffect): boolean {
 
 function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[] = []): DuelEffectDefinition["operation"] {
   if (isKnownYellowAlertDelayedReturnEffect(effect)) return yellowAlertDelayedReturnOperation(effect);
+  if (isKnownCalledByTheGraveChainSolvingNegateEffect(effect)) return calledByTheGraveChainSolvingNegateOperation(effect);
   if (isKnownRareMetalmorphChainSolvingNegateEffect(effect)) return rareMetalmorphChainSolvingNegateOperation(effect);
   if (isKnownBookOfEclipsePhaseEndEffect(effect)) return bookOfEclipsePhaseEndOperation(effect);
   if (isKnownSwordsOfRevealingLightPhaseEndEffect(effect)) return swordsOfRevealingLightPhaseEndOperation();
@@ -777,22 +765,6 @@ function hinoKaguTsuchiPredrawDiscardOperation(effect: SerializedDuelEffect): Du
       }
     }
   };
-}
-
-function rareMetalmorphChainSolvingNegateOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
-  return (ctx) => {
-    const chainLink = ctx.chainLink;
-    const targetUid = ctx.source.cardTargetUids?.[0];
-    if (!chainLink || !targetUid || !chainLink.targetUids?.includes(targetUid)) return;
-    const chainSource = findCard(ctx.duel, chainLink.sourceUid);
-    if (!chainSource || !isSpellCard(chainSource)) return;
-    if (!negateDuelChainLinkObject(ctx.duel, chainLink, ctx.player, ctx.source.name)) return;
-    resetDuelCardEffects(ctx.duel, ctx.source, (candidate) => candidate.id === effect.id);
-  };
-}
-
-function isSpellCard(card: { kind: string; typeFlags?: number; data?: { typeFlags?: number } }): boolean {
-  return card.kind === "spell" || (((card.typeFlags ?? card.data?.typeFlags ?? 0) & 0x2) !== 0);
 }
 
 function luaHandlerReturnToHandOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
@@ -861,6 +833,7 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   if (effect.luaConditionDescriptor === luaSourceControllerConditionDescriptor) return { canActivate: (ctx) => ctx.source.controller === effect.controller };
   if (effect.luaConditionDescriptor === luaNotDrawPhaseConditionDescriptor) return { canActivate: (ctx) => ctx.duel.phase !== "draw" };
   if (effect.luaConditionDescriptor === luaSourceEquippedConditionDescriptor) return { canActivate: (ctx) => ctx.source.equippedToUid !== undefined };
+  if (effect.luaConditionDescriptor === "condition:chain-solving-monster-effect-handler-original-code-label") return { canActivate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); return Boolean(handler && (cardTypeFlags(handler, ctx.duel) & luaTypeMonster) !== 0 && effect.label !== undefined && currentCardMatchesCode(handler, ctx.duel, String(effect.label))); } };
   if (effect.luaConditionDescriptor === "condition:source-faceup") return { canActivate: (ctx) => ctx.source.faceUp === true };
   if (effect.luaConditionDescriptor === "condition:source-attack-position") return { canActivate: (ctx) => ctx.source.position === "faceUpAttack" };
   if (effect.luaConditionDescriptor === "condition:source-defense-position") return { canActivate: (ctx) => ctx.source.position === "faceUpDefense" || ctx.source.position === "faceDownDefense" }; if (effect.luaConditionDescriptor === "condition:turn-player:self-main-phase") return { canActivate: (ctx) => (ctx.duel.phase === "main1" || ctx.duel.phase === "main2") && ctx.duel.turnPlayer === effect.controller }; if (effect.luaConditionDescriptor === "condition:turn-player:opponent-main-phase") return { canActivate: (ctx) => (ctx.duel.phase === "main1" || ctx.duel.phase === "main2") && ctx.duel.turnPlayer !== effect.controller }; if (effect.luaConditionDescriptor === "condition:turn-player:self-battle-phase") return { canActivate: (ctx) => ctx.duel.phase === "battle" && ctx.duel.turnPlayer === effect.controller }; if (effect.luaConditionDescriptor === "condition:turn-player:opponent-battle-phase") return { canActivate: (ctx) => ctx.duel.phase === "battle" && ctx.duel.turnPlayer !== effect.controller }; if (effect.luaConditionDescriptor?.startsWith("condition:turn-player-phase:")) return { canActivate: (ctx) => { const [, , side, mask] = effect.luaConditionDescriptor?.split(":") ?? []; const current = ctx.duel.phase === "draw" ? 1 : ctx.duel.phase === "standby" ? 2 : ctx.duel.phase === "main1" ? 4 : ctx.duel.phase === "battle" ? 128 : ctx.duel.phase === "main2" ? 256 : ctx.duel.phase === "end" ? 512 : 0; return current === Number(mask) && (side === "opponent" ? ctx.duel.turnPlayer !== effect.controller : ctx.duel.turnPlayer === effect.controller); } }; if (effect.luaConditionDescriptor?.startsWith("condition:phase:")) return { canActivate: (ctx) => (ctx.duel.phase === "draw" ? 1 : ctx.duel.phase === "standby" ? 2 : ctx.duel.phase === "main1" ? 4 : ctx.duel.phase === "battle" ? 128 : ctx.duel.phase === "main2" ? 256 : ctx.duel.phase === "end" ? 512 : 0) === Number(effect.luaConditionDescriptor?.split(":").pop()) }; if (effect.luaConditionDescriptor === "condition:battle-phase") return { canActivate: (ctx) => ctx.duel.phase === "battle" }; if (effect.luaConditionDescriptor === "condition:main-phase") return { canActivate: (ctx) => ctx.duel.phase === "main1" || ctx.duel.phase === "main2" }; if (effect.luaConditionDescriptor === "condition:main-or-battle-phase") return { canActivate: (ctx) => ctx.duel.phase === "main1" || ctx.duel.phase === "main2" || ctx.duel.phase === "battle" }; if (effect.luaConditionDescriptor === "condition:turn-player:self") return { canActivate: (ctx) => ctx.duel.turnPlayer === effect.controller }; if (effect.luaConditionDescriptor === "condition:turn-player:opponent") return { canActivate: (ctx) => ctx.duel.turnPlayer !== effect.controller };
