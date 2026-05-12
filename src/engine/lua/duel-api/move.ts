@@ -165,7 +165,7 @@ function moveGenericDuelCardToLocation(
   payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId">,
 ): DuelCardInstance {
   if (location === "graveyard") return sendDuelCardToGraveyard(session.state, uid, controller, reason, reasonPlayer, payload);
-  if (location === "banished") return banishDuelCard(session.state, uid, controller, reason, reasonPlayer);
+  if (location === "banished") return banishDuelCard(session.state, uid, controller, reason, reasonPlayer, payload);
   return moveDuelCardWithRedirects(session.state, uid, location, controller, reason, reasonPlayer, payload);
 }
 function pushRemoveCards(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
@@ -196,7 +196,7 @@ function pushRemove(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiH
     if (luaMoveBlockedByImmunity(L, session, hostState, card, reason)) continue;
     const before = movementSnapshot(card);
     try {
-      const result = banishDuelCard(session.state, uid, card.controller, reason, hostState.activeContext?.player ?? session.state.turnPlayer);
+      const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer, result = banishDuelCard(session.state, uid, card.controller, reason, reasonPlayer, luaEffectReasonPayload(hostState, reason ?? 0, reasonPlayer));
       assignReasonCard(result, hostState);
       if (requestedPosition) applyLuaMovePosition(result, requestedPosition);
       if (didMove(result, before)) moved.push(uid);

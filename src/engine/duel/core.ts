@@ -496,7 +496,7 @@ export function sendDuelCardToGraveyard(state: DuelState, uid: string, controlle
 
 export function destroyDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect | duelReason.destroy, reasonPlayer?: PlayerId, destination: DuelLocation = "graveyard", payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance { return destroyCoreDuelCard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers, destination, payload); }
 
-export function banishDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId): DuelCardInstance { return banishCoreDuelCard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers); }
+export function banishDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance { return banishCoreDuelCard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers, payload); }
 
 export function moveDuelCardWithRedirects(state: DuelState, uid: string, to: DuelLocation, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance { return moveCoreDuelCardWithRedirects(state, uid, to, controller, reason, reasonPlayer, coreMovementHandlers, payload); }
 

@@ -85,6 +85,72 @@ describe("Lua Remove grouped events", () => {
     }
     expect(host.messages).toEqual(expect.arrayContaining(["remove first group 2", "remove second group 2", "remove generic group 2"]));
   });
+
+  it("preserves active Lua reason source metadata for banish triggers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Remove Source", kind: "monster", typeFlags: 0x21 },
+      { code: "200", name: "Reason Removed Target", kind: "monster", typeFlags: 0x21 },
+    ];
+    const session = createDuel({ seed: 105, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+    for (const code of ["100", "200"]) {
+      const card = session.state.cards.find((candidate) => candidate.code === code);
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+      card!.position = "faceUpAttack";
+      card!.faceUp = true;
+    }
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_MZONE)
+        e:SetOperation(function(e,tp)
+          local target=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode,200), tp, LOCATION_MZONE, 0, 1, 1, nil)
+          Debug.Message("reason remove count " .. Duel.Remove(target, POS_FACEUP, REASON_EFFECT))
+        end)
+        source_effect=e
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_REMOVE)
+        e:SetRange(LOCATION_REMOVED)
+        e:SetOperation(function(e,tp,eg)
+          local c=e:GetHandler()
+          local rc=c:GetReasonCard()
+          local re=c:GetReasonEffect()
+          Debug.Message("remove reason source " .. tostring(rc and rc:IsCode(100)) .. "/" .. tostring(re==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "remove-reason-source-event.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    const source = session.state.cards.find((card) => card.code === "100");
+    const target = session.state.cards.find((card) => card.code === "200");
+    expect(host.messages).toContain("reason remove count 1");
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "banished", eventCardUid: target!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 });
+
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain("remove reason source true/true");
+  });
 });
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {

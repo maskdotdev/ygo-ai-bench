@@ -221,13 +221,16 @@ export function banishCoreDuelCard(
   reason: number,
   reasonPlayer: PlayerId | undefined,
   handlers: CoreMovementHandlers,
+  payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {},
 ): DuelCardInstance {
   const createContext = handlers.createContinuousContext(state);
-  if (shouldRedirectBanishMove(state, uid, createContext)) return sendCoreDuelCardToGraveyard(state, uid, controller, reason | duelReason.redirect, reasonPlayer, handlers);
+  if (shouldRedirectBanishMove(state, uid, createContext)) return sendCoreDuelCardToGraveyard(state, uid, controller, reason | duelReason.redirect, reasonPlayer, handlers, payload);
   const redirectLocation = leaveFieldRedirectLocation(state, uid, "banished", createContext);
   if (redirectLocation && redirectLocation.location !== "banished") return moveCoreDuelCardToRedirectedLocation(state, uid, redirectLocation, controller, reason, reasonPlayer, handlers);
   requireCoreDuelMoveAllowed(state, uid, "banished", reason, handlers);
   const { card, lostTargetEquipUids, controlReturnTargetUids } = moveDuelCardWithLostTargetCapture(state, uid, "banished", controller, reason, reasonPlayer, createContext);
+  if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
+  if (payload.eventReasonEffectId !== undefined) card.reasonEffectId = payload.eventReasonEffectId;
   pushDuelLog(state, "banish", card.controller, card.name, "Banished");
   collectLeaveFieldTriggers(state, card, handlers);
   collectLeaveGraveyardTriggers(state, card, handlers);
