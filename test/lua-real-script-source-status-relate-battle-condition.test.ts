@@ -31,6 +31,65 @@ function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance
 }
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script source status relate battle condition", () => {
+  it("restores comma-local handler IsStatus plus IsRelateToBattle conditions", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const numeronCode = "42230449";
+    const targetCode = "72329844";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => [numeronCode, targetCode].includes(card.code));
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 8012, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { extra: [numeronCode, targetCode], main: [] }, 1: { main: [] } });
+    startDuel(session);
+
+    const numeron = session.state.cards.find((card) => card.code === numeronCode);
+    const target = session.state.cards.find((card) => card.code === targetCode);
+    expect(numeron).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, numeron!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1);
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${numeronCode}),0,LOCATION_MZONE,0,nil)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetCode(EFFECT_UPDATE_ATTACK)
+      e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+        local c,tp=e:GetHandler(),e:GetHandlerPlayer()
+        return c:IsStatus(STATUS_OPPO_BATTLE) and c:IsRelateToBattle()
+      end)
+      e:SetValue(1000)
+      c:RegisterEffect(e)
+      `,
+      "numeron-comma-local-status-relate-battle-condition.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          luaConditionDescriptor: `condition:source-status-relate-battle:${statusOpposingBattle}`,
+          sourceUid: numeron!.uid,
+        }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredNumeron = restored.session.state.cards.find((card) => card.code === numeronCode);
+    const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === numeron!.uid && candidate.luaConditionDescriptor === `condition:source-status-relate-battle:${statusOpposingBattle}`);
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = targetContext(restored.session.state, restoredNumeron!);
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restored.session.state.currentAttack = { attackerUid: restoredTarget!.uid, targetUid: restoredNumeron!.uid };
+    restored.session.state.pendingBattle = { attackerUid: restoredTarget!.uid, targetUid: restoredNumeron!.uid };
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restored.session.state.currentAttack = { attackerUid: restoredTarget!.uid };
+    restored.session.state.pendingBattle = { attackerUid: restoredTarget!.uid };
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
+
   it("restores local handler IsStatus plus IsRelateToBattle conditions", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const numeronCode = "42230449";
