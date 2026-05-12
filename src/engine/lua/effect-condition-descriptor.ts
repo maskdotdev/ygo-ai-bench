@@ -28,7 +28,8 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const sourceLocationNotValue = sourceLocationNot?.[1] ? luaNumberExpressionValue(L, index, sourceLocationNot[1]) : localSourceLocationNot?.[2] ? luaNumberExpressionValue(L, index, localSourceLocationNot[2]) : undefined;
   if (sourceLocationNotValue !== undefined) return `condition:source-location-not:${sourceLocationNotValue}`;
   const sourceLocation = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s*(?:end\\b|$)`));
-  const sourceLocationValue = sourceLocation?.[1] ? luaNumberExpressionValue(L, index, sourceLocation[1]) : undefined;
+  const localSourceLocation = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s+return\\s+\\1\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s*(?:end\\b|$)`));
+  const sourceLocationValue = sourceLocation?.[1] ? luaNumberExpressionValue(L, index, sourceLocation[1]) : localSourceLocation?.[2] ? luaNumberExpressionValue(L, index, localSourceLocation[2]) : undefined;
   if (sourceLocationValue !== undefined) return `condition:source-location:${sourceLocationValue}`;
   const sourceSummonType = snippet.match(/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*Is(Ritual|Fusion|Synchro|Xyz|Pendulum|Link)Summoned\s*\(\s*\)\s*(?:end\b|$)/);
   if (sourceSummonType?.[1]) return `condition:source-summon-type:${summonTypeConditionValues[sourceSummonType[1]]}`;
