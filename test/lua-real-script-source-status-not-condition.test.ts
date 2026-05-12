@@ -32,6 +32,56 @@ function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance
 }
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script source negated status condition", () => {
+  it("restores comma-local source not IsStatus checks from serialized battle status", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const vennominagaCode = "8062132";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === vennominagaCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 7431, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [vennominagaCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const vennominaga = session.state.cards.find((card) => card.code === vennominagaCode);
+    expect(vennominaga).toBeDefined();
+    moveDuelCard(session.state, vennominaga!.uid, "monsterZone", 0);
+    vennominaga!.faceUp = true;
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${vennominagaCode}),0,LOCATION_MZONE,0,nil)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+      e:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+      e:SetRange(LOCATION_MZONE)
+      e:SetCondition(function(e)
+        local c,tp=e:GetHandler(),e:GetHandlerPlayer()
+        return not c:IsStatus(STATUS_BATTLE_DESTROYED)
+      end)
+      e:SetValue(aux.tgoval)
+      c:RegisterEffect(e)
+      `,
+      "vennominaga-comma-local-source-status-not-condition.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    const descriptor = `condition:source-status-not:${statusBattleDestroyed}`;
+    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: vennominaga!.uid })]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredVennominaga = restored.session.state.cards.find((card) => card.code === vennominagaCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === vennominaga!.uid && candidate.luaConditionDescriptor === descriptor);
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = targetContext(restored.session.state, restoredVennominaga!);
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredVennominaga!.customStatusMask = statusBattleDestroyed;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restoredVennominaga!.customStatusMask = 0;
+    restoredVennominaga!.reason = duelReason.battle;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
+
   it("restores local source not IsStatus checks from serialized battle status", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const vennominagaCode = "8062132";
