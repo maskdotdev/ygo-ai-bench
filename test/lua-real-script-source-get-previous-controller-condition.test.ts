@@ -30,7 +30,7 @@ function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance
 }
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script source GetPreviousControler condition", () => {
-  it("restores source previous-controller equality checks against the effect controller", () => {
+  it("restores source previous-controller equality checks with opponent reason player", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const wattfoxCode = "46897277";
     const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === wattfoxCode);
@@ -67,7 +67,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
         expect.objectContaining({
           code: 71,
           controller: 0,
-          luaConditionDescriptor: "condition:source-previous-controller",
+          luaConditionDescriptor: "condition:source-previous-controller-reason-player:opponent",
           luaValueDescriptor: "cannot-be-effect-target:opponent",
           range: ["monsterZone"],
         }),
@@ -82,13 +82,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(restoredEffect).toMatchObject({
       code: 71,
       controller: 0,
-      luaConditionDescriptor: "condition:source-previous-controller",
+      luaConditionDescriptor: "condition:source-previous-controller-reason-player:opponent",
       luaValueDescriptor: "cannot-be-effect-target:opponent",
       range: ["monsterZone"],
     });
     expect(restoredEffect?.canActivate).toBeDefined();
     const ctx = targetContext(restored.session.state, restoredWattfox!);
+    restoredWattfox!.reasonPlayer = 1;
     expect(restoredEffect!.canActivate!(ctx)).toBe(true);
+    restoredWattfox!.reasonPlayer = 0;
+    expect(restoredEffect!.canActivate!(ctx)).toBe(false);
+    restoredWattfox!.reasonPlayer = 1;
     restoredWattfox!.previousController = 1;
     expect(restoredEffect!.canActivate!(ctx)).toBe(false);
     delete restoredWattfox!.previousController;
