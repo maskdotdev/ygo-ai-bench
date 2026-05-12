@@ -38,8 +38,9 @@ describe("Lua equip restore helpers", () => {
             e:SetType(EFFECT_TYPE_TRIGGER_O)
             e:SetCode(EVENT_REMOVE)
             e:SetRange(LOCATION_HAND)
-            e:SetOperation(function(e,tp,eg)
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("restored remove trigger " .. eg:GetFirst():GetCode())
+              Debug.Message("restored remove reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(e)
           end
@@ -62,15 +63,17 @@ describe("Lua equip restore helpers", () => {
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
     applyAndAssert(session, action!);
+    const starter = session.state.cards.find((card) => card.code === "100");
+    expect(starter).toBeDefined();
     const removed = session.state.cards.find((card) => card.code === "200");
     expect(removed).toMatchObject({ location: "banished" });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["banished"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1011, eventCardUid: removed!.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1011, eventCardUid: removed!.uid, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["banished"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1011, eventCardUid: removed!.uid });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1011, eventCardUid: removed!.uid, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -92,6 +95,7 @@ describe("Lua equip restore helpers", () => {
 
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored remove trigger 200");
+    expect(restored.host.messages).toContain("restored remove reason effect true");
     const staleReplay = applyLuaRestoreResponse(restored, trigger!);
     expect(staleReplay.ok).toBe(false);
     expect(staleReplay.error).toContain("Response is not currently legal");

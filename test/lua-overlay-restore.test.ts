@@ -37,8 +37,9 @@ describe("Lua overlay restore helpers", () => {
             e:SetType(EFFECT_TYPE_TRIGGER_O)
             e:SetCode(EVENT_DETACH_MATERIAL)
             e:SetRange(LOCATION_HAND)
-            e:SetOperation(function(e,tp,eg)
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("restored detach trigger " .. eg:GetFirst():GetCode())
+              Debug.Message("restored detach reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(920)))
             end)
             c:RegisterEffect(e)
           end
@@ -71,12 +72,12 @@ describe("Lua overlay restore helpers", () => {
     applyAndAssert(session, action!);
     expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "graveyard" });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["detachedMaterial"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1202, eventCardUid: material!.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1202, eventCardUid: material!.uid, eventReason: 0x80, eventReasonPlayer: 0, eventReasonCardUid: xyz!.uid, eventReasonEffectId: 2 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["detachedMaterial"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1202, eventCardUid: material!.uid });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1202, eventCardUid: material!.uid, eventReason: 0x80, eventReasonPlayer: 0, eventReasonCardUid: xyz!.uid, eventReasonEffectId: 2 });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -98,6 +99,7 @@ describe("Lua overlay restore helpers", () => {
 
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored detach trigger 100");
+    expect(restored.host.messages).toContain("restored detach reason effect true");
     const staleReplay = applyLuaRestoreResponse(restored, trigger!);
     expect(staleReplay.ok).toBe(false);
     expect(staleReplay.error).toContain("Response is not currently legal");
