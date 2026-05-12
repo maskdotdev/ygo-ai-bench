@@ -6,6 +6,79 @@ import { createLuaScriptHost } from "#lua/host.js";
 import type { DuelCardData } from "#duel/types.js";
 
 describe("Lua SwapControl grouped events", () => {
+  it("preserves active Lua reason source metadata for swapped cards and grouped control events", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Swap Reason Source", kind: "monster", typeFlags: 0x21 },
+      { code: "200", name: "Swap Reason Self", kind: "monster", typeFlags: 0x21 },
+      { code: "600", name: "Swap Reason Opponent", kind: "monster", typeFlags: 0x21 },
+      { code: "700", name: "Swap Reason Watcher", kind: "monster", typeFlags: 0x21 },
+    ];
+    const session = createDuel({ seed: 121, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "700"] }, 1: { main: ["600"] } });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "100");
+    const selfTarget = session.state.cards.find((card) => card.code === "200");
+    const opponentTarget = session.state.cards.find((card) => card.code === "600");
+    expect(source).toBeDefined();
+    expect(selfTarget).toBeDefined();
+    expect(opponentTarget).toBeDefined();
+    for (const card of [selfTarget!, opponentTarget!]) {
+      moveDuelCard(session.state, card.uid, "monsterZone", card.controller);
+      card.position = "faceUpAttack";
+      card.faceUp = true;
+    }
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          local self_target=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 200), tp, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+          local opponent_target=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 600), tp, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+          Debug.Message("swap reason result " .. tostring(Duel.SwapControl(self_target, opponent_target)))
+          Debug.Message("swap reason self " .. tostring(self_target:GetReasonCard()==c) .. "/" .. tostring(self_target:GetReasonEffect()==source_effect))
+          Debug.Message("swap reason opponent " .. tostring(opponent_target:GetReasonCard()==c) .. "/" .. tostring(opponent_target:GetReasonEffect()==source_effect))
+        end)
+        source_effect=e
+        c:RegisterEffect(e)
+      end
+      c700={}
+      function c700.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_CONTROL_CHANGED)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          local changed=eg:GetFirst()
+          Debug.Message("swap event reason source " .. tostring(changed:GetReasonCard():IsCode(100)) .. "/" .. tostring(changed:GetReasonEffect()==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "swap-control-reason-source.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    expect(host.messages).toEqual(expect.arrayContaining(["swap reason result true", "swap reason self true/true", "swap reason opponent true/true"]));
+    expect(selfTarget).toMatchObject({ controller: 1, reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(opponentTarget).toMatchObject({ controller: 0, reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "controlChanged", eventCardUid: selfTarget!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain("swap event reason source true/true");
+  });
+
   it("collects one grouped EVENT_CONTROL_CHANGED event for paired swaps", () => {
     const cards: DuelCardData[] = [
       { code: "200", name: "Grouped Swap Self", kind: "monster" },
