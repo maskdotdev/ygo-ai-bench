@@ -30,6 +30,74 @@ function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance
 }
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script source GetPreviousControler condition", () => {
+  it("restores comma-local previous-controller equality checks with opponent reason player", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const wattfoxCode = "46897277";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === wattfoxCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 4690, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [wattfoxCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const wattfox = session.state.cards.find((card) => card.code === wattfoxCode);
+    expect(wattfox).toBeDefined();
+    moveDuelCard(session.state, wattfox!.uid, "monsterZone", 0);
+    wattfox!.faceUp = true;
+    wattfox!.position = "faceUpAttack";
+    wattfox!.previousController = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${wattfoxCode}),0,LOCATION_MZONE,0,nil)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+      e:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+      e:SetRange(LOCATION_MZONE)
+      e:SetCondition(function(e,tp)
+        local c,p=e:GetHandler(),e:GetHandlerPlayer()
+        return c:GetPreviousControler()==tp and rp==1-tp
+      end)
+      e:SetValue(aux.tgoval)
+      c:RegisterEffect(e)
+      `,
+      "wattfox-comma-local-get-previous-controller-condition.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    const descriptor = "condition:source-previous-controller-reason-player:opponent";
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 71,
+          controller: 0,
+          luaConditionDescriptor: descriptor,
+          luaValueDescriptor: "cannot-be-effect-target:opponent",
+          range: ["monsterZone"],
+        }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredWattfox = restored.session.state.cards.find((card) => card.code === wattfoxCode);
+    const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === wattfox!.uid && effect.code === 71);
+    expect(restoredEffect).toMatchObject({
+      luaConditionDescriptor: descriptor,
+      luaValueDescriptor: "cannot-be-effect-target:opponent",
+      range: ["monsterZone"],
+    });
+    expect(restoredEffect?.canActivate).toBeDefined();
+    const ctx = targetContext(restored.session.state, restoredWattfox!);
+    restoredWattfox!.reasonPlayer = 1;
+    expect(restoredEffect!.canActivate!(ctx)).toBe(true);
+    restoredWattfox!.reasonPlayer = 0;
+    expect(restoredEffect!.canActivate!(ctx)).toBe(false);
+    restoredWattfox!.reasonPlayer = 1;
+    restoredWattfox!.previousController = 1;
+    expect(restoredEffect!.canActivate!(ctx)).toBe(false);
+  });
+
   it("restores source previous-controller equality checks with opponent reason player", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const wattfoxCode = "46897277";
