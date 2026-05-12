@@ -40,7 +40,8 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   if (sourceLocationValue !== undefined) return `condition:source-location:${sourceLocationValue}`;
   const sourceSummonType = snippet.match(/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*Is(Ritual|Fusion|Synchro|Xyz|Pendulum|Link)Summoned\s*\(\s*\)\s*(?:end\b|$)/);
   const localSourceSummonType = snippet.match(/\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s+return\s+\1\s*:\s*Is(Ritual|Fusion|Synchro|Xyz|Pendulum|Link)Summoned\s*\(\s*\)\s*(?:end\b|$)/);
-  const sourceSummonTypeName = sourceSummonType?.[1] ?? localSourceSummonType?.[2];
+  const commaLocalSourceSummonType = snippet.match(/\blocal\s+(\w+)\s*,\s*\w+\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s*,\s*\w+\s*:\s*GetHandlerPlayer\s*\(\s*\)\s+return\s+\1\s*:\s*Is(Ritual|Fusion|Synchro|Xyz|Pendulum|Link)Summoned\s*\(\s*\)\s*(?:end\b|$)/);
+  const sourceSummonTypeName = sourceSummonType?.[1] ?? localSourceSummonType?.[2] ?? commaLocalSourceSummonType?.[2];
   if (sourceSummonTypeName) return `condition:source-summon-type:${summonTypeConditionValues[sourceSummonTypeName]}`;
   const sourceTurnCurrentReasonNot = snippet.match(new RegExp(`\\b(?:local\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s+)?return\\s+(?:(?:\\1|\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\))\\s*:\\s*GetTurnID\\s*\\(\\s*\\)\\s*==\\s*Duel\\s*\\.\\s*GetTurnCount\\s*\\(\\s*\\)\\s+and\\s+not\\s+(?:\\1|\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\))\\s*:\\s*IsReason\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\))`));
   const sourceTurnCurrentReasonNotValue = sourceTurnCurrentReasonNot?.[2] ? luaNumberExpressionValue(L, index, sourceTurnCurrentReasonNot[2]) : undefined;
