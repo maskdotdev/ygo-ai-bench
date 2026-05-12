@@ -159,4 +159,68 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     restoredNight!.previousController = 1;
     expect(effect!.canActivate!(ctx)).toBe(false);
   });
+
+  it("restores local-handler reason-first opponent previous-controller checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const magicianCode = "24731391";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === magicianCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 2473, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [magicianCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const magician = session.state.cards.find((card) => card.code === magicianCode);
+    expect(magician).toBeDefined();
+    moveDuelCard(session.state, magician!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, magician!.uid, "graveyard", 0, duelReason.effect, 1);
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadCardScript(Number(magicianCode), workspace);
+    expect(register.ok, register.error).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const descriptor = `condition:source-previous-controller-reason-player-reason:${duelReason.effect}:opponent`;
+    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: magician!.uid })]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredMagician = restored.session.state.cards.find((card) => card.code === magicianCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === magician!.uid && candidate.luaConditionDescriptor === descriptor);
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = conditionContext(restored.session.state, restoredMagician!);
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredMagician!.reasonPlayer = 0;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
+
+  it("restores local-handler previous-controller-first opponent reason checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const falconCode = "15092394";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === falconCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 1509, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [], extra: [falconCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const falcon = session.state.cards.find((card) => card.code === falconCode);
+    expect(falcon).toBeDefined();
+    moveDuelCard(session.state, falcon!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, falcon!.uid, "graveyard", 0, duelReason.destroy, 1);
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadCardScript(Number(falconCode), workspace);
+    expect(register.ok, register.error).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const descriptor = `condition:source-previous-controller-reason-player-reason:${duelReason.destroy}:opponent`;
+    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: falcon!.uid })]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredFalcon = restored.session.state.cards.find((card) => card.code === falconCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === falcon!.uid && candidate.luaConditionDescriptor === descriptor);
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = conditionContext(restored.session.state, restoredFalcon!);
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredFalcon!.reason = duelReason.effect;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
 });
