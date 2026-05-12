@@ -111,4 +111,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     restoredCoppelia!.previousLocation = "spellTrapZone";
     expect(effect!.canActivate!(ctx)).toBe(false);
   });
+
+  it("restores local-handler GetPreviousControler previous-location opponent reason-player checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const ascalonCode = "48891960";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === ascalonCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 4889, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [], extra: [ascalonCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const ascalon = session.state.cards.find((card) => card.code === ascalonCode);
+    expect(ascalon).toBeDefined();
+    moveDuelCard(session.state, ascalon!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, ascalon!.uid, "graveyard", 0, duelReason.effect, 1);
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadCardScript(Number(ascalonCode), workspace);
+    expect(register.ok, register.error).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const descriptor = "condition:source-previous-controller-previous-location-reason-player:4:opponent";
+    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: ascalon!.uid })]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredAscalon = restored.session.state.cards.find((card) => card.code === ascalonCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === ascalon!.uid && candidate.luaConditionDescriptor === descriptor);
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = conditionContext(restored.session.state, restoredAscalon!);
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredAscalon!.previousController = 1;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restoredAscalon!.previousController = 0;
+    restoredAscalon!.reasonPlayer = 0;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
 });
