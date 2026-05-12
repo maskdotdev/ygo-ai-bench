@@ -190,6 +190,7 @@ describe("Lua special summon event sources", () => {
             e:SetRange(LOCATION_HAND)
             e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("restored special summon trigger " .. eg:GetFirst():GetCode() .. "/" .. r .. "/" .. rp)
+              Debug.Message("restored special summon reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(e)
           end
@@ -247,6 +248,7 @@ describe("Lua special summon event sources", () => {
     assertLuaRestoreLegalWindow(restored, originalTriggerPreapply, 0);
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored special summon trigger 200/2064/0");
+    expect(restored.host.messages).toContain("restored special summon reason effect true");
   });
 });
 
