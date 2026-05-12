@@ -95,6 +95,70 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(restoredEffect!.canActivate!(ctx)).toBe(false);
   });
 
+  it("restores direct source IsPreviousPosition and IsReason checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const panzerDragonCode = "72959823";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === panzerDragonCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 73061, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { extra: [panzerDragonCode], main: [] }, 1: { main: [] } });
+    startDuel(session);
+
+    const panzer = session.state.cards.find((card) => card.code === panzerDragonCode);
+    expect(panzer).toBeDefined();
+    moveDuelCard(session.state, panzer!.uid, "monsterZone", 0);
+    panzer!.position = "faceUpAttack";
+    moveDuelCard(session.state, panzer!.uid, "graveyard", 0, duelReason.battle);
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${panzerDragonCode}),0,LOCATION_GRAVE,0,nil)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+      e:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+      e:SetRange(LOCATION_GRAVE)
+      e:SetCondition(function(e) return e:GetHandler():IsPreviousPosition(POS_FACEUP) and e:GetHandler():IsReason(REASON_BATTLE) end)
+      e:SetValue(aux.tgoval)
+      c:RegisterEffect(e)
+      `,
+      "panzer-dragon-direct-source-previous-position-reason-condition.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 71,
+          luaConditionDescriptor: "condition:source-previous-position-reason:5:32",
+          luaValueDescriptor: "cannot-be-effect-target:opponent",
+          range: ["graveyard"],
+        }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredPanzer = restored.session.state.cards.find((card) => card.code === panzerDragonCode);
+    const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === panzer!.uid && effect.code === 71);
+    expect(restoredPanzer).toMatchObject({ previousPosition: "faceUpAttack", reason: duelReason.battle });
+    expect(restoredEffect).toMatchObject({
+      luaConditionDescriptor: "condition:source-previous-position-reason:5:32",
+      luaValueDescriptor: "cannot-be-effect-target:opponent",
+      range: ["graveyard"],
+    });
+    expect(restoredEffect?.canActivate).toBeDefined();
+    const ctx = targetContext(restored.session.state, restoredPanzer!);
+    expect(restoredEffect!.canActivate!(ctx)).toBe(true);
+    restoredPanzer!.reason = duelReason.effect;
+    expect(restoredEffect!.canActivate!(ctx)).toBe(false);
+    restoredPanzer!.reason = duelReason.battle;
+    restoredPanzer!.previousPosition = "faceDownDefense";
+    expect(restoredEffect!.canActivate!(ctx)).toBe(false);
+    delete restoredPanzer!.previousPosition;
+    expect(restoredEffect!.canActivate!(ctx)).toBe(false);
+  });
+
   it("restores local handler source IsReason and IsPreviousPosition checks", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const giantKozakyCode = "58185394";
