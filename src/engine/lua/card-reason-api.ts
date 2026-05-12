@@ -28,29 +28,31 @@ export function installCardReasonApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("SetTurnCounter"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session, 1);
-    if (!card?.reasonCardUid) lua.lua_pushnil(state);
-    else pushCardTable(state, card.reasonCardUid);
+    const reasonCardUid = reasonCardUidForCard(card, hostState);
+    if (!reasonCardUid) lua.lua_pushnil(state);
+    else pushCardTable(state, reasonCardUid);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetReasonCard"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    const reasonCard = readCard(state, session, 1);
-    const target = readCard(state, session, 2);
-    lua.lua_pushboolean(state, Boolean(reasonCard && target?.reasonCardUid === reasonCard.uid));
+    const target = readCard(state, session, 1);
+    const reasonCard = readCard(state, session, 2);
+    lua.lua_pushboolean(state, Boolean(reasonCard && reasonCardUidForCard(target, hostState) === reasonCard.uid));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsReasonCard"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session, 1);
-    if (card?.reasonEffectId === undefined) lua.lua_pushnil(state);
-    else hostState.pushEffectTable(state, card.reasonEffectId);
+    const reasonEffectId = reasonEffectIdForCard(card, hostState);
+    if (reasonEffectId === undefined) lua.lua_pushnil(state);
+    else hostState.pushEffectTable(state, reasonEffectId);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetReasonEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session, 1);
     const effectId = readTableNumberField(state, 2, "__effect_id");
-    lua.lua_pushboolean(state, Boolean(card && effectId !== undefined && card.reasonEffectId === effectId));
+    lua.lua_pushboolean(state, Boolean(card && effectId !== undefined && reasonEffectIdForCard(card, hostState) === effectId));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsReasonEffect"));
@@ -84,6 +86,16 @@ function reasonForCard(card: DuelCardInstance | undefined, hostState: LuaCardRea
 function reasonPlayerForCard(card: DuelCardInstance | undefined, hostState: LuaCardReasonApiState): PlayerId {
   if (card && hostState.activeContext?.eventCard?.uid === card.uid && hostState.activeContext.eventReasonPlayer !== undefined) return hostState.activeContext.eventReasonPlayer;
   return card?.reasonPlayer ?? card?.controller ?? 0;
+}
+
+function reasonCardUidForCard(card: DuelCardInstance | undefined, hostState: LuaCardReasonApiState): string | undefined {
+  if (card && hostState.activeContext?.eventCard?.uid === card.uid && hostState.activeContext.eventReasonCardUid !== undefined) return hostState.activeContext.eventReasonCardUid;
+  return card?.reasonCardUid;
+}
+
+function reasonEffectIdForCard(card: DuelCardInstance | undefined, hostState: LuaCardReasonApiState): number | undefined {
+  if (card && hostState.activeContext?.eventCard?.uid === card.uid && hostState.activeContext.eventReasonEffectId !== undefined) return hostState.activeContext.eventReasonEffectId;
+  return card?.reasonEffectId;
 }
 
 function pushPlayerMatcher(L: unknown, fieldName: string, session: DuelSession, matcher: (card: DuelCardInstance, requested: PlayerId[]) => boolean): void {
