@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDuel, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions, loadDecks, startDuel } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -45,6 +45,56 @@ describe("Lua release summon helpers", () => {
     expect(host.messages).toContain("release ritual field previous true");
     expect(host.messages).toContain("release ritual reason true/true/true");
     expect(session.state.cards.filter((card) => card.location === "graveyard" && (card.code === "100" || card.code === "300"))).toHaveLength(2);
+  });
+
+  it("preserves active Lua reason source metadata when releasing ritual materials", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Ritual Release Source", kind: "monster", typeFlags: 0x21 },
+      { code: "200", name: "Ritual Release Material", kind: "monster" },
+      { code: "940", name: "Ritual Release Target", kind: "monster", ritualMaterials: ["200"] },
+    ];
+    const session = createDuel({ seed: 125, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "940"] }, 1: { main: [] } });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "100");
+    const material = session.state.cards.find((card) => card.code === "200");
+    expect(source).toBeTruthy();
+    expect(material).toBeTruthy();
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          local ritual=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 940), tp, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+          local materials=Duel.GetRitualMaterial(tp, ritual)
+          Debug.Message("release ritual source result " .. Duel.ReleaseRitualMaterial(materials))
+          local released=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 200), tp, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+          local rc=released:GetReasonCard()
+          Debug.Message("release ritual source " .. tostring(rc and rc:IsCode(100)) .. "/" .. tostring(released:GetReasonEffect()==source_effect))
+        end)
+        source_effect=e
+        c:RegisterEffect(e)
+      end
+      `,
+      "release-ritual-material-reason-source.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const action = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    const response = applyResponse(session, action!);
+    expect(response.ok).toBe(true);
+
+    expect(host.messages).toContain("release ritual source result 1");
+    expect(host.messages).toContain("release ritual source true/true");
+    expect(material).toMatchObject({ location: "graveyard", reasonCardUid: source!.uid, reasonEffectId: 1 });
   });
 
   it("lets Lua scripts check tribute summon availability", () => {

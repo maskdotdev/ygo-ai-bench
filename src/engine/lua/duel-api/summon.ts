@@ -646,12 +646,14 @@ function pushRitualMaterial(L: unknown, session: DuelSession): number {
 function pushReleaseRitualMaterial(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
   if (session.state.status === "ended") return pushEmptyIntegerResult(L, hostState);
   const reason = duelReason.release | duelReason.material | duelReason.ritual;
+  const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
+  const payload = luaEffectReasonPayload(hostState, reason, reasonPlayer);
   const moved: string[] = [];
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
     try {
-      const result = sendDuelCardToGraveyard(session.state, uid, card.controller, reason, session.state.turnPlayer);
+      const result = sendDuelCardToGraveyard(session.state, uid, card.controller, reason, reasonPlayer, payload);
       if (result.location === "graveyard") moved.push(uid);
     } catch {
       // EDOPro-style helpers report successful material releases only.
