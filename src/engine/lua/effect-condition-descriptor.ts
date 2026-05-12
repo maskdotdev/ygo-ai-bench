@@ -34,7 +34,9 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const sourceLocationValue = sourceLocation?.[1] ? luaNumberExpressionValue(L, index, sourceLocation[1]) : localSourceLocation?.[2] ? luaNumberExpressionValue(L, index, localSourceLocation[2]) : undefined;
   if (sourceLocationValue !== undefined) return `condition:source-location:${sourceLocationValue}`;
   const sourceSummonType = snippet.match(/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*Is(Ritual|Fusion|Synchro|Xyz|Pendulum|Link)Summoned\s*\(\s*\)\s*(?:end\b|$)/);
-  if (sourceSummonType?.[1]) return `condition:source-summon-type:${summonTypeConditionValues[sourceSummonType[1]]}`;
+  const localSourceSummonType = snippet.match(/\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s+return\s+\1\s*:\s*Is(Ritual|Fusion|Synchro|Xyz|Pendulum|Link)Summoned\s*\(\s*\)\s*(?:end\b|$)/);
+  const sourceSummonTypeName = sourceSummonType?.[1] ?? localSourceSummonType?.[2];
+  if (sourceSummonTypeName) return `condition:source-summon-type:${summonTypeConditionValues[sourceSummonTypeName]}`;
   const sourceTurnCurrentReasonNot = snippet.match(new RegExp(`\\b(?:local\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s+)?return\\s+(?:(?:\\1|\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\))\\s*:\\s*GetTurnID\\s*\\(\\s*\\)\\s*==\\s*Duel\\s*\\.\\s*GetTurnCount\\s*\\(\\s*\\)\\s+and\\s+not\\s+(?:\\1|\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\))\\s*:\\s*IsReason\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\))`));
   const sourceTurnCurrentReasonNotValue = sourceTurnCurrentReasonNot?.[2] ? luaNumberExpressionValue(L, index, sourceTurnCurrentReasonNot[2]) : undefined;
   if (sourceTurnCurrentReasonNotValue !== undefined) return `condition:source-turn-current-reason-not:${sourceTurnCurrentReasonNotValue}`;
