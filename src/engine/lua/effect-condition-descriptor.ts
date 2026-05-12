@@ -296,7 +296,9 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const localSourceReasonPlayerSelf = /\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s+return\s+\1\s*:\s*(?:GetReasonPlayer\s*\(\s*\)\s*==\s*tp|IsReasonPlayer\s*\(\s*tp\s*\))\s*(?:end\b|$)/.test(snippet);
   if (localSourceReasonPlayerSelf || /\b\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*(?:GetReasonPlayer\s*\(\s*\)\s*==\s*tp|IsReasonPlayer\s*\(\s*tp\s*\))/.test(snippet)) return "condition:source-reason-player:self";
   const sourceOverlayCount = snippet.match(/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetOverlayCount\s*\(\s*\)\s*(==|~=|>|>=)\s*0\s*(?:end\b|$)/);
-  if (sourceOverlayCount?.[1]) return sourceOverlayCount[1] === "==" ? "condition:source-overlay-count-zero" : "condition:source-overlay-count-positive";
+  const localSourceOverlayCount = snippet.match(/\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s+return\s+\1\s*:\s*GetOverlayCount\s*\(\s*\)\s*(==|~=|>|>=)\s*0\s*(?:end\b|$)/);
+  const sourceOverlayCountOperator = sourceOverlayCount?.[1] ?? localSourceOverlayCount?.[2];
+  if (sourceOverlayCountOperator) return sourceOverlayCountOperator === "==" ? "condition:source-overlay-count-zero" : "condition:source-overlay-count-positive";
   const params = luaFunctionParams(snippet);
   if (params && params.length > 0) return undefined;
   const identifier = String.raw`[A-Za-z_]\w*`;
