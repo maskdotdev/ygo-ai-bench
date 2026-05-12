@@ -116,6 +116,67 @@ describe("Lua generic Sendto grouped events", () => {
 
     assertGroupedMove(session, host, "deck bottom sent 2", "deck", ["deck bottom first group 2", "deck bottom second group 2", "deck bottom generic group 2"]);
   });
+
+  it.each([
+    { label: "top", api: "MoveToDeckTop", seed: 114 },
+    { label: "bottom", api: "MoveToDeckBottom", seed: 115 },
+  ])("preserves active Lua reason source metadata for MoveToDeck$label triggers", ({ api, seed }) => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: `${api} Source`, kind: "monster" },
+      { code: "200", name: `${api} Target`, kind: "monster" },
+      { code: "300", name: `${api} Watcher`, kind: "monster" },
+    ];
+    const session = createDuel({ seed, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "300"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      local starter=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local move=Effect.CreateEffect(starter)
+      move:SetType(EFFECT_TYPE_IGNITION)
+      move:SetRange(LOCATION_HAND)
+      move:SetOperation(function(e,tp)
+        source_effect=e
+        Debug.Message("${api} reason count " .. Duel.${api}(target, tp, REASON_EFFECT))
+        Debug.Message("${api} reason source " .. tostring(target:GetReasonCard()==starter) .. "/" .. tostring(target:GetReasonEffect()==source_effect))
+      end)
+      starter:RegisterEffect(move)
+
+      local trigger=Effect.CreateEffect(watcher)
+      trigger:SetType(EFFECT_TYPE_TRIGGER_O)
+      trigger:SetCode(EVENT_TO_DECK)
+      trigger:SetRange(LOCATION_HAND)
+      trigger:SetOperation(function(e,tp,eg)
+        local moved=eg:GetFirst()
+        Debug.Message("${api} event reason source " .. tostring(moved:GetReasonCard():IsCode(100)) .. "/" .. tostring(moved:GetReasonEffect()==source_effect))
+      end)
+      watcher:RegisterEffect(trigger)
+      `,
+      `${api}-reason-source.lua`,
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    const source = session.state.cards.find((card) => card.code === "100");
+    const target = session.state.cards.find((card) => card.code === "200");
+    expect(host.messages).toContain(`${api} reason count 1`);
+    expect(host.messages).toContain(`${api} reason source true/true`);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "sentToDeck", eventCode: 1013, eventCardUid: target!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 });
+
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain(`${api} event reason source true/true`);
+  });
 });
 
 function registerGroupedTrigger(eventCode: string, sourceRange: string, label: string): string {
