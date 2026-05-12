@@ -97,8 +97,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     restoredPanzer!.reasonPlayer = 0;
     for (const effect of opponentEffects) {
       expect(effect.canActivate?.(ctx)).toBe(false);
+      expect(effect.canActivate?.({ ...ctx, eventReasonPlayer: 1 })).toBe(true);
     }
     expect(selfEffect!.canActivate?.(ctx)).toBe(true);
+    expect(selfEffect!.canActivate?.({ ...ctx, eventReasonPlayer: 1 })).toBe(false);
     delete restoredPanzer!.reasonPlayer;
     expect(selfEffect!.canActivate?.(ctx)).toBe(true);
   });

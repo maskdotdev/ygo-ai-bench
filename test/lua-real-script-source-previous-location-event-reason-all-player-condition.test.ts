@@ -70,6 +70,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredMinar!.reasonPlayer = 0;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventReasonPlayer: 1 })).toBe(true);
     restoredMinar!.reasonPlayer = 1;
     restoredMinar!.reason = duelReason.discard;
     expect(effect!.canActivate!(ctx)).toBe(false);
