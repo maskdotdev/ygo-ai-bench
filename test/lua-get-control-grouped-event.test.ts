@@ -6,6 +6,79 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua GetControl grouped events", () => {
+  it("preserves active Lua reason source metadata for controlled cards and grouped control events", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Control Reason Source", kind: "monster", typeFlags: 0x21 },
+      { code: "200", name: "Control Reason Target", kind: "monster", typeFlags: 0x21 },
+      { code: "201", name: "Control Reason Second Target", kind: "monster", typeFlags: 0x21 },
+      { code: "700", name: "Control Reason Watcher", kind: "monster", typeFlags: 0x21 },
+    ];
+    const session = createDuel({ seed: 122, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "700"] }, 1: { main: ["200", "201"] } });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "100");
+    const first = session.state.cards.find((card) => card.code === "200");
+    const second = session.state.cards.find((card) => card.code === "201");
+    expect(source).toBeDefined();
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    for (const card of [first!, second!]) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 1);
+      card.position = "faceUpAttack";
+      card.faceUp = true;
+    }
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          local first=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 200), tp, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+          local second=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 201), tp, 0, LOCATION_MZONE, 1, 1, nil):GetFirst()
+          Debug.Message("control reason result " .. Duel.GetControl(Group.FromCards(first, second), tp, 0, 0, LOCATION_MZONE))
+          Debug.Message("control reason first " .. tostring(first:GetReasonCard()==c) .. "/" .. tostring(first:GetReasonEffect()==source_effect))
+          Debug.Message("control reason second " .. tostring(second:GetReasonCard()==c) .. "/" .. tostring(second:GetReasonEffect()==source_effect))
+        end)
+        source_effect=e
+        c:RegisterEffect(e)
+      end
+      c700={}
+      function c700.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_CONTROL_CHANGED)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          local changed=eg:GetFirst()
+          Debug.Message("control event reason source " .. tostring(changed:GetReasonCard():IsCode(100)) .. "/" .. tostring(changed:GetReasonEffect()==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "get-control-reason-source.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    expect(host.messages).toEqual(expect.arrayContaining(["control reason result 2", "control reason first true/true", "control reason second true/true"]));
+    expect(first).toMatchObject({ controller: 0, reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(second).toMatchObject({ controller: 0, reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "controlChanged", eventCardUid: first!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain("control event reason source true/true");
+  });
+
   it("collects one grouped EVENT_CONTROL_CHANGED event for direct group control changes", () => {
     const cards: DuelCardData[] = [
       { code: "200", name: "Grouped Control First", kind: "monster" },
