@@ -32,6 +32,68 @@ function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance
 }
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script source status and summon type condition", () => {
+  it("restores comma-local handler IsStatus plus summon type checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const sprindCode = "72329844";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === sprindCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 7542, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { extra: [sprindCode], main: [] }, 1: { main: [] } });
+    startDuel(session);
+
+    const sprind = session.state.cards.find((card) => card.code === sprindCode);
+    expect(sprind).toBeDefined();
+    moveDuelCard(session.state, sprind!.uid, "monsterZone", 0);
+    sprind!.summonType = "link";
+    sprind!.customStatusMask = statusSpecialSummonTurn;
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${sprindCode}),0,LOCATION_MZONE,0,nil)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+      e:SetCode(EFFECT_UPDATE_ATTACK)
+      e:SetRange(LOCATION_MZONE)
+      e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+        local c,tp=e:GetHandler(),e:GetHandlerPlayer()
+        return c:IsStatus(STATUS_SPSUMMON_TURN) and c:IsLinkSummoned()
+      end)
+      e:SetValue(300)
+      c:RegisterEffect(e)
+      `,
+      "sprind-comma-local-status-link-summon-condition.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          luaConditionDescriptor: `condition:source-status-summon-type:${statusSpecialSummonTurn}:${summonTypeLink}`,
+          sourceUid: sprind!.uid,
+        }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredSprind = restored.session.state.cards.find((card) => card.code === sprindCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === sprind!.uid && candidate.luaConditionDescriptor === `condition:source-status-summon-type:${statusSpecialSummonTurn}:${summonTypeLink}`);
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = targetContext(restored.session.state, restoredSprind!);
+    restoredSprind!.summonType = "link";
+    restoredSprind!.customStatusMask = statusSpecialSummonTurn;
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredSprind!.summonType = "xyz";
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restoredSprind!.summonType = "link";
+    restoredSprind!.customStatusMask = 0;
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    delete restoredSprind!.summonType;
+    restoredSprind!.customStatusMask = statusSpecialSummonTurn;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
+
   it("restores local handler IsStatus plus summon type checks", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const sprindCode = "72329844";
