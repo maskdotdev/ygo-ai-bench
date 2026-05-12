@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData, DuelSession } from "#duel/types.js";
 
 describe("Lua deck and graveyard swap grouped events", () => {
@@ -27,93 +28,16 @@ describe("Lua deck and graveyard swap grouped events", () => {
     moveDuelCard(session.state, watcher!.uid, "hand", 0);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(
-      `
-      local deck_targets=Duel.GetDecktopGroup(0, 2)
-      local deck_first=deck_targets:GetFirst()
-      local deck_second=deck_targets:GetNext()
-      local grave_first=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
-      local grave_second=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 201), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
-      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+    const sourceScripts = createSwapDeckGraveGroupedScripts();
+    for (const code of [100, 101, 200, 201, 300]) {
+      const loaded = host.loadCardScript(code, sourceScripts);
+      expect(loaded.ok, loaded.error).toBe(true);
+    }
+    expect(host.registerInitialEffects()).toBe(5);
 
-      local deck_first_trigger=Effect.CreateEffect(deck_first)
-      deck_first_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
-      deck_first_trigger:SetCode(EVENT_TO_GRAVE)
-      deck_first_trigger:SetRange(LOCATION_GRAVE)
-      deck_first_trigger:SetOperation(function(e,tp,eg)
-        Debug.Message("to grave first group " .. eg:GetCount())
-      end)
-      deck_first:RegisterEffect(deck_first_trigger)
-
-      local deck_second_trigger=Effect.CreateEffect(deck_second)
-      deck_second_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
-      deck_second_trigger:SetCode(EVENT_TO_GRAVE)
-      deck_second_trigger:SetRange(LOCATION_GRAVE)
-      deck_second_trigger:SetOperation(function(e,tp,eg)
-        Debug.Message("to grave second group " .. eg:GetCount())
-      end)
-      deck_second:RegisterEffect(deck_second_trigger)
-
-      local to_grave_generic=Effect.CreateEffect(watcher)
-      to_grave_generic:SetType(EFFECT_TYPE_TRIGGER_O)
-      to_grave_generic:SetCode(EVENT_TO_GRAVE)
-      to_grave_generic:SetRange(LOCATION_HAND)
-      to_grave_generic:SetOperation(function(e,tp,eg)
-        Debug.Message("to grave generic group " .. eg:GetCount() .. "/" .. Duel.GetOperatedGroup():GetCount())
-      end)
-      watcher:RegisterEffect(to_grave_generic)
-
-      local grave_first_trigger=Effect.CreateEffect(grave_first)
-      grave_first_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
-      grave_first_trigger:SetCode(EVENT_TO_DECK)
-      grave_first_trigger:SetRange(LOCATION_DECK)
-      grave_first_trigger:SetOperation(function(e,tp,eg)
-        Debug.Message("to deck first group " .. eg:GetCount())
-      end)
-      grave_first:RegisterEffect(grave_first_trigger)
-
-      local grave_second_trigger=Effect.CreateEffect(grave_second)
-      grave_second_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
-      grave_second_trigger:SetCode(EVENT_TO_DECK)
-      grave_second_trigger:SetRange(LOCATION_DECK)
-      grave_second_trigger:SetOperation(function(e,tp,eg)
-        Debug.Message("to deck second group " .. eg:GetCount())
-      end)
-      grave_second:RegisterEffect(grave_second_trigger)
-
-      local to_deck_generic=Effect.CreateEffect(watcher)
-      to_deck_generic:SetType(EFFECT_TYPE_TRIGGER_O)
-      to_deck_generic:SetCode(EVENT_TO_DECK)
-      to_deck_generic:SetRange(LOCATION_HAND)
-      to_deck_generic:SetOperation(function(e,tp,eg)
-        Debug.Message("to deck generic group " .. eg:GetCount() .. "/" .. Duel.GetOperatedGroup():GetCount())
-      end)
-      watcher:RegisterEffect(to_deck_generic)
-
-      local move_generic=Effect.CreateEffect(watcher)
-      move_generic:SetType(EFFECT_TYPE_TRIGGER_O)
-      move_generic:SetCode(EVENT_MOVE)
-      move_generic:SetRange(LOCATION_HAND)
-      move_generic:SetOperation(function(e,tp,eg)
-        Debug.Message("move generic group " .. eg:GetCount() .. "/" .. Duel.GetOperatedGroup():GetCount())
-      end)
-      watcher:RegisterEffect(move_generic)
-
-      local leave_grave_generic=Effect.CreateEffect(watcher)
-      leave_grave_generic:SetType(EFFECT_TYPE_TRIGGER_O)
-      leave_grave_generic:SetCode(EVENT_LEAVE_GRAVE)
-      leave_grave_generic:SetRange(LOCATION_HAND)
-      leave_grave_generic:SetOperation(function(e,tp,eg)
-        Debug.Message("leave grave generic group " .. eg:GetCount() .. "/" .. Duel.GetOperatedGroup():GetCount())
-      end)
-      watcher:RegisterEffect(leave_grave_generic)
-
-      Duel.SwapDeckAndGrave(0)
-      Debug.Message("swap operated " .. Duel.GetOperatedGroup():GetCount())
-      `,
-      "swap-deck-grave-grouped-event.lua",
-    );
-    expect(loaded.ok, loaded.error).toBe(true);
+    const swapAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === watcher!.uid);
+    expect(swapAction).toBeDefined();
+    applyAndAssert(session, swapAction!);
 
     const toGrave = ["100", "101"].map((code) => session.state.cards.find((card) => card.code === code)!);
     const toDeck = ["200", "201"].map((code) => session.state.cards.find((card) => card.code === code)!);
@@ -130,24 +54,29 @@ describe("Lua deck and graveyard swap grouped events", () => {
     for (const trigger of session.state.pendingTriggers.filter((candidate) => candidate.eventName === "sentToGraveyard")) expect(trigger.eventUids).toEqual(toGrave.map((card) => card.uid));
     for (const trigger of session.state.pendingTriggers.filter((candidate) => candidate.eventName === "sentToDeck")) expect(trigger.eventUids).toEqual(toDeck.map((card) => card.uid));
 
-    for (;;) {
-      const player = session.state.waitingFor ?? 0;
-      const trigger = getDuelLegalActions(session, player).find((candidate) => candidate.type === "activateTrigger");
-      if (!trigger) break;
-      applyAndAssert(session, trigger);
-    }
-    expect(host.messages).toEqual(
-      expect.arrayContaining([
-        "to grave first group 2",
-        "to grave second group 2",
-        "to grave generic group 2/2",
-        "to deck first group 2",
-        "to deck second group 2",
-        "to deck generic group 2/2",
-        "move generic group 4/4",
-        "leave grave generic group 2/2",
-      ]),
-    );
+    const resolvedMessages = [
+      "to grave first group 2",
+      "to grave second group 2",
+      "to grave generic group 2/2",
+      "to deck first group 2",
+      "to deck second group 2",
+      "to deck generic group 2/2",
+      "move generic group 4/4",
+      "leave grave generic group 2/2",
+    ];
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScripts, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state.pendingTriggers).toHaveLength(8);
+    expect(restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "moved")).toHaveLength(1);
+    expect(restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "leftGraveyard")).toHaveLength(1);
+    expect(restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "sentToGraveyard")).toHaveLength(3);
+    expect(restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "sentToDeck")).toHaveLength(3);
+    activateAllRestoredTriggers(restored);
+    expect(restored.host.messages).toEqual(expect.arrayContaining(resolvedMessages));
+
+    activateAllTriggers(session);
+    expect(host.messages).toEqual(expect.arrayContaining(resolvedMessages));
   });
 
   it("preserves active Lua reason source metadata for swapped deck-to-grave triggers", () => {
@@ -236,11 +165,148 @@ describe("Lua deck and graveyard swap grouped events", () => {
   });
 });
 
+function createSwapDeckGraveGroupedScripts(): { readScript(name: string): string | undefined } {
+  return {
+    readScript(name: string) {
+      if (name === "c100.lua") return `
+      c100={}
+      function c100.initial_effect(c)
+      local deck_first_trigger=Effect.CreateEffect(c)
+      deck_first_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+      deck_first_trigger:SetCode(EVENT_TO_GRAVE)
+      deck_first_trigger:SetRange(LOCATION_GRAVE)
+      deck_first_trigger:SetOperation(function(e,tp,eg)
+        Debug.Message("to grave first group " .. eg:GetCount())
+      end)
+      c:RegisterEffect(deck_first_trigger)
+      end
+      `;
+      if (name === "c101.lua") return `
+      c101={}
+      function c101.initial_effect(c)
+      local deck_second_trigger=Effect.CreateEffect(c)
+      deck_second_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+      deck_second_trigger:SetCode(EVENT_TO_GRAVE)
+      deck_second_trigger:SetRange(LOCATION_GRAVE)
+      deck_second_trigger:SetOperation(function(e,tp,eg)
+        Debug.Message("to grave second group " .. eg:GetCount())
+      end)
+      c:RegisterEffect(deck_second_trigger)
+      end
+      `;
+      if (name === "c200.lua") return `
+      c200={}
+      function c200.initial_effect(c)
+      local grave_first_trigger=Effect.CreateEffect(c)
+      grave_first_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+      grave_first_trigger:SetCode(EVENT_TO_DECK)
+      grave_first_trigger:SetRange(LOCATION_DECK)
+      grave_first_trigger:SetOperation(function(e,tp,eg)
+        Debug.Message("to deck first group " .. eg:GetCount())
+      end)
+      c:RegisterEffect(grave_first_trigger)
+      end
+      `;
+      if (name === "c201.lua") return `
+      c201={}
+      function c201.initial_effect(c)
+      local grave_second_trigger=Effect.CreateEffect(c)
+      grave_second_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+      grave_second_trigger:SetCode(EVENT_TO_DECK)
+      grave_second_trigger:SetRange(LOCATION_DECK)
+      grave_second_trigger:SetOperation(function(e,tp,eg)
+        Debug.Message("to deck second group " .. eg:GetCount())
+      end)
+      c:RegisterEffect(grave_second_trigger)
+      end
+      `;
+      if (name === "c300.lua") return `
+      c300={}
+      function c300.initial_effect(c)
+      local swap=Effect.CreateEffect(c)
+      swap:SetType(EFFECT_TYPE_IGNITION)
+      swap:SetRange(LOCATION_HAND)
+      swap:SetOperation(function(e,tp)
+        Duel.SwapDeckAndGrave(tp)
+        Debug.Message("swap operated " .. Duel.GetOperatedGroup():GetCount())
+      end)
+      c:RegisterEffect(swap)
+
+      local to_grave_generic=Effect.CreateEffect(c)
+      to_grave_generic:SetType(EFFECT_TYPE_TRIGGER_O)
+      to_grave_generic:SetCode(EVENT_TO_GRAVE)
+      to_grave_generic:SetRange(LOCATION_HAND)
+      to_grave_generic:SetOperation(function(e,tp,eg)
+        Debug.Message("to grave generic group " .. eg:GetCount() .. "/" .. Duel.GetOperatedGroup():GetCount())
+      end)
+      c:RegisterEffect(to_grave_generic)
+
+      local to_deck_generic=Effect.CreateEffect(c)
+      to_deck_generic:SetType(EFFECT_TYPE_TRIGGER_O)
+      to_deck_generic:SetCode(EVENT_TO_DECK)
+      to_deck_generic:SetRange(LOCATION_HAND)
+      to_deck_generic:SetOperation(function(e,tp,eg)
+        Debug.Message("to deck generic group " .. eg:GetCount() .. "/" .. Duel.GetOperatedGroup():GetCount())
+      end)
+      c:RegisterEffect(to_deck_generic)
+
+      local move_generic=Effect.CreateEffect(c)
+      move_generic:SetType(EFFECT_TYPE_TRIGGER_O)
+      move_generic:SetCode(EVENT_MOVE)
+      move_generic:SetRange(LOCATION_HAND)
+      move_generic:SetOperation(function(e,tp,eg)
+        Debug.Message("move generic group " .. eg:GetCount() .. "/" .. Duel.GetOperatedGroup():GetCount())
+      end)
+      c:RegisterEffect(move_generic)
+
+      local leave_grave_generic=Effect.CreateEffect(c)
+      leave_grave_generic:SetType(EFFECT_TYPE_TRIGGER_O)
+      leave_grave_generic:SetCode(EVENT_LEAVE_GRAVE)
+      leave_grave_generic:SetRange(LOCATION_HAND)
+      leave_grave_generic:SetOperation(function(e,tp,eg)
+        Debug.Message("leave grave generic group " .. eg:GetCount() .. "/" .. Duel.GetOperatedGroup():GetCount())
+      end)
+      c:RegisterEffect(leave_grave_generic)
+      end
+      `;
+      return undefined;
+    },
+  };
+}
+
+function activateAllTriggers(session: DuelSession): void {
+  for (;;) {
+    const player = session.state.waitingFor ?? 0;
+    const trigger = getDuelLegalActions(session, player).find((candidate) => candidate.type === "activateTrigger");
+    if (!trigger) break;
+    applyAndAssert(session, trigger);
+  }
+}
+
+function activateAllRestoredTriggers(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  for (;;) {
+    const player = restored.session.state.waitingFor ?? 0;
+    const trigger = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "activateTrigger");
+    if (!trigger) break;
+    applyLuaRestoreAndAssert(restored, trigger);
+  }
+}
+
 function applyAndAssert(session: DuelSession, action: Parameters<typeof applyResponse>[1]) {
   const response = applyResponse(session, action);
   expect(response.ok).toBe(true);
   expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, response.state.waitingFor!));
+  expect(queryPublicState(restored.session)).toEqual(response.state);
   return response;
 }
