@@ -153,6 +153,72 @@ describe("Lua move events", () => {
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored move trigger 200");
   });
+
+  it.each([
+    { label: "hand", api: "SendtoHand", event: "EVENT_TO_HAND", eventName: "sentToHand", eventCode: 1012 },
+    { label: "deck", api: "SendtoDeck", event: "EVENT_TO_DECK", eventName: "sentToDeck", eventCode: 1013 },
+  ])("preserves Duel.$api active reason source for sent-to-$label events", ({ api, event, eventName, eventCode }) => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: `${api} Starter`, kind: "monster" },
+      { code: "200", name: `${api} Target`, kind: "monster" },
+      { code: "300", name: `${api} Watcher`, kind: "monster" },
+    ];
+    const session = createDuel({ seed: 1178 + eventCode, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["200"] },
+    });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "100");
+    const target = session.state.cards.find((card) => card.code === "200");
+    expect(source).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local source_effect=nil
+      local starter=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 1, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local move=Effect.CreateEffect(starter)
+      move:SetType(EFFECT_TYPE_IGNITION)
+      move:SetRange(LOCATION_HAND)
+      move:SetOperation(function(e,tp)
+        source_effect=e
+        Duel.${api}(target, tp, REASON_EFFECT)
+        Debug.Message("${eventName} reason source " .. tostring(target:GetReasonCard()==starter) .. "/" .. tostring(target:GetReasonEffect()==source_effect))
+      end)
+      starter:RegisterEffect(move)
+
+      local trigger=Effect.CreateEffect(watcher)
+      trigger:SetType(EFFECT_TYPE_TRIGGER_O)
+      trigger:SetCode(${event})
+      trigger:SetRange(LOCATION_HAND)
+      trigger:SetOperation(function(e,tp,eg)
+        local moved=eg:GetFirst()
+        Debug.Message("${eventName} event reason source " .. tostring(moved:GetReasonCard():IsCode(100)) .. "/" .. tostring(moved:GetReasonEffect()==source_effect))
+      end)
+      watcher:RegisterEffect(trigger)
+      `,
+      `${eventName}-reason-source.lua`,
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+    expect(host.messages).toContain(`${eventName} reason source true/true`);
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual([eventName]);
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode, eventCardUid: target!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 });
+
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain(`${eventName} event reason source true/true`);
+  });
 });
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
