@@ -11,10 +11,12 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   if (!snippet) return undefined;
   if (/\breturn\s+Duel\s*\.\s*GetCurrentPhase\s*\(\s*\)\s*~=\s*PHASE_DRAW\b/.test(snippet)) return "condition:not-draw-phase";
   const equippedTargetSetcode = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetEquipTarget\\s*\\(\\s*\\)\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
-  const equippedTargetSetcodeValue = equippedTargetSetcode?.[1] ? luaNumberTokenValue(L, index, equippedTargetSetcode[1]) : undefined;
+  const localEquippedTargetSetcode = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetEquipTarget\\s*\\(\\s*\\)\\s+return\\s+\\1\\s+and\\s+\\1\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
+  const equippedTargetSetcodeValue = equippedTargetSetcode?.[1] ? luaNumberTokenValue(L, index, equippedTargetSetcode[1]) : localEquippedTargetSetcode?.[2] ? luaNumberTokenValue(L, index, localEquippedTargetSetcode[2]) : undefined;
   if (equippedTargetSetcodeValue !== undefined) return `condition:equipped-target-setcode:${equippedTargetSetcodeValue}`;
   const equippedTargetType = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetEquipTarget\\s*\\(\\s*\\)\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
-  const equippedTargetTypeValue = equippedTargetType?.[1] ? luaNumberTokenValue(L, index, equippedTargetType[1]) : undefined;
+  const localEquippedTargetType = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetEquipTarget\\s*\\(\\s*\\)\\s+return\\s+\\1\\s+and\\s+\\1\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
+  const equippedTargetTypeValue = equippedTargetType?.[1] ? luaNumberTokenValue(L, index, equippedTargetType[1]) : localEquippedTargetType?.[2] ? luaNumberTokenValue(L, index, localEquippedTargetType[2]) : undefined;
   if (equippedTargetTypeValue !== undefined) return `condition:equipped-target-type:${equippedTargetTypeValue}`;
   const equippedTargetRace = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetEquipTarget\\s*\\(\\s*\\)\\s+return\\s+\\1\\s+and\\s+\\1\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const equippedTargetRaceValue = equippedTargetRace?.[2] ? luaNumberTokenValue(L, index, equippedTargetRace[2]) : undefined;
