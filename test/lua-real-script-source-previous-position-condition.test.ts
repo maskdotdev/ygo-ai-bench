@@ -94,4 +94,62 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     delete restoredShoreKnight!.previousPosition;
     expect(restoredEffect!.canActivate!(ctx)).toBe(false);
   });
+
+  it("restores local source previous-position checks from official face-up masks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const ranvierCode = "10698416";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === ranvierCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 1069, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [ranvierCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const ranvier = session.state.cards.find((card) => card.code === ranvierCode);
+    expect(ranvier).toBeDefined();
+    moveDuelCard(session.state, ranvier!.uid, "monsterZone", 0);
+    ranvier!.faceUp = true;
+    ranvier!.position = "faceUpAttack";
+    ranvier!.previousPosition = "faceUpDefense";
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${ranvierCode}),0,LOCATION_MZONE,0,nil)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+      e:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+      e:SetRange(LOCATION_MZONE)
+      e:SetCondition(function(e)
+        local c=e:GetHandler()
+        return c:IsPreviousPosition(POS_FACEUP)
+      end)
+      e:SetValue(aux.tgoval)
+      c:RegisterEffect(e)
+      `,
+      "ranvier-official-local-previous-position-condition.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 71,
+          luaConditionDescriptor: "condition:source-previous-position:5",
+          luaValueDescriptor: "cannot-be-effect-target:opponent",
+          range: ["monsterZone"],
+        }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredRanvier = restored.session.state.cards.find((card) => card.code === ranvierCode);
+    const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === ranvier!.uid && effect.code === 71);
+    expect(restoredEffect).toMatchObject({ luaConditionDescriptor: "condition:source-previous-position:5" });
+    expect(restoredEffect?.canActivate).toBeDefined();
+    const ctx = targetContext(restored.session.state, restoredRanvier!);
+    expect(restoredEffect!.canActivate!(ctx)).toBe(true);
+    restoredRanvier!.previousPosition = "faceDownDefense";
+    expect(restoredEffect!.canActivate!(ctx)).toBe(false);
+  });
 });

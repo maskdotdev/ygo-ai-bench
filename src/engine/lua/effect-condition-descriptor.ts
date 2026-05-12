@@ -185,6 +185,9 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const sourcePreviousPosition = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsPreviousPosition\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
   const sourcePreviousPositionValue = sourcePreviousPosition?.[1] ? luaNumberExpressionValue(L, index, sourcePreviousPosition[1]) : undefined;
   if (sourcePreviousPositionValue !== undefined) return `condition:source-previous-position:${sourcePreviousPositionValue}`;
+  const localSourcePreviousPosition = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s+return\\s+\\1\\s*:\\s*IsPreviousPosition\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
+  const localSourcePreviousPositionValue = localSourcePreviousPosition?.[2] ? luaNumberExpressionValue(L, index, localSourcePreviousPosition[2]) : undefined;
+  if (localSourcePreviousPositionValue !== undefined) return `condition:source-previous-position:${localSourcePreviousPositionValue}`;
   const sourcePreviousPositionMask = snippet.match(new RegExp(`\\b\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetPreviousPosition\\s*\\(\\s*\\)\\s*&\\s*(${numericOrIdentifierPattern})\\s*\\)\\s*~=\\s*0`));
   const sourcePreviousPositionMaskValue = sourcePreviousPositionMask?.[1] ? luaNumberTokenValue(L, index, sourcePreviousPositionMask[1]) : undefined;
   if (sourcePreviousPositionMaskValue !== undefined) return `condition:source-previous-position:${sourcePreviousPositionMaskValue}`;
