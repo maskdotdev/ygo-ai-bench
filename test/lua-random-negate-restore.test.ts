@@ -30,8 +30,9 @@ function runTossNegateRestore(eventCode: string, numericCode: number, eventName:
         e:SetType(EFFECT_TYPE_TRIGGER_O)
         e:SetCode(${eventCode})
         e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp,eg)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
           Debug.Message("${message} " .. eg:GetFirst():GetCode())
+          Debug.Message("${message} reason " .. tostring(r==REASON_EFFECT) .. "/" .. tostring(rp==0))
         end)
         c:RegisterEffect(e)
       end
@@ -57,12 +58,16 @@ function runTossNegateRestore(eventCode: string, numericCode: number, eventName:
   const watcher = session.state.cards.find((card) => card.code === "100");
   expect(watcher).toBeDefined();
   expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual([eventName]);
-  expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: numericCode, eventCardUid: watcher!.uid });
+  expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: numericCode, eventCardUid: watcher!.uid, eventReason: 0x40, eventReasonPlayer: 0 });
+  expect(session.state.pendingTriggers[0]).not.toHaveProperty("eventReasonCardUid");
+  expect(session.state.pendingTriggers[0]).not.toHaveProperty("eventReasonEffectId");
 
   const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
   expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
   expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual([eventName]);
-  expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: numericCode, eventCardUid: watcher!.uid });
+  expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: numericCode, eventCardUid: watcher!.uid, eventReason: 0x40, eventReasonPlayer: 0 });
+  expect(restored.session.state.pendingTriggers[0]).not.toHaveProperty("eventReasonCardUid");
+  expect(restored.session.state.pendingTriggers[0]).not.toHaveProperty("eventReasonEffectId");
   expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
   expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
   expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -81,8 +86,10 @@ function runTossNegateRestore(eventCode: string, numericCode: number, eventName:
   assertLuaRestoreLegalWindow(restored, staleTrigger, 0);
   expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual([eventName]);
   expect(restored.host.messages).not.toContain(`${message} 100`);
+  expect(restored.host.messages).not.toContain(`${message} reason true/true`);
 
   applyLuaRestoreAndAssert(restored, trigger!);
+  expect(restored.host.messages).toContain(`${message} reason true/true`);
   const staleReplay = applyLuaRestoreResponse(restored, trigger!);
   expect(staleReplay.ok).toBe(false);
   expect(staleReplay.error).toContain("Response is not currently legal");
