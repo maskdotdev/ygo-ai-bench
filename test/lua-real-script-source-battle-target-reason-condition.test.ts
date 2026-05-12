@@ -78,4 +78,64 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     restoredTarget!.reason = duelReason.battle;
     expect(effect!.canActivate!(ctx)).toBe(false);
   });
+
+  it("restores direct source battle-target reason checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const memorygantCode = "23790299";
+    const targetCode = "72329844";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => [memorygantCode, targetCode].includes(card.code));
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 8226, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [targetCode], extra: [memorygantCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const memorygant = session.state.cards.find((card) => card.code === memorygantCode);
+    const target = session.state.cards.find((card) => card.code === targetCode);
+    expect(memorygant).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, memorygant!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 1);
+    target!.reason = duelReason.battle;
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${memorygantCode}),0,LOCATION_MZONE,0,nil)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetCode(EFFECT_UPDATE_ATTACK)
+      e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
+        return e:GetHandler():IsRelateToBattle() and e:GetHandler():GetBattleTarget():IsReason(REASON_BATTLE)
+      end)
+      e:SetValue(300)
+      c:RegisterEffect(e)
+      `,
+      "memorygant-official-direct-battle-target-reason-condition.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          luaConditionDescriptor: `condition:source-relate-battle-target-reason:${duelReason.battle}`,
+          sourceUid: memorygant!.uid,
+        }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredMemorygant = restored.session.state.cards.find((card) => card.code === memorygantCode);
+    const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === memorygant!.uid && candidate.luaConditionDescriptor === `condition:source-relate-battle-target-reason:${duelReason.battle}`);
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = conditionContext(restored.session.state, restoredMemorygant!);
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restored.session.state.currentAttack = { attackerUid: restoredMemorygant!.uid, targetUid: restoredTarget!.uid };
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredTarget!.reason = duelReason.effect;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restored.session.state.currentAttack = { attackerUid: restoredMemorygant!.uid };
+    restoredTarget!.reason = duelReason.battle;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
 });
