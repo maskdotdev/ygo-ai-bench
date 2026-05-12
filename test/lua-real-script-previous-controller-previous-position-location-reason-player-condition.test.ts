@@ -73,6 +73,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     restoredTongue!.reason = duelReason.effect;
     restoredTongue!.reasonPlayer = 0;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventReasonPlayer: 1 })).toBe(true);
     restoredTongue!.reasonPlayer = 1;
     restoredTongue!.previousPosition = "faceUpAttack";
     expect(effect!.canActivate!(ctx)).toBe(false);

@@ -76,6 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredDispatchparazzi!.reasonPlayer = 0;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventReasonPlayer: 1 })).toBe(true);
     restoredDispatchparazzi!.reasonPlayer = 1;
     restoredDispatchparazzi!.previousLocation = "hand";
     expect(effect!.canActivate!(ctx)).toBe(false);

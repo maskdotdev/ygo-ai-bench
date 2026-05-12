@@ -73,6 +73,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     restoredStruggle!.previousPosition = "faceDown";
     restoredStruggle!.reasonPlayer = 0;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventReasonPlayer: 1 })).toBe(true);
     restoredStruggle!.reasonPlayer = 1;
     restoredStruggle!.previousLocation = "hand";
     expect(effect!.canActivate!(ctx)).toBe(false);
