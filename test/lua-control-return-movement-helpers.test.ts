@@ -256,8 +256,9 @@ describe("Lua control and return movement helpers", () => {
             e:SetType(EFFECT_TYPE_TRIGGER_O)
             e:SetCode(EVENT_TO_HAND)
             e:SetRange(LOCATION_HAND)
-            e:SetOperation(function(e,tp,eg)
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("restored to hand trigger " .. eg:GetFirst():GetCode())
+              Debug.Message("restored to hand reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(e)
           end
@@ -281,14 +282,16 @@ describe("Lua control and return movement helpers", () => {
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
     applyAndAssert(session, action!);
+    const starter = session.state.cards.find((card) => card.code === "100");
+    expect(starter).toBeDefined();
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ location: "hand", controller: 1 });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["sentToHand"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1012, eventCardUid: target!.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1012, eventCardUid: target!.uid, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["sentToHand"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1012, eventCardUid: target!.uid });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1012, eventCardUid: target!.uid, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
     expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
     expect(queryPublicState(restored.session).triggerOrderPrompt).toEqual(queryPublicState(session).triggerOrderPrompt);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
@@ -310,6 +313,7 @@ describe("Lua control and return movement helpers", () => {
 
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored to hand trigger 200");
+    expect(restored.host.messages).toContain("restored to hand reason effect true");
   });
 
   it("makes Lua optional when to-hand triggers miss timing after later event boundaries", () => {
