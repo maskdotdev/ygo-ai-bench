@@ -98,4 +98,78 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
       restoredPanzer!.reason = duelReason.destroy | duelReason.battle;
     }
   });
+
+  it("restores local source GetReason bitmask checks from serialized reason flags", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const panzerDragonCode = "72959823";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === panzerDragonCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 7297, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { extra: [panzerDragonCode], main: [] }, 1: { main: [] } });
+    startDuel(session);
+
+    const panzer = session.state.cards.find((card) => card.code === panzerDragonCode);
+    expect(panzer).toBeDefined();
+    moveDuelCard(session.state, panzer!.uid, "monsterZone", 0);
+    panzer!.faceUp = true;
+    panzer!.position = "faceUpAttack";
+    panzer!.reason = duelReason.destroy | duelReason.battle;
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${panzerDragonCode}),0,LOCATION_MZONE,0,nil)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+      e:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+      e:SetRange(LOCATION_MZONE)
+      e:SetCondition(function(e)
+        local c=e:GetHandler()
+        return (c:GetReason()&REASON_BATTLE)~=0
+      end)
+      e:SetValue(aux.tgoval)
+      c:RegisterEffect(e)
+      local e2=e:Clone()
+      e2:SetCondition(function(e)
+        local c=e:GetHandler()
+        return c:GetReason()&REASON_BATTLE>0
+      end)
+      c:RegisterEffect(e2)
+      `,
+      "panzer-dragon-official-local-source-get-reason-condition.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    expect(session.state.effects.filter((effect) => effect.code === 71)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          luaConditionDescriptor: `condition:source-reason:${duelReason.battle}`,
+          luaValueDescriptor: "cannot-be-effect-target:opponent",
+          range: ["monsterZone"],
+        }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredPanzer = restored.session.state.cards.find((card) => card.code === panzerDragonCode);
+    const restoredEffects = restored.session.state.effects.filter((effect) => effect.sourceUid === panzer!.uid && effect.code === 71);
+    expect(restoredPanzer).toBeDefined();
+    expect(restoredEffects).toHaveLength(2);
+    for (const restoredEffect of restoredEffects) {
+      expect(restoredEffect).toMatchObject({
+        luaConditionDescriptor: `condition:source-reason:${duelReason.battle}`,
+        luaValueDescriptor: "cannot-be-effect-target:opponent",
+        range: ["monsterZone"],
+      });
+      expect(restoredEffect.canActivate).toBeDefined();
+      const ctx = targetContext(restored.session.state, restoredPanzer!);
+      expect(restoredEffect.canActivate!(ctx)).toBe(true);
+      restoredPanzer!.reason = duelReason.destroy | duelReason.effect;
+      expect(restoredEffect.canActivate!(ctx)).toBe(false);
+      delete restoredPanzer!.reason;
+      expect(restoredEffect.canActivate!(ctx)).toBe(false);
+      restoredPanzer!.reason = duelReason.destroy | duelReason.battle;
+    }
+  });
 });
