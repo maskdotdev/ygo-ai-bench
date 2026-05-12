@@ -12,7 +12,7 @@ describe("Lua chain activation events", () => {
 
   it("queues chaining triggers with the chain source as event card", () => {
     const events = runChainEventFixture("EVENT_CHAINING");
-    expect(events).toEqual([{ eventName: "chaining", eventCode: 1027, eventPlayer: 0, eventValue: 1, eventChainDepth: 1, eventChainLinkId: events[0]!.eventChainLinkId, eventReasonPlayer: 0 }]);
+    expect(events).toEqual([{ eventName: "chaining", eventCode: 1027, eventPlayer: 0, eventValue: 1, eventChainDepth: 1, eventChainLinkId: events[0]!.eventChainLinkId, eventReasonPlayer: 0, relatedEffectId: 1 }]);
     expect(events[0]!.eventChainLinkId).toMatch(/^chain-/);
   });
 });
@@ -58,8 +58,9 @@ function runChainEventFixture(eventCode: "EVENT_CHAIN_ACTIVATING" | "EVENT_CHAIN
         e:SetCondition(function(e,tp,eg,ep,ev,re,r,rp)
           return eg and eg:IsExists(function(tc) return tc:IsCode(100) end,1,nil)
         end)
-        e:SetOperation(function(e,tp)
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
           Debug.Message("watcher resolved " .. tp)
+          Debug.Message("watcher related effect " .. tostring(re~=nil and re:GetHandler():IsCode(100)))
         end)
         c:RegisterEffect(e)
       end
@@ -132,6 +133,7 @@ function runChainEventFixture(eventCode: "EVENT_CHAIN_ACTIVATING" | "EVENT_CHAIN
     ...(trigger.eventChainDepth === undefined ? {} : { eventChainDepth: trigger.eventChainDepth }),
     ...(trigger.eventChainLinkId === undefined ? {} : { eventChainLinkId: trigger.eventChainLinkId }),
     ...(trigger.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: trigger.eventReasonPlayer }),
+    ...(trigger.relatedEffectId === undefined ? {} : { relatedEffectId: trigger.relatedEffectId }),
   }));
   expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining(queuedEvents[0] ?? {})]));
   const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
@@ -168,6 +170,7 @@ function runChainEventFixture(eventCode: "EVENT_CHAIN_ACTIVATING" | "EVENT_CHAIN
     applyLuaRestoreAndAssert(restored, chainPass!);
   }
   expect(restored.host.messages).toContain("watcher resolved 0");
+  if (eventCode === "EVENT_CHAINING") expect(restored.host.messages).toContain("watcher related effect true");
   return queuedEvents;
 }
 
