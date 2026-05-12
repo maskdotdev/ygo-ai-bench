@@ -215,6 +215,7 @@ describe("Lua equip movement helpers", () => {
             e:SetRange(LOCATION_HAND)
             e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("restored equip trigger " .. eg:GetFirst():GetCode() .. "/" .. r .. "/" .. rp)
+              Debug.Message("restored equip reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(900)))
             end)
             c:RegisterEffect(e)
           end
@@ -259,6 +260,7 @@ describe("Lua equip movement helpers", () => {
     expect(trigger).toBeDefined();
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored equip trigger 500/64/0");
+    expect(restored.host.messages).toContain("restored equip reason effect true");
   });
 
   it("makes Lua optional when equip triggers miss timing after later event boundaries", () => {
