@@ -258,4 +258,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     restoredMikorange!.reason = duelReason.effect;
     expect(effect!.canActivate!(ctx)).toBe(false);
   });
+
+  it("restores local-handler GetPreviousControler opponent reason checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const logesFlameCode = "18478530";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === logesFlameCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 1847, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [logesFlameCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const logesFlame = session.state.cards.find((card) => card.code === logesFlameCode);
+    expect(logesFlame).toBeDefined();
+    moveDuelCard(session.state, logesFlame!.uid, "spellTrapZone", 0);
+    moveDuelCard(session.state, logesFlame!.uid, "graveyard", 0, duelReason.effect, 1);
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadCardScript(Number(logesFlameCode), workspace);
+    expect(register.ok, register.error).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const descriptor = `condition:source-previous-controller-reason-player-reason:${duelReason.effect}:opponent`;
+    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: logesFlame!.uid })]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredLogesFlame = restored.session.state.cards.find((card) => card.code === logesFlameCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === logesFlame!.uid && candidate.luaConditionDescriptor === descriptor);
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = conditionContext(restored.session.state, restoredLogesFlame!);
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredLogesFlame!.previousController = 1;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restoredLogesFlame!.previousController = 0;
+    restoredLogesFlame!.reasonPlayer = 0;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
 });
