@@ -76,4 +76,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     restoredRanshin!.previousController = 1;
     expect(effect!.canActivate!(ctx)).toBe(false);
   });
+
+  it("restores local-handler previous-location previous-controller opponent reason-player checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const coppeliaCode = "77841719";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === coppeliaCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 7784, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [coppeliaCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const coppelia = session.state.cards.find((card) => card.code === coppeliaCode);
+    expect(coppelia).toBeDefined();
+    moveDuelCard(session.state, coppelia!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, coppelia!.uid, "graveyard", 0, duelReason.effect, 1);
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadCardScript(Number(coppeliaCode), workspace);
+    expect(register.ok, register.error).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const descriptor = "condition:source-previous-controller-previous-location-reason-player:4:opponent";
+    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: coppelia!.uid })]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredCoppelia = restored.session.state.cards.find((card) => card.code === coppeliaCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === coppelia!.uid && candidate.luaConditionDescriptor === descriptor);
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = conditionContext(restored.session.state, restoredCoppelia!);
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredCoppelia!.reasonPlayer = 0;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restoredCoppelia!.reasonPlayer = 1;
+    restoredCoppelia!.previousLocation = "spellTrapZone";
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
 });
