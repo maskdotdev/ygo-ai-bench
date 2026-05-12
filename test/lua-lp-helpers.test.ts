@@ -550,6 +550,7 @@ describe("Lua LP helpers", () => {
             trigger:SetRange(LOCATION_HAND)
             trigger:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("damage trigger resolved " .. ep .. "/" .. ev .. "/" .. r .. "/" .. rp .. "/" .. Duel.GetLP(1))
+              Debug.Message("damage reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(trigger)
           end
@@ -588,6 +589,7 @@ describe("Lua LP helpers", () => {
     expect(restoredTrigger).toBeDefined();
     applyLuaRestoreAndAssert(restored, restoredTrigger!);
     expect(restored.host.messages).toContain("damage trigger resolved 1/700/64/0/7300");
+    expect(restored.host.messages).toContain("damage reason effect true");
 
     const damageTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(damageTrigger).toBeDefined();
@@ -898,6 +900,7 @@ describe("Lua LP helpers", () => {
             trigger:SetRange(LOCATION_HAND)
             trigger:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("draw trigger resolved " .. ep .. "/" .. ev .. "/" .. r .. "/" .. rp .. "/" .. Duel.GetOperatedGroup():GetCount() .. "/" .. Duel.GetFieldGroupCount(0, LOCATION_HAND, 0))
+              Debug.Message("draw reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(trigger)
           end
@@ -940,6 +943,7 @@ describe("Lua LP helpers", () => {
     expect(restoredTrigger).toBeDefined();
     applyLuaRestoreAndAssert(restored, restoredTrigger!);
     expect(restored.host.messages).toContain("draw trigger resolved 0/1/64/0/1/3");
+    expect(restored.host.messages).toContain("draw reason effect true");
 
     const drawTrigger = getDuelLegalActions(session, 0).find((action) => action.type === "activateTrigger");
     expect(drawTrigger).toBeDefined();
