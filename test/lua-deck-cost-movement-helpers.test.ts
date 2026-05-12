@@ -152,8 +152,9 @@ describe("Lua deck and cost movement helpers", () => {
             e:SetType(EFFECT_TYPE_TRIGGER_O)
             e:SetCode(EVENT_DISCARD)
             e:SetRange(LOCATION_HAND)
-            e:SetOperation(function(e,tp,eg)
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("restored discard trigger " .. eg:GetFirst():GetCode())
+              Debug.Message("restored discard reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(e)
           end
@@ -174,15 +175,17 @@ describe("Lua deck and cost movement helpers", () => {
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
     expect(action).toBeDefined();
     applyAndAssert(session, action!);
+    const starter = session.state.cards.find((card) => card.code === "100");
+    expect(starter).toBeDefined();
     const discarded = session.state.cards.find((card) => card.code === "200");
     expect(discarded).toMatchObject({ location: "graveyard" });
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["discarded"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1018, eventCardUid: discarded!.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1018, eventCardUid: discarded!.uid, eventReason: 0x4080, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["discarded"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1018, eventCardUid: discarded!.uid });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1018, eventCardUid: discarded!.uid, eventReason: 0x4080, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 });
     expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
     expect(queryPublicState(restored.session).triggerOrderPrompt).toEqual(queryPublicState(session).triggerOrderPrompt);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
@@ -204,6 +207,7 @@ describe("Lua deck and cost movement helpers", () => {
 
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored discard trigger 200");
+    expect(restored.host.messages).toContain("restored discard reason effect true");
   });
 
   it("makes Lua optional when discard triggers miss timing after later event boundaries", () => {

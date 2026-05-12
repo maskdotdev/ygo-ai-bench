@@ -371,9 +371,10 @@ describe("Lua movement helpers", () => {
               local tc=eg:GetFirst()
               return tc and tc:IsCode(200) and tc:IsPreviousLocation(LOCATION_MZONE) and tc:IsReason(REASON_EFFECT)
             end)
-            e:SetOperation(function(e,tp,eg)
+            e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               local tc=eg:GetFirst()
               Debug.Message("restored to grave " .. tc:GetCode() .. "/" .. tostring(tc:IsLocation(LOCATION_GRAVE)))
+              Debug.Message("restored to grave reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(e)
           end
@@ -403,12 +404,12 @@ describe("Lua movement helpers", () => {
     expect(action).toBeDefined();
     applyAndAssert(session, action!);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toContain("sentToGraveyard");
-    expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventCode: 1014, eventCardUid: target!.uid }));
+    expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventCode: 1014, eventCardUid: target!.uid, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: sender!.uid, eventReasonEffectId: 1 }));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toContain("sentToGraveyard");
-    expect(restored.session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventCode: 1014, eventCardUid: target!.uid }));
+    expect(restored.session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventCode: 1014, eventCardUid: target!.uid, eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: sender!.uid, eventReasonEffectId: 1 }));
     expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
     expect(queryPublicState(restored.session).triggerOrderPrompt).toEqual(queryPublicState(session).triggerOrderPrompt);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
@@ -418,6 +419,7 @@ describe("Lua movement helpers", () => {
     expect(trigger).toBeDefined();
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored to grave 200/true");
+    expect(restored.host.messages).toContain("restored to grave reason effect true");
   });
 
   it("applies restored Lua leave-grave triggers through restore responses", () => {
