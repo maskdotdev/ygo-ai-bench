@@ -446,15 +446,21 @@ export function ritualSummonSelectedMaterials(
     }
   }
   if (!materialsAlreadyMoved) {
+    const reasonPlayer = hostState.activeContext?.player ?? target.controller;
+    const materialReason = duelReason.material | duelReason.ritual;
+    const materialPayload = luaEffectReasonPayload(hostState, materialReason, reasonPlayer);
     for (const uid of materialUids) {
       const material = session.state.cards.find((candidate) => candidate.uid === uid);
       if (!material) continue;
-      sendDuelCardToGraveyard(session.state, uid, target.controller, duelReason.material | duelReason.ritual, target.controller);
+      sendDuelCardToGraveyard(session.state, uid, target.controller, materialReason, reasonPlayer, materialPayload);
       pushDuelLog(session.state, "ritualMaterial", target.controller, material.name, `Used for ${target.name}`);
     }
   }
   hostState.activeOperationMoved = true;
-  moveDuelCard(session.state, target.uid, "monsterZone", target.controller, duelReason.summon | duelReason.specialSummon | duelReason.ritual);
+  const reasonPlayer = hostState.activeContext?.player ?? target.controller;
+  const summonPayload = luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon | duelReason.ritual, reasonPlayer);
+  moveDuelCard(session.state, target.uid, "monsterZone", target.controller, duelReason.summon | duelReason.specialSummon | duelReason.ritual, reasonPlayer);
+  applyReasonPayload(target, summonPayload);
   applySummonPosition(target, position);
   target.summonType = "ritual";
   target.summonPlayer = target.controller;
@@ -463,7 +469,7 @@ export function ritualSummonSelectedMaterials(
   recordSpecialSummonActivity(session.state, target.controller, target);
   pushDuelLog(session.state, "ritualSummon", target.controller, target.name, `Ritual Summoned with ${materialUids.length} material(s)`);
   markLuaOperationTimingBoundary(session, hostState);
-  collectLuaSummonEvent(session, "specialSummoned", target);
+  collectDuelTriggerEffects(session.state, "specialSummoned", target, summonPayload);
 }
 
 function isSelectedRitualTargetLocation(location: DuelLocation): boolean {
