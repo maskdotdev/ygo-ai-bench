@@ -83,6 +83,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(restoredEffect!.canActivate!(ctx)).toBe(true);
     restoredTitaniklad!.reason = duelReason.return;
     expect(restoredEffect!.canActivate!(ctx)).toBe(false);
+    expect(restoredEffect!.canActivate!({ ...ctx, eventCard: restoredTitaniklad!, eventReason: duelReason.effect })).toBe(true);
     restoredTitaniklad!.reason = duelReason.effect;
     expect(restoredEffect!.canActivate!(ctx)).toBe(true);
     restoredTitaniklad!.turnId = restored.session.state.turn - 1;
@@ -138,5 +139,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     restoredTitaniklad!.turnId = restored.session.state.turn;
     restoredTitaniklad!.reason = duelReason.return | duelReason.effect;
     expect(restoredEffect!.canActivate!(ctx)).toBe(false);
+    expect(restoredEffect!.canActivate!({ ...ctx, eventCard: restoredTitaniklad!, eventReason: duelReason.effect })).toBe(true);
   });
 });

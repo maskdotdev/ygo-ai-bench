@@ -87,6 +87,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredTarget!.reason = duelReason.effect;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventCard: restoredTarget!, eventReason: duelReason.battle })).toBe(true);
     restored.session.state.currentAttack = { attackerUid: restoredMemorygant!.uid };
     restoredTarget!.reason = duelReason.battle;
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -135,6 +136,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredTarget!.reason = duelReason.effect;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventCard: restoredTarget!, eventReason: duelReason.battle })).toBe(true);
     restored.session.state.currentAttack = { attackerUid: restoredMemorygant!.uid };
     restoredTarget!.reason = duelReason.battle;
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -195,6 +197,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredTarget!.reason = duelReason.effect;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventCard: restoredTarget!, eventReason: duelReason.battle })).toBe(true);
     restored.session.state.currentAttack = { attackerUid: restoredMemorygant!.uid };
     restoredTarget!.reason = duelReason.battle;
     expect(effect!.canActivate!(ctx)).toBe(false);
