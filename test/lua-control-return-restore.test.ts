@@ -155,6 +155,7 @@ describe("Lua control and return restore helpers", () => {
             e:SetRange(LOCATION_HAND)
             e:SetOperation(function(e,tp,eg)
               Debug.Message("restored to deck trigger " .. eg:GetFirst():GetCode())
+              Debug.Message("restored to deck reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(e)
           end
@@ -211,6 +212,7 @@ describe("Lua control and return restore helpers", () => {
 
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored to deck trigger 200");
+    expect(restored.host.messages).toContain("restored to deck reason effect true");
     const staleReplay = applyLuaRestoreResponse(restored, trigger!);
     expect(staleReplay.ok).toBe(false);
     expect(staleReplay.error).toContain("Response is not currently legal");
