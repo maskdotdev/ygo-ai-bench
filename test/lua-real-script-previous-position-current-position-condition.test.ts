@@ -12,6 +12,8 @@ import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const positionFaceUpAttack = 0x1;
+const positionFaceUpDefense = 0x4;
 const positionAttack = 0x3;
 const positionDefense = 0x0c;
 
@@ -74,6 +76,44 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     expect(effect!.canActivate!(ctx)).toBe(false);
     restoredTaintedWisdom!.position = "faceUpDefense";
     restoredTaintedWisdom!.previousPosition = "faceUpDefense";
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
+
+  it("restores local previous-position current-position checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const samuraiCode = "64926005";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === samuraiCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 6492, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [samuraiCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const samurai = session.state.cards.find((card) => card.code === samuraiCode);
+    expect(samurai).toBeDefined();
+    moveDuelCard(session.state, samurai!.uid, "monsterZone", 0);
+    samurai!.faceUp = true;
+    samurai!.position = "faceUpAttack";
+    samurai!.previousPosition = "faceUpAttack";
+    samurai!.position = "faceUpDefense";
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadCardScript(Number(samuraiCode), workspace);
+    expect(register.ok, register.error).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const descriptor = `condition:source-previous-position-position:${positionFaceUpAttack}:${positionFaceUpDefense}`;
+    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: samurai!.uid })]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredSamurai = restored.session.state.cards.find((card) => card.code === samuraiCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === samurai!.uid && candidate.luaConditionDescriptor === descriptor);
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = conditionContext(restored.session.state, restoredSamurai!);
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredSamurai!.position = "faceUpAttack";
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restoredSamurai!.position = "faceUpDefense";
+    restoredSamurai!.previousPosition = "faceUpDefense";
     expect(effect!.canActivate!(ctx)).toBe(false);
   });
 });
