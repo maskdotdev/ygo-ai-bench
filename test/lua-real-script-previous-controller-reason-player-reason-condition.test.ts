@@ -117,4 +117,46 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     restoredNova!.reason = duelReason.destroy;
     expect(effect!.canActivate!(ctx)).toBe(false);
   });
+
+  it("restores local-handler opponent reason previous-controller checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const nightCode = "85827713";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === nightCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 8582, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [nightCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const night = session.state.cards.find((card) => card.code === nightCode);
+    expect(night).toBeDefined();
+    moveDuelCard(session.state, night!.uid, "spellTrapZone", 0);
+    moveDuelCard(session.state, night!.uid, "graveyard", 0, duelReason.destroy, 1);
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadCardScript(Number(nightCode), workspace);
+    expect(register.ok, register.error).toBe(true);
+    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    const descriptor = `condition:source-previous-controller-reason-player-reason:${duelReason.destroy}:opponent`;
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          luaConditionDescriptor: descriptor,
+          sourceUid: night!.uid,
+        }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredNight = restored.session.state.cards.find((card) => card.code === nightCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === night!.uid && candidate.luaConditionDescriptor === descriptor);
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = conditionContext(restored.session.state, restoredNight!);
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredNight!.reasonPlayer = 0;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restoredNight!.reasonPlayer = 1;
+    restoredNight!.previousController = 1;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
 });
