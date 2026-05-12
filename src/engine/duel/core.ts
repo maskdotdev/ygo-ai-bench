@@ -677,8 +677,8 @@ export function canChangeDuelCardPosition(state: DuelState, uid: string, positio
   return canCoreChangeDuelCardPosition(state, uid, position, coreBattleHandlers, source);
 }
 
-export function changeDuelCardPosition(state: DuelState, player: PlayerId, uid: string, position: CardPosition, source: "effect" | "manual" = "effect"): DuelCardInstance {
-  return changeCoreDuelCardPosition(state, player, uid, position, coreBattleHandlers, source);
+export function changeDuelCardPosition(state: DuelState, player: PlayerId, uid: string, position: CardPosition, source: "effect" | "manual" = "effect", payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance {
+  return changeCoreDuelCardPosition(state, player, uid, position, coreBattleHandlers, source, payload);
 }
 
 function createContinuousEffectContext(state: DuelState): ContinuousEffectContextFactory {

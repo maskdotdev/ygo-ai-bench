@@ -6,6 +6,80 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua ChangePosition grouped events", () => {
+  it("preserves active Lua reason source metadata for position-change events", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Position Reason Source", kind: "monster" },
+      { code: "200", name: "Position Reason Target", kind: "monster" },
+      { code: "201", name: "Position Reason Second Target", kind: "monster" },
+      { code: "300", name: "Position Reason Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 287, startingHandSize: 4, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "201", "300"] }, 1: { main: [] } });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "100");
+    const target = session.state.cards.find((card) => card.code === "200");
+    const second = session.state.cards.find((card) => card.code === "201");
+    const watcher = session.state.cards.find((card) => card.code === "300");
+    expect(source).toBeDefined();
+    expect(target).toBeDefined();
+    expect(second).toBeDefined();
+    expect(watcher).toBeDefined();
+    for (const card of [target!, second!]) {
+      moveDuelCard(session.state, card.uid, "monsterZone", 0);
+      card.position = "faceUpAttack";
+      card.faceUp = true;
+    }
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          local target=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 200), tp, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+          local second=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 201), tp, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+          Duel.ChangePosition(Group.FromCards(target, second), POS_FACEUP_DEFENSE)
+          Debug.Message("position reason source " .. tostring(target:GetReasonCard()==c) .. "/" .. tostring(target:GetReasonEffect()==source_effect))
+        end)
+        source_effect=e
+        c:RegisterEffect(e)
+      end
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_CHANGE_POS)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          local changed=eg:GetFirst()
+          Debug.Message("position event reason source " .. eg:GetCount() .. "/" .. tostring(changed:GetReasonCard():IsCode(100)) .. "/" .. tostring(changed:GetReasonEffect()==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "change-position-reason-source.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    expect(host.messages).toContain("position reason source true/true");
+    expect(session.state.pendingTriggers).toContainEqual(
+      expect.objectContaining({ eventName: "positionChanged", eventCardUid: target!.uid, eventUids: [target!.uid, second!.uid], eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }),
+    );
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === watcher!.uid);
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain("position event reason source 2/true/true");
+  });
+
   it("collects one grouped EVENT_CHANGE_POS success event for direct group position changes", () => {
     const cards: DuelCardData[] = [
       { code: "200", name: "Grouped Position First", kind: "monster" },

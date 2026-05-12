@@ -379,7 +379,7 @@ function pushChangePosition(L: unknown, session: DuelSession, hostState: LuaDuel
       continue;
     }
     try {
-      changeDuelCardPosition(session.state, card.controller, uid, requestedPosition);
+      changeDuelCardPosition(session.state, card.controller, uid, requestedPosition, "effect", luaEffectReasonPayload(hostState, duelReason.effect, hostState.activeContext?.player ?? card.controller));
       changed.push(uid);
     } catch {
       // EDOPro-style helpers report the number of changed cards; illegal changes simply fail.

@@ -7,13 +7,14 @@ import { otherPlayer } from "#duel/player-id.js";
 import { duelReason } from "#duel/reasons.js";
 import { cardTypeFlags } from "#duel/card-stats.js";
 import { isDuelPhaseSkipped } from "#duel/turn-flow.js";
+import type { DuelEventPayload } from "#duel/event-history.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
 export interface DuelBattleCallbacks {
   canAttackTarget?(attacker: DuelCardInstance, target: DuelCardInstance): boolean;
   applyStoredBattleDamage?(battleCards?: DuelCardInstance[]): boolean;
   changeBattleDamage?(player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
-  collectEvent(eventName: DuelEventName, eventCard?: DuelCardInstance | DuelCardInstance[]): void;
+  collectEvent(eventName: DuelEventName, eventCard?: DuelCardInstance | DuelCardInstance[], payload?: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId">): void;
   damagePlayer(player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
   destroyCard(uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;
   getAttackValue?(card: DuelCardInstance): number;
@@ -239,28 +240,30 @@ export function getDuelAttackCostPaid(state: DuelState): number {
   return state.attackCostPaid;
 }
 
-export function changeDuelCardPosition(state: DuelState, player: PlayerId, uid: string, position: CardPosition, collectEvent: DuelBattleCallbacks["collectEvent"]): DuelCardInstance {
+export function changeDuelCardPosition(state: DuelState, player: PlayerId, uid: string, position: CardPosition, collectEvent: DuelBattleCallbacks["collectEvent"], payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance {
   const card = requireControlledCard(state, player, uid, "monsterZone");
   if (!canChangeDuelCardPosition(state, uid, position)) throw new Error(`${card.name} cannot change to ${position}`);
-  return applyDuelCardPositionChange(state, player, uid, position, collectEvent);
+  return applyDuelCardPositionChange(state, player, uid, position, collectEvent, payload);
 }
 
-export function changeDuelCardPositionByEffect(state: DuelState, player: PlayerId, uid: string, position: CardPosition, collectEvent: DuelBattleCallbacks["collectEvent"]): DuelCardInstance {
+export function changeDuelCardPositionByEffect(state: DuelState, player: PlayerId, uid: string, position: CardPosition, collectEvent: DuelBattleCallbacks["collectEvent"], payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance {
   const card = requireControlledCard(state, player, uid, "monsterZone");
   if (!canEffectChangeDuelCardPosition(state, uid, position)) throw new Error(`${card.name} cannot change to ${position}`);
-  return applyDuelCardPositionChange(state, player, uid, position, collectEvent);
+  return applyDuelCardPositionChange(state, player, uid, position, collectEvent, payload);
 }
 
-function applyDuelCardPositionChange(state: DuelState, player: PlayerId, uid: string, position: CardPosition, collectEvent: DuelBattleCallbacks["collectEvent"]): DuelCardInstance {
+function applyDuelCardPositionChange(state: DuelState, player: PlayerId, uid: string, position: CardPosition, collectEvent: DuelBattleCallbacks["collectEvent"], payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance {
   const card = requireControlledCard(state, player, uid, "monsterZone");
   recordPreviousDuelCardState(state, card);
   card.position = position;
   card.faceUp = position !== "faceDownDefense";
+  if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
+  if (payload.eventReasonEffectId !== undefined) card.reasonEffectId = payload.eventReasonEffectId;
   state.positionsChanged.push(card.uid);
   pruneResetEffectsAfterPositionChange(state, card);
   pruneDuelFlagEffectsAfterPositionChange(state, card);
   pushDuelLog(state, "changePosition", player, card.name, position);
-  collectEvent("positionChanged", card);
+  collectEvent("positionChanged", card, payload);
   return card;
 }
 

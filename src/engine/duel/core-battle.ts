@@ -42,6 +42,7 @@ import {
 } from "#duel/continuous-effects.js";
 import { continuousSetPosition } from "#duel/continuous-position-effects.js";
 import type { BattleDamageChangeOptions } from "#duel/core-battle-damage.js";
+import type { DuelEventPayload } from "#duel/event-history.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEffectContext, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
 
 export type PositionChangeSource = "effect" | "manual";
@@ -52,7 +53,7 @@ export interface CoreBattleHandlers {
   battleDamagePlayer(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): PlayerId;
   battleDamageReason(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): number;
   changeBattleDamage(state: DuelState, player: PlayerId, amount: number, battleCards?: DuelCardInstance[], options?: BattleDamageChangeOptions): number;
-  collectEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance | DuelCardInstance[], payload?: { eventPlayer?: PlayerId; eventValue?: number; eventReason?: number }): void;
+  collectEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance | DuelCardInstance[], payload?: Pick<DuelEventPayload, "eventPlayer" | "eventValue" | "eventReason" | "eventReasonCardUid" | "eventReasonEffectId">): void;
   createContinuousContext(state: DuelState): ContinuousEffectContextFactory;
   damagePlayer(state: DuelState, player: PlayerId, amount: number, reason?: number): number;
   destroyCard(state: DuelState, uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;
@@ -219,13 +220,13 @@ export function canCoreChangeDuelCardPosition(state: DuelState, uid: string, pos
   );
 }
 
-export function changeCoreDuelCardPosition(state: DuelState, player: PlayerId, uid: string, position: CardPosition, handlers: CoreBattleHandlers, source: PositionChangeSource = "effect"): DuelCardInstance {
+export function changeCoreDuelCardPosition(state: DuelState, player: PlayerId, uid: string, position: CardPosition, handlers: CoreBattleHandlers, source: PositionChangeSource = "effect", payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance {
   if (!canCoreChangeDuelCardPosition(state, uid, position, handlers, source)) {
     const card = findCard(state, uid);
     throw new Error(`${card?.name ?? uid} cannot change position`);
   }
   const changePosition = source === "effect" ? changeDuelCardPositionByEffectRule : changeDuelCardPositionRule;
-  return changePosition(state, player, uid, position, (eventName, eventCard) => handlers.collectEvent(state, eventName, eventCard));
+  return changePosition(state, player, uid, position, (eventName, eventCard) => handlers.collectEvent(state, eventName, eventCard, payload), payload);
 }
 
 export function corePositionChangeActions(state: DuelState, player: PlayerId, handlers: CoreBattleHandlers): DuelAction[] {
