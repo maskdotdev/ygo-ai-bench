@@ -76,6 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredMikorange!.reasonPlayer = 0;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventReasonPlayer: 1 })).toBe(true);
     restoredMikorange!.reasonPlayer = 1;
     restoredMikorange!.previousController = 1;
     expect(effect!.canActivate!(ctx)).toBe(false);

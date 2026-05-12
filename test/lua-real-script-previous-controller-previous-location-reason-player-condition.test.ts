@@ -77,6 +77,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredCoppelia!.reasonPlayer = 0;
     expect(effect!.canActivate!(ctx)).toBe(false);
+    expect(effect!.canActivate!({ ...ctx, eventReasonPlayer: 1 })).toBe(true);
     restoredCoppelia!.reasonPlayer = 1;
     restoredCoppelia!.previousLocation = "spellTrapZone";
     expect(effect!.canActivate!(ctx)).toBe(false);
