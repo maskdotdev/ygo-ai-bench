@@ -30,6 +30,65 @@ function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance
 }
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dragon Buster equipped Clock Lizard lock", () => {
+  it("restores local handler equipped-only opponent Clock Lizard checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const dragonBusterCode = "76218313";
+    const busterBladerCode = "78193831";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === dragonBusterCode),
+      { code: busterBladerCode, name: "Buster Blader Equip Target", kind: "monster", typeFlags: 0x1, race: 0x1, attribute: 0x1, level: 7, attack: 2600, defense: 2300 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 764, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [dragonBusterCode, busterBladerCode] }, 1: { main: [] } });
+    startDuel(session);
+    const dragonBuster = session.state.cards.find((card) => card.code === dragonBusterCode);
+    const busterBlader = session.state.cards.find((card) => card.code === busterBladerCode);
+    expect(dragonBuster).toBeDefined();
+    expect(busterBlader).toBeDefined();
+    moveDuelCard(session.state, busterBlader!.uid, "monsterZone", 0);
+    busterBlader!.faceUp = true;
+    busterBlader!.position = "faceUpAttack";
+    moveDuelCard(session.state, dragonBuster!.uid, "spellTrapZone", 0);
+    dragonBuster!.faceUp = true;
+    dragonBuster!.equippedToUid = busterBlader!.uid;
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${dragonBusterCode}),0,LOCATION_SZONE,0,nil)
+      local e4=aux.createContinuousLizardCheck(c,LOCATION_SZONE,nil,0,0xff)
+      e4:SetCondition(function(e)
+        local c=e:GetHandler()
+        return c:GetEquipTarget()
+      end)
+      c:RegisterEffect(e4)
+      `,
+      "dragon-buster-official-local-handler-equipped-lizard.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    const effect = session.state.effects.find((candidate) => candidate.code === 51476410);
+    expect(effect).toMatchObject({
+      luaConditionDescriptor: "condition:source-equipped",
+      range: ["spellTrapZone"],
+      targetRange: [0, 0xff],
+      value: 1,
+    });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredEffect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
+    const restoredDragonBuster = restored.session.state.cards.find((card) => card.code === dragonBusterCode);
+    expect(restoredEffect?.canActivate).toBeDefined();
+    expect(restoredDragonBuster).toBeDefined();
+    const ctx = targetContext(restored.session.state, restoredDragonBuster!);
+    expect(restoredEffect!.canActivate!(ctx)).toBe(true);
+    delete restoredDragonBuster!.equippedToUid;
+    expect(restoredEffect!.canActivate!(ctx)).toBe(false);
+  });
+
   it("restores local equipped-only opponent Clock Lizard checks", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const dragonBusterCode = "76218313";
