@@ -94,6 +94,7 @@ describe("Lua level-up events", () => {
             e:SetRange(LOCATION_HAND)
             e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
               Debug.Message("restored level trigger " .. eg:GetFirst():GetCode() .. "/" .. r .. "/" .. rp)
+              Debug.Message("restored level reason effect " .. tostring(Duel.GetReasonEffect():GetHandler():IsCode(100)))
             end)
             c:RegisterEffect(e)
           end
@@ -149,6 +150,7 @@ describe("Lua level-up events", () => {
 
     applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toContain("restored level trigger 100/64/0");
+    expect(restored.host.messages).toContain("restored level reason effect true");
   });
 
   it("makes earlier Lua optional when triggers miss timing at level-change boundaries", () => {
