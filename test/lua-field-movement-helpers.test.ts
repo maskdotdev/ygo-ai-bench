@@ -71,6 +71,75 @@ describe("Lua field movement helpers", () => {
     expect(host.messages).toContain("move field event reason source true/true");
   });
 
+  it("preserves active Lua reason source metadata for ReturnToField move events", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "ReturnToField Reason Source", kind: "monster" },
+      { code: "200", name: "ReturnToField Reason Target", kind: "monster" },
+      { code: "300", name: "ReturnToField Reason Watcher", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 291, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "300"] }, 1: { main: [] } });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.code === "200");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+    target!.position = "faceUpAttack";
+    target!.faceUp = true;
+    moveDuelCard(session.state, target!.uid, "banished", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          local target=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 200), tp, LOCATION_REMOVED, 0, 1, 1, nil):GetFirst()
+          Duel.ReturnToField(target, POS_FACEUP_DEFENSE)
+          Debug.Message("return field reason source " .. tostring(target:GetReasonCard()==c) .. "/" .. tostring(target:GetReasonEffect()==source_effect))
+        end)
+        source_effect=e
+        c:RegisterEffect(e)
+      end
+      c300={}
+      function c300.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_MOVE)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp,eg)
+          local moved=eg:GetFirst()
+          Debug.Message("return field event reason source " .. tostring(moved:GetReasonCard():IsCode(100)) .. "/" .. tostring(moved:GetReasonEffect()==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "return-to-field-reason-source.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const source = session.state.cards.find((card) => card.code === "100");
+    const watcher = session.state.cards.find((card) => card.code === "300");
+    expect(source).toBeDefined();
+    expect(watcher).toBeDefined();
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    expect(host.messages).toContain("return field reason source true/true");
+    expect(session.state.pendingTriggers).toContainEqual(
+      expect.objectContaining({ eventName: "moved", eventCardUid: target!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }),
+    );
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === watcher!.uid);
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain("return field event reason source true/true");
+  });
+
   it("lets Lua scripts move cards onto field zones", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Field Filler A", kind: "monster" },
