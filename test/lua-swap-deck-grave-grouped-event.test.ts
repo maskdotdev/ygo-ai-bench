@@ -149,6 +149,73 @@ describe("Lua deck and graveyard swap grouped events", () => {
       ]),
     );
   });
+
+  it("preserves active Lua reason source metadata for swapped deck-to-grave triggers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Swap Source", kind: "monster", typeFlags: 0x21 },
+      { code: "200", name: "Swap Deck Target", kind: "monster", typeFlags: 0x21 },
+      { code: "300", name: "Swap Grave Target", kind: "monster", typeFlags: 0x21 },
+    ];
+    const session = createDuel({ seed: 179, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "300"] }, 1: { main: [] } });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "100");
+    const deckTarget = session.state.cards.find((card) => card.code === "200");
+    const graveTarget = session.state.cards.find((card) => card.code === "300");
+    expect(source).toBeDefined();
+    expect(deckTarget).toBeDefined();
+    expect(graveTarget).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "hand", 0);
+    moveDuelCard(session.state, graveTarget!.uid, "graveyard", 0);
+    deckTarget!.sequence = 0;
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          Duel.SwapDeckAndGrave(tp)
+          Debug.Message("swap reason operated " .. Duel.GetOperatedGroup():GetCount())
+        end)
+        source_effect=e
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_TO_GRAVE)
+        e:SetRange(LOCATION_GRAVE)
+        e:SetOperation(function(e,tp,eg)
+          local handler=e:GetHandler()
+          local rc=handler:GetReasonCard()
+          local re=handler:GetReasonEffect()
+          Debug.Message("swap reason source " .. tostring(rc and rc:IsCode(100)) .. "/" .. tostring(re==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "swap-deck-grave-reason-source-event.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    expect(host.messages).toContain("swap reason operated 2");
+    expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: deckTarget!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain("swap reason source true/true");
+  });
 });
 
 function applyAndAssert(session: DuelSession, action: Parameters<typeof applyResponse>[1]) {

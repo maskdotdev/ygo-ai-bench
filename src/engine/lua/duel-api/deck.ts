@@ -15,6 +15,7 @@ import { locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef,
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary, regroupLuaOperationEvent, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import { shuffle } from "#engine/rng.js";
+import type { DuelEventPayload } from "#duel/event-history.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -325,29 +326,38 @@ function swapDeckAndGrave(session: DuelSession, hostState: LuaDuelDeckApiHostSta
   const graveCards = getCards(session.state, player, "graveyard");
   if (deckCards.length === 0 && graveCards.length === 0) return [];
   markLuaOperationTimingBoundary(session, hostState);
+  const reasonPlayer = hostState.activeContext?.player ?? player;
+  const payload = luaEffectReasonPayload(hostState, duelReason.effect, reasonPlayer);
   const moved: string[] = [];
   for (const card of deckCards) {
-    moveDuelCard(session.state, card.uid, "graveyard", player, duelReason.effect, player);
+    moveDuelCard(session.state, card.uid, "graveyard", player, duelReason.effect, reasonPlayer);
+    applyReasonPayload(card, payload);
     moved.push(card.uid);
   }
   for (const card of graveCards) {
-    moveDuelCard(session.state, card.uid, "deck", player, duelReason.effect, player);
+    moveDuelCard(session.state, card.uid, "deck", player, duelReason.effect, reasonPlayer);
+    applyReasonPayload(card, payload);
     moved.push(card.uid);
   }
   for (const [sequence, card] of deckCards.entries()) card.sequence = sequence;
   for (const [sequence, card] of graveCards.entries()) card.sequence = sequence;
   shuffleDeck(session, player);
   if (hostState.activeContext) hostState.activeOperationMoved = true;
-  collectSwapDeckAndGraveEvents(session, deckCards, graveCards);
+  collectSwapDeckAndGraveEvents(session, deckCards, graveCards, payload);
   return moved;
 }
 
-function collectSwapDeckAndGraveEvents(session: DuelSession, toGraveyard: DuelCardInstance[], toDeck: DuelCardInstance[]): void {
+function applyReasonPayload(card: DuelCardInstance, payload: DuelEventPayload): void {
+  if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
+  if (payload.eventReasonEffectId !== undefined) card.reasonEffectId = payload.eventReasonEffectId;
+}
+
+function collectSwapDeckAndGraveEvents(session: DuelSession, toGraveyard: DuelCardInstance[], toDeck: DuelCardInstance[], payload: DuelEventPayload): void {
   const moved = [...toGraveyard, ...toDeck];
-  if (moved.length > 0) collectDuelGroupedTriggerEffects(session.state, "moved", moved, { eventUids: moved.map((card) => card.uid) });
-  if (toDeck.length > 0) collectDuelGroupedTriggerEffects(session.state, "leftGraveyard", toDeck, { eventUids: toDeck.map((card) => card.uid) });
-  if (toGraveyard.length > 0) collectDuelGroupedTriggerEffects(session.state, "sentToGraveyard", toGraveyard, { eventUids: toGraveyard.map((card) => card.uid) });
-  if (toDeck.length > 0) collectDuelGroupedTriggerEffects(session.state, "sentToDeck", toDeck, { eventUids: toDeck.map((card) => card.uid) });
+  if (moved.length > 0) collectDuelGroupedTriggerEffects(session.state, "moved", moved, { ...payload, eventUids: moved.map((card) => card.uid) });
+  if (toDeck.length > 0) collectDuelGroupedTriggerEffects(session.state, "leftGraveyard", toDeck, { ...payload, eventUids: toDeck.map((card) => card.uid) });
+  if (toGraveyard.length > 0) collectDuelGroupedTriggerEffects(session.state, "sentToGraveyard", toGraveyard, { ...payload, eventUids: toGraveyard.map((card) => card.uid) });
+  if (toDeck.length > 0) collectDuelGroupedTriggerEffects(session.state, "sentToDeck", toDeck, { ...payload, eventUids: toDeck.map((card) => card.uid) });
 }
 
 function topDeckUids(session: DuelSession, player: PlayerId, count: number): string[] {
