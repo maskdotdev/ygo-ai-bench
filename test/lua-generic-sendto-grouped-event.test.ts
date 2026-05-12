@@ -177,6 +177,79 @@ describe("Lua generic Sendto grouped events", () => {
     applyAndAssert(session, trigger!);
     expect(host.messages).toContain(`${api} event reason source true/true`);
   });
+
+  it.each([
+    { label: "grave", destination: "LOCATION_GRAVE", position: "", event: "EVENT_TO_GRAVE", range: "LOCATION_GRAVE", eventName: "sentToGraveyard", eventCode: 1014, seed: 116 },
+    { label: "remove", destination: "LOCATION_REMOVED", position: ", POS_FACEUP", event: "EVENT_REMOVE", range: "LOCATION_REMOVED", eventName: "banished", eventCode: 1011, seed: 117 },
+  ])("preserves active Lua reason source metadata for generic $label sends", ({ label, destination, position, event, range, eventName, eventCode, seed }) => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: `Generic ${label} Source`, kind: "monster" },
+      { code: "200", name: `Generic ${label} Target`, kind: "monster" },
+      { code: "300", name: `Generic ${label} Watcher`, kind: "monster" },
+    ];
+    const session = createDuel({ seed, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200", "300"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      local starter=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      local watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+
+      local move=Effect.CreateEffect(starter)
+      move:SetType(EFFECT_TYPE_IGNITION)
+      move:SetRange(LOCATION_HAND)
+      move:SetOperation(function(e,tp)
+        source_effect=e
+        Debug.Message("generic ${label} reason count " .. Duel.Sendto(target, ${destination}, REASON_EFFECT${position}))
+        Debug.Message("generic ${label} reason source " .. tostring(target:GetReasonCard()==starter) .. "/" .. tostring(target:GetReasonEffect()==source_effect))
+      end)
+      starter:RegisterEffect(move)
+
+      local trigger=Effect.CreateEffect(watcher)
+      trigger:SetType(EFFECT_TYPE_TRIGGER_O)
+      trigger:SetCode(${event})
+      trigger:SetRange(LOCATION_HAND)
+      trigger:SetOperation(function(e,tp,eg)
+        local moved=eg:GetFirst()
+        Debug.Message("generic ${label} event reason source " .. tostring(moved:GetReasonCard():IsCode(100)) .. "/" .. tostring(moved:GetReasonEffect()==source_effect))
+      end)
+      watcher:RegisterEffect(trigger)
+
+      local single=Effect.CreateEffect(target)
+      single:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+      single:SetCode(${event})
+      single:SetRange(${range})
+      single:SetOperation(function(e,tp,eg)
+        Debug.Message("generic ${label} single reason source " .. tostring(e:GetHandler():GetReasonCard():IsCode(100)) .. "/" .. tostring(e:GetHandler():GetReasonEffect()==source_effect))
+      end)
+      target:RegisterEffect(single)
+      `,
+      `generic-sendto-${label}-reason-source.lua`,
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    const source = session.state.cards.find((card) => card.code === "100");
+    const target = session.state.cards.find((card) => card.code === "200");
+    expect(host.messages).toContain(`generic ${label} reason count 1`);
+    expect(host.messages).toContain(`generic ${label} reason source true/true`);
+    expect(session.state.pendingTriggers).toEqual(expect.arrayContaining([expect.objectContaining({ eventName, eventCode, eventCardUid: target!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 })]));
+
+    for (;;) {
+      const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+      if (!trigger) break;
+      applyAndAssert(session, trigger);
+    }
+    expect(host.messages).toContain(`generic ${label} event reason source true/true`);
+    expect(host.messages).toContain(`generic ${label} single reason source true/true`);
+  });
 });
 
 function registerGroupedTrigger(eventCode: string, sourceRange: string, label: string): string {
