@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -6,6 +7,68 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 import type { DuelCardData } from "#duel/types.js";
 
 describe("Lua chain event helpers", () => {
+  it("preserves active Lua reason source metadata for adjust triggers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Adjust Reason Source", kind: "monster", typeFlags: 0x21 },
+      { code: "200", name: "Adjust Reason Target", kind: "monster", typeFlags: 0x21 },
+    ];
+    const session = createDuel({ seed: 285, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+    const source = session.state.cards.find((card) => card.code === "100");
+    const target = session.state.cards.find((card) => card.code === "200");
+    expect(source).toBeDefined();
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          local target=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 200), tp, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+          Duel.AdjustInstantly(target)
+          Debug.Message("adjust reason queued")
+        end)
+        source_effect=e
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_ADJUST)
+        e:SetRange(LOCATION_MZONE)
+        e:SetOperation(function(e,tp,eg)
+          local adjusted=eg:GetFirst()
+          local rc=adjusted:GetReasonCard()
+          Debug.Message("adjust reason source " .. tostring(rc and rc:IsCode(100)) .. "/" .. tostring(adjusted:GetReasonEffect()==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "adjust-reason-source.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    expect(host.messages).toContain("adjust reason queued");
+    expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "adjust", eventCardUid: target!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === target!.uid);
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain("adjust reason source true/true");
+  });
+
   it("lets Lua scripts raise adjust triggers instantly", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Adjust Source", kind: "monster" },
