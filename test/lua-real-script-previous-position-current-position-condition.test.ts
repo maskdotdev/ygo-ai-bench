@@ -34,6 +34,59 @@ function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInsta
 }
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script previous position current position condition", () => {
+  it("restores comma-local previous-position current-position checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const samuraiCode = "64926005";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === samuraiCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 6493, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [samuraiCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const samurai = session.state.cards.find((card) => card.code === samuraiCode);
+    expect(samurai).toBeDefined();
+    moveDuelCard(session.state, samurai!.uid, "monsterZone", 0);
+    samurai!.faceUp = true;
+    samurai!.position = "faceUpAttack";
+    samurai!.previousPosition = "faceUpAttack";
+    samurai!.position = "faceUpDefense";
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${samuraiCode}),0,LOCATION_MZONE,0,nil)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+      e:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+      e:SetRange(LOCATION_MZONE)
+      e:SetCondition(function(e)
+        local c,tp=e:GetHandler(),e:GetHandlerPlayer()
+        return c:IsPreviousPosition(POS_FACEUP_ATTACK) and c:IsPosition(POS_FACEUP_DEFENSE)
+      end)
+      e:SetValue(aux.tgoval)
+      c:RegisterEffect(e)
+      `,
+      "samurai-comma-local-previous-current-position-condition.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    const descriptor = `condition:source-previous-position-position:${positionFaceUpAttack}:${positionFaceUpDefense}`;
+    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: samurai!.uid })]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredSamurai = restored.session.state.cards.find((card) => card.code === samuraiCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === samurai!.uid && candidate.luaConditionDescriptor === descriptor);
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = conditionContext(restored.session.state, restoredSamurai!);
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredSamurai!.position = "faceUpAttack";
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restoredSamurai!.position = "faceUpDefense";
+    restoredSamurai!.previousPosition = "faceUpDefense";
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
+
   it("restores previous-position current-position checks", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const taintedWisdomCode = "28725004";
