@@ -107,7 +107,8 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   if (sourceStatusBattleTargetControlValue !== undefined) return `condition:source-status-battle-target-control:${sourceStatusBattleTargetControlValue}`;
   const sourceStatus = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
   const localSourceStatus = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s+return\\s+\\1\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s*(?:end\\b|$)`));
-  const sourceStatusValue = sourceStatus?.[1] ? luaNumberExpressionValue(L, index, sourceStatus[1]) : localSourceStatus?.[2] ? luaNumberExpressionValue(L, index, localSourceStatus[2]) : undefined;
+  const commaLocalSourceStatus = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*,\\s*\\w+\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*,\\s*\\w+\\s*:\\s*GetHandlerPlayer\\s*\\(\\s*\\)\\s+return\\s+\\1\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s*(?:end\\b|$)`));
+  const sourceStatusValue = sourceStatus?.[1] ? luaNumberExpressionValue(L, index, sourceStatus[1]) : localSourceStatus?.[2] ? luaNumberExpressionValue(L, index, localSourceStatus[2]) : commaLocalSourceStatus?.[2] ? luaNumberExpressionValue(L, index, commaLocalSourceStatus[2]) : undefined;
   if (sourceStatusValue !== undefined) return `condition:source-status:${sourceStatusValue}`;
   if (/\breturn\s+Duel\s*\.\s*IsTurnPlayer\s*\(\s*tp\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:turn-player:self";
   if (/\breturn\s+Duel\s*\.\s*IsTurnPlayer\s*\(\s*1\s*-\s*tp\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:turn-player:opponent";
