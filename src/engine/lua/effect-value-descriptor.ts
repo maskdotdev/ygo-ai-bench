@@ -30,6 +30,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (cardActivationPredicate) return cardActivationPredicate;
   const sameCodeActivationPredicate = sameCodeActivationPredicateDescriptor(snippet, params);
   if (sameCodeActivationPredicate) return sameCodeActivationPredicate;
+  const setcodeMonsterActivationPredicate = setcodeMonsterActivationPredicateDescriptor(L, index, snippet, params);
+  if (setcodeMonsterActivationPredicate) return setcodeMonsterActivationPredicate;
   const monsterAttributeExceptActivationPredicate = monsterAttributeExceptActivationPredicateDescriptor(L, index, snippet, params);
   if (monsterAttributeExceptActivationPredicate) return monsterAttributeExceptActivationPredicate;
   const cannotMaterialSummonTypes = cannotMaterialSummonTypesDescriptor(L, index, snippet);
@@ -217,6 +219,18 @@ function sameCodeActivationPredicateDescriptor(snippet: string, params: string[]
   if (new RegExp(`\\breturn\\s+(?:${monsterEffect}\\s+and\\s+${sameCode}|${sameCode}\\s+and\\s+${monsterEffect})\\s*(?:end\\b|$)`).test(snippet)) return "cannot-activate:same-code-monster-effect";
   const predicate = new RegExp(`\\breturn\\s+(?:${relatedEffect}\\s*:\\s*IsHasType\\s*\\(\\s*(?:EFFECT_TYPE_ACTIVATE|16)\\s*\\)\\s+and\\s+)?${sameCode}\\s*(?:end\\b|$)`);
   return predicate.test(snippet) ? "cannot-activate:same-code" : undefined;
+}
+
+function setcodeMonsterActivationPredicateDescriptor(L: unknown, index: number, snippet: string, params: string[] | undefined): string | undefined {
+  const relatedEffectParam = params?.[1];
+  if (!relatedEffectParam) return undefined;
+  const relatedEffect = escapeRegExp(relatedEffectParam);
+  const handlerSetcode = `${relatedEffect}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`;
+  const monsterEffect = `${relatedEffect}\\s*:\\s*IsMonsterEffect\\s*\\(\\s*\\)`;
+  const match = snippet.match(new RegExp(`\\breturn\\s+(?:${handlerSetcode}\\s+and\\s+${monsterEffect}|${monsterEffect}\\s+and\\s+${handlerSetcode})\\s*(?:end\\b|$)`));
+  const setcode = match?.[1] ?? match?.[2];
+  const setcodeValue = setcode ? luaNumberTokenValue(L, index, setcode) : undefined;
+  return setcodeValue === undefined ? undefined : `cannot-activate:setcode-monster-effect:${setcodeValue}`;
 }
 
 function monsterAttributeExceptActivationPredicateDescriptor(L: unknown, index: number, snippet: string, params: string[] | undefined): string | undefined {

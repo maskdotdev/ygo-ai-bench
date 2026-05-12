@@ -10,6 +10,8 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
   if (/\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetLabel\s*\(\s*\)\s+local\s+(\w+)\s*,\s*(\w+)\s*=\s*re\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetOriginalCodeRule\s*\(\s*\)\s+return\s+re\s*:\s*IsMonsterEffect\s*\(\s*\)\s+and\s*\(\s*\2\s*==\s*\1\s+or\s+\3\s*==\s*\1\s*\)/.test(snippet)) return "condition:chain-solving-monster-effect-handler-original-code-label";
+  const customActivityChainAtLeast = snippet.match(/\breturn\s+Duel\s*\.\s*GetCustomActivityCount\s*\(\s*[^,]+,\s*\w+\s*:\s*GetHandlerPlayer\s*\(\s*\)\s*,\s*ACTIVITY_CHAIN\s*\)\s*>=\s*(\d+)/);
+  if (customActivityChainAtLeast?.[1]) return `condition:custom-activity-chain-count-at-least:${customActivityChainAtLeast[1]}`;
   if (/\breturn\s+Duel\s*\.\s*GetCurrentPhase\s*\(\s*\)\s*~=\s*PHASE_DRAW\b/.test(snippet)) return "condition:not-draw-phase";
   const equippedTargetSetcode = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetEquipTarget\\s*\\(\\s*\\)\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const localEquippedTargetSetcode = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetEquipTarget\\s*\\(\\s*\\)\\s+return\\s+\\1\\s+and\\s+\\1\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
