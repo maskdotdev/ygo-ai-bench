@@ -33,6 +33,57 @@ function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInsta
 }
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script location reason previous position condition", () => {
+  it("restores comma-local current-location battle-reason previous-position checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const poisonCloudCode = "83982270";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === poisonCloudCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 8246, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [poisonCloudCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const poisonCloud = session.state.cards.find((card) => card.code === poisonCloudCode);
+    expect(poisonCloud).toBeDefined();
+    moveDuelCard(session.state, poisonCloud!.uid, "monsterZone", 0);
+    poisonCloud!.position = "faceUpDefense";
+    moveDuelCard(session.state, poisonCloud!.uid, "graveyard", 0, duelReason.battle, 1);
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${poisonCloudCode}),0,LOCATION_GRAVE,0,nil)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+      e:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+      e:SetRange(LOCATION_GRAVE)
+      e:SetCondition(function(e)
+        local c,tp=e:GetHandler(),e:GetHandlerPlayer()
+        return c:IsLocation(LOCATION_GRAVE) and c:IsReason(REASON_BATTLE) and c:IsPreviousPosition(POS_FACEUP)
+      end)
+      e:SetValue(aux.tgoval)
+      c:RegisterEffect(e)
+      `,
+      "poison-cloud-comma-local-location-reason-previous-position-condition.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    const descriptor = `condition:source-previous-position-location-reason:${positionFaceUp}:${locationGraveyard}:${duelReason.battle}`;
+    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: poisonCloud!.uid })]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredPoisonCloud = restored.session.state.cards.find((card) => card.code === poisonCloudCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === poisonCloud!.uid && candidate.luaConditionDescriptor === descriptor);
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = conditionContext(restored.session.state, restoredPoisonCloud!);
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredPoisonCloud!.previousPosition = "faceDownDefense";
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restoredPoisonCloud!.previousPosition = "faceUpAttack";
+    restoredPoisonCloud!.reason = duelReason.effect;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
+
   it("restores current-location battle-reason previous-position checks", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const poisonCloudCode = "83982270";

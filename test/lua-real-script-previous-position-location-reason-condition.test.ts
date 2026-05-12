@@ -33,6 +33,57 @@ function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInsta
 }
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script previous position location reason condition", () => {
+  it("restores comma-local previous-position current-location battle-reason checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const wispCode = "70546737";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === wispCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 8249, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [wispCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const wisp = session.state.cards.find((card) => card.code === wispCode);
+    expect(wisp).toBeDefined();
+    moveDuelCard(session.state, wisp!.uid, "monsterZone", 0);
+    wisp!.position = "faceUpAttack";
+    moveDuelCard(session.state, wisp!.uid, "graveyard", 0, duelReason.battle, 1);
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${wispCode}),0,LOCATION_GRAVE,0,nil)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+      e:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+      e:SetRange(LOCATION_GRAVE)
+      e:SetCondition(function(e)
+        local c,tp=e:GetHandler(),e:GetHandlerPlayer()
+        return c:IsPreviousPosition(POS_FACEUP_ATTACK) and c:IsLocation(LOCATION_GRAVE) and c:IsReason(REASON_BATTLE)
+      end)
+      e:SetValue(aux.tgoval)
+      c:RegisterEffect(e)
+      `,
+      "wisp-comma-local-previous-position-location-reason-condition.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    const descriptor = `condition:source-previous-position-location-reason:${positionFaceUpAttack}:${locationGraveyard}:${duelReason.battle}`;
+    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: wisp!.uid })]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredWisp = restored.session.state.cards.find((card) => card.code === wispCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === wisp!.uid && candidate.luaConditionDescriptor === descriptor);
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = conditionContext(restored.session.state, restoredWisp!);
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredWisp!.reason = duelReason.effect;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restoredWisp!.reason = duelReason.battle;
+    restoredWisp!.location = "monsterZone";
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
+
   it("restores previous-position current-location battle-reason checks", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const wispCode = "70546737";
