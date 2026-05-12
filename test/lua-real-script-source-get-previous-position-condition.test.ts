@@ -12,6 +12,7 @@ import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const positionAttack = 0x03;
 
 function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
   return {
@@ -92,6 +93,65 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     restoredSegment!.previousPosition = "faceDownDefense";
     expect(restoredEffect!.canActivate!(ctx)).toBe(false);
     delete restoredSegment!.previousPosition;
+    expect(restoredEffect!.canActivate!(ctx)).toBe(false);
+  });
+
+  it("restores local source previous-position bitmask checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const dreamClownCode = "13215230";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === dreamClownCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 1321, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [dreamClownCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const dreamClown = session.state.cards.find((card) => card.code === dreamClownCode);
+    expect(dreamClown).toBeDefined();
+    moveDuelCard(session.state, dreamClown!.uid, "monsterZone", 0);
+    dreamClown!.faceUp = true;
+    dreamClown!.position = "faceUpDefense";
+    dreamClown!.previousPosition = "faceUpAttack";
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${dreamClownCode}),0,LOCATION_MZONE,0,nil)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+      e:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+      e:SetRange(LOCATION_MZONE)
+      e:SetCondition(function(e)
+        local c=e:GetHandler()
+        return (c:GetPreviousPosition()&POS_ATTACK)~=0
+      end)
+      e:SetValue(aux.tgoval)
+      c:RegisterEffect(e)
+      `,
+      "dream-clown-official-local-get-previous-position-condition.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    const descriptor = `condition:source-previous-position:${positionAttack}`;
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 71,
+          luaConditionDescriptor: descriptor,
+          luaValueDescriptor: "cannot-be-effect-target:opponent",
+          range: ["monsterZone"],
+        }),
+      ]),
+    );
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredDreamClown = restored.session.state.cards.find((card) => card.code === dreamClownCode);
+    const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === dreamClown!.uid && effect.code === 71);
+    expect(restoredEffect).toMatchObject({ luaConditionDescriptor: descriptor });
+    expect(restoredEffect?.canActivate).toBeDefined();
+    const ctx = targetContext(restored.session.state, restoredDreamClown!);
+    expect(restoredEffect!.canActivate!(ctx)).toBe(true);
+    restoredDreamClown!.previousPosition = "faceUpDefense";
     expect(restoredEffect!.canActivate!(ctx)).toBe(false);
   });
 });
