@@ -85,6 +85,75 @@ describe("Lua Release grouped events", () => {
     }
     expect(host.messages).toEqual(expect.arrayContaining(["release first group 2", "release second group 2", "release generic group 2"]));
   });
+
+  it("preserves active Lua reason source metadata for release triggers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Release Source", kind: "monster" },
+      { code: "200", name: "Reason Release Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 103, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+    for (const code of ["100", "200"]) {
+      const card = session.state.cards.find((candidate) => candidate.code === code);
+      moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+      card!.position = "faceUpAttack";
+      card!.faceUp = true;
+    }
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_MZONE)
+        e:SetOperation(function(e,tp)
+          source_effect=e
+          local target=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode,200), tp, LOCATION_MZONE, 0, 1, 1, nil)
+          Debug.Message("reason release count " .. Duel.Release(target, REASON_EFFECT))
+          local tc=target:GetFirst()
+          Debug.Message("release reason source " .. tostring(tc:GetReasonCard()==c) .. "/" .. tostring(tc:GetReasonEffect()==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_RELEASE)
+        e:SetRange(LOCATION_GRAVE)
+        e:SetOperation(function(e,tp,eg)
+          local c=e:GetHandler()
+          local rc=c:GetReasonCard()
+          local re=c:GetReasonEffect()
+          Debug.Message("release event reason source " .. tostring(rc and rc:IsCode(100)) .. "/" .. tostring(re==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "release-reason-source-event.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+
+    const source = session.state.cards.find((card) => card.code === "100");
+    const target = session.state.cards.find((card) => card.code === "200");
+    expect(host.messages).toContain("reason release count 1");
+    expect(host.messages).toContain("release reason source true/true");
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventName: "released", eventCardUid: target!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 });
+
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain("release event reason source true/true");
+  });
 });
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {
