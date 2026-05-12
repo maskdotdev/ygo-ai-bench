@@ -33,6 +33,59 @@ function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInsta
 }
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script previous controller previous location reason condition", () => {
+  it("restores comma-local previous-location previous-controller reason order checks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const asmodeusCode = "85771019";
+    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === asmodeusCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 8579, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [asmodeusCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const asmodeus = session.state.cards.find((card) => card.code === asmodeusCode);
+    expect(asmodeus).toBeDefined();
+    moveDuelCard(session.state, asmodeus!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, asmodeus!.uid, "graveyard", 0, duelReason.destroy, 1);
+
+    const host = createLuaScriptHost(session, workspace);
+    const register = host.loadScript(
+      `
+      local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${asmodeusCode}),0,LOCATION_GRAVE,0,nil)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_SINGLE)
+      e:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+      e:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)
+      e:SetRange(LOCATION_GRAVE)
+      e:SetCondition(function(e,tp)
+        local c,p=e:GetHandler(),e:GetHandlerPlayer()
+        return c:IsPreviousLocation(LOCATION_ONFIELD) and c:IsPreviousControler(tp) and c:IsReason(REASON_DESTROY)
+      end)
+      e:SetValue(aux.tgoval)
+      c:RegisterEffect(e)
+      `,
+      "asmodeus-comma-local-previous-location-controller-reason-condition.lua",
+    );
+    expect(register.ok, register.error).toBe(true);
+    const descriptor = `condition:source-previous-controller-previous-location-reason:${locationOnField}:${duelReason.destroy}`;
+    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ code: 71, luaConditionDescriptor: descriptor, sourceUid: asmodeus!.uid })]));
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredAsmodeus = restored.session.state.cards.find((card) => card.code === asmodeusCode);
+    const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === asmodeus!.uid && candidate.luaConditionDescriptor === descriptor);
+    expect(effect?.canActivate).toBeDefined();
+    const ctx = conditionContext(restored.session.state, restoredAsmodeus!);
+    expect(effect!.canActivate!(ctx)).toBe(true);
+    restoredAsmodeus!.previousLocation = "deck";
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restoredAsmodeus!.previousLocation = "monsterZone";
+    restoredAsmodeus!.previousController = 1;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+    restoredAsmodeus!.previousController = 0;
+    restoredAsmodeus!.reason = duelReason.effect;
+    expect(effect!.canActivate!(ctx)).toBe(false);
+  });
+
   it("restores comma-local previous-controller previous-location reason checks", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const asmodeusCode = "85771019";
