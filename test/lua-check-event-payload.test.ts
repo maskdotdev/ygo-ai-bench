@@ -181,13 +181,13 @@ describe("Lua CheckEvent payloads", () => {
     const check = host.loadScript(
       `
       local ok,eg,ep,ev,re,r,rp = Duel.CheckEvent(EVENT_CHAINING,true)
-      Debug.Message("check chaining " .. tostring(ok) .. "/" .. eg:GetFirst():GetCode() .. "/" .. ep .. "/" .. ev .. "/" .. tostring(re:GetLabel()) .. "/" .. rp)
+      Debug.Message("check chaining " .. tostring(ok) .. "/" .. eg:GetFirst():GetCode() .. "/" .. ep .. "/" .. ev .. "/" .. tostring(re:GetLabel()) .. "/" .. tostring(re:GetHandler():IsCode(100)) .. "/" .. rp)
       `,
       "check-event-chaining-read.lua",
     );
     expect(check.ok, check.error).toBe(true);
 
-    expect(host.messages).toContain("check chaining true/100/0/1/912/0");
+    expect(host.messages).toContain("check chaining true/100/0/1/912/true/0");
   });
 });
 
