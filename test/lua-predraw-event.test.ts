@@ -33,8 +33,8 @@ describe("Lua predraw events", () => {
         e:SetType(EFFECT_TYPE_TRIGGER_O)
         e:SetCode(EVENT_PREDRAW)
         e:SetRange(LOCATION_HAND)
-        e:SetOperation(function(e,tp,eg,ep,ev)
-          Debug.Message("predraw resolved " .. tp .. "/" .. ep .. "/" .. ev .. "/" .. Duel.GetFieldGroupCount(tp, LOCATION_HAND, 0))
+        e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Debug.Message("predraw resolved " .. tp .. "/" .. ep .. "/" .. ev .. "/" .. r .. "/" .. rp .. "/" .. Duel.GetFieldGroupCount(tp, LOCATION_HAND, 0))
         end)
         c:RegisterEffect(e)
       end
@@ -55,6 +55,8 @@ describe("Lua predraw events", () => {
     expect(session.state.cards.filter((card) => card.controller === 1 && card.location === "hand")).toHaveLength(2);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["preDraw"]);
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1113, eventPlayer: 1, eventValue: 1 });
+    expect(session.state.pendingTriggers[0]).not.toHaveProperty("eventReason");
+    expect(session.state.pendingTriggers[0]).not.toHaveProperty("eventReasonPlayer");
     expect(session.state.eventHistory.slice(-4)).toEqual([
       expect.objectContaining({ eventName: "preDraw", eventCode: 1113, eventPlayer: 1, eventValue: 1 }),
       expect.objectContaining({ eventName: "phaseStartMain1", eventCode: 0x2004 }),
@@ -65,6 +67,8 @@ describe("Lua predraw events", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1113, eventPlayer: 1, eventValue: 1 });
+    expect(restored.session.state.pendingTriggers[0]).not.toHaveProperty("eventReason");
+    expect(restored.session.state.pendingTriggers[0]).not.toHaveProperty("eventReasonPlayer");
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
@@ -73,13 +77,13 @@ describe("Lua predraw events", () => {
     expectLuaRestoreStalePreapply(restored, restoredTrigger!, 1);
     applyLuaRestoreAndAssert(restored, restoredTrigger!);
     drainRestoredChain(restored);
-    expect(restored.host.messages).toContain("predraw resolved 1/1/1/2");
+    expect(restored.host.messages).toContain("predraw resolved 1/1/1/0/1/2");
 
     const trigger = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
     applyAndAssert(session, trigger!);
     drainChain(session);
-    expect(host.messages).toContain("predraw resolved 1/1/1/2");
+    expect(host.messages).toContain("predraw resolved 1/1/1/0/1/2");
   });
 });
 
