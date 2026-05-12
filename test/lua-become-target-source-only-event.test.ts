@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, queryPublicState, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData, DuelSession } from "#duel/types.js";
 
 describe("Lua source-only become-target events", () => {
@@ -17,14 +18,12 @@ describe("Lua source-only become-target events", () => {
     startDuel(session);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(
-      `
-      local activator=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      local generic_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      local single_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 301), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-
-      local activate=Effect.CreateEffect(activator)
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") return `
+      c100={}
+      function c100.initial_effect(c)
+      local activate=Effect.CreateEffect(c)
       activate:SetType(EFFECT_TYPE_IGNITION)
       activate:SetRange(LOCATION_HAND)
       activate:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
@@ -37,38 +36,56 @@ describe("Lua source-only become-target events", () => {
       activate:SetOperation(function(e,tp)
         Debug.Message("targeting effect resolved " .. Duel.GetFirstTarget():GetCode())
       end)
-      activator:RegisterEffect(activate)
-
-      local source_trigger=Effect.CreateEffect(target)
+      c:RegisterEffect(activate)
+      end
+      `;
+        if (name === "c200.lua") return `
+      c200={}
+      function c200.initial_effect(c)
+      local source_trigger=Effect.CreateEffect(c)
       source_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
       source_trigger:SetCode(EVENT_BECOME_TARGET)
       source_trigger:SetRange(LOCATION_HAND)
       source_trigger:SetOperation(function(e,tp,eg)
         Debug.Message("source become target " .. eg:GetCount() .. "/" .. eg:GetFirst():GetCode())
       end)
-      target:RegisterEffect(source_trigger)
-
-      local generic_trigger=Effect.CreateEffect(generic_watcher)
+      c:RegisterEffect(source_trigger)
+      end
+      `;
+        if (name === "c300.lua") return `
+      c300={}
+      function c300.initial_effect(c)
+      local generic_trigger=Effect.CreateEffect(c)
       generic_trigger:SetType(EFFECT_TYPE_TRIGGER_O)
       generic_trigger:SetCode(EVENT_BECOME_TARGET)
       generic_trigger:SetRange(LOCATION_HAND)
       generic_trigger:SetOperation(function(e,tp,eg)
         Debug.Message("generic become target " .. eg:GetCount() .. "/" .. eg:GetFirst():GetCode())
       end)
-      generic_watcher:RegisterEffect(generic_trigger)
-
-      local wrong_single=Effect.CreateEffect(single_watcher)
+      c:RegisterEffect(generic_trigger)
+      end
+      `;
+        if (name === "c301.lua") return `
+      c301={}
+      function c301.initial_effect(c)
+      local wrong_single=Effect.CreateEffect(c)
       wrong_single:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
       wrong_single:SetCode(EVENT_BECOME_TARGET)
       wrong_single:SetRange(LOCATION_HAND)
       wrong_single:SetOperation(function(e,tp,eg)
         Debug.Message("wrong become target " .. eg:GetCount())
       end)
-      single_watcher:RegisterEffect(wrong_single)
-      `,
-      "become-target-source-only-event.lua",
-    );
-    expect(loaded.ok, loaded.error).toBe(true);
+      c:RegisterEffect(wrong_single)
+      end
+      `;
+        return undefined;
+      },
+    };
+    for (const code of [100, 200, 300, 301]) {
+      const loaded = host.loadCardScript(code, source);
+      expect(loaded.ok, loaded.error).toBe(true);
+    }
+    expect(host.registerInitialEffects()).toBe(4);
 
     const target = session.state.cards.find((card) => card.code === "200");
     const genericWatcher = session.state.cards.find((card) => card.code === "300");
@@ -90,16 +107,44 @@ describe("Lua source-only become-target events", () => {
     );
     expect(targetTriggers.some((trigger) => trigger.sourceUid === singleWatcher!.uid)).toBe(false);
 
-    for (;;) {
-      const player = session.state.waitingFor ?? 0;
-      const trigger = getDuelLegalActions(session, player).find((candidate) => candidate.type === "activateTrigger");
-      if (!trigger) break;
-      applyAndAssert(session, trigger);
-    }
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    const restoredTargetTriggers = restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "becameTarget");
+    expect(restoredTargetTriggers).toHaveLength(2);
+    expect(restoredTargetTriggers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceUid: target!.uid, eventCardUid: target!.uid, eventCode: 1028 }),
+        expect.objectContaining({ sourceUid: genericWatcher!.uid, eventCardUid: target!.uid, eventCode: 1028 }),
+      ]),
+    );
+    expect(restoredTargetTriggers.some((trigger) => trigger.sourceUid === singleWatcher!.uid)).toBe(false);
+    activateAllRestoredTriggers(restored);
+    expect(restored.host.messages).toEqual(expect.arrayContaining(["source become target 1/200", "generic become target 1/200"]));
+    expect(restored.host.messages).not.toContain("wrong become target 1");
+
+    activateAllTriggers(session);
     expect(host.messages).toEqual(expect.arrayContaining(["source become target 1/200", "generic become target 1/200"]));
     expect(host.messages).not.toContain("wrong become target 1");
   });
 });
+
+function activateAllTriggers(session: DuelSession): void {
+  for (;;) {
+    const player = session.state.waitingFor ?? 0;
+    const trigger = getDuelLegalActions(session, player).find((candidate) => candidate.type === "activateTrigger");
+    if (!trigger) break;
+    applyAndAssert(session, trigger);
+  }
+}
+
+function activateAllRestoredTriggers(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  for (;;) {
+    const player = restored.session.state.waitingFor ?? 0;
+    const trigger = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "activateTrigger");
+    if (!trigger) break;
+    applyLuaRestoreAndAssert(restored, trigger);
+  }
+}
 
 function applyAndAssert(session: DuelSession, action: Parameters<typeof applyResponse>[1]) {
   const response = applyResponse(session, action);
@@ -107,5 +152,15 @@ function applyAndAssert(session: DuelSession, action: Parameters<typeof applyRes
   expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, response.state.waitingFor!));
+  expect(queryPublicState(restored.session)).toEqual(response.state);
   return response;
 }
