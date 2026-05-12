@@ -810,9 +810,10 @@ function pushSpecialSummonComplete(L: unknown, session: DuelSession, hostState: 
 function pushNegateSummon(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState): number {
   if (session.state.status === "ended") return pushEmptyIntegerResult(L, hostState);
   const negated: string[] = [];
+  const sourcePayload = luaEffectReasonPayload(hostState, duelReason.disSummon, hostState.activeContext?.player ?? session.state.turnPlayer), payload = { ...(sourcePayload.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: sourcePayload.eventReasonCardUid }), ...(sourcePayload.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: sourcePayload.eventReasonEffectId }) };
   for (const uid of readCardOrGroupUids(L, 1)) {
     try {
-      if (negateDuelSummon(session.state, uid)) negated.push(uid);
+      if (negateDuelSummon(session.state, uid, session.state.turnPlayer, payload)) negated.push(uid);
     } catch {
       // EDOPro-style helpers report successful negations only.
     }

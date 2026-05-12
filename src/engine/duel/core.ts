@@ -453,11 +453,11 @@ export function specialSummonDuelCard(state: DuelState, uid: string, controller?
   return card;
 }
 
-export function negateDuelSummon(state: DuelState, uid: string): DuelCardInstance | undefined {
+export function negateDuelSummon(state: DuelState, uid: string, reasonPlayer: PlayerId = state.turnPlayer, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance | undefined {
   return negateCoreDuelSummon(state, uid, {
     createContinuousContext: createContinuousEffectContext,
     collectEvent: collectDuelTriggerEffects,
-  });
+  }, reasonPlayer, payload);
 }
 
 export function canSpecialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId, summonTypeCode?: number, relatedEffectId?: number, allowUnconditionalSpecialSummonCondition = false, summonPosition?: CardPosition): boolean {

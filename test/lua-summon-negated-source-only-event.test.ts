@@ -6,6 +6,67 @@ import { createLuaScriptHost } from "#lua/host.js";
 import type { DuelCardData, DuelEventName, DuelSession } from "#duel/types.js";
 
 describe("Lua source-only summon-negated events", () => {
+  it("preserves active Lua reason source metadata for summon-negated triggers", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Reason Source Negated Summon", kind: "monster" },
+      { code: "200", name: "Reason Source Summon Negator", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 284, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const loaded = host.loadScript(
+      `
+      local source_effect=nil
+      c200={}
+      function c200.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_IGNITION)
+        e:SetRange(LOCATION_HAND)
+        e:SetOperation(function(e,tp)
+          local summoned=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 100), tp, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
+          Debug.Message("reason negated " .. Duel.NegateSummon(summoned))
+        end)
+        source_effect=e
+        c:RegisterEffect(e)
+      end
+      c100={}
+      function c100.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+        e:SetCode(EVENT_SUMMON_NEGATED)
+        e:SetRange(LOCATION_GRAVE)
+        e:SetOperation(function(e,tp,eg)
+          local negated=eg:GetFirst()
+          local rc=negated:GetReasonCard()
+          Debug.Message("negated reason source " .. tostring(rc and rc:IsCode(200)) .. "/" .. tostring(negated:GetReasonEffect()==source_effect))
+        end)
+        c:RegisterEffect(e)
+      end
+      `,
+      "summon-negated-reason-source.lua",
+    );
+    expect(loaded.ok, loaded.error).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const source = session.state.cards.find((card) => card.code === "100");
+    const negator = session.state.cards.find((card) => card.code === "200");
+    expect(source).toBeDefined();
+    expect(negator).toBeDefined();
+    performSummon(session, "normal", source!.uid);
+    activateNegator(session, negator!.uid);
+    drainChain(session);
+
+    expect(host.messages).toContain("reason negated 1");
+    expect(source).toMatchObject({ location: "graveyard", reasonCardUid: negator!.uid, reasonEffectId: 2 });
+    expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "normalSummonNegated", eventCardUid: source!.uid, eventReasonCardUid: negator!.uid, eventReasonEffectId: 2 }));
+    const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === source!.uid);
+    expect(trigger).toBeDefined();
+    applyAndAssert(session, trigger!);
+    expect(host.messages).toContain("negated reason source true/true");
+  });
+
   it.each([
     { label: "normal", eventConstant: "EVENT_SUMMON_NEGATED", eventName: "normalSummonNegated" as DuelEventName, eventCode: 1114 },
     { label: "flip", eventConstant: "EVENT_FLIP_SUMMON_NEGATED", eventName: "flipSummonNegated" as DuelEventName, eventCode: 1115 },
