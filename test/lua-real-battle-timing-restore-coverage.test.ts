@@ -26,6 +26,16 @@ describe("Lua real battle timing restore coverage", () => {
 function battleTimingFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-cipher-soldier-pre-damage-calculate.test.ts",
+      required: [
+        'battleWindow?.kind).toBe("beforeDamageCalculation")',
+        'eventName: "beforeDamageCalculation"',
+        "eventCode: 1134",
+        "currentAttack(restored.session.state.cards.find((card) => card.uid === cipherSoldier!.uid), restored.session.state)).toBe(3350)",
+        'location: "monsterZone", controller: 1',
+      ],
+    },
+    {
       file: "test/lua-real-script-dd-warrior-wall-battled-segoc.test.ts",
       required: [
         'eventName: "afterDamageCalculation"',
