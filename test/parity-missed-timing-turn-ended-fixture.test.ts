@@ -128,6 +128,10 @@ describe("EDOPro parity turn-ended missed timing fixture", () => {
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "turn-ended-activation-optional-if", eventName: "turnEnded", eventCode: 1210 }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "turn-ended-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "turn-ended-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
             legalActionGroups: [
               triggerActivationGroup(0, "turn-ended-activation-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "turn-ended-activation-optional-if", "turnOptional", 1, 1),
@@ -140,6 +144,7 @@ describe("EDOPro parity turn-ended missed timing fixture", () => {
               absentTriggerActivationGroup(0, "turn-ended-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "turn-ended-activation-open-fast", 1, "triggerBucket"),
             ],
+            legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
           },
           after: {

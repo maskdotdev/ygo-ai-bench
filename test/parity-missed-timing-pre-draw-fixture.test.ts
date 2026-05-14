@@ -126,6 +126,10 @@ describe("EDOPro parity pre-draw missed timing fixture", () => {
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "pre-draw-activation-optional-if", eventName: "preDraw", eventCode: 1113, eventPlayer: 0, eventValue: 1 }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "pre-draw-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "pre-draw-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
             legalActionGroups: [
               triggerActivationGroup(0, "pre-draw-activation-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "pre-draw-activation-optional-if", "turnOptional", 1, 1),
@@ -138,6 +142,7 @@ describe("EDOPro parity pre-draw missed timing fixture", () => {
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "pre-draw-activation-optional-when" },
               { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "pre-draw-activation-open-fast" },
             ],
+            legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
           },
           after: {
