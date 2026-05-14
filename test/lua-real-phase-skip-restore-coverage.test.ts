@@ -80,6 +80,15 @@ function realScriptPhaseSkipFixtures(): Array<{ file: string; requiredSnippets: 
       ],
     },
     {
+      file: "test/lua-real-script-super-junior-confrontation-calculate-damage.test.ts",
+      requiredSnippets: [
+        'battleWindow?.kind).toBe("attackNegationResponse")',
+        'skippedPhases).toEqual([{ player: 1, phase: "battle", remaining: 1 }])',
+        'eventName: "attackDisabled"',
+        'eventName: "destroyed"',
+      ],
+    },
+    {
       file: "test/lua-real-script-grandsoil-leave-skip-battle.test.ts",
       requiredSnippets: [
         'phase: "main1"',
