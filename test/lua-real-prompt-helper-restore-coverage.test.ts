@@ -6,7 +6,7 @@ const root = process.cwd();
 
 describe("Lua real prompt helper restore coverage", () => {
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(7);
+    expect(representativePromptHelperFixtures()).toHaveLength(8);
   });
 
   it("requires representative prompt helper fixtures to assert clean Lua restore", () => {
@@ -37,6 +37,17 @@ describe("Lua real prompt helper restore coverage", () => {
 
 function representativePromptHelperFixtures(): Array<{ file: string; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-gunkan-suship-catch-select-codes.test.ts",
+      required: [
+        "restores the opponent code-selection prompt into the chosen Suship search",
+        'api: "SelectCardsFromCodes"',
+        "options: [Number(sushipIkuraCode), Number(sushipUniCode), Number(sushipShirauoCode)]",
+        "returned: Number(sushipIkuraCode)",
+        'location: "hand"',
+        'expect(restored.host.messages).not.toContain("gunkan suship responder resolved")',
+      ],
+    },
     {
       file: "test/lua-real-script-inferno-ashened-field-zone-option.test.ts",
       required: [
