@@ -309,6 +309,114 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     );
   });
 
+  it("restores Butterfly Dagger leave-field return trigger with previous equip target", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const daggerCode = "69243953";
+    const targetCode = "601039";
+    const responderCode = "601040";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === daggerCode),
+      { code: targetCode, name: "Butterfly Dagger Target", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: responderCode, name: "Butterfly Dagger Chain Responder", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 312, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [daggerCode, targetCode] }, 1: { main: [responderCode] } });
+    startDuel(session);
+
+    const dagger = session.state.cards.find((card) => card.code === daggerCode);
+    const target = session.state.cards.find((card) => card.code === targetCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(dagger).toBeDefined();
+    expect(target).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, dagger!.uid, "hand", 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, source);
+    expect(host.loadCardScript(Number(daggerCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expectCleanRestore(restoredEquipWindow);
+    expect(getLuaRestoreLegalActionGroups(restoredEquipWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredEquipWindow.session, 0));
+    expect(getLuaRestoreLegalActions(restoredEquipWindow, 0)).toEqual(getDuelLegalActions(restoredEquipWindow.session, 0));
+    const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === dagger!.uid);
+    expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
+
+    expect(restoredEquipWindow.session.state.chain[0]).toMatchObject({
+      sourceUid: dagger!.uid,
+      targetUids: [target!.uid],
+      operationInfos: [{ category: 0x40000, targetUids: [dagger!.uid], count: 1, player: 0, parameter: 0 }],
+    });
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
+    expectCleanRestore(restoredChain);
+    expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+    resolveRestoredChain(restoredChain);
+
+    expect(restoredChain.host.messages).not.toContain("equip responder resolved");
+    expect(restoredChain.session.state.cards.find((card) => card.uid === dagger!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      equippedToUid: target!.uid,
+      faceUp: true,
+    });
+
+    const restoredEquipState = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
+    expectCleanRestore(restoredEquipState);
+    expectLuaEquipProbe(restoredEquipState, targetCode, daggerCode, "equip probe 69243953/1300");
+
+    destroyDuelCard(restoredEquipState.session.state, dagger!.uid, 0, duelReason.effect | duelReason.destroy, 0);
+    expect(restoredEquipState.session.state.cards.find((card) => card.uid === dagger!.uid)).toMatchObject({
+      location: "graveyard",
+      previousLocation: "spellTrapZone",
+      previousEquippedToUid: target!.uid,
+    });
+    expect(restoredEquipState.session.state.pendingTriggers).toEqual([
+      expect.objectContaining({ sourceUid: dagger!.uid, eventName: "leftField", eventCardUid: dagger!.uid, player: 0 }),
+    ]);
+
+    const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredEquipState.session), source, reader);
+    expectCleanRestore(restoredTriggerWindow);
+    const triggerAction = getLuaRestoreLegalActions(restoredTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.uid === dagger!.uid);
+    expect(triggerAction, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredTriggerWindow, triggerAction!);
+
+    expect(restoredTriggerWindow.session.state.chain[0]).toMatchObject({
+      sourceUid: dagger!.uid,
+      operationInfos: [{ category: 0x8, targetUids: [dagger!.uid], count: 1, player: 0, parameter: 0 }],
+    });
+    expect(getLuaRestoreLegalActions(restoredTriggerWindow, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+
+    const restoredReturnChain = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), source, reader);
+    expectCleanRestore(restoredReturnChain);
+    expect(restoredReturnChain.session.state.chain[0]).toMatchObject(restoredTriggerWindow.session.state.chain[0]!);
+    resolveRestoredChain(restoredReturnChain);
+
+    expect(restoredReturnChain.session.state.cards.find((card) => card.uid === dagger!.uid)).toMatchObject({
+      location: "hand",
+      controller: 0,
+    });
+    expect(restoredReturnChain.host.messages).not.toContain("equip responder resolved");
+    expect(restoredReturnChain.session.state.eventHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ eventName: "leftField", eventCode: 1015, eventCardUid: dagger!.uid }),
+        expect.objectContaining({ eventName: "sentToHand", eventCode: 1012, eventCardUid: dagger!.uid }),
+        expect.objectContaining({ eventName: "confirmed", eventCode: 1211, eventUids: [dagger!.uid] }),
+      ]),
+    );
+  });
+
   it("restores United We Stand dynamic equip stat callbacks", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const unitedCode = "56747793";
