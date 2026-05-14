@@ -92,6 +92,8 @@ function advanceDamageWindow(state: DuelState, lastDamageResponder: PlayerId, ha
   if (kind === "duringDamageCalculation") {
     openDamageResponseWindow(state, lastDamageResponder, "afterDamageCalculation");
     resolvePendingBattle(state, handlers, { preserveBattleContext: true });
+    pruneResetEffectsAfterPhaseFlag(state, 0x40);
+    pruneDuelFlagEffectsAfterPhaseFlag(state, 0x40);
     if (state.pendingBattle && currentBattleWindowKind(state) === "afterDamageCalculation") collectBattleTimingEvent(state, handlers, "afterDamageCalculation");
     return;
   }
@@ -112,7 +114,7 @@ function currentDamageWindowKind(state: DuelState): DamageBattleWindowKind {
 
 function pruneBattleSubphaseResets(state: DuelState, kind: BattleWindowKind, previousKind: BattleWindowKind | undefined): void {
   if (kind === previousKind) return;
-  const phaseFlag = kind === "attackNegationResponse" ? 0x10 : kind === "startDamageStep" ? 0x20 : kind === "duringDamageCalculation" ? 0x40 : undefined;
+  const phaseFlag = kind === "attackNegationResponse" ? 0x10 : kind === "startDamageStep" ? 0x20 : undefined;
   if (phaseFlag === undefined) return;
   pruneResetEffectsAfterPhaseFlag(state, phaseFlag);
   pruneDuelFlagEffectsAfterPhaseFlag(state, phaseFlag);

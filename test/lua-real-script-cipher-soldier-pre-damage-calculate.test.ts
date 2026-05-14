@@ -81,6 +81,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ci
         expect.objectContaining({ eventName: "beforeDamageCalculation", eventCode: 1134, eventUids: [cipherSoldier!.uid, warriorTarget!.uid] }),
       ]),
     );
+
+    finishBattle(restored.session);
+
+    expect(restored.session.state.players[1].lifePoints).toBe(6650);
+    expect(restored.session.state.battleDamage[1]).toBe(1350);
+    expect(restored.session.state.cards.find((card) => card.uid === warriorTarget!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
+    expect(restored.session.state.pendingBattle).toBeUndefined();
+    expect(restored.session.state.battleWindow).toBeUndefined();
   });
 });
 
@@ -96,6 +104,23 @@ function passBattleResponse(session: DuelSession): void {
   const pass = getLegalActions(session, player).find((action) => action.type === passType);
   expect(pass).toBeDefined();
   applyAndAssert(session, pass!);
+}
+
+function finishBattle(session: DuelSession): void {
+  let guard = 0;
+  while ((session.state.pendingBattle || session.state.chain.length > 0) && guard < 20) {
+    guard += 1;
+    if (session.state.chain.length > 0) {
+      const player = session.state.waitingFor ?? session.state.turnPlayer;
+      const pass = getLegalActions(session, player).find((action) => action.type === "passChain");
+      if (!pass) break;
+      applyAndAssert(session, pass);
+      continue;
+    }
+    if (session.state.pendingTriggers.length > 0) break;
+    passBattleResponse(session);
+  }
+  expect(guard).toBeLessThan(20);
 }
 
 function applyAndAssert(session: DuelSession, action: DuelAction) {

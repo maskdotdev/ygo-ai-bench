@@ -386,6 +386,9 @@ describe("duel battle timing", () => {
     passDamageWindow(restored);
 
     expect(restored.state.battleWindow?.kind).toBe("duringDamageCalculation");
+    expect(restored.state.effects.map((effect) => effect.id)).toEqual(["restore-damage-calc-reset"]);
+    passDamageWindow(restored);
+    expect(restored.state.battleWindow?.kind).toBe("afterDamageCalculation");
     expect(restored.state.effects).toHaveLength(0);
   });
 
@@ -419,6 +422,9 @@ describe("duel battle timing", () => {
     passDamageWindow(restored);
 
     expect(restored.state.battleWindow?.kind).toBe("duringDamageCalculation");
+    expect(restored.state.flagEffects.map((flag) => flag.code)).toEqual([611]);
+    passDamageWindow(restored);
+    expect(restored.state.battleWindow?.kind).toBe("afterDamageCalculation");
     expect(restored.state.flagEffects).toHaveLength(0);
   });
 

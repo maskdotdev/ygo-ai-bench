@@ -438,6 +438,9 @@ describe("Lua effect reset", () => {
     passDamageWindow(session);
 
     expect(session.state.battleWindow?.kind).toBe("duringDamageCalculation");
+    expect(session.state.effects).toHaveLength(1);
+    passDamageWindow(session);
+    expect(session.state.battleWindow?.kind).toBe("afterDamageCalculation");
     expect(session.state.effects).toHaveLength(0);
   });
 

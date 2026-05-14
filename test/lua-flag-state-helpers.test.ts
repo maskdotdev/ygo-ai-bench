@@ -737,6 +737,9 @@ describe("Lua flag state helpers", () => {
     passFlagDamageWindow(session);
 
     expect(session.state.battleWindow?.kind).toBe("duringDamageCalculation");
+    expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([928]);
+    passFlagDamageWindow(session);
+    expect(session.state.battleWindow?.kind).toBe("afterDamageCalculation");
     expect(session.state.flagEffects).toHaveLength(0);
   });
 
