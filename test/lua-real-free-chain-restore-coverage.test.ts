@@ -69,6 +69,7 @@ function realScriptFreeChainFixtureFiles(): string[] {
     "lua-real-script-book-of-moon-free-chain.test.ts",
     "lua-real-script-compulsory-evacuation-device-free-chain.test.ts",
     "lua-real-script-cosmic-cyclone-free-chain.test.ts",
+    "lua-real-script-infinite-impermanence-target-param.test.ts",
     "lua-real-script-monster-reborn-free-chain.test.ts",
     "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
     "lua-real-script-omega-judgment-select-unselect-targets.test.ts",
@@ -89,6 +90,7 @@ function realScriptChainedFreeChainFixtureFiles(): string[] {
   return realScriptFreeChainFixtureFiles()
     .filter((file) => !file.endsWith("lua-real-script-armor-blast-multi-target-free-chain.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-book-of-moon-free-chain.test.ts"))
+    .filter((file) => !file.endsWith("lua-real-script-infinite-impermanence-target-param.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-monster-reborn-free-chain.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-omega-judgment-select-unselect-targets.test.ts"));
 }
