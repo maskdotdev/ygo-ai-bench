@@ -6,7 +6,7 @@ const root = process.cwd();
 
 describe("Lua real prompt helper restore coverage", () => {
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(15);
+    expect(representativePromptHelperFixtures()).toHaveLength(16);
   });
 
   it("requires representative prompt helper fixtures to assert clean Lua restore", () => {
@@ -136,6 +136,17 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
         "summonMaterialUids).toEqual([handMaterial!.uid, faceupNormal!.uid, deckNormalMaterial!.uid])",
         "reason: duelReason.effect | duelReason.material | duelReason.ritual",
         'expect(restored.host.messages).not.toContain("magikey maftea responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-magia-magic-select-effect.test.ts",
+      required: [
+        "restores multi-option SelectEffect into Magia Magic's Special Summon branch",
+        'api: "SelectEffect"',
+        "options: [1, 2]",
+        "effectLabel: 1",
+        "summonType: \"special\"",
+        'expect(restored.host.messages).not.toContain("magia magic responder resolved")',
       ],
     },
     {
