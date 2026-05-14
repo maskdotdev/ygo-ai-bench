@@ -6,7 +6,7 @@ const root = process.cwd();
 
 describe("Lua real prompt helper restore coverage", () => {
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(12);
+    expect(representativePromptHelperFixtures()).toHaveLength(13);
   });
 
   it("requires representative prompt helper fixtures to assert clean Lua restore", () => {
@@ -148,6 +148,16 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
         'location: "monsterZone"',
         "overlayUids: [material.uid]",
         'expect(restored.host.messages).not.toContain("springans ship responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-sprind-select-disable-field.test.ts",
+      required: [
+        "restores the selected disabled-field zone into the column movement operation",
+        'api: "SelectDisableField"',
+        "options: [1, 8, 16]",
+        "sequence: 0",
+        'expect(restored.host.messages).not.toContain("sprind responder resolved")',
       ],
     },
     {
