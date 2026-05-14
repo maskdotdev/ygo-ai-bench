@@ -128,6 +128,10 @@ describe("EDOPro parity adjust missed timing decline fixture", () => {
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "adjust-decline-optional-if", eventName: "adjust", eventCode: 1040, eventReason: 0x40, eventReasonPlayer: 0 }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "adjust-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "adjust-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
             legalActionGroups: [
               triggerActivationGroup(0, "adjust-decline-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "adjust-decline-optional-if", "turnOptional", 1, 1),
@@ -140,6 +144,7 @@ describe("EDOPro parity adjust missed timing decline fixture", () => {
               absentTriggerActivationGroup(0, "adjust-decline-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "adjust-decline-open-fast", 1, "triggerBucket"),
             ],
+            legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
           },
           after: {

@@ -128,6 +128,10 @@ describe("EDOPro parity after-damage-calculation missed timing decline fixture",
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "after-damage-calculation-decline-optional-if", eventName: "afterDamageCalculation", eventCode: 1138 }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "after-damage-calculation-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "after-damage-calculation-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
             legalActionGroups: [
               triggerActivationGroup(0, "after-damage-calculation-decline-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "after-damage-calculation-decline-optional-if", "turnOptional", 1, 1),
@@ -140,6 +144,7 @@ describe("EDOPro parity after-damage-calculation missed timing decline fixture",
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "after-damage-calculation-decline-optional-when" },
               { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "after-damage-calculation-decline-open-fast" },
             ],
+            legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
           },
           after: {
