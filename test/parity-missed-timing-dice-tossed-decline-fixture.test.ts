@@ -134,6 +134,10 @@ describe("EDOPro parity dice-tossed missed timing decline fixture", () => {
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "dice-decline-optional-if", eventName: "diceTossed", eventCode: 1150, eventPlayer: 0, eventValue: 2 }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "dice-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "dice-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
             legalActionGroups: [
               triggerActivationGroup(0, "dice-decline-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "dice-decline-optional-if", "turnOptional", 1, 1),
@@ -147,6 +151,7 @@ describe("EDOPro parity dice-tossed missed timing decline fixture", () => {
               { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "dice-decline-open-fast" },
             ],
 
+            legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },},
           after: {
             source: "edopro",
