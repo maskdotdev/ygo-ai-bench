@@ -12,6 +12,9 @@ describe("package scripts", () => {
     expect(pkg.scripts?.["scan:legal-action-evidence"]).toContain("tools/scan-legal-action-evidence.mjs");
     expect(pkg.scripts?.["scan:parity-fixture-provenance"]).toContain("tools/scan-parity-fixture-provenance.mjs");
     expect(pkg.scripts?.["probe:top-tier-deck"]).toContain("--fail-on-errors --min-upstream-scripts 30 --min-actions 10 --min-activate-effects 2 --min-initial-effects 53 --min-registered-effects 136 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 2 --expected-missing-script-code 89631139 --expected-missing-script-code 46986414");
+    expect(pkg.scripts?.["probe:competitive-decks"]).toContain("labrynth-2026.ydk --fail-on-errors --min-upstream-scripts 38 --min-actions 10 --min-activate-effects 2 --min-initial-effects 60 --min-registered-effects 143 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 0");
+    expect(pkg.scripts?.["probe:competitive-decks"]).toContain("voiceless-voice-2026.ydk --fail-on-errors --min-upstream-scripts 36 --min-actions 9 --min-activate-effects 2 --min-initial-effects 56 --min-registered-effects 154 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 0");
+    expect(pkg.scripts?.["probe:competitive-decks"]).toContain("marincess-2026.ydk --fail-on-errors --min-upstream-scripts 29 --min-actions 11 --min-initial-effects 55 --min-registered-effects 123 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 0");
     expect(pkg.scripts?.["check:bridge-bundle"]).toContain("tools/check-bridge-bundle.mjs");
     expect(pkg.scripts?.check?.split(" && ")).toEqual([
       "bun run check:loc",
@@ -22,6 +25,7 @@ describe("package scripts", () => {
       "bun run scan:parity-fixture-provenance -- --min-files 860 --min-expectation-blocks 4493 --min-edopro-blocks 4493 --min-restored-fixtures 855 --fail-on-missing-source --fail-on-invalid-source --fail-on-missing-note --fail-on-weak-note --fail-on-backlog --fail-on-missing-restore",
       "bun run scan:legal-action-evidence -- --min-files 860 --min-edopro-blocks 4493 --min-action-evidence-blocks 4493 --min-group-evidence-blocks 4493 --min-action-evidence-percent 100 --min-group-evidence-percent 100 --fail-on-missing --fail-on-empty --fail-on-zero-only --fail-on-zero-evidence",
       "bun run probe:top-tier-deck",
+      "bun run probe:competitive-decks",
       "bun run typecheck",
       "bun run test",
       "bun run build",
