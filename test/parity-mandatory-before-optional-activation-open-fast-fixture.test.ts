@@ -260,6 +260,17 @@ describe("EDOPro parity mandatory before optional activation open fast fixture",
             pendingTriggerBuckets: [],
             chain: [],
             chainPasses: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-activation-open-fast-after-optional", count: 1 },
+              { type: "changePhase", player: 0, windowId: 4, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 4, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              openEffectGroup(0, "fixture-activation-open-fast-after-optional", 1, 4),
+              turnGroup(4),
+            ],
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-activation-open-mandatory-first" },
               { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-activation-open-optional-second" },
