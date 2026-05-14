@@ -74,5 +74,15 @@ function battleTimingFixtureFiles(): Array<{ file: string; required: string[] }>
         "pendingBattle).toBeUndefined()",
       ],
     },
+    {
+      file: "test/lua-real-script-topologic-bomber-battled-damage.test.ts",
+      required: [
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "afterDamageCalculation"',
+        'eventName: "damageDealt"',
+        "eventValue: 1200",
+        "pendingBattle).toBeUndefined()",
+      ],
+    },
   ].sort((a, b) => a.file.localeCompare(b.file));
 }

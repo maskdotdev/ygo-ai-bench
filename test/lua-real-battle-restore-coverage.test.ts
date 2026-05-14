@@ -5,13 +5,13 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const battleKeywords = ["battle", "attack", "damage"];
-const realScriptBattleFixtureCount = 113;
+const realScriptBattleFixtureCount = 114;
 const battleLegalActionFixtureCount = 4;
 const attackDeclarationTrapFixtureCount = 6;
 const battleRoutingFixtureCount = 5;
 const damageStepRestoreFixtureCount = 3;
 const battleDamageSemanticFixtureCount = 6;
-const battleTriggerSemanticFixtureCount = 5;
+const battleTriggerSemanticFixtureCount = 6;
 
 describe("Lua real battle restore coverage", () => {
   it("requires real-script battle fixtures to assert Lua-aware complete restore with diagnostics", () => {
@@ -360,6 +360,17 @@ function realScriptBattleTriggerSemanticFixtureFiles(): Array<{ file: string; re
         "eventCode: 1138",
         'eventName: "sentToHand"',
         'location: "hand"',
+      ],
+    },
+    {
+      file: "lua-real-script-topologic-bomber-battled-damage.test.ts",
+      required: [
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "afterDamageCalculation"',
+        "eventCode: 1138",
+        'eventName: "damageDealt"',
+        "eventValue: 1200",
+        "players[1].lifePoints).toBe(5000)",
       ],
     },
     {
