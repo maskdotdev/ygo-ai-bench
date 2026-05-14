@@ -5,12 +5,12 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const battleKeywords = ["battle", "attack", "damage"];
-const realScriptBattleFixtureCount = 118;
+const realScriptBattleFixtureCount = 119;
 const battleLegalActionFixtureCount = 4;
 const attackDeclarationTrapFixtureCount = 6;
 const battleRoutingFixtureCount = 5;
 const damageStepRestoreFixtureCount = 3;
-const battleDamageSemanticFixtureCount = 7;
+const battleDamageSemanticFixtureCount = 8;
 const battleTriggerSemanticFixtureCount = 7;
 
 describe("Lua real battle restore coverage", () => {
@@ -330,6 +330,15 @@ function realScriptBattleDamageSemanticFixtureFiles(): Array<{ file: string; req
         "expect(restored.session.state.battleDamage).toEqual({ 0: 1500, 1: 0 })",
         'eventName: "controlChanged"',
         'eventName: "battleDamageDealt"',
+      ],
+    },
+    {
+      file: "lua-real-script-mirage-knight-battle-target-atk.test.ts",
+      required: [
+        'battleWindow?.kind).toBe("duringDamageCalculation")',
+        "expect(restoredDamageCalc.session.state.battleDamage).toEqual({ 0: 0, 1: 2800 })",
+        'eventName: "battleDamageDealt"',
+        'location: "banished"',
       ],
     },
     {

@@ -90,8 +90,9 @@ function advanceDamageWindow(state: DuelState, lastDamageResponder: PlayerId, ha
     return;
   }
   if (kind === "duringDamageCalculation") {
-    openDamageResponseWindow(state, lastDamageResponder, "afterDamageCalculation");
     resolvePendingBattle(state, handlers, { preserveBattleContext: true });
+    if (state.status === "ended" || !state.pendingBattle) return;
+    openDamageResponseWindow(state, lastDamageResponder, "afterDamageCalculation");
     pruneResetEffectsAfterPhaseFlag(state, 0x40);
     pruneDuelFlagEffectsAfterPhaseFlag(state, 0x40);
     if (state.pendingBattle && currentBattleWindowKind(state) === "afterDamageCalculation") collectBattleTimingEvent(state, handlers, "afterDamageCalculation");

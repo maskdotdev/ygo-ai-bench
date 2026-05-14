@@ -35,6 +35,16 @@ function statFixtureFiles(): Array<{ file: string; required: string[] }> {
       ],
     },
     {
+      file: "test/lua-real-script-mirage-knight-battle-target-atk.test.ts",
+      required: [
+        'battleWindow?.kind).toBe("duringDamageCalculation")',
+        "currentAttack(restoredDamageCalc.session.state.cards.find((card) => card.uid === mirage!.uid)!, restoredDamageCalc.session.state)).toBe(4700)",
+        "expect(restoredDamageCalc.session.state.battleDamage).toEqual({ 0: 0, 1: 2800 })",
+        'eventName: "battleDamageDealt"',
+        'location: "banished"',
+      ],
+    },
+    {
       file: "test/lua-real-script-shrink-set-base-attack.test.ts",
       required: [
         "restoredChain.missingRegistryKeys).toEqual([])",

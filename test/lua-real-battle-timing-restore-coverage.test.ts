@@ -86,6 +86,14 @@ function battleTimingFixtureFiles(): Array<{ file: string; required: string[] }>
       ],
     },
     {
+      file: "test/lua-real-script-mirage-knight-battle-target-atk.test.ts",
+      required: [
+        'battleWindow?.kind).toBe("duringDamageCalculation")',
+        'eventName: "battleDamageDealt"',
+        'eventName: "banished"',
+      ],
+    },
+    {
       file: "test/lua-real-script-reflect-bounder-battle-confirm-destroy.test.ts",
       required: [
         'battleWindow?.kind).toBe("startDamageStep")',
