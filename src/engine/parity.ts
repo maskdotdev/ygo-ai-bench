@@ -18,9 +18,29 @@ import {
   type CreateDuelOptions,
 } from "#duel/core.js";
 import { describeDuelActionSelector, duelActionMatchesSelector, selectDuelActionBySelector } from "#duel/action-selectors.js";
+import { isCardPosition } from "#duel/card-kinds.js";
 import { duelReason } from "#duel/reasons.js";
-import { sameStringMembers } from "#duel/string-list-match.js";
+import { sameAction } from "#duel/response-match.js";
 import type { DuelChainLimitRestoreRegistry, DuelEffectRestoreRegistry } from "#duel/snapshot.js";
+import { assertActivityHistoryExpectations } from "./parity-activity-history-validation.js";
+import { assertBattlePairsForWindow } from "./parity-battle-pair-validation.js";
+import { assertCardExpectations } from "./parity-card-validation.js";
+import { assertChainLimitExpectations } from "./parity-chain-limit-validation.js";
+import { assertChainExpectations } from "./parity-chain-validation.js";
+import { assertEventHistoryExpectations } from "./parity-event-history-validation.js";
+import { fixtureSetupList, malformedFixtureEffectListExpectations, malformedFixtureEventListExpectations, malformedFixtureMoveListExpectations } from "./parity-fixture-effect-validation.js";
+import { malformedFixtureDeckExpectations, malformedFixtureOptionsExpectations } from "./parity-fixture-options-validation.js";
+import { malformedFixturePromptExpectations } from "./parity-fixture-prompt-validation.js";
+import { fixtureResponseList, malformedFixtureResponseExpectations } from "./parity-fixture-response-validation.js";
+import { fixtureNameForFailure, malformedFixtureExpectations, malformedWindowShapeExpectations } from "./parity-fixture-validation.js";
+import { malformedGroupShapeExpectations, matchesTriggerOrderPrompt } from "./parity-group-validation.js";
+import { legalActionExpectationList, legalActionGroupExpectationList } from "./parity-legal-action-list-validation.js";
+import { assertLogExpectations, assertLogIncludes } from "./parity-log-validation.js";
+import { assertPendingTriggerExpectations } from "./parity-pending-trigger-validation.js";
+import { assertPendingTriggerBucketExpectations, matchesPendingTriggerBucket } from "./parity-trigger-bucket-validation.js";
+import { isRecord, isSafeBattleStep, isSafeBoolean, isSafeCount, isSafeLocationKey, isSafePhase, isSafePlayerId, isSafePlayerKey, isSafeStatus, isSafeString, isSafeWindowId, isSafeWindowKind, isSafeWindowToken, isSafeWinner } from "./parity-validation.js";
+import { assertActivityCountsForWindow, assertNumberListForWindow, assertPlayerListForWindow, assertPlayerNumberMapForWindow, assertStringListForWindow } from "./parity-window-list-validation.js";
+import { assertBattleWindowForWindow, assertBooleanForWindow, assertOptionalSafeNumberForWindow, assertOptionsForWindow, assertPromptForWindow, assertSafeNumberForWindow, assertSafePlayerForWindow, assertSkippedPhasesForWindow, assertTriggerOrderPromptForWindow, assertWinnerForWindow } from "./parity-window-validation.js";
 import type {
   DuelAction,
   DuelActionWindowKind,
@@ -29,7 +49,6 @@ import type {
   DuelEffectDefinition,
   DuelEffectContext,
   DuelLocation,
-  PendingTriggerBucketState,
   DuelResponse,
   DuelSession,
   PlayerId,
@@ -46,39 +65,47 @@ import type {
   ScriptedResponseSelector,
   SerializedDuelEffect,
 } from "#duel/types.js";
-import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
+import { isTriggerBucket, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 
 type ScriptedStepResponse = DuelResponse | ScriptedResponseSelector;
+const ACTION_SELECTOR_KEYS = new Set(["attackerUid", "code", "count", "directAttack", "effectId", "labelIncludes", "location", "materialUids", "occurrence", "option", "phase", "player", "position", "promptId", "summonUids", "targetUid", "triggerBucket", "triggerId", "tributeUids", "type", "uid", "windowId", "windowKind", "windowToken", "yes"]);
 
-export interface ParityRunOptions extends CreateDuelOptions {
-  cardReader?: DuelCardReader;
-}
+export interface ParityRunOptions extends CreateDuelOptions { cardReader?: DuelCardReader; }
 
-export interface ParityFailure {
-  fixture: string;
-  message: string;
-}
+export interface ParityFailure { fixture: string; message: string; }
 
-export interface ParityRunResult {
-  ok: boolean;
-  failures: ParityFailure[];
-}
+export interface ParityRunResult { ok: boolean; failures: ParityFailure[]; }
 
 export function runScriptedDuelFixture(fixture: ScriptedDuelFixture, options: ParityRunOptions = {}): ParityRunResult {
+  const failures: ParityFailure[] = [], fixtureName = fixtureNameForFailure(fixture);
+  for (const message of malformedFixtureExpectations(fixture)) failures.push({ fixture: fixtureName, message });
+  if (failures.length) return { ok: false, failures };
+  for (const message of malformedFixtureOptionsExpectations(fixture.options)) failures.push({ fixture: fixture.name, message });
+  for (const message of malformedFixtureDeckExpectations(fixture.decks)) failures.push({ fixture: fixture.name, message });
+  if (failures.length) return { ok: false, failures };
   let session = createDuel({ ...fixture.options, ...options });
-  loadDecks(session, fixture.decks);
-  startDuel(session);
+  loadDecks(session, fixture.decks); startDuel(session);
 
-  const failures: ParityFailure[] = [];
-  const effectRegistry: DuelEffectRestoreRegistry = {};
-  const chainLimitRegistry: DuelChainLimitRestoreRegistry = {};
-  applyFixtureSetup(session, fixture.setup?.moveCards ?? [], failures, fixture.name);
+  const effectRegistry: DuelEffectRestoreRegistry = {}, chainLimitRegistry: DuelChainLimitRestoreRegistry = {};
+  const setupMoves = fixtureSetupList("setup.moveCards", fixture.setup?.moveCards, failures, fixture.name);
+  const setupEffects = fixtureSetupList("setup.effects", fixture.setup?.effects, failures, fixture.name);
+  const setupEvents = fixtureSetupList("setup.collectEvents", fixture.setup?.collectEvents, failures, fixture.name);
+  if (failures.length) return { ok: false, failures };
+  for (const message of malformedFixtureMoveListExpectations(setupMoves)) failures.push({ fixture: fixture.name, message });
+  for (const message of malformedFixturePromptExpectations(fixture.setup?.prompt)) failures.push({ fixture: fixture.name, message });
+  if (failures.length) return { ok: false, failures };
+  applyFixtureSetup(session, setupMoves, failures, fixture.name);
   applyFixturePrompt(session, fixture.setup?.prompt);
-  applyFixtureEffects(session, fixture.setup?.effects ?? [], failures, fixture.name, effectRegistry, chainLimitRegistry);
-  applyFixtureEvents(session, fixture.setup?.collectEvents ?? [], failures, fixture.name);
+  applyFixtureEffects(session, setupEffects, failures, fixture.name, effectRegistry, chainLimitRegistry);
+  for (const message of malformedFixtureEventListExpectations(setupEvents)) failures.push({ fixture: fixture.name, message });
+  if (failures.length) return { ok: false, failures };
+  applyFixtureEvents(session, setupEvents, failures, fixture.name);
+  if (failures.length) return { ok: false, failures };
+  const responses = fixtureResponseList(fixture.responses, failures, fixture.name);
+  for (const message of malformedFixtureResponseExpectations(responses)) failures.push({ fixture: fixture.name, message });
   if (failures.length) return { ok: false, failures };
   assertWindow(session, fixture.before, fixture.name, "before fixture", failures);
-  for (const step of fixture.responses) {
+  for (const step of responses) {
     const stepResponse = step.response;
     assertWindow(session, scriptedStepBefore(step), fixture.name, `before ${describeStep(stepResponse)}`, failures);
     if (scriptedStepSnapshotRestoreBefore(step)) {
@@ -116,9 +143,7 @@ export function makeResponseSelector(type: DuelResponse["type"], player: PlayerI
 export function makeScriptedStep(
   response: ScriptedStepResponse,
   assertions: Omit<ScriptedDuelStep, "response"> = {},
-): ScriptedDuelStep {
-  return { response, ...assertions };
-}
+): ScriptedDuelStep { return { response, ...assertions }; }
 
 function assertSnapshotRestore(
   session: DuelSession,
@@ -213,11 +238,7 @@ function snapshotEffects(effects: Array<DuelSession["state"]["effects"][number] 
 }
 
 function chainLimitMetadata(chainLimits: DuelSession["state"]["chainLimits"]): Array<Pick<DuelSession["state"]["chainLimits"][number], "registryKey" | "untilChainEnd" | "expiresAtChainLength">> {
-  return chainLimits.map((limit) => ({
-    ...(limit.registryKey === undefined ? {} : { registryKey: limit.registryKey }),
-    untilChainEnd: limit.untilChainEnd,
-    ...(limit.expiresAtChainLength === undefined ? {} : { expiresAtChainLength: limit.expiresAtChainLength }),
-  }));
+  return chainLimits.map((limit) => ({ ...(limit.registryKey === undefined ? {} : { registryKey: limit.registryKey }), untilChainEnd: limit.untilChainEnd, ...(limit.expiresAtChainLength === undefined ? {} : { expiresAtChainLength: limit.expiresAtChainLength }) }));
 }
 
 function assertWindow(session: DuelSession, expected: ScriptedDuelWindowExpectation | undefined, fixture: string, context: string, failures: ParityFailure[]): void {
@@ -225,65 +246,64 @@ function assertWindow(session: DuelSession, expected: ScriptedDuelWindowExpectat
   const state = queryPublicState(session);
   const label = expectationLabel(expected);
   const fail = (message: string) => failures.push({ fixture, message: `${context}${label}: ${message}` });
-  if (expected.status !== undefined && state.status !== expected.status) fail(`Expected status ${expected.status}, got ${state.status}`);
-  assertOptionalValueForWindow("winner", state.winner, expected.winner, fail);
-  assertOptionalValueForWindow("winReason", state.winReason, expected.winReason, fail);
-  if (expected.windowId !== undefined && session.state.actionWindowId !== expected.windowId) fail(`Expected windowId ${expected.windowId}, got ${session.state.actionWindowId}`);
-  if (expected.windowKind !== undefined) {
-    const actualWindowKind = currentWindowKind(session);
-    if (actualWindowKind !== expected.windowKind) fail(`Expected windowKind ${expected.windowKind}, got ${actualWindowKind ?? "none"}`);
-  }
-  if (expected.waitingFor !== undefined && state.waitingFor !== expected.waitingFor) fail(`Expected waitingFor ${expected.waitingFor}, got ${state.waitingFor}`);
-  if (expected.turn !== undefined && state.turn !== expected.turn) fail(`Expected turn ${expected.turn}, got ${state.turn}`);
-  if (expected.turnPlayer !== undefined && state.turnPlayer !== expected.turnPlayer) fail(`Expected turnPlayer ${expected.turnPlayer}, got ${state.turnPlayer}`);
-  if (expected.phase !== undefined && state.phase !== expected.phase) fail(`Expected phase ${expected.phase}, got ${state.phase}`);
-  if (expected.randomCounter !== undefined && session.state.randomCounter !== expected.randomCounter) fail(`Expected randomCounter ${expected.randomCounter}, got ${session.state.randomCounter}`);
+  for (const message of malformedWindowShapeExpectations(expected)) fail(message);
+  if (expected.status !== undefined && !isSafeStatus(expected.status)) fail(`Expected status has malformed value ${expected.status}`);
+  else if (expected.status !== undefined && state.status !== expected.status) fail(`Expected status ${expected.status}, got ${state.status}`);
+  assertWinnerForWindow(state.winner, expected.winner, fail);
+  assertOptionalSafeNumberForWindow("winReason", state.winReason, expected.winReason, fail);
+  if (assertSafeNumberForWindow("windowId", expected.windowId, fail) && session.state.actionWindowId !== expected.windowId) fail(`Expected windowId ${expected.windowId}, got ${session.state.actionWindowId}`);
+  if (expected.windowKind !== undefined && !isSafeWindowKind(expected.windowKind)) fail(`Expected windowKind has malformed value ${expected.windowKind}`);
+  else if (expected.windowKind !== undefined && currentWindowKind(session) !== expected.windowKind) fail(`Expected windowKind ${expected.windowKind}, got ${currentWindowKind(session) ?? "none"}`);
+  if (assertSafePlayerForWindow("waitingFor", expected.waitingFor, fail) && state.waitingFor !== expected.waitingFor) fail(`Expected waitingFor ${expected.waitingFor}, got ${state.waitingFor}`);
+  if (assertSafeNumberForWindow("turn", expected.turn, fail) && state.turn !== expected.turn) fail(`Expected turn ${expected.turn}, got ${state.turn}`);
+  if (assertSafePlayerForWindow("turnPlayer", expected.turnPlayer, fail) && state.turnPlayer !== expected.turnPlayer) fail(`Expected turnPlayer ${expected.turnPlayer}, got ${state.turnPlayer}`);
+  if (expected.phase !== undefined && !isSafePhase(expected.phase)) fail(`Expected phase has malformed value ${expected.phase}`);
+  else if (expected.phase !== undefined && state.phase !== expected.phase) fail(`Expected phase ${expected.phase}, got ${state.phase}`);
+  if (assertSafeNumberForWindow("randomCounter", expected.randomCounter, fail) && session.state.randomCounter !== expected.randomCounter) fail(`Expected randomCounter ${expected.randomCounter}, got ${session.state.randomCounter}`);
   assertNumberListForWindow("lastDiceResults", session.state.lastDiceResults, expected.lastDiceResults, fail);
   assertNumberListForWindow("lastCoinResults", session.state.lastCoinResults, expected.lastCoinResults, fail);
-  for (const [player, expectedLifePoints] of Object.entries(expected.lifePoints ?? {}) as [string, number][]) {
-    const actualLifePoints = state.players[Number(player) as PlayerId]?.lifePoints;
-    if (actualLifePoints !== expectedLifePoints) fail(`Expected player ${player} LP ${expectedLifePoints}, got ${actualLifePoints}`);
-  }
+  assertPlayerNumberMapForWindow("lifePoints", { 0: state.players[0].lifePoints, 1: state.players[1].lifePoints }, expected.lifePoints, fail);
   assertActivityCountsForWindow(state.activityCounts, expected.activityCounts, fail);
-  assertPartialList("activityHistory", session.state.activityHistory, expected.activityHistory, fail);
-  assertPartialList("skippedPhases", session.state.skippedPhases, expected.skippedPhases, fail);
-  if (expected.phaseActivity !== undefined && session.state.phaseActivity !== expected.phaseActivity) fail(`Expected phaseActivity ${expected.phaseActivity}, got ${session.state.phaseActivity}`);
+  assertActivityHistoryExpectations(session.state.activityHistory, expected.activityHistory, fail);
+  assertSkippedPhasesForWindow(session.state.skippedPhases, expected.skippedPhases, fail);
+  assertBooleanForWindow("phaseActivity", session.state.phaseActivity, expected.phaseActivity, fail);
   assertPlayerNumberMapForWindow("battleDamage", session.state.battleDamage, expected.battleDamage, fail);
-  if (expected.attackCostPaid !== undefined && session.state.attackCostPaid !== expected.attackCostPaid) fail(`Expected attackCostPaid ${expected.attackCostPaid}, got ${session.state.attackCostPaid}`);
-  if (expected.options !== undefined && !matchesPartial(session.state.options, expected.options)) fail(`Expected options ${JSON.stringify(expected.options)}, got ${JSON.stringify(session.state.options)}`);
-  if (expected.duelTypeFlags !== undefined && session.state.duelTypeFlags !== expected.duelTypeFlags) fail(`Expected duelTypeFlags ${expected.duelTypeFlags}, got ${session.state.duelTypeFlags}`);
-  if (expected.globalFlags !== undefined && session.state.globalFlags !== expected.globalFlags) fail(`Expected globalFlags ${expected.globalFlags}, got ${session.state.globalFlags}`);
-  if (expected.unofficialProcEnabled !== undefined && session.state.unofficialProcEnabled !== expected.unofficialProcEnabled) fail(`Expected unofficialProcEnabled ${expected.unofficialProcEnabled}, got ${session.state.unofficialProcEnabled}`);
-  if (expected.shuffleCheckDisabled !== undefined && session.state.shuffleCheckDisabled !== expected.shuffleCheckDisabled) fail(`Expected shuffleCheckDisabled ${expected.shuffleCheckDisabled}, got ${session.state.shuffleCheckDisabled}`);
+  if (assertSafeNumberForWindow("attackCostPaid", expected.attackCostPaid, fail) && session.state.attackCostPaid !== expected.attackCostPaid) fail(`Expected attackCostPaid ${expected.attackCostPaid}, got ${session.state.attackCostPaid}`);
+  assertOptionsForWindow(session.state.options, expected.options, fail);
+  if (assertSafeNumberForWindow("duelTypeFlags", expected.duelTypeFlags, fail) && session.state.duelTypeFlags !== expected.duelTypeFlags) fail(`Expected duelTypeFlags ${expected.duelTypeFlags}, got ${session.state.duelTypeFlags}`);
+  if (assertSafeNumberForWindow("globalFlags", expected.globalFlags, fail) && session.state.globalFlags !== expected.globalFlags) fail(`Expected globalFlags ${expected.globalFlags}, got ${session.state.globalFlags}`);
+  assertBooleanForWindow("unofficialProcEnabled", session.state.unofficialProcEnabled, expected.unofficialProcEnabled, fail);
+  assertBooleanForWindow("shuffleCheckDisabled", session.state.shuffleCheckDisabled, expected.shuffleCheckDisabled, fail);
   assertStringListForWindow("usedCountKeys", session.state.usedCountKeys, expected.usedCountKeys, fail);
-  if (expected.battleStep !== undefined && state.battleStep !== expected.battleStep) fail(`Expected battleStep ${expected.battleStep}, got ${state.battleStep}`);
-  if (expected.battleWindow !== undefined && !matchesOptionalPartial(state.battleWindow, expected.battleWindow)) fail(`Expected battleWindow ${JSON.stringify(expected.battleWindow)}, got ${JSON.stringify(state.battleWindow)}`);
-  if (expected.pendingBattle !== undefined && Boolean(session.state.pendingBattle) !== expected.pendingBattle) fail(`Expected pendingBattle ${expected.pendingBattle}, got ${Boolean(session.state.pendingBattle)}`);
-  if (expected.currentAttack !== undefined && Boolean(session.state.currentAttack) !== expected.currentAttack) fail(`Expected currentAttack ${expected.currentAttack}, got ${Boolean(session.state.currentAttack)}`);
-  if (expected.prompt !== undefined && !matchesOptionalPartial(state.prompt, expected.prompt)) fail(`Expected prompt ${JSON.stringify(expected.prompt)}, got ${JSON.stringify(state.prompt)}`);
-  if (expected.triggerOrderPrompt !== undefined && !matchesOptionalPartial(queryPublicState(session).triggerOrderPrompt, expected.triggerOrderPrompt)) {
-    fail(`Expected triggerOrderPrompt ${JSON.stringify(expected.triggerOrderPrompt)}, got ${JSON.stringify(queryPublicState(session).triggerOrderPrompt)}`);
-  }
-  assertPartialList("chainLimits", chainLimitMetadata(session.state.chainLimits), expected.chainLimits, fail);
+  if (expected.battleStep !== undefined && !isSafeBattleStep(expected.battleStep)) fail(`Expected battleStep has malformed value ${expected.battleStep}`);
+  else if (expected.battleStep !== undefined && state.battleStep !== expected.battleStep) fail(`Expected battleStep ${expected.battleStep}, got ${state.battleStep}`);
+  assertBattleWindowForWindow(state.battleWindow, expected.battleWindow, fail);
+  assertBooleanForWindow("pendingBattle", Boolean(session.state.pendingBattle), expected.pendingBattle, fail);
+  assertBooleanForWindow("currentAttack", Boolean(session.state.currentAttack), expected.currentAttack, fail);
+  assertPromptForWindow(state.prompt, expected.prompt, fail);
+  assertTriggerOrderPromptForWindow(queryPublicState(session).triggerOrderPrompt, expected.triggerOrderPrompt, fail);
+  assertChainLimitExpectations(chainLimitMetadata(session.state.chainLimits), expected.chainLimits, fail);
   assertPlayerListForWindow("chainPasses", session.state.chainPasses, expected.chainPasses, fail);
   assertPlayerListForWindow("attackPasses", state.attackPasses, expected.attackPasses, fail);
   assertPlayerListForWindow("damagePasses", state.damagePasses, expected.damagePasses, fail);
-  assertPartialList("chain", state.chain, expected.chain, fail);
-  assertPartialList("pendingTriggers", state.pendingTriggers, expected.pendingTriggers, fail);
+  assertChainExpectations(state.chain, expected.chain, fail);
+  assertPendingTriggerExpectations(state.pendingTriggers, expected.pendingTriggers, fail);
   assertPendingTriggerBucketExpectations(queryPublicState(session).pendingTriggerBuckets, expected.pendingTriggerBuckets, fail);
-  assertPartialList("eventHistory", session.state.eventHistory, expected.eventHistory, fail);
+  assertEventHistoryExpectations(session.state.eventHistory, expected.eventHistory, fail);
+  const expectedLegalActions = legalActionExpectationList("legalActions", expected.legalActions, fail);
+  const expectedAbsentLegalActions = legalActionExpectationList("absentLegalActions", expected.absentLegalActions, fail);
+  const expectedLegalActionGroups = legalActionGroupExpectationList("legalActionGroups", expected.legalActionGroups, fail);
+  const expectedAbsentLegalActionGroups = legalActionGroupExpectationList("absentLegalActionGroups", expected.absentLegalActionGroups, fail);
   assertLegalActionCounts(session, expected.legalActionCounts, fail);
   assertLegalActionGroupCounts(session, expected.legalActionGroupCounts, fail);
-  assertLegalActionGroupsFlattenLegalActions(session, expected, fail);
-  assertLegalActionWindowStamps(session, expected, fail);
-  for (const expectedLog of expected.logIncludes ?? []) {
-    if (!state.log.some((entry) => entry.detail.includes(expectedLog) || entry.action.includes(expectedLog))) fail(`Expected log containing ${expectedLog}`);
-  }
+  assertLegalActionGroupsFlattenLegalActions(session, expected, expectedLegalActions, expectedAbsentLegalActions, expectedLegalActionGroups, expectedAbsentLegalActionGroups, fail);
+  assertLegalActionWindowStamps(session, expected, expectedLegalActions, expectedAbsentLegalActions, expectedLegalActionGroups, expectedAbsentLegalActionGroups, fail);
+  assertLogIncludes(state.log, expected.logIncludes, fail);
   const cards = state.cards;
-  if (expected.legalActions?.length) assertLegalActions("Expected legal action", session, expected.legalActions, cards, fail, false);
-  if (expected.legalActionGroups?.length) assertLegalActionGroups("Expected legal action group", session, expected.legalActionGroups, cards, fail, false);
-  if (expected.absentLegalActions?.length) assertLegalActions("Expected no legal action", session, expected.absentLegalActions, cards, fail, true);
-  if (expected.absentLegalActionGroups?.length) assertLegalActionGroups("Expected no legal action group", session, expected.absentLegalActionGroups, cards, fail, true);
+  if (expectedLegalActions.length) assertLegalActions("Expected legal action", session, expectedLegalActions, cards, fail, false);
+  if (expectedLegalActionGroups.length) assertLegalActionGroups("Expected legal action group", session, expectedLegalActionGroups, cards, fail, false);
+  if (expectedAbsentLegalActions.length) assertLegalActions("Expected no legal action", session, expectedAbsentLegalActions, cards, fail, true);
+  if (expectedAbsentLegalActionGroups.length) assertLegalActionGroups("Expected no legal action group", session, expectedAbsentLegalActionGroups, cards, fail, true);
   assertLocationExpectations(cards, expected.locations, expected.locationCounts, fail);
   assertCardExpectations(cardsWithMovementMetadata(session, cards), expected.cards, fail);
   assertStringListForWindow("positionsChanged", state.positionsChanged, expected.positionsChanged, fail);
@@ -291,89 +311,58 @@ function assertWindow(session: DuelSession, expected: ScriptedDuelWindowExpectat
   assertStringListForWindow("attackCanceledUids", state.attackCanceledUids, expected.attackCanceledUids, fail);
   assertStringListForWindow("attackedTargetUids", state.attackedTargetUids, expected.attackedTargetUids, fail);
   assertBattlePairsForWindow(state.battlePairs, expected.battlePairs, fail);
-  if (expected.logCount !== undefined && state.log.length !== expected.logCount) fail(`Expected log count ${expected.logCount}, got ${state.log.length}`);
-  assertPartialList("log", state.log, expected.log, fail);
+  if (assertSafeNumberForWindow("logCount", expected.logCount, fail) && state.log.length !== expected.logCount) fail(`Expected log count ${expected.logCount}, got ${state.log.length}`);
+  assertLogExpectations(state.log, expected.log, fail);
 }
 
-function currentWindowKind(session: DuelSession): DuelActionWindowKind | undefined {
-  return queryPublicState(session).windowKind;
-}
+function currentWindowKind(session: DuelSession): DuelActionWindowKind | undefined { return queryPublicState(session).windowKind; }
 
-function expectationLabel(expected: ScriptedDuelWindowExpectation): string {
-  const source = ` (${expected.source})`;
-  const note = expected.note ? ` [${expected.note}]` : "";
-  return `${source}${note}`;
-}
-
-function assertStringListForWindow(name: string, actual: string[], expected: string[] | undefined, fail: (message: string) => void): void {
-  if (expected === undefined) return;
-  if (actual.length !== expected.length || actual.some((value, index) => value !== expected[index])) {
-    fail(`Expected ${name} ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
-  }
-}
-
-function assertPlayerListForWindow(name: string, actual: PlayerId[], expected: PlayerId[] | undefined, fail: (message: string) => void): void {
-  if (expected === undefined) return;
-  if (actual.length !== expected.length || actual.some((value, index) => value !== expected[index])) {
-    fail(`Expected ${name} ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
-  }
-}
-
-function assertNumberListForWindow(name: string, actual: number[], expected: number[] | undefined, fail: (message: string) => void): void {
-  if (expected === undefined) return;
-  if (actual.length !== expected.length || actual.some((value, index) => value !== expected[index])) {
-    fail(`Expected ${name} ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
-  }
-}
-
-function assertPlayerNumberMapForWindow(name: string, actual: Record<PlayerId, number>, expected: Partial<Record<PlayerId, number>> | undefined, fail: (message: string) => void): void {
-  for (const [player, expectedValue] of Object.entries(expected ?? {}) as [string, number][]) {
-    const actualValue = actual[Number(player) as PlayerId] ?? 0;
-    if (actualValue !== expectedValue) fail(`Expected ${name}[${player}] ${expectedValue}, got ${actualValue}`);
-  }
-}
-
-function assertOptionalValueForWindow<T>(name: string, actual: T | undefined, expected: T | null | undefined, fail: (message: string) => void): void {
-  if (expected === undefined) return;
-  if (expected === null) {
-    if (actual !== undefined) fail(`Expected no ${name}, got ${String(actual)}`);
-    return;
-  }
-  if (actual !== expected) fail(`Expected ${name} ${String(expected)}, got ${String(actual)}`);
-}
-
-function assertActivityCountsForWindow(actual: Record<PlayerId, unknown>, expected: Partial<Record<PlayerId, Record<string, number>>> | undefined, fail: (message: string) => void): void {
-  for (const [player, expectedCounts] of Object.entries(expected ?? {}) as [string, Record<string, number>][]) {
-    const actualCounts = actual[Number(player) as PlayerId] as Record<string, number> | undefined;
-    for (const [activity, expectedCount] of Object.entries(expectedCounts)) {
-      const actualCount = actualCounts?.[activity] ?? 0;
-      if (actualCount !== expectedCount) fail(`Expected player ${player} activity ${activity} ${expectedCount}, got ${actualCount}`);
-    }
-  }
-}
+function expectationLabel(expected: ScriptedDuelWindowExpectation): string { const source = ` (${expected.source})`; const note = expected.note ? ` [${expected.note}]` : ""; return `${source}${note}`; }
 
 function assertLegalActionCounts(session: DuelSession, expected: Partial<Record<PlayerId, number>> | undefined, fail: (message: string) => void): void {
+  if (expected !== undefined && !isRecord(expected)) return void fail(`Expected legal action count has malformed value ${String(expected)}`);
   for (const [player, expectedCount] of Object.entries(expected ?? {}) as [string, number][]) {
+    if (!isSafePlayerKey(player)) { fail(`Expected legal action count has malformed player ${player}`); continue; }
+    if (!isSafeCount(expectedCount)) { fail(`Expected player ${player} legal action count has malformed count ${expectedCount}`); continue; }
     const actualCount = getLegalActions(session, Number(player) as PlayerId).length;
     if (actualCount !== expectedCount) fail(`Expected player ${player} legal action count ${expectedCount}, got ${actualCount}`);
   }
 }
 
 function assertLegalActionGroupCounts(session: DuelSession, expected: Partial<Record<PlayerId, number>> | undefined, fail: (message: string) => void): void {
+  if (expected !== undefined && !isRecord(expected)) return void fail(`Expected legal action group count has malformed value ${String(expected)}`);
   for (const [player, expectedCount] of Object.entries(expected ?? {}) as [string, number][]) {
+    if (!isSafePlayerKey(player)) { fail(`Expected legal action group count has malformed player ${player}`); continue; }
+    if (!isSafeCount(expectedCount)) { fail(`Expected player ${player} legal action group count has malformed count ${expectedCount}`); continue; }
     const actualCount = getGroupedDuelLegalActions(session, Number(player) as PlayerId).length;
     if (actualCount !== expectedCount) fail(`Expected player ${player} legal action group count ${expectedCount}, got ${actualCount}`);
   }
 }
 
-function assertLegalActionGroupsFlattenLegalActions(session: DuelSession, expected: ScriptedDuelWindowExpectation, fail: (message: string) => void): void {
-  for (const player of expectedLegalActionPlayers(expected)) {
+function assertLegalActionGroupsFlattenLegalActions(
+  session: DuelSession,
+  expected: ScriptedDuelWindowExpectation,
+  expectedLegalActions: ScriptedLegalActionExpectation[],
+  expectedAbsentLegalActions: ScriptedLegalActionExpectation[],
+  expectedLegalActionGroups: ScriptedLegalActionGroupExpectation[],
+  expectedAbsentLegalActionGroups: ScriptedLegalActionGroupExpectation[],
+  fail: (message: string) => void,
+): void {
+  for (const player of expectedLegalActionPlayers(expected, expectedLegalActions, expectedAbsentLegalActions, expectedLegalActionGroups, expectedAbsentLegalActionGroups)) {
     assertLegalActionSurface(session, player, fail);
   }
 }
 
-function assertLegalActionWindowStamps(session: DuelSession, expected: ScriptedDuelWindowExpectation, fail: (message: string) => void): void {
-  for (const player of expectedLegalActionPlayers(expected)) {
+function assertLegalActionWindowStamps(
+  session: DuelSession,
+  expected: ScriptedDuelWindowExpectation,
+  expectedLegalActions: ScriptedLegalActionExpectation[],
+  expectedAbsentLegalActions: ScriptedLegalActionExpectation[],
+  expectedLegalActionGroups: ScriptedLegalActionGroupExpectation[],
+  expectedAbsentLegalActionGroups: ScriptedLegalActionGroupExpectation[],
+  fail: (message: string) => void,
+): void {
+  for (const player of expectedLegalActionPlayers(expected, expectedLegalActions, expectedAbsentLegalActions, expectedLegalActionGroups, expectedAbsentLegalActionGroups)) {
     assertLegalActionWindowStampsForPlayer(session, player, fail);
   }
 }
@@ -405,22 +394,25 @@ function assertLegalActionWindowStampsForPlayer(session: DuelSession, player: Pl
   }
 }
 
-function expectedLegalActionPlayers(expected: ScriptedDuelWindowExpectation): Set<PlayerId> {
+function expectedLegalActionPlayers(
+  expected: ScriptedDuelWindowExpectation,
+  expectedLegalActions: ScriptedLegalActionExpectation[],
+  expectedAbsentLegalActions: ScriptedLegalActionExpectation[],
+  expectedLegalActionGroups: ScriptedLegalActionGroupExpectation[],
+  expectedAbsentLegalActionGroups: ScriptedLegalActionGroupExpectation[],
+): Set<PlayerId> {
   const players = new Set<PlayerId>();
-  for (const player of Object.keys(expected.legalActionCounts ?? {})) players.add(Number(player) as PlayerId);
-  for (const player of Object.keys(expected.legalActionGroupCounts ?? {})) players.add(Number(player) as PlayerId);
-  for (const action of expected.legalActions ?? []) players.add(action.player);
-  for (const action of expected.absentLegalActions ?? []) players.add(action.player);
-  for (const group of expected.legalActionGroups ?? []) players.add(group.player);
-  for (const group of expected.absentLegalActionGroups ?? []) players.add(group.player);
+  for (const player of Object.keys(isRecord(expected.legalActionCounts) ? expected.legalActionCounts : {})) addExpectedLegalActionPlayer(players, Number(player));
+  for (const player of Object.keys(isRecord(expected.legalActionGroupCounts) ? expected.legalActionGroupCounts : {})) addExpectedLegalActionPlayer(players, Number(player));
+  for (const action of expectedLegalActions) addExpectedLegalActionPlayer(players, action.player);
+  for (const action of expectedAbsentLegalActions) addExpectedLegalActionPlayer(players, action.player);
+  for (const group of expectedLegalActionGroups) addExpectedLegalActionPlayer(players, group.player);
+  for (const group of expectedAbsentLegalActionGroups) addExpectedLegalActionPlayer(players, group.player);
   return players;
 }
 
-function assertBattlePairsForWindow(actual: { attackerUid: string; targetUid: string }[], expected: { attackerUid: string; targetUid: string }[] | undefined, fail: (message: string) => void): void {
-  if (expected === undefined) return;
-  if (actual.length !== expected.length || actual.some((pair, index) => pair.attackerUid !== expected[index]?.attackerUid || pair.targetUid !== expected[index]?.targetUid)) {
-    fail(`Expected battlePairs ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
-  }
+function addExpectedLegalActionPlayer(players: Set<PlayerId>, player: number): void {
+  if (isSafePlayerId(player as PlayerId)) players.add(player as PlayerId);
 }
 
 function assertLocationExpectations(
@@ -429,29 +421,28 @@ function assertLocationExpectations(
   locationCounts: Partial<Record<DuelLocation, Record<string, number>>> | undefined,
   fail: (message: string) => void,
 ): void {
-  for (const [location, expectedCodes] of Object.entries(locations ?? {}) as [DuelLocation, string[]][]) {
+  if (locations !== undefined && !isRecord(locations)) fail(`Expected locations has malformed value ${String(locations)}`);
+  if (locationCounts !== undefined && !isRecord(locationCounts)) fail(`Expected locationCounts has malformed value ${String(locationCounts)}`);
+  const safeLocations = isRecord(locations) ? locations : undefined;
+  const safeLocationCounts = isRecord(locationCounts) ? locationCounts : undefined;
+  for (const [location, expectedCodes] of Object.entries(safeLocations ?? {}) as [DuelLocation, string[]][]) {
+    if (!isSafeLocationKey(location)) { fail(`Expected locations has malformed location ${location}`); continue; }
+    if (!Array.isArray(expectedCodes)) { fail(`Expected locations[${location}] has malformed value ${String(expectedCodes)}`); continue; }
     const actualCodes = cards.filter((card) => card.location === location).map((card) => card.code);
     for (const code of expectedCodes) {
+      if (!isSafeString(code)) { fail(`Expected locations[${location}] has malformed code ${String(code)}`); continue; }
       if (!actualCodes.includes(code)) fail(`Expected ${code} in ${location}`);
     }
   }
-  for (const [location, expectedCounts] of Object.entries(locationCounts ?? {}) as [DuelLocation, Record<string, number>][]) {
+  for (const [location, expectedCounts] of Object.entries(safeLocationCounts ?? {}) as [DuelLocation, Record<string, number>][]) {
+    if (!isSafeLocationKey(location)) { fail(`Expected locationCounts has malformed location ${location}`); continue; }
+    if (!isRecord(expectedCounts)) { fail(`Expected locationCounts[${location}] has malformed value ${String(expectedCounts)}`); continue; }
     const actualCounts = countCodes(cards.filter((card) => card.location === location).map((card) => card.code));
     for (const [code, expectedCount] of Object.entries(expectedCounts)) {
+      if (!isSafeCount(expectedCount)) { fail(`Expected ${code} in ${location} has malformed count ${expectedCount}`); continue; }
       const actualCount = actualCounts.get(code) ?? 0;
       if (actualCount !== expectedCount) fail(`Expected ${expectedCount} ${code} in ${location}, got ${actualCount}`);
     }
-  }
-}
-
-function assertCardExpectations(cards: { uid: string }[], expectedCards: (Partial<{ uid: string }> & { uid: string })[] | undefined, fail: (message: string) => void): void {
-  for (const expectedCard of expectedCards ?? []) {
-    const actualCard = cards.find((card) => card.uid === expectedCard.uid);
-    if (!actualCard) {
-      fail(`Expected card ${expectedCard.uid}`);
-      continue;
-    }
-    if (!matchesPartial(actualCard, expectedCard)) fail(`Expected card ${expectedCard.uid} ${JSON.stringify(expectedCard)}, got ${JSON.stringify(actualCard)}`);
   }
 }
 
@@ -481,6 +472,24 @@ function assertLegalActions(
   absent: boolean,
 ): void {
   for (const expectation of expected) {
+    if (!isSafePlayerId(expectation.player)) {
+      fail(`${prefix} ${describeStep(expectation)} has malformed player ${expectation.player}`);
+      continue;
+    }
+    if (expectation.count !== undefined && !isSafeCount(expectation.count)) {
+      fail(`${prefix} ${describeStep(expectation)} has malformed count ${expectation.count}`);
+      continue;
+    }
+    const malformedWindowField = malformedActionWindowField(expectation);
+    if (malformedWindowField) {
+      fail(`${prefix} ${describeStep(expectation)} has malformed ${malformedWindowField}`);
+      continue;
+    }
+    const malformedSelectorField = malformedActionSelectorField(expectation);
+    if (malformedSelectorField) {
+      fail(`${prefix} ${describeStep(expectation)} has malformed ${malformedSelectorField}`);
+      continue;
+    }
     const legal = getLegalActions(session, expectation.player);
     const matches = legal.filter((action) => duelActionMatchesSelector(action, expectation, cards));
     const expectedCount = expectation.count;
@@ -499,6 +508,31 @@ function assertLegalActionGroups(
   absent: boolean,
 ): void {
   for (const expectation of expected) {
+    const malformedPlayerExpectation = malformedGroupPlayerExpectation(expectation);
+    if (malformedPlayerExpectation) {
+      fail(`${prefix} ${malformedPlayerExpectation.description} has malformed player ${malformedPlayerExpectation.player}`);
+      continue;
+    }
+    const malformedCountExpectation = malformedGroupCountExpectation(expectation);
+    if (malformedCountExpectation) {
+      fail(`${prefix} ${malformedCountExpectation.description} has malformed count ${malformedCountExpectation.count}`);
+      continue;
+    }
+    const malformedShapeExpectations = malformedGroupShapeExpectations(expectation, describeGroupExpectation(expectation));
+    if (malformedShapeExpectations.length) {
+      for (const malformed of malformedShapeExpectations) fail(`${prefix} ${malformed}`);
+      continue;
+    }
+    const malformedWindowExpectation = malformedGroupWindowExpectation(expectation);
+    if (malformedWindowExpectation) {
+      fail(`${prefix} ${malformedWindowExpectation.description} has malformed ${malformedWindowExpectation.field}`);
+      continue;
+    }
+    const malformedSelectorExpectation = malformedGroupSelectorExpectation(expectation);
+    if (malformedSelectorExpectation) {
+      fail(`${prefix} ${malformedSelectorExpectation.description} has malformed ${malformedSelectorExpectation.field}`);
+      continue;
+    }
     const groups = getGroupedDuelLegalActions(session, expectation.player);
     const matches = groups.filter((group) => legalActionGroupMatches(group, expectation, cards));
     const expectedCount = expectation.count;
@@ -515,11 +549,16 @@ function legalActionGroupMatches(
 ): boolean {
   if (expectation.key !== undefined && group.key !== expectation.key) return false;
   if (expectation.label !== undefined && group.label !== expectation.label) return false;
+  if (expectation.windowId !== undefined && !isSafeWindowId(expectation.windowId)) return false;
   if (expectation.windowId !== undefined && group.windowId !== expectation.windowId) return false;
   if (expectation.windowKind !== undefined && group.windowKind !== expectation.windowKind) return false;
   if (expectation.windowToken !== undefined && group.windowToken !== expectation.windowToken) return false;
   if (expectation.triggerBucket !== undefined && !matchesPendingTriggerBucket(group.triggerBucket, expectation.triggerBucket)) return false;
-  for (const actionExpectation of expectation.actions ?? []) {
+  if (expectation.triggerOrderPrompt !== undefined && !matchesTriggerOrderPrompt(group.triggerOrderPrompt, expectation.triggerOrderPrompt)) return false;
+  for (const actionExpectation of groupActionExpectations(expectation)) {
+    if (!isSafePlayerId(actionExpectation.player)) return false;
+    if (actionExpectation.count !== undefined && !isSafeCount(actionExpectation.count)) return false;
+    if (malformedActionSelectorField(actionExpectation)) return false;
     const matches = group.actions.filter((action) => duelActionMatchesSelector(action, actionExpectation, cards));
     const expectedCount = actionExpectation.count;
     if (expectedCount === undefined ? matches.length === 0 : matches.length !== expectedCount) return false;
@@ -527,27 +566,74 @@ function legalActionGroupMatches(
   return true;
 }
 
-function assertPendingTriggerBucketExpectations(
-  actual: PendingTriggerBucketState[],
-  expected: Array<Partial<PendingTriggerBucketState>> | undefined,
-  fail: (message: string) => void,
-): void {
-  if (expected === undefined) return;
-  if (actual.length !== expected.length) {
-    fail(`Expected pendingTriggerBuckets length ${expected.length}, got ${actual.length}`);
-    return;
-  }
-  expected.forEach((partial, index) => {
-    if (!matchesPendingTriggerBucket(actual[index], partial)) fail(`Expected pendingTriggerBuckets[${index}] ${JSON.stringify(partial)}, got ${JSON.stringify(actual[index])}`);
-  });
+function malformedActionWindowField(expectation: ScriptedResponseSelector): string | undefined {
+  if (expectation.windowId !== undefined && !isSafeWindowId(expectation.windowId)) return "windowId"; if (expectation.windowKind !== undefined && !isSafeWindowKind(expectation.windowKind)) return "windowKind"; if (expectation.windowToken !== undefined && !isSafeWindowToken(expectation.windowToken)) return "windowToken"; return undefined;
 }
 
-function matchesPendingTriggerBucket(actual: PendingTriggerBucketState | undefined, expected: Partial<PendingTriggerBucketState>): boolean {
-  if (actual === undefined) return false;
-  if (expected.triggerBucket !== undefined && actual.triggerBucket !== expected.triggerBucket) return false;
-  if (expected.player !== undefined && actual.player !== expected.player) return false;
-  if (expected.triggerIds !== undefined && (actual.triggerIds.length !== expected.triggerIds.length || actual.triggerIds.some((id, index) => id !== expected.triggerIds?.[index]))) return false;
-  return true;
+function malformedActionSelectorField(expectation: ScriptedResponseSelector): string | undefined {
+  const unknownKey = Object.keys(expectation).find((key) => !ACTION_SELECTOR_KEYS.has(key));
+  if (unknownKey !== undefined) return `key ${unknownKey}`;
+  if (expectation.code !== undefined && !isSafeString(expectation.code)) return "code";
+  if (expectation.uid !== undefined && !isSafeString(expectation.uid)) return "uid";
+  if (expectation.tributeUids !== undefined && !isStringList(expectation.tributeUids)) return "tributeUids";
+  if (expectation.materialUids !== undefined && !isStringList(expectation.materialUids)) return "materialUids";
+  if (expectation.summonUids !== undefined && !isStringList(expectation.summonUids)) return "summonUids";
+  if (expectation.position !== undefined && !isCardPosition(expectation.position)) return "position";
+  if (expectation.phase !== undefined && !isSafePhase(expectation.phase)) return "phase";
+  if (expectation.attackerUid !== undefined && !isSafeString(expectation.attackerUid)) return "attackerUid";
+  if (expectation.targetUid !== undefined && !isSafeString(expectation.targetUid)) return "targetUid";
+  if (expectation.directAttack !== undefined && !isSafeBoolean(expectation.directAttack)) return "directAttack";
+  if (expectation.promptId !== undefined && !isSafeWindowToken(expectation.promptId)) return "promptId";
+  if (expectation.option !== undefined && !isSafeCount(expectation.option)) return "option";
+  if (expectation.yes !== undefined && !isSafeBoolean(expectation.yes)) return "yes";
+  if (expectation.effectId !== undefined && !isSafeString(expectation.effectId)) return "effectId";
+  if (expectation.triggerId !== undefined && !isSafeString(expectation.triggerId)) return "triggerId";
+  if (expectation.triggerBucket !== undefined && !isTriggerBucket(expectation.triggerBucket)) return "triggerBucket";
+  if (expectation.location !== undefined && !isSafeLocationKey(expectation.location)) return "location";
+  if (expectation.labelIncludes !== undefined && !isSafeWindowToken(expectation.labelIncludes)) return "labelIncludes";
+  if (expectation.occurrence !== undefined && !isSafeCount(expectation.occurrence)) return "occurrence";
+  return undefined;
+}
+
+function isStringList(value: string[]): boolean {
+  return Array.isArray(value) && value.every(isSafeString);
+}
+
+function malformedGroupWindowExpectation(expectation: ScriptedLegalActionGroupExpectation): { description: string; field: string } | undefined {
+  if (expectation.windowId !== undefined && !isSafeWindowId(expectation.windowId)) return { description: describeGroupExpectation(expectation), field: "windowId" };
+  if (expectation.windowKind !== undefined && !isSafeWindowKind(expectation.windowKind)) return { description: describeGroupExpectation(expectation), field: "windowKind" };
+  if (expectation.windowToken !== undefined && !isSafeWindowToken(expectation.windowToken)) return { description: describeGroupExpectation(expectation), field: "windowToken" };
+  for (const action of groupActionExpectations(expectation)) {
+    const field = malformedActionWindowField(action);
+    if (field) return { description: `${describeGroupExpectation(expectation)} action ${describeStep(action)}`, field };
+  }
+  return undefined;
+}
+
+function malformedGroupSelectorExpectation(expectation: ScriptedLegalActionGroupExpectation): { description: string; field: string } | undefined {
+  for (const action of groupActionExpectations(expectation)) {
+    const field = malformedActionSelectorField(action);
+    if (field) return { description: `${describeGroupExpectation(expectation)} action ${describeStep(action)}`, field };
+  }
+  return undefined;
+}
+
+function malformedGroupCountExpectation(expectation: ScriptedLegalActionGroupExpectation): { description: string; count: number } | undefined {
+  if (expectation.count !== undefined && !isSafeCount(expectation.count)) return { description: describeGroupExpectation(expectation), count: expectation.count };
+  for (const action of groupActionExpectations(expectation)) {
+    if (action.count !== undefined && !isSafeCount(action.count)) return { description: `${describeGroupExpectation(expectation)} action ${describeStep(action)}`, count: action.count };
+  }
+  return undefined;
+}
+
+function malformedGroupPlayerExpectation(expectation: ScriptedLegalActionGroupExpectation): { description: string; player: PlayerId } | undefined {
+  if (!isSafePlayerId(expectation.player)) return { description: describeGroupExpectation(expectation), player: expectation.player };
+  for (const action of groupActionExpectations(expectation)) if (!isSafePlayerId(action.player)) return { description: `${describeGroupExpectation(expectation)} action ${describeStep(action)}`, player: action.player };
+  return undefined;
+}
+
+function groupActionExpectations(expectation: ScriptedLegalActionGroupExpectation): ScriptedLegalActionExpectation[] {
+  return Array.isArray(expectation.actions) ? expectation.actions.filter(isRecord) as ScriptedLegalActionExpectation[] : [];
 }
 
 function resolveScriptedStep(step: ScriptedStepResponse, legal: DuelAction[], cards: { uid: string; code: string; location: DuelLocation }[]): DuelAction | undefined {
@@ -556,7 +642,9 @@ function resolveScriptedStep(step: ScriptedStepResponse, legal: DuelAction[], ca
     return action ? withMatchedWindowStamp(step, action) : undefined;
   }
   const selector = step as ScriptedResponseSelector;
-  return selectDuelActionBySelector(legal, selector, cards);
+  const action = selectDuelActionBySelector(legal, selector, cards);
+  if (action?.type === "pendulumSummon" && selector.summonUids !== undefined) return { ...action, summonUids: [...selector.summonUids] };
+  return action;
 }
 
 function withMatchedWindowStamp(step: DuelAction, action: DuelAction): DuelAction {
@@ -565,6 +653,7 @@ function withMatchedWindowStamp(step: DuelAction, action: DuelAction): DuelActio
 }
 
 function isConcreteResponse(step: ScriptedStepResponse): step is DuelAction {
+  if (step.type === "pendulumSummon") return false;
   if (step.type === "changePhase") return "phase" in step && "label" in step;
   return "label" in step && (!("uid" in step) || typeof step.uid === "string");
 }
@@ -585,42 +674,6 @@ function scriptedStepSnapshotRestoreAfter(step: ScriptedDuelStep): boolean {
   return step.snapshotRestore === "after" || step.snapshotRestore === "both";
 }
 
-function matchesOptionalPartial<T extends object>(actual: T | undefined, expected: Partial<T> | null): boolean {
-  if (expected === null) return actual === undefined;
-  return matchesPartial(actual, expected);
-}
-
-function assertPartialList<T extends object>(name: string, actual: T[], expected: Partial<T>[] | undefined, fail: (message: string) => void): void {
-  if (expected === undefined) return;
-  if (actual.length !== expected.length) {
-    fail(`Expected ${name} length ${expected.length}, got ${actual.length}`);
-    return;
-  }
-  expected.forEach((partial, index) => {
-    if (!matchesPartial(actual[index], partial)) fail(`Expected ${name}[${index}] ${JSON.stringify(partial)}, got ${JSON.stringify(actual[index])}`);
-  });
-}
-
-function matchesPartial<T extends object>(actual: T | undefined, expected: Partial<T>): boolean {
-  if (actual === undefined) return false;
-  return Object.entries(expected).every(([key, value]) => matchesPartialValue((actual as Record<string, unknown>)[key], value));
-}
-
-function matchesPartialValue(actual: unknown, expected: unknown): boolean {
-  if (Array.isArray(expected)) {
-    return Array.isArray(actual) && actual.length === expected.length && expected.every((value, index) => matchesPartialValue(actual[index], value));
-  }
-  if (isRecord(expected)) {
-    if (!isRecord(actual)) return false;
-    return Object.entries(expected).every(([key, value]) => matchesPartialValue(actual[key], value));
-  }
-  return actual === expected;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 function applyFixtureEffects(
   session: DuelSession,
   effects: ScriptedFixtureEffect[],
@@ -629,7 +682,16 @@ function applyFixtureEffects(
   effectRegistry: DuelEffectRestoreRegistry,
   chainLimitRegistry: DuelChainLimitRestoreRegistry,
 ): void {
-  for (const effect of effects) {
+  for (const [index, effect] of effects.entries()) {
+    if (!isRecord(effect)) {
+      failures.push({ fixture, message: `setup.effects[${index}] has malformed value ${String(effect)}` });
+      return;
+    }
+    for (const message of malformedFixtureEffectListExpectations(effect)) {
+      failures.push({ fixture, message: `Setup effect ${effect.id} ${message}` });
+    }
+    if (failures.length) return;
+    if (effect.occurrence !== undefined && !isSafeCount(effect.occurrence)) return void failures.push({ fixture, message: `Setup effect source ${effect.code} for player ${effect.player} has malformed occurrence ${effect.occurrence}` });
     const cards = queryPublicState(session).cards.filter((card) => {
       if (card.controller !== effect.player || card.code !== effect.code) return false;
       return effect.location === undefined || card.location === effect.location;
@@ -698,6 +760,7 @@ function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid:
       }
       for (const move of effect.moveCardsOnResolve ?? []) {
         if (timingBoundaryStart !== undefined) markFixtureOperationTimingBoundary(ctx.duel, timingBoundaryStart, operationMoved);
+        if (move.occurrence !== undefined && !isSafeCount(move.occurrence)) throw new Error(`Fixture effect move ${move.code} for player ${move.player} has malformed occurrence ${move.occurrence}`);
         const candidates = ctx.duel.cards
           .filter((card) => {
             if (card.controller !== move.player || card.code !== move.code) return false;
@@ -747,6 +810,7 @@ function targetFixtureCards(state: DuelSession["state"], selectors: ScriptedFixt
 }
 
 function findFixtureCard(state: DuelSession["state"], selector: ScriptedFixtureCardSelector): DuelCardInstance | undefined {
+  if (selector.occurrence !== undefined && !isSafeCount(selector.occurrence)) return undefined;
   const candidates = state.cards
     .filter((card) => {
       if (card.controller !== selector.player || card.code !== selector.code) return false;
@@ -774,6 +838,7 @@ function markFixtureOperationTimingBoundary(state: DuelSession["state"], start: 
 }
 
 function negateFixtureSummon(state: DuelSession["state"], target: NonNullable<ScriptedFixtureEffect["negateSummonOnResolve"]>) {
+  if (target.occurrence !== undefined && !isSafeCount(target.occurrence)) return undefined;
   const candidates = state.cards
     .filter((card) => {
       if (card.controller !== target.player || card.code !== target.code) return false;
@@ -797,6 +862,7 @@ function createFixtureChainLimit(effect: ScriptedFixtureEffect, registryKey: str
 
 function applyFixtureSetup(session: DuelSession, moves: ScriptedFixtureMove[], failures: ParityFailure[], fixture: string): void {
   for (const move of moves) {
+    if (move.occurrence !== undefined && !isSafeCount(move.occurrence)) return void failures.push({ fixture, message: `Setup move ${move.code} for player ${move.player} has malformed occurrence ${move.occurrence}` });
     const cards = queryPublicState(session).cards.filter((card) => {
       if (card.controller !== move.player || card.code !== move.code) return false;
       return move.from === undefined || card.location === move.from;
@@ -862,58 +928,8 @@ function fixtureEventPayload(event: ScriptedFixtureMove | ScriptedFixtureEvent) 
 
 function applyFixturePrompt(session: DuelSession, prompt: DuelSession["state"]["prompt"] | undefined): void {
   if (!prompt) return;
-  session.state.prompt = prompt.type === "selectOption" ? { ...prompt, options: [...prompt.options] } : { ...prompt };
+  session.state.prompt = prompt.type === "selectOption" ? { ...prompt, options: [...prompt.options], ...(prompt.descriptions === undefined ? {} : { descriptions: [...prompt.descriptions] }) } : { ...prompt };
   session.state.waitingFor = prompt.player;
-}
-
-function sameAction(action: DuelAction, response: DuelAction): boolean {
-  if (action.type !== response.type || action.player !== response.player) return false;
-  if (hasPartialWindowStamp(response)) return false;
-  if (hasWindowStamp(action) && !hasWindowStamp(response)) return false;
-  if (action.windowId !== undefined && response.windowId !== undefined && action.windowId !== response.windowId) return false;
-  if (action.windowKind !== undefined && response.windowKind !== undefined && action.windowKind !== response.windowKind) return false;
-  if (action.windowToken !== undefined && response.windowToken !== undefined && action.windowToken !== response.windowToken) return false;
-  if ("uid" in action && (!("uid" in response) || action.uid !== response.uid)) return false;
-  if (action.type === "activateEffect" && response.type === "activateEffect" && action.effectId !== response.effectId) return false;
-  if (action.type === "specialSummonProcedure" && response.type === "specialSummonProcedure" && action.effectId !== response.effectId) return false;
-  if (action.type === "activateTrigger" && response.type === "activateTrigger" && (action.triggerId !== response.triggerId || action.triggerBucket !== response.triggerBucket || action.effectId !== response.effectId)) return false;
-  if (action.type === "declineTrigger" && response.type === "declineTrigger" && (action.triggerId !== response.triggerId || action.triggerBucket !== response.triggerBucket || action.effectId !== response.effectId)) return false;
-  if (action.type === "selectOption" && response.type === "selectOption" && (action.promptId !== response.promptId || action.option !== response.option)) return false;
-  if (action.type === "selectYesNo" && response.type === "selectYesNo" && (action.promptId !== response.promptId || action.yes !== response.yes)) return false;
-  if (action.type === "tributeSummon" && response.type === "tributeSummon" && !sameStringMembers(action.tributeUids, response.tributeUids)) return false;
-  if (action.type === "tributeSet" && response.type === "tributeSet" && !sameStringMembers(action.tributeUids, response.tributeUids)) return false;
-  if (action.type === "fusionSummon" && response.type === "fusionSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
-  if (action.type === "synchroSummon" && response.type === "synchroSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
-  if (action.type === "xyzSummon" && response.type === "xyzSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
-  if (action.type === "linkSummon" && response.type === "linkSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
-  if (action.type === "ritualSummon" && response.type === "ritualSummon" && !sameStringMembers(action.materialUids, response.materialUids)) return false;
-  if (action.type === "pendulumSummon" && response.type === "pendulumSummon" && !isPendulumSummonSelection(action.summonUids, response.summonUids)) return false;
-  if (action.type === "changePosition" && response.type === "changePosition" && action.position !== response.position) return false;
-  if (action.type === "declareAttack" && response.type === "declareAttack" && action.attackerUid !== response.attackerUid) return false;
-  if (action.type === "declareAttack" && response.type === "declareAttack" && action.targetUid !== response.targetUid) return false;
-  if (action.type === "declareAttack" && response.type === "declareAttack" && !sameDirectAttackIntent(action, response)) return false;
-  if (action.type === "replayAttack" && response.type === "replayAttack" && action.attackerUid !== response.attackerUid) return false;
-  if (action.type === "replayAttack" && response.type === "replayAttack" && action.targetUid !== response.targetUid) return false;
-  if (action.type === "replayAttack" && response.type === "replayAttack" && !sameDirectAttackIntent(action, response)) return false;
-  if (action.type === "cancelAttack" && response.type === "cancelAttack" && action.attackerUid !== response.attackerUid) return false;
-  if (action.type === "changePhase" && response.type === "changePhase" && action.phase !== response.phase) return false;
-  return true;
-}
-
-function hasPartialWindowStamp(response: DuelAction): boolean {
-  const hasWindowId = response.windowId !== undefined;
-  const hasWindowKind = response.windowKind !== undefined;
-  const hasWindowToken = response.windowToken !== undefined;
-  return (hasWindowId || hasWindowKind || hasWindowToken) && !(hasWindowId && hasWindowKind && hasWindowToken);
-}
-
-function hasWindowStamp(response: DuelAction): boolean {
-  return response.windowId !== undefined && response.windowKind !== undefined && response.windowToken !== undefined;
-}
-
-function sameDirectAttackIntent(action: Extract<DuelAction, { type: "declareAttack" | "replayAttack" }>, response: Extract<DuelAction, { type: "declareAttack" | "replayAttack" }>): boolean {
-  if (action.directAttack === true) return response.directAttack === true;
-  return response.directAttack !== true;
 }
 
 function describeStep(step: ScriptedStepResponse): string {
@@ -922,39 +938,37 @@ function describeStep(step: ScriptedStepResponse): string {
     `type=${step.type}`,
     `player=${step.player}`,
     "windowId" in step && step.windowId !== undefined ? `windowId=${step.windowId}` : undefined,
-    "code" in step && step.code ? `code=${step.code}` : undefined,
-    "uid" in step && step.uid ? `uid=${step.uid}` : undefined,
+    "windowKind" in step && step.windowKind !== undefined ? `windowKind=${step.windowKind}` : undefined,
+    "windowToken" in step && step.windowToken !== undefined ? `windowToken=${step.windowToken}` : undefined,
+    "code" in step && step.code !== undefined ? `code=${step.code}` : undefined,
+    "uid" in step && step.uid !== undefined ? `uid=${step.uid}` : undefined,
     "tributeUids" in step && step.tributeUids ? `tributeUids=${step.tributeUids.join(",")}` : undefined,
     "materialUids" in step && step.materialUids ? `materialUids=${step.materialUids.join(",")}` : undefined,
     "summonUids" in step && step.summonUids ? `summonUids=${step.summonUids.join(",")}` : undefined,
-    "position" in step && step.position ? `position=${step.position}` : undefined,
-    "phase" in step && step.phase ? `phase=${step.phase}` : undefined,
-    "attackerUid" in step && step.attackerUid ? `attackerUid=${step.attackerUid}` : undefined,
-    "targetUid" in step && step.targetUid ? `targetUid=${step.targetUid}` : undefined,
-    "promptId" in step && step.promptId ? `promptId=${step.promptId}` : undefined,
+    "position" in step && step.position !== undefined ? `position=${step.position}` : undefined,
+    "phase" in step && step.phase !== undefined ? `phase=${step.phase}` : undefined,
+    "attackerUid" in step && step.attackerUid !== undefined ? `attackerUid=${step.attackerUid}` : undefined,
+    "targetUid" in step && step.targetUid !== undefined ? `targetUid=${step.targetUid}` : undefined,
+    "promptId" in step && step.promptId !== undefined ? `promptId=${step.promptId}` : undefined,
     "option" in step && step.option !== undefined ? `option=${step.option}` : undefined,
     "yes" in step && step.yes !== undefined ? `yes=${step.yes}` : undefined,
-    "effectId" in step && step.effectId ? `effectId=${step.effectId}` : undefined,
-    "triggerId" in step && step.triggerId ? `triggerId=${step.triggerId}` : undefined,
-    "location" in step && step.location ? `location=${step.location}` : undefined,
+    "effectId" in step && step.effectId !== undefined ? `effectId=${step.effectId}` : undefined,
+    "triggerId" in step && step.triggerId !== undefined ? `triggerId=${step.triggerId}` : undefined,
+    "location" in step && step.location !== undefined ? `location=${step.location}` : undefined,
   ].filter(Boolean);
   return detail.join(" ");
-}
-
-function isPendulumSummonSelection(candidates: string[], selected: string[]): boolean {
-  if (!selected.length || selected.length > candidates.length) return false;
-  if (new Set(selected).size !== selected.length) return false;
-  return selected.every((uid) => candidates.includes(uid));
 }
 
 function describeGroupExpectation(expectation: ScriptedLegalActionGroupExpectation): string {
   const detail = [
     `player=${expectation.player}`,
-    expectation.key ? `key=${expectation.key}` : undefined,
-    expectation.label ? `label=${expectation.label}` : undefined,
+    expectation.key !== undefined ? `key=${expectation.key}` : undefined,
+    expectation.label !== undefined ? `label=${expectation.label}` : undefined,
     expectation.windowId !== undefined ? `windowId=${expectation.windowId}` : undefined,
-    expectation.windowKind ? `windowKind=${expectation.windowKind}` : undefined,
-    expectation.windowToken ? `windowToken=${expectation.windowToken}` : undefined,
+    expectation.windowKind !== undefined ? `windowKind=${expectation.windowKind}` : undefined,
+    expectation.windowToken !== undefined ? `windowToken=${expectation.windowToken}` : undefined,
+    expectation.triggerBucket !== undefined ? `triggerBucket=${JSON.stringify(expectation.triggerBucket)}` : undefined,
+    expectation.triggerOrderPrompt !== undefined ? `triggerOrderPrompt=${JSON.stringify(expectation.triggerOrderPrompt)}` : undefined,
   ].filter(Boolean);
   return detail.join(" ");
 }

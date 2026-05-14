@@ -266,6 +266,118 @@ describe("EDOPro compatibility harness fixtures", () => {
     expect(result.failures).toHaveLength(1);
   });
 
+  it("rejects malformed setup move occurrence indexes", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture(
+      {
+        name: "malformed setup move occurrence fixture",
+        options: { seed: 51, startingHandSize: 1 },
+        decks: {
+          0: { main: ["100"] },
+          1: { main: ["200"] },
+        },
+        setup: {
+          moveCards: [{ player: 0, code: "100", from: "hand", to: "graveyard", occurrence: Number.NaN }],
+        },
+        responses: [],
+        expected: { source: "edopro" },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      failures: [
+        {
+          fixture: "malformed setup move occurrence fixture",
+          message: "setup.moveCards[0].occurrence has malformed value NaN",
+        },
+      ],
+    });
+  });
+
+  it("rejects malformed setup effect source occurrence indexes", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture(
+      {
+        name: "malformed setup effect occurrence fixture",
+        options: { seed: 52, startingHandSize: 1 },
+        decks: {
+          0: { main: ["100"] },
+          1: { main: ["200"] },
+        },
+        setup: {
+          effects: [
+            {
+              id: "malformed-source-occurrence",
+              player: 0,
+              code: "100",
+              location: "hand",
+              event: "ignition",
+              range: ["hand"],
+              occurrence: -1,
+            },
+          ],
+        },
+        responses: [],
+        expected: { source: "edopro" },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      failures: [
+        {
+          fixture: "malformed setup effect occurrence fixture",
+        message: "Setup effect malformed-source-occurrence effect.occurrence has malformed value -1",
+        },
+      ],
+    });
+  });
+
+  it("rejects malformed effect move occurrence indexes", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Fixture Ignition", kind: "monster", attack: 1800, defense: 1200 },
+      { code: "200", name: "Fixture Move Target", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "300", name: "Fixture Filler", kind: "monster", attack: 1000, defense: 1000 },
+    ];
+    const result = runScriptedDuelFixture(
+      {
+        name: "malformed effect move occurrence fixture",
+        options: { seed: 53, startingHandSize: 2 },
+        decks: {
+          0: { main: ["100", "200"] },
+          1: { main: ["300", "300"] },
+        },
+        setup: {
+          effects: [
+            {
+              id: "malformed-move-occurrence",
+              player: 0,
+              code: "100",
+              location: "hand",
+              event: "ignition",
+              range: ["hand"],
+              moveCardsOnResolve: [{ player: 0, code: "200", from: "hand", to: "graveyard", occurrence: 1.5 }],
+            },
+          ],
+        },
+        responses: [makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "malformed-move-occurrence" }))],
+        expected: { source: "edopro" },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      {
+        fixture: "malformed effect move occurrence fixture",
+        message: "Setup effect malformed-move-occurrence moveCardsOnResolve[0].occurrence has malformed value 1.5",
+      },
+    ]);
+  });
+
   it("runs a scripted trigger-controller fast-effect fixture", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Fixture Summon", kind: "monster", attack: 1800, defense: 1200 },
@@ -471,6 +583,417 @@ describe("EDOPro compatibility harness fixtures", () => {
     );
 
     expect(result).toEqual({ ok: true, failures: [] });
+  });
+
+  it("rejects malformed location expectations", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture(
+      {
+        name: "malformed location expectation fixture",
+        options: { seed: 51, startingHandSize: 1 },
+        decks: {
+          0: { main: ["100"] },
+          1: { main: ["200"] },
+        },
+        before: {
+          source: "edopro",
+          locations: { bogus: ["100"] } as never,
+          locationCounts: { graveyard: { "100": Number.NaN }, nowhere: { "200": 0 } } as never,
+        },
+        responses: [],
+        expected: { source: "edopro" },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      {
+        fixture: "malformed location expectation fixture",
+        message: "before fixture (edopro): Expected locations has malformed location bogus",
+      },
+      {
+        fixture: "malformed location expectation fixture",
+        message: "before fixture (edopro): Expected 100 in graveyard has malformed count NaN",
+      },
+      {
+        fixture: "malformed location expectation fixture",
+        message: "before fixture (edopro): Expected locationCounts has malformed location nowhere",
+      },
+    ]);
+  });
+
+  it("rejects malformed list expectations", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture(
+      {
+        name: "malformed list expectation fixture",
+        options: { seed: 52, startingHandSize: 1 },
+        decks: {
+          0: { main: ["100"] },
+          1: { main: ["200"] },
+        },
+        before: {
+          source: "edopro",
+          lastDiceResults: [Number.NaN],
+          chainPasses: [2] as never,
+        },
+        responses: [],
+        expected: { source: "edopro" },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      {
+        fixture: "malformed list expectation fixture",
+        message: "before fixture (edopro): Expected lastDiceResults[0] has malformed value NaN",
+      },
+      {
+        fixture: "malformed list expectation fixture",
+        message: "before fixture (edopro): Expected chainPasses[0] has malformed player 2",
+      },
+    ]);
+  });
+
+  it("rejects malformed string expectations", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture(
+      {
+        name: "malformed string expectation fixture",
+        options: { seed: 55, startingHandSize: 1 },
+        decks: {
+          0: { main: ["100"] },
+          1: { main: ["200"] },
+        },
+        before: {
+          source: "edopro",
+          usedCountKeys: [100] as never,
+          logIncludes: [false] as never,
+          locations: { hand: [100] } as never,
+          battlePairs: [{ attackerUid: 100, targetUid: false }] as never,
+        },
+        responses: [],
+        expected: { source: "edopro" },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      { fixture: "malformed string expectation fixture", message: "before fixture (edopro): Expected usedCountKeys[0] has malformed value 100" },
+      { fixture: "malformed string expectation fixture", message: "before fixture (edopro): Expected logIncludes[0] has malformed value false" },
+      { fixture: "malformed string expectation fixture", message: "before fixture (edopro): Expected locations[hand] has malformed code 100" },
+      { fixture: "malformed string expectation fixture", message: "before fixture (edopro): Expected battlePairs[0].attackerUid has malformed value 100" },
+    ]);
+  });
+
+  it("rejects malformed scalar number expectations", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture(
+      {
+        name: "malformed scalar number fixture",
+        options: { seed: 53, startingHandSize: 1 },
+        decks: {
+          0: { main: ["100"] },
+          1: { main: ["200"] },
+        },
+        before: {
+          source: "edopro",
+          status: "bogus" as "awaiting",
+          winner: 2 as never,
+          winReason: Number.NaN,
+          windowId: Number.NaN,
+          windowKind: "bogus" as "open",
+          phase: "bogus" as "main1",
+          battleStep: "bogus" as "attack",
+          turn: -1,
+          randomCounter: 0.5,
+          activityCounts: { 0: { bogus: 1 }, 1: { attack: Number.NaN }, 2: { summon: 1 } } as never,
+          skippedPhases: [{ player: 2, phase: "combat", remaining: 0 }] as never,
+          phaseActivity: "yes" as never,
+          attackCostPaid: Number.POSITIVE_INFINITY,
+          options: { startingHandSize: Number.NaN, bogus: 1 } as never,
+          duelTypeFlags: Number.NaN,
+          globalFlags: -1,
+          unofficialProcEnabled: "yes" as never,
+          shuffleCheckDisabled: "yes" as never,
+          pendingBattle: "yes" as never,
+          currentAttack: "yes" as never,
+          logCount: -1,
+        },
+        responses: [],
+        expected: { source: "edopro" },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected status has malformed value bogus" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected winner has malformed value 2" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected winReason has malformed value NaN" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected windowId has malformed value NaN" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected windowKind has malformed value bogus" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected turn has malformed value -1" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected phase has malformed value bogus" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected randomCounter has malformed value 0.5" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected player 0 activityCounts has malformed activity bogus" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected player 1 activity attack has malformed count NaN" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected activityCounts has malformed player 2" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected skippedPhases[0].player has malformed player 2" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected skippedPhases[0].phase has malformed value combat" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected skippedPhases[0].remaining has malformed value 0" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected phaseActivity has malformed value yes" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected attackCostPaid has malformed value Infinity" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected options.startingHandSize has malformed value NaN" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected options has malformed key bogus" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected duelTypeFlags has malformed value NaN" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected globalFlags has malformed value -1" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected unofficialProcEnabled has malformed value yes" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected shuffleCheckDisabled has malformed value yes" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected battleStep has malformed value bogus" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected pendingBattle has malformed value yes" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected currentAttack has malformed value yes" },
+      { fixture: "malformed scalar number fixture", message: "before fixture (edopro): Expected logCount has malformed value -1" },
+    ]);
+  });
+
+  it("rejects malformed scalar player expectations", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture(
+      {
+        name: "malformed scalar player fixture",
+        options: { seed: 54, startingHandSize: 1 },
+        decks: {
+          0: { main: ["100"] },
+          1: { main: ["200"] },
+        },
+        before: {
+          source: "edopro",
+          waitingFor: 2 as never,
+          turnPlayer: -1 as never,
+        },
+        responses: [],
+        expected: { source: "edopro" },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      { fixture: "malformed scalar player fixture", message: "before fixture (edopro): Expected waitingFor has malformed player 2" },
+      { fixture: "malformed scalar player fixture", message: "before fixture (edopro): Expected turnPlayer has malformed player -1" },
+    ]);
+  });
+
+  it("rejects malformed battle window expectations", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture(
+      {
+        name: "malformed battle window fixture",
+        options: { seed: 56, startingHandSize: 1 },
+        decks: {
+          0: { main: ["100"] },
+          1: { main: ["200"] },
+        },
+        before: {
+          source: "edopro",
+          battleWindow: {
+            id: Number.NaN,
+            kind: "combat" as never,
+            step: "declare" as never,
+            attackerUid: 100 as never,
+            targetUid: false as never,
+            responsePlayer: 2 as never,
+            attackNegated: "yes" as never,
+            bogus: 1,
+          } as never,
+        },
+        responses: [],
+        expected: { source: "edopro" },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      { fixture: "malformed battle window fixture", message: "before fixture (edopro): Expected battleWindow.id has malformed value NaN" },
+      { fixture: "malformed battle window fixture", message: "before fixture (edopro): Expected battleWindow.kind has malformed value combat" },
+      { fixture: "malformed battle window fixture", message: "before fixture (edopro): Expected battleWindow.step has malformed value declare" },
+      { fixture: "malformed battle window fixture", message: "before fixture (edopro): Expected battleWindow.attackerUid has malformed value 100" },
+      { fixture: "malformed battle window fixture", message: "before fixture (edopro): Expected battleWindow.targetUid has malformed value false" },
+      { fixture: "malformed battle window fixture", message: "before fixture (edopro): Expected battleWindow.responsePlayer has malformed player 2" },
+      { fixture: "malformed battle window fixture", message: "before fixture (edopro): Expected battleWindow.attackNegated has malformed value yes" },
+      { fixture: "malformed battle window fixture", message: "before fixture (edopro): Expected battleWindow has malformed key bogus" },
+    ]);
+  });
+
+  it("rejects malformed prompt expectations", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture(
+      {
+        name: "malformed prompt fixture",
+        options: { seed: 57, startingHandSize: 1 },
+        decks: {
+          0: { main: ["100"] },
+          1: { main: ["200"] },
+        },
+        before: {
+          source: "edopro",
+          prompt: {
+            id: 100,
+            type: "choose" as never,
+            player: 2,
+            options: [1, Number.NaN],
+            description: -1,
+            returnTo: -1,
+            bogus: 1,
+          } as never,
+        },
+        responses: [],
+        expected: { source: "edopro" },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      { fixture: "malformed prompt fixture", message: "before fixture (edopro): Expected prompt.id has malformed value 100" },
+      { fixture: "malformed prompt fixture", message: "before fixture (edopro): Expected prompt.type has malformed value choose" },
+      { fixture: "malformed prompt fixture", message: "before fixture (edopro): Expected prompt.player has malformed player 2" },
+      { fixture: "malformed prompt fixture", message: "before fixture (edopro): Expected prompt.options[1] has malformed value NaN" },
+      { fixture: "malformed prompt fixture", message: "before fixture (edopro): Expected prompt.description has malformed value -1" },
+      { fixture: "malformed prompt fixture", message: "before fixture (edopro): Expected prompt.returnTo has malformed player -1" },
+      { fixture: "malformed prompt fixture", message: "before fixture (edopro): Expected prompt has malformed key bogus" },
+    ]);
+  });
+
+  it("rejects malformed trigger order prompt expectations", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture(
+      {
+        name: "malformed trigger order prompt fixture",
+        options: { seed: 58, startingHandSize: 1 },
+        decks: {
+          0: { main: ["100"] },
+          1: { main: ["200"] },
+        },
+        before: {
+          source: "edopro",
+          triggerOrderPrompt: {
+            id: 100,
+            type: "choose" as never,
+            player: 2,
+            triggerBucket: "later" as never,
+            triggerIds: ["ok", false],
+            bogus: 1,
+          } as never,
+        },
+        responses: [],
+        expected: { source: "edopro" },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      { fixture: "malformed trigger order prompt fixture", message: "before fixture (edopro): Expected triggerOrderPrompt.id has malformed value 100" },
+      { fixture: "malformed trigger order prompt fixture", message: "before fixture (edopro): Expected triggerOrderPrompt.type has malformed value choose" },
+      { fixture: "malformed trigger order prompt fixture", message: "before fixture (edopro): Expected triggerOrderPrompt.player has malformed player 2" },
+      { fixture: "malformed trigger order prompt fixture", message: "before fixture (edopro): Expected triggerOrderPrompt.triggerBucket has malformed value later" },
+      { fixture: "malformed trigger order prompt fixture", message: "before fixture (edopro): Expected triggerOrderPrompt.triggerIds[1] has malformed value false" },
+      { fixture: "malformed trigger order prompt fixture", message: "before fixture (edopro): Expected triggerOrderPrompt has malformed key bogus" },
+    ]);
+  });
+
+  it("rejects malformed legal action group trigger metadata expectations", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture(
+      {
+        name: "malformed legal action group trigger metadata fixture",
+        options: { seed: 59, startingHandSize: 1 },
+        decks: {
+          0: { main: ["100"] },
+          1: { main: ["200"] },
+        },
+        before: {
+          source: "edopro",
+          legalActionGroups: [
+            {
+              player: 0,
+              triggerBucket: { player: 2, triggerBucket: "later", triggerIds: ["ok", false], bogus: 1 } as never,
+              triggerOrderPrompt: {
+                id: 100,
+                type: "choose",
+                player: -1,
+                triggerBucket: "later",
+                triggerIds: ["ok", false],
+                bogus: 1,
+              } as never,
+            },
+          ],
+        },
+        responses: [],
+        expected: { source: "edopro" },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      {
+        fixture: "malformed legal action group trigger metadata fixture",
+        message:
+          'before fixture (edopro): Expected legal action group player=0 triggerBucket={"player":2,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerOrderPrompt={"id":100,"type":"choose","player":-1,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerBucket has malformed key bogus',
+      },
+      {
+        fixture: "malformed legal action group trigger metadata fixture",
+        message:
+          'before fixture (edopro): Expected legal action group player=0 triggerBucket={"player":2,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerOrderPrompt={"id":100,"type":"choose","player":-1,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerBucket.triggerBucket has malformed value later',
+      },
+      {
+        fixture: "malformed legal action group trigger metadata fixture",
+        message:
+          'before fixture (edopro): Expected legal action group player=0 triggerBucket={"player":2,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerOrderPrompt={"id":100,"type":"choose","player":-1,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerBucket.player has malformed player 2',
+      },
+      {
+        fixture: "malformed legal action group trigger metadata fixture",
+        message:
+          'before fixture (edopro): Expected legal action group player=0 triggerBucket={"player":2,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerOrderPrompt={"id":100,"type":"choose","player":-1,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerBucket.triggerIds[1] has malformed value false',
+      },
+      {
+        fixture: "malformed legal action group trigger metadata fixture",
+        message:
+          'before fixture (edopro): Expected legal action group player=0 triggerBucket={"player":2,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerOrderPrompt={"id":100,"type":"choose","player":-1,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerOrderPrompt has malformed key bogus',
+      },
+      {
+        fixture: "malformed legal action group trigger metadata fixture",
+        message:
+          'before fixture (edopro): Expected legal action group player=0 triggerBucket={"player":2,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerOrderPrompt={"id":100,"type":"choose","player":-1,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerOrderPrompt.id has malformed value 100',
+      },
+      {
+        fixture: "malformed legal action group trigger metadata fixture",
+        message:
+          'before fixture (edopro): Expected legal action group player=0 triggerBucket={"player":2,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerOrderPrompt={"id":100,"type":"choose","player":-1,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerOrderPrompt.type has malformed value choose',
+      },
+      {
+        fixture: "malformed legal action group trigger metadata fixture",
+        message:
+          'before fixture (edopro): Expected legal action group player=0 triggerBucket={"player":2,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerOrderPrompt={"id":100,"type":"choose","player":-1,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerOrderPrompt.player has malformed player -1',
+      },
+      {
+        fixture: "malformed legal action group trigger metadata fixture",
+        message:
+          'before fixture (edopro): Expected legal action group player=0 triggerBucket={"player":2,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerOrderPrompt={"id":100,"type":"choose","player":-1,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerOrderPrompt.triggerBucket has malformed value later',
+      },
+      {
+        fixture: "malformed legal action group trigger metadata fixture",
+        message:
+          'before fixture (edopro): Expected legal action group player=0 triggerBucket={"player":2,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerOrderPrompt={"id":100,"type":"choose","player":-1,"triggerBucket":"later","triggerIds":["ok",false],"bogus":1} triggerOrderPrompt.triggerIds[1] has malformed value false',
+      },
+    ]);
   });
 
 });
