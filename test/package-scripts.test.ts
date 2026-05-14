@@ -19,6 +19,7 @@ describe("package scripts", () => {
     expect(pkg.scripts?.["probe:competitive-decks"]).toContain("kewl-tune-may-2026.ydk --fail-on-errors --min-upstream-scripts 26 --min-actions 12 --min-activate-effects 1 --min-initial-effects 55 --min-registered-effects 149 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 0");
     expect(pkg.scripts?.["probe:competitive-decks"]).toContain("kashtira-2026.ydk --fail-on-errors --min-upstream-scripts 30 --min-actions 10 --min-activate-effects 1 --min-initial-effects 55 --min-registered-effects 145 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 0");
     expect(pkg.scripts?.["probe:competitive-decks"]).toContain("exosister-ots-mar-2026.ydk --fail-on-errors --min-upstream-scripts 31 --min-actions 13 --min-activate-effects 4 --min-initial-effects 55 --min-registered-effects 154 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 0");
+    expect(pkg.scripts?.["probe:competitive-decks"]).toContain("rikka-sunavalon-2026.ydk --fail-on-errors --min-upstream-scripts 32 --min-actions 11 --min-activate-effects 3 --min-initial-effects 52 --min-registered-effects 124 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 1 --expected-missing-script-code 27520594");
     expect(pkg.scripts?.["check:bridge-bundle"]).toContain("tools/check-bridge-bundle.mjs");
     expect(pkg.scripts?.check?.split(" && ")).toEqual([
       "bun run check:loc",
