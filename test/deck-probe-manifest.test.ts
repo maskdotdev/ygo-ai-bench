@@ -17,6 +17,7 @@ describe("Lua deck probe manifest", () => {
       ...(pkg.scripts?.["probe:competitive-decks"] ?? "").split(" && "),
       ...(pkg.scripts?.["probe:fallback-decks"] ?? "").split(" && "),
     ];
+    const malformedProbeCommands = packageProbeCommands.filter((command) => !/^bun run probe:lua-deck -- \S+\.ydk /.test(command));
     const packageProbeDecks = [...topTierDecks, ...competitiveDecks, ...fallbackDecks].sort();
     const duplicated = packageProbeDecks.filter((name, index) => packageProbeDecks.indexOf(name) !== index);
     const looseProbeCommands = packageProbeCommands.filter(
@@ -37,6 +38,7 @@ describe("Lua deck probe manifest", () => {
     const uncovered = deckNames.filter((name) => !packageProbeDecks.includes(name));
 
     expect(deckNames).toHaveLength(21);
+    expect(packageProbeCommands).toHaveLength(21);
     expect(topTierDecks).toEqual(["top_tier_dark_magician_primite_azamina.ydk"]);
     expect(competitiveDecks).toEqual([
       "dark-magical-blast-master-duel-day1.ydk",
@@ -63,6 +65,7 @@ describe("Lua deck probe manifest", () => {
       "solfachord-2026.ydk",
     ]);
     expect(duplicated).toEqual([]);
+    expect(malformedProbeCommands).toEqual([]);
     expect(looseProbeCommands).toEqual([]);
     expect(unbudgetedProbeCommands).toEqual([]);
     expect(uncovered).toEqual([]);
