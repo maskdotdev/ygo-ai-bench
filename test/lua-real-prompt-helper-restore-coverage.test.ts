@@ -6,7 +6,7 @@ const root = process.cwd();
 
 describe("Lua real prompt helper restore coverage", () => {
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(13);
+    expect(representativePromptHelperFixtures()).toHaveLength(14);
   });
 
   it("requires representative prompt helper fixtures to assert clean Lua restore", () => {
@@ -69,6 +69,16 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
         "effectLabel: 1",
         "currentLevel(restoredGagaga, restored.session.state)).toBe(1)",
         'expect(restored.host.messages).not.toContain("gagaga magician responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-gachi-gachi-select-effect-yes-no.test.ts",
+      required: [
+        "restores SelectEffectYesNo destroy replacement into Xyz material detach",
+        'api: "SelectEffectYesNo"',
+        "description: 96",
+        "reason: duelReason.effect",
+        "location: \"graveyard\"",
       ],
     },
     {
