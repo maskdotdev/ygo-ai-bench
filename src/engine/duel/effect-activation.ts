@@ -21,6 +21,7 @@ import type {
   DuelLocation,
   DuelSession,
   DuelState,
+  CardPosition,
   ChainLink,
   PlayerId,
   TriggerBucket,
@@ -28,6 +29,9 @@ import type {
 
 const luaEffectSummonProc = 32;
 const luaEffectLimitSummonProc = 33;
+const luaEffectFlagSpecialSummonParam = 0x100000;
+const luaPositionFaceUpAttack = 0x1;
+const luaPositionFaceUpDefense = 0x4;
 
 export interface DuelActivationHandlers {
   createEffectContext(
@@ -88,8 +92,8 @@ export interface DuelActivationHandlers {
   hasChainResponses(state: DuelState, player: PlayerId): boolean;
   resolveChain(state: DuelState): void;
   canAttemptSpecialSummonProcedure(state: DuelState, uid: string, summonTypeCode?: number, relatedEffectId?: number): boolean;
-  canSpecialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number, allowUnconditionalSpecialSummonCondition?: boolean, relatedEffectId?: number): boolean;
-  specialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number, allowUnconditionalSpecialSummonCondition?: boolean, relatedEffectId?: number): DuelCardInstance;
+  canSpecialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number, allowUnconditionalSpecialSummonCondition?: boolean, relatedEffectId?: number, summonPosition?: CardPosition): boolean;
+  specialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number, allowUnconditionalSpecialSummonCondition?: boolean, relatedEffectId?: number, summonPosition?: CardPosition): DuelCardInstance;
 }
 
 export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: string, effectId: string, handlers: DuelActivationHandlers): void {
@@ -183,6 +187,7 @@ export function specialSummonDuelByProcedure(session: DuelSession, player: Playe
   const ctx = handlers.createEffectContext(session.state, source, player);
   const summonTypeCode = summonProcedureTypeCode(effect);
   const relatedEffectId = luaRelatedEffectId(effect);
+  const summonPosition = specialSummonProcedurePosition(effect);
   if (!handlers.canAttemptSpecialSummonProcedure(session.state, uid, summonTypeCode, relatedEffectId)) throw new Error(`${source.name} cannot be Special Summoned`);
   if (effect.canActivate && !effect.canActivate(ctx)) throw new Error(`Condition for ${effectId} is not legal`);
   const rollback = captureDuelState(session.state);
@@ -192,16 +197,24 @@ export function specialSummonDuelByProcedure(session: DuelSession, player: Playe
     if (effect.operation) effect.operation(ctx);
     const currentSource = requireControlledCard(session.state, player, uid);
     if (!effect.range.includes(currentSource.location)) throw new Error(`${source.name} summon procedure is no longer in range`);
-    if (!handlers.canSpecialSummonCard(session.state, uid, player, summonTypeCode, true, relatedEffectId)) throw new Error(`${source.name} cannot be Special Summoned`);
+    if (!handlers.canSpecialSummonCard(session.state, uid, player, summonTypeCode, true, relatedEffectId, summonPosition)) throw new Error(`${source.name} cannot be Special Summoned`);
     const presetMaterialUids = summonTypeCode !== undefined ? [...(currentSource.summonMaterialUids ?? [])] : [];
     markEffectUsed(session.state, effect);
-    const summoned = handlers.specialSummonCard(session.state, uid, player, summonTypeCode, true, relatedEffectId);
+    const summoned = handlers.specialSummonCard(session.state, uid, player, summonTypeCode, true, relatedEffectId, summonPosition);
     if (presetMaterialUids.length > 0) summoned.summonMaterialUids = presetMaterialUids;
     markProcedureComplete(summoned);
   } catch (error) {
     restoreDuelState(session.state, rollback);
     throw error;
   }
+}
+
+function specialSummonProcedurePosition(effect: DuelEffectDefinition): CardPosition | undefined {
+  if (((effect.property ?? 0) & luaEffectFlagSpecialSummonParam) === 0) return undefined;
+  const selfPosition = effect.targetRange?.[0] ?? 0;
+  if ((selfPosition & luaPositionFaceUpDefense) !== 0) return "faceUpDefense";
+  if ((selfPosition & luaPositionFaceUpAttack) !== 0) return "faceUpAttack";
+  return undefined;
 }
 
 export function normalSummonDuelByProcedure(

@@ -185,8 +185,8 @@ const activationHandlers: DuelActivationHandlers = {
   hasChainResponses,
   resolveChain,
   canAttemptSpecialSummonProcedure,
-  canSpecialSummonCard: (state, uid, player, summonTypeCode, allowUnconditionalSpecialSummonCondition, relatedEffectId) => canSpecialSummonDuelCard(state, uid, player, summonTypeCode, relatedEffectId, allowUnconditionalSpecialSummonCondition),
-  specialSummonCard: (state, uid, player, summonTypeCode, allowUnconditionalSpecialSummonCondition, relatedEffectId) => specialSummonDuelCard(state, uid, player, undefined, {}, summonTypeCode, true, allowUnconditionalSpecialSummonCondition, undefined, relatedEffectId),
+  canSpecialSummonCard: (state, uid, player, summonTypeCode, allowUnconditionalSpecialSummonCondition, relatedEffectId, summonPosition) => canSpecialSummonDuelCard(state, uid, player, summonTypeCode, relatedEffectId, allowUnconditionalSpecialSummonCondition, summonPosition),
+  specialSummonCard: (state, uid, player, summonTypeCode, allowUnconditionalSpecialSummonCondition, relatedEffectId, summonPosition) => specialSummonDuelCard(state, uid, player, undefined, {}, summonTypeCode, true, allowUnconditionalSpecialSummonCondition, summonPosition, relatedEffectId),
 };
 const battleContinuationHandlers: BattleContinuationHandlers = {
   additionalBattleDamagePlayers: (state, player, battleCards) => getCoreAdditionalBattleDamagePlayers(state, player, battleCards, coreBattleHandlers),
@@ -446,8 +446,8 @@ export function specialSummonDuelCard(state: DuelState, uid: string, controller?
   moveDuelCard(state, uid, "monsterZone", summonController, duelReason.summon | duelReason.specialSummon, reasonPlayer);
   if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
   if (payload.eventReasonEffectId !== undefined) card.reasonEffectId = payload.eventReasonEffectId;
-  card.position = "faceUpAttack";
-  card.faceUp = true;
+  card.position = summonPosition ?? "faceUpAttack";
+  card.faceUp = card.position !== "faceDownDefense";
   card.summonType = duelSummonTypeFromCode(summonTypeCode);
   if (summonTypeCode && summonTypeCode !== 0) card.summonTypeCode = summonTypeCode;
   else delete card.summonTypeCode;
