@@ -157,6 +157,13 @@ describe("EDOPro parity Normal Summon success fixtures", () => {
             windowKind: "open",
             waitingFor: 0,
             pendingTriggers: [],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [turnGroup(2)],
             logIncludes: ["Fixture normal summon success watcher resolved"],
           },
         }),
