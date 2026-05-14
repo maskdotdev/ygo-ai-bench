@@ -6,7 +6,7 @@ const root = process.cwd();
 
 describe("Lua real prompt helper restore coverage", () => {
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(10);
+    expect(representativePromptHelperFixtures()).toHaveLength(11);
   });
 
   it("requires representative prompt helper fixtures to assert clean Lua restore", () => {
@@ -58,6 +58,17 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
         "effectLabels: [raceWarrior, attributeEarth]",
         'card?.location === "deck"',
         'expect(restored.host.messages).not.toContain("gishki psychelone responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-gagaga-magician-announce-level.test.ts",
+      required: [
+        "restores announced level label into the temporary level change",
+        'api: "AnnounceLevel"',
+        "options: [1, 2, 3, 5, 6, 7, 8]",
+        "effectLabel: 1",
+        "currentLevel(restoredGagaga, restored.session.state)).toBe(1)",
+        'expect(restored.host.messages).not.toContain("gagaga magician responder resolved")',
       ],
     },
     {
