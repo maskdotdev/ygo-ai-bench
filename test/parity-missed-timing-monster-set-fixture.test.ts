@@ -148,6 +148,10 @@ describe("EDOPro parity monster-set missed timing fixture", () => {
               { player: 0, effectId: "monster-set-activation-optional-if", eventName: "monsterSet", eventCode: 1106, eventCardUid: "p0-deck-600-4" },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "monster-set-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "monster-set-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
             legalActionGroups: [
               triggerActivationGroup(0, "monster-set-activation-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "monster-set-activation-optional-if", "turnOptional", 1, 1),
@@ -160,6 +164,7 @@ describe("EDOPro parity monster-set missed timing fixture", () => {
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "monster-set-activation-optional-when" },
               { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "monster-set-activation-open-fast" },
             ],
+            legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
           },
           after: {
