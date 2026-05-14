@@ -5,13 +5,13 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const battleKeywords = ["battle", "attack", "damage"];
-const realScriptBattleFixtureCount = 110;
+const realScriptBattleFixtureCount = 111;
 const battleLegalActionFixtureCount = 4;
 const attackDeclarationTrapFixtureCount = 6;
 const battleRoutingFixtureCount = 5;
 const damageStepRestoreFixtureCount = 3;
 const battleDamageSemanticFixtureCount = 6;
-const battleTriggerSemanticFixtureCount = 4;
+const battleTriggerSemanticFixtureCount = 5;
 
 describe("Lua real battle restore coverage", () => {
   it("requires real-script battle fixtures to assert Lua-aware complete restore with diagnostics", () => {
@@ -342,6 +342,16 @@ function realScriptBattleDamageSemanticFixtureFiles(): Array<{ file: string; req
 
 function realScriptBattleTriggerSemanticFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
+    {
+      file: "lua-real-script-ally-of-justice-nullfier-battled-disable.test.ts",
+      required: [
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "afterDamageCalculation"',
+        "eventCode: 1138",
+        "code: 2",
+        "code: 8",
+      ],
+    },
     {
       file: "lua-real-script-wall-of-illusion-battled.test.ts",
       required: [
