@@ -348,6 +348,128 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       ]),
     );
   });
+
+  it("restores Smoke Grenade of the Thief destroyed equip hand discard trigger", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const smokeCode = "63789924";
+    const targetCode = "601043";
+    const discardACode = "601044";
+    const discardBCode = "601045";
+    const responderCode = "601046";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === smokeCode),
+      { code: targetCode, name: "Smoke Grenade Equip Target", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: discardACode, name: "Smoke Grenade Discard A", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: discardBCode, name: "Smoke Grenade Discard B", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: responderCode, name: "Smoke Grenade Chain Responder", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 314, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [smokeCode, targetCode] }, 1: { main: [discardACode, discardBCode, responderCode] } });
+    startDuel(session);
+
+    const smoke = session.state.cards.find((card) => card.code === smokeCode);
+    const target = session.state.cards.find((card) => card.code === targetCode);
+    const discardA = session.state.cards.find((card) => card.code === discardACode);
+    const discardB = session.state.cards.find((card) => card.code === discardBCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(smoke).toBeDefined();
+    expect(target).toBeDefined();
+    expect(discardA).toBeDefined();
+    expect(discardB).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, smoke!.uid, "hand", 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, discardA!.uid, "hand", 1);
+    moveDuelCard(session.state, discardB!.uid, "hand", 1);
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, source);
+    expect(host.loadCardScript(Number(smokeCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expectCleanRestore(restoredEquipWindow);
+    expect(getLuaRestoreLegalActionGroups(restoredEquipWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredEquipWindow.session, 0));
+    expect(getLuaRestoreLegalActions(restoredEquipWindow, 0)).toEqual(getDuelLegalActions(restoredEquipWindow.session, 0));
+    const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === smoke!.uid);
+    expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
+
+    expect(restoredEquipWindow.session.state.chain[0]).toMatchObject({
+      sourceUid: smoke!.uid,
+      targetUids: [target!.uid],
+      operationInfos: [{ category: 0x40000, targetUids: [smoke!.uid], count: 1, player: 0, parameter: 0 }],
+    });
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
+    expectCleanRestore(restoredChain);
+    expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+    resolveRestoredChain(restoredChain);
+
+    expect(restoredChain.host.messages).not.toContain("equip responder resolved");
+    expect(restoredChain.session.state.cards.find((card) => card.uid === smoke!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      equippedToUid: target!.uid,
+      faceUp: true,
+    });
+
+    const restoredEquipState = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
+    expectCleanRestore(restoredEquipState);
+    expectLuaEquipProbe(restoredEquipState, targetCode, smokeCode, "equip probe 63789924/1000");
+
+    destroyDuelCard(restoredEquipState.session.state, smoke!.uid, 0, duelReason.effect | duelReason.destroy, 0);
+    expect(restoredEquipState.session.state.cards.find((card) => card.uid === smoke!.uid)).toMatchObject({
+      location: "graveyard",
+      previousLocation: "spellTrapZone",
+      previousEquippedToUid: target!.uid,
+    });
+    expect(restoredEquipState.session.state.pendingTriggers).toEqual([
+      expect.objectContaining({ sourceUid: smoke!.uid, eventName: "leftField", eventCardUid: smoke!.uid, player: 0 }),
+    ]);
+
+    const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredEquipState.session), source, reader);
+    expectCleanRestore(restoredTriggerWindow);
+    const triggerAction = getLuaRestoreLegalActions(restoredTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.uid === smoke!.uid);
+    expect(triggerAction, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredTriggerWindow, triggerAction!);
+
+    expect(restoredTriggerWindow.session.state.chain[0]).toMatchObject({
+      sourceUid: smoke!.uid,
+      operationInfos: [{ category: 0x80, targetUids: [], count: 0, player: 1, parameter: 1 }],
+    });
+    expect(getLuaRestoreLegalActions(restoredTriggerWindow, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+
+    const restoredDiscardChain = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), source, reader);
+    expectCleanRestore(restoredDiscardChain);
+    expect(restoredDiscardChain.session.state.chain[0]).toMatchObject(restoredTriggerWindow.session.state.chain[0]!);
+    resolveRestoredChain(restoredDiscardChain);
+
+    const discardedCards = [discardA!, discardB!].filter(
+      (card) => restoredDiscardChain.session.state.cards.find((stateCard) => stateCard.uid === card.uid)?.location === "graveyard",
+    );
+    const remainingCards = [discardA!, discardB!].filter(
+      (card) => restoredDiscardChain.session.state.cards.find((stateCard) => stateCard.uid === card.uid)?.location === "hand",
+    );
+    expect(discardedCards).toHaveLength(1);
+    expect(remainingCards).toHaveLength(1);
+    expect(restoredDiscardChain.host.messages).not.toContain("equip responder resolved");
+    expect(restoredDiscardChain.session.state.eventHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ eventName: "leftField", eventCode: 1015, eventCardUid: smoke!.uid }),
+        expect.objectContaining({ eventName: "confirmed", eventCode: 1211, eventPlayer: 0, eventUids: expect.arrayContaining([discardA!.uid, discardB!.uid]) }),
+        expect.objectContaining({ eventName: "discarded", eventCode: 1018, eventCardUid: discardedCards[0]!.uid }),
+      ]),
+    );
+  });
 });
 
 function chainResponderScript(): string {
