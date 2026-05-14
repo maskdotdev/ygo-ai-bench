@@ -52,7 +52,16 @@ describe("EDOPro parity set lock fixtures", () => {
             source: "edopro",
             note: "EDOPro allows the same monster to be Normal Summoned when only CANNOT_MSET applies",
             phase: "main1",
+            windowId: 1,
+            windowKind: "open",
             locations: { monsterZone: ["100"] },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [turnGroup(1)],
             eventHistory: [
               { eventName: "normalSummoning", eventCardUid: "p0-deck-100-0" },
               { eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },

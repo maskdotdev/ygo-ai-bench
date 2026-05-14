@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
+import { turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity phase lock fixtures", () => {
   it("skips Battle Phase legal actions for players affected by skip-battle effects", () => {
@@ -82,9 +83,31 @@ describe("EDOPro parity phase lock fixtures", () => {
             source: "edopro",
             note: "EDOPro accepts Main Phase 2 as the next available phase after SKIP_BP",
             phase: "main2",
+            windowId: 1,
+            windowKind: "open",
             waitingFor: 0,
             pendingBattle: false,
             battleWindow: null,
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "changePosition", player: 0, code: "100", location: "monsterZone", position: "faceUpDefense", windowId: 1, windowKind: "open", count: 1 },
+              { type: "changePhase", player: 0, phase: "end", windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Actions",
+                windowId: 1,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "changePosition", player: 0, code: "100", location: "monsterZone", position: "faceUpDefense", windowId: 1, windowKind: "open", count: 1 },
+                ],
+              },
+              turnGroup(1),
+            ],
           },
         }),
         makeScriptedStep(makeResponseSelector("endTurn", 0), {
