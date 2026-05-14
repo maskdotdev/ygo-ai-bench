@@ -41,6 +41,15 @@ describe("Lua API usage scanner", () => {
     expect(duplicated).toEqual([]);
   });
 
+  it("keeps local fallback passcodes out of the upstream card database", () => {
+    if (!fs.existsSync(".upstream/ignis/cdb/cards.cdb")) return;
+    const codes = fallbackScripts().map((file) => path.basename(file, ".lua").replace(/^c/, ""));
+    const query = `select id, alias from datas where id in (${codes.join(",")}) or alias in (${codes.join(",")}) order by id`;
+    const output = execFileSync("sqlite3", ["-readonly", ".upstream/ignis/cdb/cards.cdb", query], { encoding: "utf8" });
+
+    expect(output.trim()).toBe("");
+  });
+
   it("rejects local fallback stub scripts", () => {
     const stubs = fallbackScripts().filter((file) => fs.readFileSync(file, "utf8").includes("local-fallback-stub"));
 
