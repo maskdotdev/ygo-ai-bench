@@ -19,6 +19,7 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 const setThePhantomKnights = 0x10db;
+const preReleaseScript = (code: string): string => fs.readFileSync(`.upstream/ignis/script/pre-release/c${code}.lua`, "utf8");
 
 describe("Lua card script movement helpers", () => {
   it("lets Corrupted Ritual Records set itself from the GY after a listed monster leaves by effect", () => {
@@ -389,7 +390,7 @@ describe("Lua card script movement helpers", () => {
     moveDuelCard(session.state, trap!.uid, "deck", 0);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305019.lua", "utf8"), "c101305019.lua");
+    const loaded = host.loadScript(preReleaseScript("101305019"), "c101305019.lua");
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
@@ -431,7 +432,7 @@ describe("Lua card script movement helpers", () => {
     moveDuelCard(session.state, rankTarget!.uid, "monsterZone", 0);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305019.lua", "utf8"), "c101305019.lua");
+    const loaded = host.loadScript(preReleaseScript("101305019"), "c101305019.lua");
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
@@ -475,7 +476,7 @@ describe("Lua card script movement helpers", () => {
     moveDuelCard(session.state, searched!.uid, "deck", 0);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305018.lua", "utf8"), "c101305018.lua");
+    const loaded = host.loadScript(preReleaseScript("101305018"), "c101305018.lua");
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
@@ -512,7 +513,7 @@ describe("Lua card script movement helpers", () => {
     moveDuelCard(session.state, revealed!.uid, "hand", 0);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305018.lua", "utf8"), "c101305018.lua");
+    const loaded = host.loadScript(preReleaseScript("101305018"), "c101305018.lua");
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
@@ -556,7 +557,7 @@ describe("Lua card script movement helpers", () => {
     xyz!.overlayUids.push(material!.uid);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305037.lua", "utf8"), "c101305037.lua");
+    const loaded = host.loadScript(preReleaseScript("101305037"), "c101305037.lua");
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
@@ -597,7 +598,7 @@ describe("Lua card script movement helpers", () => {
     recovered!.faceUp = true;
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305037.lua", "utf8"), "c101305037.lua");
+    const loaded = host.loadScript(preReleaseScript("101305037"), "c101305037.lua");
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
@@ -639,7 +640,7 @@ describe("Lua card script movement helpers", () => {
     opponent!.position = "faceUpAttack";
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305073.lua", "utf8"), "c101305073.lua");
+    const loaded = host.loadScript(preReleaseScript("101305073"), "c101305073.lua");
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
@@ -684,7 +685,7 @@ describe("Lua card script movement helpers", () => {
     for (const material of materials) moveDuelCard(session.state, material.uid, "monsterZone", 0);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305073.lua", "utf8"), "c101305073.lua");
+    const loaded = host.loadScript(preReleaseScript("101305073"), "c101305073.lua");
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
@@ -736,7 +737,7 @@ describe("Lua card script movement helpers", () => {
     rankThree!.overlayUids.push(overlay!.uid);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c101305057.lua", "utf8"), "c101305057.lua");
+    const loaded = host.loadScript(preReleaseScript("101305057"), "c101305057.lua");
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
