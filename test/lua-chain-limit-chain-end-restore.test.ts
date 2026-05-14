@@ -73,6 +73,7 @@ describe("Lua chain-end chain-limit restore", () => {
 
     const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
     expect(queryPublicState(restored.session)).toMatchObject({ waitingFor: 0, windowKind: "open" });
@@ -154,6 +155,7 @@ describe("Lua chain-end chain-limit restore", () => {
 
     const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
     expect(actionsWithoutWindowToken(getLuaRestoreLegalActions(restored, 0))).toEqual(actionsWithoutWindowToken(getLegalActions(session, 0)));
@@ -235,6 +237,7 @@ describe("Lua chain-end chain-limit restore", () => {
 
     const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
 
@@ -385,6 +388,7 @@ describe("Lua chain-end chain-limit restore", () => {
 
     const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
 
@@ -477,6 +481,7 @@ describe("Lua chain-end chain-limit restore", () => {
 
     const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
 
@@ -560,6 +565,7 @@ describe("Lua chain-end chain-limit restore", () => {
 
     const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
 
@@ -726,6 +732,7 @@ describe("Lua chain-end chain-limit restore", () => {
 
     const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
 

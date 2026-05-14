@@ -63,6 +63,7 @@ describe("Lua multi-code handler chain-limit restore", () => {
     const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
 
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
@@ -124,6 +125,7 @@ describe("Lua multi-code handler chain-limit restore", () => {
     const opponentRestored = restoreDuelWithLuaScripts(opponentSnapshot, source, createCardReader(cards));
 
     expect(opponentRestored.restoreComplete, opponentRestored.incompleteReasons.join("; ")).toBe(true);
+    expect(opponentRestored.missingRegistryKeys).toEqual([]);
     expect(opponentRestored.missingChainLimitRegistryKeys).toEqual([]);
     expect(opponentRestored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(getLuaRestoreLegalActionGroups(opponentRestored, 1)).toEqual(getGroupedDuelLegalActions(opponentRestored.session, 1));
@@ -198,6 +200,7 @@ describe("Lua multi-code handler chain-limit restore", () => {
 
     const opponentRestored = restoreDuelWithLuaScripts(opponentSnapshot, source, createCardReader(cards));
     expect(opponentRestored.restoreComplete, opponentRestored.incompleteReasons.join("; ")).toBe(true);
+    expect(opponentRestored.missingRegistryKeys).toEqual([]);
     expect(opponentRestored.missingChainLimitRegistryKeys).toEqual([]);
     expect(opponentRestored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(getLuaRestoreLegalActionGroups(opponentRestored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(opponentRestored, 1));
@@ -271,6 +274,7 @@ describe("Lua multi-code handler chain-limit restore", () => {
 
     const opponentRestored = restoreDuelWithLuaScripts(opponentSnapshot, source, createCardReader(cards));
     expect(opponentRestored.restoreComplete, opponentRestored.incompleteReasons.join("; ")).toBe(true);
+    expect(opponentRestored.missingRegistryKeys).toEqual([]);
     expect(opponentRestored.missingChainLimitRegistryKeys).toEqual([]);
     expect(opponentRestored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(getLuaRestoreLegalActionGroups(opponentRestored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(opponentRestored, 1));
@@ -342,6 +346,7 @@ describe("Lua multi-code handler chain-limit restore", () => {
 
     const opponentRestored = restoreDuelWithLuaScripts(opponentSnapshot, source, createCardReader(cards));
     expect(opponentRestored.restoreComplete, opponentRestored.incompleteReasons.join("; ")).toBe(true);
+    expect(opponentRestored.missingRegistryKeys).toEqual([]);
     expect(opponentRestored.missingChainLimitRegistryKeys).toEqual([]);
     expect(opponentRestored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
     expect(getLuaRestoreLegalActionGroups(opponentRestored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(opponentRestored, 1));

@@ -105,6 +105,7 @@ describe("Lua draw grouped events", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScripts, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.session.state.pendingTriggers).toHaveLength(3);
     for (const trigger of restored.session.state.pendingTriggers) expect(trigger.eventUids).toEqual(expectedDrawnUids);
     expect(restored.session.state.pendingTriggers).toEqual(

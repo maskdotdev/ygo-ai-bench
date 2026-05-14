@@ -94,6 +94,28 @@ describe("duel snapshot card and effect shape validation", () => {
     expect(() => restoreDuel(badMaterial, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.summonMaterialUids.1 must reference a card");
   });
 
+  it("rejects unknown card and card data snapshot fields before restore", () => {
+    const session = createDuel({ seed: 167, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const staleCard = serializeDuel(session);
+    const staleData = serializeDuel(session);
+    const staleUnique = serializeDuel(session);
+    const staleSynchro = serializeDuel(session);
+    staleCard.state.cards[0] = { ...staleCard.state.cards[0]!, staleWindow: "open" } as never;
+    staleData.state.cards[0] = { ...staleData.state.cards[0]!, data: { ...staleData.state.cards[0]!.data, staleKind: "monster" } } as never;
+    staleUnique.state.cards[0] = { ...staleUnique.state.cards[0]!, uniqueOnField: { self: true, opponent: false, code: 100, locationMask: 0x04, staleUnique: true } } as never;
+    staleSynchro.state.cards[0] = { ...staleSynchro.state.cards[0]!, data: { ...staleSynchro.state.cards[0]!.data, synchroMaterials: { tuner: "100", nonTuners: ["400"], staleMaterial: true } } } as never;
+
+    expect(() => restoreDuel(staleCard, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.staleWindow is not a known field");
+    expect(() => restoreDuel(staleData, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.data.staleKind is not a known field");
+    expect(() => restoreDuel(staleUnique, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.uniqueOnField.staleUnique is not a known field");
+    expect(() => restoreDuel(staleSynchro, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.data.synchroMaterials.staleMaterial is not a known field");
+  });
+
   it("rejects malformed effect snapshots before restore", () => {
     const session = createDuel({ seed: 159, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -124,6 +146,30 @@ describe("duel snapshot card and effect shape validation", () => {
     expect(() => restoreDuel(badTriggerEvent, createCardReader(cards))).toThrow("Malformed duel snapshot: state.effects.0.triggerEvent must be a duel event");
   });
 
+  it("rejects unknown effect snapshot fields before restore", () => {
+    const session = createDuel({ seed: 168, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const source = findPublicCard(session, 0, "hand", "100");
+    expect(source).toBeTruthy();
+    registerEffect(session, {
+      id: "snapshot-unknown-effect",
+      registryKey: "snapshot-unknown-effect",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation() {},
+    });
+    const staleEffect = serializeDuel(session);
+    staleEffect.state.effects[0] = { ...staleEffect.state.effects[0]!, staleSelector: true } as never;
+
+    expect(() => restoreDuel(staleEffect, createCardReader(cards))).toThrow("Malformed duel snapshot: state.effects.0.staleSelector is not a known field");
+  });
+
   it("rejects malformed effect reset and tuple snapshots before restore", () => {
     const session = createDuel({ seed: 160, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -146,10 +192,13 @@ describe("duel snapshot card and effect shape validation", () => {
     });
     const badReset = serializeDuel(session);
     const badTuple = serializeDuel(session);
+    const staleReset = serializeDuel(session);
     badReset.state.effects[0] = { ...badReset.state.effects[0]!, reset: { flags: "reset" as unknown as number } };
     badTuple.state.effects[0] = { ...badTuple.state.effects[0]!, targetRange: [1, 2, 3] as unknown as [number, number] };
+    staleReset.state.effects[0] = { ...staleReset.state.effects[0]!, reset: { flags: 1, staleReset: true } } as never;
 
     expect(() => restoreDuel(badReset, createCardReader(cards))).toThrow("Malformed duel snapshot: state.effects.0.reset.flags must be a number");
     expect(() => restoreDuel(badTuple, createCardReader(cards))).toThrow("Malformed duel snapshot: state.effects.0.targetRange must contain one or two numbers");
+    expect(() => restoreDuel(staleReset, createCardReader(cards))).toThrow("Malformed duel snapshot: state.effects.0.reset.staleReset is not a known field");
   });
 });

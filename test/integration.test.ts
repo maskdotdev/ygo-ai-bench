@@ -8,7 +8,7 @@ describe("included Dark Magician deck", () => {
   it("runs fixed-seed opening playtests without impossible zone state", () => {
     const ydk = parseYdk(fs.readFileSync(path.join(process.cwd(), "dark-magical-blast-tcg-branded-dm.ydk"), "utf8"));
 
-    for (const seed of [1, 7, 42]) {
+    for (const [seed, expectedLogLength] of [[1, 20], [7, 18], [42, 11]] as const) {
       const session = startPlaytest({ deck: ydk.main, extraDeck: ydk.extra, seed, handSize: 5 });
       const result = runPlaytest(session, chooseHighestPriority, 10);
       const uids = Object.values(session.engine.state.zones).flat().map((card) => card.uid);
@@ -18,7 +18,7 @@ describe("included Dark Magician deck", () => {
       const mainCardsOnField = result.state.field.filter((card) => card.type !== "extra").length;
       expect(result.state.deckCount + result.state.hand.length + mainCardsOnField + result.state.graveyard.length + result.state.banished.length).toBe(ydk.main.length);
       expect(result.state.extraDeck.length + result.state.field.filter((card) => card.type === "extra").length).toBeLessThanOrEqual(ydk.extra.length);
-      expect(result.state.log.length).toBeGreaterThanOrEqual(5);
+      expect(result.state.log.length).toBe(expectedLogLength);
     }
   });
 });

@@ -98,6 +98,7 @@ describe("Lua source-only equip events", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredEquipTriggers = restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "equipped");
     expect(restoredEquipTriggers).toHaveLength(2);
     expect(restoredEquipTriggers).toEqual(

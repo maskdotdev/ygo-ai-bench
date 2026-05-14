@@ -142,7 +142,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script eq
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(shieldCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
 
     moveDuelCard(session.state, shield.uid, "spellTrapZone", 0);
     shield.equippedToUid = target.uid;
@@ -195,7 +195,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script eq
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(shieldCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
 
     moveDuelCard(session.state, shield.uid, "spellTrapZone", 0);
     shield.equippedToUid = target.uid;

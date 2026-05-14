@@ -118,6 +118,7 @@ describe("Lua source-only grouped move events", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScripts, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "moved")).toHaveLength(3);
     expect(restored.session.state.pendingTriggers).toEqual(
       expect.arrayContaining([

@@ -16,6 +16,7 @@ import {
   startDuel,
 } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
+import { luaOptionPromptApis, luaYesNoPromptApis, type LuaPromptDecision } from "#lua/host-types.js";
 import { cards, findPublicCard } from "./full-duel-engine-fixtures.js";
 
 describe("duel snapshot persistence", () => {
@@ -82,6 +83,7 @@ describe("duel snapshot persistence", () => {
     const attackerUid = session.state.cards[0]!.uid;
     const targetUid = session.state.cards[1]!.uid;
     session.state.phase = "battle";
+    session.state.battleStep = "attack";
     session.state.attacksDeclared = [attackerUid];
     session.state.currentAttack = { attackerUid, targetUid, replayTargetCount: 1, replayTargetUids: [targetUid] };
     session.state.pendingBattle = { attackerUid, targetUid, replayTargetCount: 1, replayTargetUids: [targetUid] };
@@ -301,7 +303,7 @@ describe("duel snapshot persistence", () => {
       1: { main: ["400"] },
     });
     startDuel(session);
-    session.state.prompt = { id: "snapshot-options", type: "selectOption", player: 0, options: [1, 2], returnTo: 0 };
+    session.state.prompt = { id: "snapshot-options", type: "selectOption", player: 0, options: [1, 2], returnTo: 0, origin: "luaOperation" };
 
     const publicPrompt = queryPublicState(session).prompt;
     const serializedPrompt = serializeDuel(session).state.prompt;
@@ -314,6 +316,123 @@ describe("duel snapshot persistence", () => {
     if (freshSerializedPrompt?.type !== "selectOption") throw new Error("Expected fresh serialized select-option prompt");
     expect(session.state.prompt.options).toEqual([1, 2]);
     expect(freshSerializedPrompt.options).toEqual([1, 2]);
+    expect(publicPrompt.origin).toBe("luaOperation");
+    expect(serializedPrompt.origin).toBe("luaOperation");
+    expect(freshSerializedPrompt.origin).toBe("luaOperation");
+  });
+
+  it("preserves SelectEffectYesNo Lua operation prompts across snapshots", () => {
+    const session = createDuel({ seed: 164, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    session.state.status = "awaiting";
+    session.state.waitingFor = 0;
+    session.state.prompt = { id: "lua-prompt-1", type: "selectYesNo", player: 0, description: 501, returnTo: 0, origin: "luaOperation" };
+    session.state.luaOperationPrompt = {
+      chainLink: { id: "chain-1", player: 0, sourceUid, effectId: "effect-a" },
+      prompt: { id: "lua-prompt-1", api: "SelectEffectYesNo", player: 0, description: 501, returned: true },
+    };
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+
+    expect(restored.state.prompt).toEqual(session.state.prompt);
+    expect(restored.state.luaOperationPrompt).toEqual(session.state.luaOperationPrompt);
+  });
+
+  it("preserves AnnounceType Lua operation prompts across snapshots", () => {
+    const session = createDuel({ seed: 166, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    session.state.status = "awaiting";
+    session.state.waitingFor = 0;
+    session.state.prompt = { id: "lua-prompt-1", type: "selectOption", player: 0, options: [1, 2], descriptions: [1, 2], returnTo: 0, origin: "luaOperation" };
+    session.state.luaOperationPrompt = {
+      chainLink: { id: "chain-1", player: 0, sourceUid, effectId: "effect-a" },
+      prompt: { id: "lua-prompt-1", api: "AnnounceType", player: 0, options: [1, 2], descriptions: [1, 2], returned: 1 },
+    };
+
+    const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+
+    expect(restored.state.prompt).toEqual(session.state.prompt);
+    expect(restored.state.luaOperationPrompt).toEqual(session.state.luaOperationPrompt);
+  });
+
+  it("preserves every Lua operation prompt API across snapshots", () => {
+    const prompts: LuaPromptDecision[] = [
+      ...luaOptionPromptApis.map((api, index): LuaPromptDecision => ({
+        id: `lua-prompt-${index + 1}`,
+        api,
+        player: 0,
+        options: [index + 1, index + 101],
+        descriptions: [index + 1, index + 101],
+        returned: index + 1,
+      })),
+      ...luaYesNoPromptApis.map((api, index): LuaPromptDecision => ({
+        id: `lua-prompt-yes-no-${index + 1}`,
+        api,
+        player: 0,
+        description: 701 + index,
+        returned: index === 0,
+      })),
+    ];
+
+    for (const [index, luaPrompt] of prompts.entries()) {
+      const session = createDuel({ seed: 190 + index, startingHandSize: 1, cardReader: createCardReader(cards) });
+      loadDecks(session, {
+        0: { main: ["100"] },
+        1: { main: ["400"] },
+      });
+      startDuel(session);
+      const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
+      session.state.status = "awaiting";
+      session.state.waitingFor = 0;
+      session.state.prompt = "options" in luaPrompt
+        ? { id: luaPrompt.id, type: "selectOption", player: 0, options: [...luaPrompt.options], descriptions: [...luaPrompt.descriptions], returnTo: 0, origin: "luaOperation" }
+        : { id: luaPrompt.id, type: "selectYesNo", player: 0, ...(luaPrompt.description === undefined ? {} : { description: luaPrompt.description }), returnTo: 0, origin: "luaOperation" };
+      session.state.luaOperationPrompt = {
+        chainLink: { id: `chain-${index + 1}`, player: 0, sourceUid, effectId: "effect-a" },
+        prompt: luaPrompt,
+      };
+
+      const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
+
+      expect(restored.state.prompt).toEqual(session.state.prompt);
+      expect(restored.state.luaOperationPrompt).toEqual(session.state.luaOperationPrompt);
+    }
+  });
+
+  it("rejects malformed Lua operation prompt payload fields", () => {
+    const session = createDuel({ seed: 165, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    const snapshot = serializeDuel(session);
+    const malformedState = snapshot.state as unknown as { luaOperationPrompt?: unknown };
+
+    const optionPromptWithDescription: unknown = {
+      chainLink: { id: "chain-1", player: 0, sourceUid, effectId: "effect-a" },
+      prompt: { id: "lua-prompt-1", api: "SelectOption", player: 0, options: [0], descriptions: [101], description: 101, returned: 0 },
+    };
+    malformedState.luaOperationPrompt = optionPromptWithDescription;
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.luaOperationPrompt.prompt.description is only valid for yes/no prompt APIs");
+
+    const yesNoPromptWithOptions: unknown = {
+      chainLink: { id: "chain-1", player: 0, sourceUid, effectId: "effect-a" },
+      prompt: { id: "lua-prompt-1", api: "SelectEffectYesNo", player: 0, options: [0], returned: true },
+    };
+    malformedState.luaOperationPrompt = yesNoPromptWithOptions;
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.luaOperationPrompt.prompt.options is only valid for option-like prompt APIs");
   });
 
   it("copies battle response collections out of public and serialized state", () => {

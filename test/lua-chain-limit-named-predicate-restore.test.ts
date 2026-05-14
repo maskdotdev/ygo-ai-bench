@@ -33,6 +33,124 @@ describe("Lua named chain-limit predicate restore", () => {
     expectNamedPredicateRestore(true, "chlimit2");
   });
 
+  it("keeps missing named card-table predicates unsafe after snapshot restore", () => {
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") return sourceScript(false, "chlimit");
+        if (name === "c200.lua") return quickScript(200, "same-player response resolved");
+        if (name === "c300.lua") return quickScript(300, "blocked opponent response resolved");
+        return undefined;
+      },
+    };
+    const missingPredicateSource = {
+      readScript(name: string) {
+        if (name === "c100.lua") return sourceScriptWithoutPredicate();
+        return source.readScript(name);
+      },
+    };
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }, { id: 300, type: 1 }], []);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 405, startingHandSize: 2, cardReader: reader });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: ["300"] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+
+    const sourceAction = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
+    expect(sourceAction).toBeDefined();
+    const sourceResult = applyResponse(session, sourceAction!);
+    expect(sourceResult.ok, sourceResult.error).toBe(true);
+
+    const registryKey = "lua-chain-limit:100:0:link:known:c100.chlimit";
+    expect(serializeDuel(session).state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), missingPredicateSource, reader);
+    expect(restored.restoreComplete).toBe(false);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([registryKey]);
+    expect(restored.incompleteReasons).toEqual([`missing Lua chain-limit registry keys: ${registryKey}`]);
+    expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual([]);
+    const restoredResponse = applyLuaRestoreResponse(restored, { ...sourceAction!, windowToken: restored.session.state.actionWindowToken });
+    expect(restoredResponse).toMatchObject({ ok: false, error: `Lua snapshot restore is incomplete: missing Lua chain-limit registry keys: ${registryKey}`, legalActions: [], legalActionGroups: [] });
+  });
+
+  it("keeps runtime-erroring named card-table predicates fail-closed after snapshot restore", () => {
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") return sourceScript(false, "chlimit");
+        if (name === "c200.lua") return quickScript(200, "runtime-error same-player response resolved");
+        if (name === "c300.lua") return quickScript(300, "runtime-error opponent response resolved");
+        return undefined;
+      },
+    };
+    const runtimeErrorSource = {
+      readScript(name: string) {
+        if (name === "c100.lua") return runtimeErrorPredicateSourceScript();
+        return source.readScript(name);
+      },
+    };
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }, { id: 300, type: 1 }], []);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 406, startingHandSize: 2, cardReader: reader });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: ["300"] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+
+    const sourceAction = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
+    expect(sourceAction).toBeDefined();
+    const sourceResult = applyResponse(session, sourceAction!);
+    expect(sourceResult.ok, sourceResult.error).toBe(true);
+
+    const registryKey = "lua-chain-limit:100:0:link:known:c100.chlimit";
+    expect(serializeDuel(session).state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), runtimeErrorSource, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
+    expect(getLuaRestoreLegalActions(restored, 1).some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+  });
+
+  it("keeps runtime-erroring live named card-table predicates fail-closed", () => {
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") return runtimeErrorPredicateSourceScript();
+        if (name === "c200.lua") return quickScript(200, "runtime-error live same-player response resolved");
+        if (name === "c300.lua") return quickScript(300, "runtime-error live opponent response resolved");
+        return undefined;
+      },
+    };
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }, { id: 300, type: 1 }], []);
+    const session = createDuel({ seed: 407, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100", "200"] }, 1: { main: ["300"] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    expect(host.loadCardScript(100, source).ok).toBe(true);
+    expect(host.loadCardScript(200, source).ok).toBe(true);
+    expect(host.loadCardScript(300, source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(3);
+
+    const sourceAction = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
+    expect(sourceAction).toBeDefined();
+    const sourceResult = applyResponse(session, sourceAction!);
+    expect(sourceResult.ok, sourceResult.error).toBe(true);
+    expect(sourceResult.legalActions.some((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3")).toBe(false);
+    expect(sourceResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(sourceResult.legalActions);
+  });
+
   it("recognizes named literal false predicates as known false descriptors", () => {
     const source = `
       c100 = {}
@@ -160,6 +278,42 @@ function sourceScript(untilChainEnd: boolean, predicateName: NamedPredicate): st
     end
     function s.${predicateName}(e,ep,tp)
       return tp==ep and e:GetHandler():IsCode(200)
+    end
+  `;
+}
+
+function sourceScriptWithoutPredicate(): string {
+  return `
+    local s,id=GetID()
+    function s.initial_effect(c)
+      local e = Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_IGNITION)
+      e:SetRange(LOCATION_HAND)
+      e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+        if chk==0 then return true end
+      end)
+      e:SetOperation(function(e,tp) Debug.Message("missing named limit source resolved") end)
+      c:RegisterEffect(e)
+    end
+  `;
+}
+
+function runtimeErrorPredicateSourceScript(): string {
+  return `
+    c100 = {}
+    function c100.initial_effect(c)
+      local e = Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_IGNITION)
+      e:SetRange(LOCATION_HAND)
+      e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+        if chk==0 then return true end
+        Duel.SetChainLimit(c100.chlimit)
+      end)
+      e:SetOperation(function(e,tp) Debug.Message("runtime-error named limit source resolved") end)
+      c:RegisterEffect(e)
+    end
+    function c100.chlimit(e,ep,tp)
+      return e:IsMissingChainLimitProbe()
     end
   `;
 }
@@ -301,6 +455,7 @@ function effectTypeSourceScript(): string {
 
 function expectRestoredChainLimit(restored: ReturnType<typeof restoreDuelWithLuaScripts>, registryKey: string, untilChainEnd: boolean): void {
   expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+  expect(restored.missingRegistryKeys).toEqual([]);
   expect(restored.missingChainLimitRegistryKeys).toEqual([]);
   expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd });
   expectLuaRestoreGroupsMirrorActions(restored, 0);

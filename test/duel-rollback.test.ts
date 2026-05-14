@@ -268,16 +268,22 @@ describe("duel rollback", () => {
       1: { main: ["400"] },
     });
     startDuel(session);
-    session.state.prompt = { id: "rollback-options", type: "selectOption", player: 0, options: [1, 2], returnTo: 0 };
+    session.state.prompt = { id: "rollback-options", type: "selectOption", player: 0, options: [1, 2], descriptions: [101, 202], returnTo: 0 };
     const rollback = captureDuelState(session.state);
 
     session.state.prompt.options.push(3);
+    session.state.prompt.descriptions?.push(303);
     restoreDuelState(session.state, rollback);
     if (session.state.prompt?.type !== "selectOption") throw new Error("Expected select-option prompt");
 
     expect(session.state.prompt.options).toEqual([1, 2]);
-    rollback.prompt && rollback.prompt.type === "selectOption" && rollback.prompt.options.push(4);
+    expect(session.state.prompt.descriptions).toEqual([101, 202]);
+    if (rollback.prompt?.type === "selectOption") {
+      rollback.prompt.options.push(4);
+      rollback.prompt.descriptions?.push(404);
+    }
     expect(session.state.prompt.options).toEqual([1, 2]);
+    expect(session.state.prompt.descriptions).toEqual([101, 202]);
   });
 
   it("rolls back nested pending battle damage overrides", () => {

@@ -58,6 +58,8 @@ describe("Lua card relation state helpers", () => {
     const result = host.loadScript(
       `
       local option=Duel.SelectOption(0, 101, 102, 103)
+      local cancel_option=Duel.SelectOption(0, false, 101, 102, 103)
+      local empty_cancel_option=Duel.SelectOption(0, false)
       local yes=Duel.SelectYesNo(0, 201)
       local everyone=Duel.AskEveryone(203)
       local any=Duel.AskAny(204)
@@ -97,7 +99,7 @@ describe("Lua card relation state helpers", () => {
       local another_card_race=single:AnnounceAnotherRace(0)
       local group_hint_result=Duel.HintSelection(group, 501)
       local card_hint_result=Duel.HintSelection(single)
-      Debug.Message("prompt option " .. option .. "/" .. tostring(yes) .. "/" .. tostring(everyone) .. "/" .. tostring(any))
+      Debug.Message("prompt option " .. option .. "/" .. cancel_option .. "/" .. empty_cancel_option .. "/" .. tostring(yes) .. "/" .. tostring(everyone) .. "/" .. tostring(any))
       Debug.Message("prompt effect " .. tostring(effect_yes) .. "/" .. tostring(effect_choice) .. "/" .. tostring(effect_none))
       Debug.Message("prompt announce " .. number .. "/" .. table_number .. "/" .. card .. "/" .. kind .. "/" .. race .. "/" .. attribute .. "/" .. upstream_race .. "/" .. upstream_attribute .. "/" .. level .. "/" .. default_level .. "/" .. excluded_level .. "/" .. ranged)
       Debug.Message("prompt announce card " .. default_card .. "/" .. typed_card .. "/" .. table_card)
@@ -111,7 +113,7 @@ describe("Lua card relation state helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toContain("prompt option 0/true/true/true");
+    expect(host.messages).toContain("prompt option 0/1/-1/true/true/true");
     expect(host.messages).toContain("prompt effect true/2/nil");
     expect(host.messages).toContain("prompt announce 4/6/100/1/2/32/2/4/3/1/5/4");
     expect(host.messages).toContain("prompt announce card 100/100/200");

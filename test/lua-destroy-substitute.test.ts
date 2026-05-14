@@ -83,7 +83,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script de
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(unionCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
 
     moveDuelCard(session.state, union.uid, "spellTrapZone", 0);
     union.equippedToUid = target.uid;
@@ -150,7 +150,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script de
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(steedCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
 
     moveDuelCard(session.state, steed.uid, "spellTrapZone", 0);
     steed.equippedToUid = target.uid;
@@ -315,7 +315,7 @@ function setupRealOldUnionSubstitute(): { session: DuelSession; target: DuelCard
 
   const host = createLuaScriptHost(session, workspace);
   expect(host.loadCardScript(Number(unionCode), workspace).ok).toBe(true);
-  expect(host.registerInitialEffects()).toBeGreaterThan(0);
+  expect(host.registerInitialEffects()).toBe(1);
 
   moveDuelCard(session.state, union.uid, "spellTrapZone", 0);
   union.equippedToUid = target.uid;

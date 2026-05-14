@@ -72,6 +72,7 @@ describe("Lua multi-card chain-limit restore", () => {
     const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
 
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
@@ -158,6 +159,7 @@ describe("Lua multi-card chain-limit restore", () => {
     const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
 
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));

@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData, DuelEventName, DuelSession } from "#duel/types.js";
 
 describe("Lua source-only battle timing events", () => {
@@ -18,75 +19,20 @@ describe("Lua source-only battle timing events", () => {
     startDuel(session);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(
-      `
-      local attacker=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 100), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 1, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      local generic_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 300), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      local single_watcher=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 301), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-
-      local codes={
-        EVENT_BATTLE_START,
-        EVENT_BATTLE_CONFIRM,
-        EVENT_PRE_DAMAGE_CALCULATE,
-        EVENT_DAMAGE_CALCULATING,
-        EVENT_BATTLED,
-        EVENT_BATTLE_END,
-        EVENT_DAMAGE_STEP_END
-      }
-      local labels={
-        "start",
-        "confirm",
-        "precalc",
-        "calculating",
-        "battled",
-        "end",
-        "stepend"
-      }
-
-      for i,code in ipairs(codes) do
-        local label=labels[i]
-
-        local attacker_trigger=Effect.CreateEffect(attacker)
-        attacker_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
-        attacker_trigger:SetCode(code)
-        attacker_trigger:SetRange(LOCATION_MZONE)
-        attacker_trigger:SetOperation(function(e,tp,eg)
-          Debug.Message("attacker " .. label .. " " .. eg:GetCount())
-        end)
-        attacker:RegisterEffect(attacker_trigger)
-
-        local target_trigger=Effect.CreateEffect(target)
-        target_trigger:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
-        target_trigger:SetCode(code)
-        target_trigger:SetRange(LOCATION_MZONE)
-        target_trigger:SetOperation(function(e,tp,eg)
-          Debug.Message("target " .. label .. " " .. eg:GetCount())
-        end)
-        target:RegisterEffect(target_trigger)
-
-        local generic_trigger=Effect.CreateEffect(generic_watcher)
-        generic_trigger:SetType(EFFECT_TYPE_TRIGGER_O)
-        generic_trigger:SetCode(code)
-        generic_trigger:SetRange(LOCATION_HAND)
-        generic_trigger:SetOperation(function(e,tp,eg)
-          Debug.Message("generic " .. label .. " " .. eg:GetCount())
-        end)
-        generic_watcher:RegisterEffect(generic_trigger)
-
-        local wrong_single=Effect.CreateEffect(single_watcher)
-        wrong_single:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
-        wrong_single:SetCode(code)
-        wrong_single:SetRange(LOCATION_HAND)
-        wrong_single:SetOperation(function(e,tp,eg)
-          Debug.Message("wrong " .. label .. " " .. eg:GetCount())
-        end)
-        single_watcher:RegisterEffect(wrong_single)
-      end
-      `,
-      "battle-timing-source-only-event.lua",
-    );
-    expect(loaded.ok, loaded.error).toBe(true);
+    const source = {
+      readScript(name: string) {
+        if (name === "c100.lua") return timingScript("c100", "attacker", "single");
+        if (name === "c200.lua") return timingScript("c200", "target", "single");
+        if (name === "c300.lua") return timingScript("c300", "generic", "generic");
+        if (name === "c301.lua") return timingScript("c301", "wrong", "single");
+        return undefined;
+      },
+    };
+    for (const code of [100, 200, 300, 301]) {
+      const loaded = host.loadCardScript(code, source);
+      expect(loaded.ok, loaded.error).toBe(true);
+    }
+    expect(host.registerInitialEffects()).toBe(4);
 
     const attacker = session.state.cards.find((card) => card.code === "100");
     const target = session.state.cards.find((card) => card.code === "200");
@@ -108,6 +54,15 @@ describe("Lua source-only battle timing events", () => {
     passBattleResponsePair(session);
     assertTimingTriggers(session, "battleStarted", 1132, attacker!.uid, target!.uid, genericWatcher!.uid, singleWatcher!.uid);
     assertTimingTriggers(session, "battleConfirmed", 1133, attacker!.uid, target!.uid, genericWatcher!.uid, singleWatcher!.uid);
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    assertTimingTriggers(restored.session, "battleStarted", 1132, attacker!.uid, target!.uid, genericWatcher!.uid, singleWatcher!.uid);
+    assertTimingTriggers(restored.session, "battleConfirmed", 1133, attacker!.uid, target!.uid, genericWatcher!.uid, singleWatcher!.uid);
+    activateAllRestoredTriggers(restored);
+    expect(restored.host.messages).toEqual(expect.arrayContaining(["attacker start 2", "target start 2", "generic start 2", "attacker confirm 2", "target confirm 2", "generic confirm 2"]));
+    expect(restored.host.messages.some((message) => message.startsWith("wrong start ") || message.startsWith("wrong confirm "))).toBe(false);
+
     activateAllTriggers(session);
     expect(host.messages).toEqual(expect.arrayContaining(["attacker start 2", "target start 2", "generic start 2", "attacker confirm 2", "target confirm 2", "generic confirm 2"]));
     expect(host.messages.some((message) => message.startsWith("wrong start ") || message.startsWith("wrong confirm "))).toBe(false);
@@ -138,6 +93,45 @@ describe("Lua source-only battle timing events", () => {
     expect(host.messages.some((message) => message.startsWith("wrong end ") || message.startsWith("wrong stepend "))).toBe(false);
   });
 });
+
+function timingScript(namespace: string, labelPrefix: string, kind: "generic" | "single"): string {
+  const type = kind === "single" ? "EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O" : "EFFECT_TYPE_TRIGGER_O";
+  return `
+      ${namespace}={}
+      function ${namespace}.initial_effect(c)
+        local codes={
+          EVENT_BATTLE_START,
+          EVENT_BATTLE_CONFIRM,
+          EVENT_PRE_DAMAGE_CALCULATE,
+          EVENT_DAMAGE_CALCULATING,
+          EVENT_BATTLED,
+          EVENT_BATTLE_END,
+          EVENT_DAMAGE_STEP_END
+        }
+        local labels={
+          "start",
+          "confirm",
+          "precalc",
+          "calculating",
+          "battled",
+          "end",
+          "stepend"
+        }
+
+        for i,code in ipairs(codes) do
+          local label=labels[i]
+          local e=Effect.CreateEffect(c)
+          e:SetType(${type})
+          e:SetCode(code)
+          e:SetRange(${kind === "single" && labelPrefix !== "wrong" ? "LOCATION_MZONE" : "LOCATION_HAND"})
+          e:SetOperation(function(e,tp,eg)
+            Debug.Message("${labelPrefix} " .. label .. " " .. eg:GetCount())
+          end)
+          c:RegisterEffect(e)
+        end
+      end
+      `;
+}
 
 function assertTimingTriggers(
   session: DuelSession,
@@ -176,6 +170,15 @@ function passBattleResponsePair(session: DuelSession): void {
   }
 }
 
+function activateAllRestoredTriggers(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  for (;;) {
+    const player = restored.session.state.waitingFor ?? 0;
+    const trigger = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "activateTrigger");
+    if (!trigger) break;
+    applyLuaRestoreAndAssert(restored, trigger);
+  }
+}
+
 function activateAllTriggers(session: DuelSession): void {
   for (;;) {
     const player = session.state.waitingFor ?? 0;
@@ -190,6 +193,15 @@ function applyAndAssert(session: DuelSession, action: Parameters<typeof applyRes
   expect(response.ok, response.error).toBe(true);
   expect(response.legalActions).toEqual(getDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  return response;
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: Parameters<typeof applyLuaRestoreResponse>[1]) {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  expect(response.legalActions).toEqual(getLuaRestoreLegalActions(restored, response.state.waitingFor!));
+  expect(response.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
 }

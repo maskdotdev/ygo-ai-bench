@@ -118,6 +118,7 @@ describe("Lua captured handler-only chain-limit restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
     expectLuaRestoreGroupsMirrorActions(restored, 0);

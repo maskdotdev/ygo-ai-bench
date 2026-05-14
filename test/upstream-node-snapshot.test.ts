@@ -178,6 +178,8 @@ describe("Node upstream snapshot restore", () => {
     const host = createLuaScriptHost(session);
     expect(host.loadCardScript(100, workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
+    const staleActivate = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-1");
+    expect(staleActivate).toBeDefined();
     const snapshot = serializeDuel(session);
     fs.rmSync(path.join(root, "script", "c100.lua"));
 
@@ -193,6 +195,11 @@ describe("Node upstream snapshot restore", () => {
     expect(getDuelLegalActions(restored.session, 0).some((candidate) => candidate.type === "activateEffect")).toBe(false);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual([]);
+    const replay = applyLuaRestoreResponse(restored, staleActivate!);
+    expect(replay.ok).toBe(false);
+    expect(replay.error).toBe("Lua snapshot restore is incomplete: script c100.lua: Script c100.lua was not found; missing Lua effect registry keys: lua:100:lua-1");
+    expect(replay.legalActions).toEqual([]);
+    expect(replay.legalActionGroups).toEqual([]);
   });
 
   it("hides prompt responses when Lua snapshot restore is incomplete", () => {

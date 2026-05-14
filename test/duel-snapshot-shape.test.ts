@@ -162,24 +162,52 @@ describe("duel snapshot restore shape validation", () => {
     startDuel(session);
     const badOptions = serializeDuel(session);
     const badOptionValue = serializeDuel(session);
+    const badDuplicateOptions = serializeDuel(session);
+    const badDescriptions = serializeDuel(session);
+    const badDescriptionLength = serializeDuel(session);
+    const badYesNoDescriptions = serializeDuel(session);
     const badPromptType = serializeDuel(session);
     const badDescription = serializeDuel(session);
     const badReturnTo = serializeDuel(session);
+    const badOrigin = serializeDuel(session);
     const badWaitingFor = serializeDuel(session);
     badOptions.state.prompt = { id: "bad-prompt", type: "selectOption", player: 0, options: "not-options" as unknown as number[] };
-    badOptionValue.state.prompt = { id: "bad-option-value", type: "selectOption", player: 0, options: [1, "two" as unknown as number] };
+    badOptionValue.state.prompt = { id: "bad-option-value", type: "selectOption", player: 0, options: [1, Number.NaN] };
+    badDuplicateOptions.state.prompt = { id: "bad-duplicate-options", type: "selectOption", player: 0, options: [1, 1] };
+    badDescriptions.state.prompt = { id: "bad-descriptions", type: "selectOption", player: 0, options: [1], descriptions: [Number.NaN] };
+    badDescriptionLength.state.prompt = { id: "bad-description-length", type: "selectOption", player: 0, options: [1, 2], descriptions: [100] };
+    badYesNoDescriptions.state.prompt = { id: "bad-yes-no-descriptions", type: "selectYesNo", player: 0, descriptions: [100] } as NonNullable<typeof badYesNoDescriptions.state.prompt>;
     badPromptType.state.prompt = { id: "bad-type", type: "selectCard" as "selectOption", player: 0, options: [1] };
-    badDescription.state.prompt = { id: "bad-description", type: "selectYesNo", player: 0, description: "yes" as unknown as number };
+    badDescription.state.prompt = { id: "bad-description", type: "selectYesNo", player: 0, description: Number.POSITIVE_INFINITY };
     badReturnTo.state.prompt = { id: "bad-return", type: "selectYesNo", player: 0, returnTo: 2 as 0 };
+    badOrigin.state.prompt = { id: "bad-origin", type: "selectYesNo", player: 0, origin: "regularPrompt" as "luaOperation" };
     badWaitingFor.state.prompt = { id: "bad-waiting", type: "selectYesNo", player: 0 };
     badWaitingFor.state.waitingFor = 1;
 
     expect(() => restoreDuel(badOptions, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.options must be an array");
-    expect(() => restoreDuel(badOptionValue, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.options must contain numbers");
+    expect(() => restoreDuel(badOptionValue, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.options must contain safe integers");
+    expect(() => restoreDuel(badDuplicateOptions, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.options must be unique");
+    expect(() => restoreDuel(badDescriptions, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.descriptions must contain safe integers");
+    expect(() => restoreDuel(badDescriptionLength, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.descriptions must match options length");
+    expect(() => restoreDuel(badYesNoDescriptions, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.descriptions is only valid for selectOption");
     expect(() => restoreDuel(badPromptType, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.type must be a prompt type");
-    expect(() => restoreDuel(badDescription, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.description must be a number");
+    expect(() => restoreDuel(badDescription, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.description must be a safe integer");
     expect(() => restoreDuel(badReturnTo, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.returnTo must be a player id");
+    expect(() => restoreDuel(badOrigin, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.origin must be a prompt origin");
     expect(() => restoreDuel(badWaitingFor, createCardReader(cards))).toThrow("Malformed duel snapshot: state.waitingFor must match prompt.player");
+  });
+
+  it("rejects unknown prompt snapshot fields before restore", () => {
+    const session = createDuel({ seed: 242, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const snapshot = serializeDuel(session);
+    snapshot.state.prompt = { id: "stale-prompt", type: "selectYesNo", player: 0, stalePrompt: true } as unknown as NonNullable<typeof snapshot.state.prompt>;
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.prompt.stalePrompt is not a known field");
   });
 
   it("rejects prompt snapshots that overlap hidden timing windows", () => {
@@ -236,6 +264,19 @@ describe("duel snapshot restore shape validation", () => {
 
     expect(() => restoreDuel(badPlayer, createCardReader(cards))).toThrow("Malformed duel snapshot: state.players.1.lifePoints must be a number");
     expect(() => restoreDuel(badOption, createCardReader(cards))).toThrow("Malformed duel snapshot: state.options.drawPerTurn must be a number");
+  });
+
+  it("rejects unknown duel state snapshot fields before restore", () => {
+    const session = createDuel({ seed: 250, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const stale = serializeDuel(session) as ReturnType<typeof serializeDuel> & { state: Record<string, unknown> };
+    stale.state.restoredWindow = "stale";
+
+    expect(() => restoreDuel(stale, createCardReader(cards))).toThrow("Malformed duel snapshot: state.restoredWindow is not a known field");
   });
 
   it("rejects impossible player and option numeric snapshots before restore", () => {
@@ -537,6 +578,19 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(fractional, createCardReader(cards))).toThrow("Malformed duel snapshot: state.activityCounts.1.specialSummon must be a non-negative integer");
   });
 
+  it("rejects unknown battle pair snapshot fields before restore", () => {
+    const session = createDuel({ seed: 238, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const snapshot = serializeDuel(session);
+    snapshot.state.battlePairs = [{ attackerUid: snapshot.state.cards[0]!.uid, targetUid: snapshot.state.cards[1]!.uid, staleBattle: true } as unknown as typeof snapshot.state.battlePairs[number]];
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battlePairs.0.staleBattle is not a known field");
+  });
+
   it("rejects malformed pending trigger snapshots before restore", () => {
     const session = createDuel({ seed: 151, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -556,6 +610,24 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badPayload, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggers.0.eventPlayer must be a player id");
     expect(() => restoreDuel(badEventName, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggers.0.eventName must be a duel event");
     expect(() => restoreDuel(badBucketPlayer, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggers.0.triggerBucket must match the trigger player");
+  });
+
+  it("rejects unknown pending trigger and bucket snapshot fields before restore", () => {
+    const session = createDuel({ seed: 239, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = serializeDuel(session).state.cards[0]!.uid;
+    const badTrigger = serializeDuel(session);
+    const badBucket = serializeDuel(session);
+    badTrigger.state.pendingTriggers = [{ id: "trigger", player: 0, sourceUid, effectId: "effect", eventName: "customEvent", triggerBucket: "turnOptional", staleTrigger: true } as unknown as typeof badTrigger.state.pendingTriggers[number]];
+    badBucket.state.pendingTriggers = [{ id: "trigger", player: 0, sourceUid, effectId: "effect", eventName: "customEvent", triggerBucket: "turnOptional" }];
+    badBucket.state.pendingTriggerBuckets = [{ triggerBucket: "turnOptional", player: 0, triggerIds: ["trigger"], staleBucket: true }] as unknown as NonNullable<typeof badBucket.state.pendingTriggerBuckets>;
+
+    expect(() => restoreDuel(badTrigger, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggers.0.staleTrigger is not a known field");
+    expect(() => restoreDuel(badBucket, createCardReader(cards))).toThrow("Malformed duel snapshot: state.pendingTriggerBuckets.0.staleBucket is not a known field");
   });
 
   it("rejects active trigger snapshots with mismatched waiting player before restore", () => {
@@ -649,6 +721,22 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(badEventUids, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventUids must be an array");
   });
 
+  it("rejects unknown event history and event card-state snapshot fields before restore", () => {
+    const session = createDuel({ seed: 240, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badEvent = serializeDuel(session);
+    const badCardState = serializeDuel(session);
+    badEvent.state.eventHistory = [{ eventName: "customEvent", staleEvent: true } as unknown as typeof badEvent.state.eventHistory[number]];
+    badCardState.state.eventHistory = [{ eventName: "customEvent", eventPreviousState: { controller: 0, location: "hand", sequence: 0, position: "faceDown", faceUp: false, staleState: true } } as unknown as typeof badCardState.state.eventHistory[number]];
+
+    expect(() => restoreDuel(badEvent, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.staleEvent is not a known field");
+    expect(() => restoreDuel(badCardState, createCardReader(cards))).toThrow("Malformed duel snapshot: state.eventHistory.0.eventPreviousState.staleState is not a known field");
+  });
+
   it("rejects missing event history card references before restore", () => {
     const session = createDuel({ seed: 168, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -696,6 +784,55 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(duplicateLinkIds, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.1.id must be unique");
     expect(() => restoreDuel(badPlayer, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.player must be a player id");
     expect(() => restoreDuel(badActivationLocation, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.activationLocation must be a card location");
+  });
+
+  it("rejects malformed Lua operation prompt snapshots before restore", () => {
+    const session = createDuel({ seed: 248, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    const unknownField = serializeDuel(session);
+    const missingChainLink = serializeDuel(session);
+    const missingPrompt = serializeDuel(session);
+    const badPromptApi = serializeDuel(session);
+    const badPromptDescriptions = serializeDuel(session);
+    const badOptionPromptDescription = serializeDuel(session);
+    const badYesNoPromptOptions = serializeDuel(session);
+    const badChainLinkSource = serializeDuel(session);
+    const prompt = { id: "lua-prompt-1", api: "SelectOption" as const, player: 0 as const, options: [0, 1], descriptions: [701, 702], returned: 0 };
+    unknownField.state.luaOperationPrompt = { chainLink: { id: "lua-op-chain", player: 0, sourceUid, effectId: "effect" }, prompt, stale: true } as unknown as NonNullable<typeof unknownField.state.luaOperationPrompt>;
+    missingChainLink.state.luaOperationPrompt = {} as NonNullable<typeof missingChainLink.state.luaOperationPrompt>;
+    missingPrompt.state.luaOperationPrompt = { chainLink: { id: "lua-op-chain", player: 0, sourceUid, effectId: "effect" } } as NonNullable<typeof missingPrompt.state.luaOperationPrompt>;
+    badPromptApi.state.luaOperationPrompt = { chainLink: { id: "lua-op-chain", player: 0, sourceUid, effectId: "effect" }, prompt: { ...prompt, api: "SelectCard" as "SelectOption" } };
+    badPromptDescriptions.state.luaOperationPrompt = { chainLink: { id: "lua-op-chain", player: 0, sourceUid, effectId: "effect" }, prompt: { ...prompt, descriptions: [701] } };
+    badOptionPromptDescription.state.luaOperationPrompt = { chainLink: { id: "lua-op-chain", player: 0, sourceUid, effectId: "effect" }, prompt: { ...prompt, description: 701 } } as unknown as NonNullable<typeof badOptionPromptDescription.state.luaOperationPrompt>;
+    badYesNoPromptOptions.state.luaOperationPrompt = { chainLink: { id: "lua-op-chain", player: 0, sourceUid, effectId: "effect" }, prompt: { id: "lua-prompt-2", api: "SelectEffectYesNo", player: 0, returned: true, options: [0] } } as unknown as NonNullable<typeof badYesNoPromptOptions.state.luaOperationPrompt>;
+    badChainLinkSource.state.luaOperationPrompt = { chainLink: { id: "lua-op-chain", player: 0, sourceUid: "missing-card", effectId: "effect" }, prompt };
+
+    expect(() => restoreDuel(unknownField, createCardReader(cards))).toThrow("Malformed duel snapshot: state.luaOperationPrompt.stale is not a known field");
+    expect(() => restoreDuel(missingChainLink, createCardReader(cards))).toThrow("Malformed duel snapshot: state.luaOperationPrompt.chainLink is required");
+    expect(() => restoreDuel(missingPrompt, createCardReader(cards))).toThrow("Malformed duel snapshot: state.luaOperationPrompt.prompt is required");
+    expect(() => restoreDuel(badPromptApi, createCardReader(cards))).toThrow("Malformed duel snapshot: state.luaOperationPrompt.prompt.api must be a Lua prompt api");
+    expect(() => restoreDuel(badPromptDescriptions, createCardReader(cards))).toThrow("Malformed duel snapshot: state.luaOperationPrompt.prompt.descriptions must match options length");
+    expect(() => restoreDuel(badOptionPromptDescription, createCardReader(cards))).toThrow("Malformed duel snapshot: state.luaOperationPrompt.prompt.description is only valid for yes/no prompt APIs");
+    expect(() => restoreDuel(badYesNoPromptOptions, createCardReader(cards))).toThrow("Malformed duel snapshot: state.luaOperationPrompt.prompt.options is only valid for option-like prompt APIs");
+    expect(() => restoreDuel(badChainLinkSource, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.sourceUid must reference a card");
+  });
+
+  it("rejects unknown chain link snapshot fields before restore", () => {
+    const session = createDuel({ seed: 241, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const snapshot = serializeDuel(session);
+    snapshot.state.chain = [{ id: "link", player: 0, sourceUid: snapshot.state.cards[0]!.uid, effectId: "effect", staleChain: true } as unknown as typeof snapshot.state.chain[number]];
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.staleChain is not a known field");
   });
 
   it("rejects missing chain target and event card snapshots before restore", () => {
@@ -767,6 +904,25 @@ describe("duel snapshot restore shape validation", () => {
     expect(() => restoreDuel(missingExpiry, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chainLimits.0.expiresAtChainLength is required for non-until-chain-end limits");
   });
 
+  it("rejects unknown chain limit, skipped phase, and activity history snapshot fields before restore", () => {
+    const session = createDuel({ seed: 236, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badLimit = serializeDuel(session);
+    const badSkip = serializeDuel(session);
+    const badActivity = serializeDuel(session);
+    badLimit.state.chainLimits = [{ registryKey: "limit", untilChainEnd: true, staleScope: "all" } as typeof badLimit.state.chainLimits[number]];
+    badSkip.state.skippedPhases = [{ player: 0, phase: "battle", remaining: 1, staleSkip: true } as typeof badSkip.state.skippedPhases[number]];
+    badActivity.state.activityHistory = [{ player: 0, activity: 1, staleSource: "ui" } as typeof badActivity.state.activityHistory[number]];
+
+    expect(() => restoreDuel(badLimit, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chainLimits.0.staleScope is not a known field");
+    expect(() => restoreDuel(badSkip, createCardReader(cards))).toThrow("Malformed duel snapshot: state.skippedPhases.0.staleSkip is not a known field");
+    expect(() => restoreDuel(badActivity, createCardReader(cards))).toThrow("Malformed duel snapshot: state.activityHistory.0.staleSource is not a known field");
+  });
+
   it("rejects malformed phase and activity history snapshots before restore", () => {
     const session = createDuel({ seed: 155, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -832,6 +988,25 @@ describe("duel snapshot restore shape validation", () => {
 
     expect(() => restoreDuel(badFlag, createCardReader(cards))).toThrow("Malformed duel snapshot: state.flagEffects.0.ownerType must be a flag owner type");
     expect(() => restoreDuel(badLog, createCardReader(cards))).toThrow("Malformed duel snapshot: state.log.0.player must be a player id");
+  });
+
+  it("rejects unknown flag, log, and operation info snapshot fields before restore", () => {
+    const session = createDuel({ seed: 237, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const badFlag = serializeDuel(session);
+    const badLog = serializeDuel(session);
+    const badOperationInfo = serializeDuel(session);
+    badFlag.state.flagEffects = [{ ownerType: "player", ownerId: "0", code: 1, reset: 0, property: 0, value: 1, turn: 1, staleFlag: 1 } as typeof badFlag.state.flagEffects[number]];
+    badLog.state.log = [{ step: 1, action: "bad", detail: "bad field", staleLog: true } as typeof badLog.state.log[number]];
+    badOperationInfo.state.chain = [{ id: "chain-1", effectId: "effect-1", sourceUid: badOperationInfo.state.cards[0]!.uid, player: 0, operationInfos: [{ category: 1, count: 1, parameter: 0, player: 0, targetUids: [], staleInfo: "extra" }] }] as unknown as typeof badOperationInfo.state.chain;
+
+    expect(() => restoreDuel(badFlag, createCardReader(cards))).toThrow("Malformed duel snapshot: state.flagEffects.0.staleFlag is not a known field");
+    expect(() => restoreDuel(badLog, createCardReader(cards))).toThrow("Malformed duel snapshot: state.log.0.staleLog is not a known field");
+    expect(() => restoreDuel(badOperationInfo, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.operationInfos.0.staleInfo is not a known field");
   });
 
   it("rejects malformed flag owner snapshots before restore", () => {

@@ -114,6 +114,7 @@ function runBattleDestroyedSourceOnly(eventCode: string, label: string): string[
 
   const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
   expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
   const restoredBattleTriggers = restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "battleDestroyed");
   expect(restoredBattleTriggers).toHaveLength(2);
   expect(restoredBattleTriggers).toEqual(

@@ -109,7 +109,7 @@ function setupSpiritProcedureDuel(main: string[]) {
 function loadScripts(session: DuelSession, source: ReturnType<typeof spiritScriptSource>, codes: string[]): void {
   const host = createLuaScriptHost(session, source);
   for (const code of codes) expect(host.loadCardScript(Number(code), source).ok).toBe(true);
-  expect(host.registerInitialEffects()).toBeGreaterThan(0);
+  expect(host.registerInitialEffects()).toBe(codes.length);
 }
 
 function spiritScriptSource() {

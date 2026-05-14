@@ -35,4 +35,17 @@ describe("duel snapshot counter numeric validation", () => {
     expect(() => restoreDuel(negative, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.counterBuckets.99.resetWhileNegated must be a non-negative integer");
     expect(() => restoreDuel(fractional, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.counterBuckets.99.permanent must be a non-negative integer");
   });
+
+  it("rejects unknown card counter bucket snapshot fields before restore", () => {
+    const session = createDuel({ seed: 245, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const stale = serializeDuel(session);
+    stale.state.cards[0] = { ...stale.state.cards[0]!, counterBuckets: { 99: { permanent: 1, staleCounter: 1 } } } as never;
+
+    expect(() => restoreDuel(stale, createCardReader(cards))).toThrow("Malformed duel snapshot: state.cards.0.counterBuckets.99.staleCounter is not a known field");
+  });
 });

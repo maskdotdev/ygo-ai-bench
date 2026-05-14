@@ -16,7 +16,7 @@ describe("duel legal action groups", () => {
     const actions = getDuelLegalActions(session, 0);
     const groups = groupDuelLegalActions(actions);
 
-    expect(groups.length).toBeGreaterThan(0);
+    expect(groups).toHaveLength(2);
     expect(groups.every((group) => group.windowKind === "open")).toBe(true);
     expect(groups.every((group) => group.windowToken === session.state.actionWindowToken)).toBe(true);
     expect(groups.flatMap((group) => group.actions)).toEqual(actions);

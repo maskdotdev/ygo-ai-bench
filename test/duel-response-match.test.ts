@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeDuelActionSelector, duelActionMatchesSelector } from "#duel/action-selectors.js";
+import { describeDuelActionSelector, duelActionMatchesSelector, selectDuelActionBySelector } from "#duel/action-selectors.js";
 import { sameAction } from "#duel/response-match.js";
 import type { DuelAction } from "#duel/types.js";
 
@@ -78,6 +78,15 @@ describe("duel response matching", () => {
     expect(sameAction({ type: "passChain", player: 0, label: "Pass chain" }, tokenOnly)).toBe(false);
   });
 
+  it("rejects malformed numeric window ids", () => {
+    const action: DuelAction = { type: "passChain", player: 0, label: "Pass chain", windowId: 23, windowKind: "chainResponse", windowToken: windowToken(23) };
+    const response = { ...action };
+
+    for (const windowId of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1]) {
+      expect(sameAction(action, { ...response, windowId })).toBe(false);
+    }
+  });
+
   it("matches unordered summon material responses without accepting duplicates", () => {
     const action: DuelAction = {
       type: "fusionSummon",
@@ -124,6 +133,191 @@ describe("duel response matching", () => {
     expect(duelActionMatchesSelector(action, { type: "passChain", player: 0, windowToken: windowToken(22) }, [])).toBe(true);
     expect(duelActionMatchesSelector(action, { type: "passChain", player: 0, windowToken: "forged-window" }, [])).toBe(false);
     expect(duelActionMatchesSelector(unstampedAction, { type: "passChain", player: 0, windowToken: windowToken(22) }, [])).toBe(false);
+  });
+
+  it("matches prompt fixture selectors by prompt id, choice, and window token", () => {
+    const option: DuelAction = {
+      type: "selectOption",
+      player: 1,
+      promptId: "lua-prompt-1",
+      option: 4,
+      label: "Select option 4",
+      windowId: 24,
+      windowKind: "prompt",
+      windowToken: windowToken(24),
+    };
+    const yesNo: DuelAction = {
+      type: "selectYesNo",
+      player: 1,
+      promptId: "lua-prompt-2",
+      yes: false,
+      label: "No",
+      windowId: 25,
+      windowKind: "prompt",
+      windowToken: windowToken(25),
+    };
+
+    expect(duelActionMatchesSelector(option, { type: "selectOption", player: 1, promptId: "lua-prompt-1", option: 4, windowKind: "prompt", windowToken: windowToken(24) }, [])).toBe(true);
+    expect(duelActionMatchesSelector(option, { type: "selectOption", player: 1, promptId: "lua-prompt-1", option: 2, windowKind: "prompt", windowToken: windowToken(24) }, [])).toBe(false);
+    expect(duelActionMatchesSelector(option, { type: "selectOption", player: 1, promptId: "lua-prompt-1", option: 4, windowKind: "prompt", windowToken: windowToken(25) }, [])).toBe(false);
+    expect(duelActionMatchesSelector(yesNo, { type: "selectYesNo", player: 1, promptId: "lua-prompt-2", yes: false, windowKind: "prompt", windowToken: windowToken(25) }, [])).toBe(true);
+    expect(duelActionMatchesSelector(yesNo, { type: "selectYesNo", player: 1, promptId: "lua-prompt-2", yes: true, windowKind: "prompt", windowToken: windowToken(25) }, [])).toBe(false);
+    expect(duelActionMatchesSelector(yesNo, { type: "selectYesNo", player: 1, promptId: "lua-prompt-2", yes: false, windowKind: "prompt", windowToken: windowToken(24) }, [])).toBe(false);
+  });
+
+  it("rejects malformed numeric fixture selector window ids", () => {
+    const action: DuelAction = {
+      type: "passChain",
+      player: 0,
+      label: "Pass chain",
+      windowId: 22,
+      windowKind: "chainResponse",
+      windowToken: windowToken(22),
+    };
+
+    for (const windowId of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1]) {
+      expect(duelActionMatchesSelector(action, { type: "passChain", player: 0, windowId }, [])).toBe(false);
+    }
+  });
+
+  it("rejects malformed fixture selector window stamps", () => {
+    const action: DuelAction = {
+      type: "passChain",
+      player: 0,
+      label: "Pass chain",
+      windowId: 22,
+      windowKind: "chainResponse",
+      windowToken: windowToken(22),
+    };
+
+    expect(duelActionMatchesSelector(action, { type: "passChain", player: 0, windowKind: "bogus" as "open" }, [])).toBe(false);
+    expect(duelActionMatchesSelector(action, { type: "passChain", player: 0, windowKind: "" as "open" }, [])).toBe(false);
+    expect(duelActionMatchesSelector(action, { type: "passChain", player: 0, windowToken: "" }, [])).toBe(false);
+    expect(describeDuelActionSelector({ type: "passChain", player: 0, windowKind: "bogus" as "open", windowToken: "" })).toContain("windowKind=bogus");
+    expect(describeDuelActionSelector({ type: "passChain", player: 0, windowKind: "bogus" as "open", windowToken: "" })).toContain("windowToken=");
+  });
+
+  it("selects fixture action occurrences explicitly", () => {
+    const first: DuelAction = {
+      type: "changePhase",
+      player: 0,
+      phase: "battle",
+      label: "Battle Phase",
+      windowId: 22,
+      windowKind: "open",
+      windowToken: windowToken(22),
+    };
+    const second: DuelAction = { ...first, label: "Battle Phase copy" };
+
+    expect(selectDuelActionBySelector([first, second], { type: "changePhase", player: 0, phase: "battle" }, [])).toBe(first);
+    expect(selectDuelActionBySelector([first, second], { type: "changePhase", player: 0, phase: "battle", occurrence: 1 }, [])).toBe(second);
+  });
+
+  it("rejects malformed fixture selector occurrences", () => {
+    const action: DuelAction = {
+      type: "passChain",
+      player: 0,
+      label: "Pass chain",
+      windowId: 22,
+      windowKind: "chainResponse",
+      windowToken: windowToken(22),
+    };
+
+    for (const occurrence of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1]) {
+      expect(selectDuelActionBySelector([action], { type: "passChain", player: 0, occurrence }, [])).toBeUndefined();
+    }
+    expect(describeDuelActionSelector({ type: "passChain", player: 0, occurrence: Number.NaN })).toContain("occurrence=NaN");
+  });
+
+  it("does not ignore empty fixture selector identifiers", () => {
+    const action: DuelAction = {
+      type: "activateTrigger",
+      player: 0,
+      triggerId: "trigger",
+      triggerBucket: "turnOptional",
+      uid: "card",
+      effectId: "effect",
+      label: "Activate",
+      windowId: 22,
+      windowKind: "triggerBucket",
+      windowToken: windowToken(22),
+    };
+
+    expect(duelActionMatchesSelector(action, { type: "activateTrigger", player: 0, uid: "" }, [])).toBe(false);
+    expect(duelActionMatchesSelector(action, { type: "activateTrigger", player: 0, effectId: "" }, [])).toBe(false);
+    expect(duelActionMatchesSelector(action, { type: "activateTrigger", player: 0, triggerId: "" }, [])).toBe(false);
+    expect(duelActionMatchesSelector(action, { type: "activateTrigger", player: 0, triggerBucket: "" as "turnOptional" }, [])).toBe(false);
+    expect(describeDuelActionSelector({ type: "activateTrigger", player: 0, uid: "" })).toContain("uid=");
+  });
+
+  it("does not ignore empty prompt selector fields", () => {
+    const option: DuelAction = {
+      type: "selectOption",
+      player: 0,
+      promptId: "prompt",
+      option: 1,
+      label: "Select option 1",
+      windowId: 26,
+      windowKind: "prompt",
+      windowToken: windowToken(26),
+    };
+    const yesNo: DuelAction = {
+      type: "selectYesNo",
+      player: 0,
+      promptId: "prompt",
+      yes: true,
+      label: "Yes",
+      windowId: 26,
+      windowKind: "prompt",
+      windowToken: windowToken(26),
+    };
+
+    expect(duelActionMatchesSelector(option, { type: "selectOption", player: 0, promptId: "" }, [])).toBe(false);
+    expect(duelActionMatchesSelector(option, { type: "selectOption", player: 0, promptId: "prompt", labelIncludes: "" }, [])).toBe(false);
+    expect(duelActionMatchesSelector(yesNo, { type: "selectYesNo", player: 0, promptId: "" }, [])).toBe(false);
+    expect(duelActionMatchesSelector(yesNo, { type: "selectYesNo", player: 0, promptId: "prompt", labelIncludes: "" }, [])).toBe(false);
+    expect(describeDuelActionSelector({ type: "selectOption", player: 0, promptId: "" })).toContain("promptId=");
+    expect(describeDuelActionSelector({ type: "selectYesNo", player: 0, promptId: "", labelIncludes: "" })).toContain("labelIncludes=");
+  });
+
+  it("does not ignore empty fixture selector filters", () => {
+    const attack: DuelAction = {
+      type: "declareAttack",
+      player: 0,
+      attackerUid: "attacker",
+      targetUid: "target",
+      label: "Attack target",
+      windowId: 22,
+      windowKind: "open",
+      windowToken: windowToken(22),
+    };
+    const phase: DuelAction = {
+      type: "changePhase",
+      player: 0,
+      phase: "battle",
+      label: "Battle Phase",
+      windowId: 22,
+      windowKind: "open",
+      windowToken: windowToken(22),
+    };
+    const summon: DuelAction = {
+      type: "normalSummon",
+      player: 0,
+      uid: "card",
+      label: "Normal Summon",
+      windowId: 22,
+      windowKind: "open",
+      windowToken: windowToken(22),
+    };
+    const cards = [{ uid: "card", code: "100", location: "hand" as const }];
+
+    expect(duelActionMatchesSelector(attack, { type: "declareAttack", player: 0, attackerUid: "" }, [])).toBe(false);
+    expect(duelActionMatchesSelector(attack, { type: "declareAttack", player: 0, targetUid: "" }, [])).toBe(false);
+    expect(duelActionMatchesSelector(phase, { type: "changePhase", player: 0, phase: "" as "battle" }, [])).toBe(false);
+    expect(duelActionMatchesSelector(summon, { type: "normalSummon", player: 0, code: "" }, cards)).toBe(false);
+    expect(duelActionMatchesSelector(summon, { type: "normalSummon", player: 0, location: "" as "hand" }, cards)).toBe(false);
+    expect(duelActionMatchesSelector(summon, { type: "normalSummon", player: 0, labelIncludes: "" }, cards)).toBe(false);
+    expect(describeDuelActionSelector({ type: "normalSummon", player: 0, code: "", location: "" as "hand", labelIncludes: "" })).toContain("code=");
   });
 
   it("describes fixture selectors with action window tokens", () => {

@@ -612,7 +612,7 @@ describe("Lua control and return restore helpers", () => {
     const host = createLuaScriptHost(session);
     const loaded = host.loadCardScript(100, source);
     expect(loaded.ok, loaded.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();

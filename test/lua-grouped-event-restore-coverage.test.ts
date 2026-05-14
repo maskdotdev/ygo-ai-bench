@@ -4,11 +4,26 @@ import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
 const testRoot = path.join(root, "test");
+const groupedEventFixtureCount = 18;
 
 describe("Lua grouped event restore coverage", () => {
-  it("keeps every grouped event fixture covered by Lua-aware snapshot restore", () => {
-    const missing = groupedEventFixtureFiles()
-      .filter((file) => !fs.readFileSync(path.join(root, file), "utf8").includes("restoreDuelWithLuaScripts"));
+  it("keeps every grouped event fixture covered by complete Lua-aware snapshot restore and legal actions", () => {
+    const files = groupedEventFixtureFiles();
+    expect(files).toHaveLength(groupedEventFixtureCount);
+
+    const missing = files
+      .filter((file) => {
+        const text = fs.readFileSync(path.join(root, file), "utf8");
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys")
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)");
+      });
 
     expect(missing).toEqual([]);
   });

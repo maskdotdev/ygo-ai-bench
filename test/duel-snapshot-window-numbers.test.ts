@@ -4,6 +4,19 @@ import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
 describe("duel snapshot pending-window numeric validation", () => {
+  it("rejects empty action window tokens before restore", () => {
+    const session = createDuel({ seed: 235, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const snapshot = serializeDuel(session);
+    snapshot.state.actionWindowToken = "";
+
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.actionWindowToken must be a non-empty string");
+  });
+
   it("rejects impossible chain limit expiry snapshots before restore", () => {
     const session = createDuel({ seed: 236, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

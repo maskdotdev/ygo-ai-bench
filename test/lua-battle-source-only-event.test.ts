@@ -91,6 +91,7 @@ describe("Lua source-only battle events", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredAttackTriggers = restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "attackDeclared");
     expect(restoredAttackTriggers).toHaveLength(2);
     expect(restoredAttackTriggers).toEqual(
@@ -197,6 +198,7 @@ describe("Lua source-only battle events", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredTargetTriggers = restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "battleTargeted");
     expect(restoredTargetTriggers).toHaveLength(2);
     expect(restoredTargetTriggers).toEqual(

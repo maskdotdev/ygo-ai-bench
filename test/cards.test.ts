@@ -89,7 +89,7 @@ describe("Dark Magician scripts", () => {
     const result = runPlaytest(session, chooseHighestPriority, 6);
 
     expect(result.ok).toBe(true);
-    expect(result.state.log.length).toBeGreaterThan(5);
+    expect(result.state.log).toHaveLength(9);
     expect(["strong", "playable", "thin", "weak"]).toContain(result.evaluation.quality);
   });
 });

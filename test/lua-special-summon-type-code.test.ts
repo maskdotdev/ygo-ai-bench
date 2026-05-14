@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createDuel, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { luaSummonTypeSpecial } from "#duel/summon-type-codes.js";
-import type { DuelCardData } from "#duel/types.js";
+import type { DuelCardData, DuelEffectContext } from "#duel/types.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
@@ -168,5 +168,51 @@ describe("Lua Special Summon type codes", () => {
       `, "restored-special-summon-equality-cost-check.lua").ok).toBe(true);
     expect(restored.host.messages).toContain("restored equality open true");
     expect(restored.host.messages).toContain("restored equality blocked false");
+  });
+
+  it("restores EFFECT_SPSUMMON_COST predicates with captured numeric upvalues", () => {
+    const cards: DuelCardData[] = [{ code: "402", name: "Upvalue Cost Target", kind: "monster" }];
+    const script = `
+      c402={}
+      local summon_detail=0xb7
+      function c402.initial_effect(c)
+        local e=Effect.CreateEffect(c)
+        e:SetType(EFFECT_TYPE_SINGLE)
+        e:SetCode(EFFECT_SPSUMMON_COST)
+        e:SetCost(function(e,c,tp,sumtype)return sumtype~=SUMMON_TYPE_SPECIAL+summon_detail end)
+        c:RegisterEffect(e)
+      end
+      `;
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 183, startingHandSize: 1, cardReader: reader });
+    loadDecks(session, { 0: { main: ["402"] }, 1: { main: [] } });
+    startDuel(session);
+    const host = createLuaScriptHost(session);
+    expect(host.loadScript(script, "c402.lua").ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    expect(session.state.effects[0]).toMatchObject({ code: 92, luaCostDescriptor: `cost:special-summon-type-not:${luaSummonTypeSpecial + 183}` });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c402.lua" ? script : undefined }, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.session.state.effects[0]).toMatchObject({ code: 92, luaCostDescriptor: `cost:special-summon-type-not:${luaSummonTypeSpecial + 183}` });
+    expect(restored.session.state.cards.find((card) => card.code === "402")).toMatchObject({ location: "hand" });
+    const restoredEffect = restored.session.state.effects[0]!;
+    expect(typeof restoredEffect.cost).toBe("function");
+    const restoredTarget = restored.session.state.cards.find((card) => card.code === "402")!;
+    const ctx: DuelEffectContext = {
+      duel: restored.session.state,
+      source: restoredTarget,
+      player: 0,
+      targetUids: [],
+      log: () => {},
+      moveCard: () => restoredTarget,
+      negateChainLink: () => false,
+      setTargets: () => {},
+      getTargets: () => [],
+      setTargetPlayer: () => {},
+      setTargetParam: () => {},
+    };
+    expect(restoredEffect.cost?.({ ...ctx, summonTypeCode: luaSummonTypeSpecial + 183 })).toBe(false);
+    expect(restoredEffect.cost?.({ ...ctx, summonTypeCode: luaSummonTypeSpecial + 182 })).toBe(true);
   });
 });

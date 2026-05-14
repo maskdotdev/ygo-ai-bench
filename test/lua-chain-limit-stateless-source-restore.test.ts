@@ -5,6 +5,27 @@ import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua stateless source chain-limit restore", () => {
+  it("restores descriptor-backed stateless source predicates without requiring the original script body", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }], []);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 420, startingHandSize: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: [] } });
+    startDuel(session);
+
+    const predicateSource = "function(e,rp,tp) return rp==tp end";
+    const registryKey = `lua-chain-limit:100:0:chain:known:closure:source:${encodeURIComponent(predicateSource)}`;
+    const snapshot = serializeDuel(session);
+    snapshot.state.chainLimits = [{ registryKey, untilChainEnd: true }];
+
+    const restored = restoreDuelWithLuaScripts(snapshot, { readScript: () => undefined }, reader);
+
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.loadedScripts).toEqual([]);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
+  });
+
   it("restores inline no-upvalue source predicates from snapshots", () => {
     runStatelessSourceRestoreCase(false);
   });
@@ -57,6 +78,7 @@ describe("Lua stateless source chain-limit restore", () => {
     const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.chainLimitRegistryKeys).toEqual([]);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual([]);
@@ -168,6 +190,7 @@ function quickScript(code: number, message: string): string {
 
 function expectRestoredChainLimit(restored: ReturnType<typeof restoreDuelWithLuaScripts>, registryKey: string, untilChainEnd: boolean): void {
   expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+  expect(restored.missingRegistryKeys).toEqual([]);
   expect(restored.missingChainLimitRegistryKeys).toEqual([]);
   expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd });
   expectLuaRestoreGroupsMirrorActions(restored, 0);

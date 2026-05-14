@@ -451,7 +451,7 @@ describe("Lua random helpers", () => {
     };
     const host = createLuaScriptHost(session);
     expect(host.loadCardScript(100, source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
     expect(action).toBeDefined();

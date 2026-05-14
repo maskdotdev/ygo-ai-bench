@@ -42,7 +42,7 @@ ${IDS.theDarkMagicians}
     const result = agent.autoRun({ sessionId: started.sessionId, maxActions: 3 });
 
     expect(result.ok).toBe(true);
-    expect(result.state.log.length).toBeGreaterThanOrEqual(2);
+    expect(result.state.log.length).toBe(5);
   });
 
   it("normalizes record zones into repeated ids", () => {
@@ -77,7 +77,7 @@ ${IDS.theDarkMagicians}
     const started = agent.start({ seed: 1, handSize: 2 });
     const groups = agent.legalActionGroups(started.sessionId);
 
-    expect(groups.length).toBeGreaterThan(0);
+    expect(groups).toHaveLength(4);
     expect(groups.flatMap((group) => group.actions)).toEqual(agent.legalActions(started.sessionId));
     expect(groups.every((group) => group.key && group.label)).toBe(true);
   });
@@ -147,7 +147,7 @@ ${IDS.theDarkMagicians}
 
     expect(result.ok).toBe(true);
     expect(result.failedStep).toBeUndefined();
-    expect(result.state.log.length).toBeGreaterThan(started.state.log.length);
+    expect(result.state.log.length).toBe(started.state.log.length + 2);
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   });
 
@@ -171,7 +171,7 @@ ${IDS.theDarkMagicians}
     expect(result.divergenceGroupKey).toBe(result.legalActionGroups[0]?.key);
     expect(result.divergenceGroupLabel).toBe(result.legalActionGroups[0]?.label);
     expect(result.divergenceActions).toEqual(result.legalActions);
-    expect(result.divergenceActions?.length).toBeGreaterThan(0);
+    expect(result.divergenceActions).toHaveLength(4);
     expect(result.divergenceActions).not.toBe(result.legalActions);
     expect(result.sessionId).toBe(started.sessionId);
   });

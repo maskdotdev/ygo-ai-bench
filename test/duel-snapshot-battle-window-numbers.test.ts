@@ -17,11 +17,14 @@ describe("duel snapshot battle window numeric validation", () => {
 
     const negative = serializeDuel(session);
     const fractional = serializeDuel(session);
+    const unsafe = serializeDuel(session);
     negative.state.battleWindow = { ...negative.state.battleWindow!, id: -1 };
     fractional.state.battleWindow = { ...fractional.state.battleWindow!, id: 1.5 };
+    unsafe.state.battleWindow = { ...unsafe.state.battleWindow!, id: Number.MAX_SAFE_INTEGER + 1 };
 
     expect(() => restoreDuel(negative, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.id must be a non-negative integer");
     expect(() => restoreDuel(fractional, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.id must be a non-negative integer");
+    expect(() => restoreDuel(unsafe, createCardReader(cards))).toThrow("Malformed duel snapshot: state.battleWindow.id must be a safe integer");
   });
 });
 

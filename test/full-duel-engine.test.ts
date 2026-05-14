@@ -39,19 +39,19 @@ describe("full duel engine API", () => {
     });
     startDuel(session);
 
-    session.state.prompt = { id: "prompt-1", type: "selectOption", player: 1, options: [0, 2], returnTo: 0 };
+    session.state.prompt = { id: "prompt-1", type: "selectOption", player: 1, options: [0, 2], descriptions: [101, 202], returnTo: 0 };
     session.state.waitingFor = 1;
 
-    expect(queryPublicState(session).prompt).toEqual({ id: "prompt-1", type: "selectOption", player: 1, options: [0, 2], returnTo: 0 });
+    expect(queryPublicState(session).prompt).toEqual({ id: "prompt-1", type: "selectOption", player: 1, options: [0, 2], descriptions: [101, 202], returnTo: 0 });
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
-    expect(queryPublicState(restored).prompt).toEqual({ id: "prompt-1", type: "selectOption", player: 1, options: [0, 2], returnTo: 0 });
+    expect(queryPublicState(restored).prompt).toEqual({ id: "prompt-1", type: "selectOption", player: 1, options: [0, 2], descriptions: [101, 202], returnTo: 0 });
     expect(getDuelLegalActions(restored, 0)).toEqual([]);
     expect(getGroupedDuelLegalActions(restored, 0)).toEqual([]);
 
     const options = getDuelLegalActions(restored, 1);
     expect(options).toEqual([
-      { type: "selectOption", player: 1, promptId: "prompt-1", option: 0, label: "Select option 0", windowId: 0, windowKind: "prompt", windowToken: restored.state.actionWindowToken },
-      { type: "selectOption", player: 1, promptId: "prompt-1", option: 2, label: "Select option 2", windowId: 0, windowKind: "prompt", windowToken: restored.state.actionWindowToken },
+      { type: "selectOption", player: 1, promptId: "prompt-1", option: 0, label: "Select option 0 (101)", windowId: 0, windowKind: "prompt", windowToken: restored.state.actionWindowToken },
+      { type: "selectOption", player: 1, promptId: "prompt-1", option: 2, label: "Select option 2 (202)", windowId: 0, windowKind: "prompt", windowToken: restored.state.actionWindowToken },
     ]);
     expect(getGroupedDuelLegalActions(restored, 1).flatMap((group) => group.actions)).toEqual(options);
     const optionResult = applyResponse(restored, options[1]!);

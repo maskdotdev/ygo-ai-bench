@@ -263,6 +263,7 @@ function quickScript(code: number, message: string): string {
 
 function expectRestoredChainLimit(restored: ReturnType<typeof restoreDuelWithLuaScripts>, registryKey: string): void {
   expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+  expect(restored.missingRegistryKeys).toEqual([]);
   expect(restored.missingChainLimitRegistryKeys).toEqual([]);
   expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
   expectLuaRestoreGroupsMirrorActions(restored, 0);
