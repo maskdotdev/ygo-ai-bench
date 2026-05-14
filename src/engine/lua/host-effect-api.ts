@@ -766,6 +766,7 @@ function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffec
   if (legacyArgs) {
     if (luaEffect.code === 90 && kind === "cost") { pushRelatedEffectTable(L, hostState, ctx?.relatedEffectId); lua.lua_pushinteger(L, ctx?.player ?? card.controller); return 3; }
     pushCardTable(L, card.uid);
+    if ((luaEffect.code === luaEffectSummonProc || luaEffect.code === luaEffectLimitSummonProc) && kind === "condition") { lua.lua_pushinteger(L, 0); return 3; }
     if ([91, 93, 94, 95, 96].includes(luaEffect.code ?? -1) && kind === "cost") { lua.lua_pushinteger(L, ctx?.player ?? card.controller); return 3; }
     if (luaEffect.code === 92 && kind === "cost") { lua.lua_pushinteger(L, ctx?.player ?? card.controller); lua.lua_pushinteger(L, effectiveSpecialSummonTypeCode(ctx?.summonTypeCode)); return 4; }
     return 2;
