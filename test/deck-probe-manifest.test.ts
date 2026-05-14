@@ -26,6 +26,13 @@ describe("Lua deck probe manifest", () => {
         !/--max-local-fallbacks \d+/.test(command) ||
         !/--max-expected-missing-scripts \d+/.test(command),
     );
+    const unbudgetedProbeCommands = packageProbeCommands.filter(
+      (command) =>
+        !/--min-upstream-scripts \d+/.test(command) ||
+        !/--min-actions \d+/.test(command) ||
+        !/--min-initial-effects \d+/.test(command) ||
+        !/--min-registered-effects \d+/.test(command),
+    );
 
     const uncovered = deckNames.filter((name) => !packageProbeDecks.includes(name));
 
@@ -57,6 +64,7 @@ describe("Lua deck probe manifest", () => {
     ]);
     expect(duplicated).toEqual([]);
     expect(looseProbeCommands).toEqual([]);
+    expect(unbudgetedProbeCommands).toEqual([]);
     expect(uncovered).toEqual([]);
   });
 });
