@@ -101,16 +101,18 @@ bun run test
 bun run build
 ```
 
-`bun run check` includes the combined Lua parity scanner. To inspect missing EDOPro Lua APIs or constants against a local Project Ignis card-script checkout, clone scripts into the ignored upstream workspace and run the scanners directly:
+`bun run check` includes the combined Lua parity scanner and the official chain-limit predicate-shape scanner. To inspect missing EDOPro Lua APIs, constants, or unclassified chain-limit predicates against a local Project Ignis card-script checkout, clone scripts into the ignored upstream workspace and run the scanners directly:
 
 ```bash
 git clone --depth 1 https://github.com/ProjectIgnis/CardScripts .upstream/ignis/script
 bun run scan:lua-api -- --limit 50
 bun run scan:lua-constants -- --fail-on-missing
+bun run scan:lua-chain-limits -- --limit 80 --fail-on-unclassified
 bun run scan:lua-parity
 ```
 
 These scanners are parity guardrails. Missing APIs or constants should become implementation work or fixture-backed parity backlog, not permanent exclusions from the engine target.
+The chain-limit scanner classifies official `Duel.SetChainLimit` and `Duel.SetChainLimitTillChainEnd` predicate shapes so restore coverage can be compared against the current Project Ignis corpus.
 
 `bun run build` emits the React playtest page and `dist/playtest-engine.js`, which exposes `window.duelDeckPlaytest` in the browser. If that bundle is loaded, the existing `window.duelDeckAgent.playtest` bridge can start, inspect, step, and auto-run playtest sessions from the current deck.
 

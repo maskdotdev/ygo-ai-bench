@@ -10,6 +10,15 @@ import { parseYdk } from "#playtest/ydk.js";
 interface ProbeArgs {
   ydkPath: string;
   upstreamRoot: string;
+  failOnErrors: boolean;
+  minUpstreamScripts: number | undefined;
+  minActions: number | undefined;
+  minActivateEffects: number | undefined;
+  minInitialEffects: number | undefined;
+  minRegisteredEffects: number | undefined;
+  maxLocalOverrides: number | undefined;
+  maxLocalFallbacks: number | undefined;
+  maxExpectedMissingScripts: number | undefined;
 }
 
 const args = readArgs(process.argv.slice(2));
@@ -52,18 +61,56 @@ printReport({
   startupResult,
   registeredEffectCount: session.state.effects.length,
   actions,
+  failOnErrors: args.failOnErrors,
+  minUpstreamScripts: args.minUpstreamScripts,
+  minActions: args.minActions,
+  minActivateEffects: args.minActivateEffects,
+  minInitialEffects: args.minInitialEffects,
+  minRegisteredEffects: args.minRegisteredEffects,
+  maxLocalOverrides: args.maxLocalOverrides,
+  maxLocalFallbacks: args.maxLocalFallbacks,
+  maxExpectedMissingScripts: args.maxExpectedMissingScripts,
 });
 
 function readArgs(argv: string[]): ProbeArgs {
   const upstreamFlag = argv.indexOf("--upstream");
   const upstreamRoot = upstreamFlag >= 0 ? argv[upstreamFlag + 1] : ".upstream/ignis";
-  const positional = argv.filter((value, index) => (upstreamFlag < 0 || (index !== upstreamFlag && index !== upstreamFlag + 1)) && !value.startsWith("--"));
+  const minUpstreamScriptsFlag = argv.indexOf("--min-upstream-scripts");
+  const minUpstreamScripts = minUpstreamScriptsFlag >= 0 ? Number(argv[minUpstreamScriptsFlag + 1]) : undefined;
+  const minActionsFlag = argv.indexOf("--min-actions");
+  const minActions = minActionsFlag >= 0 ? Number(argv[minActionsFlag + 1]) : undefined;
+  const minActivateEffectsFlag = argv.indexOf("--min-activate-effects");
+  const minActivateEffects = minActivateEffectsFlag >= 0 ? Number(argv[minActivateEffectsFlag + 1]) : undefined;
+  const minInitialEffectsFlag = argv.indexOf("--min-initial-effects");
+  const minInitialEffects = minInitialEffectsFlag >= 0 ? Number(argv[minInitialEffectsFlag + 1]) : undefined;
+  const minRegisteredEffectsFlag = argv.indexOf("--min-registered-effects");
+  const minRegisteredEffects = minRegisteredEffectsFlag >= 0 ? Number(argv[minRegisteredEffectsFlag + 1]) : undefined;
+  const maxLocalOverridesFlag = argv.indexOf("--max-local-overrides");
+  const maxLocalOverrides = maxLocalOverridesFlag >= 0 ? Number(argv[maxLocalOverridesFlag + 1]) : undefined;
+  const maxLocalFallbacksFlag = argv.indexOf("--max-local-fallbacks");
+  const maxLocalFallbacks = maxLocalFallbacksFlag >= 0 ? Number(argv[maxLocalFallbacksFlag + 1]) : undefined;
+  const maxExpectedMissingScriptsFlag = argv.indexOf("--max-expected-missing-scripts");
+  const maxExpectedMissingScripts = maxExpectedMissingScriptsFlag >= 0 ? Number(argv[maxExpectedMissingScriptsFlag + 1]) : undefined;
+  const failOnErrors = argv.includes("--fail-on-errors");
+  const positional = argv.filter((value, index) => {
+    if (upstreamFlag >= 0 && (index === upstreamFlag || index === upstreamFlag + 1)) return false;
+    if (minUpstreamScriptsFlag >= 0 && (index === minUpstreamScriptsFlag || index === minUpstreamScriptsFlag + 1)) return false;
+    if (minActionsFlag >= 0 && (index === minActionsFlag || index === minActionsFlag + 1)) return false;
+    if (minActivateEffectsFlag >= 0 && (index === minActivateEffectsFlag || index === minActivateEffectsFlag + 1)) return false;
+    if (minInitialEffectsFlag >= 0 && (index === minInitialEffectsFlag || index === minInitialEffectsFlag + 1)) return false;
+    if (minRegisteredEffectsFlag >= 0 && (index === minRegisteredEffectsFlag || index === minRegisteredEffectsFlag + 1)) return false;
+    if (maxLocalOverridesFlag >= 0 && (index === maxLocalOverridesFlag || index === maxLocalOverridesFlag + 1)) return false;
+    if (maxLocalFallbacksFlag >= 0 && (index === maxLocalFallbacksFlag || index === maxLocalFallbacksFlag + 1)) return false;
+    if (maxExpectedMissingScriptsFlag >= 0 && (index === maxExpectedMissingScriptsFlag || index === maxExpectedMissingScriptsFlag + 1)) return false;
+    return !value.startsWith("--");
+  });
   const ydkPath = positional[0];
-  if (!ydkPath || !upstreamRoot) {
-    console.error("Usage: npm run probe:lua-deck -- <deck.ydk> [--upstream .upstream/ignis]");
+  const invalidMinimum = [minUpstreamScripts, minActions, minActivateEffects, minInitialEffects, minRegisteredEffects, maxLocalOverrides, maxLocalFallbacks, maxExpectedMissingScripts].some((value) => value !== undefined && (!Number.isInteger(value) || value < 0));
+  if (!ydkPath || !upstreamRoot || invalidMinimum) {
+    console.error("Usage: bun run probe:lua-deck -- <deck.ydk> [--upstream .upstream/ignis] [--fail-on-errors] [--min-upstream-scripts <count>] [--min-actions <count>] [--min-activate-effects <count>] [--min-initial-effects <count>] [--min-registered-effects <count>] [--max-local-overrides <count>] [--max-local-fallbacks <count>] [--max-expected-missing-scripts <count>]");
     process.exit(1);
   }
-  return { ydkPath: path.resolve(ydkPath), upstreamRoot: path.resolve(upstreamRoot) };
+  return { ydkPath: path.resolve(ydkPath), upstreamRoot: path.resolve(upstreamRoot), failOnErrors, minUpstreamScripts, minActions, minActivateEffects, minInitialEffects, minRegisteredEffects, maxLocalOverrides, maxLocalFallbacks, maxExpectedMissingScripts };
 }
 
 function mergeProbeCards(main: string[], extra: string[], databaseCards: DuelCardData[]): DuelCardData[] {
@@ -112,6 +159,15 @@ function printReport(report: {
   startupResult: { count: number; error?: string };
   registeredEffectCount: number;
   actions: DuelAction[];
+  failOnErrors: boolean;
+  minUpstreamScripts: number | undefined;
+  minActions: number | undefined;
+  minActivateEffects: number | undefined;
+  minInitialEffects: number | undefined;
+  minRegisteredEffects: number | undefined;
+  maxLocalOverrides: number | undefined;
+  maxLocalFallbacks: number | undefined;
+  maxExpectedMissingScripts: number | undefined;
 }): void {
   const found = report.scriptResults.filter((result) => result.foundAt);
   const upstreamFound = found.filter((result) => result.source !== "local-fallback" && result.source !== "local-override");
@@ -124,6 +180,7 @@ function printReport(report: {
   const initialFailures = report.initialEffectResults.filter((result) => !result.ok);
   const startupErrors = report.startupResult.error ? [report.startupResult.error] : [];
   const registeredInitialEffects = report.initialEffectResults.filter((result) => result.ok && !result.skipped).length;
+  const activateEffectActions = report.actions.filter((action) => action.type === "activateEffect").length;
 
   console.log(`Lua deck probe: ${path.basename(report.ydkPath)}`);
   console.log(`Upstream root: ${report.upstreamRoot}`);
@@ -159,6 +216,44 @@ function printReport(report: {
   console.log("");
   console.log(`Opening hand legal actions: ${report.actions.length}`);
   for (const action of report.actions) console.log(`  ${action.type}: ${action.label}`);
+
+  const failures: string[] = [];
+  if (report.failOnErrors) {
+    if (missing.length) failures.push(`${missing.length} scripts missing`);
+    if (localFallbackStubs.length) failures.push(`${localFallbackStubs.length} local fallback stubs`);
+    if (loadErrors.length) failures.push(`${loadErrors.length} script load errors`);
+    if (initialFailures.length) failures.push(`${initialFailures.length} initial_effect failures`);
+    if (startupErrors.length) failures.push(`${startupErrors.length} startup effect failures`);
+  }
+  if (report.minUpstreamScripts !== undefined && upstreamFound.length < report.minUpstreamScripts) {
+    failures.push(`Upstream scripts found ${upstreamFound.length} is below required ${report.minUpstreamScripts}`);
+  }
+  if (report.minActions !== undefined && report.actions.length < report.minActions) {
+    failures.push(`Opening hand legal actions ${report.actions.length} is below required ${report.minActions}`);
+  }
+  if (report.minActivateEffects !== undefined && activateEffectActions < report.minActivateEffects) {
+    failures.push(`Opening hand activateEffect actions ${activateEffectActions} is below required ${report.minActivateEffects}`);
+  }
+  if (report.minInitialEffects !== undefined && registeredInitialEffects < report.minInitialEffects) {
+    failures.push(`Registered initial_effect calls ${registeredInitialEffects} is below required ${report.minInitialEffects}`);
+  }
+  if (report.minRegisteredEffects !== undefined && report.registeredEffectCount < report.minRegisteredEffects) {
+    failures.push(`Registered Lua effects ${report.registeredEffectCount} is below required ${report.minRegisteredEffects}`);
+  }
+  if (report.maxLocalOverrides !== undefined && localOverrides.length > report.maxLocalOverrides) {
+    failures.push(`Local overrides ${localOverrides.length} is above allowed ${report.maxLocalOverrides}`);
+  }
+  if (report.maxLocalFallbacks !== undefined && localFallbacks.length > report.maxLocalFallbacks) {
+    failures.push(`Local fallback scripts ${localFallbacks.length} is above allowed ${report.maxLocalFallbacks}`);
+  }
+  if (report.maxExpectedMissingScripts !== undefined && expectedMissing.length > report.maxExpectedMissingScripts) {
+    failures.push(`Expected missing script count ${expectedMissing.length} is above allowed ${report.maxExpectedMissingScripts}`);
+  }
+  if (failures.length) {
+    console.error("");
+    console.error(`Lua deck probe failed:\n${failures.map((failure) => `- ${failure}`).join("\n")}`);
+    process.exit(1);
+  }
 }
 
 function runStartupProbe(host: ReturnType<typeof createLuaScriptHost>): { count: number; error?: string } {

@@ -8,6 +8,10 @@ export default mergeConfig(
     test: {
       globalSetup: ["./test/vitest-global-setup.ts"],
       setupFiles: ["./test/vitest-setup.ts"],
+      maxWorkers: 4,
+      minWorkers: 1,
+      teardownTimeout: 30_000,
+      testTimeout: 10_000,
     },
   }),
 );

@@ -82,7 +82,7 @@ function overLimit(file, limit) {
 
 function countLines(text) {
   if (text.length === 0) return 0;
-  return text.endsWith("\n") ? text.split("\n").length - 1 : text.split("\n").length;
+  return text.split("\n").filter((line) => line.trim().length > 0).length;
 }
 
 try {

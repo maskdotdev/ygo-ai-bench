@@ -28,6 +28,10 @@ function parseArgs(argv) {
     else if (arg === "--upstream") options.upstream = requireOptionValue(argv, ++index, arg);
     else if (arg === "--source") options.source = requireOptionValue(argv, ++index, arg);
     else if (arg === "--limit") options.limit = requireOptionValue(argv, ++index, arg);
+    else if (arg === "--min-used-apis") options.minUsedApis = requireOptionValue(argv, ++index, arg);
+    else if (arg === "--min-implemented-apis") options.minImplementedApis = requireOptionValue(argv, ++index, arg);
+    else if (arg === "--min-upstream-constants") options.minUpstreamConstants = requireOptionValue(argv, ++index, arg);
+    else if (arg === "--min-local-constants") options.minLocalConstants = requireOptionValue(argv, ++index, arg);
     else throw new Error(`Unknown argument: ${arg}`);
   }
   return options;
@@ -45,6 +49,8 @@ function buildApiArgs(options) {
     ...(options.scripts ? ["--scripts", options.scripts] : []),
     ...(options.source ? ["--source", options.source] : []),
     ...(options.limit ? ["--limit", options.limit] : []),
+    ...(options.minUsedApis ? ["--min-used-apis", options.minUsedApis] : []),
+    ...(options.minImplementedApis ? ["--min-implemented-apis", options.minImplementedApis] : []),
   ];
 }
 
@@ -53,6 +59,8 @@ function buildConstantArgs(options) {
     ...(options.failOnMissing ? ["--fail-on-missing"] : []),
     ...(options.upstream ? ["--upstream", options.upstream] : []),
     ...(options.source ? ["--source", options.source] : []),
+    ...(options.minUpstreamConstants ? ["--min-upstream-constants", options.minUpstreamConstants] : []),
+    ...(options.minLocalConstants ? ["--min-local-constants", options.minLocalConstants] : []),
   ];
 }
 
@@ -68,6 +76,14 @@ Options:
   --upstream <path>      Project Ignis constant.lua path for constants
   --source <path>        Local Lua host source directory for both scanners
   --limit <count>        Number of missing APIs to print
+  --min-used-apis <count>
+                         Fail unless upstream script usage has at least this many APIs
+  --min-implemented-apis <count>
+                         Fail unless local Lua source exposes at least this many APIs
+  --min-upstream-constants <count>
+                         Fail unless upstream constants have at least this many names
+  --min-local-constants <count>
+                         Fail unless local constants have at least this many names
   --fail-on-missing      Exit non-zero when missing APIs or constants are found
 `);
 }

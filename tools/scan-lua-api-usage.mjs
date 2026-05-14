@@ -32,7 +32,12 @@ function main(argv) {
   const usage = scanUsage(scriptRoot);
   const implemented = scanImplementedApis(sourceRoot);
   const rows = summarizeMissingApis(usage, implemented, options.limit);
+  const failures = apiCorpusFailures({ usage, implemented, options });
   printReport({ scriptRoot, sourceRoot, usage, implemented, rows });
+  if (failures.length > 0) {
+    console.error(failures.join("\n"));
+    return 1;
+  }
   return rows.length > 0 && options.failOnMissing ? 2 : 0;
 }
 
@@ -45,6 +50,8 @@ function parseArgs(argv) {
     else if (arg === "--scripts") options.scriptRoot = requireOptionValue(argv, ++index, arg);
     else if (arg === "--source") options.sourceRoot = requireOptionValue(argv, ++index, arg);
     else if (arg === "--limit") options.limit = Number(requireOptionValue(argv, ++index, arg));
+    else if (arg === "--min-used-apis") options.minUsedApis = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
+    else if (arg === "--min-implemented-apis") options.minImplementedApis = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
     else if (!options.scriptRoot) options.scriptRoot = arg;
     else throw new Error(`Unknown argument: ${arg}`);
   }
@@ -58,6 +65,12 @@ function requireOptionValue(argv, index, option) {
   return value;
 }
 
+function parseMinimum(value, option) {
+  const count = Number(value);
+  if (!Number.isInteger(count) || count < 0) throw new Error(`${option} must be a non-negative integer`);
+  return count;
+}
+
 function printHelp() {
   console.log(`Usage: node tools/scan-lua-api-usage.mjs [script-root] [options]
 
@@ -65,6 +78,10 @@ Options:
   --scripts <path>       Project Ignis CardScripts script directory. Default: ${defaultScriptRoot}
   --source <path>        Local Lua host source directory. Default: src/engine/lua
   --limit <count>        Number of missing APIs to print. Default: 40
+  --min-used-apis <count>
+                         Fail unless upstream script usage has at least this many APIs
+  --min-implemented-apis <count>
+                         Fail unless local Lua source exposes at least this many APIs
   --fail-on-missing      Exit 2 when missing APIs are found
 `);
 }
@@ -143,6 +160,15 @@ function printReport({ scriptRoot, sourceRoot, usage, implemented, rows }) {
   }
   console.log("Top missing APIs:");
   for (const row of rows) console.log(`${String(row.count).padStart(6, " ")}  ${row.table}.${row.name}`);
+}
+
+function apiCorpusFailures({ usage, implemented, options }) {
+  const usedTotal = apiTables.reduce((total, table) => total + usage[table].size, 0);
+  const implementedTotal = apiTables.reduce((total, table) => total + implemented[table].size, 0);
+  const failures = [];
+  if (options.minUsedApis !== undefined && usedTotal < options.minUsedApis) failures.push(`Used APIs ${usedTotal} is below required ${options.minUsedApis}`);
+  if (options.minImplementedApis !== undefined && implementedTotal < options.minImplementedApis) failures.push(`Implemented APIs ${implementedTotal} is below required ${options.minImplementedApis}`);
+  return failures;
 }
 
 function listFiles(root, extension) {

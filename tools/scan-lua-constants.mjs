@@ -33,6 +33,11 @@ function main(argv) {
   const local = scanLocalConstants(sourceRoot);
   const missing = [...upstream].filter((name) => !local.has(name)).sort((a, b) => a.localeCompare(b));
   printReport({ upstreamFiles, sourceRoot, upstream, local, missing });
+  const failures = constantCorpusFailures({ upstream, local, options });
+  if (failures.length > 0) {
+    console.error(failures.join("\n"));
+    return 1;
+  }
   return missing.length > 0 && options.failOnMissing ? 2 : 0;
 }
 
@@ -44,6 +49,8 @@ function parseArgs(argv) {
     else if (arg === "--fail-on-missing") options.failOnMissing = true;
     else if (arg === "--upstream") (options.upstreamConstants ??= []).push(requireOptionValue(argv, ++index, arg));
     else if (arg === "--source") options.sourceRoot = requireOptionValue(argv, ++index, arg);
+    else if (arg === "--min-upstream-constants") options.minUpstreamConstants = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
+    else if (arg === "--min-local-constants") options.minLocalConstants = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
     else if (!options.upstreamConstants?.length) options.upstreamConstants = [arg];
     else throw new Error(`Unknown argument: ${arg}`);
   }
@@ -56,6 +63,12 @@ function requireOptionValue(argv, index, option) {
   return value;
 }
 
+function parseMinimum(value, option) {
+  const count = Number(value);
+  if (!Number.isInteger(count) || count < 0) throw new Error(`${option} must be a non-negative integer`);
+  return count;
+}
+
 function printHelp() {
   console.log(`Usage: node tools/scan-lua-constants.mjs [constant.lua] [options]
 
@@ -63,6 +76,10 @@ Options:
   --upstream <path>      Project Ignis constants path. Can be repeated.
                          Default: ${defaultUpstreamConstants.join(", ")}
   --source <path>        Local Lua host source directory. Default: ${defaultSourceRoot}
+  --min-upstream-constants <count>
+                         Fail unless upstream constants have at least this many names
+  --min-local-constants <count>
+                         Fail unless local constants have at least this many names
   --fail-on-missing      Exit 2 when upstream constants are missing locally
 `);
 }
@@ -104,6 +121,13 @@ function printReport({ upstreamFiles, sourceRoot, upstream, local, missing }) {
   }
   console.log("Missing constants:");
   for (const name of missing) console.log(`  ${name}`);
+}
+
+function constantCorpusFailures({ upstream, local, options }) {
+  const failures = [];
+  if (options.minUpstreamConstants !== undefined && upstream.size < options.minUpstreamConstants) failures.push(`Upstream constants ${upstream.size} is below required ${options.minUpstreamConstants}`);
+  if (options.minLocalConstants !== undefined && local.size < options.minLocalConstants) failures.push(`Local constants ${local.size} is below required ${options.minLocalConstants}`);
+  return failures;
 }
 
 function listFiles(root, extension) {

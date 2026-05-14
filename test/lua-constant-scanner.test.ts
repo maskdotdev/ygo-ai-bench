@@ -117,6 +117,72 @@ describe("Lua constant scanner", () => {
     expect(output).toContain("No missing constants found.");
   });
 
+  it("fails combined Lua parity scans when API corpus floors are not met", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "lua-parity-scan-"));
+    const scripts = path.join(root, "script");
+    const source = path.join(root, "source");
+    const upstream = path.join(root, "constant.lua");
+    fs.mkdirSync(path.join(source, "duel-api"), { recursive: true });
+    fs.mkdirSync(scripts, { recursive: true });
+    fs.writeFileSync(path.join(scripts, "c100.lua"), "Duel.Draw(0,1,REASON_EFFECT)\n");
+    fs.writeFileSync(path.join(source, "duel-api", "deck.ts"), `lua.lua_setfield(L, -2, to_luastring("Draw"));\n`);
+    fs.writeFileSync(path.join(source, "basic-test-constant-data.ts"), "export const constants = { REASON_EFFECT: 0x40 };\n");
+    fs.writeFileSync(upstream, "REASON_EFFECT = 0x40\n");
+
+    const result = spawnSync(process.execPath, [
+      parityScannerPath,
+      "--scripts",
+      scripts,
+      "--upstream",
+      upstream,
+      "--source",
+      source,
+      "--min-used-apis",
+      "2",
+      "--min-implemented-apis",
+      "2",
+    ], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("used APIs: 1");
+    expect(result.stdout).toContain("implemented APIs found: 1");
+    expect(result.stderr).toContain("Used APIs 1 is below required 2");
+    expect(result.stderr).toContain("Implemented APIs 1 is below required 2");
+  });
+
+  it("fails combined Lua parity scans when constant corpus floors are not met", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "lua-parity-scan-"));
+    const scripts = path.join(root, "script");
+    const source = path.join(root, "source");
+    const upstream = path.join(root, "constant.lua");
+    fs.mkdirSync(path.join(source, "duel-api"), { recursive: true });
+    fs.mkdirSync(scripts, { recursive: true });
+    fs.writeFileSync(path.join(scripts, "c100.lua"), "Duel.Draw(0,1,REASON_EFFECT)\n");
+    fs.writeFileSync(path.join(source, "duel-api", "deck.ts"), `lua.lua_setfield(L, -2, to_luastring("Draw"));\n`);
+    fs.writeFileSync(path.join(source, "basic-test-constant-data.ts"), "export const constants = { REASON_EFFECT: 0x40 };\n");
+    fs.writeFileSync(upstream, "REASON_EFFECT = 0x40\n");
+
+    const result = spawnSync(process.execPath, [
+      parityScannerPath,
+      "--scripts",
+      scripts,
+      "--upstream",
+      upstream,
+      "--source",
+      source,
+      "--min-upstream-constants",
+      "2",
+      "--min-local-constants",
+      "2",
+    ], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("upstream constants: 1");
+    expect(result.stdout).toContain("local constants:    1");
+    expect(result.stderr).toContain("Upstream constants 1 is below required 2");
+    expect(result.stderr).toContain("Local constants 1 is below required 2");
+  });
+
   it("fails combined Lua parity scans when upstream scripts use missing APIs", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "lua-parity-scan-"));
     const scripts = path.join(root, "script");

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import { createDuel, getLegalActions, loadDecks, startDuel } from "#duel/core.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
@@ -35,10 +35,11 @@ describe.skipIf(!hasUpstreamScripts)("Dark Magical Blast Lua deck probe", () => 
     const actions = getLegalActions(session, 0);
 
     expect(loadResults.every((result) => result.ok), loadResults.find((result) => !result.ok)?.error).toBe(true);
-    expect(initialResults.filter((result) => result.ok && !result.skipped).length).toBeGreaterThanOrEqual(45);
+    expect(availableCodes).toHaveLength(35);
+    expect(initialResults.filter((result) => result.ok && !result.skipped)).toHaveLength(52);
     expect(initialResults.filter((result) => !result.ok)).toEqual([]);
-    expect(actions.length).toBeGreaterThanOrEqual(10);
-    expect(actions.filter((action) => action.type === "activateEffect").length).toBeLessThanOrEqual(5);
+    expect(actions).toHaveLength(13);
+    expect(actions.filter((action) => action.type === "activateEffect")).toHaveLength(1);
   });
 });
 
@@ -63,6 +64,182 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
     expect(output).toContain("NO SCRIPT c74677422.lua");
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("First failing API/helper: none detected");
+  }, deckProbeTimeoutMs);
+
+  it("fails strict probes when the legal-action surface is below the required minimum", () => {
+    const result = spawnSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "dark-magical-blast-master-duel-day1.ydk",
+        "--upstream",
+        ".upstream/ignis",
+        "--fail-on-errors",
+        "--min-actions",
+        "999",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("Opening hand legal actions:");
+    expect(result.stderr).toContain("Lua deck probe failed:");
+    expect(result.stderr).toContain("Opening hand legal actions");
+    expect(result.stderr).toContain("is below required 999");
+  }, deckProbeTimeoutMs);
+
+  it("fails strict probes when the upstream script surface is below the required minimum", () => {
+    const result = spawnSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "dark-magical-blast-master-duel-day1.ydk",
+        "--upstream",
+        ".upstream/ignis",
+        "--fail-on-errors",
+        "--min-upstream-scripts",
+        "999",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("Upstream scripts found:");
+    expect(result.stderr).toContain("Lua deck probe failed:");
+    expect(result.stderr).toContain("Upstream scripts found");
+    expect(result.stderr).toContain("is below required 999");
+  }, deckProbeTimeoutMs);
+
+  it("fails strict probes when the Lua activate-effect surface is below the required minimum", () => {
+    const result = spawnSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "dark-magical-blast-master-duel-day1.ydk",
+        "--upstream",
+        ".upstream/ignis",
+        "--fail-on-errors",
+        "--min-activate-effects",
+        "999",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("activateEffect:");
+    expect(result.stderr).toContain("Lua deck probe failed:");
+    expect(result.stderr).toContain("Opening hand activateEffect actions");
+    expect(result.stderr).toContain("is below required 999");
+  }, deckProbeTimeoutMs);
+
+  it("fails strict probes when the registered effect surface is below required minimums", () => {
+    const result = spawnSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "dark-magical-blast-master-duel-day1.ydk",
+        "--upstream",
+        ".upstream/ignis",
+        "--fail-on-errors",
+        "--min-initial-effects",
+        "999",
+        "--min-registered-effects",
+        "999",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("Registered initial_effect calls:");
+    expect(result.stdout).toContain("Registered Lua effects:");
+    expect(result.stderr).toContain("Lua deck probe failed:");
+    expect(result.stderr).toContain("Registered initial_effect calls");
+    expect(result.stderr).toContain("Registered Lua effects");
+    expect(result.stderr).toContain("is below required 999");
+  }, deckProbeTimeoutMs);
+
+  it("fails strict probes when expected missing script count grows above the allowed maximum", () => {
+    const result = spawnSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "dark-magical-blast-master-duel-day1.ydk",
+        "--upstream",
+        ".upstream/ignis",
+        "--fail-on-errors",
+        "--max-expected-missing-scripts",
+        "1",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("Scripts not expected: 2");
+    expect(result.stderr).toContain("Lua deck probe failed:");
+    expect(result.stderr).toContain("Expected missing script count 2 is above allowed 1");
+  }, deckProbeTimeoutMs);
+
+  it("fails strict probes when local fallback script count grows above the allowed maximum", () => {
+    const result = spawnSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "onomat-ryzeal-ycs-guatemala-2026.ydk",
+        "--upstream",
+        ".upstream/ignis",
+        "--fail-on-errors",
+        "--max-local-fallbacks",
+        "0",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("Local fallback scripts: 1");
+    expect(result.stderr).toContain("Lua deck probe failed:");
+    expect(result.stderr).toContain("Local fallback scripts 1 is above allowed 0");
+  }, deckProbeTimeoutMs);
+
+  it("accepts strict probes when scripts load and legal actions are present", () => {
+    const output = execFileSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "dark-magical-blast-master-duel-day1.ydk",
+        "--upstream",
+        ".upstream/ignis",
+        "--fail-on-errors",
+        "--min-upstream-scripts",
+        "1",
+        "--min-actions",
+        "1",
+        "--min-activate-effects",
+        "1",
+        "--min-initial-effects",
+        "1",
+        "--min-registered-effects",
+        "1",
+        "--max-local-overrides",
+        "0",
+        "--max-local-fallbacks",
+        "0",
+        "--max-expected-missing-scripts",
+        "2",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Script load errors: 0");
+    expect(output).toContain("Initial effect failures: 0");
+    expect(output).toContain("Opening hand legal actions:");
   }, deckProbeTimeoutMs);
 });
 
