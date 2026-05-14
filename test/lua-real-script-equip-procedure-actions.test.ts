@@ -370,6 +370,126 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expectLuaEquipStatProbe(restoredOneBackrow, targetCode, magePowerCode, "equip stat probe 83746708/1500/1500");
   });
 
+  it("restores Big Bang Shot equip stat, piercing, and leave-field banish cleanup", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const bigBangCode = "61127349";
+    const targetCode = "601029";
+    const battleTargetCode = "601030";
+    const responderCode = "601031";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === bigBangCode),
+      { code: targetCode, name: "Big Bang Shot Target", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1600, defense: 1000 },
+      { code: battleTargetCode, name: "Big Bang Shot Defense Target", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 900, defense: 1000 },
+      { code: responderCode, name: "Big Bang Shot Chain Responder", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 308, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [bigBangCode, targetCode] }, 1: { main: [battleTargetCode, responderCode] } });
+    startDuel(session);
+
+    const bigBang = session.state.cards.find((card) => card.code === bigBangCode);
+    const target = session.state.cards.find((card) => card.code === targetCode);
+    const battleTarget = session.state.cards.find((card) => card.code === battleTargetCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(bigBang).toBeDefined();
+    expect(target).toBeDefined();
+    expect(battleTarget).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, bigBang!.uid, "hand", 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, battleTarget!.uid, "monsterZone", 1).position = "faceUpDefense";
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, source);
+    expect(host.loadCardScript(Number(bigBangCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expectCleanRestore(restoredEquipWindow);
+    expect(getLuaRestoreLegalActions(restoredEquipWindow, 0)).toEqual(getDuelLegalActions(restoredEquipWindow.session, 0));
+    const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === bigBang!.uid);
+    expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
+
+    expect(restoredEquipWindow.session.state.chain[0]).toMatchObject({
+      sourceUid: bigBang!.uid,
+      targetUids: [target!.uid],
+      operationInfos: [{ category: 0x40000, targetUids: [bigBang!.uid], count: 1, player: 0, parameter: 0 }],
+    });
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
+    expectCleanRestore(restoredChain);
+    expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+    resolveRestoredChain(restoredChain);
+
+    expect(restoredChain.host.messages).not.toContain("equip responder resolved");
+    expect(restoredChain.session.state.cards.find((card) => card.uid === bigBang!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      equippedToUid: target!.uid,
+      faceUp: true,
+    });
+
+    const restoredEquipState = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
+    expectCleanRestore(restoredEquipState);
+    expect(restoredEquipState.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceUid: bigBang!.uid, event: "continuous", code: 100 }),
+        expect.objectContaining({ sourceUid: bigBang!.uid, event: "continuous", code: 203 }),
+      ]),
+    );
+    expectLuaEquipProbe(restoredEquipState, targetCode, bigBangCode, "equip probe 61127349/2000");
+
+    restoredEquipState.session.state.turnPlayer = 0;
+    restoredEquipState.session.state.phase = "battle";
+    restoredEquipState.session.state.waitingFor = 0;
+    const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredEquipState.session), source, reader);
+    expectCleanRestore(restoredBattle);
+    const attack = getLuaRestoreLegalActions(restoredBattle, 0).find(
+      (action) => action.type === "declareAttack" && action.attackerUid === target!.uid && action.targetUid === battleTarget!.uid,
+    );
+    expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredBattle, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredBattle, attack!);
+    passRestoredBattleResponsesUntilTrigger(restoredBattle);
+    expect(restoredBattle.session.state.battleDamage[1]).toBe(1000);
+    expect(restoredBattle.session.state.players[1].lifePoints).toBe(7000);
+    expect(restoredBattle.session.state.eventHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 1000 }),
+      ]),
+    );
+
+    destroyDuelCard(restoredBattle.session.state, bigBang!.uid, 0, duelReason.effect | duelReason.destroy, 0);
+    expect(restoredBattle.session.state.cards.find((card) => card.uid === bigBang!.uid)).toMatchObject({
+      location: "graveyard",
+      previousLocation: "spellTrapZone",
+      previousEquippedToUid: target!.uid,
+    });
+    expect(restoredBattle.session.state.pendingTriggers).toEqual([]);
+    expect(restoredBattle.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({
+      location: "banished",
+      previousLocation: "monsterZone",
+      faceUp: true,
+    });
+    expect(restoredBattle.session.state.eventHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ eventName: "leftField", eventCode: 1015, eventCardUid: bigBang!.uid }),
+        expect.objectContaining({ eventName: "banished", eventCode: 1011, eventCardUid: target!.uid }),
+      ]),
+    );
+
+    const restoredCleanup = restoreDuelWithLuaScripts(serializeDuel(restoredBattle.session), source, reader);
+    expectCleanRestore(restoredCleanup);
+    expect(restoredCleanup.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "banished", faceUp: true });
+  });
+
   it("restores Battle Archfiend Shield equip procedure setcode target filtering", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const shieldCode = "8730435";
