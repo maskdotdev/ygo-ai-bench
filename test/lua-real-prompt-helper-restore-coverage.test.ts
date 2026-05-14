@@ -6,7 +6,7 @@ const root = process.cwd();
 
 describe("Lua real prompt helper restore coverage", () => {
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(8);
+    expect(representativePromptHelperFixtures()).toHaveLength(9);
   });
 
   it("requires representative prompt helper fixtures to assert clean Lua restore", () => {
@@ -103,6 +103,17 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
         "summonMaterialUids).toEqual([handMaterial!.uid, faceupNormal!.uid, deckNormalMaterial!.uid])",
         "reason: duelReason.effect | duelReason.material | duelReason.ritual",
         'expect(restored.host.messages).not.toContain("magikey maftea responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-springans-ship-select-field-zone.test.ts",
+      required: [
+        "restores Exblowrer's selected opponent field zone chain label",
+        'api: "SelectFieldZone"',
+        "returned: 1 << 16",
+        'location: "monsterZone"',
+        "overlayUids: [material.uid]",
+        'expect(restored.host.messages).not.toContain("springans ship responder resolved")',
       ],
     },
     {
