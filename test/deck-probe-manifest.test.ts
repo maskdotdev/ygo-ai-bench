@@ -12,8 +12,20 @@ describe("Lua deck probe manifest", () => {
     const topTierDecks = deckNames.filter((name) => (pkg.scripts?.["probe:top-tier-deck"] ?? "").includes(name));
     const competitiveDecks = deckNames.filter((name) => (pkg.scripts?.["probe:competitive-decks"] ?? "").includes(name));
     const fallbackDecks = deckNames.filter((name) => (pkg.scripts?.["probe:fallback-decks"] ?? "").includes(name));
+    const packageProbeCommands = [
+      ...(pkg.scripts?.["probe:top-tier-deck"] ?? "").split(" && "),
+      ...(pkg.scripts?.["probe:competitive-decks"] ?? "").split(" && "),
+      ...(pkg.scripts?.["probe:fallback-decks"] ?? "").split(" && "),
+    ];
     const packageProbeDecks = [...topTierDecks, ...competitiveDecks, ...fallbackDecks].sort();
     const duplicated = packageProbeDecks.filter((name, index) => packageProbeDecks.indexOf(name) !== index);
+    const looseProbeCommands = packageProbeCommands.filter(
+      (command) =>
+        !command.includes("--fail-on-errors") ||
+        !command.includes("--max-local-overrides 0") ||
+        !/--max-local-fallbacks \d+/.test(command) ||
+        !/--max-expected-missing-scripts \d+/.test(command),
+    );
 
     const uncovered = deckNames.filter((name) => !packageProbeDecks.includes(name));
 
@@ -44,6 +56,7 @@ describe("Lua deck probe manifest", () => {
       "solfachord-2026.ydk",
     ]);
     expect(duplicated).toEqual([]);
+    expect(looseProbeCommands).toEqual([]);
     expect(uncovered).toEqual([]);
   });
 });
