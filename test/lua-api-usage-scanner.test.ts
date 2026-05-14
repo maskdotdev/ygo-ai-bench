@@ -5,8 +5,42 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 const scannerPath = path.resolve("tools/scan-lua-api-usage.mjs");
+const expectedFallbackScripts = [
+  "c100452013.lua",
+  "c100452015.lua",
+  "c101303089.lua",
+  "c2372506.lua",
+  "c24088928.lua",
+  "c24461358.lua",
+  "c24749710.lua",
+  "c33599853.lua",
+  "c44001993.lua",
+  "c50073633.lua",
+  "c70405001.lua",
+  "c97462632.lua",
+  "c98684220.lua",
+];
 
 describe("Lua API usage scanner", () => {
+  it("keeps the local fallback inventory explicit", () => {
+    const fallbackNames = fallbackScripts().map((file) => path.basename(file)).sort();
+
+    expect(fallbackNames).toEqual(expectedFallbackScripts);
+  });
+
+  it("keeps local fallbacks from duplicating exact upstream scripts", () => {
+    const duplicated = fallbackScripts().filter((file) => {
+      const name = path.basename(file);
+      return [
+        path.join(".upstream/ignis/script/official", name),
+        path.join(".upstream/ignis/script", name),
+        path.join(".upstream/ignis/script/pre-release", name),
+      ].some((candidate) => fs.existsSync(candidate));
+    });
+
+    expect(duplicated).toEqual([]);
+  });
+
   it("rejects local fallback stub scripts", () => {
     const stubs = fallbackScripts().filter((file) => fs.readFileSync(file, "utf8").includes("local-fallback-stub"));
 
