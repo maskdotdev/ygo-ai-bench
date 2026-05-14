@@ -490,6 +490,92 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(restoredCleanup.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "banished", faceUp: true });
   });
 
+  it("restores Megamorph LP-conditional set-attack equip callbacks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const megamorphCode = "22046459";
+    const targetCode = "601032";
+    const responderCode = "601033";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === megamorphCode),
+      { code: targetCode, name: "Megamorph Target", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: responderCode, name: "Megamorph Chain Responder", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 309, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [megamorphCode, targetCode] }, 1: { main: [responderCode] } });
+    startDuel(session);
+
+    const megamorph = session.state.cards.find((card) => card.code === megamorphCode);
+    const target = session.state.cards.find((card) => card.code === targetCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(megamorph).toBeDefined();
+    expect(target).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, megamorph!.uid, "hand", 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, source);
+    expect(host.loadCardScript(Number(megamorphCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expectCleanRestore(restoredEquipWindow);
+    expect(getLuaRestoreLegalActionGroups(restoredEquipWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredEquipWindow.session, 0));
+    expect(getLuaRestoreLegalActions(restoredEquipWindow, 0)).toEqual(getDuelLegalActions(restoredEquipWindow.session, 0));
+    const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === megamorph!.uid);
+    expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
+
+    expect(restoredEquipWindow.session.state.chain[0]).toMatchObject({
+      sourceUid: megamorph!.uid,
+      targetUids: [target!.uid],
+      operationInfos: [{ category: 0x40000, targetUids: [megamorph!.uid], count: 1, player: 0, parameter: 0 }],
+    });
+
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
+    expectCleanRestore(restoredChain);
+    expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+    resolveRestoredChain(restoredChain);
+
+    expect(restoredChain.host.messages).not.toContain("equip responder resolved");
+    expect(restoredChain.session.state.cards.find((card) => card.uid === megamorph!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      equippedToUid: target!.uid,
+      faceUp: true,
+    });
+
+    const restoredEqualLp = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
+    expectCleanRestore(restoredEqualLp);
+    expect(restoredEqualLp.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceUid: megamorph!.uid, event: "continuous", code: 101 }),
+      ]),
+    );
+    expectLuaEquipStatProbe(restoredEqualLp, targetCode, megamorphCode, "equip stat probe 22046459/1000/1000");
+
+    restoredEqualLp.session.state.players[0].lifePoints = 6000;
+    restoredEqualLp.session.state.players[1].lifePoints = 8000;
+    const restoredLowerLp = restoreDuelWithLuaScripts(serializeDuel(restoredEqualLp.session), source, reader);
+    expectCleanRestore(restoredLowerLp);
+    expectLuaEquipStatProbe(restoredLowerLp, targetCode, megamorphCode, "equip stat probe 22046459/2000/1000");
+
+    restoredLowerLp.session.state.players[0].lifePoints = 9000;
+    restoredLowerLp.session.state.players[1].lifePoints = 8000;
+    const restoredHigherLp = restoreDuelWithLuaScripts(serializeDuel(restoredLowerLp.session), source, reader);
+    expectCleanRestore(restoredHigherLp);
+    expectLuaEquipStatProbe(restoredHigherLp, targetCode, megamorphCode, "equip stat probe 22046459/500/1000");
+  });
+
   it("restores Battle Archfiend Shield equip procedure setcode target filtering", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const shieldCode = "8730435";
