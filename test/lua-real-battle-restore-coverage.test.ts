@@ -5,13 +5,13 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const battleKeywords = ["battle", "attack", "damage"];
-const realScriptBattleFixtureCount = 115;
+const realScriptBattleFixtureCount = 116;
 const battleLegalActionFixtureCount = 4;
 const attackDeclarationTrapFixtureCount = 6;
 const battleRoutingFixtureCount = 5;
 const damageStepRestoreFixtureCount = 3;
 const battleDamageSemanticFixtureCount = 6;
-const battleTriggerSemanticFixtureCount = 6;
+const battleTriggerSemanticFixtureCount = 7;
 
 describe("Lua real battle restore coverage", () => {
   it("requires real-script battle fixtures to assert Lua-aware complete restore with diagnostics", () => {
@@ -371,6 +371,18 @@ function realScriptBattleTriggerSemanticFixtureFiles(): Array<{ file: string; re
         'eventName: "damageDealt"',
         "eventValue: 1200",
         "players[1].lifePoints).toBe(5000)",
+      ],
+    },
+    {
+      file: "lua-real-script-reflect-bounder-battle-confirm-destroy.test.ts",
+      required: [
+        'battleWindow?.kind).toBe("startDamageStep")',
+        'eventName: "battleConfirmed"',
+        'eventName: "damageDealt"',
+        "eventValue: 1700",
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "destroyed"',
+        'location: "graveyard"',
       ],
     },
     {

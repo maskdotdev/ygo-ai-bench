@@ -86,6 +86,17 @@ function battleTimingFixtureFiles(): Array<{ file: string; required: string[] }>
       ],
     },
     {
+      file: "test/lua-real-script-reflect-bounder-battle-confirm-destroy.test.ts",
+      required: [
+        'battleWindow?.kind).toBe("startDamageStep")',
+        'eventName: "battleConfirmed"',
+        "eventCode: 1133",
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "afterDamageCalculation"',
+        "eventCode: 1138",
+      ],
+    },
+    {
       file: "test/lua-real-script-topologic-bomber-battled-damage.test.ts",
       required: [
         'battleWindow?.kind).toBe("afterDamageCalculation")',
