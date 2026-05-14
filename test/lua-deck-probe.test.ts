@@ -218,7 +218,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
       [
         "--experimental-transform-types",
         "tools/probe-lua-deck.ts",
-        "onomat-ryzeal-ycs-guatemala-2026.ydk",
+        "phantom-knights-mar-2026-v4.ydk",
         "--upstream",
         ".upstream/ignis",
         "--fail-on-errors",
@@ -301,8 +301,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
   }, deckProbeTimeoutMs);
 });
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Onomat Ryzeal Lua deck probe with local fallbacks", () => {
-  it("uses the local Bagooska alias fallback instead of reporting a missing script", () => {
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Onomat Ryzeal Lua deck probe", () => {
+  it("uses the CDB Bagooska alias instead of local fallback coverage", () => {
     const output = execFileSync(
       "node",
       [
@@ -316,8 +316,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Onomat Ryzeal Lua 
     );
 
     expect(output).toContain("Metadata source: cards.cdb");
-    expect(output).toContain("Local fallback scripts: 1");
-    expect(output).toContain("FALLBACK c90590304.lua");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("OK c90590304.lua -> script/official/c90590303.lua");
     expect(output).toContain("Local fallback stubs: 0");
     expect(output).toContain("Scripts missing: 0");
     expect(output).toContain("Script load errors: 0");
@@ -377,7 +377,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Ritual of Light an
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Branded Dracotail Lua deck probe", () => {
-  it("uses local alternate-art fallbacks without helper failures", () => {
+  it("uses CDB alternate-art aliases without helper failures", () => {
     const output = execFileSync(
       "node",
       [
@@ -391,8 +391,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Branded Dracotail 
     );
 
     expect(output).toContain("Metadata source: cards.cdb");
-    expect(output).toContain("Local fallback scripts: 1");
-    expect(output).toContain("FALLBACK c14558128.lua");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("OK c14558128.lua -> script/official/c14558127.lua");
     expect(output).toContain("Local fallback stubs: 0");
     expect(output).toContain("Scripts missing: 0");
     expect(output).toContain("Script load errors: 0");
@@ -566,7 +566,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Exosister Lua deck
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Solfachord Lua deck probe", () => {
-  it("uses alternate-art fallbacks for non-Magician Pendulum coverage", () => {
+  it("uses CDB alternate-art aliases for non-Magician Pendulum coverage", () => {
     const output = execFileSync(
       "node",
       ["--experimental-transform-types", "tools/probe-lua-deck.ts", "solfachord-2026.ydk", "--upstream", ".upstream/ignis"],
@@ -574,9 +574,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Solfachord Lua dec
     );
 
     expect(output).toContain("Metadata source: cards.cdb");
-    expect(output).toContain("Local fallback scripts: 2");
-    expect(output).toContain("FALLBACK c14558128.lua");
-    expect(output).toContain("FALLBACK c65741787.lua");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("OK c14558128.lua -> script/official/c14558127.lua");
+    expect(output).toContain("OK c65741787.lua -> script/official/c65741786.lua");
     expect(output).toContain("Local fallback stubs: 0");
     expect(output).toContain("Scripts missing: 0");
     expect(output).toContain("Script load errors: 0");
@@ -635,8 +635,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Mikanko Lua deck p
     );
 
     expect(output).toContain("Metadata source: cards.cdb");
-    expect(output).toContain("Local fallback scripts: 1");
-    expect(output).toContain("FALLBACK c18144507.lua");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("OK c18144507.lua -> script/official/c18144506.lua");
     expect(output).toContain("Local fallback stubs: 0");
     expect(output).toContain("Scripts missing: 0");
     expect(output).toContain("Script load errors: 0");
@@ -665,7 +665,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Rikka Sunavalon Lu
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Ancient Gear Lua deck probe", () => {
-  it("loads legacy Fusion/procedure scripts with alternate-art fallbacks", () => {
+  it("loads legacy Fusion/procedure scripts with CDB alternate-art aliases", () => {
     const output = execFileSync(
       "node",
       [
@@ -679,8 +679,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Ancient Gear Lua d
     );
 
     expect(output).toContain("Metadata source: cards.cdb");
-    expect(output).toContain("Local fallback scripts: 1");
-    expect(output).toContain("FALLBACK c18144507.lua");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("OK c18144507.lua -> script/official/c18144506.lua");
     expect(output).toContain("Local fallback stubs: 0");
     expect(output).toContain("Scripts missing: 0");
     expect(output).toContain("Script load errors: 0");

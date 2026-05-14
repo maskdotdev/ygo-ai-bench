@@ -93,7 +93,16 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
     loadCardScript(cardCode, source) {
       const name = scriptFilenameForCard(cardCode);
       const code = source.readScript(name);
-      if (code === undefined) return { ok: false, name, error: `Script ${name} was not found` };
+      if (code === undefined) {
+        const alias = session.state.cards.find((card) => card.code === String(cardCode))?.data.alias;
+        if (!alias) return { ok: false, name, error: `Script ${name} was not found` };
+        const aliasName = scriptFilenameForCard(alias);
+        const aliasCode = source.readScript(aliasName);
+        if (aliasCode === undefined) return { ok: false, name, error: `Script ${name} was not found` };
+        const result = runLuaCardScript(L, hostState, `Duel.LoadCardScriptAlias(${alias})`, name);
+        if (result.ok) hostState.loadedScriptBodies.set(name, aliasCode);
+        return result;
+      }
       hostState.loadedScriptBodies.set(name, code);
       return runLuaCardScript(L, hostState, code, name);
     },

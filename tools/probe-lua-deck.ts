@@ -40,8 +40,8 @@ startDuel(session);
 const host = createLuaScriptHost(session, upstream);
 const scriptResults = deckCodes.map((code) => {
   const name = `c${code}.lua`;
-  const found = findScript(upstream, name);
   const card = cards.find((candidate) => candidate.code === code);
+  const found = findScript(upstream, name, card);
   const expectedMissing = !found && isScriptlessNormalMonster(card);
   const load = found ? host.loadCardScript(code, upstream) : { ok: true };
   return { code, name, foundAt: found?.path, source: found?.source, isStub: found?.isStub ?? false, expectedMissing, load };
@@ -156,17 +156,32 @@ function createPlaceholderCard(code: string, extraCodes: Set<string>): DuelCardD
   };
 }
 
-function findScript(upstream: ReturnType<typeof createUpstreamNodeWorkspace>, name: string): { path: string; source: string; isStub: boolean } | undefined {
+function findScript(upstream: ReturnType<typeof createUpstreamNodeWorkspace>, name: string, card: DuelCardData | undefined): { path: string; source: string; isStub: boolean } | undefined {
+  const exactFallbacks: ReturnType<typeof scriptMatch>[] = [];
   for (const candidate of upstream.scriptCandidates(name)) {
     if (fs.existsSync(candidate.path)) {
-      return {
-        path: candidate.path,
-        source: candidate.source,
-        isStub: candidate.source === "local-fallback" && fs.readFileSync(candidate.path, "utf8").includes("local-fallback-stub"),
-      };
+      const match = scriptMatch(candidate);
+      if (candidate.source !== "local-fallback") return match;
+      exactFallbacks.push(match);
     }
   }
+  if (card?.alias) {
+    const aliasName = `c${card.alias}.lua`;
+    for (const candidate of upstream.scriptCandidates(aliasName)) {
+      if (candidate.source === "local-fallback") continue;
+      if (fs.existsSync(candidate.path)) return scriptMatch(candidate);
+    }
+  }
+  if (exactFallbacks.length) return exactFallbacks[0];
   return undefined;
+}
+
+function scriptMatch(candidate: ReturnType<ReturnType<typeof createUpstreamNodeWorkspace>["scriptCandidates"]>[number]): { path: string; source: string; isStub: boolean } {
+  return {
+    path: candidate.path,
+    source: candidate.source,
+    isStub: candidate.source === "local-fallback" && fs.readFileSync(candidate.path, "utf8").includes("local-fallback-stub"),
+  };
 }
 
 function printReport(report: {
