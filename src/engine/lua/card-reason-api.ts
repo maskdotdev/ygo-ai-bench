@@ -35,9 +35,12 @@ export function installCardReasonApi(L: unknown, session: DuelSession, hostState
   });
   lua.lua_setfield(L, -2, to_luastring("GetReasonCard"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    const target = readCard(state, session, 1);
-    const reasonCard = readCard(state, session, 2);
-    lua.lua_pushboolean(state, Boolean(reasonCard && reasonCardUidForCard(target, hostState) === reasonCard.uid));
+    const first = readCard(state, session, 1);
+    const second = readCard(state, session, 2);
+    lua.lua_pushboolean(
+      state,
+      Boolean(first && second && (reasonCardUidForCard(second, hostState) === first.uid || reasonCardUidForCard(first, hostState) === second.uid)),
+    );
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsReasonCard"));

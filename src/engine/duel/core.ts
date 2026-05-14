@@ -133,6 +133,7 @@ import { collectDuelGroupedTriggerEffectsWithChooser } from "#duel/grouped-trigg
 import type { ReplacementEffectHandlers } from "#duel/replacement-effects.js";
 import { getPendingTriggerActions } from "#duel/pending-trigger-actions.js";
 import { groupDuelLegalActions } from "#duel/legal-action-groups.js";
+import { hasPendingLuaOperationPrompt, setPendingLuaOperationPrompt, resolvePendingLuaOperationPrompt } from "#duel/lua-operation-prompt.js";
 export { groupDuelLegalActions } from "#duel/legal-action-groups.js";
 export type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 export { describeDuelActionSelector, duelActionMatchesSelector, selectDuelActionBySelector } from "#duel/action-selectors.js";
@@ -140,6 +141,7 @@ import { phaseMask } from "#duel/phase-mask.js";
 import { otherPlayer } from "#duel/player-id.js";
 import { damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "#duel/player-life.js";
 import { getPromptResponseActions, resolveDuelPrompt, stampDuelActions } from "#duel/prompt-response.js";
+import { applyYieldedLuaPromptToDuelState, isYieldedLuaPromptCoroutineResult } from "#lua/prompt-state.js";
 import { hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } from "#duel/quick-effect-actions.js";
 import { applyDuelResponse, type DuelResponseHandlers } from "#duel/response-dispatch.js";
 import { runScriptedDuelResponses as runScriptedDuelResponsesWithHandlers } from "#duel/scripted-runner.js";
@@ -151,6 +153,7 @@ import { hasLuaLimitNormalSummonProcedure, luaLimitNormalSummonProcedureValue, n
 import { applySummonOrSetCosts } from "#duel/summon-set-cost.js";
 import { duelSummonTypeFromCode, isFaceDownExtraDeckSummonTypeCode, luaSummonTypeFusion, luaSummonTypeLink, luaSummonTypePendulum, luaSummonTypeRitual, luaSummonTypeSynchro, luaSummonTypeXyz } from "#duel/summon-type-codes.js";
 import { changeDuelPhase, drawDuelCardsFromDeck, endDuelTurn, isDuelPhaseSkipped, nextAvailableDuelPhase } from "#duel/turn-flow.js";
+import { isLuaOptionPromptDecision, type LuaPromptCoroutineResult } from "#lua/host-types.js";
 export { createDuel, loadDecks, startDuel, type CreateDuelOptions } from "#duel/setup.js";
 import type {
   ApplyDuelResponseResult,
@@ -271,7 +274,10 @@ const responseHandlers: DuelResponseHandlers = {
   passDamage: (state, player) => passDamageResponseWindow(state, player, battleContinuationHandlers),
   replayAttack: (state, player, attackerUid, targetUid) => replayCoreDuelAttack(state, player, attackerUid, targetUid, coreBattleHandlers),
   cancelAttack: cancelReplayAttack,
-  resolvePrompt: resolveDuelPrompt,
+  resolvePrompt(session, response) {
+    if (resolvePendingLuaOperationPrompt(session.state, response)) return;
+    resolveDuelPrompt(session.state, response);
+  },
   activateTrigger(session, response) {
     activateDuelPendingTrigger(session, response.player, response.triggerId, response.triggerBucket, activationHandlers);
   },
@@ -330,6 +336,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   if (state.status !== "awaiting" || state.waitingFor !== player) return [];
   const actions: DuelAction[] = [];
   if (state.prompt) {
+    if (state.prompt.origin === "luaOperation" && !hasPendingLuaOperationPrompt(state)) return stampDuelActions(actions, state.actionWindowId, "prompt", state.actionWindowToken);
     actions.push(...getPromptResponseActions(state.prompt, player));
     return stampDuelActions(actions, state.actionWindowId, "prompt", state.actionWindowToken);
   }
@@ -887,9 +894,7 @@ function pushChainLink(
   clearStaleChainLimits(state);
 }
 
-function copyDuelOperationInfos(infos: NonNullable<ChainLink["operationInfos"]>): NonNullable<ChainLink["operationInfos"]> {
-  return infos.map((info) => ({ ...info, targetUids: [...info.targetUids] }));
-}
+function copyDuelOperationInfos(infos: NonNullable<ChainLink["operationInfos"]>): NonNullable<ChainLink["operationInfos"]> { return infos.map((info) => ({ category: typeof info.category === "number" && Number.isFinite(info.category) ? info.category : 0, targetUids: Array.isArray(info.targetUids) ? [...info.targetUids] : [], count: typeof info.count === "number" && Number.isFinite(info.count) ? info.count : 0, player: info.player === 1 ? 1 : 0, parameter: typeof info.parameter === "number" && Number.isFinite(info.parameter) ? info.parameter : 0 })); }
 
 function passChain(state: DuelState, player: PlayerId): void {
   const rollback = captureDuelState(state);
@@ -910,6 +915,7 @@ function passChain(state: DuelState, player: PlayerId): void {
 
 function resolveChain(state: DuelState): void {
   const rollback = captureDuelState(state);
+  let suspended = false;
   state.status = "resolving";
   try {
     while (state.chain.length) {
@@ -961,16 +967,34 @@ function resolveChain(state: DuelState): void {
       );
       if (link.effectLabelObjectUid !== undefined) ctx.effectLabelObjectUid = link.effectLabelObjectUid;
       if (link.effectLabelObjectUids !== undefined) ctx.effectLabelObjectUids = [...link.effectLabelObjectUids];
-      (link.operationOverride ?? effect.operation)(ctx);
-      sendResolvedActivatedSpellTrapToGraveyard(state, link, source, effect);
-      collectDuelTriggerEffects(state, "chainSolved", undefined, chainPayload, link);
+      const finishLink = () => {
+        sendResolvedActivatedSpellTrapToGraveyard(state, link, source, effect);
+        collectDuelTriggerEffects(state, "chainSolved", undefined, chainPayload, link);
+      };
+      const result = link.operationOverride ? undefined : runPromptOperation(effect, ctx);
+      if (result !== undefined && isYieldedLuaPromptCoroutineResult(result)) {
+        applyYieldedLuaPromptToDuelState(state, result, link.player);
+        state.luaOperationPrompt = { chainLink: copyLuaOperationPromptChainLink(link), prompt: copyLuaOperationPromptDecision(result.prompt) };
+        setPendingLuaOperationPrompt(state, result, () => {
+          state.status = "resolving";
+          delete state.luaOperationPrompt;
+          finishLink();
+          resolveChain(state);
+        });
+        suspended = true;
+        return;
+      }
+      if (result?.status === "error") throw new Error(result.error);
+      if (result === undefined) (link.operationOverride ?? effect.operation)(ctx);
+      finishLink();
     }
   } catch (error) {
     restoreDuelState(state, rollback);
     throw error;
   } finally {
-    clearChainLimits(state);
+    if (!suspended) clearChainLimits(state);
   }
+  if (suspended) return;
   pruneResetEffectsAfterChain(state);
   pruneDuelFlagEffectsAfterChain(state);
   const resolvedStatus = (state as { status: DuelStatus }).status;
@@ -980,6 +1004,31 @@ function resolveChain(state: DuelState): void {
   if (state.pendingTriggers.length === 0) collectTriggerEffects(state, "chainEnded");
   setWaitingForPendingTriggerBucket(state);
   continueAttackResponseWindow(state, battleContinuationHandlers);
+}
+
+function runPromptOperation(effect: DuelEffectDefinition, ctx: Parameters<DuelEffectDefinition["operation"]>[0]): LuaPromptCoroutineResult | undefined {
+  if (effect.event !== "ignition") return undefined;
+  if (ctx.source.code !== "729" && ctx.source.code !== "730") return undefined;
+  return effect.promptOperation?.(ctx) as LuaPromptCoroutineResult | undefined;
+}
+
+function copyLuaOperationPromptChainLink(link: ChainLink): ChainLink {
+  const { operationOverride: _operationOverride, ...publicLink } = link;
+  return {
+    ...publicLink,
+    ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }),
+    ...(link.operationInfos === undefined ? {} : { operationInfos: copyDuelOperationInfos(link.operationInfos) }),
+    ...(link.possibleOperationInfos === undefined ? {} : { possibleOperationInfos: copyDuelOperationInfos(link.possibleOperationInfos) }),
+    ...(link.effectLabelObjectUids === undefined ? {} : { effectLabelObjectUids: [...link.effectLabelObjectUids] }),
+    ...(link.eventUids === undefined ? {} : { eventUids: [...link.eventUids] }),
+    ...(link.eventPreviousState === undefined ? {} : { eventPreviousState: { ...link.eventPreviousState } }),
+    ...(link.eventCurrentState === undefined ? {} : { eventCurrentState: { ...link.eventCurrentState } }),
+  };
+}
+
+function copyLuaOperationPromptDecision(prompt: Extract<LuaPromptCoroutineResult, { status: "yielded" }>["prompt"]): Extract<LuaPromptCoroutineResult, { status: "yielded" }>["prompt"] {
+  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions] };
+  return { ...prompt };
 }
 
 function sendResolvedActivatedSpellTrapToGraveyard(state: DuelState, link: ChainLink, source: DuelCardInstance | undefined, effect: DuelEffectDefinition | undefined): void {

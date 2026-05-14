@@ -22,6 +22,7 @@ export function assertSnapshotDeferredBattleDestroyed(records: unknown, path: st
     const record = records[index];
     const recordPath = `${path}.${index}`;
     if (!isRecord(record)) throw new Error(`Malformed duel snapshot: ${recordPath} must be an object`);
+    for (const key of Object.keys(record)) if (!deferredBattleDestroyedKeys.has(key)) throw new Error(`Malformed duel snapshot: ${recordPath}.${key} is not a known field`);
     if (typeof record.uid !== "string") throw new Error(`Malformed duel snapshot: ${recordPath}.uid must be a string`);
     if (typeof record.reasonCardUid !== "string") throw new Error(`Malformed duel snapshot: ${recordPath}.reasonCardUid must be a string`);
     if (!cardUids.has(record.uid)) throw new Error(`Malformed duel snapshot: ${recordPath}.uid must reference a card`);
@@ -29,6 +30,8 @@ export function assertSnapshotDeferredBattleDestroyed(records: unknown, path: st
     assertSnapshotPlayerId(record.reasonPlayer, `${recordPath}.reasonPlayer`);
   }
 }
+
+const deferredBattleDestroyedKeys = new Set(["reasonCardUid", "reasonPlayer", "uid"]);
 
 function assertSnapshotPlayerId(value: unknown, path: string): asserts value is PlayerId {
   if (value !== 0 && value !== 1) throw new Error(`Malformed duel snapshot: ${path} must be a player id`);

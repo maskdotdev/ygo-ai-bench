@@ -16,6 +16,14 @@ export function hasAdditionalNormalSummonCountAvailable(state: DuelState, player
   return state.activityCounts[player].normalSummon < playerNormalSummonCountLimit(state, player);
 }
 
+export function hasActiveExtraNormalSummonCountEffect(state: DuelState, player: PlayerId): boolean {
+  return state.effects.some((effect) => {
+    if (effect.event !== "continuous" || effect.code !== effectExtraSummonCount || effect.controller !== player) return false;
+    const source = findCard(state, effect.sourceUid);
+    return Boolean(source && effect.range.includes(source.location));
+  });
+}
+
 function normalSummonCountLimit(state: DuelState, player: PlayerId, card: DuelCardInstance): number {
   return Math.max(playerNormalSummonCountLimit(state, player), 1 + extraNormalSummonCount(state, player, card));
 }

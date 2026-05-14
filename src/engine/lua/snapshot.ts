@@ -4,6 +4,7 @@ import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
 import { applyResponse, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
+import { duelLocations } from "#duel/location-kinds.js";
 import { duelReason } from "#duel/reasons.js";
 import { effectiveSpecialSummonTypeCode, isSummonTypeMaskMatch, luaSummonTypeRitual, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
@@ -12,8 +13,12 @@ import { bookOfEclipsePhaseEndCanActivate, bookOfEclipsePhaseEndOperation, isKno
 import { isKnownUnleashYourPowerDelayedSetEffect, isKnownYellowAlertDelayedReturnEffect, unleashYourPowerDelayedSetOperation, yellowAlertDelayedReturnOperation } from "#lua/snapshot-delayed-operations.js";
 import { isKnownSwordsOfRevealingLightPhaseEndEffect, isKnownSwordsOfRevealingLightResetEffect, swordsOfRevealingLightPhaseEndCanActivate, swordsOfRevealingLightPhaseEndOperation, swordsOfRevealingLightRestoredReset } from "#lua/snapshot-swords-of-revealing-light.js";
 import { isKnownPlayerDamageZeroEffect, isKnownTemporaryActivationLockEffect, isKnownTemporaryArtifactLanceaBanishLockEffect, isKnownTemporaryBattleProtectionEffect, isKnownTemporaryCannotAttackEffect, isKnownTemporaryEarthshatteringDeckGraveLockEffect, isKnownTemporaryOpponentCannotBattlePhaseEffect, isKnownTemporaryOpponentTurnSkipMain1Effect, isKnownTemporaryOpponentTurnSkipMain2Effect, isKnownTemporaryOpponentTurnSkipTurnEffect, isKnownTemporaryPlayerAttackAnnounceLockEffect, isKnownTemporarySameCodeActivationOathEffect, isKnownTemporarySelfTurnCannotEndPhaseEffect, isKnownTemporarySelfTurnSkipBattlePhaseEffect, isKnownTemporarySummonSetLockEffect, temporaryOpponentTurnSkipMain1CanActivate, temporarySelfTurnSkipBattlePhaseCanActivate } from "#lua/snapshot-temporary-effects.js";
+import { isKnownMulcharmyDrawWatcherEffect, isKnownMulcharmyEndPhaseShuffleEffect, mulcharmyDrawWatcherOperation, mulcharmyEndPhaseShuffleOperation } from "#lua/snapshot-mulcharmy.js";
 import { assaultZoneExtraDeckReleaseValueCallbacks, assaultZoneReleaseFlagConditionCallbacks, assaultZoneReleaseFlagOperation, isAssaultZoneExtraDeckReleaseRestoreEffect } from "#lua/snapshot-assault-zone.js";
 import { calledByTheGraveChainSolvingNegateOperation, isKnownCalledByTheGraveChainSolvingNegateEffect, isKnownRareMetalmorphChainSolvingNegateEffect, rareMetalmorphChainSolvingNegateOperation } from "#lua/snapshot-chain-solving-effects.js";
+import { luaRegistryCardCodes } from "#lua/snapshot-registry-keys.js";
+import { restoredSpecialSummonConditionValueCallbacks } from "#lua/snapshot-special-summon-condition.js";
+import { isLuaOptionPromptDecision, isLuaYesNoPromptDecision } from "#lua/host-types.js";
 import { ritualSummonSelectedMaterials, type LuaDuelSummonApiHostState } from "#lua/duel-api/summon.js";
 import { luaTemporaryControlReturnDescriptor, luaTemporaryControlReturnOperation } from "#lua/duel-api/move-control.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
@@ -100,6 +105,7 @@ export function restoreDuelWithLuaScripts(
   const restoredRegistryKeys = filterRestoredLuaEffects(session, registryKeys, snapshot.state.effects);
   restoredRegistryKeys.push(...restoreKnownLuaEffects(session, registryKeys, snapshot.state.effects, restoredRegistryKeys));
   restoreKnownLuaChainOperations(session);
+  session.state.effects = session.state.effects.map(restoredLuaEffectWithoutPromptOperation);
   prunePendingTriggersWithoutEffects(session.state);
   const missingRegistryKeys = [...registryKeys].filter((key) => !restoredRegistryKeys.includes(key));
   const restoredChainLimitRegistryKeys = luaChainLimitRegistryKeys({ ...snapshot, state: session.state });
@@ -126,7 +132,35 @@ export function applyLuaRestoreResponse(restored: LuaSnapshotRestoreResult, resp
       legalActionGroups: [],
     };
   }
-  return applyResponse(restored.session, response);
+  const result = applyResponse(restored.session, response);
+  if (!result.ok) return result;
+  return drainRestoredLuaOperationPrompts(restored, result);
+}
+
+function drainRestoredLuaOperationPrompts(restored: LuaSnapshotRestoreResult, initial: ApplyDuelResponseResult): ApplyDuelResponseResult {
+  let result = initial;
+  while (result.ok && restored.session.state.luaOperationPrompt && restored.session.state.prompt?.origin === "luaOperation") {
+    const prompt = restored.session.state.prompt;
+    const luaPrompt = restored.session.state.luaOperationPrompt.prompt;
+    const response = defaultLuaPromptResponse(restored.session, prompt, luaPrompt);
+    if (!response) break;
+    result = applyResponse(restored.session, response);
+  }
+  return result;
+}
+
+function defaultLuaPromptResponse(
+  session: DuelSession,
+  prompt: NonNullable<DuelSession["state"]["prompt"]>,
+  luaPrompt: NonNullable<DuelSession["state"]["luaOperationPrompt"]>["prompt"],
+): DuelResponse | undefined {
+  if (prompt.type === "selectOption" && isLuaOptionPromptDecision(luaPrompt)) {
+    return getLegalActions(session, prompt.player).find((action) => action.type === "selectOption" && action.promptId === prompt.id && action.option === luaPrompt.returned);
+  }
+  if (prompt.type === "selectYesNo" && isLuaYesNoPromptDecision(luaPrompt)) {
+    return getLegalActions(session, prompt.player).find((action) => action.type === "selectYesNo" && action.promptId === prompt.id && action.yes === luaPrompt.returned);
+  }
+  return undefined;
 }
 
 function filterRestoredLuaEffects(session: DuelSession, registryKeys: Set<string>, snapshotEffects: SerializedDuelEffect[]): string[] {
@@ -134,6 +168,7 @@ function filterRestoredLuaEffects(session: DuelSession, registryKeys: Set<string
   const snapshotEffectsByKey = new Map(snapshotEffects.map((effect) => [effect.registryKey, effect]).filter((entry): entry is [string, SerializedDuelEffect] => Boolean(entry[0])));
   const semanticSnapshotEffectsByLiveKey = new Map<string, SerializedDuelEffect>();
   const semanticRegistryKeys = new Set<string>();
+  const liveLuaEffectsByKey = liveLuaCallbackEffectsByRegistryKey(session.state.effects, registryKeys);
   session.state.effects = session.state.effects
     .filter((effect) => {
       if (effect.registryKey === undefined || registryKeys.has(effect.registryKey)) return true;
@@ -143,9 +178,51 @@ function filterRestoredLuaEffects(session: DuelSession, registryKeys: Set<string
       semanticRegistryKeys.add(snapshotEffect.registryKey!);
       return true;
     })
-    .map((effect) => mergeRestoredLuaEffectMetadata(effect, snapshotEffectsByKey.get(effect.registryKey ?? "") ?? semanticSnapshotEffectsByLiveKey.get(effect.registryKey ?? "")));
+    .map((effect) => {
+      const snapshotEffect = snapshotEffectsByKey.get(effect.registryKey ?? "") ?? semanticSnapshotEffectsByLiveKey.get(effect.registryKey ?? "");
+      const rebound = rebindRestoredLuaEffectCallbacks(effect, liveLuaEffectsByKey.get(effect.registryKey ?? ""));
+      return mergeRestoredLuaEffectMetadata(rebound, snapshotEffect);
+    });
   const exactRegistryKeys = session.state.effects.map((effect) => effect.registryKey).filter((key): key is string => Boolean(key?.startsWith("lua:") && registryKeys.has(key)));
   return [...new Set([...exactRegistryKeys, ...semanticRegistryKeys])];
+}
+
+function liveLuaCallbackEffectsByRegistryKey(effects: DuelEffectDefinition[], registryKeys: Set<string>): Map<string, DuelEffectDefinition> {
+  const liveEffects = new Map<string, DuelEffectDefinition>();
+  for (const effect of effects) {
+    if (!effect.registryKey || !registryKeys.has(effect.registryKey)) continue;
+    if (!hasLiveLuaCallbacks(effect)) continue;
+    const existing = liveEffects.get(effect.registryKey);
+    if (!existing || (existing.id === effect.id && effect.operation !== undefined)) liveEffects.set(effect.registryKey, effect);
+  }
+  return liveEffects;
+}
+
+function hasLiveLuaCallbacks(effect: DuelEffectDefinition): boolean {
+  return Boolean(effect.operation || effect.promptOperation || effect.canActivate || effect.cost || effect.target);
+}
+
+function rebindRestoredLuaEffectCallbacks(effect: DuelEffectDefinition, liveEffect: DuelEffectDefinition | undefined): DuelEffectDefinition {
+  if (!liveEffect || liveEffect === effect) return restoredLuaEffectWithoutPromptOperation(effect);
+  const restoredEffect = restoredLuaEffectWithoutPromptOperation(effect);
+  return {
+    ...restoredEffect,
+    ...(liveEffect.canActivate === undefined ? {} : { canActivate: liveEffect.canActivate }),
+    ...(liveEffect.cost === undefined ? {} : { cost: liveEffect.cost }),
+    ...(liveEffect.target === undefined ? {} : { target: liveEffect.target }),
+    ...(liveEffect.operation === undefined ? {} : { operation: liveEffect.operation }),
+    ...(liveEffect.battleDamageValue === undefined ? {} : { battleDamageValue: liveEffect.battleDamageValue }),
+    ...(liveEffect.lifePointValue === undefined ? {} : { lifePointValue: liveEffect.lifePointValue }),
+    ...(liveEffect.statValue === undefined ? {} : { statValue: liveEffect.statValue }),
+    ...(liveEffect.targetCardPredicate === undefined ? {} : { targetCardPredicate: liveEffect.targetCardPredicate }),
+    ...(liveEffect.valueCardPredicate === undefined ? {} : { valueCardPredicate: liveEffect.valueCardPredicate }),
+    ...(liveEffect.valuePredicate === undefined ? {} : { valuePredicate: liveEffect.valuePredicate }),
+  };
+}
+
+function restoredLuaEffectWithoutPromptOperation(effect: DuelEffectDefinition): DuelEffectDefinition {
+  const { promptOperation: _promptOperation, ...rest } = effect;
+  return rest;
 }
 
 function mergeRestoredLuaEffectMetadata(effect: DuelEffectDefinition, snapshotEffect: SerializedDuelEffect | undefined): DuelEffectDefinition {
@@ -437,6 +514,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         effect.code === 25 ||
         (effect.code === 60 && effect.value !== undefined) ||
         (effect.code === 92 && (specialSummonTypeNotCostDescriptor(effect.luaCostDescriptor) !== undefined || specialSummonTypeIsCostDescriptor(effect.luaCostDescriptor) !== undefined)) ||
+        (effect.code === 30 && effect.luaValueDescriptor?.startsWith("special-summon-condition:") === true) ||
         effect.code === luaEffectClockLizard ||
         isKnownCannotBeMaterialEffect(effect) ||
         (effect.code === 71 && effect.luaValueDescriptor === "cannot-be-effect-target:opponent") ||
@@ -458,6 +536,8 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownHinoKaguTsuchiPredrawDiscardEffect(effect) ||
         isKnownGreatLongNoseSkipBattlePhaseEffect(effect) ||
         isKnownUnleashYourPowerDelayedSetEffect(effect) ||
+        isKnownMulcharmyDrawWatcherEffect(effect) ||
+        isKnownMulcharmyEndPhaseShuffleEffect(effect) ||
         isKnownRemainFieldEffect(effect) ||
         isKnownCannotActivateSpecialSummonedMonsterEffect(effect) ||
         isKnownCannotActivateNonSpiritMonsterEffect(effect) ||
@@ -692,7 +772,7 @@ function isClientHintEffect(effect: SerializedDuelEffect): boolean {
 }
 
 function hasDefaultLuaFieldRange(effect: SerializedDuelEffect): boolean {
-  const allLocations = new Set(["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"]);
+  const allLocations = new Set(duelLocations);
   return effect.range.length === allLocations.size && effect.range.every((location) => allLocations.has(location));
 }
 
@@ -731,6 +811,8 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownGeminiEndPhaseReturnEffect(effect, snapshotEffects)) return luaHandlerReturnToHandOperation(effect);
   if (isKnownGrantedSpiritEndPhaseReturnEffect(effect, snapshotEffects)) return luaHandlerReturnToHandOperation(effect);
   if (isKnownUnleashYourPowerDelayedSetEffect(effect)) return unleashYourPowerDelayedSetOperation(effect);
+  if (isKnownMulcharmyDrawWatcherEffect(effect)) return mulcharmyDrawWatcherOperation(effect);
+  if (isKnownMulcharmyEndPhaseShuffleEffect(effect)) return mulcharmyEndPhaseShuffleOperation(effect);
   if (effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor) {
     const returnPlayer = effect.value === 0 || effect.value === 1 ? effect.value : undefined;
     return luaTemporaryControlReturnOperation(returnPlayer);
@@ -778,6 +860,7 @@ function luaHandlerReturnToHandOperation(effect: SerializedDuelEffect): DuelEffe
     }
   };
 }
+
 function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "battleDamageValue" | "lifePointValue" | "valueCardPredicate" | "valuePredicate"> {
   if (effect.luaValueDescriptor === "cannot-be-effect-target:opponent") {
     return { valuePredicate: (_ctx, player) => player !== undefined && player !== effect.controller };
@@ -815,6 +898,8 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
     const summonTypes = effect.luaValueDescriptor.slice("cannot-material:summon-types:".length).split(",").map(Number);
     return { valuePredicate: (ctx) => summonTypes.includes(ctx.summonTypeCode ?? 0) };
   }
+  const specialSummonConditionCallbacks = restoredSpecialSummonConditionValueCallbacks(effect);
+  if (specialSummonConditionCallbacks.valuePredicate) return specialSummonConditionCallbacks;
   if (effect.luaValueDescriptor?.startsWith("cannot-material:controller-summon-types:")) { const summonTypes = effect.luaValueDescriptor.slice("cannot-material:controller-summon-types:".length).split(",").map(Number); return { valuePredicate: (ctx) => summonTypes.includes(ctx.summonTypeCode ?? 0) && ctx.eventCard?.controller === effect.controller }; }
   if (effect.luaValueDescriptor?.startsWith("cannot-material:target-not-setcode:")) return { valuePredicate: (ctx) => !ctx.eventCard || !currentCardMatchesSetcode(ctx.eventCard, ctx.duel, Number(effect.luaValueDescriptor?.split(":").pop())) }; if (effect.luaValueDescriptor?.startsWith("cannot-material:target-not-race:")) return { valuePredicate: (ctx) => !ctx.eventCard || (currentRace(ctx.eventCard, ctx.duel) & Number(effect.luaValueDescriptor?.split(":").pop())) === 0 }; if (effect.luaValueDescriptor?.startsWith("cannot-material:target-not-attribute:")) return { valuePredicate: (ctx) => !ctx.eventCard || (currentAttribute(ctx.eventCard, ctx.duel) & Number(effect.luaValueDescriptor?.split(":").pop())) === 0 };
   if (effect.luaValueDescriptor !== "change-damage:effect-double" && effect.luaValueDescriptor !== "change-damage:effect-zero") return {};
@@ -968,8 +1053,3 @@ function luaRestoreIncompleteReasons(loadedScripts: LuaScriptLoadResult[], missi
   ];
 }
 function luaRestoreIncompleteError(restored: LuaSnapshotRestoreResult): string { return restored.incompleteReasons.length === 0 ? "Lua snapshot restore is incomplete" : `Lua snapshot restore is incomplete: ${restored.incompleteReasons.join("; ")}`; }
-function luaRegistryCardCodes(registryKeys: Set<string>, chainLimitRegistryKeys: string[] = []): Set<string> {
-  const codes = new Set<string>();
-  for (const key of [...registryKeys, ...chainLimitRegistryKeys]) { const [, code] = key.split(":"); if (code && /^\d+$/.test(code)) codes.add(code); }
-  return codes;
-}

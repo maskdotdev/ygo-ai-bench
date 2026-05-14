@@ -1,5 +1,6 @@
 import { copyBattleWindowState } from "#duel/battle-window-state.js";
 import type { ChainLimit, ChainLink, DuelBattlePair, DuelCardData, DuelCardInstance, DuelEffectDefinition, DuelEventRecord, DuelFlagEffect, DuelLogEntry, DuelPlayerState, DuelPromptState, DuelState, PendingTrigger, PlayerId, SkippedDuelPhase } from "#duel/types.js";
+import { isLuaOptionPromptDecision } from "#lua/host-types.js";
 
 export interface DuelStateRollback {
   status: DuelState["status"];
@@ -45,6 +46,7 @@ export interface DuelStateRollback {
   currentAttack: DuelState["currentAttack"] | undefined;
   pendingBattle: DuelState["pendingBattle"] | undefined;
   prompt: DuelState["prompt"] | undefined;
+  luaOperationPrompt: DuelState["luaOperationPrompt"] | undefined;
   waitingFor: PlayerId | undefined;
   log: DuelLogEntry[];
 }
@@ -94,6 +96,7 @@ export function captureDuelState(state: DuelState): DuelStateRollback {
     currentAttack: state.currentAttack ? copyBattleAttack(state.currentAttack) : undefined,
     pendingBattle: state.pendingBattle ? copyPendingBattle(state.pendingBattle) : undefined,
     prompt: state.prompt ? copyPrompt(state.prompt) : undefined,
+    luaOperationPrompt: state.luaOperationPrompt ? { chainLink: copyChainLink(state.luaOperationPrompt.chainLink), prompt: copyLuaOperationPromptDecision(state.luaOperationPrompt.prompt) } : undefined,
     waitingFor: state.waitingFor,
     log: state.log.map((entry) => ({ ...entry })),
   };
@@ -150,13 +153,20 @@ export function restoreDuelState(state: DuelState, rollback: DuelStateRollback):
   else delete state.pendingBattle;
   if (rollback.prompt) state.prompt = copyPrompt(rollback.prompt);
   else delete state.prompt;
+  if (rollback.luaOperationPrompt) state.luaOperationPrompt = { chainLink: copyChainLink(rollback.luaOperationPrompt.chainLink), prompt: copyLuaOperationPromptDecision(rollback.luaOperationPrompt.prompt) };
+  else delete state.luaOperationPrompt;
   if (rollback.waitingFor !== undefined) state.waitingFor = rollback.waitingFor;
   else delete state.waitingFor;
   state.log = rollback.log.map((entry) => ({ ...entry }));
 }
 
 function copyPrompt(prompt: DuelPromptState): DuelPromptState {
-  if (prompt.type === "selectOption") return { ...prompt, options: [...prompt.options] };
+  if (prompt.type === "selectOption") return { ...prompt, options: [...prompt.options], ...(prompt.descriptions === undefined ? {} : { descriptions: [...prompt.descriptions] }) };
+  return { ...prompt };
+}
+
+function copyLuaOperationPromptDecision(prompt: NonNullable<DuelState["luaOperationPrompt"]>["prompt"]): NonNullable<DuelState["luaOperationPrompt"]>["prompt"] {
+  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions] };
   return { ...prompt };
 }
 
@@ -216,7 +226,13 @@ function copyChainLink(link: ChainLink): ChainLink {
 }
 
 function copyOperationInfos(infos: NonNullable<ChainLink["operationInfos"]>): NonNullable<ChainLink["operationInfos"]> {
-  return infos.map((info) => ({ ...info, targetUids: [...info.targetUids] }));
+  return infos.map((info) => ({
+    category: typeof info.category === "number" && Number.isFinite(info.category) ? info.category : 0,
+    targetUids: Array.isArray(info.targetUids) ? [...info.targetUids] : [],
+    count: typeof info.count === "number" && Number.isFinite(info.count) ? info.count : 0,
+    player: info.player === 1 ? 1 : 0,
+    parameter: typeof info.parameter === "number" && Number.isFinite(info.parameter) ? info.parameter : 0,
+  }));
 }
 
 function copyPendingTrigger(trigger: PendingTrigger): PendingTrigger {

@@ -43,6 +43,7 @@ function assertSnapshotPromptWindow(state: Record<string, unknown>): void {
   if (state.status !== "awaiting") throw new Error("Malformed duel snapshot: pending prompt requires an awaiting duel");
   if ((state.chain as unknown[]).length > 0) throw new Error("Malformed duel snapshot: state.prompt must not overlap a pending chain");
   if ((state.pendingTriggers as unknown[]).length > 0) throw new Error("Malformed duel snapshot: state.prompt must not overlap pending triggers");
+  if (state.battleWindow !== undefined) throw new Error("Malformed duel snapshot: state.prompt must not overlap battleWindow");
   if (state.waitingFor !== state.prompt.player) throw new Error("Malformed duel snapshot: state.waitingFor must match prompt.player");
 }
 

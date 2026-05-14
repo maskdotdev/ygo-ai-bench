@@ -5,7 +5,10 @@ import type { DuelAction, DuelActionWindowKind, DuelPromptState, DuelResponse, D
 export function getPromptResponseActions(prompt: DuelPromptState, player: PlayerId): DuelAction[] {
   if (prompt.player !== player) return [];
   if (prompt.type === "selectOption") {
-    return prompt.options.map((option) => ({ type: "selectOption", player, promptId: prompt.id, option, label: `Select option ${option}` }));
+    return prompt.options.map((option, index) => {
+      const description = prompt.descriptions?.[index];
+      return { type: "selectOption", player, promptId: prompt.id, option, label: description === undefined ? `Select option ${option}` : `Select option ${option} (${description})` };
+    });
   }
   return [
     { type: "selectYesNo", player, promptId: prompt.id, yes: true, label: "Yes" },
@@ -16,6 +19,7 @@ export function getPromptResponseActions(prompt: DuelPromptState, player: Player
 export function resolveDuelPrompt(state: DuelState, response: Extract<DuelResponse, { type: "selectOption" | "selectYesNo" }>): void {
   const prompt = state.prompt;
   if (!prompt || prompt.id !== response.promptId || prompt.player !== response.player || prompt.type !== response.type) throw new Error("Prompt response does not match the pending prompt");
+  if (prompt.origin === "luaOperation") throw new Error("Cannot resolve a Lua operation prompt without its live operation continuation");
   if (prompt.type === "selectOption") {
     if (response.type !== "selectOption" || !prompt.options.includes(response.option)) throw new Error(`Option ${response.type === "selectOption" ? response.option : ""} is not legal`);
     pushDuelLog(state, "selectOption", response.player, undefined, `Selected option ${response.option}`);

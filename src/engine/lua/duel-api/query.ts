@@ -16,13 +16,16 @@ import { findSubGroupSelection, findSumGreaterSelection, findSumSelection } from
 import { uniqueUids } from "#lua/group-uid-utils.js";
 import { locationMatchesCardMask, locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
-import type { LuaEffectRecord } from "#lua/host-types.js";
+import type { LuaEffectRecord, LuaPromptDecision } from "#lua/host-types.js";
 
 const { lua, to_luastring } = fengari;
 
 type LuaFilterArgs = { start: number; count: number };
 
 export interface LuaDuelQueryApiHostState {
+  promptDecisions?: LuaPromptDecision[];
+  nextPromptId?: number;
+  promptBehavior?: "default" | "yield";
   activeTargetUids: string[] | undefined;
   activeLuaEffectId: number | undefined;
   activeContext: DuelEffectContext | undefined;
@@ -82,7 +85,7 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("IsEnvironment"));
   lua.lua_pushcfunction(L, (state: unknown) => pushEnvironment(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetEnvironment"));
-  installDuelLocationApi(L, session);
+  installDuelLocationApi(L, session, hostState);
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckWithSumEqual(state, session));
   lua.lua_setfield(L, -2, to_luastring("CheckWithSumEqual"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectWithSumEqual(state, session));

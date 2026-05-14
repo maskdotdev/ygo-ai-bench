@@ -291,6 +291,24 @@ export const auxUtilitySource = `
     function aux.lnklimit(e,se,sp,st)
       return aux.sumlimit(SUMMON_TYPE_LINK)(e,se,sp,st)
     end
+    function aux.fusfirstlimit(e,se,sp,st)
+      return not e:GetHandler():IsLocation(LOCATION_EXTRA) or (st & SUMMON_TYPE_FUSION)==SUMMON_TYPE_FUSION
+    end
+    function aux.ritfirstlimit(e,se,sp,st)
+      return e:GetHandler():IsStatus(STATUS_PROC_COMPLETE) or (st & SUMMON_TYPE_RITUAL)==SUMMON_TYPE_RITUAL
+    end
+    function aux.synfirstlimit(e,se,sp,st)
+      return not e:GetHandler():IsLocation(LOCATION_EXTRA) or (st & SUMMON_TYPE_SYNCHRO)==SUMMON_TYPE_SYNCHRO
+    end
+    function aux.xyzfirstlimit(e,se,sp,st)
+      return not e:GetHandler():IsLocation(LOCATION_EXTRA) or (st & SUMMON_TYPE_XYZ)==SUMMON_TYPE_XYZ
+    end
+    function aux.penfirstlimit(e,se,sp,st)
+      return e:GetHandler():IsStatus(STATUS_PROC_COMPLETE) or (st & SUMMON_TYPE_PENDULUM)==SUMMON_TYPE_PENDULUM
+    end
+    function aux.lnkfirstlimit(e,se,sp,st)
+      return not e:GetHandler():IsLocation(LOCATION_EXTRA) or (st & SUMMON_TYPE_LINK)==SUMMON_TYPE_LINK
+    end
     local card_dark_fusion = CARD_DARK_FUSION or 94820406
     local card_super_polymerization = CARD_SUPER_POLYMERIZATION or 48130397
     local skill_dark_unity = SKILL_DARK_UNITY or 300306009

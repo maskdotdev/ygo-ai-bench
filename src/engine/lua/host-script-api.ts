@@ -3,7 +3,7 @@ import { applyLuaExtraDeckProcedureMetadata } from "#lua/extra-deck-procedure-me
 import { applyLuaNormalTributeMetadata } from "#lua/tribute-metadata-api.js";
 import { pushCardTable } from "#lua/card-api.js";
 import type { DuelSession } from "#duel/types.js";
-import type { LuaHostState, LuaInitialEffectRegistrationResult, LuaScriptLoadResult } from "#lua/host-types.js";
+import type { LuaHostState, LuaInitialEffectRegistrationResult, LuaPromptCoroutineResult, LuaScriptLoadResult } from "#lua/host-types.js";
 
 const { lua, lauxlib, to_luastring } = fengari;
 
@@ -97,6 +97,19 @@ export function runLuaCardScript(L: unknown, hostState: LuaHostState, code: stri
   return result;
 }
 
+export function runLuaPromptCoroutine(L: unknown, hostState: LuaHostState, code: string, name: string): LuaPromptCoroutineResult {
+  const loadStatus = lauxlib.luaL_loadbuffer(L, to_luastring(code), code.length, to_luastring(name));
+  if (loadStatus !== lua.LUA_OK) return { status: "error", error: readLuaError(L) };
+  return runLuaPromptCoroutineFromStack(L, hostState, 0);
+}
+
+export function runLuaPromptCoroutineFromStack(L: unknown, hostState: LuaHostState, argCount: number): LuaPromptCoroutineResult {
+  const thread = lua.lua_newthread(L);
+  lua.lua_insert(L, -(argCount + 2));
+  lua.lua_xmove(L, thread, argCount + 1);
+  return resumeLuaPromptCoroutine(L, thread, hostState, argCount);
+}
+
 export function readLuaError(L: unknown): string {
   const tableMessage = readLuaErrorTableMessage(L);
   if (tableMessage) {
@@ -112,6 +125,51 @@ export function readLuaError(L: unknown): string {
   const message = lua.lua_tojsstring(L, -1) ?? "Lua script error";
   lua.lua_pop(L, 2);
   return message;
+}
+
+function resumeLuaPromptCoroutine(L: unknown, thread: unknown, hostState: LuaHostState, argCount: number): LuaPromptCoroutineResult {
+  const previousBehavior = hostState.promptBehavior;
+  const promptCount = hostState.promptDecisions.length;
+  hostState.promptBehavior = "yield";
+  try {
+    const status = lua.lua_resume(thread, L, argCount);
+    if (status === lua.LUA_YIELD) {
+      const prompt = hostState.promptDecisions.at(-1);
+      if (!prompt || hostState.promptDecisions.length === promptCount) return { status: "error", error: "Lua coroutine yielded without a prompt decision" };
+      return {
+        status: "yielded",
+        prompt,
+        resume(value) {
+          pushLuaResumeValue(thread, value);
+          return resumeLuaPromptCoroutine(L, thread, hostState, 1);
+        },
+      };
+    }
+    if (status !== lua.LUA_OK) return { status: "error", error: readLuaError(thread) };
+    return { status: "completed", values: readLuaStackValues(thread) };
+  } finally {
+    hostState.promptBehavior = previousBehavior;
+  }
+}
+
+function pushLuaResumeValue(L: unknown, value: number | boolean): void {
+  if (typeof value === "boolean") lua.lua_pushboolean(L, value);
+  else lua.lua_pushinteger(L, value);
+}
+
+function readLuaStackValues(L: unknown): unknown[] {
+  const values: unknown[] = [];
+  for (let index = 1; index <= lua.lua_gettop(L); index += 1) values.push(readLuaStackValue(L, index));
+  lua.lua_settop(L, 0);
+  return values;
+}
+
+function readLuaStackValue(L: unknown, index: number): unknown {
+  if (lua.lua_isboolean(L, index)) return Boolean(lua.lua_toboolean(L, index));
+  if (lua.lua_isnumber(L, index)) return lua.lua_tonumber(L, index);
+  if (lua.lua_isstring(L, index)) return lua.lua_tojsstring(L, index);
+  if (lua.lua_isnoneornil(L, index)) return undefined;
+  return undefined;
 }
 
 function cardCodeFromScriptName(name: string): string | undefined {

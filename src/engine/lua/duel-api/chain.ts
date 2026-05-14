@@ -596,7 +596,8 @@ function literalResponseMatchesChainPlayerOrNotEffectTypePredicate(L: unknown, i
   return mask !== undefined && Number.isSafeInteger(mask) && mask > 0 ? mask : undefined;
 }
 
-const effectTypeMaskExpressionPattern = String.raw`(?:[A-Za-z_]\w*|\d+)(?:\s*(?:\+|\|)\s*(?:[A-Za-z_]\w*|\d+))*`;
+const numericMaskPattern = String.raw`(?:0x[0-9A-Fa-f]+|\d+)`;
+const effectTypeMaskExpressionPattern = String.raw`(?:[A-Za-z_]\w*|${numericMaskPattern})(?:\s*(?:\+|\|)\s*(?:[A-Za-z_]\w*|${numericMaskPattern}))*`;
 const effectTypeMasks: Record<string, number> = {
   EFFECT_TYPE_SINGLE: 0x1,
   EFFECT_TYPE_FIELD: 0x2,
@@ -615,7 +616,7 @@ function effectTypeMaskTokenValue(token: string): number | undefined {
   if (parts.length === 0) return undefined;
   let mask = 0;
   for (const part of parts) {
-    const value = effectTypeMasks[part] ?? (/^\d+$/.test(part) ? Number(part) : undefined);
+    const value = effectTypeMasks[part] ?? parseNumericMaskPart(part);
     if (value === undefined || !Number.isSafeInteger(value) || value <= 0) return undefined;
     mask |= value;
   }
@@ -672,14 +673,9 @@ function literalResponseMatchesChainPlayerOrNotActiveTypePredicate(L: unknown, i
   return mask !== undefined && Number.isSafeInteger(mask) && mask > 0 ? mask : undefined;
 }
 
-function activeTypeMethodMask(method: string): number | undefined {
-  if (method === "IsMonsterEffect") return 0x1;
-  if (method === "IsSpellEffect") return 0x2;
-  if (method === "IsTrapEffect") return 0x4;
-  return undefined;
-}
+function activeTypeMethodMask(method: string): number | undefined { return method === "IsMonsterEffect" ? 0x1 : method === "IsSpellEffect" ? 0x2 : method === "IsTrapEffect" ? 0x4 : undefined; }
 
-const activeTypeMaskExpressionPattern = String.raw`(?:TYPE_MONSTER|TYPE_SPELL|TYPE_TRAP|\d+)(?:\s*(?:\+|\|)\s*(?:TYPE_MONSTER|TYPE_SPELL|TYPE_TRAP|\d+))*`;
+const activeTypeMaskExpressionPattern = String.raw`(?:TYPE_MONSTER|TYPE_SPELL|TYPE_TRAP|${numericMaskPattern})(?:\s*(?:\+|\|)\s*(?:TYPE_MONSTER|TYPE_SPELL|TYPE_TRAP|${numericMaskPattern}))*`;
 const activeTypeMasks: Record<string, number> = {
   TYPE_MONSTER: 0x1,
   TYPE_SPELL: 0x2,
@@ -691,12 +687,14 @@ function activeTypeMaskTokenValue(token: string): number | undefined {
   if (parts.length === 0) return undefined;
   let mask = 0;
   for (const part of parts) {
-    const value = activeTypeMasks[part] ?? (/^\d+$/.test(part) ? Number(part) : undefined);
+    const value = activeTypeMasks[part] ?? parseNumericMaskPart(part);
     if (value === undefined || !Number.isSafeInteger(value) || value <= 0) return undefined;
     mask |= value;
   }
   return mask;
 }
+
+function parseNumericMaskPart(part: string): number | undefined { return /^0x[0-9A-Fa-f]+$/.test(part) ? Number.parseInt(part.slice(2), 16) : /^\d+$/.test(part) ? Number(part) : undefined; }
 
 function luaFunctionParams(snippet: string): string[] | undefined {
   const match = snippet.match(/function\s+(?:[A-Za-z_]\w*(?:[.:][A-Za-z_]\w*)*)\s*\(([^)]*)\)/)
@@ -823,7 +821,10 @@ function callChainLimit(
   lua.lua_pushinteger(L, player);
   lua.lua_pushinteger(L, chainPlayer);
   const status = lua.lua_pcall(L, 3, 1, 0);
-  if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+  if (status !== lua.LUA_OK) {
+    readLuaError(L);
+    return false;
+  }
   const result = lua.lua_toboolean(L, -1);
   lua.lua_pop(L, 1);
   return Boolean(result);
@@ -954,11 +955,7 @@ function chainEffectTypeFlags(link: DuelState["chain"][number], hostState: LuaDu
   return Number.isFinite(id) ? hostState.getEffectTypeFlags(id) ?? 0 : 0;
 }
 
-function readLuaError(L: unknown): string {
-  const message = lua.lua_tojsstring(L, -1);
-  lua.lua_pop(L, 1);
-  return message;
-}
+function readLuaError(L: unknown): void { lua.lua_tojsstring(L, -1); lua.lua_pop(L, 1); }
 
 function chainNumericId(link: DuelState["chain"][number]): number {
   const id = Number(link.id.match(/^chain-(\d+)$/)?.[1]);

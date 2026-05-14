@@ -6,6 +6,7 @@ export * from "#duel/types.js";
 export * from "#engine/data-loaders.js";
 export * from "#engine/parity.js";
 export * from "#lua/snapshot.js";
+export * from "#lua/prompt-state.js";
 export type { DuelEffectRestoreFactory, DuelEffectRestoreRegistry } from "#duel/snapshot.js";
 export {
   createDuel,

@@ -482,7 +482,7 @@ ${spiritProcedureSource}
       e0:SetType(EFFECT_TYPE_SINGLE)
       e0:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
       e0:SetCode(EFFECT_SPSUMMON_CONDITION)
-      e0:SetValue(function(e,sum_eff,sum_p,sum_type) return not e:GetHandler():IsLocation(LOCATION_EXTRA) or (sum_type&SUMMON_TYPE_FUSION)==SUMMON_TYPE_FUSION end)
+      e0:SetValue(aux.fusfirstlimit)
       c:RegisterEffect(e0)
       return e0
     end
@@ -500,7 +500,7 @@ ${spiritProcedureSource}
       e0:SetType(EFFECT_TYPE_SINGLE)
       e0:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
       e0:SetCode(EFFECT_SPSUMMON_CONDITION)
-      e0:SetValue(function(e,sum_eff,sum_p,sum_type) return e:GetHandler():IsStatus(STATUS_PROC_COMPLETE) or (sum_type&SUMMON_TYPE_RITUAL)==SUMMON_TYPE_RITUAL end)
+      e0:SetValue(aux.ritfirstlimit)
       c:RegisterEffect(e0)
       return e0
     end
@@ -518,7 +518,7 @@ ${spiritProcedureSource}
       e0:SetType(EFFECT_TYPE_SINGLE)
       e0:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
       e0:SetCode(EFFECT_SPSUMMON_CONDITION)
-      e0:SetValue(function(e,sum_eff,sum_p,sum_type) return not e:GetHandler():IsLocation(LOCATION_EXTRA) or (sum_type&SUMMON_TYPE_SYNCHRO)==SUMMON_TYPE_SYNCHRO end)
+      e0:SetValue(aux.synfirstlimit)
       c:RegisterEffect(e0)
       return e0
     end
@@ -536,7 +536,7 @@ ${spiritProcedureSource}
       e0:SetType(EFFECT_TYPE_SINGLE)
       e0:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
       e0:SetCode(EFFECT_SPSUMMON_CONDITION)
-      e0:SetValue(function(e,sum_eff,sum_p,sum_type) return not e:GetHandler():IsLocation(LOCATION_EXTRA) or (sum_type&SUMMON_TYPE_XYZ)==SUMMON_TYPE_XYZ end)
+      e0:SetValue(aux.xyzfirstlimit)
       c:RegisterEffect(e0)
       return e0
     end
@@ -554,7 +554,7 @@ ${spiritProcedureSource}
       e0:SetType(EFFECT_TYPE_SINGLE)
       e0:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
       e0:SetCode(EFFECT_SPSUMMON_CONDITION)
-      e0:SetValue(function(e,sum_eff,sum_p,sum_type) return not e:GetHandler():IsLocation(LOCATION_EXTRA) or (sum_type&SUMMON_TYPE_LINK)==SUMMON_TYPE_LINK end)
+      e0:SetValue(aux.lnkfirstlimit)
       c:RegisterEffect(e0)
       return e0
     end
@@ -572,7 +572,7 @@ ${spiritProcedureSource}
       e0:SetType(EFFECT_TYPE_SINGLE)
       e0:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
       e0:SetCode(EFFECT_SPSUMMON_CONDITION)
-      e0:SetValue(function(e,sum_eff,sum_p,sum_type) return e:GetHandler():IsStatus(STATUS_PROC_COMPLETE) or (sum_type&SUMMON_TYPE_PENDULUM)==SUMMON_TYPE_PENDULUM end)
+      e0:SetValue(aux.penfirstlimit)
       c:RegisterEffect(e0)
       return e0
     end

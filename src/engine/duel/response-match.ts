@@ -1,7 +1,6 @@
+import { isDuelActionWindowKind } from "#duel/action-window-kinds.js";
 import type { DuelAction, DuelActionWindowKind, DuelResponse } from "#duel/types.js";
 import { sameStringMembers } from "#duel/string-list-match.js";
-
-const duelActionWindowKinds = new Set<DuelActionWindowKind>(["prompt", "chainResponse", "triggerBucket", "battle", "open"]);
 
 export function sameAction(a: DuelAction, b: unknown): b is DuelResponse {
   if (!isRecord(b) || typeof b.type !== "string") return false;
@@ -63,11 +62,13 @@ function isPendulumSummonSelection(candidates: string[], selected: string[], max
 }
 
 function hasWindowId(value: unknown): value is { windowId: number } {
-  return isRecord(value) && "windowId" in value && typeof value.windowId === "number";
+  if (!isRecord(value) || !("windowId" in value)) return false;
+  const windowId = value.windowId;
+  return typeof windowId === "number" && Number.isSafeInteger(windowId) && windowId >= 0;
 }
 
 function hasWindowKind(value: unknown): value is { windowKind: DuelActionWindowKind } {
-  return isRecord(value) && "windowKind" in value && typeof value.windowKind === "string" && duelActionWindowKinds.has(value.windowKind as DuelActionWindowKind);
+  return isRecord(value) && "windowKind" in value && isDuelActionWindowKind(value.windowKind);
 }
 
 function hasWindowToken(value: unknown): value is { windowToken: string } {

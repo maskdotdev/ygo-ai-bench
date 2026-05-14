@@ -6,3 +6,6 @@ export * from "#playtest/api.js";
 export * from "#playtest/agent-bridge.js";
 export * from "#playtest/ydk.js";
 export * from "#lua/snapshot.js";
+export * from "#lua/prompt-state.js";
+export { isLuaOptionPromptApi, isLuaYesNoPromptApi, luaOptionPromptApis, luaPromptApis, luaYesNoPromptApis } from "#lua/host-types.js";
+export type { LuaPromptDecision } from "#lua/host-types.js";

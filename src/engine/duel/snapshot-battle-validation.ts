@@ -24,6 +24,7 @@ export function assertSnapshotBattleStateConsistency(state: Record<string, unkno
   if (state.currentAttack.battleDamageOverrides !== undefined) throw new Error("Malformed duel snapshot: state.currentAttack must not contain battleDamageOverrides");
   if (state.currentAttack.resultApplied !== undefined) throw new Error("Malformed duel snapshot: state.currentAttack must not contain resultApplied");
   if (state.currentAttack.deferredBattleDestroyed !== undefined) throw new Error("Malformed duel snapshot: state.currentAttack must not contain deferredBattleDestroyed");
+  if (state.battleStep === undefined && state.battleWindow === undefined) throw new Error("Malformed duel snapshot: battle state requires battleStep");
   assertReplayTargetCountMatchesUids(state.currentAttack, "state.currentAttack");
   assertReplayTargetCountMatchesUids(state.pendingBattle, "state.pendingBattle");
   if (state.currentAttack.attackerUid !== state.pendingBattle.attackerUid) throw new Error("Malformed duel snapshot: state.pendingBattle.attackerUid must match currentAttack");
@@ -87,6 +88,7 @@ function findSnapshotCard(state: Record<string, unknown>, uid: unknown): Record<
 }
 
 function assertReplayTargetCountMatchesUids(battle: Record<string, unknown>, path: string): void {
+  if ((battle.replayTargetCount === undefined) !== (battle.replayTargetUids === undefined)) throw new Error(`Malformed duel snapshot: ${path}.replayTargetCount must be paired with replayTargetUids`);
   if (typeof battle.replayTargetCount !== "number" || !Array.isArray(battle.replayTargetUids)) return;
   if (battle.replayTargetCount !== battle.replayTargetUids.length) throw new Error(`Malformed duel snapshot: ${path}.replayTargetCount must match replayTargetUids length`);
 }

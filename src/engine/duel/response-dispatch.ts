@@ -33,7 +33,7 @@ export interface DuelResponseHandlers {
   passDamage(state: DuelState, player: PlayerId): void;
   replayAttack(state: DuelState, player: PlayerId, attackerUid: string, targetUid?: string): void;
   cancelAttack(state: DuelState, player: PlayerId, attackerUid: string): void;
-  resolvePrompt(state: DuelState, response: Extract<DuelResponse, { type: "selectOption" | "selectYesNo" }>): void;
+  resolvePrompt(session: DuelSession, response: Extract<DuelResponse, { type: "selectOption" | "selectYesNo" }>): void;
   activateTrigger(session: DuelSession, response: Extract<DuelResponse, { type: "activateTrigger" }>): void;
   declineTrigger(session: DuelSession, response: Extract<DuelResponse, { type: "declineTrigger" }>): void;
   flipSummon(state: DuelState, player: PlayerId, uid: string): void;
@@ -98,7 +98,7 @@ function dispatchDuelResponse(session: DuelSession, response: DuelResponse, hand
   else if (response.type === "passDamage") handlers.passDamage(session.state, response.player);
   else if (response.type === "replayAttack") handlers.replayAttack(session.state, response.player, response.attackerUid, response.targetUid);
   else if (response.type === "cancelAttack") handlers.cancelAttack(session.state, response.player, response.attackerUid);
-  else if (response.type === "selectOption" || response.type === "selectYesNo") handlers.resolvePrompt(session.state, response);
+  else if (response.type === "selectOption" || response.type === "selectYesNo") handlers.resolvePrompt(session, response);
   else if (response.type === "activateTrigger") handlers.activateTrigger(session, response);
   else if (response.type === "declineTrigger") handlers.declineTrigger(session, response);
   else if (response.type === "flipSummon") handlers.flipSummon(session.state, response.player, response.uid);

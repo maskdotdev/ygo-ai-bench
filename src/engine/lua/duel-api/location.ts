@@ -3,10 +3,17 @@ import { cardTypeFlags, currentLinkMarkers } from "#duel/card-stats.js";
 import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import type { CardPosition, DuelCardInstance, DuelSession, DuelState, PlayerId } from "#duel/types.js";
+import type { LuaPromptDecision } from "#lua/host-types.js";
 
 const { lua, to_luastring } = fengari;
 
-export function installDuelLocationApi(L: unknown, session: DuelSession): void {
+export interface LuaDuelLocationApiHostState {
+  promptDecisions?: LuaPromptDecision[];
+  nextPromptId?: number;
+  promptBehavior?: "default" | "yield";
+}
+
+export function installDuelLocationApi(L: unknown, session: DuelSession, hostState: LuaDuelLocationApiHostState = {}): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const locationMask = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
@@ -46,11 +53,11 @@ export function installDuelLocationApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("CheckLocation"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCheckPendulumZones(state, session));
   lua.lua_setfield(L, -2, to_luastring("CheckPendulumZones"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushSelectedFieldZoneMask(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSelectedFieldZoneMask(state, session, hostState, "SelectDisableField"));
   lua.lua_setfield(L, -2, to_luastring("SelectDisableField"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushSelectedFieldZoneMask(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSelectedFieldZoneMask(state, session, hostState, "SelectField"));
   lua.lua_setfield(L, -2, to_luastring("SelectField"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushSelectedFieldZoneMask(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSelectedFieldZoneMask(state, session, hostState, "SelectFieldZone"));
   lua.lua_setfield(L, -2, to_luastring("SelectFieldZone"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const count = Math.max(1, lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : 1);
@@ -141,15 +148,45 @@ function isPendulumZoneOpen(session: DuelSession, player: PlayerId, sequence: nu
   return !session.state.cards.some((card) => card.controller === player && card.location === "spellTrapZone" && card.sequence === sequence);
 }
 
-function pushSelectedFieldZoneMask(L: unknown, session: DuelSession): number {
+function pushSelectedFieldZoneMask(L: unknown, session: DuelSession, hostState: LuaDuelLocationApiHostState, api: "SelectDisableField" | "SelectField" | "SelectFieldZone"): number {
   const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
   const count = Math.max(1, lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 1);
   const selfLocations = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
   const opponentLocations = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 0;
   const filter = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : 0;
-  const zones = selectableFieldZones(session, player, selfLocations, opponentLocations, filter).slice(0, count);
-  lua.lua_pushinteger(L, zones.reduce((mask, zone) => mask | zone, 0));
+  const options = selectableFieldZoneMasks(session, player, count, selfLocations, opponentLocations, filter);
+  const returned = options[0] ?? 0;
+  if (options.length > 0) {
+    const decision: LuaPromptDecision = { id: nextLuaPromptId(hostState), api, player, options, descriptions: [...options], returned };
+    hostState.promptDecisions?.push(decision);
+    if (hostState.promptBehavior === "yield") return lua.lua_yield(L, 0);
+  }
+  lua.lua_pushinteger(L, returned);
   return 1;
+}
+
+function nextLuaPromptId(hostState: LuaDuelLocationApiHostState): string {
+  const id = hostState.nextPromptId ?? 1;
+  hostState.nextPromptId = id + 1;
+  return `lua-prompt-${id}`;
+}
+
+function selectableFieldZoneMasks(session: DuelSession, player: PlayerId, count: number, selfLocations: number, opponentLocations: number, filter: number): number[] {
+  const zones = selectableFieldZones(session, player, selfLocations, opponentLocations, filter);
+  if (count <= 1) return zones;
+  const masks: number[] = [];
+  collectZoneMaskCombinations(zones, count, 0, 0, masks);
+  return masks;
+}
+
+function collectZoneMaskCombinations(zones: number[], remaining: number, start: number, mask: number, masks: number[]): void {
+  if (remaining === 0) {
+    masks.push(mask);
+    return;
+  }
+  for (let index = start; index <= zones.length - remaining; index += 1) {
+    collectZoneMaskCombinations(zones, remaining - 1, index + 1, mask | zones[index]!, masks);
+  }
 }
 
 function selectableFieldZones(session: DuelSession, player: PlayerId, selfLocations: number, opponentLocations: number, filter: number): number[] {

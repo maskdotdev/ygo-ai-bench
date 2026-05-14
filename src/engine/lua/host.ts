@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { findCard, moveDuelCard, pushDuelLog } from "#duel/card-state.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { recordDuelEvent } from "#duel/event-history.js";
+import { createEffectContext } from "#duel/effect-context.js";
 import { installAuxApi, installConstants, installDebugApi } from "#lua/basic-api.js";
 import { installCardApi } from "#lua/card-api.js";
 import { isSetcodeMatch } from "#lua/card-code-utils.js";
@@ -12,8 +13,8 @@ import { installGroupApi } from "#lua/group-api.js";
 import { restorableStatelessLuaChainLimitSource } from "#lua/chain-limit-predicate-descriptors.js";
 import { scriptFilenameForCard } from "#engine/data-loaders.js";
 import { installTypeCompatibilityApi } from "#lua/type-compatibility-api.js";
-import { installTracebackHandler, loadLuaScriptFile, readLuaError, registerLuaInitialEffectsDetailed, runLuaCardScript } from "#lua/host-script-api.js";
-import { installEffectApi, installGetIdCompatibilityApi, pushLuaEffectTable, majesticCopyLuaEffects, changeLuaChainOperation, registerLuaEffect, toDuelEffect } from "#lua/host-effect-api.js";
+import { installTracebackHandler, loadLuaScriptFile, readLuaError, registerLuaInitialEffectsDetailed, runLuaCardScript, runLuaPromptCoroutine, runLuaPromptCoroutineFromStack } from "#lua/host-script-api.js";
+import { installEffectApi, installGetIdCompatibilityApi, pushLuaEffectTable, majesticCopyLuaEffects, changeLuaChainOperation, registerLuaEffect, runLuaEffectOperationPromptCoroutine, toDuelEffect } from "#lua/host-effect-api.js";
 import { normalizeLuaUnsignedInteger } from "#lua/numeric-utils.js";
 import type { ChainLimit, DuelCardInstance, DuelEffectDefinition, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaHostState, LuaScriptHost, LuaScriptSource } from "#lua/host-types.js";
@@ -32,6 +33,9 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
     functionDescriptors: new Map(),
     usedEffectCounts: new Map(),
     messages: [],
+    promptDecisions: [],
+    nextPromptId: 1,
+    promptBehavior: "default",
     activeTargetUids: undefined,
     activeLuaEffectId: undefined,
     activeContext: undefined,
@@ -81,6 +85,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
 
   return {
     messages: hostState.messages,
+    promptDecisions: hostState.promptDecisions,
     loadScript(code, name) {
       hostState.loadedScriptBodies.set(name, code);
       return runLuaCardScript(L, hostState, code, name);
@@ -121,7 +126,31 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
       lua.lua_pop(L, 1);
       return value !== undefined && Number.isInteger(value) && value < 0 ? normalizeLuaUnsignedInteger(value) : value;
     },
+    runPromptCoroutine(code, name) {
+      return runLuaPromptCoroutine(L, hostState, code, name);
+    },
+    runPromptCallback(name, args = []) {
+      lua.lua_getglobal(L, to_luastring(name));
+      if (!lua.lua_isfunction(L, -1)) {
+        lua.lua_pop(L, 1);
+        return { status: "error", error: `Lua prompt callback ${name} was not found` };
+      }
+      for (const arg of args) pushLuaPromptCallbackArg(L, arg);
+      return runLuaPromptCoroutineFromStack(L, hostState, args.length);
+    },
+    runPromptEffectOperation(effectId, sourceUid, player) {
+      const source = findCard(session.state, sourceUid);
+      if (!source) return { status: "error", error: `Lua effect source ${sourceUid} was not found` };
+      const ctx = createEffectContext(session.state, source, player, undefined, undefined, [], false, source.location, source.sequence);
+      return runLuaEffectOperationPromptCoroutine(L, hostState, effectId, source, ctx);
+    },
   };
+}
+
+function pushLuaPromptCallbackArg(L: unknown, arg: number | boolean | string): void {
+  if (typeof arg === "boolean") lua.lua_pushboolean(L, arg);
+  else if (typeof arg === "number") lua.lua_pushinteger(L, arg);
+  else lua.lua_pushstring(L, to_luastring(arg));
 }
 
 function nextLuaEffectId(session: DuelSession): number {
@@ -250,7 +279,10 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
         lua.lua_pushinteger(L, player);
         lua.lua_pushinteger(L, chainPlayer);
         const status = lua.lua_pcall(L, 3, 1, 0);
-        if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+        if (status !== lua.LUA_OK) {
+          readLuaError(L);
+          return false;
+        }
         const result = lua.lua_toboolean(L, -1);
         lua.lua_pop(L, 1);
         return Boolean(result);
@@ -264,6 +296,11 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
   if (!field) return undefined;
   const [, tableName, fieldName] = field;
   if (!tableName || !fieldName) return undefined;
+  lua.lua_getglobal(L, to_luastring(tableName));
+  lua.lua_getfield(L, -1, to_luastring(fieldName));
+  const hasNamedPredicate = lua.lua_isfunction(L, -1);
+  lua.lua_pop(L, 2);
+  if (!hasNamedPredicate) return undefined;
   return {
     ...limit,
     allows(effect, player, chainPlayer) {
@@ -277,7 +314,11 @@ function restoreKnownLuaChainLimit(L: unknown, hostState: LuaHostState, key: str
       lua.lua_pushinteger(L, player);
       lua.lua_pushinteger(L, chainPlayer);
       const status = lua.lua_pcall(L, 3, 1, 0);
-      if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+      if (status !== lua.LUA_OK) {
+        readLuaError(L);
+        lua.lua_pop(L, 1);
+        return false;
+      }
       const result = lua.lua_toboolean(L, -1);
       lua.lua_pop(L, 2);
       return Boolean(result);

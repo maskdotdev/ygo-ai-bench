@@ -11,10 +11,13 @@ export function assertSnapshotCounterBuckets(record: unknown, path: string): voi
   for (const [key, value] of Object.entries(record)) {
     if (!/^\d+$/.test(key)) throw new Error(`Malformed duel snapshot: ${path} must use numeric keys`);
     if (!isRecord(value)) throw new Error(`Malformed duel snapshot: ${path}.${key} must be an object`);
+    for (const bucketKey of Object.keys(value)) if (!counterBucketKeys.has(bucketKey)) throw new Error(`Malformed duel snapshot: ${path}.${key}.${bucketKey} is not a known field`);
     if (value.permanent !== undefined) assertSnapshotNonNegativeInteger(value.permanent, `${path}.${key}.permanent`);
     if (value.resetWhileNegated !== undefined) assertSnapshotNonNegativeInteger(value.resetWhileNegated, `${path}.${key}.resetWhileNegated`);
   }
 }
+
+const counterBucketKeys = new Set(["permanent", "resetWhileNegated"]);
 
 function assertSnapshotNonNegativeInteger(value: unknown, path: string): void {
   if (typeof value !== "number") throw new Error(`Malformed duel snapshot: ${path} must be a number`);

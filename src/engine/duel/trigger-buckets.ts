@@ -1,6 +1,12 @@
 import type { DuelState, PendingTrigger, PendingTriggerBucketState, TriggerBucket } from "#duel/types.js";
 
-const triggerBucketOrder: TriggerBucket[] = ["turnMandatory", "opponentMandatory", "turnOptional", "opponentOptional"];
+export const triggerBucketOrder: readonly TriggerBucket[] = ["turnMandatory", "opponentMandatory", "turnOptional", "opponentOptional"];
+
+const triggerBuckets = new Set<TriggerBucket>(triggerBucketOrder);
+
+export function isTriggerBucket(value: unknown): value is TriggerBucket {
+  return triggerBuckets.has(value as TriggerBucket);
+}
 
 export function pendingTriggerBuckets(triggers: PendingTrigger[]): PendingTriggerBucketState[] {
   return triggerBucketOrder.flatMap((bucket) => {

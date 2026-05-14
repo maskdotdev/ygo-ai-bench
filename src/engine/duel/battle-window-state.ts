@@ -1,5 +1,23 @@
 import type { BattleStep, BattleWindowKind, BattleWindowState, DuelState, PlayerId } from "#duel/types.js";
 
+export const battleWindowKinds: readonly BattleWindowKind[] = [
+  "attackDeclaration",
+  "attackTargetConfirmation",
+  "attackNegationResponse",
+  "replayDecision",
+  "startDamageStep",
+  "beforeDamageCalculation",
+  "duringDamageCalculation",
+  "afterDamageCalculation",
+  "endDamageStep",
+];
+
+const battleWindowKindSet = new Set<BattleWindowKind>(battleWindowKinds);
+
+export function isBattleWindowKind(value: unknown): value is BattleWindowKind {
+  return battleWindowKindSet.has(value as BattleWindowKind);
+}
+
 export function openBattleWindowState(state: DuelState, kind: BattleWindowKind, step: BattleStep, responsePlayer: PlayerId): BattleWindowState | undefined {
   const battle = state.pendingBattle ?? state.currentAttack;
   if (!battle) {

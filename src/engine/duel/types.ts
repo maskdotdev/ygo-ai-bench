@@ -340,6 +340,7 @@ export interface DuelEffectDefinition {
   labelObjectUid?: string;
   labelObjectUids?: string[];
   operation: (ctx: DuelEffectContext) => void;
+  promptOperation?: (ctx: DuelEffectContext) => unknown;
 }
 
 export interface ChainLimit {
@@ -352,7 +353,7 @@ export interface ChainLimit {
 
 export type SerializedDuelEffect = Omit<
   DuelEffectDefinition,
-  "battleDamageValue" | "canActivate" | "cost" | "lifePointValue" | "luaTypeFlags" | "operation" | "statValue" | "target" | "targetCardPredicate" | "valueCardPredicate" | "valuePredicate"
+  "battleDamageValue" | "canActivate" | "cost" | "lifePointValue" | "luaTypeFlags" | "operation" | "promptOperation" | "statValue" | "target" | "targetCardPredicate" | "valueCardPredicate" | "valuePredicate"
 >;
 export type SerializedChainLimit = Omit<ChainLimit, "allows" | "release">;
 
@@ -445,6 +446,11 @@ export interface ChainLink {
 
 export type PublicChainLink = Omit<ChainLink, "operationOverride">;
 
+export interface LuaOperationPromptState {
+  chainLink: PublicChainLink;
+  prompt: import("#lua/host-types.js").LuaPromptDecision;
+}
+
 export type TriggerBucket = "turnMandatory" | "opponentMandatory" | "turnOptional" | "opponentOptional";
 export type TriggerTiming = "if" | "when";
 
@@ -518,8 +524,8 @@ export interface DuelFlagEffect {
 }
 
 export type DuelPromptState =
-  | { id: string; type: "selectOption"; player: PlayerId; options: number[]; returnTo?: PlayerId }
-  | { id: string; type: "selectYesNo"; player: PlayerId; description?: number; returnTo?: PlayerId };
+  | { id: string; type: "selectOption"; player: PlayerId; options: number[]; descriptions?: number[]; returnTo?: PlayerId; origin?: "luaOperation" }
+  | { id: string; type: "selectYesNo"; player: PlayerId; description?: number; returnTo?: PlayerId; origin?: "luaOperation" };
 
 export type BattleStep = "attack" | "damage" | "damageCalculation";
 export type BattleWindowKind =
@@ -611,6 +617,7 @@ export interface DuelState {
     }[];
   };
   prompt?: DuelPromptState;
+  luaOperationPrompt?: LuaOperationPromptState;
   waitingFor?: PlayerId;
   log: DuelLogEntry[];
   options: Required<Pick<DuelOptions, "startingLifePoints" | "startingHandSize" | "drawPerTurn">>;
@@ -687,6 +694,7 @@ export interface PublicDuelState {
   actionWindowToken: string;
   windowKind?: DuelActionWindowKind;
   prompt?: DuelPromptState;
+  luaOperationPrompt?: LuaOperationPromptState;
   triggerOrderPrompt?: TriggerOrderPromptState;
   players: Record<PlayerId, DuelPlayerState>;
   cards: PublicDuelCard[];
@@ -773,6 +781,7 @@ export interface ScriptedLegalActionGroupExpectation {
   windowKind?: DuelActionWindowKind;
   windowToken?: string;
   triggerBucket?: Partial<PendingTriggerBucketState>;
+  triggerOrderPrompt?: Partial<TriggerOrderPromptState> | null;
   count?: number;
   actions?: ScriptedLegalActionExpectation[];
 }

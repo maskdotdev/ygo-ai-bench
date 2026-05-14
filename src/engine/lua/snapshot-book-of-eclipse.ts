@@ -1,4 +1,5 @@
 import { changeDuelCardPosition, drawDuelCards } from "#duel/core.js";
+import { duelLocations } from "#duel/location-kinds.js";
 import type { DuelEffectContext, DuelEffectDefinition, DuelState, SerializedDuelEffect } from "#duel/types.js";
 
 const luaBookOfEclipseCode = "35480699";
@@ -52,6 +53,6 @@ function opponent(player: DuelEffectContext["player"] | undefined): 0 | 1 {
 }
 
 function hasDefaultLuaFieldRange(effect: SerializedDuelEffect): boolean {
-  const allLocations = new Set(["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"]);
+  const allLocations = new Set(duelLocations);
   return effect.range.length === allLocations.size && effect.range.every((location) => allLocations.has(location));
 }

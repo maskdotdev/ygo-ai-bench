@@ -3,6 +3,7 @@ import { copyBattleWindowState } from "#duel/battle-window-state.js";
 import { shouldContinueTriggerSelection } from "#duel/effect-activation.js";
 import { pendingTriggerBucketsForState } from "#duel/trigger-buckets.js";
 import type { DuelCardInstance, DuelPromptState, DuelState, PublicChainLink, PublicDuelCard, PublicDuelState, TriggerOrderPromptState } from "#duel/types.js";
+import { isLuaOptionPromptDecision } from "#lua/host-types.js";
 
 export function queryPublicState({ state }: { state: DuelState }): PublicDuelState {
   const windowKind = currentPublicWindowKind(state);
@@ -20,6 +21,7 @@ export function queryPublicState({ state }: { state: DuelState }): PublicDuelSta
     actionWindowToken: state.actionWindowToken,
     ...(windowKind === undefined ? {} : { windowKind }),
     ...(state.prompt === undefined ? {} : { prompt: copyPrompt(state.prompt) }),
+    ...(state.luaOperationPrompt === undefined ? {} : { luaOperationPrompt: { chainLink: copyPublicChainLink(state.luaOperationPrompt.chainLink), prompt: copyLuaOperationPromptDecision(state.luaOperationPrompt.prompt) } }),
     ...triggerOrderPromptState(state, pendingTriggerBuckets),
     players: {
       0: { ...state.players[0] },
@@ -81,7 +83,13 @@ function copyPublicChainLink(link: DuelState["chain"][number]): PublicChainLink 
 }
 
 function copyOperationInfos(infos: NonNullable<DuelState["chain"][number]["operationInfos"]>): NonNullable<DuelState["chain"][number]["operationInfos"]> {
-  return infos.map((info) => ({ ...info, targetUids: [...info.targetUids] }));
+  return infos.map((info) => ({
+    category: typeof info.category === "number" && Number.isFinite(info.category) ? info.category : 0,
+    targetUids: Array.isArray(info.targetUids) ? [...info.targetUids] : [],
+    count: typeof info.count === "number" && Number.isFinite(info.count) ? info.count : 0,
+    player: info.player === 1 ? 1 : 0,
+    parameter: typeof info.parameter === "number" && Number.isFinite(info.parameter) ? info.parameter : 0,
+  }));
 }
 
 function copyPendingTrigger(trigger: DuelState["pendingTriggers"][number]): DuelState["pendingTriggers"][number] {
@@ -94,7 +102,12 @@ function copyPendingTrigger(trigger: DuelState["pendingTriggers"][number]): Duel
 }
 
 function copyPrompt(prompt: DuelPromptState): DuelPromptState {
-  if (prompt.type === "selectOption") return { ...prompt, options: [...prompt.options] };
+  if (prompt.type === "selectOption") return { ...prompt, options: [...prompt.options], ...(prompt.descriptions === undefined ? {} : { descriptions: [...prompt.descriptions] }) };
+  return { ...prompt };
+}
+
+function copyLuaOperationPromptDecision(prompt: NonNullable<DuelState["luaOperationPrompt"]>["prompt"]): NonNullable<DuelState["luaOperationPrompt"]>["prompt"] {
+  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions] };
   return { ...prompt };
 }
 

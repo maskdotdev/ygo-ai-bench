@@ -16,7 +16,7 @@ export function literalActionTypeChainPlayerLimitPredicate(L: unknown, index: nu
   const effect = escapeRegExp(effectParam);
   const chainPlayer = escapeRegExp(chainPlayerParam);
   const capturedName = escapeRegExp(captured.name);
-  const typeCheck = `${effect}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsType\\s*\\(\\s*(?:TYPE_ACTION|${TYPE_ACTION})\\s*\\)`;
+  const typeCheck = `${effect}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsType\\s*\\(\\s*(?:TYPE_ACTION|${TYPE_ACTION}|0x10000000)\\s*\\)`;
   const mismatchedPlayer = `(?:${chainPlayer}\\s*~=\\s*1\\s*-\\s*${capturedName}|1\\s*-\\s*${capturedName}\\s*~=\\s*${chainPlayer})`;
   const matches = new RegExp(`\\breturn\\s+not\\s*\\(\\s*${typeCheck}\\s+and\\s+${mismatchedPlayer}\\s*\\)`).test(snippet);
   return matches ? `closure:not-source-type-unless-chain-player:${TYPE_ACTION}:${1 - captured.value}` : undefined;
@@ -61,7 +61,7 @@ export function literalResponseMatchesChainPlayerOrSourceTypeNonActivatePredicat
   const sourceTypeTerm = terms.find((term) => term !== equality);
   if (!equality || !sourceTypeTerm) return undefined;
   const effect = escapeRegExp(effectParam);
-  const nonActivation = `not\\s+${effect}\\s*:\\s*IsHasType\\s*\\(\\s*(?:EFFECT_TYPE_ACTIVATE|16)\\s*\\)`;
+  const nonActivation = `not\\s+${effect}\\s*:\\s*IsHasType\\s*\\(\\s*(?:EFFECT_TYPE_ACTIVATE|16|0x10)\\s*\\)`;
   const sourceType = sourceTypeTerm.match(new RegExp(`^${effect}\\s*:\\s*(IsSpellTrapEffect|IsSpellEffect|IsTrapEffect)\\s*\\(\\s*\\)\\s+and\\s+${nonActivation}$`))
     ?? sourceTypeTerm.match(new RegExp(`^${nonActivation}\\s+and\\s+${effect}\\s*:\\s*(IsSpellTrapEffect|IsSpellEffect|IsTrapEffect)\\s*\\(\\s*\\)$`));
   return sourceType?.[1] ? sourceTypeNonActivationMethodMask(sourceType[1]) : undefined;
@@ -78,7 +78,7 @@ export function literalNotOpponentControlledTrapPredicate(L: unknown, index: num
   const terms = returnExpression.split(/\s+or\s+/).map((term) => trimOuterParens(term.trim())).filter(Boolean);
   if (terms.length !== 2) return false;
   const handler = `${escapeRegExp(effectParam)}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`;
-  const trap = new RegExp(`^not\\s+${handler}\\s*:\\s*(?:IsTrap\\s*\\(\\s*\\)|IsType\\s*\\(\\s*(?:TYPE_TRAP|4)\\s*\\))$`);
+  const trap = new RegExp(`^not\\s+${handler}\\s*:\\s*(?:IsTrap\\s*\\(\\s*\\)|IsType\\s*\\(\\s*(?:TYPE_TRAP|4|0x4)\\s*\\))$`);
   const opponent = new RegExp(`^not\\s+${handler}\\s*:\\s*IsControler\\s*\\(\\s*1\\s*-\\s*${escapeRegExp(responsePlayerParam)}\\s*\\)$`);
   return terms.some((term) => trap.test(term)) && terms.some((term) => opponent.test(term));
 }
@@ -343,7 +343,8 @@ function sourceTypeNonActivationMethodMask(method: string): number | undefined {
   return undefined;
 }
 
-const sourceTypeMaskExpressionPattern = String.raw`(?:TYPE_MONSTER|TYPE_SPELL|TYPE_TRAP|\d+)(?:\s*(?:\+|\|)\s*(?:TYPE_MONSTER|TYPE_SPELL|TYPE_TRAP|\d+))*`;
+const numericMaskPattern = String.raw`(?:0x[0-9A-Fa-f]+|\d+)`;
+const sourceTypeMaskExpressionPattern = String.raw`(?:TYPE_MONSTER|TYPE_SPELL|TYPE_TRAP|${numericMaskPattern})(?:\s*(?:\+|\|)\s*(?:TYPE_MONSTER|TYPE_SPELL|TYPE_TRAP|${numericMaskPattern}))*`;
 const sourceTypeMasks: Record<string, number> = {
   TYPE_MONSTER: 0x1,
   TYPE_SPELL: 0x2,
@@ -354,7 +355,7 @@ function sourceTypeMaskTokenValue(token: string): number | undefined {
   return maskTokenValue(token, sourceTypeMasks);
 }
 
-const effectTypeMaskExpressionPattern = String.raw`(?:EFFECT_TYPE_SINGLE|EFFECT_TYPE_FIELD|EFFECT_TYPE_EQUIP|EFFECT_TYPE_ACTIVATE|EFFECT_TYPE_IGNITION|EFFECT_TYPE_TRIGGER_O|EFFECT_TYPE_QUICK_O|EFFECT_TYPE_TRIGGER_F|EFFECT_TYPE_QUICK_F|EFFECT_TYPE_CONTINUOUS|\d+)(?:\s*(?:\+|\|)\s*(?:EFFECT_TYPE_SINGLE|EFFECT_TYPE_FIELD|EFFECT_TYPE_EQUIP|EFFECT_TYPE_ACTIVATE|EFFECT_TYPE_IGNITION|EFFECT_TYPE_TRIGGER_O|EFFECT_TYPE_QUICK_O|EFFECT_TYPE_TRIGGER_F|EFFECT_TYPE_QUICK_F|EFFECT_TYPE_CONTINUOUS|\d+))*`;
+const effectTypeMaskExpressionPattern = String.raw`(?:EFFECT_TYPE_SINGLE|EFFECT_TYPE_FIELD|EFFECT_TYPE_EQUIP|EFFECT_TYPE_ACTIVATE|EFFECT_TYPE_IGNITION|EFFECT_TYPE_TRIGGER_O|EFFECT_TYPE_QUICK_O|EFFECT_TYPE_TRIGGER_F|EFFECT_TYPE_QUICK_F|EFFECT_TYPE_CONTINUOUS|${numericMaskPattern})(?:\s*(?:\+|\|)\s*(?:EFFECT_TYPE_SINGLE|EFFECT_TYPE_FIELD|EFFECT_TYPE_EQUIP|EFFECT_TYPE_ACTIVATE|EFFECT_TYPE_IGNITION|EFFECT_TYPE_TRIGGER_O|EFFECT_TYPE_QUICK_O|EFFECT_TYPE_TRIGGER_F|EFFECT_TYPE_QUICK_F|EFFECT_TYPE_CONTINUOUS|${numericMaskPattern}))*`;
 const effectTypeMasks: Record<string, number> = {
   EFFECT_TYPE_SINGLE: 0x1,
   EFFECT_TYPE_FIELD: 0x2,
@@ -391,7 +392,7 @@ function activeTypeMethodMask(method: string): number | undefined {
   return undefined;
 }
 
-const activeTypeMaskExpressionPattern = String.raw`(?:TYPE_MONSTER|TYPE_SPELL|TYPE_TRAP|\d+)(?:\s*(?:\+|\|)\s*(?:TYPE_MONSTER|TYPE_SPELL|TYPE_TRAP|\d+))*`;
+const activeTypeMaskExpressionPattern = String.raw`(?:TYPE_MONSTER|TYPE_SPELL|TYPE_TRAP|${numericMaskPattern})(?:\s*(?:\+|\|)\s*(?:TYPE_MONSTER|TYPE_SPELL|TYPE_TRAP|${numericMaskPattern}))*`;
 const activeTypeMasks: Record<string, number> = {
   TYPE_MONSTER: 0x1,
   TYPE_SPELL: 0x2,
@@ -407,7 +408,7 @@ function maskTokenValue(token: string, masks: Record<string, number>): number | 
   if (parts.length === 0) return undefined;
   let mask = 0;
   for (const part of parts) {
-    const value = masks[part] ?? (/^\d+$/.test(part) ? Number(part) : undefined);
+    const value = masks[part] ?? (/^0x[0-9A-Fa-f]+$/.test(part) ? Number.parseInt(part.slice(2), 16) : /^\d+$/.test(part) ? Number(part) : undefined);
     if (value === undefined || !Number.isSafeInteger(value) || value <= 0) return undefined;
     mask |= value;
   }

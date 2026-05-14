@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { registerEffect } from "#duel/core.js";
 import { cleanupRemovedDuelEffect } from "#duel/effect-reset.js";
+import { duelLocations } from "#duel/location-kinds.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import { locationsFromMask, positionMaskFromPosition, readCardUid, readGroupUids, readTableNumberField } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
@@ -14,13 +15,12 @@ import { installEffectCompatibilityApi } from "#lua/effect-compatibility-api.js"
 import { cardTypeFlags } from "#lua/card-stat-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { triggerEventFromCode } from "#lua/event-code.js";
-import { readLuaError } from "#lua/host-script-api.js";
+import { readLuaError, runLuaPromptCoroutineFromStack } from "#lua/host-script-api.js";
 import { normalizeLuaDamageModifier, normalizeLuaUnsignedInteger, toLuaSigned32 } from "#lua/numeric-utils.js";
 import { materializeSkipDrawPhaseEffect } from "#lua/phase-skip-effects.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
-import type { LuaEffectRecord, LuaHostState } from "#lua/host-types.js";
+import type { LuaEffectRecord, LuaHostState, LuaPromptCoroutineResult } from "#lua/host-types.js";
 const { lua, lauxlib, to_luastring } = fengari;
-const allDuelLocations: DuelLocation[] = ["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"];
 const luaEffectTypeSingle = 0x1, luaResetEvent = 0x1000, luaResetToField = 0x1000000;
 const luaEffectSummonProc = 32, luaEffectLimitSummonProc = 33, luaEffectSpecialSummonProc = 34, luaEffectFusionSubstitute = 234;
 export function installEffectApi(L: unknown, hostState: LuaHostState, readLuaError: (state: unknown) => string): void {
@@ -374,7 +374,7 @@ export function registerLuaEffect(L: unknown, hostState: LuaHostState, id: numbe
   if (!luaEffect || !source) return false;
   luaEffect.ownerPlayer = player;
   const effect = toDuelEffect(source, luaEffect, L, hostState);
-  if (luaEffect.range === undefined) effect.range = [...allDuelLocations];
+  if (luaEffect.range === undefined) effect.range = [...duelLocations];
   if (materializeSkipDrawPhaseEffect(hostState.session, source, effect)) return true;
   registerEffect(hostState.session, effect);
   return true;
@@ -527,7 +527,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.value === undefined ? {} : { value: luaEffect.value }),
     ...(luaEffect.conditionDescriptor === undefined ? {} : { luaConditionDescriptor: luaEffect.conditionDescriptor }),
     ...(luaEffect.costDescriptor === undefined ? {} : { luaCostDescriptor: luaEffect.costDescriptor }),
-    ...(luaEffect.valueDescriptor === undefined ? {} : { luaValueDescriptor: luaEffect.valueDescriptor }),
+    ...(luaEffect.valueDescriptor === undefined ? defaultLuaValueDescriptor(luaEffect) : { luaValueDescriptor: luaEffect.valueDescriptor }),
     ...(luaEffect.targetDescriptor === undefined ? {} : { luaTargetDescriptor: luaEffect.targetDescriptor }),
     ...(triggerEvent === undefined ? {} : { triggerEvent }),
     ...(triggerEvent !== undefined && shouldKeepTriggerCode(triggerEvent, luaEffect.code) ? { triggerCode: luaEffect.code } : {}),
@@ -564,24 +564,23 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     cost: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.costRef, true, "cost", ctx),
     target: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.targetRef, true, "target", ctx),
     operation: (ctx) => {
-      if (luaEffect.operationRef === undefined) {
+      const operationRef = luaEffect.operationRef;
+      if (operationRef === undefined) {
         ctx.log("Lua effect resolved without an operation");
         return;
       }
       withLuaCallbackContext(hostState, ctx, luaEffect.id, "operation", () => {
-        applyLuaEffectContextLabelObject(L, luaEffect, ctx);
         if (ctx.chainLink?.effectLabel !== undefined) luaEffect.label = ctx.chainLink.effectLabel;
-        lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.operationRef);
-        const legacyArgs = secondParameterName(L, -1) === "c";
-        const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, "operation", legacyArgs, ctx);
-        const status = lua.lua_pcall(L, argCount, 0, 0);
-        if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+        callLuaEffectOperation(L, hostState, luaEffect, card, operationRef, ctx, readLuaError);
         ctx.log("Lua effect operation resolved");
       });
     },
+    promptOperation: (ctx) => runLuaEffectOperationPromptCoroutine(L, hostState, luaEffectDuelId(luaEffect), card, ctx),
   };
   return duelEffect;
 }
+
+function defaultLuaValueDescriptor(luaEffect: LuaEffectRecord): Pick<DuelEffectDefinition, "luaValueDescriptor"> { return luaEffect.code === 30 && luaEffect.valueRef === undefined && (luaEffect.value === undefined || luaEffect.value === 0) ? { luaValueDescriptor: "special-summon-condition:false" } : {}; }
 
 function luaEffectEvent(card: DuelCardInstance, luaEffect: LuaEffectRecord): DuelEffectDefinition["event"] {
   const { typeFlags, code } = luaEffect;
@@ -662,11 +661,11 @@ function isSummonAttemptTriggerEvent(event: DuelEffectDefinition["triggerEvent"]
 }
 
 function luaEffectDefaultRange(card: DuelCardInstance, luaEffect: LuaEffectRecord, event: DuelEffectDefinition["event"]): DuelLocation[] {
-  if (event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEventFromCode(luaEffect.code), luaEffect.code)) return ["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"];
-  if (event === "continuous" && luaEffectIsSourceOnlyContinuousEvent(luaEffect.typeFlags, triggerEventFromCode(luaEffect.code))) return ["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"];
+  if (event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEventFromCode(luaEffect.code), luaEffect.code)) return [...duelLocations];
+  if (event === "continuous" && luaEffectIsSourceOnlyContinuousEvent(luaEffect.typeFlags, triggerEventFromCode(luaEffect.code))) return [...duelLocations];
   if (event === "continuous" && (luaEffect.typeFlags & 0x4) !== 0) return ["spellTrapZone"];
-  if (event === "continuous" && shouldSurviveLuaSingleEffectEnteringField(card, luaEffect)) return [...allDuelLocations];
-  if (event === "continuous" && luaEffect.code === luaEffectFusionSubstitute) return [...allDuelLocations];
+  if (event === "continuous" && shouldSurviveLuaSingleEffectEnteringField(card, luaEffect)) return [...duelLocations];
+  if (event === "continuous" && luaEffect.code === luaEffectFusionSubstitute) return [...duelLocations];
   if (event === "continuous" && luaEffect.code === 313) return ["monsterZone"];
   if (event === "continuous" || event === "summonProcedure" || event === "trigger") return [card.location];
   if ((luaEffect.typeFlags & 0x10) !== 0 && card.kind === "spell") return ["hand", "spellTrapZone"];
@@ -871,16 +870,81 @@ export function changeLuaChainOperation(L: unknown, hostState: LuaHostState, cha
   if (!link || !luaEffect || !source) return false;
   link.operationOverride = (ctx) => {
     withLuaCallbackContext(hostState, ctx, luaEffect.id, "operation", () => {
-      applyLuaEffectContextLabelObject(L, luaEffect, ctx);
-      lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, operationRef);
-      const legacyArgs = secondParameterName(L, -1) === "c";
-      const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, source, "operation", legacyArgs, ctx);
-      const status = lua.lua_pcall(L, argCount, 0, 0);
-      if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+      callLuaEffectOperation(L, hostState, luaEffect, source, operationRef, ctx, readLuaError);
       ctx.log("Lua chain operation changed");
     });
   };
   return true;
+}
+
+export function runLuaEffectOperationPromptCoroutine(
+  L: unknown,
+  hostState: LuaHostState,
+  effectId: string,
+  source: DuelCardInstance,
+  ctx: DuelEffectContext,
+): LuaPromptCoroutineResult {
+  const id = Number(effectId.match(/^lua-(\d+)/)?.[1]);
+  const luaEffect = Number.isFinite(id) ? hostState.effects.get(id) : undefined;
+  if (!luaEffect) return { status: "error", error: `Lua effect ${effectId} was not found` };
+  const operationRef = luaEffect.operationRef;
+  if (operationRef === undefined) return { status: "completed", values: [] };
+  if (ctx.chainLink?.effectLabel !== undefined) luaEffect.label = ctx.chainLink.effectLabel;
+  const result = withLuaCallbackContext(hostState, ctx, luaEffect.id, "operation", () => callLuaEffectOperationCoroutine(L, hostState, luaEffect, source, operationRef, ctx));
+  return wrapLuaEffectOperationCoroutineResult(hostState, luaEffect, ctx, result);
+}
+
+function callLuaEffectOperation(
+  L: unknown,
+  hostState: LuaHostState,
+  luaEffect: LuaEffectRecord,
+  card: DuelCardInstance,
+  operationRef: number,
+  ctx: DuelEffectContext,
+  readLuaError: (state: unknown) => string,
+): void {
+  applyLuaEffectContextLabelObject(L, luaEffect, ctx);
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, operationRef);
+  const legacyArgs = secondParameterName(L, -1) === "c";
+  const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, "operation", legacyArgs, ctx);
+  const status = lua.lua_pcall(L, argCount, 0, 0);
+  if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+}
+
+function callLuaEffectOperationCoroutine(
+  L: unknown,
+  hostState: LuaHostState,
+  luaEffect: LuaEffectRecord,
+  card: DuelCardInstance,
+  operationRef: number,
+  ctx: DuelEffectContext,
+): LuaPromptCoroutineResult {
+  applyLuaEffectContextLabelObject(L, luaEffect, ctx);
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, operationRef);
+  const legacyArgs = secondParameterName(L, -1) === "c";
+  const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, "operation", legacyArgs, ctx);
+  const result = runLuaPromptCoroutineFromStack(L, hostState, argCount);
+  return result;
+}
+
+function wrapLuaEffectOperationCoroutineResult(
+  hostState: LuaHostState,
+  luaEffect: LuaEffectRecord,
+  ctx: DuelEffectContext,
+  result: LuaPromptCoroutineResult,
+): LuaPromptCoroutineResult {
+  if (result.status === "completed") {
+    ctx.log("Lua effect operation resolved");
+    return result;
+  }
+  if (result.status !== "yielded") return result;
+  return {
+    ...result,
+    resume(value) {
+      const resumed = withLuaCallbackContext(hostState, ctx, luaEffect.id, "operation", () => result.resume(value));
+      return wrapLuaEffectOperationCoroutineResult(hostState, luaEffect, ctx, resumed);
+    },
+  };
 }
 
 function chainLinkByLuaIndex(session: DuelSession, requestedIndex: number): DuelSession["state"]["chain"][number] | undefined {

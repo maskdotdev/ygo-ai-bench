@@ -14,7 +14,7 @@ import { getDuelFlagEffectCount } from "#duel/flags.js";
 import { hasPendulumSummonAvailable } from "#duel/pendulum-availability.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
-import { hasAdditionalNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
+import { hasActiveExtraNormalSummonCountEffect, hasAdditionalNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
 import { maxSimultaneousSpecialSummonCount } from "#duel/special-summon-count.js";
 import { cardTypeFlags, currentCardHasEffect, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
 import { pendulumAnyLevelScaleEffectCode, pendulumLevelBypassEffectCode } from "#duel/pendulum-effect-codes.js";
@@ -269,7 +269,7 @@ function canNormalSummon(session: DuelSession, player: PlayerId, card: DuelCardI
 function canAdditionalSummon(session: DuelSession, player: PlayerId): boolean {
   if (!isMainPhaseForPlayer(session, player)) return false;
   if (availableMonsterZoneCount(session, player, []) <= 0) return false;
-  return hasAdditionalNormalSummonCountAvailable(session.state, player);
+  return hasAdditionalNormalSummonCountAvailable(session.state, player) && !hasActiveExtraNormalSummonCountEffect(session.state, player);
 }
 
 function canNormalSet(session: DuelSession, player: PlayerId, uid: string | undefined, ignoreCount: boolean): boolean {

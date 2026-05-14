@@ -6,6 +6,7 @@ import { clearEndedDuelPendingState } from "#duel/end-state.js";
 import { pruneDuelFlagEffectsAfterPhase } from "#duel/flags.js";
 import { otherPlayer } from "#duel/player-id.js";
 import { duelReason } from "#duel/reasons.js";
+import { duelPhases } from "#duel/state-kinds.js";
 import { phaseEventCode, phaseStartEventCode, phaseTimingEventCode } from "#duel/event-codes.js";
 import type { DuelEventName, DuelPhase, DuelState, PlayerId } from "#duel/types.js";
 
@@ -17,7 +18,7 @@ export interface DuelTurnFlowHandlers {
   executePhaseEffects?(phase: DuelPhase): void;
 }
 
-const phaseOrder: DuelPhase[] = ["draw", "standby", "main1", "battle", "main2", "end"];
+const phaseOrder = duelPhases;
 
 export function drawDuelCardsFromDeck(state: DuelState, player: PlayerId, count: number, detail: string, canLoseByDeck: (player: PlayerId) => boolean = () => false): number {
   let drawn = 0;

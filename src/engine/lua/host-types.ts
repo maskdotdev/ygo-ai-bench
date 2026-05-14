@@ -7,8 +7,14 @@ export interface LuaScriptLoadResult {
   name: string;
 }
 
+export type LuaPromptCoroutineResult =
+  | { status: "completed"; values: unknown[] }
+  | { status: "yielded"; prompt: LuaPromptDecision; resume: (value: number | boolean) => LuaPromptCoroutineResult }
+  | { status: "error"; error: string };
+
 export interface LuaScriptHost {
   readonly messages: string[];
+  readonly promptDecisions: LuaPromptDecision[];
   loadScript(code: string, name: string): LuaScriptLoadResult;
   loadCardScript(cardCode: string | number, source: LuaScriptSource): LuaScriptLoadResult;
   registerInitialEffects(): number;
@@ -17,6 +23,52 @@ export interface LuaScriptHost {
   restoreChainLimit(key: string, limit: ChainLimit): ChainLimit | undefined;
   getGlobalString(name: string): string | undefined;
   getGlobalNumber(name: string): number | undefined;
+  runPromptCoroutine(code: string, name: string): LuaPromptCoroutineResult;
+  runPromptCallback(name: string, args?: Array<number | boolean | string>): LuaPromptCoroutineResult;
+  runPromptEffectOperation(effectId: string, sourceUid: string, player: PlayerId): LuaPromptCoroutineResult;
+}
+
+export type LuaPromptDecision =
+  | { id: string; api: "SelectOption" | "SelectEffect" | "AnnounceNumber" | "AnnounceNumberRange" | "AnnounceCard" | "AnnounceType" | "AnnounceLevel" | "AnnounceRace" | "AnnounceAttribute" | "SelectCardsFromCodes" | "SelectDisableField" | "SelectField" | "SelectFieldZone"; player?: PlayerId; options: number[]; descriptions: number[]; returned: number }
+  | { id: string; api: "SelectYesNo" | "SelectEffectYesNo"; player?: PlayerId; description?: number; returned: boolean };
+
+export const luaOptionPromptApis: ReadonlyArray<Extract<LuaPromptDecision, { options: number[] }>["api"]> = [
+  "SelectOption",
+  "SelectEffect",
+  "AnnounceNumber",
+  "AnnounceNumberRange",
+  "AnnounceCard",
+  "AnnounceType",
+  "AnnounceLevel",
+  "AnnounceRace",
+  "AnnounceAttribute",
+  "SelectCardsFromCodes",
+  "SelectDisableField",
+  "SelectField",
+  "SelectFieldZone",
+];
+
+export const luaYesNoPromptApis: ReadonlyArray<Extract<LuaPromptDecision, { returned: boolean }>["api"]> = [
+  "SelectYesNo",
+  "SelectEffectYesNo",
+];
+
+export const luaPromptApis: ReadonlyArray<LuaPromptDecision["api"]> = [...luaOptionPromptApis, ...luaYesNoPromptApis];
+
+export function isLuaOptionPromptApi(api: unknown): api is Extract<LuaPromptDecision, { options: number[] }>["api"] {
+  return luaOptionPromptApis.includes(api as Extract<LuaPromptDecision, { options: number[] }>["api"]);
+}
+
+export function isLuaOptionPromptDecision(prompt: LuaPromptDecision): prompt is Extract<LuaPromptDecision, { options: number[] }> {
+  return isLuaOptionPromptApi(prompt.api);
+}
+
+export function isLuaYesNoPromptApi(api: unknown): api is Extract<LuaPromptDecision, { returned: boolean }>["api"] {
+  return luaYesNoPromptApis.includes(api as Extract<LuaPromptDecision, { returned: boolean }>["api"]);
+}
+
+export function isLuaYesNoPromptDecision(prompt: LuaPromptDecision): prompt is Extract<LuaPromptDecision, { returned: boolean }> {
+  return isLuaYesNoPromptApi(prompt.api);
 }
 
 export interface LuaInitialEffectRegistrationResult {
@@ -78,6 +130,9 @@ export interface LuaHostState {
   functionDescriptors: Map<number, string>;
   usedEffectCounts: Map<string, number>;
   messages: string[];
+  promptDecisions: LuaPromptDecision[];
+  nextPromptId: number;
+  promptBehavior: "default" | "yield";
   activeTargetUids: string[] | undefined;
   activeLuaEffectId: number | undefined;
   activeContext: DuelEffectContext | undefined;

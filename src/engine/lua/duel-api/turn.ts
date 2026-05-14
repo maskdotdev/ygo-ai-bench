@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { isBattleAttackStep, isBattleDamageCalculation, isBattleDamageStep } from "#duel/battle-window-state.js";
 import { isPhaseEntryPrevented } from "#duel/continuous-effects.js";
 import { currentDuelPhaseMask, isBattleEndPhase, isBattleStartPhase, phaseMask } from "#duel/phase-mask.js";
+import { duelPhases } from "#duel/state-kinds.js";
 import { nextAvailableDuelPhase } from "#duel/turn-flow.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelPhase, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
@@ -126,7 +127,7 @@ function normalizePlayer(value: number): PlayerId {
 
 function phasesFromMask(mask: number): DuelPhase[] {
   const phases: DuelPhase[] = [];
-  for (const phase of ["draw", "standby", "main1", "battle", "main2", "end"] satisfies DuelPhase[]) {
+  for (const phase of duelPhases) {
     if ((phaseMask(phase) & mask) !== 0) phases.push(phase);
   }
   return phases;

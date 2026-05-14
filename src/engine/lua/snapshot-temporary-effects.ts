@@ -1,3 +1,4 @@
+import { duelLocations } from "#duel/location-kinds.js";
 import type { DuelEffectDefinition, SerializedDuelEffect } from "#duel/types.js";
 
 const luaEffectFlagPlayerTarget = 0x800;
@@ -272,6 +273,6 @@ function hasAnyPlayerTarget(effect: SerializedDuelEffect): boolean {
 }
 
 function hasDefaultLuaFieldRange(effect: SerializedDuelEffect): boolean {
-  const allLocations = new Set(["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"]);
+  const allLocations = new Set(duelLocations);
   return effect.range.length === allLocations.size && effect.range.every((location) => allLocations.has(location));
 }

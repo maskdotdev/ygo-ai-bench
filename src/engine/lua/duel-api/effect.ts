@@ -6,6 +6,7 @@ import type { DuelEffectContext, DuelSession, PlayerId } from "#duel/types.js";
 const { lua, to_luastring } = fengari;
 
 export interface LuaDuelEffectApiHostState {
+  activeLuaEffectId?: number | undefined;
   activeContext?: DuelEffectContext | undefined;
   pushEffectTable: (state: unknown, id: number) => void;
   registerEffect: (state: unknown, id: number, player: PlayerId) => boolean;
@@ -74,8 +75,19 @@ function getReasonPlayer(session: DuelSession, hostState: LuaDuelEffectApiHostSt
 }
 
 function pushReasonEffect(L: unknown, session: DuelSession, hostState: LuaDuelEffectApiHostState): number {
+  const activeChainEffectId = hostState.activeContext?.chainLink?.effectId;
+  const activeChainLuaId = Number(activeChainEffectId?.match(/^lua-(\d+)/)?.[1]);
+  const eventReasonPlayer = hostState.activeContext?.chainLink?.eventReasonPlayer ?? hostState.activeContext?.eventReasonPlayer;
+  if (Number.isFinite(activeChainLuaId) && eventReasonPlayer !== undefined && hostState.activeContext?.chainLink?.player !== eventReasonPlayer) {
+    hostState.pushEffectTable(L, activeChainLuaId);
+    return 1;
+  }
   if (hostState.activeContext?.eventReasonEffectId !== undefined) {
     hostState.pushEffectTable(L, hostState.activeContext.eventReasonEffectId);
+    return 1;
+  }
+  if (Number.isFinite(activeChainLuaId)) {
+    hostState.pushEffectTable(L, activeChainLuaId);
     return 1;
   }
   const effectId = (hostState.activeContext?.chainLink ?? session.state.chain[session.state.chain.length - 1])?.effectId;
