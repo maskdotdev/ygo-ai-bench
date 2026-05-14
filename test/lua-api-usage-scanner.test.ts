@@ -50,6 +50,24 @@ describe("Lua API usage scanner", () => {
     expect(output.trim()).toBe("");
   });
 
+  it("keeps local alias fallbacks pointed at existing upstream scripts", () => {
+    const broken = fallbackScripts()
+      .filter((file) => !fs.readFileSync(file, "utf8").includes("local-fallback-provisional"))
+      .flatMap((file) => {
+        const source = fs.readFileSync(file, "utf8");
+        const alias = source.match(/Duel\.LoadCardScriptAlias\((\d+)\)/)?.[1];
+        if (!alias) return [`${file}: missing Duel.LoadCardScriptAlias`];
+        const candidates = [
+          path.join(".upstream/ignis/script/official", `c${alias}.lua`),
+          path.join(".upstream/ignis/script", `c${alias}.lua`),
+          path.join(".upstream/ignis/script/pre-release", `c${alias}.lua`),
+        ];
+        return candidates.some((candidate) => fs.existsSync(candidate)) ? [] : [`${file}: missing upstream alias c${alias}.lua`];
+      });
+
+    expect(broken).toEqual([]);
+  });
+
   it("rejects local fallback stub scripts", () => {
     const stubs = fallbackScripts().filter((file) => fs.readFileSync(file, "utf8").includes("local-fallback-stub"));
 
