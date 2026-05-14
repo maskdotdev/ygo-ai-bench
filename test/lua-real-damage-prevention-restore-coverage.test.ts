@@ -115,5 +115,14 @@ function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; require
         "expect(restoredFire.session.state.battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
+    {
+      file: "lua-real-script-kuriboh-pre-damage-prevent.test.ts",
+      required: [
+        "expect(restored.session.state.players[0].lifePoints).toBe(8000)",
+        "expect(restored.session.state.players[1].lifePoints).toBe(8000)",
+        "expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 0 })",
+        'eventName: "battleDamageDealt", eventPlayer: 0',
+      ],
+    },
   ].map(({ file, required }) => ({ file: path.join("test", file), required }));
 }

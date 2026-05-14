@@ -75,6 +75,17 @@ function battleTimingFixtureFiles(): Array<{ file: string; required: string[] }>
       ],
     },
     {
+      file: "test/lua-real-script-kuriboh-pre-damage-prevent.test.ts",
+      required: [
+        'battleWindow?.kind).toBe("beforeDamageCalculation")',
+        'triggerEvent: "beforeDamageCalculation"',
+        "targetRange: [1, 0]",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+        'eventName: "battleDamageDealt", eventPlayer: 0',
+        "pendingBattle).toBeUndefined()",
+      ],
+    },
+    {
       file: "test/lua-real-script-topologic-bomber-battled-damage.test.ts",
       required: [
         'battleWindow?.kind).toBe("afterDamageCalculation")',

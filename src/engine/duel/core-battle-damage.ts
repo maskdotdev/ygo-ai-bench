@@ -1,5 +1,6 @@
-import { isBattleDamageStep } from "#duel/battle-window-state.js";
+import { currentBattleWindowKind, isBattleDamageStep } from "#duel/battle-window-state.js";
 import { findCard, pushDuelLog } from "#duel/card-state.js";
+import { currentAttack, currentDefense } from "#duel/card-stats.js";
 import {
   changedBattleDamageAmount,
   isBattleDamagePrevented,
@@ -7,6 +8,7 @@ import {
   reflectedBattleDamagePlayer,
   type ContinuousEffectContextFactory,
 } from "#duel/continuous-effects.js";
+import { otherPlayer } from "#duel/player-id.js";
 import type { DuelCardInstance, DuelState, PlayerId } from "#duel/types.js";
 
 export interface BattleDamageChangeOptions {
@@ -14,7 +16,11 @@ export interface BattleDamageChangeOptions {
 }
 
 export function getDuelBattleDamage(state: DuelState, player: PlayerId): number {
-  return state.battleDamage[player] ?? 0;
+  const stored = state.battleDamage[player] ?? 0;
+  if (stored > 0 || !state.pendingBattle || state.pendingBattle.resultApplied) return stored;
+  if (state.pendingBattle.battleDamageOverrides?.[player] !== undefined) return stored;
+  if (currentBattleWindowKind(state) !== "beforeDamageCalculation") return stored;
+  return prospectiveBattleDamage(state, player);
 }
 
 export function changeDuelBattleDamage(state: DuelState, player: PlayerId, amount: number): number {
@@ -57,4 +63,22 @@ function currentBattleCards(state: DuelState): DuelCardInstance[] {
   const attacker = battle?.attackerUid ? findCard(state, battle.attackerUid) : undefined;
   const target = battle?.targetUid ? findCard(state, battle.targetUid) : undefined;
   return [attacker, target].filter((card): card is DuelCardInstance => Boolean(card));
+}
+
+function prospectiveBattleDamage(state: DuelState, player: PlayerId): number {
+  const battle = state.currentAttack ?? state.pendingBattle;
+  const attacker = battle?.attackerUid ? findCard(state, battle.attackerUid) : undefined;
+  if (!battle || !attacker || attacker.location !== "monsterZone") return 0;
+  const target = battle.targetUid ? findCard(state, battle.targetUid) : undefined;
+  if (!target) return player === otherPlayer(attacker.controller) ? currentAttack(attacker, state) : 0;
+  if (target.location !== "monsterZone") return 0;
+  const attackerAttack = currentAttack(attacker, state);
+  const targetStat = target.position === "faceUpAttack" ? currentAttack(target, state) : currentDefense(target, state);
+  if (target.position === "faceUpAttack") {
+    if (attackerAttack > targetStat) return player === target.controller ? attackerAttack - targetStat : 0;
+    if (attackerAttack < targetStat) return player === attacker.controller ? targetStat - attackerAttack : 0;
+    return 0;
+  }
+  if (attackerAttack < targetStat) return player === attacker.controller ? targetStat - attackerAttack : 0;
+  return 0;
 }
