@@ -162,6 +162,24 @@ describe("EDOPro parity Pendulum Summon turn reset fixtures", () => {
             turn: 2,
             turnPlayer: 1,
             phase: "main1",
+            legalActionCounts: { 0: 0, 1: 2 },
+            legalActionGroupCounts: { 0: 0, 1: 1 },
+            legalActions: [
+              { type: "changePhase", player: 1, windowId: 2, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 1, windowId: 2, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 1,
+                label: "Turn",
+                windowId: 2,
+                windowKind: "open",
+                actions: [
+                  { type: "changePhase", player: 1, windowId: 2, windowKind: "open", count: 1 },
+                  { type: "endTurn", player: 1, windowId: 2, windowKind: "open", count: 1 },
+                ],
+              },
+            ],
             absentLegalActions: [{ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-400-3"], windowId: 2, windowKind: "open" }],
             absentLegalActionGroups: [
               {

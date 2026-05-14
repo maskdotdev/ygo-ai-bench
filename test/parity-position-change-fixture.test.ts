@@ -47,8 +47,16 @@ describe("EDOPro parity position change fixtures", () => {
             note: "EDOPro records a manual position change and removes repeat position-change actions for that monster",
             phase: "main1",
             windowId: 1,
+            windowKind: "open",
             waitingFor: 0,
             positionsChanged: ["p0-deck-100-0"],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [turnGroup(1)],
             absentLegalActions: [{ type: "changePosition", player: 0, uid: "p0-deck-100-0", windowId: 1, windowKind: "open" }],
             absentLegalActionGroups: [
               {

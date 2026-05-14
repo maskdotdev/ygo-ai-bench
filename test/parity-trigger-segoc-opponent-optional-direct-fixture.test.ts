@@ -232,6 +232,24 @@ describe("EDOPro parity SEGOC opponent optional direct fixture", () => {
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [],
+            legalActionCounts: { 0: 3, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-segoc-open-fast-after-opponent-activation", count: 1 },
+              { type: "changePhase", player: 0, windowId: 4, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 4, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 4,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-segoc-open-fast-after-opponent-activation", count: 1 }],
+              },
+              turnGroup(4),
+            ],
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-segoc-turn-optional-before-opponent-activation" },
               { type: "activateTrigger", player: 1, windowId: 4, windowKind: "open", effectId: "fixture-segoc-opponent-optional-activation" },
