@@ -6,7 +6,7 @@ const root = process.cwd();
 
 describe("Lua real prompt helper restore coverage", () => {
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(14);
+    expect(representativePromptHelperFixtures()).toHaveLength(15);
   });
 
   it("requires representative prompt helper fixtures to assert clean Lua restore", () => {
@@ -147,6 +147,16 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
         "currentLevel(restoredMirrorMage, restored.session.state)).toBe((mirrorMage.data.level ?? 0) + 1)",
         "card.code === iceBarrierTokenCode && card.location === \"monsterZone\"",
         'expect(restored.host.messages).not.toContain("mirror mage responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-naturia-blessing-select-effect.test.ts",
+      required: [
+        "restores selected SelectEffect branch into the Naturia Special Summon operation",
+        'api: "SelectEffect"',
+        "options: [1]",
+        "summonType: \"special\"",
+        "getLuaRestoreLegalActionGroups(restored, 0)",
       ],
     },
     {
