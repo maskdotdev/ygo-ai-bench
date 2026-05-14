@@ -285,6 +285,91 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expectLuaEquipStatProbe(restoredOneMonster, targetCode, unitedCode, "equip stat probe 56747793/1800/1800");
   });
 
+  it("restores Mage Power dynamic Spell/Trap-count equip stat callbacks", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const magePowerCode = "83746708";
+    const targetCode = "601026";
+    const extraBackrowCode = "601027";
+    const responderCode = "601028";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === magePowerCode),
+      { code: targetCode, name: "Mage Power Target", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: extraBackrowCode, name: "Mage Power Extra Backrow", kind: "spell" as const, typeFlags: 0x2 },
+      { code: responderCode, name: "Mage Power Chain Responder", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 307, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [magePowerCode, targetCode, extraBackrowCode] }, 1: { main: [responderCode] } });
+    startDuel(session);
+
+    const magePower = session.state.cards.find((card) => card.code === magePowerCode);
+    const target = session.state.cards.find((card) => card.code === targetCode);
+    const extraBackrow = session.state.cards.find((card) => card.code === extraBackrowCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(magePower).toBeDefined();
+    expect(target).toBeDefined();
+    expect(extraBackrow).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, magePower!.uid, "hand", 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, extraBackrow!.uid, "spellTrapZone", 0).position = "faceDown";
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, source);
+    expect(host.loadCardScript(Number(magePowerCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expectCleanRestore(restoredEquipWindow);
+    expect(getLuaRestoreLegalActionGroups(restoredEquipWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredEquipWindow.session, 0));
+    expect(getLuaRestoreLegalActions(restoredEquipWindow, 0)).toEqual(getDuelLegalActions(restoredEquipWindow.session, 0));
+    const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === magePower!.uid);
+    expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
+
+    expect(restoredEquipWindow.session.state.chain[0]).toMatchObject({
+      sourceUid: magePower!.uid,
+      targetUids: [target!.uid],
+      operationInfos: [{ category: 0x40000, targetUids: [magePower!.uid], count: 1, player: 0, parameter: 0 }],
+    });
+
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
+    expectCleanRestore(restoredChain);
+    expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+    resolveRestoredChain(restoredChain);
+
+    expect(restoredChain.host.messages).not.toContain("equip responder resolved");
+    expect(restoredChain.session.state.cards.find((card) => card.uid === magePower!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      equippedToUid: target!.uid,
+      faceUp: true,
+    });
+
+    const restoredTwoBackrow = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
+    expectCleanRestore(restoredTwoBackrow);
+    expect(restoredTwoBackrow.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceUid: magePower!.uid, event: "continuous", code: 100 }),
+        expect.objectContaining({ sourceUid: magePower!.uid, event: "continuous", code: 104 }),
+      ]),
+    );
+    expectLuaEquipStatProbe(restoredTwoBackrow, targetCode, magePowerCode, "equip stat probe 83746708/2000/2000");
+
+    moveDuelCard(restoredTwoBackrow.session.state, extraBackrow!.uid, "graveyard", 0);
+    const restoredOneBackrow = restoreDuelWithLuaScripts(serializeDuel(restoredTwoBackrow.session), source, reader);
+    expectCleanRestore(restoredOneBackrow);
+    expectLuaEquipStatProbe(restoredOneBackrow, targetCode, magePowerCode, "equip stat probe 83746708/1500/1500");
+  });
+
   it("restores Battle Archfiend Shield equip procedure setcode target filtering", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const shieldCode = "8730435";
