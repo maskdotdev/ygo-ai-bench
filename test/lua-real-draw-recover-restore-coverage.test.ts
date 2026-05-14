@@ -28,6 +28,16 @@ describe("Lua real draw and recover restore coverage", () => {
 function drawRecoverFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-naturia-ragweed-event-draw-trigger.test.ts",
+      required: [
+        'eventName: "cardsDrawn"',
+        "targetPlayer: 1",
+        "targetParam: 2",
+        "category: 0x10000",
+        'location: "graveyard"',
+      ],
+    },
+    {
       file: "test/lua-real-script-shinobird-crane-spirit-summon-draw.test.ts",
       required: [
         'eventName: "normalSummoned"',
