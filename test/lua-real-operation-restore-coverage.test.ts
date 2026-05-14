@@ -46,6 +46,17 @@ describe("Lua real operation restore coverage", () => {
 function operationFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-dicelops-toss-dice-restore.test.ts",
+      required: [
+        "categoryDice",
+        "categoryHandes",
+        "lastDiceResults).toEqual([])",
+        'eventName: "diceTossed"',
+        'location: "graveyard"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-foolish-burial-deck-to-grave.test.ts",
       required: [
         "category: 0x20",
