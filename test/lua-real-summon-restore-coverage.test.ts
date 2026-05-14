@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-const realScriptSummonFixtureCount = 135;
-const summonProcedureFixtureCount = 12;
+const realScriptSummonFixtureCount = 136;
+const summonProcedureFixtureCount = 13;
 const typedSummonProcedureFixtureCount = 6;
 const pendulumGrantFixtureCount = 3;
 const pendulumHelperFixtureCount = 10;
@@ -147,6 +147,7 @@ function realScriptSummonProcedureFixtureFiles(): string[] {
       "lua-real-script-guardian-eatos-special-summon-procedure.test.ts",
       "lua-real-script-megalith-bethor-ritual-procedure.test.ts",
       "lua-real-script-mitsurugi-mirror-grave-ritual.test.ts",
+      "lua-real-script-palm-ryzeal-special-summon-procedure.test.ts",
       "lua-real-script-pendulum-procedure-actions.test.ts",
       "lua-real-script-polymerization-fusion-summon.test.ts",
       "lua-real-script-prayers-ritual-matfilter.test.ts",
