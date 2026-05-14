@@ -135,6 +135,10 @@ describe("EDOPro parity battle-targeted missed timing fixture", () => {
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "battle-targeted-activation-optional-if", eventName: "battleTargeted", eventCode: 1131 }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-targeted-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-targeted-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
             legalActionGroups: [
               triggerActivationGroup(0, "battle-targeted-activation-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "battle-targeted-activation-optional-if", "turnOptional", 1, 1),
@@ -147,6 +151,7 @@ describe("EDOPro parity battle-targeted missed timing fixture", () => {
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-targeted-activation-optional-when" },
               { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-targeted-activation-open-fast" },
             ],
+            legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
           },
           after: {
