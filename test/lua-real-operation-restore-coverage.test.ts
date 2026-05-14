@@ -144,6 +144,16 @@ function operationFixtureFiles(): Array<{ file: string; required: string[] }> {
       ],
     },
     {
+      file: "test/lua-real-script-saion-toss-coin-restore.test.ts",
+      required: [
+        "categoryCoin",
+        "lastCoinResults).toEqual([])",
+        'eventName: "coinTossed"',
+        "saion disabled true",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
       required: [
         "category: 0x8",
