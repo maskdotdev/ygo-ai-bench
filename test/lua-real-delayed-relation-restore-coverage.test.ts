@@ -38,6 +38,16 @@ function delayedRelationFixtureFiles(): Array<{ file: string; required: string[]
       ],
     },
     {
+      file: "test/lua-real-script-sunlit-sentinel-set-destroy-standby.test.ts",
+      required: [
+        'previousPosition: "faceDown"',
+        'triggerEvent: "phaseStandby"',
+        'luaConditionDescriptor: "condition:source-turn-next"',
+        'type === "activateTrigger"',
+        'location: "monsterZone"',
+      ],
+    },
+    {
       file: "test/lua-real-script-yellow-alert-delayed-return.test.ts",
       required: [
         "code: 0x1080",

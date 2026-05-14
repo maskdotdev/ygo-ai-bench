@@ -16,6 +16,7 @@ import { isKnownPlayerDamageZeroEffect, isKnownTemporaryActivationLockEffect, is
 import { isKnownMulcharmyDrawWatcherEffect, isKnownMulcharmyEndPhaseShuffleEffect, mulcharmyDrawWatcherOperation, mulcharmyEndPhaseShuffleOperation } from "#lua/snapshot-mulcharmy.js";
 import { assaultZoneExtraDeckReleaseValueCallbacks, assaultZoneReleaseFlagConditionCallbacks, assaultZoneReleaseFlagOperation, isAssaultZoneExtraDeckReleaseRestoreEffect } from "#lua/snapshot-assault-zone.js";
 import { calledByTheGraveChainSolvingNegateOperation, isKnownCalledByTheGraveChainSolvingNegateEffect, isKnownRareMetalmorphChainSolvingNegateEffect, rareMetalmorphChainSolvingNegateOperation } from "#lua/snapshot-chain-solving-effects.js";
+import { isKnownSunlitSentinelDelayedStandbyEffect, sunlitSentinelDelayedStandbyOperation } from "#lua/snapshot-sunlit-sentinel.js";
 import { luaRegistryCardCodes } from "#lua/snapshot-registry-keys.js";
 import { restoredSpecialSummonConditionValueCallbacks } from "#lua/snapshot-special-summon-condition.js";
 import { isLuaOptionPromptDecision, isLuaYesNoPromptDecision } from "#lua/host-types.js";
@@ -498,6 +499,7 @@ function luaRestoreSummonHostState(): LuaDuelSummonApiHostState {
 function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[] = []): boolean {
   return (
     isClientHintEffect(effect) ||
+    isKnownSunlitSentinelDelayedStandbyEffect(effect) ||
     (effect.event === "continuous" &&
       (effect.code === 2 ||
         effect.code === 8 ||
@@ -806,6 +808,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownSwordsOfRevealingLightPhaseEndEffect(effect)) return swordsOfRevealingLightPhaseEndOperation();
   if (isKnownMaharaghiPredrawEffect(effect)) return maharaghiPredrawOperation(effect);
   if (isKnownHinoKaguTsuchiPredrawDiscardEffect(effect)) return hinoKaguTsuchiPredrawDiscardOperation(effect);
+  if (isKnownSunlitSentinelDelayedStandbyEffect(effect)) return sunlitSentinelDelayedStandbyOperation(effect);
   const assaultZoneOperation = assaultZoneReleaseFlagOperation(effect);
   if (assaultZoneOperation) return assaultZoneOperation;
   if (isKnownGeminiEndPhaseReturnEffect(effect, snapshotEffects)) return luaHandlerReturnToHandOperation(effect);
