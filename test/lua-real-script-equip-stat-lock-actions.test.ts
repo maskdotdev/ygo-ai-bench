@@ -325,6 +325,63 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(lockProbe.ok, lockProbe.error).toBe(true);
     expect(restoredOpponentMain.host.messages).toContain("gravity axe position probe false");
   });
+
+  it("restores Guardian Grarl summon procedure gated by face-up Gravity Axe", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const guardianCode = "47150851";
+    const gravityAxeCode = "32022366";
+    const cards = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === guardianCode || card.code === gravityAxeCode);
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 316, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [guardianCode, gravityAxeCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const guardian = session.state.cards.find((card) => card.code === guardianCode);
+    const gravityAxe = session.state.cards.find((card) => card.code === gravityAxeCode);
+    expect(guardian).toBeDefined();
+    expect(gravityAxe).toBeDefined();
+    moveDuelCard(session.state, guardian!.uid, "hand", 0);
+    moveDuelCard(session.state, gravityAxe!.uid, "deck", 0);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(guardianCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const restoredLocked = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expectCleanRestore(restoredLocked);
+    expect(getLuaRestoreLegalActionGroups(restoredLocked, 0)).toEqual(getGroupedDuelLegalActions(restoredLocked.session, 0));
+    expect(getLuaRestoreLegalActions(restoredLocked, 0)).toEqual(getDuelLegalActions(restoredLocked.session, 0));
+    expect(getLuaRestoreLegalActions(restoredLocked, 0).some((action) => action.type === "normalSummon" && action.uid === guardian!.uid)).toBe(false);
+    expect(getLuaRestoreLegalActions(restoredLocked, 0).some((action) => action.type === "specialSummonProcedure" && action.uid === guardian!.uid)).toBe(false);
+
+    moveDuelCard(restoredLocked.session.state, gravityAxe!.uid, "spellTrapZone", 0).faceUp = true;
+    const restoredUnlocked = restoreDuelWithLuaScripts(serializeDuel(restoredLocked.session), workspace, reader);
+    expectCleanRestore(restoredUnlocked);
+    expect(getLuaRestoreLegalActionGroups(restoredUnlocked, 0)).toEqual(getGroupedDuelLegalActions(restoredUnlocked.session, 0));
+    expect(getLuaRestoreLegalActions(restoredUnlocked, 0)).toEqual(getDuelLegalActions(restoredUnlocked.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredUnlocked, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredUnlocked, 0));
+    const summon = getLuaRestoreLegalActions(restoredUnlocked, 0).find(
+      (action) => action.type === "specialSummonProcedure" && action.uid === guardian!.uid,
+    );
+    expect(summon, JSON.stringify(getLuaRestoreLegalActions(restoredUnlocked, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredUnlocked, summon!);
+
+    expect(restoredUnlocked.session.state.cards.find((card) => card.uid === guardian!.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 0,
+      position: "faceUpAttack",
+      summonType: "special",
+    });
+    expect(restoredUnlocked.session.state.cards.find((card) => card.uid === gravityAxe!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      faceUp: true,
+    });
+    expect(restoredUnlocked.session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventCardUid: guardian!.uid })]),
+    );
+  });
 });
 
 function chainResponderScript(): string {
