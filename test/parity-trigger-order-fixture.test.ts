@@ -231,6 +231,13 @@ describe("EDOPro parity trigger ordering fixtures", () => {
           { eventName: "chainEnded" },
         ],
         locations: { monsterZone: ["100"], hand: ["300", "400"] },
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(3)],
         logIncludes: ["Second mandatory resolved", "First mandatory resolved"],
       },
     };

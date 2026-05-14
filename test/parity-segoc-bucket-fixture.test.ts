@@ -401,6 +401,13 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
         chain: [],
         prompt: null,
         locationCounts: { monsterZone: { "100": 1 }, hand: { "300": 2, "400": 1, "500": 2 } },
+        legalActionCounts: { 0: 2, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [
+          { type: "changePhase", player: 0, windowId: 5, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 5, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [turnGroup(5)],
         logIncludes: ["Fixture turn mandatory resolved", "Fixture opponent mandatory resolved", "fixture-turn-optional", "Fixture opponent optional resolved"],
       },
     };
@@ -452,6 +459,22 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
       expected: {
         source: "edopro",
         note: "EDOPro would leave the wrong-bucket expectation unresolved and report the fixture mismatch",
+        windowId: 1,
+        windowKind: "triggerBucket",
+        legalActionCounts: { 0: 1, 1: 0 },
+        legalActionGroupCounts: { 0: 1, 1: 0 },
+        legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-turn-mandatory", triggerBucket: "turnOptional", count: 1 }],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Trigger Activations",
+            windowId: 1,
+            windowKind: "triggerBucket",
+            triggerBucket: { player: 0, triggerBucket: "turnOptional" },
+            count: 1,
+            actions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-turn-mandatory", triggerBucket: "turnOptional", count: 1 }],
+          },
+        ],
       },
     };
 
