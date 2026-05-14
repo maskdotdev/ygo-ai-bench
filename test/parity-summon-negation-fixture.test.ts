@@ -101,6 +101,16 @@ describe("EDOPro parity summon negation fixtures", () => {
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             triggerOrderPrompt: { type: "orderTriggers", player: 0, triggerBucket: "turnOptional" },
+            legalActionCounts: { 0: 4, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-summon-negator", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-summon-negator", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-summon-negator", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "fixture-summon-negator", "turnOptional", 1, 1),
+            ],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-summon-negator" }), {
@@ -137,6 +147,16 @@ describe("EDOPro parity summon negation fixtures", () => {
             pendingTriggers: [{ player: 0, effectId: "fixture-negated-summon-watcher", eventName: "normalSummonNegated", eventCardUid: "p0-deck-100-0" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             locations: { graveyard: ["100"], hand: ["200", "300"] },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-negated-summon-watcher", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-negated-summon-watcher", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-negated-summon-watcher", "turnOptional", 1, 2),
+              triggerDeclineGroup(0, "fixture-negated-summon-watcher", "turnOptional", 1, 2),
+            ],
             logIncludes: ["Fixture summon negator resolved"],
           },
         }),
