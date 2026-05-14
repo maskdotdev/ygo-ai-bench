@@ -122,6 +122,7 @@ function realScriptEquipOperationInfoFixtureFiles(): string[] {
 
 function realScriptEquipCleanupFixtureFiles(): string[] {
   return [
+    "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-premature-burial-revive-destroy.test.ts",
     "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
