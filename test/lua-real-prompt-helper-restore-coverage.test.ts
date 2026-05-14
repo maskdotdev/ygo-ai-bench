@@ -6,7 +6,7 @@ const root = process.cwd();
 
 describe("Lua real prompt helper restore coverage", () => {
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(11);
+    expect(representativePromptHelperFixtures()).toHaveLength(12);
   });
 
   it("requires representative prompt helper fixtures to assert clean Lua restore", () => {
@@ -126,6 +126,17 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
         "summonMaterialUids).toEqual([handMaterial!.uid, faceupNormal!.uid, deckNormalMaterial!.uid])",
         "reason: duelReason.effect | duelReason.material | duelReason.ritual",
         'expect(restored.host.messages).not.toContain("magikey maftea responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-mirror-mage-announce-number-range.test.ts",
+      required: [
+        "restores announced token count into token summons and level update",
+        'api: "AnnounceNumberRange"',
+        "options: [1, 2, 3]",
+        "currentLevel(restoredMirrorMage, restored.session.state)).toBe((mirrorMage.data.level ?? 0) + 1)",
+        "card.code === iceBarrierTokenCode && card.location === \"monsterZone\"",
+        'expect(restored.host.messages).not.toContain("mirror mage responder resolved")',
       ],
     },
     {
