@@ -376,9 +376,15 @@ function pushSelectedMatchingGroup(L: unknown, session: DuelSession, options?: {
   const matches = effectTargetableMatches(L, session, query, options?.hostState);
   const selected = selectMatchingUids(matches, min, max);
   releaseOptionalFunctionRef(L, query.filterRef);
-  if (options?.targetUids) options.targetUids.splice(0, options.targetUids.length, ...selected);
+  if (options?.targetUids) appendSelectedTargetUids(options.targetUids, selected);
   pushGroupTable(L, selected);
   return 1;
+}
+
+function appendSelectedTargetUids(targetUids: string[], selected: string[]): void {
+  for (const uid of selected) {
+    if (!targetUids.includes(uid)) targetUids.push(uid);
+  }
 }
 
 function selectTargetOptions(hostState: LuaDuelQueryApiHostState): { hostState: LuaDuelQueryApiHostState; targetUids?: string[] } {

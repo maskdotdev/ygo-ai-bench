@@ -65,6 +65,7 @@ describe("Lua real free-chain restore coverage", () => {
 
 function realScriptFreeChainFixtureFiles(): string[] {
   return [
+    "lua-real-script-armor-blast-multi-target-free-chain.test.ts",
     "lua-real-script-book-of-moon-free-chain.test.ts",
     "lua-real-script-compulsory-evacuation-device-free-chain.test.ts",
     "lua-real-script-cosmic-cyclone-free-chain.test.ts",
@@ -85,6 +86,7 @@ function realScriptFreeChainOperationInfoFixtureFiles(): string[] {
 
 function realScriptChainedFreeChainFixtureFiles(): string[] {
   return realScriptFreeChainFixtureFiles()
+    .filter((file) => !file.endsWith("lua-real-script-armor-blast-multi-target-free-chain.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-book-of-moon-free-chain.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-monster-reborn-free-chain.test.ts"));
 }
