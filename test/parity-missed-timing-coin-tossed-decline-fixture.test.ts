@@ -126,6 +126,10 @@ describe("EDOPro parity coin-tossed missed timing decline fixture", () => {
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "coin-decline-optional-if", eventName: "coinTossed", eventCode: 1151, eventPlayer: 0, eventValue: 2 }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "coin-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "coin-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
             legalActionGroups: [
               triggerActivationGroup(0, "coin-decline-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "coin-decline-optional-if", "turnOptional", 1, 1),
@@ -139,6 +143,7 @@ describe("EDOPro parity coin-tossed missed timing decline fixture", () => {
               { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "coin-decline-open-fast" },
             ],
 
+            legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },},
           after: {
             source: "edopro",
