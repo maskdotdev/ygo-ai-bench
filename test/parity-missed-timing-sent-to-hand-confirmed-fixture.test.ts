@@ -163,6 +163,10 @@ describe("EDOPro parity sent-to-hand confirmed missed timing fixture", () => {
               },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "hand-confirm-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "hand-confirm-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
             legalActionGroups: [
               triggerActivationGroup(0, "hand-confirm-activation-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "hand-confirm-activation-optional-if", "turnOptional", 1, 1),
@@ -176,6 +180,7 @@ describe("EDOPro parity sent-to-hand confirmed missed timing fixture", () => {
               { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "hand-confirm-activation-open-fast" },
             ],
 
+            legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },},
           after: {
             source: "edopro",
