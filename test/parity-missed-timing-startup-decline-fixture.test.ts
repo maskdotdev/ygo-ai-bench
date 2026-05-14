@@ -2,21 +2,22 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentTriggerActivationGroup, triggerActivationGroup, triggerDeclineGroup } from "./parity-legal-action-group-helpers.js";
+import { absentTriggerActivationGroup, absentWindowEffectGroup, openEffectGroup, triggerActivationGroup, triggerDeclineGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity startup missed timing decline fixture", () => {
-  it("declines optional if startup triggers while optional when remains missed", () => {
+  it("returns declined optional if startup triggers to open fast priority while optional when remains missed", () => {
     const cards: DuelCardData[] = [
       { code: "400", name: "Startup Optional When", kind: "monster", attack: 1500, defense: 1600 },
       { code: "500", name: "Startup Optional If", kind: "monster", attack: 1200, defense: 1200 },
       { code: "700", name: "Followup Body", kind: "monster", attack: 1000, defense: 1000 },
+      { code: "800", name: "Startup Open Quick", kind: "monster", attack: 500, defense: 500 },
     ];
     const fixture: ScriptedDuelFixture = {
-      name: "startup missed timing decline fixture",
-      options: { seed: 392, startingHandSize: 3 },
+      name: "startup missed timing decline open fast fixture",
+      options: { seed: 392, startingHandSize: 4 },
       decks: {
-        0: { main: ["400", "500", "700"] },
-        1: { main: ["700", "700", "700"] },
+        0: { main: ["400", "500", "700", "800"] },
+        1: { main: ["700", "700", "700", "700"] },
       },
       setup: {
         effects: [
@@ -44,6 +45,16 @@ describe("EDOPro parity startup missed timing decline fixture", () => {
             range: ["hand"],
             logMessage: "Startup decline optional if should not resolve",
           },
+          {
+            id: "startup-decline-open-fast",
+            player: 0,
+            code: "800",
+            location: "hand",
+            event: "quick",
+            range: ["hand"],
+            activationChain: "open",
+            logMessage: "Startup decline open fast resolved",
+          },
         ],
         collectEvents: [{ collectEvent: "startup", eventCode: 1000, eventIsLast: false }],
       },
@@ -67,13 +78,16 @@ describe("EDOPro parity startup missed timing decline fixture", () => {
               triggerDeclineGroup(0, "startup-decline-optional-if", "turnOptional", 1, 0),
             ],
             absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "startup-decline-optional-when" }],
-            absentLegalActionGroups: [absentTriggerActivationGroup(0, "startup-decline-optional-when", "turnOptional", 0, "triggerBucket")],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "startup-decline-optional-when", "turnOptional", 0, "triggerBucket"),
+              absentWindowEffectGroup(0, "startup-decline-open-fast", 0, "triggerBucket"),
+            ],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
           },
           after: {
             source: "edopro",
-            note: "EDOPro clears the declined optional if startup trigger without reviving the missed optional when trigger",
+            note: "EDOPro exposes open fast effects after declining the surviving optional if startup trigger",
             windowId: 1,
             windowKind: "open",
             waitingFor: 0,
@@ -81,12 +95,20 @@ describe("EDOPro parity startup missed timing decline fixture", () => {
             pendingTriggerBuckets: [],
             chain: [],
             chainPasses: [],
+            legalActions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "startup-decline-open-fast", count: 1 }],
+            legalActionGroups: [openEffectGroup(0, "startup-decline-open-fast", 1, 1)],
+            legalActionCounts: { 0: 11, 1: 0 },
+            legalActionGroupCounts: { 0: 3, 1: 0 },
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "startup-decline-optional-when", "turnOptional", 1, "open"),
+              absentTriggerActivationGroup(0, "startup-decline-optional-if", "turnOptional", 1, "open"),
+            ],
           },
         }),
       ],
       expected: {
         source: "edopro",
-        note: "EDOPro final state keeps optional when startup missed after the optional if trigger is declined",
+        note: "EDOPro final state exposes open fast effects after declining the startup optional if trigger while optional when remains missed",
         windowId: 1,
         windowKind: "open",
         waitingFor: 0,
@@ -94,6 +116,14 @@ describe("EDOPro parity startup missed timing decline fixture", () => {
         pendingTriggerBuckets: [],
         chain: [],
         chainPasses: [],
+        legalActions: [{ type: "activateEffect", player: 0, windowId: 1, windowKind: "open", effectId: "startup-decline-open-fast", count: 1 }],
+        legalActionGroups: [openEffectGroup(0, "startup-decline-open-fast", 1, 1)],
+        legalActionCounts: { 0: 11, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },
+        absentLegalActionGroups: [
+          absentTriggerActivationGroup(0, "startup-decline-optional-when", "turnOptional", 1, "open"),
+          absentTriggerActivationGroup(0, "startup-decline-optional-if", "turnOptional", 1, "open"),
+        ],
       },
     };
 

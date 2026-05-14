@@ -10,8 +10,10 @@ import {
   chainEffectGroup,
   chainPassGroup,
   openEffectGroup,
+  summonGroup,
   triggerActivationGroup,
   triggerDeclineGroup,
+  turnGroup,
 } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity restored follow-up chainEnded response until-chain-end fixture", () => {
@@ -776,6 +778,33 @@ describe("EDOPro parity restored follow-up chainEnded response until-chain-end f
         chainLimits: [],
         legalActionCounts: { 0: 11, 1: 0 },
         legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 13, windowKind: "open", effectId: "fixture-cross-payload-follow-up-ended-until-starter", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 13, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 13, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 13, windowKind: "open", code: "900", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 13, windowKind: "open", code: "800", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 13, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 13, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 13, windowKind: "open", code: "900", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 13, windowKind: "open", code: "800", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 13, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 13, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          openEffectGroup(0, "fixture-cross-payload-follow-up-ended-until-starter", 1, 13),
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "100", location: "hand" },
+            { type: "normalSummon", player: 0, code: "300", location: "hand" },
+            { type: "normalSummon", player: 0, code: "900", location: "hand" },
+            { type: "normalSummon", player: 0, code: "800", location: "hand" },
+            { type: "setMonster", player: 0, code: "100", location: "hand" },
+            { type: "setMonster", player: 0, code: "300", location: "hand" },
+            { type: "setMonster", player: 0, code: "900", location: "hand" },
+            { type: "setMonster", player: 0, code: "800", location: "hand" },
+          ], 1, 13),
+          turnGroup(13),
+        ],
         absentLegalActions: [
           { type: "activateEffect", player: 0, windowId: 13, windowKind: "open", effectId: "fixture-cross-payload-follow-up-ended-until-turn-open-quick" },
           { type: "activateEffect", player: 0, windowId: 13, windowKind: "open", effectId: "fixture-cross-payload-follow-up-ended-until-turn-chain-quick" },

@@ -8,6 +8,7 @@ import {
   absentWindowEffectGroup,
   chainEffectGroup,
   chainPassGroup,
+  openEffectGroup,
   summonGroup,
   turnGroup,
 } from "./parity-legal-action-group-helpers.js";
@@ -310,6 +311,29 @@ describe("EDOPro parity chain-resolution SEGOC turn optional decline pass handof
         chainPasses: [],
         legalActionCounts: { 0: 9, 1: 0 },
         legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 8, windowKind: "open", effectId: "fixture-double-optional-handoff-turn-resolution-starter", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 8, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 8, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 8, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 8, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 8, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 8, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 8, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 8, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          openEffectGroup(0, "fixture-double-optional-handoff-turn-resolution-starter", 1, 8),
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "100", location: "hand" },
+            { type: "normalSummon", player: 0, code: "300", location: "hand" },
+            { type: "normalSummon", player: 0, code: "500", location: "hand" },
+            { type: "setMonster", player: 0, code: "100", location: "hand" },
+            { type: "setMonster", player: 0, code: "300", location: "hand" },
+            { type: "setMonster", player: 0, code: "500", location: "hand" },
+          ], 1, 8),
+          turnGroup(8),
+        ],
         absentLegalActions: [
           { type: "activateEffect", player: 0, windowId: 8, windowKind: "open", effectId: "fixture-double-optional-handoff-turn-resolution-turn-quick" },
           { type: "activateEffect", player: 1, windowId: 8, windowKind: "open", effectId: "fixture-double-optional-handoff-turn-resolution-opponent-quick" },

@@ -148,6 +148,13 @@ describe("EDOPro parity damage-step-only quick-effect timing fixtures", () => {
             lifePoints: { 1: 6200 },
             battleDamage: { 1: 1800 },
             attacksDeclared: ["p0-deck-100-0"],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "changePhase", player: 0, windowId: 14, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 14, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [turnGroup(14)],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open" }],
             absentLegalActionGroups: [absentAttackGroup("p0-deck-100-0", undefined, undefined, 14)],
           },

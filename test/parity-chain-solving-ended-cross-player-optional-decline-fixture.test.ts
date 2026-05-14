@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentTriggerActivationGroup, summonGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentTriggerActivationGroup, openEffectGroup, summonGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity cross-player optional chain-solving lifecycle decline fixture", () => {
   it("queues deferred chainEnded triggers only after cross-player optional chainSolving buckets are declined", () => {
@@ -539,6 +539,29 @@ describe("EDOPro parity cross-player optional chain-solving lifecycle decline fi
         pendingTriggerBuckets: [],
         legalActionCounts: { 0: 9, 1: 0 },
         legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 6, windowKind: "open", effectId: "fixture-cross-chain-solving-lifecycle-starter", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 6, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 6, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 6, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 6, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 6, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 6, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 6, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 6, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          openEffectGroup(0, "fixture-cross-chain-solving-lifecycle-starter", 1, 6),
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "100", location: "hand" },
+            { type: "normalSummon", player: 0, code: "300", location: "hand" },
+            { type: "normalSummon", player: 0, code: "500", location: "hand" },
+            { type: "setMonster", player: 0, code: "100", location: "hand" },
+            { type: "setMonster", player: 0, code: "300", location: "hand" },
+            { type: "setMonster", player: 0, code: "500", location: "hand" },
+          ], 1, 6),
+          turnGroup(6),
+        ],
         absentLegalActions: [
           { type: "activateTrigger", player: 0, windowId: 6, windowKind: "open", effectId: "fixture-cross-chain-solving-turn-optional" },
           { type: "activateTrigger", player: 1, windowId: 6, windowKind: "open", effectId: "fixture-cross-chain-solving-opponent-optional" },

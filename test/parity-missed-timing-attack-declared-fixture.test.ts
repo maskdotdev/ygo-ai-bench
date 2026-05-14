@@ -105,6 +105,10 @@ describe("EDOPro parity attack-declared missed timing fixture", () => {
               triggerActivationGroup(0, "attack-declared-activation-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "attack-declared-activation-optional-if", "turnOptional", 1, 1),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "attack-declared-activation-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "attack-declared-activation-open-fast" },
+            ],
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "attack-declared-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "attack-declared-activation-open-fast", 1, "triggerBucket"),
@@ -128,6 +132,10 @@ describe("EDOPro parity attack-declared missed timing fixture", () => {
               triggerActivationGroup(0, "attack-declared-activation-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "attack-declared-activation-optional-if", "turnOptional", 1, 1),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "attack-declared-activation-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "attack-declared-activation-open-fast" },
+            ],
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "attack-declared-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "attack-declared-activation-open-fast", 1, "triggerBucket"),
@@ -146,6 +154,10 @@ describe("EDOPro parity attack-declared missed timing fixture", () => {
             chainPasses: [],
             legalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "attack-declared-activation-open-fast", count: 1 }],
             legalActionGroups: [openEffectGroup(0, "attack-declared-activation-open-fast", 1, 2)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "attack-declared-activation-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "attack-declared-activation-optional-if" },
+            ],
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "attack-declared-activation-optional-when", "turnOptional", 2, "open"),
               absentTriggerActivationGroup(0, "attack-declared-activation-optional-if", "turnOptional", 2, "open"),
@@ -168,6 +180,10 @@ describe("EDOPro parity attack-declared missed timing fixture", () => {
         chainPasses: [],
         legalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "attack-declared-activation-open-fast", count: 1 }],
         legalActionGroups: [openEffectGroup(0, "attack-declared-activation-open-fast", 1, 2)],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "attack-declared-activation-optional-when" },
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "attack-declared-activation-optional-if" },
+        ],
         absentLegalActionGroups: [
           absentTriggerActivationGroup(0, "attack-declared-activation-optional-when", "turnOptional", 2, "open"),
           absentTriggerActivationGroup(0, "attack-declared-activation-optional-if", "turnOptional", 2, "open"),

@@ -41,7 +41,7 @@ describe("EDOPro parity Pendulum Summon success fixtures", () => {
         ],
       },
       responses: [
-        makeScriptedStep({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"], label: "Pendulum Summon selected Extra Deck candidate", windowId: 0, windowKind: "open", windowToken: "window-1" }, {
+        makeScriptedStep({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"], label: "Pendulum Summon selected Extra Deck candidate" }, {
           snapshotRestore: "both",
           before: {
             source: "edopro",

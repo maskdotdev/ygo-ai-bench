@@ -79,6 +79,13 @@ describe("EDOPro parity equal defense-position battle result fixtures", () => {
             attacksDeclared: ["p0-deck-100-0"],
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
             locations: { monsterZone: ["100", "200"] },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "changePhase", player: 0, windowId: 14, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 14, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [turnGroup(14)],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 14, windowKind: "open" }],
             absentLegalActionGroups: [absentOpenAttackGroup(0, "p0-deck-100-0", 14)],
           },

@@ -86,7 +86,7 @@ describe("EDOPro parity post-Pendulum-Summon open fast-effect handoff turn-respo
         ],
       },
       responses: [
-        makeScriptedStep({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"], label: "Pendulum Summon selected chain-limit candidate", windowId: 0, windowKind: "open", windowToken: "window-1" }, {
+        makeScriptedStep({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"], label: "Pendulum Summon selected chain-limit candidate" }, {
           snapshotRestore: "both",
           before: {
             source: "edopro",

@@ -106,6 +106,10 @@ describe("EDOPro parity custom-event missed timing decline fixture", () => {
               triggerActivationGroup(0, "custom-event-decline-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "custom-event-decline-optional-if", "turnOptional", 1, 1),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "custom-event-decline-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "custom-event-decline-open-fast" },
+            ],
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "custom-event-decline-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "custom-event-decline-open-fast", 1, "triggerBucket"),
@@ -129,6 +133,10 @@ describe("EDOPro parity custom-event missed timing decline fixture", () => {
               triggerActivationGroup(0, "custom-event-decline-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "custom-event-decline-optional-if", "turnOptional", 1, 1),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "custom-event-decline-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "custom-event-decline-open-fast" },
+            ],
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "custom-event-decline-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "custom-event-decline-open-fast", 1, "triggerBucket"),
@@ -147,6 +155,10 @@ describe("EDOPro parity custom-event missed timing decline fixture", () => {
             chainPasses: [],
             legalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "custom-event-decline-open-fast", count: 1 }],
             legalActionGroups: [openEffectGroup(0, "custom-event-decline-open-fast", 1, 2)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "custom-event-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "custom-event-decline-optional-if" },
+            ],
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "custom-event-decline-optional-when", "turnOptional", 2, "open"),
               absentTriggerActivationGroup(0, "custom-event-decline-optional-if", "turnOptional", 2, "open"),
@@ -169,6 +181,10 @@ describe("EDOPro parity custom-event missed timing decline fixture", () => {
         chainPasses: [],
         legalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "custom-event-decline-open-fast", count: 1 }],
         legalActionGroups: [openEffectGroup(0, "custom-event-decline-open-fast", 1, 2)],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "custom-event-decline-optional-when" },
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "custom-event-decline-optional-if" },
+        ],
         absentLegalActionGroups: [
           absentTriggerActivationGroup(0, "custom-event-decline-optional-when", "turnOptional", 2, "open"),
           absentTriggerActivationGroup(0, "custom-event-decline-optional-if", "turnOptional", 2, "open"),

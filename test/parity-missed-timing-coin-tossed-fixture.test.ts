@@ -107,6 +107,10 @@ describe("EDOPro parity coin-tossed missed timing fixture", () => {
               absentTriggerActivationGroup(0, "coin-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "coin-activation-open-fast", 1, "triggerBucket"),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "coin-activation-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "coin-activation-open-fast" },
+            ],
             logIncludes: ["Coin activation multi step resolved"],
 
             legalActionCounts: { 0: 2, 1: 0 },
@@ -130,6 +134,10 @@ describe("EDOPro parity coin-tossed missed timing fixture", () => {
               absentTriggerActivationGroup(0, "coin-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "coin-activation-open-fast", 1, "triggerBucket"),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "coin-activation-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "coin-activation-open-fast" },
+            ],
 
             legalActionGroupCounts: { 0: 2, 1: 0 },},
           after: {
@@ -147,6 +155,10 @@ describe("EDOPro parity coin-tossed missed timing fixture", () => {
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "coin-activation-optional-when", "turnOptional", 2, "open"),
               absentTriggerActivationGroup(0, "coin-activation-optional-if", "turnOptional", 2, "open"),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "coin-activation-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "coin-activation-optional-if" },
             ],
             logIncludes: ["Coin activation multi step resolved", "Coin activation optional if resolved"],
 
@@ -169,6 +181,10 @@ describe("EDOPro parity coin-tossed missed timing fixture", () => {
         absentLegalActionGroups: [
           absentTriggerActivationGroup(0, "coin-activation-optional-when", "turnOptional", 2, "open"),
           absentTriggerActivationGroup(0, "coin-activation-optional-if", "turnOptional", 2, "open"),
+        ],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "coin-activation-optional-when" },
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "coin-activation-optional-if" },
         ],
         logIncludes: ["Coin activation multi step resolved", "Coin activation optional if resolved"],
 

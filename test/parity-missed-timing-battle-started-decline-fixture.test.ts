@@ -105,6 +105,10 @@ describe("EDOPro parity battle-started missed timing decline fixture", () => {
               triggerActivationGroup(0, "battle-started-decline-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "battle-started-decline-optional-if", "turnOptional", 1, 1),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-started-decline-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-started-decline-open-fast" },
+            ],
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "battle-started-decline-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "battle-started-decline-open-fast", 1, "triggerBucket"),
@@ -128,6 +132,10 @@ describe("EDOPro parity battle-started missed timing decline fixture", () => {
               triggerActivationGroup(0, "battle-started-decline-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "battle-started-decline-optional-if", "turnOptional", 1, 1),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-started-decline-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-started-decline-open-fast" },
+            ],
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "battle-started-decline-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "battle-started-decline-open-fast", 1, "triggerBucket"),
@@ -146,6 +154,10 @@ describe("EDOPro parity battle-started missed timing decline fixture", () => {
             chainPasses: [],
             legalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "battle-started-decline-open-fast", count: 1 }],
             legalActionGroups: [openEffectGroup(0, "battle-started-decline-open-fast", 1, 2)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "battle-started-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "battle-started-decline-optional-if" },
+            ],
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "battle-started-decline-optional-when", "turnOptional", 2, "open"),
               absentTriggerActivationGroup(0, "battle-started-decline-optional-if", "turnOptional", 2, "open"),
@@ -168,6 +180,10 @@ describe("EDOPro parity battle-started missed timing decline fixture", () => {
         chainPasses: [],
         legalActions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "battle-started-decline-open-fast", count: 1 }],
         legalActionGroups: [openEffectGroup(0, "battle-started-decline-open-fast", 1, 2)],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "battle-started-decline-optional-when" },
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "battle-started-decline-optional-if" },
+        ],
         absentLegalActionGroups: [
           absentTriggerActivationGroup(0, "battle-started-decline-optional-when", "turnOptional", 2, "open"),
           absentTriggerActivationGroup(0, "battle-started-decline-optional-if", "turnOptional", 2, "open"),

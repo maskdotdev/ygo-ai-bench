@@ -67,6 +67,36 @@ describe("EDOPro parity open fast-effect alternation fixtures", () => {
             waitingFor: 0,
             legalActionCounts: { 0: 9, 1: 0 },
             legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "alternation-turn-open-quick", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 0,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "alternation-turn-open-quick", count: 1 }],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "300", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "300", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
+            ],
             absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "alternation-turn-chain-quick" }],
             absentLegalActionGroups: [
               {

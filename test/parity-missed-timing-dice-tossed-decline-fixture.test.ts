@@ -88,6 +88,10 @@ describe("EDOPro parity dice-tossed missed timing decline fixture", () => {
               absentTriggerActivationGroup(0, "dice-decline-optional-when", "turnOptional", 0, "open"),
               absentTriggerActivationGroup(0, "dice-decline-optional-if", "turnOptional", 0, "open"),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "dice-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "dice-decline-optional-if" },
+            ],
 
             legalActionCounts: { 0: 13, 1: 0 },
             legalActionGroupCounts: { 0: 4, 1: 0 },},
@@ -110,6 +114,10 @@ describe("EDOPro parity dice-tossed missed timing decline fixture", () => {
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "dice-decline-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "dice-decline-open-fast", 1, "triggerBucket"),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "dice-decline-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "dice-decline-open-fast" },
             ],
             logIncludes: ["Dice decline multi step resolved"],
 
@@ -134,6 +142,10 @@ describe("EDOPro parity dice-tossed missed timing decline fixture", () => {
               absentTriggerActivationGroup(0, "dice-decline-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "dice-decline-open-fast", 1, "triggerBucket"),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "dice-decline-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "dice-decline-open-fast" },
+            ],
 
             legalActionGroupCounts: { 0: 2, 1: 0 },},
           after: {
@@ -151,6 +163,10 @@ describe("EDOPro parity dice-tossed missed timing decline fixture", () => {
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "dice-decline-optional-when", "turnOptional", 2, "open"),
               absentTriggerActivationGroup(0, "dice-decline-optional-if", "turnOptional", 2, "open"),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "dice-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "dice-decline-optional-if" },
             ],
             logIncludes: ["Dice decline multi step resolved", "dice-decline-optional-if"],
 
@@ -173,6 +189,10 @@ describe("EDOPro parity dice-tossed missed timing decline fixture", () => {
         absentLegalActionGroups: [
           absentTriggerActivationGroup(0, "dice-decline-optional-when", "turnOptional", 2, "open"),
           absentTriggerActivationGroup(0, "dice-decline-optional-if", "turnOptional", 2, "open"),
+        ],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "dice-decline-optional-when" },
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "dice-decline-optional-if" },
         ],
         logIncludes: ["Dice decline multi step resolved", "dice-decline-optional-if"],
 

@@ -1,74 +1,67 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { duelEventNames } from "#duel/event-names.js";
 
-const repoRoot = path.resolve(".");
-const testDir = path.join(repoRoot, "test");
+const missedTimingFixtureAliases = new Map<string, string>([
+  ["battleDamageDealt", "battle-damage"],
+]);
+const testRoot = path.resolve("test");
+const sharedDeclineFixtureHelper = "parity-missed-timing-decline-fixture-helper.ts";
+const canonicalDuelEventCount = 84;
+const missedTimingFixtureFileCount = 171;
+const missedTimingDeclineFixtureCount = 85;
 
-const generatedCodedEventNames = [
-  "customEvent",
-  "phaseDraw",
-  "phaseStandby",
-  "phaseMain1",
-  "phaseBattle",
-  "phaseMain2",
-  "phaseEnd",
-  "phaseStartDraw",
-  "phaseStartStandby",
-  "phaseStartMain1",
-  "phaseStartBattle",
-  "phaseStartMain2",
-  "phaseStartEnd",
-] as const;
+describe("EDOPro parity missed-timing event coverage", () => {
+  it("has activation and decline fixtures for each canonical duel event", () => {
+    const fixtureFiles = new Set(fs.readdirSync(testRoot).filter((file) => file.startsWith("parity-missed-timing-") && file.endsWith("-fixture.test.ts")));
+    expect(duelEventNames.size).toBe(canonicalDuelEventCount);
+    expect(fixtureFiles.size).toBe(missedTimingFixtureFileCount);
 
-describe("missed timing event fixture coverage", () => {
-  it("keeps activation and decline fixtures for every coded duel event", () => {
-    const expectedEvents = expectedCodedMissedTimingEvents();
-    const activationCoverage = missedTimingCoverage("activation");
-    const declineCoverage = missedTimingCoverage("decline");
+    const missing = [...duelEventNames].flatMap((eventName) => {
+      const fixtureName = missedTimingFixtureAliases.get(eventName) ?? camelToKebab(eventName);
+      return [
+        fixtureFiles.has(`parity-missed-timing-${fixtureName}-fixture.test.ts`) ? [] : [`${eventName} (${fixtureName}) activation`],
+        fixtureFiles.has(`parity-missed-timing-${fixtureName}-decline-fixture.test.ts`) ? [] : [`${eventName} (${fixtureName}) decline`],
+      ].flat();
+    });
 
-    expect(missingCoverage(expectedEvents, activationCoverage)).toEqual([]);
-    expect(missingCoverage(expectedEvents, declineCoverage)).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
+  it("requires decline fixtures to prove restored open fast priority with stale trigger suppression", () => {
+    const declineFiles = fs.readdirSync(testRoot)
+      .filter((file) => file.startsWith("parity-missed-timing-") && file.endsWith("-decline-fixture.test.ts"));
+    expect(declineFiles).toHaveLength(missedTimingDeclineFixtureCount);
+
+    const weak = declineFiles
+      .filter((file) => !hasDeclineOpenFastRestoreProof(file));
+
+    expect(weak).toEqual([]);
   });
 });
 
-function expectedCodedMissedTimingEvents(): string[] {
-  return Array.from(new Set([...eventCodeMapNames(), ...generatedCodedEventNames])).sort();
+function camelToKebab(value: string): string {
+  return value.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
 }
 
-function eventCodeMapNames(): string[] {
-  const source = fs.readFileSync(path.join(repoRoot, "src/engine/duel/event-codes.ts"), "utf8");
-  const eventCodesBlock = source.match(/const eventCodes:[\s\S]*?= \{([\s\S]*?)\};/)?.[1];
-  if (!eventCodesBlock) throw new Error("Could not find eventCodes in src/engine/duel/event-codes.ts");
-  return Array.from(eventCodesBlock.matchAll(/^\s*([A-Za-z][A-Za-z0-9]*):/gm), (match) => match[1]!);
+function hasDeclineOpenFastRestoreProof(file: string): boolean {
+  const text = readTestFile(file);
+  if (file !== sharedDeclineFixtureHelper && text.includes("expectMissedTimingDeclineFixture(")) return hasDeclineOpenFastRestoreProof(sharedDeclineFixtureHelper);
+  return (
+    /source:\s*["']edopro["']/.test(text) &&
+    /snapshotRestore:\s*["']both["']/.test(text) &&
+    /makeResponseSelector\(\s*["']declineTrigger["']/.test(text) &&
+    /after:\s*\{[\s\S]*?windowKind:\s*["']open["']/.test(text) &&
+    /pendingTriggers:\s*\[\]/.test(text) &&
+    /pendingTriggerBuckets:\s*\[\]/.test(text) &&
+    /legalActions:\s*\[/.test(text) &&
+    /legalActionGroups:\s*\[/.test(text) &&
+    /absentLegalActions:\s*\[/.test(text) &&
+    /absentLegalActionGroups:\s*\[/.test(text)
+  );
 }
 
-function missedTimingCoverage(kind: "activation" | "decline"): Set<string> {
-  const coveredEvents = new Set<string>();
-  for (const file of missedTimingFixtureFiles()) {
-    const text = fs.readFileSync(path.join(testDir, file), "utf8");
-    if (!coversResponseKind(text, kind)) continue;
-    for (const eventName of triggerEventsIn(text)) coveredEvents.add(eventName);
-  }
-  return coveredEvents;
-}
-
-function missedTimingFixtureFiles(): string[] {
-  return fs
-    .readdirSync(testDir)
-    .filter((file) => file.startsWith("parity-missed-timing-") && file.endsWith("fixture.test.ts"))
-    .sort();
-}
-
-function coversResponseKind(text: string, kind: "activation" | "decline"): boolean {
-  const responseType = kind === "activation" ? "activateTrigger" : "declineTrigger";
-  return new RegExp(`makeResponseSelector\\(\\s*["']${responseType}["']`).test(text);
-}
-
-function triggerEventsIn(text: string): string[] {
-  return Array.from(text.matchAll(/triggerEvent:\s*["']([^"']+)["']/g), (match) => match[1]!);
-}
-
-function missingCoverage(expectedEvents: string[], coveredEvents: Set<string>): string[] {
-  return expectedEvents.filter((eventName) => !coveredEvents.has(eventName));
+function readTestFile(file: string): string {
+  return fs.readFileSync(path.join(testRoot, file), "utf8");
 }

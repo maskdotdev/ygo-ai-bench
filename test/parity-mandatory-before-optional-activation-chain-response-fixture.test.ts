@@ -7,6 +7,7 @@ import {
   absentWindowEffectGroup,
   chainEffectGroup,
   chainPassGroup,
+  openEffectGroup,
   triggerActivationGroup,
   triggerDeclineGroup,
   turnGroup,
@@ -370,6 +371,15 @@ describe("EDOPro parity mandatory before optional activation chain response fixt
         chainPasses: [],
         legalActionCounts: { 0: 3, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "fixture-activation-chain-turn-open-fast", count: 1 },
+          { type: "changePhase", player: 0, windowId: 5, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 5, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          openEffectGroup(0, "fixture-activation-chain-turn-open-fast", 1, 5),
+          turnGroup(5),
+        ],
         absentLegalActions: [
           { type: "activateTrigger", player: 0, windowId: 5, windowKind: "open", effectId: "fixture-activation-chain-mandatory-first" },
           { type: "activateTrigger", player: 0, windowId: 5, windowKind: "open", effectId: "fixture-activation-chain-optional-second" },

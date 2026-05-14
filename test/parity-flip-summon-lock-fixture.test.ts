@@ -42,6 +42,13 @@ describe("EDOPro parity flip summon lock fixtures", () => {
               { eventName: "flipSummoning", eventCardUid: "p0-deck-100-0" },
               { eventName: "flipSummoned", eventCardUid: "p0-deck-100-0" },
             ],
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "changePhase", player: 0, windowId: 1, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 1, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [turnGroup(1)],
           },
         }),
       ],

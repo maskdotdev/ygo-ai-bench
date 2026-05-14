@@ -276,6 +276,32 @@ describe("EDOPro parity End Turn open fast-effect no-response fixture", () => {
         chainPasses: [],
         legalActionCounts: { 0: 0, 1: 6 },
         legalActionGroupCounts: { 0: 0, 1: 2 },
+        legalActions: [
+          { type: "normalSummon", player: 1, windowId: 2, windowKind: "open", code: "200", location: "hand", count: 1 },
+          { type: "normalSummon", player: 1, windowId: 2, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "setMonster", player: 1, windowId: 2, windowKind: "open", code: "200", location: "hand", count: 1 },
+          { type: "setMonster", player: 1, windowId: 2, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "changePhase", player: 1, windowId: 2, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 1, windowId: 2, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          summonGroup([
+            { type: "normalSummon", player: 1, code: "200", location: "hand" },
+            { type: "normalSummon", player: 1, code: "300", location: "hand" },
+            { type: "setMonster", player: 1, code: "200", location: "hand" },
+            { type: "setMonster", player: 1, code: "300", location: "hand" },
+          ], 1, 2),
+          {
+            player: 1,
+            label: "Turn",
+            windowId: 2,
+            windowKind: "open",
+            actions: [
+              { type: "changePhase", player: 1, windowId: 2, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 1, windowId: 2, windowKind: "open", count: 1 },
+            ],
+          },
+        ],
         absentLegalActions: [
           { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "end-turn-no-response-previous-open-quick" },
           { type: "activateEffect", player: 1, windowId: 2, windowKind: "open", effectId: "end-turn-no-response-next-open-quick" },

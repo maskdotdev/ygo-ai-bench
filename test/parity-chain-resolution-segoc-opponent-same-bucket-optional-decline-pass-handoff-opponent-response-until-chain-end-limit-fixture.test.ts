@@ -8,8 +8,11 @@ import {
   absentWindowEffectGroup,
   chainEffectGroup,
   chainPassGroup,
+  openEffectGroup,
+  summonGroup,
   triggerActivationGroup,
   triggerDeclineGroup,
+  turnGroup,
 } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity chain-resolution opponent same-bucket optional decline pass-handoff opponent-response until-chain-end limit fixture", () => {
@@ -412,6 +415,35 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional decline p
         chain: [],
         chainPasses: [],
         chainLimits: [],
+        legalActionCounts: { 0: 9, 1: 0 },
+        legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 7, windowKind: "open", effectId: "fixture-chain-resolution-opponent-optional-decline-handoff-until-starter", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 7, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 7, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 7, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 7, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 7, windowKind: "open", code: "800", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 7, windowKind: "open", code: "800", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 7, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 7, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          openEffectGroup(0, "fixture-chain-resolution-opponent-optional-decline-handoff-until-starter", 1, 7),
+          summonGroup(
+            [
+              { type: "normalSummon", player: 0, code: "100", location: "hand" },
+              { type: "setMonster", player: 0, code: "100", location: "hand" },
+              { type: "normalSummon", player: 0, code: "300", location: "hand" },
+              { type: "setMonster", player: 0, code: "300", location: "hand" },
+              { type: "normalSummon", player: 0, code: "800", location: "hand" },
+              { type: "setMonster", player: 0, code: "800", location: "hand" },
+            ],
+            1,
+            7,
+          ),
+          turnGroup(7),
+        ],
         locations: { graveyard: ["700", "200", "900", "950"], hand: ["100", "300", "800", "400", "500", "800"] },
         logIncludes: [
           "Chain resolution opponent optional decline handoff until opponent chain limiter resolved",

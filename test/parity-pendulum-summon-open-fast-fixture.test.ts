@@ -51,7 +51,7 @@ describe("EDOPro parity Pendulum Summon open fast-effect fixture", () => {
         ],
       },
       responses: [
-        makeScriptedStep({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"], label: "Pendulum Summon selected open fast candidate", windowId: 0, windowKind: "open", windowToken: "window-1" }, {
+        makeScriptedStep({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"], label: "Pendulum Summon selected open fast candidate" }, {
           snapshotRestore: "both",
           before: {
             source: "edopro",

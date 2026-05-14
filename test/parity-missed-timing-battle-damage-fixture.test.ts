@@ -109,6 +109,10 @@ describe("EDOPro parity battle-damage missed timing fixture", () => {
               absentTriggerActivationGroup(0, "battle-damage-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "battle-damage-activation-open-fast", 1, "triggerBucket"),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-damage-activation-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-damage-activation-open-fast" },
+            ],
             logIncludes: ["Battle-damage activation multi step resolved"],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
@@ -132,6 +136,10 @@ describe("EDOPro parity battle-damage missed timing fixture", () => {
               absentTriggerActivationGroup(0, "battle-damage-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "battle-damage-activation-open-fast", 1, "triggerBucket"),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-damage-activation-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-damage-activation-open-fast" },
+            ],
             legalActionGroupCounts: { 0: 2, 1: 0 },
           },
           after: {
@@ -149,6 +157,10 @@ describe("EDOPro parity battle-damage missed timing fixture", () => {
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "battle-damage-activation-optional-when", "turnOptional", 2, "open"),
               absentTriggerActivationGroup(0, "battle-damage-activation-optional-if", "turnOptional", 2, "open"),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "battle-damage-activation-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "battle-damage-activation-optional-if" },
             ],
             logIncludes: ["Battle-damage activation multi step resolved", "Battle-damage activation optional if resolved"],
             legalActionCounts: { 0: 12, 1: 0 },
@@ -171,6 +183,10 @@ describe("EDOPro parity battle-damage missed timing fixture", () => {
         absentLegalActionGroups: [
           absentTriggerActivationGroup(0, "battle-damage-activation-optional-when", "turnOptional", 2, "open"),
           absentTriggerActivationGroup(0, "battle-damage-activation-optional-if", "turnOptional", 2, "open"),
+        ],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "battle-damage-activation-optional-when" },
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "battle-damage-activation-optional-if" },
         ],
         logIncludes: ["Battle-damage activation multi step resolved", "Battle-damage activation optional if resolved"],
         legalActionCounts: { 0: 12, 1: 0 },

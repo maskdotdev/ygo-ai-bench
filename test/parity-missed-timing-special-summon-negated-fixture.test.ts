@@ -94,6 +94,10 @@ describe("EDOPro parity special-summon-negated missed timing fixture", () => {
               { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "special-summon-negated-activation-multistep", count: 1 },
             ],
             legalActionGroups: [openEffectGroup(0, "special-summon-negated-activation-open-fast", 1, 0)],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "special-summon-negated-activation-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "special-summon-negated-activation-optional-if" },
+            ],
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "special-summon-negated-activation-optional-when", "turnOptional", 0, "open"),
               absentTriggerActivationGroup(0, "special-summon-negated-activation-optional-if", "turnOptional", 0, "open"),
@@ -123,6 +127,10 @@ describe("EDOPro parity special-summon-negated missed timing fixture", () => {
               absentTriggerActivationGroup(0, "special-summon-negated-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "special-summon-negated-activation-open-fast", 1, "triggerBucket"),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "special-summon-negated-activation-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "special-summon-negated-activation-open-fast" },
+            ],
             logIncludes: ["Special summon negated activation multi step resolved"],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
@@ -148,6 +156,10 @@ describe("EDOPro parity special-summon-negated missed timing fixture", () => {
               absentTriggerActivationGroup(0, "special-summon-negated-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "special-summon-negated-activation-open-fast", 1, "triggerBucket"),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "special-summon-negated-activation-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "special-summon-negated-activation-open-fast" },
+            ],
             legalActionGroupCounts: { 0: 2, 1: 0 },
           },
           after: {
@@ -166,6 +178,10 @@ describe("EDOPro parity special-summon-negated missed timing fixture", () => {
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "special-summon-negated-activation-optional-when", "turnOptional", 2, "open"),
               absentTriggerActivationGroup(0, "special-summon-negated-activation-optional-if", "turnOptional", 2, "open"),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "special-summon-negated-activation-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "special-summon-negated-activation-optional-if" },
             ],
             logIncludes: ["Special summon negated activation multi step resolved", "Special summon negated activation optional if resolved"],
             legalActionCounts: { 0: 13, 1: 0 },
@@ -189,6 +205,10 @@ describe("EDOPro parity special-summon-negated missed timing fixture", () => {
         absentLegalActionGroups: [
           absentTriggerActivationGroup(0, "special-summon-negated-activation-optional-when", "turnOptional", 2, "open"),
           absentTriggerActivationGroup(0, "special-summon-negated-activation-optional-if", "turnOptional", 2, "open"),
+        ],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "special-summon-negated-activation-optional-when" },
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "special-summon-negated-activation-optional-if" },
         ],
         logIncludes: ["Special summon negated activation multi step resolved", "Special summon negated activation optional if resolved"],
         legalActionCounts: { 0: 13, 1: 0 },

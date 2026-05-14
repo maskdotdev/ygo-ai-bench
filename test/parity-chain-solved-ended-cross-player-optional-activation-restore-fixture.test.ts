@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentTriggerActivationGroup, triggerActivationGroup, triggerDeclineGroup } from "./parity-legal-action-group-helpers.js";
+import { absentTriggerActivationGroup, openEffectGroup, summonGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity cross-player optional chain lifecycle activation restore fixture", () => {
   it("keeps deferred chainEnded buckets hidden until cross-player optional chainSolved activations finish", () => {
@@ -87,6 +87,10 @@ describe("EDOPro parity cross-player optional chain lifecycle activation restore
             ],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-chain-solved-turn-optional-activation", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-chain-solved-turn-optional-activation", triggerBucket: "turnOptional", count: 1 },
+            ],
             legalActionGroups: [
               triggerActivationGroup(0, "fixture-cross-chain-solved-turn-optional-activation", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "fixture-cross-chain-solved-turn-optional-activation", "turnOptional", 1, 1),
@@ -94,6 +98,10 @@ describe("EDOPro parity cross-player optional chain lifecycle activation restore
             absentLegalActionGroups: [
               absentTriggerActivationGroup(1, "fixture-cross-chain-solved-opponent-optional-activation", "opponentOptional", 1, "triggerBucket"),
               absentTriggerActivationGroup(0, "fixture-cross-chain-ended-after-optional-activations", "turnMandatory", 1, "triggerBucket"),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-chain-solved-opponent-optional-activation" },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-cross-chain-ended-after-optional-activations" },
             ],
             logIncludes: ["Cross optional activation starter resolved"],
           },
@@ -111,6 +119,10 @@ describe("EDOPro parity cross-player optional chain lifecycle activation restore
             pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
             legalActionCounts: { 0: 0, 1: 2 },
             legalActionGroupCounts: { 0: 0, 1: 2 },
+            legalActions: [
+              { type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-chain-solved-opponent-optional-activation", triggerBucket: "opponentOptional", count: 1 },
+              { type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-chain-solved-opponent-optional-activation", triggerBucket: "opponentOptional", count: 1 },
+            ],
             legalActionGroups: [
               triggerActivationGroup(1, "fixture-cross-chain-solved-opponent-optional-activation", "opponentOptional", 1, 2),
               triggerDeclineGroup(1, "fixture-cross-chain-solved-opponent-optional-activation", "opponentOptional", 1, 2),
@@ -118,6 +130,10 @@ describe("EDOPro parity cross-player optional chain lifecycle activation restore
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "fixture-cross-chain-solved-turn-optional-activation", "turnOptional", 2, "triggerBucket"),
               absentTriggerActivationGroup(0, "fixture-cross-chain-ended-after-optional-activations", "turnMandatory", 2, "triggerBucket"),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-chain-solved-turn-optional-activation" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-cross-chain-ended-after-optional-activations" },
             ],
           },
         }),
@@ -135,10 +151,17 @@ describe("EDOPro parity cross-player optional chain lifecycle activation restore
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
             legalActionCounts: { 0: 1, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-cross-chain-ended-after-optional-activations", triggerBucket: "turnMandatory", count: 1 },
+            ],
             legalActionGroups: [triggerActivationGroup(0, "fixture-cross-chain-ended-after-optional-activations", "turnMandatory", 1, 3)],
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "fixture-cross-chain-solved-turn-optional-activation", "turnOptional", 3, "triggerBucket"),
               absentTriggerActivationGroup(1, "fixture-cross-chain-solved-opponent-optional-activation", "opponentOptional", 3, "triggerBucket"),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-cross-chain-solved-turn-optional-activation" },
+              { type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-cross-chain-solved-opponent-optional-activation" },
             ],
             logIncludes: [
               "Cross chain solved turn optional activation resolved",
@@ -160,6 +183,29 @@ describe("EDOPro parity cross-player optional chain lifecycle activation restore
             pendingTriggerBuckets: [],
             legalActionCounts: { 0: 9, 1: 0 },
             legalActionGroupCounts: { 0: 3, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-cross-optional-activation-starter", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 4, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 4, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 4, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 4, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 4, windowKind: "open", code: "300", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 4, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 4, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 4, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              openEffectGroup(0, "fixture-cross-optional-activation-starter", 1, 4),
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "300", location: "hand" },
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "300", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+              ], 1, 4),
+              turnGroup(4),
+            ],
             logIncludes: ["Cross chain ended after optional activations resolved"],
           },
         }),
@@ -176,6 +222,29 @@ describe("EDOPro parity cross-player optional chain lifecycle activation restore
         pendingTriggerBuckets: [],
         legalActionCounts: { 0: 9, 1: 0 },
         legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 4, windowKind: "open", effectId: "fixture-cross-optional-activation-starter", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 4, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 4, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 4, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 4, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 4, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 4, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 4, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 4, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          openEffectGroup(0, "fixture-cross-optional-activation-starter", 1, 4),
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "100", location: "hand" },
+            { type: "normalSummon", player: 0, code: "300", location: "hand" },
+            { type: "normalSummon", player: 0, code: "500", location: "hand" },
+            { type: "setMonster", player: 0, code: "100", location: "hand" },
+            { type: "setMonster", player: 0, code: "300", location: "hand" },
+            { type: "setMonster", player: 0, code: "500", location: "hand" },
+          ], 1, 4),
+          turnGroup(4),
+        ],
         logIncludes: [
           "Cross optional activation starter resolved",
           "Cross chain solved turn optional activation resolved",

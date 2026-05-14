@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const parityFixtureDir = path.resolve("test");
 const parityDocFiles = ["readme.md", path.join("docs", "gameplay-parity-plan.md")];
-const pairedScenarioFixtureFiles = new Set(["parity-battle-direct-attack-lock-fixture.test.ts", "parity-missed-timing-fixture.test.ts", "parity-segoc-bucket-fixture.test.ts"]);
+const pairedScenarioFixtureFiles = new Set(["parity-battle-direct-attack-lock-fixture.test.ts", "parity-missed-timing-event-coverage.test.ts", "parity-missed-timing-fixture.test.ts", "parity-open-fast-coverage.test.ts", "parity-segoc-bucket-fixture.test.ts"]);
 
 describe("parity fixture metadata", () => {
   it("scans existing parity documentation files", () => {
@@ -227,6 +227,7 @@ describe("parity fixture metadata", () => {
       ]),
     ).toEqual([]);
     expect(missingLegalActionCountsInLines("fixture.ts", lines)).toEqual(["fixture.ts:2"]);
+    expect(missingLegalActionCountsInLines("fixture.ts", [...lines.slice(0, 4), "  legalActionCounts: { 0: 1, 1: 0 },", "  legalActionGroups: [turnGroup(1)],", ...lines.slice(4)])).toEqual(["fixture.ts:2"]);
     expect(missingOpenLegalActionWindowIdsInLines("fixture.ts", [...lines.slice(0, 4), '  legalActions: [{ type: "endTurn", player: 0, windowKind: "open" }],', ...lines.slice(4)])).toEqual([
       "fixture.ts:5",
     ]);

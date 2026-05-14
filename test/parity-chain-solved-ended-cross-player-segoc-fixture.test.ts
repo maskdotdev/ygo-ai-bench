@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentTriggerActivationGroup, summonGroup, triggerActivationGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentTriggerActivationGroup, openEffectGroup, summonGroup, triggerActivationGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity cross-player chain lifecycle SEGOC fixture", () => {
   it("queues cross-player chainEnded buckets only after cross-player chainSolved buckets resolve", () => {
@@ -380,6 +380,29 @@ describe("EDOPro parity cross-player chain lifecycle SEGOC fixture", () => {
         pendingTriggerBuckets: [],
         legalActionCounts: { 0: 9, 1: 0 },
         legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "fixture-cross-lifecycle-starter", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 5, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 5, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 5, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 5, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 5, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 5, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 5, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 5, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          openEffectGroup(0, "fixture-cross-lifecycle-starter", 1, 5),
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "100", location: "hand" },
+            { type: "normalSummon", player: 0, code: "300", location: "hand" },
+            { type: "normalSummon", player: 0, code: "500", location: "hand" },
+            { type: "setMonster", player: 0, code: "100", location: "hand" },
+            { type: "setMonster", player: 0, code: "300", location: "hand" },
+            { type: "setMonster", player: 0, code: "500", location: "hand" },
+          ], 1, 5),
+          turnGroup(5),
+        ],
         logIncludes: [
           "Cross lifecycle starter resolved",
           "Cross chain solved turn resolved",

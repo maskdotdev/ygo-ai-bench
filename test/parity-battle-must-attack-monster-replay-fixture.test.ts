@@ -84,6 +84,8 @@ describe("EDOPro parity battle must-attack-monster replay fixtures", () => {
             locations: { monsterZone: ["100"], graveyard: ["200"] },
             legalActionCounts: { 0: 0, 1: 1 },
             legalActionGroupCounts: { 0: 0, 1: 1 },
+            legalActions: [{ type: "passAttack", player: 1, windowId: 4, windowKind: "battle", count: 1 }],
+            legalActionGroups: [passBattleGroup(1, "passAttack", 1, 4)],
             logIncludes: ["Fixture must-monster target left before replay"],
           },
         }),

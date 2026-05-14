@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentChainEffectGroup, absentTriggerActivationGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentChainEffectGroup, absentTriggerActivationGroup, absentWindowEffectGroup, chainEffectGroup, chainPassGroup, openEffectGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity chain-resolution cross-player SEGOC handoff chain resolution fixture", () => {
   it("resolves opponent post-handoff chains after the turn player passes", () => {
@@ -280,6 +280,29 @@ describe("EDOPro parity chain-resolution cross-player SEGOC handoff chain resolu
         pendingTriggerBuckets: [],
         legalActionCounts: { 0: 9, 1: 0 },
         legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 8, windowKind: "open", effectId: "fixture-cross-handoff-chain-resolution-starter", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 8, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 8, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 8, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 8, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 8, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 8, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 8, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 8, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          openEffectGroup(0, "fixture-cross-handoff-chain-resolution-starter", 1, 8),
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "100", location: "hand" },
+            { type: "normalSummon", player: 0, code: "300", location: "hand" },
+            { type: "normalSummon", player: 0, code: "500", location: "hand" },
+            { type: "setMonster", player: 0, code: "100", location: "hand" },
+            { type: "setMonster", player: 0, code: "300", location: "hand" },
+            { type: "setMonster", player: 0, code: "500", location: "hand" },
+          ], 1, 8),
+          turnGroup(8),
+        ],
         locations: { graveyard: ["700", "200", "900"], hand: ["100", "300", "500", "400", "600", "800", "800"] },
         absentLegalActions: [
           { type: "activateEffect", player: 0, windowId: 8, windowKind: "open", effectId: "fixture-cross-handoff-chain-resolution-turn-quick" },

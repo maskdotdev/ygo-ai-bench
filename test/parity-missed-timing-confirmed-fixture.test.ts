@@ -95,6 +95,10 @@ describe("EDOPro parity confirmed missed timing fixture", () => {
               absentTriggerActivationGroup(0, "confirm-activation-optional-when", "turnOptional", 0, "open"),
               absentTriggerActivationGroup(0, "confirm-activation-optional-if", "turnOptional", 0, "open"),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "confirm-activation-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "confirm-activation-optional-if" },
+            ],
 
             legalActionCounts: { 0: 15, 1: 0 },
             legalActionGroupCounts: { 0: 4, 1: 0 },},
@@ -117,6 +121,10 @@ describe("EDOPro parity confirmed missed timing fixture", () => {
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "confirm-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "confirm-activation-open-fast", 1, "triggerBucket"),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "confirm-activation-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "confirm-activation-open-fast" },
             ],
             logIncludes: ["Confirm activation multi step resolved"],
 
@@ -141,6 +149,10 @@ describe("EDOPro parity confirmed missed timing fixture", () => {
               absentTriggerActivationGroup(0, "confirm-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "confirm-activation-open-fast", 1, "triggerBucket"),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "confirm-activation-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "confirm-activation-open-fast" },
+            ],
 
             legalActionGroupCounts: { 0: 2, 1: 0 },},
           after: {
@@ -158,6 +170,10 @@ describe("EDOPro parity confirmed missed timing fixture", () => {
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "confirm-activation-optional-when", "turnOptional", 2, "open"),
               absentTriggerActivationGroup(0, "confirm-activation-optional-if", "turnOptional", 2, "open"),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "confirm-activation-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "confirm-activation-optional-if" },
             ],
             logIncludes: ["Confirm activation multi step resolved", "Confirm activation optional if resolved"],
 
@@ -180,6 +196,10 @@ describe("EDOPro parity confirmed missed timing fixture", () => {
         absentLegalActionGroups: [
           absentTriggerActivationGroup(0, "confirm-activation-optional-when", "turnOptional", 2, "open"),
           absentTriggerActivationGroup(0, "confirm-activation-optional-if", "turnOptional", 2, "open"),
+        ],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "confirm-activation-optional-when" },
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "confirm-activation-optional-if" },
         ],
         logIncludes: ["Confirm activation multi step resolved", "Confirm activation optional if resolved"],
 

@@ -107,6 +107,10 @@ describe("EDOPro parity coin-toss-negated missed timing fixture", () => {
               absentTriggerActivationGroup(0, "coin-negated-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "coin-negated-activation-open-fast", 1, "triggerBucket"),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "coin-negated-activation-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "coin-negated-activation-open-fast" },
+            ],
             logIncludes: ["Coin negate activation multi step resolved"],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
@@ -130,6 +134,10 @@ describe("EDOPro parity coin-toss-negated missed timing fixture", () => {
               absentTriggerActivationGroup(0, "coin-negated-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "coin-negated-activation-open-fast", 1, "triggerBucket"),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "coin-negated-activation-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "coin-negated-activation-open-fast" },
+            ],
             legalActionGroupCounts: { 0: 2, 1: 0 },
           },
           after: {
@@ -147,6 +155,10 @@ describe("EDOPro parity coin-toss-negated missed timing fixture", () => {
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "coin-negated-activation-optional-when", "turnOptional", 2, "open"),
               absentTriggerActivationGroup(0, "coin-negated-activation-optional-if", "turnOptional", 2, "open"),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "coin-negated-activation-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "coin-negated-activation-optional-if" },
             ],
             logIncludes: ["Coin negate activation multi step resolved", "Coin negate activation optional if resolved"],
             legalActionCounts: { 0: 12, 1: 0 },
@@ -169,6 +181,10 @@ describe("EDOPro parity coin-toss-negated missed timing fixture", () => {
         absentLegalActionGroups: [
           absentTriggerActivationGroup(0, "coin-negated-activation-optional-when", "turnOptional", 2, "open"),
           absentTriggerActivationGroup(0, "coin-negated-activation-optional-if", "turnOptional", 2, "open"),
+        ],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "coin-negated-activation-optional-when" },
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "coin-negated-activation-optional-if" },
         ],
         logIncludes: ["Coin negate activation multi step resolved", "Coin negate activation optional if resolved"],
         legalActionCounts: { 0: 12, 1: 0 },

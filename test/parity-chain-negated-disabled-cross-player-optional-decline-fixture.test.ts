@@ -406,6 +406,32 @@ describe("EDOPro parity cross-player chain negated/disabled lifecycle decline fi
         locations: { graveyard: ["300", "400"], hand: ["100", "200", "500"] },
         legalActionCounts: { 0: 7, 1: 0 },
         legalActionGroupCounts: { 0: 3, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "fixture-cross-negated-disabled-starter", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 5, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 5, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 5, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 5, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 5, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 5, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 5,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "activateEffect", player: 0, windowId: 5, windowKind: "open", effectId: "fixture-cross-negated-disabled-starter", count: 1 }],
+          },
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "100", location: "hand" },
+            { type: "normalSummon", player: 0, code: "500", location: "hand" },
+            { type: "setMonster", player: 0, code: "100", location: "hand" },
+            { type: "setMonster", player: 0, code: "500", location: "hand" },
+          ], 1, 5),
+          turnGroup(5),
+        ],
         absentLegalActions: [
           { type: "activateTrigger", player: 0, windowId: 5, windowKind: "open", effectId: "fixture-cross-chain-negated-turn-optional" },
           { type: "activateTrigger", player: 1, windowId: 5, windowKind: "open", effectId: "fixture-cross-chain-disabled-opponent-optional" },

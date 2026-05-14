@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentChainEffectGroup, chainEffectGroup, chainPassGroup } from "./parity-legal-action-group-helpers.js";
+import { absentChainEffectGroup, chainEffectGroup, chainPassGroup, summonGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity chain-resolution SEGOC pass-handoff turn-response until-chain-end limit fixture", () => {
   it("keeps until-chain-end limits after the turn player responds to a chain-created SEGOC pass handoff", () => {
@@ -232,6 +232,33 @@ describe("EDOPro parity chain-resolution SEGOC pass-handoff turn-response until-
         chain: [],
         chainPasses: [],
         chainLimits: [],
+        legalActionCounts: { 0: 8, 1: 0 },
+        legalActionGroupCounts: { 0: 2, 1: 0 },
+        legalActions: [
+          { type: "normalSummon", player: 0, windowId: 6, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 6, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 6, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 6, windowKind: "open", code: "300", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 6, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 6, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 6, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 6, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          summonGroup(
+            [
+              { type: "normalSummon", player: 0, code: "100", location: "hand" },
+              { type: "setMonster", player: 0, code: "100", location: "hand" },
+              { type: "normalSummon", player: 0, code: "300", location: "hand" },
+              { type: "setMonster", player: 0, code: "300", location: "hand" },
+              { type: "normalSummon", player: 0, code: "500", location: "hand" },
+              { type: "setMonster", player: 0, code: "500", location: "hand" },
+            ],
+            1,
+            6,
+          ),
+          turnGroup(6),
+        ],
         locations: { graveyard: ["700", "200", "900", "400"], hand: ["100", "300", "500", "800", "800", "800", "800", "800"] },
         logIncludes: [
           "Chain resolution SEGOC until turn chain limiter resolved",

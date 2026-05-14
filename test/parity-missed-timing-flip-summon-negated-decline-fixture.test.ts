@@ -97,6 +97,10 @@ describe("EDOPro parity flip-summon-negated missed timing decline fixture", () =
               triggerActivationGroup(0, "flip-summon-negated-decline-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "flip-summon-negated-decline-optional-if", "turnOptional", 1, 1),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "flip-summon-negated-decline-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "flip-summon-negated-decline-open-fast" },
+            ],
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "flip-summon-negated-decline-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "flip-summon-negated-decline-open-fast", 1, "triggerBucket"),
@@ -124,6 +128,10 @@ describe("EDOPro parity flip-summon-negated missed timing decline fixture", () =
               absentTriggerActivationGroup(0, "flip-summon-negated-decline-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "flip-summon-negated-decline-open-fast", 1, "triggerBucket"),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "flip-summon-negated-decline-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "flip-summon-negated-decline-open-fast" },
+            ],
             legalActionGroupCounts: { 0: 2, 1: 0 },
           },
           after: {
@@ -142,6 +150,10 @@ describe("EDOPro parity flip-summon-negated missed timing decline fixture", () =
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "flip-summon-negated-decline-optional-when", "turnOptional", 2, "open"),
               absentTriggerActivationGroup(0, "flip-summon-negated-decline-optional-if", "turnOptional", 2, "open"),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "flip-summon-negated-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "flip-summon-negated-decline-optional-if" },
             ],
             logIncludes: ["Flip summon negated decline multi step resolved"],
             legalActionCounts: { 0: 13, 1: 0 },
@@ -165,6 +177,10 @@ describe("EDOPro parity flip-summon-negated missed timing decline fixture", () =
         absentLegalActionGroups: [
           absentTriggerActivationGroup(0, "flip-summon-negated-decline-optional-when", "turnOptional", 2, "open"),
           absentTriggerActivationGroup(0, "flip-summon-negated-decline-optional-if", "turnOptional", 2, "open"),
+        ],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "flip-summon-negated-decline-optional-when" },
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "flip-summon-negated-decline-optional-if" },
         ],
         legalActionCounts: { 0: 13, 1: 0 },
         legalActionGroupCounts: { 0: 4, 1: 0 },

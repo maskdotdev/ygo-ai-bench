@@ -107,7 +107,7 @@ describe("EDOPro parity post-Pendulum-Summon open fast-effect pass handoff oppon
         ],
       },
       responses: [
-        makeScriptedStep({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"], label: "Pendulum Summon selected handoff opponent turn response chain candidate", windowId: 0, windowKind: "open", windowToken: "window-1" }),
+        makeScriptedStep({ type: "pendulumSummon", player: 0, summonUids: ["p0-deck-300-2"], label: "Pendulum Summon selected handoff opponent turn response chain candidate" }),
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "post-pendulum-summon-handoff-opponent-turn-response-chain-turn-open-quick" })),
         makeScriptedStep(makeResponseSelector("activateEffect", 1, { effectId: "post-pendulum-summon-handoff-opponent-turn-response-chain-opponent-first-chain-quick" })),
         makeScriptedStep(makeResponseSelector("passChain", 0)),

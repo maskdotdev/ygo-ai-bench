@@ -107,6 +107,10 @@ describe("EDOPro parity dice-tossed missed timing fixture", () => {
               absentTriggerActivationGroup(0, "dice-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "dice-activation-open-fast", 1, "triggerBucket"),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "dice-activation-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "dice-activation-open-fast" },
+            ],
             logIncludes: ["Dice activation multi step resolved"],
 
             legalActionCounts: { 0: 2, 1: 0 },
@@ -130,6 +134,10 @@ describe("EDOPro parity dice-tossed missed timing fixture", () => {
               absentTriggerActivationGroup(0, "dice-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "dice-activation-open-fast", 1, "triggerBucket"),
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "dice-activation-optional-when" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "dice-activation-open-fast" },
+            ],
 
             legalActionGroupCounts: { 0: 2, 1: 0 },},
           after: {
@@ -147,6 +155,10 @@ describe("EDOPro parity dice-tossed missed timing fixture", () => {
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "dice-activation-optional-when", "turnOptional", 2, "open"),
               absentTriggerActivationGroup(0, "dice-activation-optional-if", "turnOptional", 2, "open"),
+            ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "dice-activation-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "dice-activation-optional-if" },
             ],
             logIncludes: ["Dice activation multi step resolved", "Dice activation optional if resolved"],
 
@@ -169,6 +181,10 @@ describe("EDOPro parity dice-tossed missed timing fixture", () => {
         absentLegalActionGroups: [
           absentTriggerActivationGroup(0, "dice-activation-optional-when", "turnOptional", 2, "open"),
           absentTriggerActivationGroup(0, "dice-activation-optional-if", "turnOptional", 2, "open"),
+        ],
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "dice-activation-optional-when" },
+          { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "dice-activation-optional-if" },
         ],
         logIncludes: ["Dice activation multi step resolved", "Dice activation optional if resolved"],
 

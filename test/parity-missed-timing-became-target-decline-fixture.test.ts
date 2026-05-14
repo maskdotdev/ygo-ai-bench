@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { absentTriggerActivationGroup, absentWindowEffectGroup, triggerActivationGroup, triggerDeclineGroup } from "./parity-legal-action-group-helpers.js";
+import { absentTriggerActivationGroup, absentWindowEffectGroup, summonGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity became-target missed timing decline fixture", () => {
   it("returns declined optional if became-target triggers to open fast priority while optional when remains missed", () => {
@@ -93,6 +93,16 @@ describe("EDOPro parity became-target missed timing decline fixture", () => {
               { type: "activateEffect", player: 0, windowId: 0, windowKind: "open", effectId: "became-target-decline-multistep", count: 1 },
               { type: "changePosition", player: 0, windowId: 0, windowKind: "open", code: "600", location: "monsterZone", position: "faceUpDefense", count: 1 },
               { type: "changePosition", player: 0, windowId: 0, windowKind: "open", code: "700", location: "monsterZone", position: "faceUpDefense", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 0, windowKind: "open", code: "800", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 0, windowKind: "open", code: "800", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 0, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 0, windowKind: "open", count: 1 },
             ],
             legalActionGroups: [
               {
@@ -117,6 +127,17 @@ describe("EDOPro parity became-target missed timing decline fixture", () => {
                   { type: "changePosition", player: 0, windowId: 0, windowKind: "open", code: "700", location: "monsterZone", position: "faceUpDefense", count: 1 },
                 ],
               },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "normalSummon", player: 0, code: "800", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "800", location: "hand" },
+              ], 1, 0),
+              turnGroup(0),
             ],
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: "became-target-decline-optional-when" },
@@ -202,7 +223,18 @@ describe("EDOPro parity became-target missed timing decline fixture", () => {
             legalActionGroupCounts: { 0: 4, 1: 0 },
             legalActions: [
               { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "became-target-decline-open-fast", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "became-target-decline-multistep", count: 1 },
               { type: "changePosition", player: 0, windowId: 2, windowKind: "open", code: "600", location: "monsterZone", position: "faceUpDefense", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 2, windowKind: "open", code: "800", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 2, windowKind: "open", code: "800", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 2, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 },
             ],
             legalActionGroups: [
               {
@@ -211,7 +243,10 @@ describe("EDOPro parity became-target missed timing decline fixture", () => {
                 windowId: 2,
                 windowKind: "open",
                 count: 1,
-                actions: [{ type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "became-target-decline-open-fast", count: 1 }],
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "became-target-decline-open-fast", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 2, windowKind: "open", effectId: "became-target-decline-multistep", count: 1 },
+                ],
               },
               {
                 player: 0,
@@ -221,6 +256,17 @@ describe("EDOPro parity became-target missed timing decline fixture", () => {
                 count: 1,
                 actions: [{ type: "changePosition", player: 0, windowId: 2, windowKind: "open", code: "600", location: "monsterZone", position: "faceUpDefense", count: 1 }],
               },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "normalSummon", player: 0, code: "800", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "800", location: "hand" },
+              ], 1, 2),
+              turnGroup(2),
             ],
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "open", effectId: "became-target-decline-optional-when" },
@@ -295,6 +341,53 @@ describe("EDOPro parity became-target missed timing decline fixture", () => {
             chainPasses: [],
             legalActionCounts: { 0: 13, 1: 0 },
             legalActionGroupCounts: { 0: 4, 1: 0 },
+            legalActions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "became-target-decline-open-fast", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "became-target-decline-multistep", count: 1 },
+              { type: "changePosition", player: 0, windowId: 3, windowKind: "open", code: "600", location: "monsterZone", position: "faceUpDefense", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "800", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "100", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "400", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "500", location: "hand", count: 1 },
+              { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "800", location: "hand", count: 1 },
+              { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+              { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+            ],
+            legalActionGroups: [
+              {
+                player: 0,
+                label: "Effects",
+                windowId: 3,
+                windowKind: "open",
+                count: 1,
+                actions: [
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "became-target-decline-open-fast", count: 1 },
+                  { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "became-target-decline-multistep", count: 1 },
+                ],
+              },
+              {
+                player: 0,
+                label: "Actions",
+                windowId: 3,
+                windowKind: "open",
+                count: 1,
+                actions: [{ type: "changePosition", player: 0, windowId: 3, windowKind: "open", code: "600", location: "monsterZone", position: "faceUpDefense", count: 1 }],
+              },
+              summonGroup([
+                { type: "normalSummon", player: 0, code: "100", location: "hand" },
+                { type: "normalSummon", player: 0, code: "400", location: "hand" },
+                { type: "normalSummon", player: 0, code: "500", location: "hand" },
+                { type: "normalSummon", player: 0, code: "800", location: "hand" },
+                { type: "setMonster", player: 0, code: "100", location: "hand" },
+                { type: "setMonster", player: 0, code: "400", location: "hand" },
+                { type: "setMonster", player: 0, code: "500", location: "hand" },
+                { type: "setMonster", player: 0, code: "800", location: "hand" },
+              ], 1, 3),
+              turnGroup(3),
+            ],
             absentLegalActions: [
               { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "became-target-decline-optional-when" },
               { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "became-target-decline-optional-if" },
@@ -319,6 +412,53 @@ describe("EDOPro parity became-target missed timing decline fixture", () => {
         chainPasses: [],
         legalActionCounts: { 0: 13, 1: 0 },
         legalActionGroupCounts: { 0: 4, 1: 0 },
+        legalActions: [
+          { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "became-target-decline-open-fast", count: 1 },
+          { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "became-target-decline-multistep", count: 1 },
+          { type: "changePosition", player: 0, windowId: 3, windowKind: "open", code: "600", location: "monsterZone", position: "faceUpDefense", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "normalSummon", player: 0, windowId: 3, windowKind: "open", code: "800", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "100", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "400", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "500", location: "hand", count: 1 },
+          { type: "setMonster", player: 0, windowId: 3, windowKind: "open", code: "800", location: "hand", count: 1 },
+          { type: "changePhase", player: 0, windowId: 3, windowKind: "open", count: 1 },
+          { type: "endTurn", player: 0, windowId: 3, windowKind: "open", count: 1 },
+        ],
+        legalActionGroups: [
+          {
+            player: 0,
+            label: "Effects",
+            windowId: 3,
+            windowKind: "open",
+            count: 1,
+            actions: [
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "became-target-decline-open-fast", count: 1 },
+              { type: "activateEffect", player: 0, windowId: 3, windowKind: "open", effectId: "became-target-decline-multistep", count: 1 },
+            ],
+          },
+          {
+            player: 0,
+            label: "Actions",
+            windowId: 3,
+            windowKind: "open",
+            count: 1,
+            actions: [{ type: "changePosition", player: 0, windowId: 3, windowKind: "open", code: "600", location: "monsterZone", position: "faceUpDefense", count: 1 }],
+          },
+          summonGroup([
+            { type: "normalSummon", player: 0, code: "100", location: "hand" },
+            { type: "normalSummon", player: 0, code: "400", location: "hand" },
+            { type: "normalSummon", player: 0, code: "500", location: "hand" },
+            { type: "normalSummon", player: 0, code: "800", location: "hand" },
+            { type: "setMonster", player: 0, code: "100", location: "hand" },
+            { type: "setMonster", player: 0, code: "400", location: "hand" },
+            { type: "setMonster", player: 0, code: "500", location: "hand" },
+            { type: "setMonster", player: 0, code: "800", location: "hand" },
+          ], 1, 3),
+          turnGroup(3),
+        ],
         absentLegalActions: [
           { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "became-target-decline-optional-when" },
           { type: "activateTrigger", player: 0, windowId: 3, windowKind: "open", effectId: "became-target-decline-optional-if" },
