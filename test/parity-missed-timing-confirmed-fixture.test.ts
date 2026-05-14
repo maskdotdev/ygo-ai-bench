@@ -141,6 +141,10 @@ describe("EDOPro parity confirmed missed timing fixture", () => {
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "confirm-activation-optional-if", eventName: "confirmed", eventCode: 1211, eventCardUid: "p0-deck-600-4" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "confirm-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "confirm-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
             legalActionGroups: [
               triggerActivationGroup(0, "confirm-activation-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "confirm-activation-optional-if", "turnOptional", 1, 1),
@@ -154,6 +158,7 @@ describe("EDOPro parity confirmed missed timing fixture", () => {
               { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "confirm-activation-open-fast" },
             ],
 
+            legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },},
           after: {
             source: "edopro",
