@@ -54,5 +54,17 @@ function damageCalculationFixtureFiles(): Array<{ file: string; required: string
         "players[1].lifePoints).toBe(8000)",
       ],
     },
+    {
+      file: "test/lua-real-script-shadow-spell-goat-damage-calculation-persistent.test.ts",
+      required: [
+        'battleWindow?.kind).toBe("duringDamageCalculation")',
+        "EFFECT_FLAG_DAMAGE_CAL",
+        "shadow spell persistent true/true/1/1500",
+        "host.messages).not.toContain(\"shadow spell responder resolved\")",
+        "battleDamage[0]).toBe(500)",
+        "players[0].lifePoints).toBe(7500)",
+        "reason: duelReason.effect | duelReason.destroy",
+      ],
+    },
   ].sort((a, b) => a.file.localeCompare(b.file));
 }
