@@ -128,6 +128,10 @@ describe("EDOPro parity phase-start-end missed timing fixture", () => {
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "phase-start-end-activation-optional-if", eventName: "phaseStartEnd", eventCode: 0x2200 }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "phase-start-end-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "phase-start-end-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
             legalActionGroups: [
               triggerActivationGroup(0, "phase-start-end-activation-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "phase-start-end-activation-optional-if", "turnOptional", 1, 1),
@@ -140,6 +144,7 @@ describe("EDOPro parity phase-start-end missed timing fixture", () => {
               absentTriggerActivationGroup(0, "phase-start-end-activation-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "phase-start-end-activation-open-fast", 1, "triggerBucket"),
             ],
+            legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
           },
           after: {
