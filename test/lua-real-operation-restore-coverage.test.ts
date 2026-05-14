@@ -46,6 +46,17 @@ describe("Lua real operation restore coverage", () => {
 function operationFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-castle-gate-release-cost-damage.test.ts",
+      required: [
+        "categoryDamage",
+        "effectLabel: 1700",
+        "targetParam: 1700",
+        'eventName: "released"',
+        'eventName: "damageDealt"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-dicelops-toss-dice-restore.test.ts",
       required: [
         "categoryDice",
