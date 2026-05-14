@@ -184,6 +184,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
     expect(result.stderr).toContain("Expected missing script count 2 is above allowed 1");
   }, deckProbeTimeoutMs);
 
+  it("fails strict probes when expected missing script identities change", () => {
+    const result = spawnSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "dark-magical-blast-master-duel-day1.ydk",
+        "--upstream",
+        ".upstream/ignis",
+        "--fail-on-errors",
+        "--max-expected-missing-scripts",
+        "2",
+        "--expected-missing-script-code",
+        "46986414",
+        "--expected-missing-script-code",
+        "12345678",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("Scripts not expected: 2");
+    expect(result.stdout).toContain("Expected no-script codes: 12345678, 46986414");
+    expect(result.stderr).toContain("Lua deck probe failed:");
+    expect(result.stderr).toContain("Unexpected expected-missing scripts: c74677422.lua");
+    expect(result.stderr).toContain("Expected missing script codes were not missing: c12345678.lua");
+  }, deckProbeTimeoutMs);
+
   it("fails strict probes when local fallback script count grows above the allowed maximum", () => {
     const result = spawnSync(
       "node",
@@ -232,6 +260,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
         "0",
         "--max-expected-missing-scripts",
         "2",
+        "--expected-missing-script-code",
+        "46986414",
+        "--expected-missing-script-code",
+        "74677422",
       ],
       { encoding: "utf8" },
     );

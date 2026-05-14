@@ -11,7 +11,7 @@ describe("package scripts", () => {
     expect(pkg.scripts?.["scan:lua-clean-restore"]).toContain("tools/scan-lua-clean-restore.mjs");
     expect(pkg.scripts?.["scan:legal-action-evidence"]).toContain("tools/scan-legal-action-evidence.mjs");
     expect(pkg.scripts?.["scan:parity-fixture-provenance"]).toContain("tools/scan-parity-fixture-provenance.mjs");
-    expect(pkg.scripts?.["probe:top-tier-deck"]).toContain("--fail-on-errors --min-upstream-scripts 30 --min-actions 10 --min-activate-effects 2 --min-initial-effects 53 --min-registered-effects 136 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 2");
+    expect(pkg.scripts?.["probe:top-tier-deck"]).toContain("--fail-on-errors --min-upstream-scripts 30 --min-actions 10 --min-activate-effects 2 --min-initial-effects 53 --min-registered-effects 136 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 2 --expected-missing-script-code 89631139 --expected-missing-script-code 46986414");
     expect(pkg.scripts?.["check:bridge-bundle"]).toContain("tools/check-bridge-bundle.mjs");
     expect(pkg.scripts?.check?.split(" && ")).toEqual([
       "bun run check:loc",

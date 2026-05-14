@@ -21,7 +21,7 @@
     "dev": "vite --host 127.0.0.1",
     "setup:upstream": "node tools/setup-upstream.mjs",
     "probe:lua-deck": "node --experimental-transform-types tools/probe-lua-deck.ts",
-    "probe:top-tier-deck": "bun run probe:lua-deck -- top_tier_dark_magician_primite_azamina.ydk --fail-on-errors --min-upstream-scripts 30 --min-actions 10 --min-activate-effects 2 --min-initial-effects 53 --min-registered-effects 136 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 2",
+    "probe:top-tier-deck": "bun run probe:lua-deck -- top_tier_dark_magician_primite_azamina.ydk --fail-on-errors --min-upstream-scripts 30 --min-actions 10 --min-activate-effects 2 --min-initial-effects 53 --min-registered-effects 136 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 2 --expected-missing-script-code 89631139 --expected-missing-script-code 46986414",
     "scan:lua-api": "node tools/scan-lua-api-usage.mjs",
     "scan:lua-constants": "node tools/scan-lua-constants.mjs",
     "scan:lua-chain-limits": "node tools/scan-lua-chain-limit-patterns.mjs",

@@ -19,6 +19,7 @@ interface ProbeArgs {
   maxLocalOverrides: number | undefined;
   maxLocalFallbacks: number | undefined;
   maxExpectedMissingScripts: number | undefined;
+  expectedMissingScriptCodes: string[];
 }
 
 const args = readArgs(process.argv.slice(2));
@@ -70,6 +71,7 @@ printReport({
   maxLocalOverrides: args.maxLocalOverrides,
   maxLocalFallbacks: args.maxLocalFallbacks,
   maxExpectedMissingScripts: args.maxExpectedMissingScripts,
+  expectedMissingScriptCodes: args.expectedMissingScriptCodes,
 });
 
 function readArgs(argv: string[]): ProbeArgs {
@@ -91,6 +93,10 @@ function readArgs(argv: string[]): ProbeArgs {
   const maxLocalFallbacks = maxLocalFallbacksFlag >= 0 ? Number(argv[maxLocalFallbacksFlag + 1]) : undefined;
   const maxExpectedMissingScriptsFlag = argv.indexOf("--max-expected-missing-scripts");
   const maxExpectedMissingScripts = maxExpectedMissingScriptsFlag >= 0 ? Number(argv[maxExpectedMissingScriptsFlag + 1]) : undefined;
+  const expectedMissingScriptCodes = readRepeatedValues(argv, "--expected-missing-script-code")
+    .flatMap((value) => value.split(","))
+    .map((value) => value.trim())
+    .filter(Boolean);
   const failOnErrors = argv.includes("--fail-on-errors");
   const positional = argv.filter((value, index) => {
     if (upstreamFlag >= 0 && (index === upstreamFlag || index === upstreamFlag + 1)) return false;
@@ -102,15 +108,28 @@ function readArgs(argv: string[]): ProbeArgs {
     if (maxLocalOverridesFlag >= 0 && (index === maxLocalOverridesFlag || index === maxLocalOverridesFlag + 1)) return false;
     if (maxLocalFallbacksFlag >= 0 && (index === maxLocalFallbacksFlag || index === maxLocalFallbacksFlag + 1)) return false;
     if (maxExpectedMissingScriptsFlag >= 0 && (index === maxExpectedMissingScriptsFlag || index === maxExpectedMissingScriptsFlag + 1)) return false;
+    if (argv[index - 1] === "--expected-missing-script-code" || value === "--expected-missing-script-code") return false;
     return !value.startsWith("--");
   });
   const ydkPath = positional[0];
   const invalidMinimum = [minUpstreamScripts, minActions, minActivateEffects, minInitialEffects, minRegisteredEffects, maxLocalOverrides, maxLocalFallbacks, maxExpectedMissingScripts].some((value) => value !== undefined && (!Number.isInteger(value) || value < 0));
-  if (!ydkPath || !upstreamRoot || invalidMinimum) {
-    console.error("Usage: bun run probe:lua-deck -- <deck.ydk> [--upstream .upstream/ignis] [--fail-on-errors] [--min-upstream-scripts <count>] [--min-actions <count>] [--min-activate-effects <count>] [--min-initial-effects <count>] [--min-registered-effects <count>] [--max-local-overrides <count>] [--max-local-fallbacks <count>] [--max-expected-missing-scripts <count>]");
+  const invalidExpectedMissingCode = expectedMissingScriptCodes.some((code) => !/^\d+$/.test(code));
+  if (!ydkPath || !upstreamRoot || invalidMinimum || invalidExpectedMissingCode) {
+    console.error("Usage: bun run probe:lua-deck -- <deck.ydk> [--upstream .upstream/ignis] [--fail-on-errors] [--min-upstream-scripts <count>] [--min-actions <count>] [--min-activate-effects <count>] [--min-initial-effects <count>] [--min-registered-effects <count>] [--max-local-overrides <count>] [--max-local-fallbacks <count>] [--max-expected-missing-scripts <count>] [--expected-missing-script-code <code>]");
     process.exit(1);
   }
-  return { ydkPath: path.resolve(ydkPath), upstreamRoot: path.resolve(upstreamRoot), failOnErrors, minUpstreamScripts, minActions, minActivateEffects, minInitialEffects, minRegisteredEffects, maxLocalOverrides, maxLocalFallbacks, maxExpectedMissingScripts };
+  return { ydkPath: path.resolve(ydkPath), upstreamRoot: path.resolve(upstreamRoot), failOnErrors, minUpstreamScripts, minActions, minActivateEffects, minInitialEffects, minRegisteredEffects, maxLocalOverrides, maxLocalFallbacks, maxExpectedMissingScripts, expectedMissingScriptCodes };
+}
+
+function readRepeatedValues(argv: string[], option: string): string[] {
+  const values: string[] = [];
+  for (let index = 0; index < argv.length; index += 1) {
+    if (argv[index] !== option) continue;
+    const value = argv[index + 1];
+    if (value === undefined || value.startsWith("--")) return [""];
+    values.push(value);
+  }
+  return values;
 }
 
 function mergeProbeCards(main: string[], extra: string[], databaseCards: DuelCardData[]): DuelCardData[] {
@@ -168,6 +187,7 @@ function printReport(report: {
   maxLocalOverrides: number | undefined;
   maxLocalFallbacks: number | undefined;
   maxExpectedMissingScripts: number | undefined;
+  expectedMissingScriptCodes: string[];
 }): void {
   const found = report.scriptResults.filter((result) => result.foundAt);
   const upstreamFound = found.filter((result) => result.source !== "local-fallback" && result.source !== "local-override");
@@ -181,6 +201,13 @@ function printReport(report: {
   const startupErrors = report.startupResult.error ? [report.startupResult.error] : [];
   const registeredInitialEffects = report.initialEffectResults.filter((result) => result.ok && !result.skipped).length;
   const activateEffectActions = report.actions.filter((action) => action.type === "activateEffect").length;
+  const expectedMissingCodes = new Set(report.expectedMissingScriptCodes);
+  const unexpectedExpectedMissing = expectedMissingCodes.size
+    ? expectedMissing.filter((result) => !expectedMissingCodes.has(result.code))
+    : [];
+  const absentExpectedMissingCodes = expectedMissingCodes.size
+    ? [...expectedMissingCodes].filter((code) => !expectedMissing.some((result) => result.code === code))
+    : [];
 
   console.log(`Lua deck probe: ${path.basename(report.ydkPath)}`);
   console.log(`Upstream root: ${report.upstreamRoot}`);
@@ -201,6 +228,7 @@ function printReport(report: {
   for (const result of missing) console.log(`  MISSING ${result.name}`);
   console.log(`Scripts not expected: ${expectedMissing.length}`);
   for (const result of expectedMissing) console.log(`  NO SCRIPT ${result.name}`);
+  if (expectedMissingCodes.size) console.log(`Expected no-script codes: ${[...expectedMissingCodes].sort().join(", ")}`);
   console.log("");
   console.log(`Script load errors: ${loadErrors.length}`);
   for (const result of loadErrors) console.log(`  ERROR ${result.name}: ${result.load.error ?? "unknown error"}`);
@@ -248,6 +276,12 @@ function printReport(report: {
   }
   if (report.maxExpectedMissingScripts !== undefined && expectedMissing.length > report.maxExpectedMissingScripts) {
     failures.push(`Expected missing script count ${expectedMissing.length} is above allowed ${report.maxExpectedMissingScripts}`);
+  }
+  if (unexpectedExpectedMissing.length) {
+    failures.push(`Unexpected expected-missing scripts: ${unexpectedExpectedMissing.map((result) => result.name).join(", ")}`);
+  }
+  if (absentExpectedMissingCodes.length) {
+    failures.push(`Expected missing script codes were not missing: ${absentExpectedMissingCodes.map((code) => `c${code}.lua`).join(", ")}`);
   }
   if (failures.length) {
     console.error("");
