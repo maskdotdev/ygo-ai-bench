@@ -5,12 +5,12 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const battleKeywords = ["battle", "attack", "damage"];
-const realScriptBattleFixtureCount = 116;
+const realScriptBattleFixtureCount = 117;
 const battleLegalActionFixtureCount = 4;
 const attackDeclarationTrapFixtureCount = 6;
 const battleRoutingFixtureCount = 5;
 const damageStepRestoreFixtureCount = 3;
-const battleDamageSemanticFixtureCount = 6;
+const battleDamageSemanticFixtureCount = 7;
 const battleTriggerSemanticFixtureCount = 7;
 
 describe("Lua real battle restore coverage", () => {
@@ -320,6 +320,16 @@ function realScriptBattleDamageSemanticFixtureFiles(): Array<{ file: string; req
         "expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 700 })",
         'expect.objectContaining({ action: "effectDamage", player: 1, detail: "700" })',
         "eventReason: 64",
+      ],
+    },
+    {
+      file: "lua-real-script-magical-arm-shield-calculate-damage.test.ts",
+      required: [
+        'battleWindow?.kind).toBe("attackNegationResponse")',
+        "action.uid === shield!.uid",
+        "expect(restored.session.state.battleDamage).toEqual({ 0: 1500, 1: 0 })",
+        'eventName: "controlChanged"',
+        'eventName: "battleDamageDealt"',
       ],
     },
     {
