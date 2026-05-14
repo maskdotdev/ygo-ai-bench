@@ -128,6 +128,10 @@ describe("EDOPro parity battle-confirmed missed timing decline fixture", () => {
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "battle-confirmed-decline-optional-if", eventName: "battleConfirmed", eventCode: 1133 }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-confirmed-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-confirmed-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+            ],
             legalActionGroups: [
               triggerActivationGroup(0, "battle-confirmed-decline-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "battle-confirmed-decline-optional-if", "turnOptional", 1, 1),
@@ -140,6 +144,7 @@ describe("EDOPro parity battle-confirmed missed timing decline fixture", () => {
               absentTriggerActivationGroup(0, "battle-confirmed-decline-optional-when", "turnOptional", 1, "triggerBucket"),
               absentWindowEffectGroup(0, "battle-confirmed-decline-open-fast", 1, "triggerBucket"),
             ],
+            legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
           },
           after: {
