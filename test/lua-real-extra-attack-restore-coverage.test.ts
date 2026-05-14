@@ -35,6 +35,17 @@ function realScriptExtraAttackFixtureFiles(): Array<{ file: string; required: st
       ],
     },
     {
+      file: "test/lua-real-script-element-doom-chain-attack.test.ts",
+      required: [
+        "attributeEarth",
+        "attributeWind",
+        "Duel.ChainAttack",
+        'eventName: "battleDestroyed"',
+        "attacksDeclared).not.toContain(elementDoom!.uid)",
+        "targetUid: followupTarget!.uid",
+      ],
+    },
+    {
       file: "test/lua-real-script-asura-priest-attack-all.test.ts",
       required: [
         "code: 193",
