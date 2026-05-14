@@ -199,6 +199,116 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     );
   });
 
+  it("restores Malevolent Nuzzler equip stat and paid top-of-Deck trigger", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const nuzzlerCode = "99597615";
+    const targetCode = "601037";
+    const responderCode = "601038";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === nuzzlerCode),
+      { code: targetCode, name: "Malevolent Nuzzler Target", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: responderCode, name: "Malevolent Nuzzler Chain Responder", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 311, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [nuzzlerCode, targetCode] }, 1: { main: [responderCode] } });
+    startDuel(session);
+
+    const nuzzler = session.state.cards.find((card) => card.code === nuzzlerCode);
+    const target = session.state.cards.find((card) => card.code === targetCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(nuzzler).toBeDefined();
+    expect(target).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, nuzzler!.uid, "hand", 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, source);
+    expect(host.loadCardScript(Number(nuzzlerCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expectCleanRestore(restoredEquipWindow);
+    expect(getLuaRestoreLegalActionGroups(restoredEquipWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredEquipWindow.session, 0));
+    expect(getLuaRestoreLegalActions(restoredEquipWindow, 0)).toEqual(getDuelLegalActions(restoredEquipWindow.session, 0));
+    const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === nuzzler!.uid);
+    expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
+
+    expect(restoredEquipWindow.session.state.chain[0]).toMatchObject({
+      sourceUid: nuzzler!.uid,
+      targetUids: [target!.uid],
+      operationInfos: [{ category: 0x40000, targetUids: [nuzzler!.uid], count: 1, player: 0, parameter: 0 }],
+    });
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
+    expectCleanRestore(restoredChain);
+    expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+    resolveRestoredChain(restoredChain);
+
+    expect(restoredChain.host.messages).not.toContain("equip responder resolved");
+    expect(restoredChain.session.state.cards.find((card) => card.uid === nuzzler!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      equippedToUid: target!.uid,
+      faceUp: true,
+    });
+
+    const restoredEquipState = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
+    expectCleanRestore(restoredEquipState);
+    expectLuaEquipProbe(restoredEquipState, targetCode, nuzzlerCode, "equip probe 99597615/1700");
+
+    destroyDuelCard(restoredEquipState.session.state, nuzzler!.uid, 0, duelReason.effect | duelReason.destroy, 0);
+    expect(restoredEquipState.session.state.cards.find((card) => card.uid === nuzzler!.uid)).toMatchObject({
+      location: "graveyard",
+      previousLocation: "spellTrapZone",
+      previousEquippedToUid: target!.uid,
+    });
+    expect(restoredEquipState.session.state.pendingTriggers).toEqual([
+      expect.objectContaining({ sourceUid: nuzzler!.uid, eventName: "sentToGraveyard", eventCardUid: nuzzler!.uid, player: 0 }),
+    ]);
+
+    const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredEquipState.session), source, reader);
+    expectCleanRestore(restoredTriggerWindow);
+    const triggerAction = getLuaRestoreLegalActions(restoredTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.uid === nuzzler!.uid);
+    expect(triggerAction, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredTriggerWindow, triggerAction!);
+
+    expect(restoredTriggerWindow.session.state.players[0].lifePoints).toBe(7500);
+    expect(restoredTriggerWindow.session.state.chain[0]).toMatchObject({
+      sourceUid: nuzzler!.uid,
+      operationInfos: [{ category: 0x10, targetUids: [nuzzler!.uid], count: 1, player: 0, parameter: 0 }],
+    });
+    expect(getLuaRestoreLegalActions(restoredTriggerWindow, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+
+    const restoredDeckChain = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), source, reader);
+    expectCleanRestore(restoredDeckChain);
+    expect(restoredDeckChain.session.state.chain[0]).toMatchObject(restoredTriggerWindow.session.state.chain[0]!);
+    resolveRestoredChain(restoredDeckChain);
+
+    expect(restoredDeckChain.session.state.cards.find((card) => card.uid === nuzzler!.uid)).toMatchObject({
+      location: "deck",
+      controller: 0,
+      sequence: 0,
+    });
+    expect(restoredDeckChain.host.messages).not.toContain("equip responder resolved");
+    expect(restoredDeckChain.session.state.eventHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ eventName: "sentToGraveyard", eventCode: 1014, eventCardUid: nuzzler!.uid }),
+        expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 0, eventValue: 500 }),
+        expect.objectContaining({ eventName: "sentToDeck", eventCode: 1013, eventCardUid: nuzzler!.uid }),
+      ]),
+    );
+  });
+
   it("restores United We Stand dynamic equip stat callbacks", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const unitedCode = "56747793";
