@@ -67,6 +67,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ef
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const responsePlayer = restored.session.state.waitingFor;
     expect(responsePlayer).toBeDefined();
     expect(getLuaRestoreLegalActionGroups(restored, responsePlayer!)).toEqual(getGroupedDuelLegalActions(restored.session, responsePlayer!));

@@ -16,7 +16,7 @@ const locationGraveyard = 0x10;
 const racePyro = 0x80;
 const raceDragon = 0x2000;
 
-function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
+function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
   return {
     duel,
     source,
@@ -54,7 +54,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(oxygeddonCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -66,11 +66,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredOxygeddon = restored.session.state.cards.find((card) => card.code === oxygeddonCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === oxygeddon!.uid && candidate.luaConditionDescriptor === `condition:source-battle-target-race-source-location:${racePyro}:${locationGraveyard}`);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredOxygeddon!);
+    const ctx = targetContext(restored.session.state, restoredOxygeddon!);
     expect(effect!.canActivate!(ctx)).toBe(false);
     restored.session.state.currentAttack = { attackerUid: restoredOxygeddon!.uid, targetUid: restoredTarget!.uid };
     expect(effect!.canActivate!(ctx)).toBe(true);
@@ -131,11 +132,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredOxygeddon = restored.session.state.cards.find((card) => card.code === oxygeddonCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === oxygeddon!.uid && candidate.luaConditionDescriptor === `condition:source-battle-target-race-source-location:${racePyro}:${locationGraveyard}`);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredOxygeddon!);
+    const ctx = targetContext(restored.session.state, restoredOxygeddon!);
     expect(effect!.canActivate!(ctx)).toBe(false);
     restored.session.state.currentAttack = { attackerUid: restoredOxygeddon!.uid, targetUid: restoredTarget!.uid };
     expect(effect!.canActivate!(ctx)).toBe(true);

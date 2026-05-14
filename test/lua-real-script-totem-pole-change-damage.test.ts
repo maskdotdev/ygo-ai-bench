@@ -55,7 +55,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
     expect(host.loadCardScript(Number(totemPoleCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(tremendousFireCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(3);
+    expect(host.registerInitialEffects()).toBe(3);
 
     const totemAction = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === totemPole!.uid);
     expect(totemAction).toBeDefined();
@@ -65,6 +65,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
 
     const totemRestored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(totemRestored.restoreComplete, totemRestored.incompleteReasons.join("; ")).toBe(true);
+    expect(totemRestored.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(totemRestored, 1)).toEqual(getGroupedDuelLegalActions(totemRestored.session, 1));
     expect(getLuaRestoreLegalActionGroups(totemRestored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(totemRestored, 1));
     const totemPass = getLuaRestoreLegalActions(totemRestored, 1).find((action) => action.type === "passChain");
@@ -96,6 +97,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
 
     const fireRestored = restoreDuelWithLuaScripts(serializeDuel(totemRestored.session), source, reader);
     expect(fireRestored.restoreComplete, fireRestored.incompleteReasons.join("; ")).toBe(true);
+    expect(fireRestored.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(fireRestored, 1)).toEqual(getGroupedDuelLegalActions(fireRestored.session, 1));
     expect(getLuaRestoreLegalActionGroups(fireRestored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(fireRestored, 1));
     expect(fireRestored.session.state.effects).toEqual(

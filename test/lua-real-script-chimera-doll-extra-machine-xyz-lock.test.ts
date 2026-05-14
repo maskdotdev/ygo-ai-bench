@@ -46,7 +46,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(chimeraCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const resolve = host.loadScript(
       `
       local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${chimeraCode}),0,LOCATION_MZONE,0,nil)
@@ -62,6 +62,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const probe = restored.host.loadScript(
       `
       local machine_xyz=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${machineXyzCode}),0,LOCATION_EXTRA,0,nil)

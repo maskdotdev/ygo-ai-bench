@@ -65,10 +65,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(equipCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(1);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredEquipWindow.restoreComplete, restoredEquipWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredEquipWindow.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredEquipWindow, 0)).toEqual(getDuelLegalActions(restoredEquipWindow.session, 0));
     const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === equip!.uid);
     expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
@@ -82,6 +83,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredChain.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredChain);
 
@@ -94,6 +96,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
 
     const postEquip = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(postEquip.restoreComplete, postEquip.incompleteReasons.join("; ")).toBe(true);
+    expect(postEquip.missingRegistryKeys).toEqual([]);
     const unequippedAfterEquip = postEquip.session.state.cards.find((card) => card.uid === unequippedAttacker!.uid);
     expect(unequippedAfterEquip).toBeDefined();
     unequippedAfterEquip!.position = "faceUpAttack";
@@ -104,6 +107,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
 
     const restoredFirstBattle = restoreDuelWithLuaScripts(serializeDuel(postEquip.session), source, reader);
     expect(restoredFirstBattle.restoreComplete, restoredFirstBattle.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredFirstBattle.missingRegistryKeys).toEqual([]);
     attackAndRestoreDamage(restoredFirstBattle, unequippedAttacker!.uid, firstDefender!.uid, source, reader);
     expect(restoredFirstBattle.session.state.players[1].lifePoints).toBe(8000);
     expect(restoredFirstBattle.session.state.eventHistory).not.toEqual(
@@ -114,6 +118,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
 
     const restoredSecondBattle = restoreDuelWithLuaScripts(serializeDuel(restoredFirstBattle.session), source, reader);
     expect(restoredSecondBattle.restoreComplete, restoredSecondBattle.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredSecondBattle.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredSecondBattle, 0)).toEqual(getGroupedDuelLegalActions(restoredSecondBattle.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredSecondBattle, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredSecondBattle, 0));
     attackAndRestoreDamage(restoredSecondBattle, equippedAttacker!.uid, secondDefender!.uid, source, reader);
@@ -147,6 +152,7 @@ function attackAndRestoreDamage(
   expect(attacked.ok, attacked.error).toBe(true);
   const restoredDamageWindow = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
   expect(restoredDamageWindow.restoreComplete, restoredDamageWindow.incompleteReasons.join("; ")).toBe(true);
+  expect(restoredDamageWindow.missingRegistryKeys).toEqual([]);
   passBattleResponses(restoredDamageWindow.session);
   restored.session = restoredDamageWindow.session;
   restored.host = restoredDamageWindow.host;

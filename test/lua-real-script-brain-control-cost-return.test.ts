@@ -74,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Br
 
     const restoredResponseWindow = restoreDuelWithLuaScripts(openedSnapshot, source, reader);
     expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredResponseWindow.missingRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.session.state.players[0].lifePoints).toBe(7200);
     expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredResponseWindow, 1));
@@ -104,6 +105,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Br
 
     const restoredReturnWindow = restoreDuelWithLuaScripts(serializeDuel(restoredResponseWindow.session), source, reader);
     expect(restoredReturnWindow.restoreComplete, restoredReturnWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredReturnWindow.missingRegistryKeys).toEqual([]);
     expect(restoredReturnWindow.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ controller: 0, previousController: 1 });
     expect(restoredReturnWindow.session.state.players[0].lifePoints).toBe(7200);
 

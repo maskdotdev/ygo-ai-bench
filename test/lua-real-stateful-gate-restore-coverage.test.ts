@@ -1,0 +1,58 @@
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+
+const root = process.cwd();
+
+describe("Lua real stateful gate restore coverage", () => {
+  it("requires stateful gate fixtures to assert clean restore and restored legal outcomes", () => {
+    const missing = statefulGateFixtureFiles()
+      .filter(({ file, required }) => {
+        const text = fs.readFileSync(path.join(root, file), "utf8");
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || required.some((snippet) => !text.includes(snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(missing).toEqual([]);
+  });
+});
+
+function statefulGateFixtureFiles(): Array<{ file: string; required: string[] }> {
+  return [
+    {
+      file: "test/lua-real-script-earthshattering-event-deck-grave-lock.test.ts",
+      required: [
+        "restoredTrigger.missingRegistryKeys).toEqual([])",
+        "restoredLock.missingRegistryKeys).toEqual([])",
+        "earthshattering self able grave locked false",
+        "earthshattering opp able grave locked false",
+        "earthshattering self able grave after end true",
+        "earthshattering opp able grave after end true",
+      ],
+    },
+    {
+      file: "test/lua-real-script-elfnotes-rhapsodia-must-attack-center.test.ts",
+      required: [
+        "code: 344",
+        "valueCardPredicate",
+        "hasAttack(actions, attacker.uid, centerTarget.uid)).toBe(true)",
+        "hasAttack(actions, attacker.uid, sideTarget.uid)).toBe(false)",
+        "directAttack)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-nibiru-flag-count.test.ts",
+      required: [
+        "restoredBelowThreshold.missingRegistryKeys).toEqual([])",
+        "restoredAtThreshold.missingRegistryKeys).toEqual([])",
+        "toHaveLength(4)",
+        "toHaveLength(5)",
+        "nibiruRestoreActions(restoredAtThreshold",
+      ],
+    },
+  ].sort((a, b) => a.file.localeCompare(b.file));
+}

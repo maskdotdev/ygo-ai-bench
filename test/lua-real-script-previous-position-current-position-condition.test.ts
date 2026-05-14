@@ -17,7 +17,7 @@ const positionFaceUpDefense = 0x4;
 const positionAttack = 0x3;
 const positionDefense = 0x0c;
 
-function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
+function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
   return {
     duel,
     source,
@@ -75,10 +75,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredSamurai = restored.session.state.cards.find((card) => card.code === samuraiCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === samurai!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredSamurai!);
+    const ctx = targetContext(restored.session.state, restoredSamurai!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredSamurai!.position = "faceUpAttack";
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -107,7 +108,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(taintedWisdomCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-position-position:${positionAttack}:${positionDefense}`;
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
@@ -120,10 +121,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredTaintedWisdom = restored.session.state.cards.find((card) => card.code === taintedWisdomCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === taintedWisdom!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredTaintedWisdom!);
+    const ctx = targetContext(restored.session.state, restoredTaintedWisdom!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredTaintedWisdom!.position = "faceUpAttack";
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -152,16 +154,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(samuraiCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-position-position:${positionFaceUpAttack}:${positionFaceUpDefense}`;
     expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: samurai!.uid })]));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredSamurai = restored.session.state.cards.find((card) => card.code === samuraiCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === samurai!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredSamurai!);
+    const ctx = targetContext(restored.session.state, restoredSamurai!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredSamurai!.position = "faceUpAttack";
     expect(effect!.canActivate!(ctx)).toBe(false);

@@ -37,7 +37,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(grandsoilCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const leave = host.loadScript(
       `
       local grandsoil=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, ${grandsoilCode}), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
@@ -63,12 +63,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
 
     const restoredSameTurn = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredSameTurn.restoreComplete, restoredSameTurn.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredSameTurn.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredSameTurn, 0)).toEqual(getDuelLegalActions(restoredSameTurn.session, 0));
     expect(getLuaRestoreLegalActions(restoredSameTurn, 0)).toEqual(expect.arrayContaining([expect.objectContaining({ type: "changePhase", phase: "battle" })]));
 
     moveToBattleMain2AndEnd(restoredSameTurn.session, 0);
     const restoredNextSelfTurn = restoreDuelWithLuaScripts(serializeDuel(restoredSameTurn.session), workspace, reader);
     expect(restoredNextSelfTurn.restoreComplete, restoredNextSelfTurn.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredNextSelfTurn.missingRegistryKeys).toEqual([]);
     expect(restoredNextSelfTurn.session.state).toMatchObject({ turnPlayer: 1, phase: "main1" });
     applyActionAndAssert(restoredNextSelfTurn.session, getDuelLegalActions(restoredNextSelfTurn.session, 1).find((action) => action.type === "endTurn"));
     expect(restoredNextSelfTurn.session.state).toMatchObject({ turnPlayer: 0, phase: "main1" });

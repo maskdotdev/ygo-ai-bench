@@ -32,7 +32,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(darkMagicianDestructionCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const darkMagician = session.state.cards.find((card) => card.code === darkMagicianDestructionCode);
     expect(darkMagician).toBeDefined();
     session.state.effects.push({
@@ -63,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const probe = restored.host.loadScript(
       `
       local dark_magician=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsOriginalCode,${darkMagicianDestructionCode}),0,LOCATION_EXTRA,0,nil)

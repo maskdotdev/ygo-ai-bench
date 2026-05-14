@@ -44,7 +44,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ar
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(lanceaCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const lanceaAction = getLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.uid === lancea!.uid);
     expect(lanceaAction, JSON.stringify(getLegalActions(session, 1), null, 2)).toBeDefined();
     applyAndAssert(session, lanceaAction!);
@@ -53,6 +53,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ar
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     assertBanishProbe(restored, selfBanishCode, opponentBanishCode, "locked", [
       "lancea self able remove locked false",
       "lancea opp able remove locked false",

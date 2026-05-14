@@ -75,6 +75,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredPanzer = restored.session.state.cards.find((card) => card.code === panzerDragonCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === panzer!.uid && effect.code === 71);
     expect(restoredPanzer).toMatchObject({ turnId: restored.session.state.turn });
@@ -110,7 +111,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(psychicProcessorCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -124,6 +125,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredProcessor = restored.session.state.cards.find((card) => card.code === psychicProcessorCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === processor!.uid && effect.triggerEvent === "phaseStandby");
     expect(restoredProcessor).toMatchObject({ turnId: restored.session.state.turn });
@@ -187,6 +189,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredPanzer = restored.session.state.cards.find((card) => card.code === panzerDragonCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === panzer!.uid && effect.code === 71);
     expect(restoredPanzer).toMatchObject({ turnId: restored.session.state.turn });

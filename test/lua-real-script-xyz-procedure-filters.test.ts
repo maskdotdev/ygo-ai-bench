@@ -2,11 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -53,14 +53,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
       session.state.waitingFor = 0;
       const host = createLuaScriptHost(session, workspace);
       expect(host.loadCardScript(Number(melffyMommyCode), workspace).ok).toBe(true);
-      expect(host.registerInitialEffects()).toBeGreaterThan(0);
+      expect(host.registerInitialEffects()).toBe(1);
       expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.data).toMatchObject({
         xyzMaterialCount: 2,
         xyzMaterialRace: 0x4000,
       });
       const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
       expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+      expect(restored.missingRegistryKeys).toEqual([]);
       expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+      expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+      expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
       return { restored, xyz };
     };
 
@@ -111,7 +114,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
     session.state.waitingFor = 0;
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(melffyMommyCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.data).toMatchObject({
       xyzMaterialCount: 2,
       xyzMaterialMax: 99,
@@ -125,12 +128,15 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
     if (!action || action.type !== "xyzSummon") throw new Error("Expected three-material Xyz Summon action");
     const summoned = applyLuaRestoreResponse(restored, action);
     expect(summoned.ok, summoned.error).toBe(true);
-    expect(restored.session.state.cards.find((card) => card.uid === xyz!.uid)).toMatchObject({
+    const restoredXyz = restored.session.state.cards.find((card) => card.uid === xyz!.uid);
+    const overlayUids = restoredXyz?.overlayUids;
+    expect(restoredXyz).toMatchObject({
       location: "monsterZone",
       summonType: "xyz",
       overlayUids: expect.arrayContaining(beastMaterialCodes.map((code) => expect.stringContaining(code))),
     });
-    expect(restored.session.state.cards.find((card) => card.uid === xyz!.uid)?.overlayUids).toHaveLength(3);
+    if (!restoredXyz) throw new Error("Expected Xyz Summoned monster");
+    expect(overlayUids).toHaveLength(3);
   });
 
   it("restores official Xyz.AddProcedure setcode filters for real extra deck summons", () => {
@@ -173,7 +179,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
       session.state.waitingFor = 0;
       const host = createLuaScriptHost(session, workspace);
       expect(host.loadCardScript(Number(gigantesDollCode), workspace).ok).toBe(true);
-      expect(host.registerInitialEffects()).toBeGreaterThan(0);
+      expect(host.registerInitialEffects()).toBe(1);
       expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.data).toMatchObject({
         xyzMaterialCount: 2,
         xyzMaterialSetcode: 0x1083,
@@ -232,7 +238,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
     session.state.waitingFor = 0;
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(thunderEndCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.data).toMatchObject({
       xyzMaterialCount: 2,
       xyzMaterialType: 0x10,
@@ -287,7 +293,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
     session.state.waitingFor = 0;
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(thunderEndCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.data).toMatchObject({
       xyzMaterialCount: 2,
       xyzMaterialType: 0x10,
@@ -358,7 +364,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
       session.state.waitingFor = 0;
       const host = createLuaScriptHost(session, workspace);
       expect(host.loadCardScript(Number(disasterCode), workspace).ok).toBe(true);
-      expect(host.registerInitialEffects()).toBeGreaterThan(0);
+      expect(host.registerInitialEffects()).toBe(1);
       expect(session.state.cards.find((card) => card.uid === xyz!.uid)?.data).toMatchObject({
         xyzMaterialCount: 2,
         xyzMaterialRank: 7,

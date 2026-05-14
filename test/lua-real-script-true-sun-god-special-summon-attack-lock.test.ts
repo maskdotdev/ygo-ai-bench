@@ -50,10 +50,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(sunGodCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ event: "continuous", code: 85, sourceUid: sunGod.uid })]));
     const actions = getLuaRestoreLegalActions(restored, 0);
     expect(hasAttack(actions, specialAttacker.uid, target.uid)).toBe(false);

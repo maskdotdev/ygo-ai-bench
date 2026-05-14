@@ -90,6 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredSource = restored.session.state.cards.find((card) => card.code === sourceCode);
     const effects = restored.session.state.effects.filter((effect) => effect.sourceUid === source!.uid && effect.code === 71 && effect.luaConditionDescriptor === "condition:source-controller");
     expect(effects).toHaveLength(3);
@@ -97,5 +98,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(effects.every((effect) => effect.canActivate?.(ctx) === true)).toBe(true);
     restoredSource!.controller = 1;
     expect(effects.every((effect) => effect.canActivate?.(ctx) === false)).toBe(true);
+    expect(effects.some((effect) => effect.canActivate?.(ctx) === true)).toBe(false);
   });
 });

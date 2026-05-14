@@ -80,6 +80,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script lo
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredLady = restored.session.state.cards.find((card) => card.code === ladyCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === lady!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
@@ -138,6 +139,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script lo
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredLady = restored.session.state.cards.find((card) => card.code === ladyCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === lady!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
@@ -168,7 +170,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script lo
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(ladyCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-reason-all:${synchroMaterialReason}`;
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
@@ -181,6 +183,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script lo
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredLady = restored.session.state.cards.find((card) => card.code === ladyCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === lady!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();

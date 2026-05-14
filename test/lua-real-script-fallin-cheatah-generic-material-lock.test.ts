@@ -60,7 +60,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(cheatahCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -74,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const actions = getLegalActions(restored.session, 0);
     expect(actions.some((action) => action.type === "fusionSummon" && action.uid === fusion!.uid)).toBe(false);
     expect(actions.some((action) => action.type === "synchroSummon" && action.uid === synchro!.uid)).toBe(false);

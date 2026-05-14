@@ -56,6 +56,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
     sendDuelCardToGraveyard(session.state, sangan.uid, 0, duelReason.effect, 0);
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredTrigger.missingRegistryKeys).toEqual([]);
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === sangan.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTrigger, trigger!);
@@ -64,6 +65,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredLock.missingRegistryKeys).toEqual([]);
     expect(restoredLock.session.state.effects.find((effect) => effect.sourceUid === sangan.uid && effect.code === 6)).toMatchObject({
       event: "continuous",
       targetRange: [1, 0],

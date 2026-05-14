@@ -39,7 +39,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(protectorCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -53,6 +53,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const blocked = restored.host.loadScript(
       `
       Debug.Message("protector can draw main1 " .. tostring(Duel.IsPlayerCanDraw(1,1)))

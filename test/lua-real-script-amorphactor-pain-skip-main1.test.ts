@@ -42,7 +42,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(amorphactorCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const summonSuccess = host.loadScript(
       `
       local amorphactor=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, ${amorphactorCode}), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
@@ -68,10 +68,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
 
     const restoredEffect = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredEffect.restoreComplete, restoredEffect.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredEffect.missingRegistryKeys).toEqual([]);
     applyActionAndAssert(restoredEffect.session, getLuaRestoreLegalActions(restoredEffect, 0).find((action) => action.type === "endTurn"));
 
     const restoredOpponentMain = restoreDuelWithLuaScripts(serializeDuel(restoredEffect.session), workspace, reader);
     expect(restoredOpponentMain.restoreComplete, restoredOpponentMain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredOpponentMain.missingRegistryKeys).toEqual([]);
     expect(restoredOpponentMain.session.state).toMatchObject({ turnPlayer: 1, phase: "main1", waitingFor: 1 });
     const actions = getLuaRestoreLegalActions(restoredOpponentMain, 1);
     expect(actions).toEqual(getDuelLegalActions(restoredOpponentMain.session, 1));

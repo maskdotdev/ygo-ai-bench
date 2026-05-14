@@ -55,10 +55,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ar
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(chaosRulerCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(1);
+    expect(host.registerInitialEffects()).toBe(1);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const contact = getLuaRestoreLegalActions(restored, 0).find(

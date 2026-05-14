@@ -51,7 +51,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D 
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(dForceCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -65,6 +65,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D 
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const probe = restored.host.loadScript(
       `
       local dforce=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${dForceCode}),0,LOCATION_SZONE,0,nil)

@@ -53,6 +53,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script An
 
     const restoredBattleStart = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredBattleStart.restoreComplete, restoredBattleStart.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredBattleStart.missingRegistryKeys).toEqual([]);
     expect(restoredBattleStart.missingChainLimitRegistryKeys).toEqual([]);
     expect(queryPublicState(restoredBattleStart.session)).toMatchObject({ phase: "battle", waitingFor: 0, windowKind: "open" });
     expect(getLuaRestoreLegalActionGroups(restoredBattleStart, 0)).toEqual(getGroupedDuelLegalActions(restoredBattleStart.session, 0));

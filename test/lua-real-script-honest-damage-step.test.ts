@@ -74,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ho
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredChain.missingRegistryKeys).toEqual([]);
     expect(restoredChain.session.state.cards.find((card) => card.uid === honest!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredChain.session.state.chain).toHaveLength(1);
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
@@ -97,6 +98,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ho
 
     const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredBattle.restoreComplete, restoredBattle.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredBattle.missingRegistryKeys).toEqual([]);
     expect(restoredBattle.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

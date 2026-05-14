@@ -55,6 +55,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const activate = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.uid === spell!.uid);
     expect(activate, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
     const activated = applyLuaRestoreResponse(restored, activate!);
@@ -62,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
 
     const chainRestored = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(chainRestored.restoreComplete, chainRestored.incompleteReasons.join("; ")).toBe(true);
+    expect(chainRestored.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(chainRestored, 1)).toEqual(getGroupedDuelLegalActions(chainRestored.session, 1));
     expect(getLuaRestoreLegalActionGroups(chainRestored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(chainRestored, 1));
     expect(getLuaRestoreLegalActions(chainRestored, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
@@ -80,6 +82,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
 
     const preEndRestored = restoreDuelWithLuaScripts(serializeDuel(chainRestored.session), source, reader);
     expect(preEndRestored.restoreComplete, preEndRestored.incompleteReasons.join("; ")).toBe(true);
+    expect(preEndRestored.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(preEndRestored, 0)).toEqual(getDuelLegalActions(preEndRestored.session, 0));
     assertGeminiStatus(preEndRestored, geminiCode, true);
 
@@ -98,6 +101,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
 
     const postEndRestored = restoreDuelWithLuaScripts(serializeDuel(preEndRestored.session), source, reader);
     expect(postEndRestored.restoreComplete, postEndRestored.incompleteReasons.join("; ")).toBe(true);
+    expect(postEndRestored.missingRegistryKeys).toEqual([]);
     expect(postEndRestored.session.state.cards.find((card) => card.uid === gemini!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(postEndRestored.host.messages).not.toContain("super double responder resolved");
   });

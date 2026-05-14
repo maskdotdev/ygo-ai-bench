@@ -59,10 +59,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(superviseCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(1);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredEquipWindow.restoreComplete, restoredEquipWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredEquipWindow.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredEquipWindow, 0)).toEqual(getDuelLegalActions(restoredEquipWindow.session, 0));
     assertGeminiStatus(restoredEquipWindow, geminiCode, false);
     const equip = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === supervise!.uid);
@@ -76,6 +77,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
 
     const restoredEquipChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
     expect(restoredEquipChain.restoreComplete, restoredEquipChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredEquipChain.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredEquipChain, 1)).toEqual(getGroupedDuelLegalActions(restoredEquipChain.session, 1));
     expect(getLuaRestoreLegalActions(restoredEquipChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredEquipChain);
@@ -88,6 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
 
     const restoredEquipped = restoreDuelWithLuaScripts(serializeDuel(restoredEquipChain.session), source, reader);
     expect(restoredEquipped.restoreComplete, restoredEquipped.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredEquipped.missingRegistryKeys).toEqual([]);
     expect(restoredEquipped.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ sourceUid: supervise!.uid, event: "continuous", code: 75 }),
@@ -119,6 +122,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredEquipped.session), source, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredTrigger.missingRegistryKeys).toEqual([]);
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === supervise!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTrigger, trigger!);
@@ -132,6 +136,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
 
     const restoredReviveChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);
     expect(restoredReviveChain.restoreComplete, restoredReviveChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredReviveChain.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredReviveChain, 1)).toEqual(getDuelLegalActions(restoredReviveChain.session, 1));
     resolveRestoredChain(restoredReviveChain);
     expect(restoredReviveChain.session.state.cards.find((card) => card.uid === normal!.uid)).toMatchObject({

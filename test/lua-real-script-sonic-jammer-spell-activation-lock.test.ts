@@ -64,6 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredLock.missingRegistryKeys).toEqual([]);
     expect(restoredLock.session.state.effects.find((effect) => effect.sourceUid === jammer.uid && effect.code === 6)).toMatchObject({
       event: "continuous",
       targetRange: [0, 1],

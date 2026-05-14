@@ -56,7 +56,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script co
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(palmCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const effect = session.state.effects.find((candidate) => candidate.code === 51476410);
     expect(effect).toMatchObject({
       luaTargetDescriptor: "target:not-original-type-rank:8388608:4",
@@ -66,6 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script co
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredEffect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
     const source = restored.session.state.cards.find((card) => card.code === palmCode);
     const rank4 = restored.session.state.cards.find((card) => card.code === rank4Code);

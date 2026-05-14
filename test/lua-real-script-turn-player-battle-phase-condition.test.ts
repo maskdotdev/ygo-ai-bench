@@ -49,7 +49,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script tu
 
     const host = createLuaScriptHost(session, workspace);
     for (const code of [hiFiveCode, terraFirmaGravityCode]) expect(host.loadCardScript(Number(code), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(2);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ luaConditionDescriptor: "condition:turn-player:self-battle-phase", sourceUid: hiFive!.uid }),
@@ -59,6 +59,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script tu
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredHiFive = restored.session.state.cards.find((card) => card.code === hiFiveCode);
     const restoredTerraFirmaGravity = restored.session.state.cards.find((card) => card.code === terraFirmaGravityCode);
     const selfBattleEffect = restored.session.state.effects.find((effect) => effect.sourceUid === hiFive!.uid && effect.luaConditionDescriptor === "condition:turn-player:self-battle-phase");

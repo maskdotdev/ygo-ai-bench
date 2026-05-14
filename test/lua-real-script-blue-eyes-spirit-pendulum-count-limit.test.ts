@@ -31,7 +31,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(blueEyesSpiritDragonCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
 
     const restrictedActions = pendulumSummonActions(session);
     expect(restrictedActions).toEqual([
@@ -42,6 +42,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(pendulumSummonActions(restored.session)).toEqual([
       expect.objectContaining({ maxSummons: 1, summonUids: [first.uid, second.uid] }),
     ]);
@@ -69,7 +70,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
     const { first, second, session, workspace } = createSpiritPendulumSession(306);
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(blueEyesSpiritDragonCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
 
     const result = host.loadScript(
       `

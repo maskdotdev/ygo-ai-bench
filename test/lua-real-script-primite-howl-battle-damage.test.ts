@@ -43,7 +43,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(primiteHowlCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(1);
+    expect(host.registerInitialEffects()).toBe(1);
 
     const activate = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === howl!.uid);
     expect(activate).toBeDefined();
@@ -61,6 +61,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

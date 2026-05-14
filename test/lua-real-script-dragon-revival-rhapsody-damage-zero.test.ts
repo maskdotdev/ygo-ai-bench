@@ -57,7 +57,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(rhapsodyCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(fireCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const rhapsodyAction = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === rhapsody!.uid);
     expect(rhapsodyAction, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
@@ -73,6 +73,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
 
     const restoredEffects = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredEffects.restoreComplete, restoredEffects.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredEffects.missingRegistryKeys).toEqual([]);
     restoredEffects.session.state.turnPlayer = 1;
     restoredEffects.session.state.phase = "main1";
     restoredEffects.session.state.waitingFor = 1;
@@ -82,6 +83,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
 
     const restoredFire = restoreDuelWithLuaScripts(serializeDuel(restoredEffects.session), source, reader);
     expect(restoredFire.restoreComplete, restoredFire.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredFire.missingRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredFire);
     expect(restoredFire.session.state.players[0].lifePoints).toBe(7000);
     expect(restoredFire.session.state.players[1].lifePoints).toBe(8000);

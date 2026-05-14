@@ -49,7 +49,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script An
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(angerCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -63,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script An
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(getLegalActions(restored.session, 0).some((action) => action.type === "linkSummon" && action.uid === targetLink!.uid)).toBe(false);
     expect(() => linkSummonDuelCard(restored.session.state, 0, targetLink!.uid, [anger!.uid])).toThrow("cannot be used as Link material");
     expect(restored.session.state.cards.find((card) => card.uid === targetLink!.uid)).toMatchObject({ location: "extraDeck" });

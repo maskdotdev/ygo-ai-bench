@@ -38,7 +38,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D/
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(leonidasCode), workspace).ok).toBe(true);
     expect(host.loadCardScript(Number(tremendousFireCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(3);
+    expect(host.registerInitialEffects()).toBe(3);
 
     activateAndResolveFire(session, fires[0]!.uid);
     expect(session.state.players[0].lifePoints).toBe(7500);
@@ -71,6 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D/
     );
     const restored = restoreDuelWithLuaScripts(snapshot, workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
 

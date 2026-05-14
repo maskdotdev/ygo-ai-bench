@@ -81,7 +81,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script He
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(heavyPolymerizationCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const activate = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === heavyPolymerization!.uid);
     expect(activate).toBeDefined();
@@ -93,6 +93,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script He
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredChainLink = restored.session.state.chain[0]!;
     expect(restoredChainLink.operationInfos).toEqual(expect.arrayContaining([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }]));
     expect(restoredChainLink.possibleOperationInfos).toEqual(expect.arrayContaining([{ category: 0x4, targetUids: [], count: 1, player: 0, parameter: 0x40 }]));
@@ -175,7 +176,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script He
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(heavyPolymerizationCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(1);
+    expect(host.registerInitialEffects()).toBe(1);
 
     expect(getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === heavyPolymerization!.uid)).toBeUndefined();
   });

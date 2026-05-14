@@ -14,7 +14,7 @@ const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
-function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
+function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
   return {
     duel,
     source,
@@ -48,7 +48,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(windaCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -60,10 +60,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredWinda = restored.session.state.cards.find((card) => card.code === windaCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === winda!.uid && candidate.luaConditionDescriptor === "condition:source-previous-controller-reason-player:opponent");
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredWinda!);
+    const ctx = targetContext(restored.session.state, restoredWinda!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredWinda!.reasonPlayer = 0;
     expect(effect!.canActivate!(ctx)).toBe(false);

@@ -52,10 +52,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(samsaraCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(fireCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredActivation.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     const trapActivation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === samsara!.uid);
     expect(trapActivation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
@@ -63,11 +64,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
 
     const restoredTrapChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredTrapChain.restoreComplete, restoredTrapChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredTrapChain.missingRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredTrapChain);
     expect(restoredTrapChain.session.state.cards.find((card) => card.uid === samsara!.uid)).toMatchObject({ location: "spellTrapZone", faceUp: true });
 
     const restoredQuick = restoreDuelWithLuaScripts(serializeDuel(restoredTrapChain.session), source, reader);
     expect(restoredQuick.restoreComplete, restoredQuick.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredQuick.missingRegistryKeys).toEqual([]);
     restoredQuick.session.state.waitingFor = 0;
     const damageLock = getLuaRestoreLegalActions(restoredQuick, 0).find((action) => action.type === "activateEffect" && action.uid === samsara!.uid);
     expect(damageLock, JSON.stringify(getLuaRestoreLegalActions(restoredQuick, 0), null, 2)).toBeDefined();
@@ -76,6 +79,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
 
     const restoredDamageLockChain = restoreDuelWithLuaScripts(serializeDuel(restoredQuick.session), source, reader);
     expect(restoredDamageLockChain.restoreComplete, restoredDamageLockChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredDamageLockChain.missingRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredDamageLockChain);
     expect(restoredDamageLockChain.session.state.effects).toEqual(
       expect.arrayContaining([
@@ -86,6 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
 
     const restoredEffects = restoreDuelWithLuaScripts(serializeDuel(restoredDamageLockChain.session), source, reader);
     expect(restoredEffects.restoreComplete, restoredEffects.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredEffects.missingRegistryKeys).toEqual([]);
     restoredEffects.session.state.turnPlayer = 1;
     restoredEffects.session.state.phase = "main1";
     restoredEffects.session.state.waitingFor = 1;
@@ -95,6 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
 
     const restoredFire = restoreDuelWithLuaScripts(serializeDuel(restoredEffects.session), source, reader);
     expect(restoredFire.restoreComplete, restoredFire.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredFire.missingRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredFire);
     expect(restoredFire.session.state.players[0].lifePoints).toBe(8000);
     expect(restoredFire.session.state.players[1].lifePoints).toBe(7500);

@@ -40,10 +40,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pe
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(trapezeCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(fireCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.session.state.effects).toEqual(
       expect.arrayContaining([expect.objectContaining({ sourceUid: trapeze!.uid, code: 82, targetRange: [1, 0] })]),
     );
@@ -53,6 +54,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pe
 
     const restoredFire = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(restoredFire.restoreComplete, restoredFire.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredFire.missingRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredFire);
     expect(restoredFire.session.state.players[0].lifePoints).toBe(8000);
     expect(restoredFire.session.state.players[1].lifePoints).toBe(7500);

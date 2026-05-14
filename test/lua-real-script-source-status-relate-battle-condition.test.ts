@@ -76,6 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredNumeron = restored.session.state.cards.find((card) => card.code === numeronCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === numeron!.uid && candidate.luaConditionDescriptor === `condition:source-status-relate-battle:${statusOpposingBattle}`);
@@ -110,7 +111,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(numeronCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -122,6 +123,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredNumeron = restored.session.state.cards.find((card) => card.code === numeronCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === numeron!.uid && candidate.luaConditionDescriptor === `condition:source-status-relate-battle:${statusOpposingBattle}`);

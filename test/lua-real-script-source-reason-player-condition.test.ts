@@ -82,6 +82,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredPanzer = restored.session.state.cards.find((card) => card.code === panzerDragonCode);
     const opponentEffects = restored.session.state.effects.filter((effect) => effect.sourceUid === panzer!.uid && effect.luaConditionDescriptor === "condition:source-reason-player:opponent");
     const selfEffect = restored.session.state.effects.find((effect) => effect.sourceUid === panzer!.uid && effect.luaConditionDescriptor === "condition:source-reason-player:self");
@@ -168,6 +169,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredPanzer = restored.session.state.cards.find((card) => card.code === panzerDragonCode);
     const opponentEffects = restored.session.state.effects.filter((effect) => effect.sourceUid === panzer!.uid && effect.luaConditionDescriptor === "condition:source-reason-player:opponent");
     const selfEffect = restored.session.state.effects.find((effect) => effect.sourceUid === panzer!.uid && effect.luaConditionDescriptor === "condition:source-reason-player:self");

@@ -80,6 +80,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredGatchiri = restored.session.state.cards.find((card) => card.code === gatchiriCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === gatchiri!.uid && effect.code === 71);
     expect(restoredEffect).toMatchObject({
@@ -143,6 +144,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredFeline = restored.session.state.cards.find((card) => card.code === felineCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === feline!.uid && effect.code === 71);
     expect(restoredFeline).toBeDefined();
@@ -212,6 +214,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredGatchiri = restored.session.state.cards.find((card) => card.code === gatchiriCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === gatchiri!.uid && effect.code === 71);
     expect(restoredEffect).toMatchObject({ luaConditionDescriptor: descriptor });

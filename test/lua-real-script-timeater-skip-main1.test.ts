@@ -41,7 +41,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ti
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(timeaterCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
 
     const attack = getDuelLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === timeater.uid && action.targetUid === defender.uid);
     expect(attack, JSON.stringify(getDuelLegalActions(session, 0), null, 2)).toBeDefined();
@@ -53,6 +53,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ti
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredTrigger.missingRegistryKeys).toEqual([]);
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === timeater.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     const result = applyLuaRestoreResponse(restoredTrigger, trigger!);
@@ -63,6 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ti
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), workspace, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredLock.missingRegistryKeys).toEqual([]);
     passBattleUntilOpen(restoredLock.session);
     moveToMain2AndEndTurn(restoredLock.session, 0);
     expect(restoredLock.session.state).toMatchObject({ turnPlayer: 1, phase: "main1", waitingFor: 1 });

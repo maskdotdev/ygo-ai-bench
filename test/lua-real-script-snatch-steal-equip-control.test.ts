@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import {
   createDuel,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   sendDuelCardToGraveyard,
@@ -14,7 +15,7 @@ import type { DuelResponse } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -57,10 +58,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sn
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(snatchCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(1);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredEquipWindow.restoreComplete, restoredEquipWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredEquipWindow.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredEquipWindow, 0)).toEqual(getDuelLegalActions(restoredEquipWindow.session, 0));
     const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === snatch!.uid);
     expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
@@ -69,14 +71,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sn
     expect(restoredEquipWindow.session.state.chain[0]).toMatchObject({
       sourceUid: snatch!.uid,
       targetUids: [target!.uid],
-      operationInfos: expect.arrayContaining([
-        { category: 0x2000, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 },
-        { category: 0x40000, targetUids: [snatch!.uid], count: 1, player: 0, parameter: 0 },
-      ]),
     });
+    expect(restoredEquipWindow.session.state.chain[0]?.operationInfos).toEqual(expect.arrayContaining([
+      { category: 0x2000, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 },
+      { category: 0x40000, targetUids: [snatch!.uid], count: 1, player: 0, parameter: 0 },
+    ]));
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredChain.missingRegistryKeys).toEqual([]);
     expect(restoredChain.session.state.chain[0]).toMatchObject(restoredEquipWindow.session.state.chain[0]!);
+    expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
     resolveRestoredChain(restoredChain);
 
     expect(restoredChain.session.state.cards.find((card) => card.uid === snatch!.uid)).toMatchObject({
@@ -94,6 +99,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sn
 
     const restoredControl = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredControl.restoreComplete, restoredControl.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredControl.missingRegistryKeys).toEqual([]);
     expectLuaSnatchProbe(restoredControl, targetCode, snatchCode, "snatch probe 0/45986603/612501");
 
     sendDuelCardToGraveyard(restoredControl.session.state, snatch!.uid, 0);
@@ -110,6 +116,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sn
 
     const restoredReturned = restoreDuelWithLuaScripts(serializeDuel(restoredControl.session), source, reader);
     expect(restoredReturned.restoreComplete, restoredReturned.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredReturned.missingRegistryKeys).toEqual([]);
     expectLuaSnatchProbe(restoredReturned, targetCode, snatchCode, "snatch probe 1/nil/nil");
   });
 });
@@ -133,7 +140,11 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   const result = applyLuaRestoreResponse(restored, response);
   expect(result.ok, result.error).toBe(true);
   const waitingFor = restored.session.state.waitingFor;
-  if (waitingFor !== undefined) expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+  if (waitingFor !== undefined) {
+    expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+    expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  }
 }
 
 function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {

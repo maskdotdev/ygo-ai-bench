@@ -15,7 +15,7 @@ const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.
 const attributeLight = 0x10;
 const attributeDark = 0x20;
 
-function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
+function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
   return {
     duel,
     source,
@@ -80,11 +80,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredBrainGolem = restored.session.state.cards.find((card) => card.code === brainGolemCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === brainGolem!.uid && candidate.luaConditionDescriptor === `condition:source-battle-target-attribute:${attributeLight}`);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredBrainGolem!);
+    const ctx = targetContext(restored.session.state, restoredBrainGolem!);
     expect(effect!.canActivate!(ctx)).toBe(false);
     restored.session.state.currentAttack = { attackerUid: restoredBrainGolem!.uid, targetUid: restoredTarget!.uid };
     expect(effect!.canActivate!(ctx)).toBe(true);
@@ -116,7 +117,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(brainGolemCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -128,11 +129,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredBrainGolem = restored.session.state.cards.find((card) => card.code === brainGolemCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === brainGolem!.uid && candidate.luaConditionDescriptor === `condition:source-battle-target-attribute:${attributeLight}`);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredBrainGolem!);
+    const ctx = targetContext(restored.session.state, restoredBrainGolem!);
     expect(effect!.canActivate!(ctx)).toBe(false);
     restored.session.state.currentAttack = { attackerUid: restoredBrainGolem!.uid, targetUid: restoredTarget!.uid };
     expect(effect!.canActivate!(ctx)).toBe(true);
@@ -191,11 +193,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredBrainGolem = restored.session.state.cards.find((card) => card.code === brainGolemCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === brainGolem!.uid && candidate.luaConditionDescriptor === `condition:source-battle-target-attribute:${attributeLight}`);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredBrainGolem!);
+    const ctx = targetContext(restored.session.state, restoredBrainGolem!);
     expect(effect!.canActivate!(ctx)).toBe(false);
     restored.session.state.currentAttack = { attackerUid: restoredBrainGolem!.uid, targetUid: restoredTarget!.uid };
     expect(effect!.canActivate!(ctx)).toBe(true);

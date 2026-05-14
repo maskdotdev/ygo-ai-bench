@@ -69,7 +69,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dy
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(dynaBaseCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const activate = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === dynaBase!.uid);
     expect(activate).toBeDefined();
@@ -78,6 +78,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dy
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 
@@ -148,7 +149,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dy
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(dynaBaseCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(1);
+    expect(host.registerInitialEffects()).toBe(1);
 
     expect(getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === dynaBase!.uid)).toBeUndefined();
   });

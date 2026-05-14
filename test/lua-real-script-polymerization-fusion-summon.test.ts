@@ -83,6 +83,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Po
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.session.state.chain[0]).toMatchObject({
       sourceUid: polymerization!.uid,
       operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }],

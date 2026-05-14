@@ -77,6 +77,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ti
 
     const restoredResponseWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredResponseWindow.missingRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(hasActivateEffect(getLuaRestoreLegalActions(restoredResponseWindow, 1), blockedFirst!.uid)).toBe(false);

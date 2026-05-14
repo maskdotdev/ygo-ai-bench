@@ -57,7 +57,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ze
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(zefraathCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
 
     expect(findPendulumSummon(getLegalActions(session, 0), allowedCandidate!.uid)).toBeUndefined();
     specialSummonDuelCard(session.state, zefraath!.uid, 0, 0, {}, undefined, true, true);
@@ -65,6 +65,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ze
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     assertLegalActions(restored);
     expect(restored.session.state.flagEffects).toEqual(expect.arrayContaining([expect.objectContaining({ ownerType: "player", ownerId: "0", code: Number(zefraathCode) })]));
     const pendulumSummon = findPendulumSummon(getLuaRestoreLegalActions(restored, 0), allowedCandidate!.uid);

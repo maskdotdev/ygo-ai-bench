@@ -80,6 +80,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredEveningstar = restored.session.state.cards.find((card) => card.code === eveningstarCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.code === 71 && effect.sourceUid === eveningstar!.uid);
     expect(restoredEveningstar).toBeDefined();
@@ -147,6 +148,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredEveningstar = restored.session.state.cards.find((card) => card.code === eveningstarCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.code === 71 && effect.sourceUid === eveningstar!.uid);
     expect(restoredEveningstar).toBeDefined();
@@ -217,6 +219,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredEveningstar = restored.session.state.cards.find((card) => card.code === eveningstarCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.code === 71 && effect.sourceUid === eveningstar!.uid);
     expect(restoredEveningstar).toBeDefined();

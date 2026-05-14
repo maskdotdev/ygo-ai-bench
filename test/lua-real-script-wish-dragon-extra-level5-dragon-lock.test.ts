@@ -62,7 +62,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wi
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(wishDragonCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const resolve = host.loadScript(
       `
       local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${wishDragonCode}),0,LOCATION_MZONE,0,nil)
@@ -78,6 +78,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wi
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const probe = restored.host.loadScript(
       `
       local level5_dragon=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${level5DragonCode}),0,LOCATION_EXTRA,0,nil)
@@ -135,7 +136,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wi
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(wishDragonCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const register = host.loadScript(
       `
       local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${wishDragonCode}),0,LOCATION_DECK,0,nil)
@@ -151,6 +152,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wi
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const mutate = restored.host.loadScript(
       `
       local level4_dragon=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${level4DragonCode}),0,LOCATION_EXTRA,0,nil)

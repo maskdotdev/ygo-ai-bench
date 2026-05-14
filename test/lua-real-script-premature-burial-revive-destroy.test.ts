@@ -51,10 +51,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(prematureCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(1);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredActivation.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === premature!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
@@ -67,15 +68,16 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(restoredActivation.session.state.chain[0]).toMatchObject({
       sourceUid: premature!.uid,
       targetUids: [target!.uid],
-      operationInfos: expect.arrayContaining([
-        { category: 0x200, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 },
-        { category: 0x40000, targetUids: [premature!.uid], count: 1, player: 0, parameter: 0 },
-      ]),
     });
+    expect(restoredActivation.session.state.chain[0]?.operationInfos).toEqual(expect.arrayContaining([
+      { category: 0x200, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 },
+      { category: 0x40000, targetUids: [premature!.uid], count: 1, player: 0, parameter: 0 },
+    ]));
     expect(getLuaRestoreLegalActions(restoredActivation, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredChain.missingRegistryKeys).toEqual([]);
     expect(restoredChain.session.state.chain[0]).toMatchObject(restoredActivation.session.state.chain[0]!);
     resolveRestoredChain(restoredChain);
 
@@ -96,6 +98,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
 
     const restoredEquipped = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredEquipped.restoreComplete, restoredEquipped.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredEquipped.missingRegistryKeys).toEqual([]);
     expectLuaPrematureProbe(restoredEquipped, targetCode, prematureCode, "premature probe 0/612601/612601/1");
 
     destroyDuelCard(restoredEquipped.session.state, premature!.uid, 0, duelReason.effect | duelReason.destroy, 0);
@@ -114,6 +117,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
 
     const restoredDestroyed = restoreDuelWithLuaScripts(serializeDuel(restoredEquipped.session), source, reader);
     expect(restoredDestroyed.restoreComplete, restoredDestroyed.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredDestroyed.missingRegistryKeys).toEqual([]);
     expect(restoredDestroyed.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredDestroyed.session.state.cards.find((card) => card.uid === premature!.uid)).toMatchObject({ location: "graveyard" });
   });

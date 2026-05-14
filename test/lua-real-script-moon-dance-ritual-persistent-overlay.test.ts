@@ -63,10 +63,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mo
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(ritualCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(1);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredActivation.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === ritual!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
@@ -81,6 +82,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mo
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredChain.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
     resolveRestoredChain(restoredChain);
@@ -94,6 +96,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mo
 
     const restoredPersistent = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredPersistent.restoreComplete, restoredPersistent.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredPersistent.missingRegistryKeys).toEqual([]);
     const persistentProbe = restoredPersistent.host.loadScript(
       persistentOverlayProbeScript(ritualCode, targetCode),
       "moon-dance-ritual-persistent-overlay-probe.lua",
@@ -109,6 +112,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mo
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredPersistent.session), source, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredTrigger.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredTrigger, 0)).toEqual(getGroupedDuelLegalActions(restoredTrigger.session, 0));
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === ritual!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
@@ -116,6 +120,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mo
 
     const restoredOverlayChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);
     expect(restoredOverlayChain.restoreComplete, restoredOverlayChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredOverlayChain.missingRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredOverlayChain);
     expect(restoredOverlayChain.session.state.cards.find((card) => card.uid === ritual!.uid)).toMatchObject({
       location: "overlay",
@@ -130,6 +135,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mo
 
     const restoredOverlay = restoreDuelWithLuaScripts(serializeDuel(restoredOverlayChain.session), source, reader);
     expect(restoredOverlay.restoreComplete, restoredOverlay.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredOverlay.missingRegistryKeys).toEqual([]);
   });
 });
 

@@ -2,12 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { createDuel, getLegalActions, loadDecks, serializeDuel, startDuel, tributeSummonDuelCard } from "#duel/core.js";
+import { createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel, tributeSummonDuelCard } from "#duel/core.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -42,7 +42,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ap
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(skybaseCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ event: "continuous", code: 154, sourceUid: skybase!.uid, luaValueDescriptor: "cannot-material:target-not-setcode:170" }),
@@ -52,6 +52,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ap
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const actions = getLegalActions(restored.session, 0);
     expect(actions.some((action) => action.type === "tributeSummon" && action.uid === skybase!.uid && action.tributeUids.includes(off!.uid))).toBe(false);
     expect(actions.some((action) => action.type === "tributeSummon" && action.uid === skybase!.uid && qlis.every((material) => action.tributeUids.includes(material!.uid)))).toBe(true);
@@ -59,6 +62,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ap
 
     const allowed = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(allowed.restoreComplete, allowed.incompleteReasons.join("; ")).toBe(true);
+    expect(allowed.missingRegistryKeys).toEqual([]);
     tributeSummonDuelCard(allowed.session.state, 0, skybase!.uid, qlis.map((material) => material!.uid));
     expect(allowed.session.state.cards.find((card) => card.uid === skybase!.uid)).toMatchObject({ location: "monsterZone", summonType: "tribute" });
     for (const material of qlis) expect(allowed.session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "graveyard" });

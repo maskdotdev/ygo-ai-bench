@@ -64,7 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(host.loadCardScript(Number(imperialCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(opponentTargetCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(3);
+    expect(host.registerInitialEffects()).toBe(3);
 
     const summonActions = getLegalActions(session, 0).filter((action) => (action.type === "tributeSummon" || action.type === "normalSummon") && action.uid === imperial!.uid);
     expect(summonActions).toEqual([
@@ -92,6 +92,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     resolveRestoredChain(restored);
 

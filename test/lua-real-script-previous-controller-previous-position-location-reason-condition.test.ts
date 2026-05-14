@@ -17,7 +17,7 @@ const positionFaceUp = 0x5;
 const locationOnField = 0x0c;
 const locationMonsterZone = 0x04;
 
-function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
+function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
   return {
     duel,
     source,
@@ -74,10 +74,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredGigastone = restored.session.state.cards.find((card) => card.code === gigastoneCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === gigastone!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredGigastone!);
+    const ctx = targetContext(restored.session.state, restoredGigastone!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredGigastone!.previousController = 1;
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -112,7 +113,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(gigastoneCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-controller-previous-position-location-reason:${positionFaceUp}:${locationOnField}:${duelReason.effect}`;
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
@@ -125,10 +126,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredGigastone = restored.session.state.cards.find((card) => card.code === gigastoneCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === gigastone!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredGigastone!);
+    const ctx = targetContext(restored.session.state, restoredGigastone!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredGigastone!.previousController = 1;
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -183,10 +185,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredGigastone = restored.session.state.cards.find((card) => card.code === gigastoneCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === gigastone!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredGigastone!);
+    const ctx = targetContext(restored.session.state, restoredGigastone!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredGigastone!.previousLocation = "spellTrapZone";
     expect(effect!.canActivate!(ctx)).toBe(false);

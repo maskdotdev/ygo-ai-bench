@@ -87,6 +87,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cu
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredCopycat = restored.session.state.cards.find((card) => card.code === copycatCode);
     const restoredMachine = restored.session.state.cards.find((card) => card.code === machineTargetCode);
     const restoredEffect = restored.session.state.effects.find((candidate) => candidate.code === 100 && candidate.sourceUid === copycat!.uid);
@@ -152,6 +153,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cu
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredCopycat = restored.session.state.cards.find((card) => card.code === copycatCode);
     const restoredMachine = restored.session.state.cards.find((card) => card.code === machineTargetCode);
     const restoredEffect = restored.session.state.effects.find((candidate) => candidate.code === 100 && candidate.sourceUid === copycat!.uid);

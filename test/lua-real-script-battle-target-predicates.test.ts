@@ -37,7 +37,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ba
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(devourerCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: 102, luaTargetDescriptor: "target:source-battle-target-type:64", sourceUid: devourer!.uid }),
@@ -46,6 +46,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ba
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredDevourer = restored.session.state.cards.find((card) => card.code === devourerCode);
     const restoredFusion = restored.session.state.cards.find((card) => card.code === fusionCode);
     const restoredNonFusion = restored.session.state.cards.find((card) => card.code === nonFusionCode);
@@ -86,7 +87,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ba
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(reflectionCode), workspace).ok).toBe(true);
     expect(host.loadCardScript(Number(dragonecroCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(2);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: 42, luaTargetDescriptor: "target:source-or-battle-target", sourceUid: reflection!.uid }),
@@ -96,6 +97,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ba
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredReflection = restored.session.state.cards.find((card) => card.code === reflectionCode);
     const restoredDragonecro = restored.session.state.cards.find((card) => card.code === dragonecroCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);

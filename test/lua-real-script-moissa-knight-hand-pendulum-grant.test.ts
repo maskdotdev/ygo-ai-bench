@@ -55,12 +55,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mo
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(moissaCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(drawDuelCards(session.state, 0, 1)).toBe(1);
     expect(session.state.cards.find((card) => card.uid === moissa!.uid)).toMatchObject({ location: "hand" });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     assertLegalActions(restored);
     const trigger = getLuaRestoreLegalActions(restored, 0).find((action): action is Extract<DuelAction, { type: "activateTrigger" }> => action.type === "activateTrigger" && action.uid === moissa!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
@@ -69,6 +70,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mo
 
     const restoredAfterGrant = restoreDuelWithLuaScripts(serializeDuel(restored.session), workspace, reader);
     expect(restoredAfterGrant.restoreComplete, restoredAfterGrant.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredAfterGrant.missingRegistryKeys).toEqual([]);
     assertLegalActions(restoredAfterGrant);
     const pendulumSummon = findPendulumSummon(getLuaRestoreLegalActions(restoredAfterGrant, 0), handCandidate!.uid);
     expect(pendulumSummon, JSON.stringify(getLuaRestoreLegalActions(restoredAfterGrant, 0), null, 2)).toBeDefined();

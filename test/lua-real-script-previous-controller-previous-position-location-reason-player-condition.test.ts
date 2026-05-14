@@ -16,7 +16,7 @@ const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.
 const positionFaceDown = 0x0a;
 const locationOnField = 0x0c;
 
-function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
+function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
   return {
     duel,
     source,
@@ -50,7 +50,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(tongueCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-controller-previous-position-location-reason-player-reason:${positionFaceDown}:${locationOnField}:${duelReason.effect}:opponent`;
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
@@ -63,10 +63,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredTongue = restored.session.state.cards.find((card) => card.code === tongueCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === tongue!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredTongue!);
+    const ctx = targetContext(restored.session.state, restoredTongue!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredTongue!.reason = duelReason.battle;
     expect(effect!.canActivate!(ctx)).toBe(false);

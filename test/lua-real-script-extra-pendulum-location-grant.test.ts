@@ -59,10 +59,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ex
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(extraPendulumCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     assertLegalActions(restored);
     expect(findPendulumSummon(getLuaRestoreLegalActions(restored, 0), extraCandidate!.uid)).toBeUndefined();
     expect(findPendulumSummon(getLuaRestoreLegalActions(restored, 0), handCandidate!.uid)).toBeUndefined();
@@ -74,6 +75,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ex
 
     const restoredAfterGrant = restoreDuelWithLuaScripts(serializeDuel(restored.session), workspace, reader);
     expect(restoredAfterGrant.restoreComplete, restoredAfterGrant.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredAfterGrant.missingRegistryKeys).toEqual([]);
     assertLegalActions(restoredAfterGrant);
     expect(restoredAfterGrant.session.state.flagEffects).toEqual(expect.arrayContaining([expect.objectContaining({ ownerType: "player", ownerId: "0", code: Number(extraPendulumCode) })]));
     expect(findExtraPendulumActivation(restoredAfterGrant.session, getLuaRestoreLegalActions(restoredAfterGrant, 0), secondExtraPendulum!.uid)).toBeUndefined();

@@ -69,6 +69,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ra
 
     const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredTriggerWindow.restoreComplete, restoredTriggerWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredTriggerWindow.missingRegistryKeys).toEqual([]);
     expect(restoredTriggerWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredTriggerWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
     expect(getLuaRestoreLegalActionGroups(restoredTriggerWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredTriggerWindow.session, 0));
@@ -83,6 +84,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ra
 
     const restoredResponseWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredResponseWindow.missingRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
     expect(getLuaRestoreLegalActions(restoredResponseWindow, 0).some((action) => action.type === "activateEffect" && action.uid === ra!.uid)).toBe(true);

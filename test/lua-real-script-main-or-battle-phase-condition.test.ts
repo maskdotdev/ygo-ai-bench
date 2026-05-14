@@ -46,7 +46,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ma
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(carnovorusCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ luaConditionDescriptor: "condition:main-or-battle-phase", sourceUid: carnovorus!.uid }),
@@ -55,6 +55,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ma
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredCarnovorus = restored.session.state.cards.find((card) => card.code === carnovorusCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === carnovorus!.uid && candidate.luaConditionDescriptor === "condition:main-or-battle-phase");
     expect(effect?.canActivate).toBeDefined();

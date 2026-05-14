@@ -70,6 +70,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cr
 
     const restoredResponseWindow = restoreDuelWithLuaScripts(openedSnapshot, source, reader);
     expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredResponseWindow.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredResponseWindow, 1));
     expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
@@ -95,6 +96,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cr
 
     const restoredLockWindow = restoreDuelWithLuaScripts(serializeDuel(restoredResponseWindow.session), source, reader);
     expect(restoredLockWindow.restoreComplete, restoredLockWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredLockWindow.missingRegistryKeys).toEqual([]);
     expect(restoredLockWindow.session.state.cards.find((card) => card.uid === ownMonster!.uid)).toMatchObject({ controller: 1, previousController: 0 });
     expect(restoredLockWindow.session.state.cards.find((card) => card.uid === opponentMonster!.uid)).toMatchObject({ controller: 0, previousController: 1 });
     expect(positionLockCodes(restoredLockWindow.session, ownMonster!.uid)).toEqual([14]);

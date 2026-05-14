@@ -16,7 +16,7 @@ const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.
 const positionFaceUp = 0x5;
 const locationGraveyard = 0x10;
 
-function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
+function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
   return {
     duel,
     source,
@@ -72,10 +72,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script lo
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredPoisonCloud = restored.session.state.cards.find((card) => card.code === poisonCloudCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === poisonCloud!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredPoisonCloud!);
+    const ctx = targetContext(restored.session.state, restoredPoisonCloud!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredPoisonCloud!.previousPosition = "faceDownDefense";
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -102,7 +103,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script lo
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(poisonCloudCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -114,11 +115,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script lo
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredPoisonCloud = restored.session.state.cards.find((card) => card.code === poisonCloudCode);
     const descriptor = `condition:source-previous-position-location-reason:${positionFaceUp}:${locationGraveyard}:${duelReason.battle}`;
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === poisonCloud!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredPoisonCloud!);
+    const ctx = targetContext(restored.session.state, restoredPoisonCloud!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredPoisonCloud!.previousPosition = "faceDownDefense";
     expect(effect!.canActivate!(ctx)).toBe(false);

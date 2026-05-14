@@ -49,10 +49,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(nikitamaCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
 
     const restoredNikitamaWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredNikitamaWindow.restoreComplete, restoredNikitamaWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredNikitamaWindow.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredNikitamaWindow, 0)).toEqual(getDuelLegalActions(restoredNikitamaWindow.session, 0));
     const nikitamaSummon = getLuaRestoreLegalActions(restoredNikitamaWindow, 0).find((action) => action.type === "normalSummon" && action.uid === nikitama!.uid);
     expect(nikitamaSummon, JSON.stringify(getLuaRestoreLegalActions(restoredNikitamaWindow, 0), null, 2)).toBeDefined();
@@ -61,6 +62,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
 
     const restoredExtraWindow = restoreDuelWithLuaScripts(serializeDuel(restoredNikitamaWindow.session), workspace, reader);
     expect(restoredExtraWindow.restoreComplete, restoredExtraWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredExtraWindow.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredExtraWindow, 0)).toEqual(getDuelLegalActions(restoredExtraWindow.session, 0));
     const extraSummon = getLuaRestoreLegalActions(restoredExtraWindow, 0).find((action) => action.type === "normalSummon" && action.uid === spiritTargets[0]!.uid);
     expect(extraSummon, JSON.stringify(getLuaRestoreLegalActions(restoredExtraWindow, 0), null, 2)).toBeDefined();

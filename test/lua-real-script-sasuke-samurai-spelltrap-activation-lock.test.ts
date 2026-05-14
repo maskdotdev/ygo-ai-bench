@@ -57,6 +57,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.session.state.players[0]!.lifePoints).toBe(7200);
     expect(restored.session.state.effects.find((effect) => effect.sourceUid === sasuke.uid && effect.code === 6)).toMatchObject({
       event: "continuous",
@@ -66,6 +67,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredLock.missingRegistryKeys).toEqual([]);
     restoredLock.session.state.turnPlayer = 1;
     restoredLock.session.state.waitingFor = 1;
     restoredLock.session.state.phase = "main1";

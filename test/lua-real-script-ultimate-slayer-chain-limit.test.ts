@@ -82,6 +82,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ul
 
     const restoredOpponentWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredOpponentWindow.restoreComplete, restoredOpponentWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredOpponentWindow.missingRegistryKeys).toEqual([]);
     expect(restoredOpponentWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredOpponentWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(hasActivateEffect(getLuaRestoreLegalActions(restoredOpponentWindow, 1), blockedMonster!.uid)).toBe(false);
@@ -95,6 +96,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ul
 
     const restoredChainPlayerWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredChainPlayerWindow.restoreComplete, restoredChainPlayerWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredChainPlayerWindow.missingRegistryKeys).toEqual([]);
     expect(restoredChainPlayerWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredChainPlayerWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(hasActivateEffect(getLuaRestoreLegalActions(restoredChainPlayerWindow, 0), chainPlayerMonster!.uid)).toBe(true);

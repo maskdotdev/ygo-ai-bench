@@ -39,7 +39,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pe
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(pendulumAreaCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const resolve = host.loadScript(
       `
       local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${pendulumAreaCode}),0,LOCATION_HAND,0,nil)
@@ -60,6 +60,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pe
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredLock = restored.session.state.effects.find((effect) => effect.code === 22);
     const pendulumProbe = restored.session.state.cards.find((card) => card.code === pendulumCode);
     expect(restoredLock?.targetCardPredicate?.({ summonTypeCode: luaSummonTypePendulum } as never, pendulumProbe!)).toBe(false);

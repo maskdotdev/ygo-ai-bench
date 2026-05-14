@@ -79,6 +79,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredSting = restored.session.state.cards.find((card) => card.code === steelswarmStingCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === sting!.uid && effect.code === 71);
     expect(restoredEffect).toMatchObject({
@@ -141,6 +142,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredSting = restored.session.state.cards.find((card) => card.code === steelswarmStingCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === sting!.uid && effect.code === 71);
     expect(restoredSting).toBeDefined();

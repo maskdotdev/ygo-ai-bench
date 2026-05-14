@@ -49,7 +49,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(ganashiaCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-location-reason:${locationHand}:${duelReason.discard}`;
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
@@ -62,6 +62,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredGanashia = restored.session.state.cards.find((card) => card.code === ganashiaCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === ganashia!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();

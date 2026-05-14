@@ -59,7 +59,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(host.loadCardScript(Number(starterCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(blockedTrapCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(allowedTrapCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(4);
+    expect(host.registerInitialEffects()).toBe(4);
 
     const summon = getLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === sourceCard!.uid);
     expect(summon).toBeDefined();
@@ -69,6 +69,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(serializeDuel(session).state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
     const restoredOpenWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredOpenWindow.restoreComplete, restoredOpenWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredOpenWindow.missingRegistryKeys).toEqual([]);
     expect(restoredOpenWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredOpenWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
     expect(getLuaRestoreLegalActionGroups(restoredOpenWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredOpenWindow.session, 0));
@@ -81,6 +82,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
 
     const restoredResponseWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredResponseWindow.missingRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
     expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === blockedTrap!.uid)).toBe(false);
@@ -148,7 +150,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(host.loadCardScript(Number(blockedTrapHoleCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(allowedTrapHoleQuickCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(allowedOffSetTrapCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(5);
+    expect(host.registerInitialEffects()).toBe(5);
 
     const summon = getLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
     expect(summon).toBeDefined();
@@ -158,6 +160,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(serializeDuel(session).state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
     const restoredOpenWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredOpenWindow.restoreComplete, restoredOpenWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredOpenWindow.missingRegistryKeys).toEqual([]);
     expect(restoredOpenWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredOpenWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
     expect(getLuaRestoreLegalActionGroups(restoredOpenWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredOpenWindow.session, 0));
@@ -171,6 +174,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
 
     const restoredResponseWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredResponseWindow.missingRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
     expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === blockedTrapHole!.uid)).toBe(false);
@@ -249,7 +253,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(host.loadCardScript(Number(blockedTrapHoleCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(allowedTrapHoleQuickCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(allowedOffSetTrapCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(6);
+    expect(host.registerInitialEffects()).toBe(6);
 
     const specialSummonChain = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === specialStarter!.uid);
     expect(specialSummonChain).toBeDefined();
@@ -262,6 +266,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(serializeDuel(session).state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
     const restoredOpenWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredOpenWindow.restoreComplete, restoredOpenWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredOpenWindow.missingRegistryKeys).toEqual([]);
     expect(restoredOpenWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredOpenWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
     expect(getLuaRestoreLegalActionGroups(restoredOpenWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredOpenWindow.session, 0));
@@ -275,6 +280,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
 
     const restoredResponseWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredResponseWindow.missingRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
     expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === blockedTrapHole!.uid)).toBe(false);

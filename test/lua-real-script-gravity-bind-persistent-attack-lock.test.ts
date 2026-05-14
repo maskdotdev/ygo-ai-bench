@@ -70,10 +70,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(gravityBindCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(1);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
-    expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
+    expectCleanRestore(restoredActivation);
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === gravityBind!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
@@ -85,7 +85,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     expect(getLuaRestoreLegalActions(restoredActivation, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
-    expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expectCleanRestore(restoredChain);
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
     resolveRestoredChain(restoredChain);
@@ -96,7 +96,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     expect(restoredChain.host.messages).not.toContain("gravity bind responder resolved");
 
     const restoredPersistent = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
-    expect(restoredPersistent.restoreComplete, restoredPersistent.incompleteReasons.join("; ")).toBe(true);
+    expectCleanRestore(restoredPersistent);
     const endTurn = getLuaRestoreLegalActions(restoredPersistent, 0).find((action) => action.type === "endTurn");
     expect(endTurn, JSON.stringify(getLuaRestoreLegalActions(restoredPersistent, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredPersistent, endTurn!);
@@ -104,13 +104,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     expect(restoredPersistent.session.state.phase).toBe("main1");
 
     const restoredOpponentTurn = restoreDuelWithLuaScripts(serializeDuel(restoredPersistent.session), source, reader);
-    expect(restoredOpponentTurn.restoreComplete, restoredOpponentTurn.incompleteReasons.join("; ")).toBe(true);
+    expectCleanRestore(restoredOpponentTurn);
     const battle = getLuaRestoreLegalActions(restoredOpponentTurn, 1).find((action) => action.type === "changePhase" && action.phase === "battle");
     expect(battle, JSON.stringify(getLuaRestoreLegalActions(restoredOpponentTurn, 1), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredOpponentTurn, battle!);
 
     const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredOpponentTurn.session), source, reader);
-    expect(restoredBattle.restoreComplete, restoredBattle.incompleteReasons.join("; ")).toBe(true);
+    expectCleanRestore(restoredBattle);
     expect(getLuaRestoreLegalActions(restoredBattle, 1)).toEqual(getDuelLegalActions(restoredBattle.session, 1));
     const battleActions = getLuaRestoreLegalActions(restoredBattle, 1).filter((action) => action.type === "declareAttack");
     expect(battleActions).toEqual(
@@ -156,6 +156,11 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
     expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   }
+}
+
+function expectCleanRestore(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+  expect(restored.missingRegistryKeys).toEqual([]);
 }
 
 function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {

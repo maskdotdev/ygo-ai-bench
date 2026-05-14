@@ -57,10 +57,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredChain.missingRegistryKeys).toEqual([]);
     expect(restoredChain.session.state.players[1].lifePoints).toBe(7000);
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), workspace, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredLock.missingRegistryKeys).toEqual([]);
     restoredLock.session.state.phase = "battle";
     restoredLock.session.state.waitingFor = 0;
     const battleActions = getLuaRestoreLegalActions(restoredLock, 0);

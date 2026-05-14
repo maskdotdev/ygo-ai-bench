@@ -57,14 +57,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ve
     expect(host.loadCardScript(Number(hillsCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(fireResponderCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(earthResponderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(3);
+    expect(host.registerInitialEffects()).toBe(3);
 
     const activation = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === hills.uid);
     expect(activation, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
     applyAndAssert(session, activation!);
+    expect(host.promptDecisions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ api: "SelectYesNo", player: 0, returned: true }),
+    ]));
 
     let restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const noSpecialSummon = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "selectYesNo" && !action.yes);
     if (noSpecialSummon) {
       expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
@@ -72,8 +76,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ve
       expect(response.ok, response.error).toBe(true);
       restored = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
       expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+      expect(restored.missingRegistryKeys).toEqual([]);
     }
-
     expect(["graveyard", "monsterZone"]).toContain(restored.session.state.cards.find((card) => card.uid === hills.uid)?.location);
     expect(restored.session.state.cards.find((card) => card.uid === discard.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.cards.find((card) => card.uid === search.uid)).toMatchObject({ location: "hand" });
@@ -85,6 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ve
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredLock.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredLock, 0).some((action) => action.type === "activateEffect" && action.uid === fireResponder.uid)).toBe(false);
     expect(getLuaRestoreLegalActions(restoredLock, 0).some((action) => action.type === "activateEffect" && action.uid === earthResponder.uid)).toBe(true);
   });

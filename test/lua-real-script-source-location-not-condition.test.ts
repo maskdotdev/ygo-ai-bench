@@ -77,6 +77,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredPanzer = restored.session.state.cards.find((card) => card.code === panzerDragonCode);
     const notExtra = restored.session.state.effects.find((effect) => effect.sourceUid === panzer!.uid && effect.luaConditionDescriptor === "condition:source-location-not:64");
     const notExtraOrGrave = restored.session.state.effects.find((effect) => effect.sourceUid === panzer!.uid && effect.luaConditionDescriptor === "condition:source-location-not:80");
@@ -132,6 +133,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredPanzer = restored.session.state.cards.find((card) => card.code === panzerDragonCode);
     const notExtra = restored.session.state.effects.find((effect) => effect.sourceUid === panzer!.uid && effect.luaConditionDescriptor === "condition:source-location-not:64");
     expect(restoredPanzer).toBeDefined();
@@ -185,6 +187,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredPanzer = restored.session.state.cards.find((card) => card.code === panzerDragonCode);
     const notExtra = restored.session.state.effects.find((effect) => effect.sourceUid === panzer!.uid && effect.luaConditionDescriptor === "condition:source-location-not:64");
     const notExtraOrGrave = restored.session.state.effects.find((effect) => effect.sourceUid === panzer!.uid && effect.luaConditionDescriptor === "condition:source-location-not:80");

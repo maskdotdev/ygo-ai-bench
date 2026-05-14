@@ -31,7 +31,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Te
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(terminalWorldCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -46,11 +46,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Te
 
     const restoredMain1 = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredMain1.restoreComplete, restoredMain1.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredMain1.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredMain1, 0)).toEqual(getDuelLegalActions(restoredMain1.session, 0));
     applyActionAndAssert(restoredMain1.session, getLuaRestoreLegalActions(restoredMain1, 0).find((action) => action.type === "changePhase" && action.phase === "battle"));
 
     const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredMain1.session), workspace, reader);
     expect(restoredBattle.restoreComplete, restoredBattle.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredBattle.missingRegistryKeys).toEqual([]);
     expect(restoredBattle.session.state).toMatchObject({ phase: "battle", waitingFor: 0 });
     const battleActions = getLuaRestoreLegalActions(restoredBattle, 0);
     expect(battleActions).toEqual(getDuelLegalActions(restoredBattle.session, 0));

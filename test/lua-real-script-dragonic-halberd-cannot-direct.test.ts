@@ -36,10 +36,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ZW
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(halberdCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.session.state.effects).toEqual(
       expect.arrayContaining([expect.objectContaining({ event: "continuous", code: 73, sourceUid: halberd.uid })]),
     );

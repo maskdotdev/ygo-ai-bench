@@ -70,6 +70,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredVennominaga = restored.session.state.cards.find((card) => card.code === vennominagaCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === vennominaga!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
@@ -126,6 +127,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredVennominaga = restored.session.state.cards.find((card) => card.code === vennominagaCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === vennominaga!.uid && candidate.luaConditionDescriptor === `condition:source-status-not:${statusBattleDestroyed}`);
     expect(effect?.canActivate).toBeDefined();
@@ -152,7 +154,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(vennominagaCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -164,6 +166,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredVennominaga = restored.session.state.cards.find((card) => card.code === vennominagaCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === vennominaga!.uid && candidate.luaConditionDescriptor === `condition:source-status-not:${statusBattleDestroyed}`);
     expect(effect?.canActivate).toBeDefined();

@@ -1,0 +1,163 @@
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+
+const root = process.cwd();
+
+describe("Lua real operation restore coverage", () => {
+  it("requires representative simple spell operations to assert clean Lua registry restore and restored operation metadata", () => {
+    const missing = operationFixtureFiles()
+      .filter(({ file, required }) => {
+        const text = fs.readFileSync(path.join(root, file), "utf8");
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
+          || !text.includes("operationInfos")
+          || required.some((snippet) => !text.includes(snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(missing).toEqual([]);
+  });
+
+  it("requires summon-trigger operations to assert clean Lua registry restore and restored operation metadata", () => {
+    const missing = summonTriggerOperationFixtureFiles()
+      .filter(({ file, required }) => {
+        const text = fs.readFileSync(path.join(root, file), "utf8");
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("operationInfos")
+          || required.some((snippet) => !text.includes(snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(missing).toEqual([]);
+  });
+});
+
+function operationFixtureFiles(): Array<{ file: string; required: string[] }> {
+  return [
+    {
+      file: "test/lua-real-script-foolish-burial-deck-to-grave.test.ts",
+      required: [
+        "category: 0x20",
+        'eventName: "sentToGraveyard"',
+        'location: "graveyard", controller: 0',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-harpies-feather-duster-group-destroy.test.ts",
+      required: [
+        "category: 0x1",
+        "sortedUids([opponentTrap!.uid, opponentSpell!.uid])",
+        'eventName: "destroyed"',
+        'location: "spellTrapZone"',
+        'location: "graveyard"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-lightning-storm-select-effect.test.ts",
+      required: [
+        "effectLabel: 1",
+        "effectLabel: 2",
+        "category: 0x1",
+        "sortedUids([opponentAttacker!.uid, opponentSecondAttacker!.uid])",
+        "sortedUids([opponentTrap!.uid, opponentSpell!.uid])",
+        'eventName: "destroyed"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-pot-of-desires-deck-cost.test.ts",
+      required: [
+        "category: 0x10000",
+        'eventName: "banished"',
+        'eventName: "cardsDrawn"',
+        "faceUp: false",
+        "reason: 0x80",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-pot-of-duality-excavate.test.ts",
+      required: [
+        "category: 0x8",
+        'eventName: "confirmed"',
+        'eventName: "sentToHandConfirmed"',
+        "effect.sourceUid === pot!.uid && effect.code === 22",
+        'action.type === "specialSummonProcedure"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-pot-of-extravagance-extra-cost.test.ts",
+      required: [
+        "category: 0x10000",
+        "randomCounter).toBe(1)",
+        'eventName: "cardsDrawn"',
+        "faceUp: false",
+        "drawDuelCards(restored.session.state, 0, 1",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-pot-of-prosperity-excavate.test.ts",
+      required: [
+        "category: 0x8",
+        'eventName: "confirmed"',
+        'eventName: "sentToHandConfirmed"',
+        "drawDuelCards(restored.session.state, 0, 1",
+        "effect.sourceUid === pot!.uid && effect.code === 82",
+        "battleDamage[1]).toBe(500)",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-raigeki-group-destroy.test.ts",
+      required: [
+        "category: 0x1",
+        "sortedUids([opponentAttack!.uid, opponentDefense!.uid])",
+        'eventName: "destroyed"',
+        'location: "graveyard"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
+      required: [
+        "category: 0x8",
+        'eventName: "sentToHand"',
+        'eventName: "sentToHandConfirmed"',
+        'location: "hand", controller: 0',
+        "host.messages).not.toContain",
+      ],
+    },
+  ].sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function summonTriggerOperationFixtureFiles(): Array<{ file: string; required: string[] }> {
+  return [
+    {
+      file: "test/lua-real-script-dark-dust-spirit-destroy.test.ts",
+      required: [
+        "restoredSummonWindow.missingRegistryKeys).toEqual([])",
+        "restoredTriggerWindow.missingRegistryKeys).toEqual([])",
+        "restoredChainWindow.missingRegistryKeys).toEqual([])",
+        'eventName: "normalSummoned"',
+        'eventName: "destroyed"',
+        "category: 0x1",
+        "host.messages).not.toContain",
+      ],
+    },
+  ].sort((a, b) => a.file.localeCompare(b.file));
+}

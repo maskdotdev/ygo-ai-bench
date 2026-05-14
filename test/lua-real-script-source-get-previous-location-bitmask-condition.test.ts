@@ -80,6 +80,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredWormHope = restored.session.state.cards.find((card) => card.code === wormHopeCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === wormHope!.uid && effect.code === 71);
     expect(restoredEffect).toMatchObject({
@@ -143,6 +144,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredWormHope = restored.session.state.cards.find((card) => card.code === wormHopeCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === wormHope!.uid && effect.code === 71);
     expect(restoredWormHope).toBeDefined();

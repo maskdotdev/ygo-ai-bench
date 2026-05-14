@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
@@ -63,7 +63,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
 
     const restoredZone = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredZone.restoreComplete, restoredZone.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredZone.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredZone, 0)).toEqual(getDuelLegalActions(restoredZone.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredZone, 0)).toEqual(getGroupedDuelLegalActions(restoredZone.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredZone, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredZone, 0));
     const zoneAction = getLuaRestoreLegalActions(restoredZone, 0).find(
       (action) => action.type === "activateEffect" && action.uid === assaultZone!.uid && action.effectId !== effectIdForActivation(restoredZone.session.state.effects, assaultZone!.uid),
     );
@@ -79,6 +82,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(restoredZone.session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredActivation.missingRegistryKeys).toEqual([]);
     expect(restoredActivation.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: effectExtraReleaseNonsum, sourceUid: assaultZone!.uid, targetRange: [locationExtra, 0] }),
@@ -86,6 +90,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
       ]),
     );
     const assaultAction = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === assaultMode!.uid);
+    expect(getLuaRestoreLegalActionGroups(restoredActivation, 0)).toEqual(getGroupedDuelLegalActions(restoredActivation.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredActivation, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredActivation, 0));
     expect(assaultAction, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredActivation, assaultAction!);
 

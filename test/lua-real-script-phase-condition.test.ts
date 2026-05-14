@@ -49,7 +49,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ph
 
     const host = createLuaScriptHost(session, workspace);
     for (const code of [damageJugglerCode, junkSleepCode]) expect(host.loadCardScript(Number(code), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(2);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ luaConditionDescriptor: "condition:battle-phase", sourceUid: damageJuggler!.uid }),
@@ -59,6 +59,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ph
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredDamageJuggler = restored.session.state.cards.find((card) => card.code === damageJugglerCode);
     const restoredJunkSleep = restored.session.state.cards.find((card) => card.code === junkSleepCode);
     const battlePhaseEffect = restored.session.state.effects.find((effect) => effect.sourceUid === damageJuggler!.uid && effect.luaConditionDescriptor === "condition:battle-phase");

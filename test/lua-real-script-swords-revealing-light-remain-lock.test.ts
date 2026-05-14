@@ -68,10 +68,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sw
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(swordsCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(1);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredActivation.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === swords!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
@@ -85,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sw
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredChain.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
     resolveRestoredChain(restoredChain);
@@ -103,6 +105,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sw
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredLock.missingRegistryKeys).toEqual([]);
     const probe = restoredLock.host.loadScript(attackLockProbeScript(attackerCode, hiddenCode), "swords-revealing-light-probe.lua");
     expect(probe.ok, probe.error).toBe(true);
     expect(restoredLock.host.messages).toContain("swords of revealing light state false/true/4");
@@ -115,6 +118,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sw
 
     let restoredMaintenance = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredMaintenance.restoreComplete, restoredMaintenance.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredMaintenance.missingRegistryKeys).toEqual([]);
     advanceOpponentEndPhase(restoredMaintenance);
     expect(restoredMaintenance.session.state.cards.find((card) => card.uid === swords!.uid)).toMatchObject({
       location: "spellTrapZone",
@@ -122,6 +126,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sw
     });
     restoredMaintenance = restoreDuelWithLuaScripts(serializeDuel(restoredMaintenance.session), source, reader);
     expect(restoredMaintenance.restoreComplete, restoredMaintenance.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredMaintenance.missingRegistryKeys).toEqual([]);
     advanceOpponentEndPhase(restoredMaintenance);
     expect(restoredMaintenance.session.state.cards.find((card) => card.uid === swords!.uid)).toMatchObject({
       location: "spellTrapZone",
@@ -129,6 +134,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sw
     });
     restoredMaintenance = restoreDuelWithLuaScripts(serializeDuel(restoredMaintenance.session), source, reader);
     expect(restoredMaintenance.restoreComplete, restoredMaintenance.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredMaintenance.missingRegistryKeys).toEqual([]);
     advanceOpponentEndPhase(restoredMaintenance);
     expect(restoredMaintenance.session.state.cards.find((card) => card.uid === swords!.uid)).toMatchObject({
       location: "graveyard",

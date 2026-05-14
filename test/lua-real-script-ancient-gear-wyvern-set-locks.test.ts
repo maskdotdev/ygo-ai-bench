@@ -48,7 +48,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script An
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(wyvernCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const operation = host.loadScript(
       `
         local c=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${wyvernCode}),0,LOCATION_MZONE,0,1,1,nil):GetFirst()
@@ -62,6 +62,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script An
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(lockCodes(restored.session.state, wyvern.uid)).toEqual([22, 23, 24, 69]);
     restored.session.state.phase = "main1";
     restored.session.state.waitingFor = 0;

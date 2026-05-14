@@ -42,7 +42,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(slimeCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -56,6 +56,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
 
     const restoredSummonWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredSummonWindow.restoreComplete, restoredSummonWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredSummonWindow.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredSummonWindow, 0)).toEqual(getDuelLegalActions(restoredSummonWindow.session, 0));
     assertGeminiStatus(restoredSummonWindow, slimeCode, false);
     const geminiSummon = getLuaRestoreLegalActions(restoredSummonWindow, 0).find((action) => action.type === "normalSummon" && action.uid === slime!.uid);
@@ -65,6 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
 
     const restoredBattleEntry = restoreDuelWithLuaScripts(serializeDuel(restoredSummonWindow.session), workspace, reader);
     expect(restoredBattleEntry.restoreComplete, restoredBattleEntry.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredBattleEntry.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredBattleEntry, 0)).toEqual(getGroupedDuelLegalActions(restoredBattleEntry.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredBattleEntry, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredBattleEntry, 0));
     assertGeminiStatus(restoredBattleEntry, slimeCode, true);
@@ -85,6 +87,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
 
     const restoredAttackWindow = restoreDuelWithLuaScripts(serializeDuel(restoredBattleEntry.session), workspace, reader);
     expect(restoredAttackWindow.restoreComplete, restoredAttackWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredAttackWindow.missingRegistryKeys).toEqual([]);
     assertGeminiStatus(restoredAttackWindow, slimeCode, true);
     const attack = getLuaRestoreLegalActions(restoredAttackWindow, 0).find(
       (action) => action.type === "declareAttack" && action.attackerUid === slime!.uid && action.targetUid === target!.uid,
@@ -96,6 +99,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
 
     const restoredDamageWindow = restoreDuelWithLuaScripts(serializeDuel(restoredAttackWindow.session), workspace, reader);
     expect(restoredDamageWindow.restoreComplete, restoredDamageWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredDamageWindow.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredDamageWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredDamageWindow.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredDamageWindow, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredDamageWindow, 1));
     passBattleResponses(restoredDamageWindow.session);

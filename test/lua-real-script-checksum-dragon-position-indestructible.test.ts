@@ -85,6 +85,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredDragon = restored.session.state.cards.find((card) => card.code === checksumDragonCode);
     const attackEffect = restored.session.state.effects.find((effect) => effect.sourceUid === checksumDragon!.uid && effect.code === 71 && effect.luaConditionDescriptor === "condition:source-attack-position");
     const defenseEffect = restored.session.state.effects.find((effect) => effect.sourceUid === checksumDragon!.uid && effect.code === 71 && effect.luaConditionDescriptor === "condition:source-defense-position");
@@ -154,6 +155,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredDragon = restored.session.state.cards.find((card) => card.code === checksumDragonCode);
     const attackEffect = restored.session.state.effects.find((effect) => effect.sourceUid === checksumDragon!.uid && effect.code === 71 && effect.luaConditionDescriptor === "condition:source-attack-position");
     const defenseEffect = restored.session.state.effects.find((effect) => effect.sourceUid === checksumDragon!.uid && effect.code === 71 && effect.luaConditionDescriptor === "condition:source-defense-position");
@@ -202,6 +204,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredDragon = restored.session.state.cards.find((card) => card.code === checksumDragonCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === checksumDragon!.uid && effect.code === 42);
     expect(restoredDragon).toBeDefined();

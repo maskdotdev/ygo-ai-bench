@@ -19,6 +19,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     expect(nibiruActions(belowThreshold.session, belowThreshold.nibiru)).toHaveLength(0);
     const restoredBelowThreshold = restoreDuelWithLuaScripts(serializeDuel(belowThreshold.session), belowThreshold.workspace, belowThreshold.reader);
     expect(restoredBelowThreshold.restoreComplete, restoredBelowThreshold.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredBelowThreshold.missingRegistryKeys).toEqual([]);
     expect(restoredBelowThreshold.session.state.flagEffects.filter((flag) => flag.code === Number(belowThreshold.nibiru.code))).toHaveLength(4);
     expect(nibiruRestoreActions(restoredBelowThreshold, belowThreshold.nibiru)).toHaveLength(0);
 
@@ -26,6 +27,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     expect(nibiruActions(atThreshold.session, atThreshold.nibiru)).toHaveLength(1);
     const restoredAtThreshold = restoreDuelWithLuaScripts(serializeDuel(atThreshold.session), atThreshold.workspace, atThreshold.reader);
     expect(restoredAtThreshold.restoreComplete, restoredAtThreshold.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredAtThreshold.missingRegistryKeys).toEqual([]);
     expect(restoredAtThreshold.session.state.flagEffects.filter((flag) => flag.code === Number(atThreshold.nibiru.code))).toHaveLength(5);
     expect(nibiruRestoreActions(restoredAtThreshold, atThreshold.nibiru)).toHaveLength(1);
   });

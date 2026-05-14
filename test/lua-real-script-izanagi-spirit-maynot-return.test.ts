@@ -45,10 +45,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Iz
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(izanagiCode), workspace).ok).toBe(true);
     expect(host.loadCardScript(Number(yataCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(1);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const restoredProcedureWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredProcedureWindow.restoreComplete, restoredProcedureWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredProcedureWindow.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredProcedureWindow, 0)).toEqual(getDuelLegalActions(restoredProcedureWindow.session, 0));
     const procedure = getLuaRestoreLegalActions(restoredProcedureWindow, 0).find((action) => action.type === "specialSummonProcedure" && action.uid === izanagi.uid);
     expect(procedure, JSON.stringify(getLuaRestoreLegalActions(restoredProcedureWindow, 0), null, 2)).toBeDefined();
@@ -72,6 +73,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Iz
 
     const restoredDecline = restoreDuelWithLuaScripts(returnSnapshot, workspace, reader);
     expect(restoredDecline.restoreComplete, restoredDecline.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredDecline.missingRegistryKeys).toEqual([]);
     const decline = getLuaRestoreLegalActions(restoredDecline, 0).find((action) => action.type === "declineTrigger" && action.uid === yata.uid);
     expect(decline, JSON.stringify(getLuaRestoreLegalActions(restoredDecline, 0), null, 2)).toBeDefined();
     const declined = applyLuaRestoreResponse(restoredDecline, decline!);
@@ -80,6 +82,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Iz
 
     const restoredActivate = restoreDuelWithLuaScripts(returnSnapshot, workspace, reader);
     expect(restoredActivate.restoreComplete, restoredActivate.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredActivate.missingRegistryKeys).toEqual([]);
     const activate = getLuaRestoreLegalActions(restoredActivate, 0).find((action) => action.type === "activateTrigger" && action.uid === yata.uid);
     expect(activate, JSON.stringify(getLuaRestoreLegalActions(restoredActivate, 0), null, 2)).toBeDefined();
     const activated = applyLuaRestoreResponse(restoredActivate, activate!);

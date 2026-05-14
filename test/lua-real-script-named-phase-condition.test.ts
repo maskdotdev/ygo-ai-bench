@@ -53,7 +53,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script na
 
     const host = createLuaScriptHost(session, workspace);
     for (const code of [fabledCode, strikeFighterCode, clownCrewCode]) expect(host.loadCardScript(Number(code), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(3);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ luaConditionDescriptor: "condition:main-phase", sourceUid: fabled!.uid }),
@@ -64,6 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script na
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredFabled = restored.session.state.cards.find((card) => card.code === fabledCode);
     const restoredStrikeFighter = restored.session.state.cards.find((card) => card.code === strikeFighterCode);
     const restoredClownCrew = restored.session.state.cards.find((card) => card.code === clownCrewCode);

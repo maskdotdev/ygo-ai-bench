@@ -134,6 +134,7 @@ function applyAndAssert(session: DuelSession, action: DuelAction): void {
 
 function expectRestoredChainLimit(restored: ReturnType<typeof restoreDuelWithLuaScripts>, registryKey: string): void {
   expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+  expect(restored.missingRegistryKeys).toEqual([]);
   expect(restored.missingChainLimitRegistryKeys).toEqual([]);
   expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
   for (const player of [0, 1] as const) {

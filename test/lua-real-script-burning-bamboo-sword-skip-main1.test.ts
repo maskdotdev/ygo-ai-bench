@@ -44,7 +44,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bu
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(burningCode), workspace).ok).toBe(true);
     expect(host.loadCardScript(Number(brokenCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(2);
     const activateBroken = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === broken.uid);
     expect(activateBroken, JSON.stringify(getDuelLegalActions(session, 0), null, 2)).toBeDefined();
     applyActionAndAssert(session, activateBroken);
@@ -55,6 +55,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bu
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredTrigger.missingRegistryKeys).toEqual([]);
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === burning.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     const result = applyLuaRestoreResponse(restoredTrigger, trigger!);
@@ -68,6 +69,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bu
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), workspace, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredLock.missingRegistryKeys).toEqual([]);
     moveToBattleMain2AndEnd(restoredLock.session, 0);
     expect(restoredLock.session.state).toMatchObject({ turnPlayer: 1, phase: "main1", waitingFor: 1 });
     const opponentActions = getLuaRestoreLegalActions(restoreDuelWithLuaScripts(serializeDuel(restoredLock.session), workspace, reader), 1);

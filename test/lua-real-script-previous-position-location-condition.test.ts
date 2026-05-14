@@ -16,7 +16,7 @@ const positionFaceUp = 0x5;
 const locationOnField = 0x0c;
 const locationSpellTrapZone = 0x08;
 
-function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
+function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
   return {
     duel,
     source,
@@ -73,10 +73,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredBlueEyesJetDragon = restored.session.state.cards.find((card) => card.code === blueEyesJetDragonCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === blueEyesJetDragon!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredBlueEyesJetDragon!);
+    const ctx = targetContext(restored.session.state, restoredBlueEyesJetDragon!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredBlueEyesJetDragon!.previousLocation = "hand";
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -104,7 +105,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(superviseCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-position-location:${positionFaceUp}:${locationOnField}`;
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
@@ -117,10 +118,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredSupervise = restored.session.state.cards.find((card) => card.code === superviseCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === supervise!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredSupervise!);
+    const ctx = targetContext(restored.session.state, restoredSupervise!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredSupervise!.previousPosition = "faceDownDefense";
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -148,7 +150,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(blueEyesJetDragonCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-position-location:${positionFaceUp}:${locationSpellTrapZone}`;
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
@@ -161,10 +163,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredBlueEyesJetDragon = restored.session.state.cards.find((card) => card.code === blueEyesJetDragonCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === blueEyesJetDragon!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredBlueEyesJetDragon!);
+    const ctx = targetContext(restored.session.state, restoredBlueEyesJetDragon!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredBlueEyesJetDragon!.previousLocation = "hand";
     expect(effect!.canActivate!(ctx)).toBe(false);

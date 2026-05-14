@@ -69,6 +69,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script En
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ event: "continuous", code: 203, sourceUid: ox!.uid, targetRange: [4, 0] }),
@@ -80,6 +81,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script En
     passBattleResponses(restored.session);
     expect(restored.session.state.battleDamage[1]).toBe(700);
     expect(restored.session.state.players[1].lifePoints).toBe(7300);
+    expect(restored.session.state.eventHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 700 }),
+      ]),
+    );
     expect(restored.session.state.cards.find((card) => card.uid === beastTarget!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
 
     const spellcasterAttack = getLegalActions(restored.session, 0).find(

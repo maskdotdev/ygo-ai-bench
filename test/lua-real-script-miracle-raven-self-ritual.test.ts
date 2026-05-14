@@ -52,7 +52,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(ravenCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const activate = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === raven!.uid);
     expect(activate).toBeDefined();
@@ -60,11 +60,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     expect(session.state.chain).toHaveLength(1);
     expect(session.state.chain[0]).toMatchObject({
       sourceUid: raven!.uid,
-      operationInfos: expect.arrayContaining([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x200 }]),
     });
+    expect(session.state.chain[0]?.operationInfos).toEqual(expect.arrayContaining([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x200 }]));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 

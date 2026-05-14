@@ -75,6 +75,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredShoreKnight = restored.session.state.cards.find((card) => card.code === shoreKnightCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === shoreKnight!.uid && effect.code === 71);
     expect(restoredShoreKnight).toBeDefined();
@@ -143,6 +144,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredRanvier = restored.session.state.cards.find((card) => card.code === ranvierCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === ranvier!.uid && effect.code === 71);
     expect(restoredEffect).toMatchObject({ luaConditionDescriptor: "condition:source-previous-position:5" });

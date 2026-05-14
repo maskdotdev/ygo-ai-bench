@@ -72,6 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gh
 
     const restoredOpenChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredOpenChain.restoreComplete, restoredOpenChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredOpenChain.missingRegistryKeys).toEqual([]);
     const ghostOgreAction = getLuaRestoreLegalActions(restoredOpenChain, 1).find((action) => action.type === "activateEffect" && action.uid === ghostOgre!.uid);
     expect(ghostOgreAction).toBeDefined();
     const chained = applyLuaRestoreResponse(restoredOpenChain, ghostOgreAction!);
@@ -85,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gh
 
     const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredOpenChain.session), source, reader);
     expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredPendingResolution.missingRegistryKeys).toEqual([]);
     const responsePlayer = restoredPendingResolution.session.state.waitingFor;
     expect(responsePlayer).toBeDefined();
     expect(getLuaRestoreLegalActionGroups(restoredPendingResolution, responsePlayer!)).toEqual(getGroupedDuelLegalActions(restoredPendingResolution.session, responsePlayer!));

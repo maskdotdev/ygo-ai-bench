@@ -62,10 +62,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(pigeonCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(1);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const restoredSummonWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredSummonWindow.restoreComplete, restoredSummonWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredSummonWindow.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredSummonWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredSummonWindow.session, 0));
     const summon = getLuaRestoreLegalActions(restoredSummonWindow, 0).find((action) => action.type === "normalSummon" && action.uid === pigeon!.uid);
     expect(summon, JSON.stringify(getLuaRestoreLegalActions(restoredSummonWindow, 0), null, 2)).toBeDefined();
@@ -73,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
 
     const restoredIgnitionWindow = restoreDuelWithLuaScripts(serializeDuel(restoredSummonWindow.session), source, reader);
     expect(restoredIgnitionWindow.restoreComplete, restoredIgnitionWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredIgnitionWindow.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredIgnitionWindow, 0)).toEqual(getDuelLegalActions(restoredIgnitionWindow.session, 0));
     const activation = getLuaRestoreLegalActions(restoredIgnitionWindow, 0).find((action) => action.type === "activateEffect" && action.uid === pigeon!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredIgnitionWindow, 0), null, 2)).toBeDefined();
@@ -88,6 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
 
     const restoredChainWindow = restoreDuelWithLuaScripts(serializeDuel(restoredIgnitionWindow.session), source, reader);
     expect(restoredChainWindow.restoreComplete, restoredChainWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredChainWindow.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredChainWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredChainWindow.session, 1));
     const pass = getLuaRestoreLegalActions(restoredChainWindow, 1).find((action) => action.type === "passChain");
     expect(pass, JSON.stringify(getLuaRestoreLegalActions(restoredChainWindow, 1), null, 2)).toBeDefined();
@@ -126,5 +129,6 @@ function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWit
   if (waitingFor !== undefined) {
     expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
     expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   }
 }

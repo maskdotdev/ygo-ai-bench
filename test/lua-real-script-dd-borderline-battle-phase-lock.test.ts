@@ -2,11 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { createDuel, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData } from "#duel/types.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
@@ -44,12 +44,22 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D.
     expect(getLegalActions(session, 0)).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "changePhase", phase: "battle" })]));
     let restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
-    expect(getLuaRestoreLegalActions(restored, 0)).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "changePhase", phase: "battle" })]));
+    expect(restored.missingRegistryKeys).toEqual([]);
+    let groups = getLuaRestoreLegalActionGroups(restored, 0);
+    let actions = getLuaRestoreLegalActions(restored, 0);
+    expect(groups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(groups.flatMap((group) => group.actions)).toEqual(actions);
+    expect(actions).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "changePhase", phase: "battle" })]));
 
     moveDuelCard(session.state, graveSpell!.uid, "graveyard", 0);
     expect(getLegalActions(session, 0)).toEqual(expect.arrayContaining([expect.objectContaining({ type: "changePhase", phase: "battle" })]));
     restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
-    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(expect.arrayContaining([expect.objectContaining({ type: "changePhase", phase: "battle" })]));
+    expect(restored.missingRegistryKeys).toEqual([]);
+    groups = getLuaRestoreLegalActionGroups(restored, 0);
+    actions = getLuaRestoreLegalActions(restored, 0);
+    expect(groups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(groups.flatMap((group) => group.actions)).toEqual(actions);
+    expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "changePhase", phase: "battle" })]));
   });
 });

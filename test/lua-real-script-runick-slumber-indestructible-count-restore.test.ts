@@ -59,6 +59,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ru
 
     const restoredProtection = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredProtection.restoreComplete, restoredProtection.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredProtection.missingRegistryKeys).toEqual([]);
     const battleDestroy = destroyDuelCard(restoredProtection.session.state, target!.uid, 0, duelReason.battle | duelReason.destroy, 1);
     expect(battleDestroy).toMatchObject({ uid: target!.uid, location: "monsterZone" });
     const effectDestroy = destroyDuelCard(restoredProtection.session.state, target!.uid, 0, duelReason.effect | duelReason.destroy, 1);

@@ -49,10 +49,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(simorghCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     restored.session.state.turnPlayer = 1;
     restored.session.state.phase = "main1";
     restored.session.state.waitingFor = 1;

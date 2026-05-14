@@ -37,7 +37,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ne
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(nekoCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const sent = host.loadScript(
       `
       local neko=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${nekoCode}),0,LOCATION_MZONE,0,1,1,nil):GetFirst()
@@ -53,6 +53,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ne
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredTrigger.missingRegistryKeys).toEqual([]);
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === neko.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTrigger.session, trigger);
@@ -70,6 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ne
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), workspace, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredLock.missingRegistryKeys).toEqual([]);
     const actions = getLuaRestoreLegalActions(restoredLock, 1);
     expect(actions).toEqual(getDuelLegalActions(restoredLock.session, 1));
     expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "endTurn", player: 1 })]));

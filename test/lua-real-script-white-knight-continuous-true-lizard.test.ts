@@ -54,7 +54,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wh
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(whiteKnightCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const effect = session.state.effects.find((candidate) => candidate.code === 51476410);
     expect(effect).toMatchObject({
       range: ["monsterZone"],
@@ -64,6 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wh
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredEffect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
     expect(restoredEffect).toMatchObject({
       range: ["monsterZone"],

@@ -86,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredRegulus = restored.session.state.cards.find((card) => card.code === regulusCode);
     const restoredOffSet = restored.session.state.cards.find((card) => card.code === offSetTargetCode);
     const restoredEffect = restored.session.state.effects.find((candidate) => candidate.code === 100 && candidate.sourceUid === regulus!.uid);
@@ -153,6 +154,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredRegulus = restored.session.state.cards.find((card) => card.code === regulusCode);
     const restoredOffSet = restored.session.state.cards.find((card) => card.code === offSetTargetCode);
     const restoredEffect = restored.session.state.effects.find((candidate) => candidate.code === 100 && candidate.sourceUid === regulus!.uid);
@@ -217,6 +219,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredRegulus = restored.session.state.cards.find((card) => card.code === regulusCode);
     const restoredTherion = restored.session.state.cards.find((card) => card.code === therionTargetCode);
     const restoredOffSet = restored.session.state.cards.find((card) => card.code === offSetTargetCode);

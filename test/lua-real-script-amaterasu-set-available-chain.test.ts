@@ -58,7 +58,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     expect(host.loadCardScript(Number(amaterasuCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(noblemanCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(3);
 
     const noblemanAction = getLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.uid === nobleman!.uid);
     expect(noblemanAction, JSON.stringify(getLegalActions(session, 1), null, 2)).toBeDefined();
@@ -75,7 +75,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
 
     const restoredOpenChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredOpenChain.restoreComplete, restoredOpenChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredOpenChain.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredOpenChain, 0)).toEqual(getGroupedDuelLegalActions(restoredOpenChain.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredOpenChain, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredOpenChain, 0));
     const amaterasuAction = getLuaRestoreLegalActions(restoredOpenChain, 0).find((action) => action.type === "activateEffect" && action.uid === amaterasu!.uid);
     expect(amaterasuAction, JSON.stringify(getLuaRestoreLegalActions(restoredOpenChain, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredOpenChain, amaterasuAction!);
@@ -96,6 +98,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
 
     const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredOpenChain.session), source, reader);
     expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredPendingResolution.missingRegistryKeys).toEqual([]);
     passUntilResolved(restoredPendingResolution);
 
     expect(restoredPendingResolution.session.state.chain).toHaveLength(0);

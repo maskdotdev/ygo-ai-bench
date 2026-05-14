@@ -48,6 +48,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
 
     const restoredOpen = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredOpen.restoreComplete, restoredOpen.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredOpen.missingRegistryKeys).toEqual([]);
     const ashResponse = getLuaRestoreLegalActions(restoredOpen, 1).find((action) => action.type === "activateEffect" && action.uid === ashBlossom!.uid);
     expect(ashResponse).toBeDefined();
     const chained = applyLuaRestoreResponse(restoredOpen, ashResponse!);
@@ -56,9 +57,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), workspace, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredChain.missingRegistryKeys).toEqual([]);
     const responsePlayer = restoredChain.session.state.waitingFor;
     expect(responsePlayer).toBeDefined();
     expect(getLuaRestoreLegalActionGroups(restoredChain, responsePlayer!)).toEqual(getGroupedDuelLegalActions(restoredChain.session, responsePlayer!));
+    expect(getLuaRestoreLegalActionGroups(restoredChain, responsePlayer!).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, responsePlayer!));
     resolveOpenChain(restoredChain);
 
     expect(restoredChain.session.state.cards.find((card) => card.uid === ashBlossom!.uid)).toMatchObject({ location: "graveyard" });

@@ -80,6 +80,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredWattfox = restored.session.state.cards.find((card) => card.code === wattfoxCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === wattfox!.uid && effect.code === 71);
     expect(restoredEffect).toMatchObject({
@@ -144,6 +145,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredWattfox = restored.session.state.cards.find((card) => card.code === wattfoxCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === wattfox!.uid && effect.code === 71);
     expect(restoredWattfox).toBeDefined();

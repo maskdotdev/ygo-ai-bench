@@ -1,0 +1,50 @@
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+
+const root = process.cwd();
+
+describe("Lua real stat restore coverage", () => {
+  it("requires stat-changing fixtures to assert clean Lua registry restore and restored battle outcomes", () => {
+    const missing = statFixtureFiles()
+      .filter(({ file, required }) => {
+        const text = fs.readFileSync(path.join(root, file), "utf8");
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("battleDamage")
+          || required.some((snippet) => !text.includes(snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(missing).toEqual([]);
+  });
+});
+
+function statFixtureFiles(): Array<{ file: string; required: string[] }> {
+  return [
+    {
+      file: "test/lua-real-script-fortune-lady-past-set-attack.test.ts",
+      required: [
+        "code: 101",
+        "code: 105",
+        'type === "declareAttack"',
+        "lifePoints).toBe(7700)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-shrink-set-base-attack.test.ts",
+      required: [
+        "restoredChain.missingRegistryKeys).toEqual([])",
+        "restoredBattle.missingRegistryKeys).toEqual([])",
+        "code: 103",
+        "value: 1000",
+        'type === "passChain"',
+        'type === "declareAttack"',
+        "host.messages).not.toContain",
+      ],
+    },
+  ].sort((a, b) => a.file.localeCompare(b.file));
+}

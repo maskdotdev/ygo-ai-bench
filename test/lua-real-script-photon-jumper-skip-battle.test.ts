@@ -46,7 +46,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(jumperCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const attack = getDuelLegalActions(session, 1).find((action) => action.type === "declareAttack" && action.attackerUid === attacker.uid && action.targetUid === target.uid);
     expect(attack, JSON.stringify(getDuelLegalActions(session, 1), null, 2)).toBeDefined();
     applyActionAndAssert(session, attack);
@@ -54,6 +54,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
 
     const restoredWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredWindow.restoreComplete, restoredWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredWindow.missingRegistryKeys).toEqual([]);
     const activate = getLuaRestoreLegalActions(restoredWindow, 0).find((action) => action.type === "activateTrigger" && action.uid === jumper.uid);
     expect(activate, JSON.stringify(getLuaRestoreLegalActions(restoredWindow, 0), null, 2)).toBeDefined();
     const result = applyLuaRestoreResponse(restoredWindow, activate!);
@@ -65,6 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredWindow.session), workspace, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredLock.missingRegistryKeys).toEqual([]);
     // Photon also ends the current Battle Phase; isolate the lingering self-turn lock after that current-turn skip.
     delete restoredLock.session.state.pendingBattle;
     delete restoredLock.session.state.currentAttack;

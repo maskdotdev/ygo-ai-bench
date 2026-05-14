@@ -40,7 +40,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(seaHorseCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const resolve = host.loadScript(
       `
       local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${seaHorseCode}),0,LOCATION_HAND,0,nil)
@@ -55,6 +55,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredLock.missingRegistryKeys).toEqual([]);
     assertSpecialProbe(restoredLock, summonProbeCode, "locked", ["sea horse can special locked false", "sea horse special locked 0"]);
 
     const endTurn = getLegalActions(restoredLock.session, 0).find((action) => action.type === "endTurn");

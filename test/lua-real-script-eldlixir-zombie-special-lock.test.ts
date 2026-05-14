@@ -45,7 +45,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script El
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(eldlixirCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const resolve = host.loadScript(
       `
       local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${eldlixirCode}),0,LOCATION_HAND,0,nil)
@@ -59,6 +59,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script El
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     assertSpecialProbe(restored, handZombieCode, warriorCode, "locked", ["eldlixir can special locked true/false", "eldlixir warrior special locked 0", "eldlixir zombie special locked 1"]);
 
     const endTurn = getLegalActions(restored.session, 0).find((action) => action.type === "endTurn");

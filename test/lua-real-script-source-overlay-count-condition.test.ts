@@ -92,6 +92,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredSargas = restored.session.state.cards.find((card) => card.code === sargasCode);
     const positiveEffect = restored.session.state.effects.find((effect) => effect.sourceUid === sargas!.uid && effect.luaConditionDescriptor === "condition:source-overlay-count-positive");
     const zeroEffect = restored.session.state.effects.find((effect) => effect.sourceUid === sargas!.uid && effect.luaConditionDescriptor === "condition:source-overlay-count-zero");
@@ -162,6 +163,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredSargas = restored.session.state.cards.find((card) => card.code === sargasCode);
     const positiveEffect = restored.session.state.effects.find((effect) => effect.sourceUid === sargas!.uid && effect.luaConditionDescriptor === "condition:source-overlay-count-positive");
     const zeroEffect = restored.session.state.effects.find((effect) => effect.sourceUid === sargas!.uid && effect.luaConditionDescriptor === "condition:source-overlay-count-zero");
@@ -238,6 +240,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredSargas = restored.session.state.cards.find((card) => card.code === sargasCode);
     const positiveEffect = restored.session.state.effects.find((effect) => effect.sourceUid === sargas!.uid && effect.luaConditionDescriptor === "condition:source-overlay-count-positive");
     const zeroEffect = restored.session.state.effects.find((effect) => effect.sourceUid === sargas!.uid && effect.luaConditionDescriptor === "condition:source-overlay-count-zero");

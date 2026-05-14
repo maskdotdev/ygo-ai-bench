@@ -76,6 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredSegment = restored.session.state.cards.find((card) => card.code === vylonSegmentCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === vylonSegment!.uid && effect.code === 71);
     expect(restoredSegment).toBeDefined();
@@ -145,6 +146,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredDreamClown = restored.session.state.cards.find((card) => card.code === dreamClownCode);
     const restoredEffect = restored.session.state.effects.find((effect) => effect.sourceUid === dreamClown!.uid && effect.code === 71);
     expect(restoredEffect).toMatchObject({ luaConditionDescriptor: descriptor });

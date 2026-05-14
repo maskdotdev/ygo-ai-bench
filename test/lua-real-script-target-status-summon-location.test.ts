@@ -38,7 +38,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ta
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(legacyCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -51,6 +51,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ta
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredSprind = restored.session.state.cards.find((card) => card.code === sprindCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === legacy!.uid && candidate.luaTargetDescriptor === `target:status-summon-location:${statusSpecialSummonTurn}:${locationExtra}`);
     expect(effect?.targetCardPredicate).toBeDefined();

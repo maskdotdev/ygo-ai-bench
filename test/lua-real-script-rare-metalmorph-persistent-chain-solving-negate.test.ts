@@ -60,10 +60,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ra
     expect(host.loadCardScript(Number(rareMetalmorphCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(bookOfMoonCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(1);
+    expect(host.registerInitialEffects()).toBe(3);
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredActivation.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === rareMetalmorph!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
@@ -77,6 +78,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ra
 
     const restoredRareChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredRareChain.restoreComplete, restoredRareChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredRareChain.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredRareChain, 1)).toEqual(getGroupedDuelLegalActions(restoredRareChain.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredRareChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredRareChain, 1));
     resolveRestoredChain(restoredRareChain);
@@ -90,6 +92,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ra
     const persistentSnapshot = serializeDuel(restoredRareChain.session);
     const restoredPersistent = restoreDuelWithLuaScripts(persistentSnapshot, source, reader);
     expect(restoredPersistent.restoreComplete, restoredPersistent.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredPersistent.missingRegistryKeys).toEqual([]);
     const persistentProbe = restoredPersistent.host.loadScript(
       persistentRareMetalmorphProbeScript(rareMetalmorphCode, targetCode),
       "rare-metalmorph-persistent-probe.lua",
@@ -108,6 +111,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ra
 
     const restoredBookChain = restoreDuelWithLuaScripts(serializeDuel(restoredPersistent.session), source, reader);
     expect(restoredBookChain.restoreComplete, restoredBookChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredBookChain.missingRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredBookChain);
     expect(restoredBookChain.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({
       location: "monsterZone",
@@ -119,6 +123,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ra
 
     const restoredTargetSent = restoreDuelWithLuaScripts(persistentSnapshot, source, reader);
     expect(restoredTargetSent.restoreComplete, restoredTargetSent.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredTargetSent.missingRegistryKeys).toEqual([]);
     sendDuelCardToGraveyard(restoredTargetSent.session.state, target!.uid, 0, duelReason.effect, 0);
     expect(restoredTargetSent.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredTargetSent.session.state.cards.find((card) => card.uid === rareMetalmorph!.uid)).toMatchObject({

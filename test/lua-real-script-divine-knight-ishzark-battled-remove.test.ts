@@ -66,6 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.session.state.pendingBattle).toMatchObject({
       resultApplied: true,
       deferredBattleDestroyed: [{ uid: target!.uid, reasonPlayer: 0, reasonCardUid: ishzark!.uid }],

@@ -15,7 +15,7 @@ const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.
 const racePlant = 0x400;
 const raceDragon = 0x2000;
 
-function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
+function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
   return {
     duel,
     source,
@@ -81,11 +81,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredRose = restored.session.state.cards.find((card) => card.code === roseCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === rose!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredRose!);
+    const ctx = targetContext(restored.session.state, restoredRose!);
     expect(effect!.canActivate!(ctx)).toBe(false);
     restored.session.state.currentAttack = { attackerUid: restoredRose!.uid, targetUid: restoredTarget!.uid };
     expect(effect!.canActivate!(ctx)).toBe(true);
@@ -117,7 +118,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(roseCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -129,11 +130,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredRose = restored.session.state.cards.find((card) => card.code === roseCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === rose!.uid && candidate.luaConditionDescriptor === `condition:source-battle-target-race:${racePlant}`);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredRose!);
+    const ctx = targetContext(restored.session.state, restoredRose!);
     expect(effect!.canActivate!(ctx)).toBe(false);
     restored.session.state.currentAttack = { attackerUid: restoredRose!.uid, targetUid: restoredTarget!.uid };
     expect(effect!.canActivate!(ctx)).toBe(true);
@@ -192,11 +194,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredRose = restored.session.state.cards.find((card) => card.code === roseCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === rose!.uid && candidate.luaConditionDescriptor === `condition:source-battle-target-race:${racePlant}`);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredRose!);
+    const ctx = targetContext(restored.session.state, restoredRose!);
     expect(effect!.canActivate!(ctx)).toBe(false);
     restored.session.state.currentAttack = { attackerUid: restoredRose!.uid, targetUid: restoredTarget!.uid };
     expect(effect!.canActivate!(ctx)).toBe(true);

@@ -82,11 +82,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     expect(session.state.chain).toHaveLength(1);
     expect(session.state.chain[0]).toMatchObject({
       sourceUid: machineAngel!.uid,
-      operationInfos: expect.arrayContaining([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }]),
     });
+    expect(session.state.chain[0]?.operationInfos).toEqual(expect.arrayContaining([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }]));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 

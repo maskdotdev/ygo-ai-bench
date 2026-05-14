@@ -13,7 +13,7 @@ const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
-function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
+function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
   return {
     duel,
     source,
@@ -50,7 +50,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(puppyCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -62,11 +62,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredPuppy = restored.session.state.cards.find((card) => card.code === puppyCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === puppy!.uid && candidate.luaConditionDescriptor === "condition:source-battle-target-opponent");
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredPuppy!);
+    const ctx = targetContext(restored.session.state, restoredPuppy!);
     expect(effect!.canActivate!(ctx)).toBe(false);
     restored.session.state.currentAttack = { attackerUid: restoredTarget!.uid, targetUid: restoredPuppy!.uid };
     expect(effect!.canActivate!(ctx)).toBe(true);
@@ -96,7 +97,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(sigmaCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -108,11 +109,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredSigma = restored.session.state.cards.find((card) => card.code === sigmaCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === sigma!.uid && candidate.luaConditionDescriptor === "condition:source-battle-target-opponent");
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredSigma!);
+    const ctx = targetContext(restored.session.state, restoredSigma!);
     expect(effect!.canActivate!(ctx)).toBe(false);
     restored.session.state.currentAttack = { attackerUid: restoredSigma!.uid, targetUid: restoredTarget!.uid };
     expect(effect!.canActivate!(ctx)).toBe(true);
@@ -167,11 +169,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredSigma = restored.session.state.cards.find((card) => card.code === sigmaCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === sigma!.uid && candidate.luaConditionDescriptor === "condition:source-battle-target-opponent");
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredSigma!);
+    const ctx = targetContext(restored.session.state, restoredSigma!);
     expect(effect!.canActivate!(ctx)).toBe(false);
     restored.session.state.currentAttack = { attackerUid: restoredSigma!.uid, targetUid: restoredTarget!.uid };
     expect(effect!.canActivate!(ctx)).toBe(true);

@@ -16,7 +16,7 @@ const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.
 const positionFaceUpAttack = 0x1;
 const locationGraveyard = 0x10;
 
-function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
+function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
   return {
     duel,
     source,
@@ -72,10 +72,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredWisp = restored.session.state.cards.find((card) => card.code === wispCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === wisp!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredWisp!);
+    const ctx = targetContext(restored.session.state, restoredWisp!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredWisp!.reason = duelReason.effect;
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -103,7 +104,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(wispCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -115,11 +116,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredWisp = restored.session.state.cards.find((card) => card.code === wispCode);
     const descriptor = `condition:source-previous-position-location-reason:${positionFaceUpAttack}:${locationGraveyard}:${duelReason.battle}`;
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === wisp!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredWisp!);
+    const ctx = targetContext(restored.session.state, restoredWisp!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredWisp!.previousPosition = "faceUpDefense";
     expect(effect!.canActivate!(ctx)).toBe(false);

@@ -2,12 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -51,10 +51,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ev
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(evequeCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(1);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     const geminiSummon = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "normalSummon" && action.uid === eveque!.uid);
     expect(geminiSummon, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
@@ -62,6 +63,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ev
 
     const triggerRestored = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(triggerRestored.restoreComplete, triggerRestored.incompleteReasons.join("; ")).toBe(true);
+    expect(triggerRestored.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(triggerRestored, 0)).toEqual(getGroupedDuelLegalActions(triggerRestored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(triggerRestored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(triggerRestored, 0));
     expect(getLuaRestoreLegalActions(triggerRestored, 0)).toEqual(getDuelLegalActions(triggerRestored.session, 0));
     const trigger = getLuaRestoreLegalActions(triggerRestored, 0).find((action) => action.type === "activateTrigger" && action.uid === eveque!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(triggerRestored, 0), null, 2)).toBeDefined();
@@ -74,6 +78,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ev
 
     const chainRestored = restoreDuelWithLuaScripts(serializeDuel(triggerRestored.session), source, reader);
     expect(chainRestored.restoreComplete, chainRestored.incompleteReasons.join("; ")).toBe(true);
+    expect(chainRestored.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(chainRestored, 1)).toEqual(getGroupedDuelLegalActions(chainRestored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(chainRestored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(chainRestored, 1));
     expect(getLuaRestoreLegalActions(chainRestored, 1)).toEqual(getDuelLegalActions(chainRestored.session, 1));
     expect(getLuaRestoreLegalActions(chainRestored, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     const pass = getLuaRestoreLegalActions(chainRestored, 1).find((action) => action.type === "passChain");
@@ -85,6 +92,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ev
       controller: 0,
       faceUp: true,
     });
+    expect(chainRestored.session.state.eventHistory).toEqual(
+      expect.arrayContaining([expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventCardUid: target!.uid })]),
+    );
     expect(chainRestored.host.messages).not.toContain("evocator eveque responder resolved");
   });
 });

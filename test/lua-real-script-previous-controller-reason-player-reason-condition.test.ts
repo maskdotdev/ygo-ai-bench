@@ -14,7 +14,7 @@ const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
-function conditionContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
+function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
   return {
     duel,
     source,
@@ -69,10 +69,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredMikorange = restored.session.state.cards.find((card) => card.code === mikorangeCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === mikorange!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredMikorange!);
+    const ctx = targetContext(restored.session.state, restoredMikorange!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredMikorange!.reasonPlayer = 0;
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -103,7 +104,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(messengelatoCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-controller-reason-player-reason:${duelReason.destroy}:opponent`;
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
@@ -116,10 +117,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredMessengelato = restored.session.state.cards.find((card) => card.code === messengelatoCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === messengelato!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredMessengelato!);
+    const ctx = targetContext(restored.session.state, restoredMessengelato!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredMessengelato!.reasonPlayer = 0;
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -148,7 +150,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(novaCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-controller-reason-player-reason:${duelReason.effect}:opponent`;
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
@@ -161,10 +163,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredNova = restored.session.state.cards.find((card) => card.code === novaCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === nova!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredNova!);
+    const ctx = targetContext(restored.session.state, restoredNova!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredNova!.reasonPlayer = 0;
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -191,7 +194,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(nightCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-controller-reason-player-reason:${duelReason.destroy}:opponent`;
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
@@ -204,10 +207,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredNight = restored.session.state.cards.find((card) => card.code === nightCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === night!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredNight!);
+    const ctx = targetContext(restored.session.state, restoredNight!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredNight!.reasonPlayer = 0;
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -233,16 +237,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(magicianCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-controller-reason-player-reason:${duelReason.effect}:opponent`;
     expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: magician!.uid })]));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredMagician = restored.session.state.cards.find((card) => card.code === magicianCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === magician!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredMagician!);
+    const ctx = targetContext(restored.session.state, restoredMagician!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredMagician!.reasonPlayer = 0;
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -265,16 +270,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(falconCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-controller-reason-player-reason:${duelReason.destroy}:opponent`;
     expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: falcon!.uid })]));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredFalcon = restored.session.state.cards.find((card) => card.code === falconCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === falcon!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredFalcon!);
+    const ctx = targetContext(restored.session.state, restoredFalcon!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredFalcon!.reason = duelReason.effect;
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -297,16 +303,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(mikorangeCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-controller-reason-player-reason:${duelReason.destroy}:opponent`;
     expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: mikorange!.uid })]));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredMikorange = restored.session.state.cards.find((card) => card.code === mikorangeCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === mikorange!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredMikorange!);
+    const ctx = targetContext(restored.session.state, restoredMikorange!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredMikorange!.reasonPlayer = 0;
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -332,16 +339,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const host = createLuaScriptHost(session, workspace);
     const register = host.loadCardScript(Number(logesFlameCode), workspace);
     expect(register.ok, register.error).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-controller-reason-player-reason:${duelReason.effect}:opponent`;
     expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: logesFlame!.uid })]));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredLogesFlame = restored.session.state.cards.find((card) => card.code === logesFlameCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === logesFlame!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
-    const ctx = conditionContext(restored.session.state, restoredLogesFlame!);
+    const ctx = targetContext(restored.session.state, restoredLogesFlame!);
     expect(effect!.canActivate!(ctx)).toBe(true);
     restoredLogesFlame!.previousController = 1;
     expect(effect!.canActivate!(ctx)).toBe(false);

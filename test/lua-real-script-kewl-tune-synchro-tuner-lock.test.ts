@@ -44,7 +44,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ke
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(kewlTuneCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const activate = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === kewlTune!.uid);
     expect(activate, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
     applyAndAssert(session, activate!);
@@ -52,6 +52,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ke
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const probe = restored.host.loadScript(
       `
       local tuner=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${tunerCode}),0,LOCATION_HAND,0,nil)

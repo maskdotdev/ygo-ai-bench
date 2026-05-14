@@ -50,10 +50,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(asuraCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
 
     const restoredSetup = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredSetup.restoreComplete, restoredSetup.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredSetup.missingRegistryKeys).toEqual([]);
     expect(restoredSetup.session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ event: "continuous", code: 193, sourceUid: asura!.uid })]));
     const openingActions = getLuaRestoreLegalActions(restoredSetup, 0);
     expect(hasAttack(openingActions, asura!.uid, firstTarget!.uid)).toBe(true);
@@ -70,6 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
 
     const restoredSecondAttack = restoreDuelWithLuaScripts(serializeDuel(restoredSetup.session), workspace, reader);
     expect(restoredSecondAttack.restoreComplete, restoredSecondAttack.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredSecondAttack.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredSecondAttack, 0)).toEqual(getGroupedDuelLegalActions(restoredSecondAttack.session, 0));
     expect(getLuaRestoreLegalActions(restoredSecondAttack, 0)).toEqual(getDuelLegalActions(restoredSecondAttack.session, 0));
     const secondActions = getLuaRestoreLegalActions(restoredSecondAttack, 0);

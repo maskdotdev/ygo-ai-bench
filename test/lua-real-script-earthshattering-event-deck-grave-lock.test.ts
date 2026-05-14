@@ -41,7 +41,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ea
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(earthshatteringCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const mill = host.loadScript(
       `
       local c=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${sentFromDeckCode}),0,LOCATION_DECK,0,1,1,nil):GetFirst()
@@ -54,6 +54,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ea
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredTrigger.missingRegistryKeys).toEqual([]);
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === earthshattering!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     const activated = applyLuaRestoreResponse(restoredTrigger, trigger!);
@@ -62,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ea
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), workspace, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredLock.missingRegistryKeys).toEqual([]);
     assertDeckGraveLock(restoredLock, lockedSelfCode, lockedOpponentCode, "locked", [
       "earthshattering self able grave locked false",
       "earthshattering opp able grave locked false",

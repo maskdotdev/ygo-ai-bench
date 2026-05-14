@@ -70,7 +70,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(primiteFusionCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const activate = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === primiteFusion!.uid);
     expect(activate).toBeDefined();
@@ -86,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredChainLink = restored.session.state.chain[0]!;
     expect(restoredChainLink.operationInfos).toEqual(
       expect.arrayContaining([
@@ -163,7 +164,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(primiteFusionCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(1);
+    expect(host.registerInitialEffects()).toBe(1);
 
     expect(getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === primiteFusion!.uid)).toBeUndefined();
   });

@@ -49,7 +49,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script tu
 
     const host = createLuaScriptHost(session, workspace);
     for (const code of [battleManiaCode, elephunCode]) expect(host.loadCardScript(Number(code), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(2);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ luaConditionDescriptor: "condition:turn-player-phase:opponent:2", sourceUid: battleMania!.uid }),
@@ -59,6 +59,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script tu
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredBattleMania = restored.session.state.cards.find((card) => card.code === battleManiaCode);
     const restoredElephun = restored.session.state.cards.find((card) => card.code === elephunCode);
     const opponentStandbyEffect = restored.session.state.effects.find((effect) => effect.sourceUid === battleMania!.uid && effect.luaConditionDescriptor === "condition:turn-player-phase:opponent:2");

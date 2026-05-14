@@ -55,7 +55,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script co
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(sourceCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const register = host.loadScript(
       `
       local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${sourceCode}),0,LOCATION_MZONE,0,nil)
@@ -74,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script co
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const effect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
     const restoredSource = restored.session.state.cards.find((card) => card.code === sourceCode);
     const aesir = restored.session.state.cards.find((card) => card.code === aesirCode);

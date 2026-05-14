@@ -55,7 +55,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(slothCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const effect = session.state.effects.find((candidate) => candidate.code === 51476410);
     expect(effect).toMatchObject({
       luaTargetDescriptor: `target:not-original-setcode:${setAmorphage}`,
@@ -66,6 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredEffect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
     const source = restored.session.state.cards.find((card) => card.code === slothCode);
     const amorphage = restored.session.state.cards.find((card) => card.code === amorphageCode);

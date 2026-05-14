@@ -42,7 +42,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(roarCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(1);
+    expect(host.registerInitialEffects()).toBe(1);
 
     const activate = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === roar!.uid);
     expect(activate).toBeDefined();
@@ -51,6 +51,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredActivation.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredActivation, 1)).toEqual(getGroupedDuelLegalActions(restoredActivation.session, 1));
     resolveOpenChain(restoredActivation.session);
     expect(restoredActivation.session.state.cards.find((card) => card.uid === darkMagician!.uid)).toMatchObject({
@@ -74,6 +75,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
 
     const restoredProtection = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), workspace, reader);
     expect(restoredProtection.restoreComplete, restoredProtection.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredProtection.missingRegistryKeys).toEqual([]);
     expect(restoredProtection.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -100,6 +102,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredProtection.session), workspace, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredTrigger.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredTrigger, 1)).toEqual(getGroupedDuelLegalActions(restoredTrigger.session, 1));
     resolveOpenChain(restoredTrigger.session);
     expect(restoredTrigger.session.state.cards.find((card) => card.uid === opponentMonster!.uid)).toMatchObject({ location: "banished", faceUp: true });

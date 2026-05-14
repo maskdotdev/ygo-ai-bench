@@ -55,7 +55,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     expect(host.loadCardScript(Number(shopinaCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(fireResponderCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(lightResponderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(3);
+    expect(host.registerInitialEffects()).toBe(3);
 
     const activation = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === shopina.uid);
     expect(activation, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
@@ -63,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.session.state.cards.find((card) => card.uid === shopina.uid)).toMatchObject({ location: "monsterZone" });
     expect(restored.session.state.cards.find((card) => card.uid === target.uid)).toMatchObject({ location: "hand" });
     expect(restored.session.state.effects.find((effect) => effect.sourceUid === shopina.uid && effect.code === 6)).toMatchObject({
@@ -73,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredLock.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredLock, 0).some((action) => action.type === "activateEffect" && action.uid === fireResponder.uid)).toBe(false);
     expect(getLuaRestoreLegalActions(restoredLock, 0).some((action) => action.type === "activateEffect" && action.uid === lightResponder.uid)).toBe(true);
   });

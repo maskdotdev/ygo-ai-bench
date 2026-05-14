@@ -49,7 +49,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script tu
 
     const host = createLuaScriptHost(session, workspace);
     for (const code of [maliciousmagnetCode, shiningStarCode]) expect(host.loadCardScript(Number(code), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(2);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ luaConditionDescriptor: "condition:turn-player:self-main-phase", sourceUid: maliciousmagnet!.uid }),
@@ -59,6 +59,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script tu
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredMaliciousmagnet = restored.session.state.cards.find((card) => card.code === maliciousmagnetCode);
     const restoredShiningStar = restored.session.state.cards.find((card) => card.code === shiningStarCode);
     const selfMainPhaseEffect = restored.session.state.effects.find((effect) => effect.sourceUid === maliciousmagnet!.uid && effect.luaConditionDescriptor === "condition:turn-player:self-main-phase");

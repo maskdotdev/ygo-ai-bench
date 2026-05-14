@@ -66,7 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script R-
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(oracleCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -80,6 +80,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script R-
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const legalActions = getLegalActions(restored.session, 0);
     expect(legalActions.some((action) => action.type === "synchroSummon" && action.uid === nonGenexSynchro!.uid)).toBe(false);
     expect(() => synchroSummonDuelCard(restored.session.state, 0, nonGenexSynchro!.uid, [oracle!.uid, nonTuner!.uid])).toThrow("cannot be used as synchro material");

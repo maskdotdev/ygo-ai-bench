@@ -35,6 +35,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.session.state.effects).toEqual(expect.arrayContaining([
       expect.objectContaining({ code: 92, sourceUid: kochi!.uid, luaCostDescriptor: `cost:special-summon-type-not:${luaSummonTypeSpecial + 182}` }),
     ]));
@@ -68,6 +69,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.session.state.effects).toEqual(expect.arrayContaining([
       expect.objectContaining({ code: 92, sourceUid: spiritMessage!.uid, luaCostDescriptor: `cost:special-summon-type-is:${luaSummonTypeSpecial + 181}` }),
     ]));

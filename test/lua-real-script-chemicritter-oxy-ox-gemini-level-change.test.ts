@@ -55,10 +55,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(oxyOxCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const restoredInitial = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredInitial.restoreComplete, restoredInitial.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredInitial.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredInitial, 0)).toEqual(getDuelLegalActions(restoredInitial.session, 0));
     const geminiSummon = getLuaRestoreLegalActions(restoredInitial, 0).find((action) => action.type === "normalSummon" && action.uid === oxyOx!.uid);
     expect(geminiSummon, JSON.stringify(getLuaRestoreLegalActions(restoredInitial, 0), null, 2)).toBeDefined();
@@ -66,6 +67,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
 
     const restoredIgnition = restoreDuelWithLuaScripts(serializeDuel(restoredInitial.session), source, reader);
     expect(restoredIgnition.restoreComplete, restoredIgnition.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredIgnition.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredIgnition, 0)).toEqual(getDuelLegalActions(restoredIgnition.session, 0));
     assertGeminiStatus(restoredIgnition, oxyOxCode, true);
     expect(currentLevel(restoredIgnition.session.state.cards.find((card) => card.uid === oxyOx!.uid), restoredIgnition.session.state)).toBe(oxyOx!.data.level);
@@ -79,6 +81,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredIgnition.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredChain.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
     expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredChain);
@@ -99,6 +102,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
 
     const restoredAfterLevel = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredAfterLevel.restoreComplete, restoredAfterLevel.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredAfterLevel.missingRegistryKeys).toEqual([]);
     expect(currentLevel(restoredAfterLevel.session.state.cards.find((card) => card.uid === oxyOx!.uid), restoredAfterLevel.session.state)).toBe(target!.data.level);
     assertLuaLevel(restoredAfterLevel, oxyOxCode, target!.data.level ?? 0);
     expect(restoredAfterLevel.host.messages).not.toContain("chemicritter oxy ox responder resolved");

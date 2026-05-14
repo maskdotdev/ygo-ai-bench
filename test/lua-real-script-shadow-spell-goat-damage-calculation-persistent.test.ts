@@ -64,10 +64,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script GO
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(shadowSpellCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(1);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const restoredSetup = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
-    expect(restoredSetup.restoreComplete, restoredSetup.incompleteReasons.join("; ")).toBe(true);
+    expectCleanRestore(restoredSetup);
     const attack = getLuaRestoreLegalActions(restoredSetup, 1).find(
       (action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && action.targetUid === target!.uid,
     );
@@ -80,7 +80,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script GO
 
     advanceRestoredBattleWindow(restoredSetup, "duringDamageCalculation", shadowSpell!.uid);
     const restoredDamageCalculation = restoreDuelWithLuaScripts(serializeDuel(restoredSetup.session), source, reader);
-    expect(restoredDamageCalculation.restoreComplete, restoredDamageCalculation.incompleteReasons.join("; ")).toBe(true);
+    expectCleanRestore(restoredDamageCalculation);
     expect(restoredDamageCalculation.session.state.battleWindow?.kind).toBe("duringDamageCalculation");
     expect(getLuaRestoreLegalActionGroups(restoredDamageCalculation, 0)).toEqual(getGroupedDuelLegalActions(restoredDamageCalculation.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredDamageCalculation, 0).flatMap((group) => group.actions)).toEqual(
@@ -99,7 +99,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script GO
     expect(getLuaRestoreLegalActions(restoredDamageCalculation, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredDamageCalculation.session), source, reader);
-    expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expectCleanRestore(restoredChain);
     resolveRestoredChain(restoredChain);
     expect(restoredChain.session.state.cards.find((card) => card.uid === shadowSpell!.uid)).toMatchObject({
       location: "spellTrapZone",
@@ -110,7 +110,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script GO
     expectShadowSpellProbe(restoredChain, shadowSpellCode, attackerCode, "shadow spell persistent true/true/1/1500");
 
     const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
-    expect(restoredBattle.restoreComplete, restoredBattle.incompleteReasons.join("; ")).toBe(true);
+    expectCleanRestore(restoredBattle);
     passBattleResponses(restoredBattle);
     expect(restoredBattle.session.state.battleDamage[0]).toBe(500);
     expect(restoredBattle.session.state.players[0].lifePoints).toBe(7500);
@@ -196,6 +196,11 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
     expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   }
+}
+
+function expectCleanRestore(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+  expect(restored.missingRegistryKeys).toEqual([]);
 }
 
 function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {

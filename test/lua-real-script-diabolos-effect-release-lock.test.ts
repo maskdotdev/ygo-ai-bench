@@ -38,13 +38,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(diabolosCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([expect.objectContaining({ event: "continuous", code: 48, sourceUid: diabolos!.uid, value: 1 })]),
     );
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const probe = restored.host.loadScript(
       `
       local diabolos=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${diabolosCode}),0,LOCATION_MZONE,0,1,1,nil):GetFirst()
@@ -62,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
 
     const costRestored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(costRestored.restoreComplete, costRestored.incompleteReasons.join("; ")).toBe(true);
+    expect(costRestored.missingRegistryKeys).toEqual([]);
     const costProbe = costRestored.host.loadScript(
       `
       local diabolos=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${diabolosCode}),0,LOCATION_MZONE,0,1,1,nil):GetFirst()

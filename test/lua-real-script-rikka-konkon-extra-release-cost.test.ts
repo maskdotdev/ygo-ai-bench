@@ -48,7 +48,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ri
     expect(host.loadCardScript(Number(helleboreCode), workspace).ok).toBe(true);
     const registrations = host.registerInitialEffectsDetailed();
     expect(registrations.filter((result) => !result.skipped).every((result) => result.ok), JSON.stringify(registrations, null, 2)).toBe(true);
-    expect(registrations.filter((result) => result.ok && !result.skipped).length).toBeGreaterThanOrEqual(2);
+    expect(registrations.filter((result) => result.ok && !result.skipped).length).toBe(2);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ event: "continuous", code: 158, sourceUid: konkon!.uid }),
@@ -58,6 +58,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ri
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === hellebore!.uid);
     expect(action, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();

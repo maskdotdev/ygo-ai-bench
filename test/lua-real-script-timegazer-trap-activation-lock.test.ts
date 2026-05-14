@@ -52,7 +52,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ti
     expect(host.loadCardScript(Number(timegazerCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(spellCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(trapCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(2);
+    expect(host.registerInitialEffects()).toBe(3);
     expect(getDuelLegalActions(session, 1).some((action) => action.type === "activateEffect" && action.uid === spell.uid)).toBe(true);
     expect(getDuelLegalActions(session, 1).some((action) => action.type === "activateEffect" && action.uid === trap.uid)).toBe(true);
 
@@ -68,6 +68,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ti
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredLock.missingRegistryKeys).toEqual([]);
     expect(restoredLock.session.state.effects.find((effect) => effect.sourceUid === timegazer.uid && effect.code === 6)).toMatchObject({
       event: "continuous",
       targetRange: [0, 1],

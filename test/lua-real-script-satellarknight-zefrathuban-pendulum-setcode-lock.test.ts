@@ -48,13 +48,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(zefrathubanCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
       luaTargetDescriptor: `target:pendulum-summon-not-setcode:${setTellarknight},${setZefra}`,
     });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const probe = restored.host.loadScript(
       `
       local tellarknight=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${tellarknightCode}),0,LOCATION_HAND,0,nil)

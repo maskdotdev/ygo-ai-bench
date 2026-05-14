@@ -1,0 +1,60 @@
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+
+const root = process.cwd();
+
+describe("Lua real attack-permission restore coverage", () => {
+  it("requires representative attack permission and cost fixtures to assert clean Lua restore", () => {
+    const missing = realScriptAttackPermissionFixtureFiles()
+      .filter(({ file, required }) => {
+        const text = fs.readFileSync(path.join(root, file), "utf8");
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActions")
+          || required.some((snippet) => !text.includes(snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(missing).toEqual([]);
+  });
+});
+
+function realScriptAttackPermissionFixtureFiles(): Array<{ file: string; required: string[] }> {
+  return [
+    {
+      file: "test/lua-real-script-dark-elf-attack-cost.test.ts",
+      required: [
+        "code: 96",
+        "attackCostPaid).toBe(1)",
+        "lifePointCostPaid",
+      ],
+    },
+    {
+      file: "test/lua-real-script-misfortune-cannot-attack-lock.test.ts",
+      required: [
+        "code === 85",
+        "targetRange: [0x04, 0]",
+        "misfortune attacker can attack false",
+      ],
+    },
+    {
+      file: "test/lua-real-script-true-sun-god-special-summon-attack-lock.test.ts",
+      required: [
+        "code: 85",
+        "hasAttack(actions, specialAttacker.uid, target.uid)).toBe(false)",
+        "true sun god can attack false/true",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ultimate-tyranno-attack-lock.test.ts",
+      required: [
+        "code: 85",
+        "code: 193",
+        "ultimate tyranno can attack true/false",
+      ],
+    },
+  ].sort((a, b) => a.file.localeCompare(b.file));
+}

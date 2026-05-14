@@ -2,11 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -43,7 +43,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sy
       session.state.waitingFor = 0;
       const host = createLuaScriptHost(session, workspace);
       expect(host.loadCardScript(Number(overmindArchfiendCode), workspace).ok).toBe(true);
-      expect(host.registerInitialEffects()).toBeGreaterThan(0);
+      expect(host.registerInitialEffects()).toBe(1);
       expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.data).toMatchObject({
         synchroTunerMin: 1,
         synchroTunerMax: 1,
@@ -54,7 +54,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sy
       });
       const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
       expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+      expect(restored.missingRegistryKeys).toEqual([]);
       expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+      expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+      expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
       return { restored, synchro };
     };
 
@@ -103,7 +106,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sy
       session.state.waitingFor = 0;
       const host = createLuaScriptHost(session, workspace);
       expect(host.loadCardScript(Number(bladeBlasterCode), workspace).ok).toBe(true);
-      expect(host.registerInitialEffects()).toBeGreaterThan(0);
+      expect(host.registerInitialEffects()).toBe(1);
       expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.data).toMatchObject({
         synchroTunerMin: 1,
         synchroTunerMax: 1,
@@ -163,7 +166,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sy
       session.state.waitingFor = 0;
       const host = createLuaScriptHost(session, workspace);
       expect(host.loadCardScript(Number(luluwalilithCode), workspace).ok).toBe(true);
-      expect(host.registerInitialEffects()).toBeGreaterThan(0);
+      expect(host.registerInitialEffects()).toBe(1);
       expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.data).toMatchObject({
         synchroTunerMin: 1,
         synchroTunerMax: 1,
@@ -221,7 +224,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sy
     session.state.waitingFor = 0;
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(swordsoulsCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.data).toMatchObject({
       synchroTunerMin: 1,
       synchroTunerMax: 1,
@@ -239,12 +242,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sy
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("default synchro tuner filter 1");
     const summoned = session.state.cards.find((card) => card.uid === synchro!.uid);
+    const summonMaterialUids = summoned?.summonMaterialUids;
     expect(summoned).toMatchObject({
       location: "monsterZone",
       summonType: "synchro",
       summonMaterialUids: expect.arrayContaining(matchingMaterialCodes.map((code) => expect.stringContaining(code))),
     });
-    expect(summoned?.summonMaterialUids).toHaveLength(2);
+    if (!summoned) throw new Error("Expected Synchro Summoned monster");
+    expect(summonMaterialUids).toHaveLength(2);
   });
 
   it("skips material locks for Lua Duel.SynchroSummon default material selection", () => {
@@ -274,7 +279,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sy
     session.state.waitingFor = 0;
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(swordsoulsCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.data).toMatchObject({
       synchroTunerMin: 1,
       synchroTunerMax: 1,
@@ -298,6 +303,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sy
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("default synchro material lock 1");
     const summoned = session.state.cards.find((card) => card.uid === synchro!.uid);
+    const summonMaterialUids = summoned?.summonMaterialUids;
     const lockedTuner = session.state.cards.find((card) => card.code === lockedTunerCode);
     const allowedTuner = session.state.cards.find((card) => card.code === allowedTunerCode);
     const nonTuner = session.state.cards.find((card) => card.code === nonTunerCode);
@@ -306,8 +312,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sy
       summonType: "synchro",
       summonMaterialUids: expect.arrayContaining([allowedTuner?.uid, nonTuner?.uid]),
     });
-    expect(summoned?.summonMaterialUids).toHaveLength(2);
-    expect(summoned?.summonMaterialUids).not.toContain(lockedTuner?.uid);
+    if (!summoned) throw new Error("Expected Synchro Summoned monster");
+    expect(summonMaterialUids).toHaveLength(2);
+    expect(summonMaterialUids).not.toContain(lockedTuner?.uid);
     expect(lockedTuner?.location).toBe("monsterZone");
   });
 
@@ -339,7 +346,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sy
       session.state.waitingFor = 0;
       const host = createLuaScriptHost(session, workspace);
       expect(host.loadCardScript(Number(gormfaobharCode), workspace).ok).toBe(true);
-      expect(host.registerInitialEffects()).toBeGreaterThan(0);
+      expect(host.registerInitialEffects()).toBe(1);
       expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.data).toMatchObject({
         synchroTunerMin: 1,
         synchroTunerMax: 1,
@@ -398,7 +405,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sy
       session.state.waitingFor = 0;
       const host = createLuaScriptHost(session, workspace);
       expect(host.loadCardScript(Number(shiEnCode), workspace).ok).toBe(true);
-      expect(host.registerInitialEffects()).toBeGreaterThan(0);
+      expect(host.registerInitialEffects()).toBe(1);
       expect(session.state.cards.find((card) => card.uid === synchro!.uid)?.data).toMatchObject({
         synchroTunerMin: 1,
         synchroTunerMax: 1,

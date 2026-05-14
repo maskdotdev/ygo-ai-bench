@@ -45,13 +45,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Lu
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(wolfCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
       luaTargetDescriptor: `target:pendulum-summon-not-setcode-monster:${setLunalight}`,
     });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const probe = restored.host.loadScript(
       `
       local lunalight=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${lunalightCode}),0,LOCATION_HAND,0,nil)

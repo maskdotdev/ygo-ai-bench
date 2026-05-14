@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { createDuel, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
-import type { DuelCardData, DuelEffectContext } from "#duel/types.js";
+import type { DuelCardData, DuelCardInstance, DuelEffectContext } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -11,6 +11,22 @@ import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+
+function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
+  return {
+    duel,
+    source,
+    player: 0,
+    targetUids: [],
+    log: () => {},
+    moveCard: () => source,
+    negateChainLink: () => false,
+    setTargets: () => {},
+    getTargets: () => [],
+    setTargetPlayer: () => {},
+    setTargetParam: () => {},
+  };
+}
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wildwind Lizard original Synchro lock", () => {
   it("restores its original-type Clock Lizard check", () => {
@@ -32,7 +48,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wi
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(wildwindCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const resolve = host.loadScript(
       `
       local c=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${wildwindCode}),0,LOCATION_DECK,0,nil)
@@ -48,6 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wi
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.session.state.effects.find((effect) => effect.code === 51476410)).toMatchObject({
       luaTargetDescriptor: "target:not-original-type:8192",
       value: 1,
@@ -78,19 +95,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wi
     expect(restoredWildwind).toBeDefined();
     expect(restoredSynchro).toBeDefined();
     expect(restoredFusion).toBeDefined();
-    const ctx: DuelEffectContext = {
-      duel: restored.session.state,
-      source: restoredWildwind!,
-      player: 0,
-      targetUids: [],
-      log: () => {},
-      moveCard: () => restoredWildwind!,
-      negateChainLink: () => false,
-      setTargets: () => {},
-      getTargets: () => [],
-      setTargetPlayer: () => {},
-      setTargetParam: () => {},
-    };
+    const ctx = targetContext(restored.session.state, restoredWildwind!);
     expect(restoredEffect!.targetCardPredicate!(ctx, restoredSynchro!)).toBe(false);
     expect(restoredEffect!.targetCardPredicate!(ctx, restoredFusion!)).toBe(true);
   });

@@ -53,7 +53,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Se
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(orichalcosCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
     const effect = session.state.effects.find((candidate) => candidate.code === 51476410);
     expect(effect).toMatchObject({
       range: ["spellTrapZone"],
@@ -64,6 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Se
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const restoredEffect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
     const source = restored.session.state.cards.find((card) => card.code === orichalcosCode);
     const extraProbe = restored.session.state.cards.find((card) => card.code === extraProbeCode);

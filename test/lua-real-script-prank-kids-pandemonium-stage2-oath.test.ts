@@ -94,7 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(host.loadCardScript(Number(nonPrankSpecialCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(prankSpecialCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(4);
+    expect(host.registerInitialEffects()).toBe(4);
 
     const activate = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === pandemonium!.uid);
     expect(activate).toBeDefined();
@@ -103,6 +103,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 
@@ -114,6 +115,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
 
     const postResolutionRestored = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(postResolutionRestored.restoreComplete, postResolutionRestored.incompleteReasons.join("; ")).toBe(true);
+    expect(postResolutionRestored.missingRegistryKeys).toEqual([]);
 
     expect(postResolutionRestored.session.state.cards.find((card) => card.uid === fusion!.uid)).toMatchObject({
       location: "monsterZone",

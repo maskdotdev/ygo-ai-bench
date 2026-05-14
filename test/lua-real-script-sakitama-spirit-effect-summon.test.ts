@@ -58,10 +58,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(sakitamaCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const restoredOpenWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredOpenWindow.restoreComplete, restoredOpenWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredOpenWindow.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredOpenWindow, 0)).toEqual(getDuelLegalActions(restoredOpenWindow.session, 0));
     const effect = getLuaRestoreLegalActions(restoredOpenWindow, 0).find((action) => action.type === "activateEffect" && action.uid === sakitama!.uid);
     expect(effect, JSON.stringify(getLuaRestoreLegalActions(restoredOpenWindow, 0), null, 2)).toBeDefined();
@@ -75,6 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
 
     const restoredChainWindow = restoreDuelWithLuaScripts(serializeDuel(restoredOpenWindow.session), source, reader);
     expect(restoredChainWindow.restoreComplete, restoredChainWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredChainWindow.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredChainWindow, 1)).toEqual(getDuelLegalActions(restoredChainWindow.session, 1));
     const pass = getLuaRestoreLegalActions(restoredChainWindow, 1).find((action) => action.type === "passChain");
     expect(pass, JSON.stringify(getLuaRestoreLegalActions(restoredChainWindow, 1), null, 2)).toBeDefined();
@@ -137,10 +139,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
     expect(host.loadCardScript(Number(sakitamaCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(releaseStarterCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(3);
+    expect(host.registerInitialEffects()).toBe(3);
 
     const restoredOpenWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredOpenWindow.restoreComplete, restoredOpenWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredOpenWindow.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredOpenWindow, 0)).toEqual(getDuelLegalActions(restoredOpenWindow.session, 0));
     const releaseEffect = getLuaRestoreLegalActions(restoredOpenWindow, 0).find((action) => action.type === "activateEffect" && action.uid === starter!.uid);
     expect(releaseEffect, JSON.stringify(getLuaRestoreLegalActions(restoredOpenWindow, 0), null, 2)).toBeDefined();
@@ -148,6 +151,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
 
     const restoredReleaseChain = restoreDuelWithLuaScripts(serializeDuel(restoredOpenWindow.session), source, reader);
     expect(restoredReleaseChain.restoreComplete, restoredReleaseChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredReleaseChain.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredReleaseChain, 1)).toEqual(getDuelLegalActions(restoredReleaseChain.session, 1));
     const releasePass = getLuaRestoreLegalActions(restoredReleaseChain, 1).find((action) => action.type === "passChain");
     expect(releasePass, JSON.stringify(getLuaRestoreLegalActions(restoredReleaseChain, 1), null, 2)).toBeDefined();
@@ -160,6 +164,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
 
     const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredReleaseChain.session), source, reader);
     expect(restoredTriggerWindow.restoreComplete, restoredTriggerWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredTriggerWindow.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredTriggerWindow, 0)).toEqual(getDuelLegalActions(restoredTriggerWindow.session, 0));
     const trigger = getLuaRestoreLegalActions(restoredTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.uid === sakitama!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
@@ -175,6 +180,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
 
     const restoredTriggerChain = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), source, reader);
     expect(restoredTriggerChain.restoreComplete, restoredTriggerChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredTriggerChain.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredTriggerChain, 1)).toEqual(getDuelLegalActions(restoredTriggerChain.session, 1));
     const triggerPass = getLuaRestoreLegalActions(restoredTriggerChain, 1).find((action) => action.type === "passChain");
     expect(triggerPass, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerChain, 1), null, 2)).toBeDefined();

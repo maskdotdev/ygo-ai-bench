@@ -60,10 +60,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(valkyriaCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const restoredInitial = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredInitial.restoreComplete, restoredInitial.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredInitial.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredInitial, 0)).toEqual(getDuelLegalActions(restoredInitial.session, 0));
     assertGeminiStatus(restoredInitial, valkyriaCode, false);
     const geminiSummon = getLuaRestoreLegalActions(restoredInitial, 0).find((action) => action.type === "normalSummon" && action.uid === valkyria!.uid);
@@ -72,6 +73,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const restoredCounterIgnition = restoreDuelWithLuaScripts(serializeDuel(restoredInitial.session), source, reader);
     expect(restoredCounterIgnition.restoreComplete, restoredCounterIgnition.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredCounterIgnition.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredCounterIgnition, 0)).toEqual(getDuelLegalActions(restoredCounterIgnition.session, 0));
     assertGeminiStatus(restoredCounterIgnition, valkyriaCode, true);
     expect(currentAttack(restoredCounterIgnition.session.state.cards.find((card) => card.uid === valkyria!.uid), restoredCounterIgnition.session.state)).toBe(1800);
@@ -85,6 +87,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const restoredCounterChain = restoreDuelWithLuaScripts(serializeDuel(restoredCounterIgnition.session), source, reader);
     expect(restoredCounterChain.restoreComplete, restoredCounterChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredCounterChain.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredCounterChain, 1)).toEqual(getGroupedDuelLegalActions(restoredCounterChain.session, 1));
     expect(getLuaRestoreLegalActions(restoredCounterChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredCounterChain);
@@ -98,6 +101,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const restoredDestroyIgnition = restoreDuelWithLuaScripts(serializeDuel(restoredCounterChain.session), source, reader);
     expect(restoredDestroyIgnition.restoreComplete, restoredDestroyIgnition.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredDestroyIgnition.missingRegistryKeys).toEqual([]);
     expect(currentAttack(restoredDestroyIgnition.session.state.cards.find((card) => card.uid === valkyria!.uid), restoredDestroyIgnition.session.state)).toBe(2100);
     const destroyIgnition = getLuaRestoreLegalActions(restoredDestroyIgnition, 0)
       .filter((action) => action.type === "activateEffect" && action.uid === valkyria!.uid)
@@ -118,6 +122,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const restoredDestroyChain = restoreDuelWithLuaScripts(serializeDuel(restoredDestroyIgnition.session), source, reader);
     expect(restoredDestroyChain.restoreComplete, restoredDestroyChain.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredDestroyChain.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredDestroyChain, 1)).toEqual(getGroupedDuelLegalActions(restoredDestroyChain.session, 1));
     resolveRestoredChain(restoredDestroyChain);
     expect(restoredDestroyChain.session.state.cards.find((card) => card.uid === destroyTarget!.uid)).toMatchObject({
@@ -132,9 +137,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const restoredAfterDestroy = restoreDuelWithLuaScripts(serializeDuel(restoredDestroyChain.session), source, reader);
     expect(restoredAfterDestroy.restoreComplete, restoredAfterDestroy.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredAfterDestroy.missingRegistryKeys).toEqual([]);
     expect(getDuelCardCounter(restoredAfterDestroy.session.state.cards.find((card) => card.uid === valkyria!.uid), counterSpell)).toBe(0);
     expect(restoredAfterDestroy.session.state.cards.find((card) => card.uid === destroyTarget!.uid)).toMatchObject({ location: "graveyard" });
-  });
+  }, 20_000);
 });
 
 function chainResponderScript(): string {

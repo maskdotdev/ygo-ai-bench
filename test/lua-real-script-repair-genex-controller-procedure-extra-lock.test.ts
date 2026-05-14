@@ -52,7 +52,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
     const host = createLuaScriptHost(session, source);
     expect(host.loadCardScript(Number(repairGenexCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(synchroCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(2);
     const script = host.loadScript(
       `
       local source=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${repairGenexCode}),0,LOCATION_DECK,0,nil)
@@ -78,6 +78,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     const synchro = restored.session.state.cards.find((card) => card.code === synchroCode);
     const procedureEffectId = Number(restored.session.state.effects.find((effect) => effect.sourceUid === synchro?.uid && effect.event === "summonProcedure")?.id.match(/^lua-(\d+)/)?.[1]);
     expect(Number.isFinite(procedureEffectId)).toBe(true);
