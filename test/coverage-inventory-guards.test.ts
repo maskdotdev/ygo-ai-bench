@@ -37,7 +37,7 @@ describe("coverage inventory guards", () => {
       }, 0);
 
     expect(loose).toEqual([]);
-    expect(exactCount).toBe(583);
+    expect(exactCount).toBe(584);
   });
 
   it("requires Lua registration proof counts to be exact", () => {
@@ -59,7 +59,7 @@ describe("coverage inventory guards", () => {
       }, 0);
 
     expect(loose).toEqual([]);
-    expect(exactCount).toBe(1217);
+    expect(exactCount).toBe(1218);
   });
 
   it("requires test proof floors to be exact", () => {

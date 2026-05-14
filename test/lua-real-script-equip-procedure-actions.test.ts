@@ -576,6 +576,103 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expectLuaEquipStatProbe(restoredHigherLp, targetCode, megamorphCode, "equip stat probe 22046459/500/1000");
   });
 
+  it("restores Gravity Axe equip stat and opponent position-change lock", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const gravityAxeCode = "32022366";
+    const targetCode = "601034";
+    const opponentMonsterCode = "601035";
+    const responderCode = "601036";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === gravityAxeCode),
+      { code: targetCode, name: "Gravity Axe Target", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: opponentMonsterCode, name: "Gravity Axe Opponent Monster", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: responderCode, name: "Gravity Axe Chain Responder", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 310, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [gravityAxeCode, targetCode] }, 1: { main: [opponentMonsterCode, responderCode] } });
+    startDuel(session);
+
+    const gravityAxe = session.state.cards.find((card) => card.code === gravityAxeCode);
+    const target = session.state.cards.find((card) => card.code === targetCode);
+    const opponentMonster = session.state.cards.find((card) => card.code === opponentMonsterCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(gravityAxe).toBeDefined();
+    expect(target).toBeDefined();
+    expect(opponentMonster).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, gravityAxe!.uid, "hand", 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, opponentMonster!.uid, "monsterZone", 1).position = "faceUpAttack";
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, source);
+    expect(host.loadCardScript(Number(gravityAxeCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expectCleanRestore(restoredEquipWindow);
+    expect(getLuaRestoreLegalActionGroups(restoredEquipWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredEquipWindow.session, 0));
+    expect(getLuaRestoreLegalActions(restoredEquipWindow, 0)).toEqual(getDuelLegalActions(restoredEquipWindow.session, 0));
+    const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === gravityAxe!.uid);
+    expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
+
+    expect(restoredEquipWindow.session.state.chain[0]).toMatchObject({
+      sourceUid: gravityAxe!.uid,
+      targetUids: [target!.uid],
+      operationInfos: [{ category: 0x40000, targetUids: [gravityAxe!.uid], count: 1, player: 0, parameter: 0 }],
+    });
+
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
+    expectCleanRestore(restoredChain);
+    expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+    resolveRestoredChain(restoredChain);
+
+    expect(restoredChain.host.messages).not.toContain("equip responder resolved");
+    expect(restoredChain.session.state.cards.find((card) => card.uid === gravityAxe!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      equippedToUid: target!.uid,
+      faceUp: true,
+    });
+
+    const restoredEquipState = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
+    expectCleanRestore(restoredEquipState);
+    expect(restoredEquipState.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceUid: gravityAxe!.uid, event: "continuous", code: 100 }),
+        expect.objectContaining({ sourceUid: gravityAxe!.uid, event: "continuous", code: 14, targetRange: [0, 4] }),
+      ]),
+    );
+    expectLuaEquipProbe(restoredEquipState, targetCode, gravityAxeCode, "equip probe 32022366/1500");
+
+    restoredEquipState.session.state.turnPlayer = 1;
+    restoredEquipState.session.state.phase = "main1";
+    restoredEquipState.session.state.waitingFor = 1;
+    const restoredOpponentMain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipState.session), source, reader);
+    expectCleanRestore(restoredOpponentMain);
+    expect(getLuaRestoreLegalActions(restoredOpponentMain, 1).some((action) => action.type === "changePosition" && action.uid === opponentMonster!.uid)).toBe(false);
+
+    const lockProbe = restoredOpponentMain.host.loadScript(
+      `
+      local locked=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${opponentMonsterCode}),1,LOCATION_MZONE,0,1,1,nil):GetFirst()
+      Debug.Message("gravity axe position probe " .. tostring(locked:IsCanChangePosition(POS_FACEUP_DEFENSE)))
+      `,
+      "gravity-axe-position-lock-probe.lua",
+    );
+    expect(lockProbe.ok, lockProbe.error).toBe(true);
+    expect(restoredOpponentMain.host.messages).toContain("gravity axe position probe false");
+  });
+
   it("restores Battle Archfiend Shield equip procedure setcode target filtering", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const shieldCode = "8730435";
