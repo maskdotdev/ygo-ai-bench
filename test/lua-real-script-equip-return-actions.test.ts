@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
+import { currentAttack } from "#duel/card-stats.js";
 import {
   createDuel,
   destroyDuelCard,
@@ -467,6 +468,120 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
         expect.objectContaining({ eventName: "leftField", eventCode: 1015, eventCardUid: smoke!.uid }),
         expect.objectContaining({ eventName: "confirmed", eventCode: 1211, eventPlayer: 0, eventUids: expect.arrayContaining([discardA!.uid, discardB!.uid]) }),
         expect.objectContaining({ eventName: "discarded", eventCode: 1018, eventCardUid: discardedCards[0]!.uid }),
+      ]),
+    );
+  });
+
+  it("restores Blast with Chain remain-field Trap equip and destroyed trigger", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const blastCode = "98239899";
+    const targetCode = "601047";
+    const responderCode = "601048";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === blastCode),
+      { code: targetCode, name: "Blast with Chain Target", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: responderCode, name: "Blast with Chain Responder", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 315, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [blastCode, targetCode] }, 1: { main: [responderCode] } });
+    startDuel(session);
+
+    const blast = session.state.cards.find((card) => card.code === blastCode);
+    const target = session.state.cards.find((card) => card.code === targetCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(blast).toBeDefined();
+    expect(target).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, blast!.uid, "spellTrapZone", 0).faceUp = false;
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, source);
+    expect(host.loadCardScript(Number(blastCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expectCleanRestore(restoredActivation);
+    expect(getLuaRestoreLegalActionGroups(restoredActivation, 0)).toEqual(getGroupedDuelLegalActions(restoredActivation.session, 0));
+    expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
+    const activate = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === blast!.uid);
+    expect(activate, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredActivation, activate!);
+
+    expect(restoredActivation.session.state.chain[0]).toMatchObject({
+      sourceUid: blast!.uid,
+      targetUids: [target!.uid],
+      operationInfos: [{ category: 0x40000, targetUids: [blast!.uid], count: 1, player: 0, parameter: 0 }],
+    });
+    expect(restoredActivation.session.state.effects).toEqual(
+      expect.arrayContaining([expect.objectContaining({ sourceUid: blast!.uid, event: "continuous", code: 17, range: ["spellTrapZone"] })]),
+    );
+
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
+    expectCleanRestore(restoredChain);
+    expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+    resolveRestoredChain(restoredChain);
+
+    expect(restoredChain.host.messages).not.toContain("equip responder resolved");
+    expect(restoredChain.session.state.cards.find((card) => card.uid === blast!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      equippedToUid: target!.uid,
+      faceUp: true,
+    });
+    expect(currentAttack(restoredChain.session.state.cards.find((card) => card.uid === target!.uid), restoredChain.session.state)).toBe(1500);
+
+    const restoredEquipped = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
+    expectCleanRestore(restoredEquipped);
+    destroyDuelCard(restoredEquipped.session.state, blast!.uid, 0, duelReason.effect | duelReason.destroy, 0);
+    expect(restoredEquipped.session.state.cards.find((card) => card.uid === blast!.uid)).toMatchObject({
+      location: "graveyard",
+      previousLocation: "spellTrapZone",
+      previousEquippedToUid: target!.uid,
+      reason: duelReason.effect | duelReason.destroy,
+    });
+    expect(currentAttack(restoredEquipped.session.state.cards.find((card) => card.uid === target!.uid), restoredEquipped.session.state)).toBe(1000);
+    expect(restoredEquipped.session.state.pendingTriggers).toEqual([
+      expect.objectContaining({ sourceUid: blast!.uid, eventName: "leftField", eventCardUid: blast!.uid, player: 0 }),
+    ]);
+
+    const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredEquipped.session), source, reader);
+    expectCleanRestore(restoredTrigger);
+    const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === blast!.uid);
+    expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredTrigger, trigger!);
+
+    expect(restoredTrigger.session.state.chain[0]).toMatchObject({
+      sourceUid: blast!.uid,
+      targetUids: [target!.uid],
+      operationInfos: [{ category: 0x1, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 }],
+    });
+    expect(getLuaRestoreLegalActions(restoredTrigger, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+
+    const restoredDestroyChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);
+    expectCleanRestore(restoredDestroyChain);
+    expect(restoredDestroyChain.session.state.chain[0]).toMatchObject(restoredTrigger.session.state.chain[0]!);
+    resolveRestoredChain(restoredDestroyChain);
+
+    expect(restoredDestroyChain.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({
+      location: "graveyard",
+      previousLocation: "monsterZone",
+      reason: duelReason.effect | duelReason.destroy,
+    });
+    expect(restoredDestroyChain.host.messages).not.toContain("equip responder resolved");
+    expect(restoredDestroyChain.session.state.eventHistory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ eventName: "leftField", eventCode: 1015, eventCardUid: blast!.uid }),
+        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: target!.uid }),
       ]),
     );
   });
