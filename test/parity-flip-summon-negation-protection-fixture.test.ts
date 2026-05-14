@@ -93,6 +93,16 @@ describe("EDOPro parity flip summon negation protection fixtures", () => {
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             triggerOrderPrompt: { type: "orderTriggers", player: 0, triggerBucket: "turnOptional" },
+            legalActionCounts: { 0: 4, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-blocked-flip-summon-negator", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-blocked-flip-summon-negator", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-blocked-flip-summon-negator", "turnOptional", 1, 1),
+              triggerDeclineGroup(0, "fixture-blocked-flip-summon-negator", "turnOptional", 1, 1),
+            ],
           },
         }),
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "fixture-blocked-flip-summon-negator" }), {
@@ -129,6 +139,16 @@ describe("EDOPro parity flip summon negation protection fixtures", () => {
             pendingTriggers: [{ player: 0, effectId: "fixture-protected-flip-success-watcher", eventName: "flipSummoned", eventCardUid: "p0-deck-100-0" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             locations: { monsterZone: ["100"], hand: ["200", "300"] },
+            legalActionCounts: { 0: 2, 1: 0 },
+            legalActionGroupCounts: { 0: 2, 1: 0 },
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-protected-flip-success-watcher", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-protected-flip-success-watcher", triggerBucket: "turnOptional", count: 1 },
+            ],
+            legalActionGroups: [
+              triggerActivationGroup(0, "fixture-protected-flip-success-watcher", "turnOptional", 1, 2),
+              triggerDeclineGroup(0, "fixture-protected-flip-success-watcher", "turnOptional", 1, 2),
+            ],
             logIncludes: ["Fixture blocked flip summon negator resolved"],
           },
         }),
