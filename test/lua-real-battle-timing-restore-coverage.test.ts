@@ -55,6 +55,15 @@ function battleTimingFixtureFiles(): Array<{ file: string; required: string[] }>
       ],
     },
     {
+      file: "test/lua-real-script-destruction-punch-damage-step-end.test.ts",
+      required: [
+        'battleWindow?.kind).toBe("endDamageStep")',
+        'eventName: "damageStepEnded"',
+        'eventName: "destroyed"',
+        'location: "graveyard"',
+      ],
+    },
+    {
       file: "test/lua-real-script-gundari-battle-start-synchro-bounce.test.ts",
       required: [
         "restoredSetup.missingRegistryKeys).toEqual([])",
