@@ -86,6 +86,7 @@ export interface DuelActivationHandlers {
     operationInfos?: ChainLink["operationInfos"],
     possibleOperationInfos?: ChainLink["possibleOperationInfos"],
     effectLabel?: number,
+    effectLabels?: number[],
     effectLabelObjectUid?: string,
     effectLabelObjectUids?: string[],
   ): void;
@@ -160,6 +161,7 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
       ctx.operationInfos ?? [],
       ctx.possibleOperationInfos ?? [],
       ctx.effectLabel,
+      ctx.effectLabels,
       ctx.effectLabelObjectUid,
       ctx.effectLabelObjectUids,
     );
@@ -339,6 +341,7 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
       ctx.operationInfos ?? [],
       ctx.possibleOperationInfos ?? [],
       ctx.effectLabel,
+      ctx.effectLabels,
       ctx.effectLabelObjectUid,
       ctx.effectLabelObjectUids,
     );

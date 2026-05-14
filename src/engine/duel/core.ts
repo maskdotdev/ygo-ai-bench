@@ -831,6 +831,7 @@ function pushChainLink(
   operationInfos: ChainLink["operationInfos"] = [],
   possibleOperationInfos: ChainLink["possibleOperationInfos"] = [],
   effectLabel?: number,
+  effectLabels?: number[],
   effectLabelObjectUid?: string,
   effectLabelObjectUids?: string[],
 ): void {
@@ -866,6 +867,7 @@ function pushChainLink(
     ...(targetPlayer === undefined ? {} : { targetPlayer }),
     ...(targetParam === undefined ? {} : { targetParam }),
     ...(effectLabel === undefined ? {} : { effectLabel }),
+    ...(effectLabels === undefined || effectLabels.length === 0 ? {} : { effectLabels: [...effectLabels] }),
     ...(effectLabelObjectUid === undefined ? {} : { effectLabelObjectUid }),
     ...(effectLabelObjectUids === undefined ? {} : { effectLabelObjectUids: [...effectLabelObjectUids] }),
   });
@@ -965,6 +967,7 @@ function resolveChain(state: DuelState): void {
         link.operationInfos ? copyDuelOperationInfos(link.operationInfos) : [],
         link.possibleOperationInfos ? copyDuelOperationInfos(link.possibleOperationInfos) : [],
       );
+      if (link.effectLabels !== undefined) ctx.effectLabels = [...link.effectLabels];
       if (link.effectLabelObjectUid !== undefined) ctx.effectLabelObjectUid = link.effectLabelObjectUid;
       if (link.effectLabelObjectUids !== undefined) ctx.effectLabelObjectUids = [...link.effectLabelObjectUids];
       const finishLink = () => {
@@ -1019,6 +1022,7 @@ function copyLuaOperationPromptChainLink(link: ChainLink): ChainLink {
     ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }),
     ...(link.operationInfos === undefined ? {} : { operationInfos: copyDuelOperationInfos(link.operationInfos) }),
     ...(link.possibleOperationInfos === undefined ? {} : { possibleOperationInfos: copyDuelOperationInfos(link.possibleOperationInfos) }),
+    ...(link.effectLabels === undefined ? {} : { effectLabels: [...link.effectLabels] }),
     ...(link.effectLabelObjectUids === undefined ? {} : { effectLabelObjectUids: [...link.effectLabelObjectUids] }),
     ...(link.eventUids === undefined ? {} : { eventUids: [...link.eventUids] }),
     ...(link.eventPreviousState === undefined ? {} : { eventPreviousState: { ...link.eventPreviousState } }),

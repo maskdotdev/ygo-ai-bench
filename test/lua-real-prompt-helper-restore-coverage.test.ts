@@ -6,7 +6,7 @@ const root = process.cwd();
 
 describe("Lua real prompt helper restore coverage", () => {
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(9);
+    expect(representativePromptHelperFixtures()).toHaveLength(10);
   });
 
   it("requires representative prompt helper fixtures to assert clean Lua restore", () => {
@@ -46,6 +46,18 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
         "returned: Number(sushipIkuraCode)",
         'location: "hand"',
         'expect(restored.host.messages).not.toContain("gunkan suship responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-gishki-psychelone-announce-traits.test.ts",
+      required: [
+        "restores announced race and attribute labels into the opponent hand shuffle",
+        'api: "AnnounceRace"',
+        'api: "AnnounceAttribute"',
+        "effectLabel: raceWarrior",
+        "effectLabels: [raceWarrior, attributeEarth]",
+        'card?.location === "deck"',
+        'expect(restored.host.messages).not.toContain("gishki psychelone responder resolved")',
       ],
     },
     {

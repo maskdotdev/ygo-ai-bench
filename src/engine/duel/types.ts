@@ -386,6 +386,7 @@ export interface DuelEffectContext {
   targetPlayer?: PlayerId;
   targetParam?: number;
   effectLabel?: number;
+  effectLabels?: number[];
   effectLabelObjectUid?: string;
   effectLabelObjectUids?: string[];
   chainLink?: ChainLink;
@@ -436,6 +437,7 @@ export interface ChainLink {
   targetPlayer?: PlayerId;
   targetParam?: number;
   effectLabel?: number;
+  effectLabels?: number[];
   effectLabelObjectUid?: string;
   effectLabelObjectUids?: string[];
   negated?: boolean;

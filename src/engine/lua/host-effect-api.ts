@@ -165,8 +165,7 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     const label = labels[0] ?? 0; effect.label = label;
     if (labels.length > 1) effect.labels = labels; else delete effect.labels;
     if (hostState.activeLuaEffectId === effect.id && hostState.activeContext) {
-      hostState.activeContext.effectLabel = label;
-      if (hostState.activeContext.chainLink) hostState.activeContext.chainLink.effectLabel = label;
+      syncActiveLabels(hostState, label, labels);
     }
     return 0;
   });
@@ -571,6 +570,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
       }
       withLuaCallbackContext(hostState, ctx, luaEffect.id, "operation", () => {
         if (ctx.chainLink?.effectLabel !== undefined) luaEffect.label = ctx.chainLink.effectLabel;
+        if (ctx.chainLink?.effectLabels !== undefined) luaEffect.labels = [...ctx.chainLink.effectLabels];
         callLuaEffectOperation(L, hostState, luaEffect, card, operationRef, ctx, readLuaError);
         ctx.log("Lua effect operation resolved");
       });
@@ -890,6 +890,7 @@ export function runLuaEffectOperationPromptCoroutine(
   const operationRef = luaEffect.operationRef;
   if (operationRef === undefined) return { status: "completed", values: [] };
   if (ctx.chainLink?.effectLabel !== undefined) luaEffect.label = ctx.chainLink.effectLabel;
+  if (ctx.chainLink?.effectLabels !== undefined) luaEffect.labels = [...ctx.chainLink.effectLabels];
   const result = withLuaCallbackContext(hostState, ctx, luaEffect.id, "operation", () => callLuaEffectOperationCoroutine(L, hostState, luaEffect, source, operationRef, ctx));
   return wrapLuaEffectOperationCoroutineResult(hostState, luaEffect, ctx, result);
 }
@@ -1014,6 +1015,8 @@ function syncActiveLabelObject(hostState: LuaHostState, effect: LuaEffectRecord,
     if (uids !== undefined) ctx.chainLink.effectLabelObjectUids = [...uids]; else delete ctx.chainLink.effectLabelObjectUids;
   }
 }
+
+function syncActiveLabels(hostState: LuaHostState, label: number, labels: number[]): void { const ctx = hostState.activeContext; if (!ctx) return; ctx.effectLabel = label; if (labels.length > 1) ctx.effectLabels = labels; else delete ctx.effectLabels; if (ctx.chainLink) { ctx.chainLink.effectLabel = label; if (labels.length > 1) ctx.chainLink.effectLabels = [...labels]; else delete ctx.chainLink.effectLabels; } }
 
 function syncDuelEffectLabelObjectUid(effect: DuelEffectDefinition, luaEffect: LuaEffectRecord): void {
   if (luaEffect.labelObjectUid === undefined) delete effect.labelObjectUid; else effect.labelObjectUid = luaEffect.labelObjectUid;
