@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const spiritReturnFixtureCount = 5;
 
 describe("Lua real Spirit return restore coverage", () => {
   it("requires Spirit return and bounce fixtures to assert clean Lua registry restore and payload outcomes", () => {
-    const missing = spiritReturnFixtureFiles()
+    const files = spiritReturnFixtureFiles();
+    expect(files).toHaveLength(spiritReturnFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
@@ -21,7 +25,10 @@ describe("Lua real Spirit return restore coverage", () => {
   });
 
   it("requires UI-facing legal-action parity through restored Spirit trigger and chain windows", () => {
-    const missing = spiritReturnFixtureFiles()
+    const files = spiritReturnFixtureFiles();
+    expect(files).toHaveLength(spiritReturnFixtureCount);
+
+    const missing = files
       .filter(({ file }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("getLuaRestoreLegalActionGroups")
