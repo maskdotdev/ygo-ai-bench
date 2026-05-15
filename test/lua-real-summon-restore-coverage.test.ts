@@ -11,7 +11,7 @@ const summonProcedureFixtureCount = 20;
 const typedSummonProcedureFixtureCount = 6;
 const pendulumGrantFixtureCount = 3;
 const pendulumHelperFixtureCount = 13;
-const unionProcedureFixtureCount = 1;
+const unionProcedureFixtureCount = 2;
 const materialLockFixtureCount = 4;
 const flipSummonSuccessTrapFixtureCount = 2;
 
@@ -395,6 +395,20 @@ function realScriptUnionProcedureFixtureSnippets(): Array<{ file: string; requir
         "findEffectActionByCategory(restoredEquippedState.session, getLuaRestoreLegalActions(restoredEquippedState, 0), unionPilot!.uid, 0x40200)",
         '{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }',
         'eventName: "specialSummoned", eventCode: 1102',
+      ],
+    },
+    {
+      file: "lua-real-script-union-procedure-actions.test.ts",
+      required: [
+        "const trigonCode = \"48568432\"",
+        "findEffectAction(restoredEquipWindow.session, getLuaRestoreLegalActions(restoredEquipWindow, 0), trigon!.uid, 1068)",
+        'location: "spellTrapZone"',
+        "equippedToUid: target!.uid",
+        "passRestoredBattleResponsesUntilTrigger(restoredBattleWindow)",
+        'eventName: "battleDestroyed"',
+        "const trigger = getLuaRestoreLegalActions(restoredTriggerWindow, 0).find((action) => action.type === \"activateTrigger\" && action.uid === trigon!.uid)",
+        "expect(restoredTriggerWindow.session.state.cards.find((card) => card.uid === graveMachine!.uid)).toMatchObject",
+        'summonType: "special"',
       ],
     },
   ].map(({ file, required }) => ({ file: path.join("test", file), required }));
