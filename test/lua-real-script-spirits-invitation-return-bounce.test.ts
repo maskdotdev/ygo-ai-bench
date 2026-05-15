@@ -181,13 +181,50 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     const invitationTrigger = getLuaRestoreLegalActions(restoredInvitationTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === invitation!.uid);
     expect(invitationTrigger, JSON.stringify(getLuaRestoreLegalActions(restoredInvitationTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredInvitationTrigger, invitationTrigger!);
-    expect(restoredInvitationTrigger.session.state.chain[0]).toMatchObject({
-      sourceUid: invitation!.uid,
-      eventName: "sentToHand",
-      eventCode: 1012,
-      eventCardUid: susa!.uid,
-      operationInfos: [{ category: 0x8, targetUids: [opponentMonster!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restoredInvitationTrigger.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-2-1012",
+        "eventCardUid": "p0-deck-40473581-1",
+        "eventCode": 1012,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "sentToHand",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventReason": 64,
+        "eventReasonCardUid": "p0-deck-40473581-1",
+        "eventReasonEffectId": 4,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-11",
+        "operationInfos": [
+          {
+            "category": 8,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-92394654-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-92394653-0",
+      }
+    `);
 
     const restoredInvitationChain = restoreDuelWithLuaScripts(serializeDuel(restoredInvitationTrigger.session), source, reader);
     expectCleanRestore(restoredInvitationChain);

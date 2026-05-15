@@ -203,13 +203,53 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTriggerWindow, trigger!);
     expect(restoredTriggerWindow.session.state.chain).toHaveLength(1);
-    expect(restoredTriggerWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: sakitama!.uid,
-      eventName: "released",
-      eventCardUid: sakitama!.uid,
-      targetUids: [graveSpirit!.uid],
-      operationInfos: [{ category: 0x8, targetUids: [graveSpirit!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restoredTriggerWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "graveyard",
+        "activationSequence": 1,
+        "chainIndex": 1,
+        "effectId": "lua-8-1017",
+        "eventCardUid": "p0-deck-67972302-0",
+        "eventCode": 1017,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "graveyard",
+          "position": "faceUpAttack",
+          "sequence": 1,
+        },
+        "eventName": "released",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventReason": 66,
+        "eventReasonCardUid": "p0-deck-94972306-2",
+        "eventReasonEffectId": 9,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-5",
+        "operationInfos": [
+          {
+            "category": 8,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-94972305-1",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-67972302-0",
+        "targetUids": [
+          "p0-deck-94972305-1",
+        ],
+      }
+    `);
 
     const restoredTriggerChain = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), source, reader);
     expect(restoredTriggerChain.restoreComplete, restoredTriggerChain.incompleteReasons.join("; ")).toBe(true);

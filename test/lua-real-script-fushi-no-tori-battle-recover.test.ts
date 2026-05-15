@@ -125,15 +125,50 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTrigger, trigger!);
     expect(restoredTrigger.session.state.chain).toHaveLength(1);
-    expect(restoredTrigger.session.state.chain[0]).toMatchObject({
-      sourceUid: fushi!.uid,
-      eventName: "battleDamageDealt",
-      eventPlayer: 1,
-      eventValue: 700,
-      targetPlayer: 0,
-      targetParam: 700,
-      operationInfos: [{ category: 0x100000, targetUids: [], count: 0, player: 0, parameter: 700 }],
-    });
+    expect(restoredTrigger.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-7-1143",
+        "eventCardUid": "p0-deck-38538445-0",
+        "eventCode": 1143,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "battleDamageDealt",
+        "eventPlayer": 1,
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "deck",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReason": 32,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "eventValue": 700,
+        "id": "chain-6",
+        "operationInfos": [
+          {
+            "category": 1048576,
+            "count": 0,
+            "parameter": 700,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-38538445-0",
+        "targetParam": 700,
+        "targetPlayer": 0,
+      }
+    `);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);

@@ -305,30 +305,111 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bo
     expect(triggerAction).toBeDefined();
     applyAndAssert(session, triggerAction!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: triggerStarter!.uid,
-      eventName: "specialSummoned",
-      eventCode: 1102,
-      eventCardUid: firstSummoned!.uid,
-      eventUids: [firstSummoned!.uid, secondSummoned!.uid],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 1,
+        "chainIndex": 1,
+        "effectId": "lua-2-1102",
+        "eventCardUid": "p0-deck-876-3",
+        "eventCode": 1102,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "specialSummoned",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 3,
+        },
+        "eventReason": 2064,
+        "eventReasonCardUid": "p0-deck-873-0",
+        "eventReasonEffectId": 1,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "eventUids": [
+          "p0-deck-876-3",
+          "p0-deck-877-4",
+        ],
+        "id": "chain-6",
+        "player": 0,
+        "sourceUid": "p0-deck-874-1",
+      }
+    `);
 
     const bottomlessAction = getLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.uid === bottomless!.uid);
     expect(bottomlessAction).toBeDefined();
     applyAndAssert(session, bottomlessAction!);
     expect(session.state.chain).toHaveLength(2);
-    expect(session.state.chain[1]).toMatchObject({
-      sourceUid: bottomless!.uid,
-      eventName: "specialSummoned",
-      eventCode: 1102,
-      eventCardUid: firstSummoned!.uid,
-      eventUids: [firstSummoned!.uid, secondSummoned!.uid],
-      targetUids: [firstSummoned!.uid, secondSummoned!.uid],
-      operationInfos: [
-        { category: 0x1, targetUids: [firstSummoned!.uid, secondSummoned!.uid], count: 2, player: 0, parameter: 0 },
-        { category: 0x4, targetUids: [firstSummoned!.uid, secondSummoned!.uid], count: 2, player: 0, parameter: 0 },
-      ],
-    });
+    expect(session.state.chain[1]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 2,
+        "effectId": "lua-6-1102",
+        "eventCardUid": "p0-deck-876-3",
+        "eventCode": 1102,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "specialSummoned",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 3,
+        },
+        "eventReason": 2064,
+        "eventReasonCardUid": "p0-deck-873-0",
+        "eventReasonEffectId": 1,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "eventUids": [
+          "p0-deck-876-3",
+          "p0-deck-877-4",
+        ],
+        "id": "chain-7",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 2,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-876-3",
+              "p0-deck-877-4",
+            ],
+          },
+          {
+            "category": 4,
+            "count": 2,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-876-3",
+              "p0-deck-877-4",
+            ],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-29401950-0",
+        "targetUids": [
+          "p0-deck-876-3",
+          "p0-deck-877-4",
+        ],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

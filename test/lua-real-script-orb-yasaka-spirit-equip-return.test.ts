@@ -186,14 +186,51 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
     const recoverTrigger = getLuaRestoreLegalActions(restoredRecoverTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === orb!.uid);
     expect(recoverTrigger, JSON.stringify(getLuaRestoreLegalActions(restoredRecoverTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredRecoverTrigger, recoverTrigger!);
-    expect(restoredRecoverTrigger.session.state.chain[0]).toMatchObject({
-      sourceUid: orb!.uid,
-      eventName: "battleDestroyed",
-      eventCode: 1140,
-      targetPlayer: 0,
-      targetParam: 500,
-      operationInfos: [{ category: 0x100000, targetUids: [], count: 0, player: 0, parameter: 500 }],
-    });
+    expect(restoredRecoverTrigger.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-3-1139",
+        "effectLabelObjectUid": "p1-deck-74115235-0",
+        "eventCardUid": "p0-deck-40473581-1",
+        "eventCode": 1140,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "battleDestroyed",
+        "eventPlayer": 1,
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 1,
+        },
+        "eventReason": 33,
+        "eventReasonCardUid": "p0-deck-40473581-1",
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-12",
+        "operationInfos": [
+          {
+            "category": 1048576,
+            "count": 0,
+            "parameter": 500,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-74115234-0",
+        "targetParam": 500,
+        "targetPlayer": 0,
+      }
+    `);
 
     const restoredRecoverChain = restoreDuelWithLuaScripts(serializeDuel(restoredRecoverTrigger.session), source, reader);
     expect(restoredRecoverChain.restoreComplete, restoredRecoverChain.incompleteReasons.join("; ")).toBe(true);

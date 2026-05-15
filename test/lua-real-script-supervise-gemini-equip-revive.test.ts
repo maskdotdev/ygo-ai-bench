@@ -162,13 +162,53 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === supervise!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTrigger, trigger!);
-    expect(restoredTrigger.session.state.chain[0]).toMatchObject({
-      sourceUid: supervise!.uid,
-      eventName: "sentToGraveyard",
-      eventCode: 1014,
-      targetUids: [normal!.uid],
-      operationInfos: [{ category: 0x200, targetUids: [normal!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restoredTrigger.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "graveyard",
+        "activationSequence": 1,
+        "chainIndex": 1,
+        "effectId": "lua-4-1014",
+        "eventCardUid": "p0-deck-95750695-0",
+        "eventCode": 1014,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "graveyard",
+          "position": "faceUpAttack",
+          "sequence": 1,
+        },
+        "eventName": "sentToGraveyard",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "spellTrapZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventReason": 64,
+        "eventReasonCardUid": "p0-deck-95750695-0",
+        "eventReasonEffectId": 1,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-6",
+        "operationInfos": [
+          {
+            "category": 512,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-95750696-2",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-95750695-0",
+        "targetUids": [
+          "p0-deck-95750696-2",
+        ],
+      }
+    `);
 
     const restoredReviveChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);
     expect(restoredReviveChain.restoreComplete, restoredReviveChain.incompleteReasons.join("; ")).toBe(true);

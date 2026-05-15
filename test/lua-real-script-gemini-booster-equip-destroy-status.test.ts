@@ -159,12 +159,42 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === booster!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTrigger, trigger!);
-    expect(restoredTrigger.session.state.chain[0]).toMatchObject({
-      sourceUid: booster!.uid,
-      eventName: "leftField",
-      eventCode: 1015,
-      targetUids: [slime!.uid],
-    });
+    expect(restoredTrigger.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "graveyard",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-2-1015",
+        "eventCardUid": "p0-deck-18096222-0",
+        "eventCode": 1015,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "graveyard",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "leftField",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "spellTrapZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventReason": 65,
+        "eventReasonCardUid": "p0-deck-18096222-0",
+        "eventReasonEffectId": 1,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-6",
+        "player": 0,
+        "sourceUid": "p0-deck-18096222-0",
+        "targetUids": [
+          "p0-deck-3918345-1",
+        ],
+      }
+    `);
 
     const restoredStatusChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);
     expect(restoredStatusChain.restoreComplete, restoredStatusChain.incompleteReasons.join("; ")).toBe(true);

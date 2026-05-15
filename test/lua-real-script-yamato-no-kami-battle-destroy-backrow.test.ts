@@ -143,14 +143,53 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTriggerWindow, trigger!);
     expect(restoredTriggerWindow.session.state.chain).toHaveLength(1);
-    expect(restoredTriggerWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: yamato!.uid,
-      eventName: "battleDestroyed",
-      eventCode: 1140,
-      eventCardUid: yamato!.uid,
-      targetUids: [backrow!.uid],
-      operationInfos: [{ category: 0x1, targetUids: [backrow!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restoredTriggerWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-8-1139",
+        "eventCardUid": "p0-deck-82841979-0",
+        "eventCode": 1140,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "battleDestroyed",
+        "eventPlayer": 1,
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReason": 33,
+        "eventReasonCardUid": "p0-deck-82841979-0",
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "if",
+        "id": "chain-11",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-82841982-1",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-82841979-0",
+        "targetUids": [
+          "p1-deck-82841982-1",
+        ],
+      }
+    `);
 
     const restoredChainWindow = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), source, reader);
     expect(restoredChainWindow.restoreComplete, restoredChainWindow.incompleteReasons.join("; ")).toBe(true);
