@@ -2,12 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, canSpecialSummonDuelCard, createDuel, getLegalActions, loadDecks, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, canSpecialSummonDuelCard, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { setDuelPlayerLifePoints } from "#duel/player-life.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData } from "#duel/types.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
@@ -65,6 +65,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
     const restoredBlocked = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredBlocked.restoreComplete, restoredBlocked.incompleteReasons.join("; ")).toBe(true);
     expect(restoredBlocked.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restoredBlocked, 0)).toEqual(getGroupedDuelLegalActions(restoredBlocked.session, 0));
+    expect(getLuaRestoreLegalActions(restoredBlocked, 0)).toEqual(getLegalActions(restoredBlocked.session, 0));
     expect(getLuaRestoreLegalActions(restoredBlocked, 0)).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", uid: spellTarget!.uid })]));
     expect(getLuaRestoreLegalActions(restoredBlocked, 0)).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "normalSummon", uid: summonTarget!.uid })]));
     expect(getLuaRestoreLegalActions(restoredBlocked, 0)).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "setMonster", uid: setTarget!.uid })]));
@@ -90,6 +92,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
     const restoredOpen = restoreDuelWithLuaScripts(serializeDuel(restoredBlocked.session), workspace, reader);
     expect(restoredOpen.restoreComplete, restoredOpen.incompleteReasons.join("; ")).toBe(true);
     expect(restoredOpen.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restoredOpen, 0)).toEqual(getGroupedDuelLegalActions(restoredOpen.session, 0));
+    expect(getLuaRestoreLegalActions(restoredOpen, 0)).toEqual(getLegalActions(restoredOpen.session, 0));
     const restoredActions = getLuaRestoreLegalActions(restoredOpen, 0);
     expect(restoredActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", uid: spellTarget!.uid })]));
     expect(restoredActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "normalSummon", uid: summonTarget!.uid })]));
