@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -97,12 +98,78 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     expect(restoredReturnLock.session.state.cards.find((card) => card.uid === opponentSpirit.uid)).toMatchObject({ location: "hand", controller: 1 });
     expect(restoredReturnLock.session.state.cards.find((card) => card.uid === faceDownSpirit.uid)).toMatchObject({ location: "monsterZone" });
     expect(restoredReturnLock.session.state.cards.find((card) => card.uid === nonSpirit.uid)).toMatchObject({ location: "monsterZone" });
-    expect(restoredReturnLock.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "sentToHand", eventCode: 1012, eventCardUid: yata.uid }),
-        expect.objectContaining({ eventName: "sentToHand", eventCode: 1012, eventCardUid: opponentSpirit.uid }),
-      ]),
-    );
+    expect(restoredReturnLock.session.state.eventHistory.filter((event) => event.eventName === "sentToHand")).toEqual([
+      {
+        eventName: "sentToHand",
+        eventCode: 1012,
+        eventCardUid: yata.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: settleMachine.uid,
+        eventReasonEffectId: 3,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "sentToHand",
+        eventCode: 1012,
+        eventCardUid: opponentSpirit.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: settleMachine.uid,
+        eventReasonEffectId: 3,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: false,
+          location: "hand",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "sentToHand",
+        eventCode: 1012,
+        eventCardUid: yata.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: settleMachine.uid,
+        eventReasonEffectId: 3,
+        eventUids: [yata.uid, opponentSpirit.uid],
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
   });
 });
 
