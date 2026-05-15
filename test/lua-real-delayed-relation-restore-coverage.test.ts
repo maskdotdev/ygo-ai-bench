@@ -17,6 +17,7 @@ describe("Lua real delayed relation restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("applyLuaRestoreResponse")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
@@ -36,9 +37,13 @@ function delayedRelationFixtureFiles(): Array<{ file: string; required: string[]
       file: "test/lua-real-script-kinka-byo-relation-banish.test.ts",
       required: [
         "restoredSummonWindow.missingRegistryKeys).toEqual([])",
+        "restoredSummonWindow.missingChainLimitRegistryKeys).toEqual([])",
         "restoredTriggerWindow.missingRegistryKeys).toEqual([])",
+        "restoredTriggerWindow.missingChainLimitRegistryKeys).toEqual([])",
         "restoredChainWindow.missingRegistryKeys).toEqual([])",
+        "restoredChainWindow.missingChainLimitRegistryKeys).toEqual([])",
         "restoredRelationWindow.missingRegistryKeys).toEqual([])",
+        "restoredRelationWindow.missingChainLimitRegistryKeys).toEqual([])",
         "kinka relation true/true/true",
         'eventName: "specialSummoned"',
         'eventName: "banished"',

@@ -63,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
     const restoredDelayed = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredDelayed.restoreComplete, restoredDelayed.incompleteReasons.join("; ")).toBe(true);
     expect(restoredDelayed.missingRegistryKeys).toEqual([]);
+    expect(restoredDelayed.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredDelayed, 0);
     expect(restoredDelayed.session.state.effects).toEqual(
       expect.arrayContaining([
@@ -89,6 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredDelayed.session), workspace, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
     expect(restoredTrigger.missingRegistryKeys).toEqual([]);
+    expect(restoredTrigger.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredTrigger, 0)).toEqual(getGroupedDuelLegalActions(restoredTrigger.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredTrigger, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredTrigger, 0));
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === sentinel!.uid);
