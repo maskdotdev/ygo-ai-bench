@@ -63,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script An
     expect(restoredSetup.restoreComplete, restoredSetup.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredSetup, 0);
     expect(restoredSetup.missingRegistryKeys).toEqual([]);
+    expect(restoredSetup.missingChainLimitRegistryKeys).toEqual([]);
     const attack = getLuaRestoreLegalActions(restoredSetup, 0).find((action) => action.type === "declareAttack" && action.attackerUid === beast.uid && !action.targetUid);
     expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredSetup, 0), null, 2)).toBeDefined();
     const attacked = applyLuaRestoreResponse(restoredSetup, attack!);
@@ -72,6 +73,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script An
     expect(restoredAttackWindow.restoreComplete, restoredAttackWindow.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredAttackWindow, 1);
     expect(restoredAttackWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredAttackWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredAttackWindow.session.state.effects.find((effect) => effect.sourceUid === beast.uid && effect.code === 6)).toMatchObject({
       event: "continuous",
       targetRange: [0, 1],

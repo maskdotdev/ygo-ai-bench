@@ -18,7 +18,8 @@ describe("Lua real activation-lock restore coverage", () => {
         return !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys")
-          || !text.includes("missingRegistryKeys).toEqual([])");
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])");
       });
 
     expect(missing).toEqual([]);
@@ -66,6 +67,7 @@ describe("Lua real activation-lock restore coverage", () => {
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !fixture.requiredSnippets.every((snippet) => text.includes(snippet));
       })
       .map((fixture) => fixture.file);
@@ -95,7 +97,9 @@ function realScriptActivationLockVariantFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-lunalight-kaleido-chick-remove-activation-lock.test.ts",
       requiredSnippets: [
         "restoredTrigger.missingRegistryKeys).toEqual([])",
+        "restoredTrigger.missingChainLimitRegistryKeys).toEqual([])",
         "restoredLock.missingRegistryKeys).toEqual([])",
+        "restoredLock.missingChainLimitRegistryKeys).toEqual([])",
         "effect.code === 6",
         "targetRange: [0, 1]",
         "action.uid === opponentSpell.uid)).toBe(false)",
@@ -106,7 +110,9 @@ function realScriptActivationLockVariantFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-ultimate-falcon-activation-lock.test.ts",
       requiredSnippets: [
         "restored.missingRegistryKeys).toEqual([])",
+        "restored.missingChainLimitRegistryKeys).toEqual([])",
         "restoredLock.missingRegistryKeys).toEqual([])",
+        "restoredLock.missingChainLimitRegistryKeys).toEqual([])",
         "currentAttack(",
         "effect.code === 6",
         "targetRange: [0, 1]",
@@ -189,6 +195,7 @@ function realScriptActivationLockVariantFixtures(): Array<{ file: string; requir
         'action.uid === fireResponder.uid)).toBe(false)',
         'action.uid === lightResponder.uid)).toBe(true)',
         "restoredLock.missingRegistryKeys).toEqual([])",
+        "restoredLock.missingChainLimitRegistryKeys).toEqual([])",
       ],
     },
     {
@@ -198,6 +205,7 @@ function realScriptActivationLockVariantFixtures(): Array<{ file: string; requir
         'action.uid === opponentSpell.uid)).toBe(false)',
         'action.uid === responder.uid)).toBe(true)',
         "restoredLock.missingRegistryKeys).toEqual([])",
+        "restoredLock.missingChainLimitRegistryKeys).toEqual([])",
       ],
     },
     {

@@ -75,6 +75,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     expect(restoredSummonWindow.restoreComplete, restoredSummonWindow.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredSummonWindow, 0);
     expect(restoredSummonWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredSummonWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredSummonWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredSummonWindow.session, 0));
     const summon = getLuaRestoreLegalActions(restoredSummonWindow, 0).find((action) => action.type === "normalSummon" && action.uid === amano!.uid);
     expect(summon, JSON.stringify(getLuaRestoreLegalActions(restoredSummonWindow, 0), null, 2)).toBeDefined();
@@ -84,6 +85,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     expect(restoredOpenWindow.restoreComplete, restoredOpenWindow.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredOpenWindow, 0);
     expect(restoredOpenWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredOpenWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredOpenWindow.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -103,6 +105,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredResponseWindow, 1);
     expect(restoredResponseWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredResponseWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.session.state.chain).toHaveLength(1);
     expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 1));
     const responseActions = getLuaRestoreLegalActions(restoredResponseWindow, 1);
@@ -125,6 +128,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     expect(restoredTwoLinkWindow.restoreComplete, restoredTwoLinkWindow.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredTwoLinkWindow, 1);
     expect(restoredTwoLinkWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredTwoLinkWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredTwoLinkWindow.session.state.chain).toHaveLength(2);
     const pass = getLuaRestoreLegalActions(restoredTwoLinkWindow, 1).find((action) => action.type === "passChain");
     expect(pass, JSON.stringify(getLuaRestoreLegalActions(restoredTwoLinkWindow, 1), null, 2)).toBeDefined();

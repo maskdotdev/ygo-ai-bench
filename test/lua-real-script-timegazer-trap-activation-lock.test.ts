@@ -69,6 +69,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ti
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
     expect(restoredLock.missingRegistryKeys).toEqual([]);
+    expect(restoredLock.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredLock.session.state.effects.find((effect) => effect.sourceUid === timegazer.uid && effect.code === 6)).toMatchObject({
       event: "continuous",
       targetRange: [0, 1],

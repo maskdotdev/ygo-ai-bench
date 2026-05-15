@@ -65,6 +65,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restored, 0);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.host.messages).not.toContain("cold wave responder resolved");
     expect(restored.session.state.effects.find((effect) => effect.sourceUid === coldWave.uid && effect.code === 6)).toMatchObject({
       event: "continuous",
@@ -76,6 +77,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredLock, restoredLock.session.state.waitingFor ?? restoredLock.session.state.turnPlayer);
     expect(restoredLock.missingRegistryKeys).toEqual([]);
+    expect(restoredLock.missingChainLimitRegistryKeys).toEqual([]);
     restoredLock.session.state.turnPlayer = 1;
     restoredLock.session.state.waitingFor = 1;
     restoredLock.session.state.phase = "main1";
