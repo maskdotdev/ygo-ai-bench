@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelResponse, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -117,11 +118,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
     expectRestoredLegalActions(restoredFirstBattle, 0);
     attackAndRestoreDamage(restoredFirstBattle, unequippedAttacker!.uid, firstDefender!.uid, source, reader);
     expect(restoredFirstBattle.session.state.players[1].lifePoints).toBe(8000);
-    expect(restoredFirstBattle.session.state.eventHistory).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleDamageDealt", eventPlayer: 1 }),
-      ]),
-    );
+    expect(restoredFirstBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt" && event.eventPlayer === 1)).toEqual([]);
 
     const restoredSecondBattle = restoreDuelWithLuaScripts(serializeDuel(restoredFirstBattle.session), source, reader);
     expect(restoredSecondBattle.restoreComplete, restoredSecondBattle.incompleteReasons.join("; ")).toBe(true);
@@ -132,11 +129,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
 
     expect(restoredSecondBattle.session.state.battleDamage).toEqual({ 0: 0, 1: 800 });
     expect(restoredSecondBattle.session.state.players[1].lifePoints).toBe(7200);
-    expect(restoredSecondBattle.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 800 }),
-      ]),
-    );
+    expect(restoredSecondBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: equippedAttacker!.uid,
+        eventPlayer: 1,
+        eventValue: 800,
+        eventReason: duelReason.battle,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 2,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredSecondBattle.session.state.cards.find((card) => card.uid === firstDefender!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredSecondBattle.session.state.cards.find((card) => card.uid === secondDefender!.uid)).toMatchObject({ location: "graveyard" });
   });

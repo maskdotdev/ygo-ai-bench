@@ -81,11 +81,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ku
     expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
     expect(restored.session.state.players[0].lifePoints).toBe(8000);
     expect(restored.session.state.players[1].lifePoints).toBe(8000);
-    expect(restored.session.state.eventHistory).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleDamageDealt", eventPlayer: 0 }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt" && event.eventPlayer === 0)).toEqual([]);
     expect(restored.session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
   });
 });
