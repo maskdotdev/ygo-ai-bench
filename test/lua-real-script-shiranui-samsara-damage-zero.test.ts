@@ -90,12 +90,70 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     expect(restoredDamageLockChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredDamageLockChain, restoredDamageLockChain.session.state.waitingFor ?? restoredDamageLockChain.session.state.turnPlayer);
     resolveRestoredChain(restoredDamageLockChain);
-    expect(restoredDamageLockChain.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: samsara!.uid, code: effectChangeDamage, value: 0, targetRange: [1, 0] }),
-        expect.objectContaining({ sourceUid: samsara!.uid, code: effectNoEffectDamage, value: 0, targetRange: [1, 0] }),
-      ]),
-    );
+    expect(restoredDamageLockChain.session.state.effects.filter((effect) => effect.sourceUid === samsara!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "code": 82,
+          "controller": 0,
+          "event": "continuous",
+          "id": "lua-6-82",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:78765160:lua-6-82",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-78765160-0",
+          "targetRange": [
+            1,
+            0,
+          ],
+          "value": 0,
+        },
+        {
+          "code": 335,
+          "controller": 0,
+          "event": "continuous",
+          "id": "lua-7-335",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:78765160:lua-7-335",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-78765160-0",
+          "targetRange": [
+            1,
+            0,
+          ],
+          "value": 0,
+        },
+      ]
+    `);
 
     const restoredEffects = restoreDuelWithLuaScripts(serializeDuel(restoredDamageLockChain.session), source, reader);
     expect(restoredEffects.restoreComplete, restoredEffects.incompleteReasons.join("; ")).toBe(true);

@@ -106,12 +106,82 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script On
     resolveRestoredChain(restoredChain);
 
     expect(restoredChain.session.state.cards.find((card) => card.uid === peace!.uid)).toMatchObject({ location: "graveyard", previousLocation: "spellTrapZone" });
-    expect(restoredChain.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: peace!.uid, code: effectChangeDamage, value: 0, targetRange: [1, 1], reset: { flags: resetPhaseEnd, count: 2 } }),
-        expect.objectContaining({ sourceUid: peace!.uid, code: effectNoEffectDamage, value: 0, targetRange: [1, 1], reset: { flags: resetPhaseEnd, count: 2 } }),
-      ]),
-    );
+    expect(restoredChain.session.state.effects.filter((effect) => effect.sourceUid === peace!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 82,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-4-82",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "promptOperation": [Function],
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:33782437:lua-4-82",
+          "reset": {
+            "count": 2,
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-33782437-0",
+          "target": [Function],
+          "targetRange": [
+            1,
+            1,
+          ],
+          "value": 0,
+        },
+        {
+          "canActivate": [Function],
+          "code": 335,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-5-335",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "promptOperation": [Function],
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:33782437:lua-5-335",
+          "reset": {
+            "count": 2,
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-33782437-0",
+          "target": [Function],
+          "targetRange": [
+            1,
+            1,
+          ],
+          "value": 0,
+        },
+      ]
+    `);
     expect(restoredChain.host.messages).not.toContain("one day of peace responder resolved");
 
     const restoredEffects = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
