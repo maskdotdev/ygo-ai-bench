@@ -38,6 +38,8 @@ function costGateFixtureFiles(): Array<{ file: string; required: string[] }> {
         "cost:special-summon-type-is:",
         "kochi blocked false",
         "kochi open true",
+        "restoredCost?.({ summonTypeCode: luaSummonTypeSpecial + 181 }",
+        "restoredCost?.({ summonTypeCode: luaSummonTypeSpecial + 182 }",
         "summonTypeCode:",
       ],
     },
