@@ -70,6 +70,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
     const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredEquipWindow.restoreComplete, restoredEquipWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredEquipWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredEquipWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredEquipWindow, 0);
     const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === equip!.uid);
     expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
@@ -84,6 +85,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredChain, 1);
     expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredChain);
@@ -98,6 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
     const postEquip = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(postEquip.restoreComplete, postEquip.incompleteReasons.join("; ")).toBe(true);
     expect(postEquip.missingRegistryKeys).toEqual([]);
+    expect(postEquip.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(postEquip, 0);
     const unequippedAfterEquip = postEquip.session.state.cards.find((card) => card.uid === unequippedAttacker!.uid);
     expect(unequippedAfterEquip).toBeDefined();
@@ -110,6 +113,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
     const restoredFirstBattle = restoreDuelWithLuaScripts(serializeDuel(postEquip.session), source, reader);
     expect(restoredFirstBattle.restoreComplete, restoredFirstBattle.incompleteReasons.join("; ")).toBe(true);
     expect(restoredFirstBattle.missingRegistryKeys).toEqual([]);
+    expect(restoredFirstBattle.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredFirstBattle, 0);
     attackAndRestoreDamage(restoredFirstBattle, unequippedAttacker!.uid, firstDefender!.uid, source, reader);
     expect(restoredFirstBattle.session.state.players[1].lifePoints).toBe(8000);
@@ -122,6 +126,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
     const restoredSecondBattle = restoreDuelWithLuaScripts(serializeDuel(restoredFirstBattle.session), source, reader);
     expect(restoredSecondBattle.restoreComplete, restoredSecondBattle.incompleteReasons.join("; ")).toBe(true);
     expect(restoredSecondBattle.missingRegistryKeys).toEqual([]);
+    expect(restoredSecondBattle.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredSecondBattle, 0);
     attackAndRestoreDamage(restoredSecondBattle, equippedAttacker!.uid, secondDefender!.uid, source, reader);
 
@@ -155,6 +160,7 @@ function attackAndRestoreDamage(
   const restoredDamageWindow = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
   expect(restoredDamageWindow.restoreComplete, restoredDamageWindow.incompleteReasons.join("; ")).toBe(true);
   expect(restoredDamageWindow.missingRegistryKeys).toEqual([]);
+  expect(restoredDamageWindow.missingChainLimitRegistryKeys).toEqual([]);
   expectRestoredLegalActions(restoredDamageWindow, restoredDamageWindow.session.state.waitingFor ?? restoredDamageWindow.session.state.turnPlayer);
   passBattleResponses(restoredDamageWindow.session);
   restored.session = restoredDamageWindow.session;

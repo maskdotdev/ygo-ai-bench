@@ -70,6 +70,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script En
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ event: "continuous", code: 203, sourceUid: ox!.uid, targetRange: [4, 0] }),
