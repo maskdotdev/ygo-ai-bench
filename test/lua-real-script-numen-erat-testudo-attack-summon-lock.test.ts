@@ -65,6 +65,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Nu
     expect(resolve.ok, resolve.error).toBe(true);
     expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
       luaTargetDescriptor: "target:attack-below:1800",
+      targetRange: [1, 1],
     });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
@@ -75,6 +76,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Nu
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restored, 0),
     );
+    expect(restored.session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      targetRange: [1, 1],
+    });
     const probe = restored.host.loadScript(
       `
       local low=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${lowCode}),0,LOCATION_HAND,0,nil)

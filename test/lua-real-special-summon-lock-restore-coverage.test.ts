@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
-const SPECIAL_SUMMON_LOCK_FIXTURE_COUNT = 69;
+const SPECIAL_SUMMON_LOCK_FIXTURE_COUNT = 70;
 const SAME_CODE_EXTRA_DECK_ONCE_LOCK_FIXTURE_COUNT = 2;
 
 describe("Lua real special-summon lock restore coverage", () => {
@@ -81,6 +81,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-numen-erat-testudo-attack-summon-lock.test.ts",
       requiredSnippets: [
         "target:attack-below:1800",
+        "targetRange: [1, 1]",
         "testudo low special 0",
         "testudo equal special 0",
         "testudo high special 1",
@@ -106,9 +107,18 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       ],
     },
     {
+      file: "test/lua-real-script-necro-vulture-rank-up-magic-xyz-lock.test.ts",
+      requiredSnippets: [
+        "target:xyz-summon-not-related-setcode:149",
+        "targetRange: [1, 0]",
+        "targetCardPredicate",
+      ],
+    },
+    {
       file: "test/lua-real-script-repair-genex-controller-procedure-extra-lock.test.ts",
       requiredSnippets: [
         "target:extra-summon-type-not-or-no-procedure:",
+        "targetRange: [1, 0]",
         "canPlayerSpecialSummon(restored.session.state, 0, synchro, luaSummonTypeSynchro, procedureEffectId)).toBe(true)",
         "canPlayerSpecialSummon(restored.session.state, 0, synchro, luaSummonTypeSynchro)).toBe(false)",
         "repair genex raw synchro special 0",
