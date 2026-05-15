@@ -78,8 +78,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
     expect(register.ok, register.error).toBe(true);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 71, luaConditionDescriptor: "condition:source-attack-position" }),
-        expect.objectContaining({ event: "continuous", code: 71, luaConditionDescriptor: "condition:source-defense-position" }),
+        expect.objectContaining({ event: "continuous", code: 71, luaConditionDescriptor: "condition:source-attack-position", property: 0x20000 }),
+        expect.objectContaining({ event: "continuous", code: 71, luaConditionDescriptor: "condition:source-defense-position", property: 0x20000 }),
       ]),
     );
 
@@ -92,6 +92,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
     const restoredDragon = restored.session.state.cards.find((card) => card.code === checksumDragonCode);
     const attackEffect = restored.session.state.effects.find((effect) => effect.sourceUid === checksumDragon!.uid && effect.code === 71 && effect.luaConditionDescriptor === "condition:source-attack-position");
     const defenseEffect = restored.session.state.effects.find((effect) => effect.sourceUid === checksumDragon!.uid && effect.code === 71 && effect.luaConditionDescriptor === "condition:source-defense-position");
+    expect(attackEffect).toMatchObject({ property: 0x20000 });
+    expect(defenseEffect).toMatchObject({ property: 0x20000 });
     expect(attackEffect?.canActivate).toBeDefined();
     expect(defenseEffect?.canActivate).toBeDefined();
     const ctx = targetContext(restored.session.state, restoredDragon!);
@@ -151,8 +153,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
     expect(register.ok, register.error).toBe(true);
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 71, luaConditionDescriptor: "condition:source-attack-position" }),
-        expect.objectContaining({ event: "continuous", code: 71, luaConditionDescriptor: "condition:source-defense-position" }),
+        expect.objectContaining({ event: "continuous", code: 71, luaConditionDescriptor: "condition:source-attack-position", property: 0x20000 }),
+        expect.objectContaining({ event: "continuous", code: 71, luaConditionDescriptor: "condition:source-defense-position", property: 0x20000 }),
       ]),
     );
 
@@ -165,6 +167,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
     const restoredDragon = restored.session.state.cards.find((card) => card.code === checksumDragonCode);
     const attackEffect = restored.session.state.effects.find((effect) => effect.sourceUid === checksumDragon!.uid && effect.code === 71 && effect.luaConditionDescriptor === "condition:source-attack-position");
     const defenseEffect = restored.session.state.effects.find((effect) => effect.sourceUid === checksumDragon!.uid && effect.code === 71 && effect.luaConditionDescriptor === "condition:source-defense-position");
+    expect(attackEffect).toMatchObject({ property: 0x20000 });
+    expect(defenseEffect).toMatchObject({ property: 0x20000 });
     expect(attackEffect?.canActivate).toBeDefined();
     expect(defenseEffect?.canActivate).toBeDefined();
     const ctx = targetContext(restored.session.state, restoredDragon!);
@@ -202,6 +206,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
           code: 42,
           sourceUid: checksumDragon!.uid,
           luaConditionDescriptor: "condition:source-attack-position",
+          property: 0x20000,
           range: ["monsterZone"],
           value: 1,
         }),
@@ -221,6 +226,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
       event: "continuous",
       code: 42,
       luaConditionDescriptor: "condition:source-attack-position",
+      property: 0x20000,
       range: ["monsterZone"],
       value: 1,
     });

@@ -37,6 +37,7 @@ function continuousOperationFixtureFiles(): Array<{ file: string; required: stri
       required: [
         "condition:source-faceup",
         "code: 60",
+        "property: 0x400",
         "duelReason.effect | duelReason.redirect",
         'location: "banished"',
         'location: "graveyard"',

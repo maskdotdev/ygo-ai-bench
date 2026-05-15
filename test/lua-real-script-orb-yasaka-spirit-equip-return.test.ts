@@ -61,11 +61,19 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
     expect(host.loadCardScript(Number(susaCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(3);
+    expect(session.state.effects.find((effect) => effect.sourceUid === responder!.uid)).toMatchObject({
+      property: 0xc000,
+      range: ["hand"],
+    });
 
     const restoredSummonWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredSummonWindow.restoreComplete, restoredSummonWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredSummonWindow.missingRegistryKeys).toEqual([]);
     expect(restoredSummonWindow.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restoredSummonWindow.session.state.effects.find((effect) => effect.sourceUid === responder!.uid)).toMatchObject({
+      property: 0xc000,
+      range: ["hand"],
+    });
     expectRestoredLegalActions(restoredSummonWindow, 0);
     const summon = getLuaRestoreLegalActions(restoredSummonWindow, 0).find((action) => action.type === "normalSummon" && action.uid === susa!.uid);
     expect(summon, JSON.stringify(getLuaRestoreLegalActions(restoredSummonWindow, 0), null, 2)).toBeDefined();

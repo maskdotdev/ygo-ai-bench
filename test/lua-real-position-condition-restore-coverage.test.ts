@@ -37,6 +37,7 @@ function positionConditionFixtureFiles(): Array<{ file: string; required: string
       required: [
         "condition:source-attack-position",
         "condition:source-defense-position",
+        "property: 0x20000",
         "restoredEffect!.canActivate!(ctx)",
         "destroyDuelCard(restored.session.state",
         "duelReason.battle | duelReason.destroy",

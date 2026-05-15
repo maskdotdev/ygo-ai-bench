@@ -75,6 +75,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
       event: "continuous",
       code: 60,
       luaConditionDescriptor: "condition:source-faceup",
+      property: 0x400,
       range: ["monsterZone"],
       value: 0x20,
     });
@@ -134,6 +135,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
       event: "continuous",
       code: 60,
       luaConditionDescriptor: "condition:source-faceup",
+      property: 0x400,
       range: ["monsterZone"],
       value: 0x20,
     });
@@ -190,6 +192,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
       event: "continuous",
       code: 60,
       luaConditionDescriptor: "condition:source-faceup",
+      property: 0x400,
       range: ["monsterZone"],
       value: 0x20,
     });
@@ -208,6 +211,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
       event: "continuous",
       code: 60,
       luaConditionDescriptor: "condition:source-faceup",
+      property: 0x400,
       range: ["monsterZone"],
       value: 0x20,
     });
