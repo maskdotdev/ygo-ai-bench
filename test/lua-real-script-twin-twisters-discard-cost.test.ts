@@ -98,11 +98,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tw
     };
     expect(session.state.eventHistory.filter((event) => event.eventName === "discarded")).toEqual([discardEvent]);
     expect(session.state.chain).toHaveLength(2);
-    expect(session.state.chain[1]).toMatchObject({
-      sourceUid: twinTwisters!.uid,
-      targetUids: [firstTarget!.uid, secondTarget!.uid],
-      operationInfos: [{ category: 0x1, targetUids: [firstTarget!.uid, secondTarget!.uid], count: 2, player: 0, parameter: 0 }],
-    });
+    expect(session.state.chain[1]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 2,
+        "effectId": "lua-3-1002",
+        "id": "chain-4",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 2,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-904-2",
+              "p0-deck-905-3",
+            ],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-43898403-0",
+        "targetUids": [
+          "p0-deck-904-2",
+          "p0-deck-905-3",
+        ],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -113,11 +135,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tw
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(restored.session.state.chain).toHaveLength(2);
-    expect(restored.session.state.chain[1]).toMatchObject({
-      sourceUid: twinTwisters!.uid,
-      targetUids: [firstTarget!.uid, secondTarget!.uid],
-      operationInfos: [{ category: 0x1, targetUids: [firstTarget!.uid, secondTarget!.uid], count: 2, player: 0, parameter: 0 }],
-    });
+    expect(restored.session.state.chain[1]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 2,
+        "effectId": "lua-3-1002",
+        "id": "chain-4",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 2,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-904-2",
+              "p0-deck-905-3",
+            ],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-43898403-0",
+        "targetUids": [
+          "p0-deck-904-2",
+          "p0-deck-905-3",
+        ],
+      }
+    `);
 
     const pass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
