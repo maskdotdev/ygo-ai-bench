@@ -81,6 +81,10 @@ describe("duel legal action groups", () => {
 
     expect(groups).toHaveLength(2);
     expect(groups.map((group) => group.key)).toEqual(["4:prompt:prompt:prompt-a", "4:prompt:prompt:prompt-b"]);
+    expect(groups.map((group) => ({ label: group.label, promptId: group.promptId, promptType: group.promptType }))).toEqual([
+      { label: "Yes / No Prompt", promptId: "prompt-a", promptType: "selectYesNo" },
+      { label: "Option Prompt", promptId: "prompt-b", promptType: "selectOption" },
+    ]);
     expect(groups.flatMap((group) => group.actions)).toEqual(actions);
   });
 

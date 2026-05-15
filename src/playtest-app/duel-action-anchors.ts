@@ -4,6 +4,11 @@ import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 export interface DuelActionUiGroup {
   key: string;
   label: string;
+  promptId?: string;
+  promptType?: "selectOption" | "selectYesNo";
+  windowId?: number;
+  windowKind?: DuelLegalActionGroup["windowKind"];
+  windowToken?: string;
   actions: DuelAction[];
 }
 
@@ -114,6 +119,11 @@ export function orphanDuelActionGroups(
     .map((group) => ({
       key: group.key,
       label: group.label,
+      ...(group.promptId === undefined ? {} : { promptId: group.promptId }),
+      ...(group.promptType === undefined ? {} : { promptType: group.promptType }),
+      ...(group.windowId === undefined ? {} : { windowId: group.windowId }),
+      ...(group.windowKind === undefined ? {} : { windowKind: group.windowKind }),
+      ...(group.windowToken === undefined ? {} : { windowToken: group.windowToken }),
       actions: dedupeDuelActions(group.actions.filter((action) => orphanKeys.has(duelActionUiKey(action)))),
     }))
     .filter((group) => group.actions.length > 0);

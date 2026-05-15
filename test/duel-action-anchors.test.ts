@@ -99,14 +99,14 @@ describe("duel action anchors", () => {
 
     const groups = orphanDuelActionGroups(actions, [
       { key: "6:chainResponse:pass", label: "Pass", windowId: 6, windowKind: "chainResponse", actions: [pass] },
-      { key: "7:prompt:prompt:prompt-a", label: "Prompt", windowId: 7, windowKind: "prompt", actions: [prompt] },
+      { key: "7:prompt:prompt:prompt-a", label: "Option Prompt", promptId: "prompt-a", promptType: "selectOption", windowId: 7, windowKind: "prompt", windowToken: "prompt-window", actions: [prompt] },
       { key: "6:chainResponse:effect", label: "Effects", windowId: 6, windowKind: "chainResponse", actions: [hiddenHandEffect, visibleEffect] },
     ], new Set(["visible-field"]));
 
     expect(groups).toEqual([
-      { key: "6:chainResponse:pass", label: "Pass", actions: [pass] },
-      { key: "7:prompt:prompt:prompt-a", label: "Prompt", actions: [prompt] },
-      { key: "6:chainResponse:effect", label: "Effects", actions: [hiddenHandEffect] },
+      { key: "6:chainResponse:pass", label: "Pass", windowId: 6, windowKind: "chainResponse", actions: [pass] },
+      { key: "7:prompt:prompt:prompt-a", label: "Option Prompt", promptId: "prompt-a", promptType: "selectOption", windowId: 7, windowKind: "prompt", windowToken: "prompt-window", actions: [prompt] },
+      { key: "6:chainResponse:effect", label: "Effects", windowId: 6, windowKind: "chainResponse", actions: [hiddenHandEffect] },
     ]);
   });
 });

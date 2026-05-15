@@ -4,6 +4,8 @@ import type { DuelAction, DuelActionWindowKind, PendingTriggerBucketState, Trigg
 export interface DuelLegalActionGroup {
   key: string;
   label: string;
+  promptId?: string;
+  promptType?: "selectOption" | "selectYesNo";
   windowId?: number;
   windowKind?: DuelActionWindowKind;
   windowToken?: string;
@@ -33,7 +35,8 @@ export function groupDuelLegalActions(actions: DuelAction[]): DuelLegalActionGro
     else {
       groups.set(key, {
         key,
-        label: duelActionGroupLabel(actionKey),
+        label: duelActionGroupLabel(actionKey, action),
+        ...promptGroupState(action),
         ...(action.windowId === undefined ? {} : { windowId: action.windowId }),
         ...(action.windowKind === undefined ? {} : { windowKind: action.windowKind }),
         ...(action.windowToken === undefined ? {} : { windowToken: action.windowToken }),
@@ -61,6 +64,11 @@ function triggerBucketGroupState(action: DuelAction): { triggerBucket: PendingTr
   };
 }
 
+function promptGroupState(action: DuelAction): { promptId: string; promptType: "selectOption" | "selectYesNo" } | Record<string, never> {
+  if (action.type !== "selectOption" && action.type !== "selectYesNo") return {};
+  return { promptId: action.promptId, promptType: action.type };
+}
+
 function triggerOrderPromptState(action: DuelAction, bucket: PendingTriggerBucketState): TriggerOrderPromptState | undefined {
   if ((action.type !== "activateTrigger" && action.type !== "declineTrigger") || action.windowId === undefined || bucket.triggerIds.length < 2) return undefined;
   return {
@@ -85,14 +93,14 @@ function duelActionGroupKey(action: DuelAction): string {
   return "action";
 }
 
-function duelActionGroupLabel(key: string): string {
+function duelActionGroupLabel(key: string, action: DuelAction): string {
   if (key === "trigger-activate") return "Trigger Activations";
   if (key === "trigger-decline") return "Trigger Declines";
   if (key === "effect") return "Effects";
   if (key === "summon") return "Summons";
   if (key === "attack") return "Attacks";
   if (key === "pass") return "Pass";
-  if (key.startsWith("prompt:")) return "Prompt";
+  if (key.startsWith("prompt:")) return action.type === "selectYesNo" ? "Yes / No Prompt" : "Option Prompt";
   if (key === "turn") return "Turn";
   if (key === "set") return "Set";
   return "Actions";
