@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const attackRetargetFixtureCount = 5;
+const attackRetargetFixtureCount = 6;
 
 describe("Lua real attack retarget restore coverage", () => {
   it("requires representative attack-retarget fixtures to assert clean Lua restore and replayed target changes", () => {
@@ -66,6 +66,14 @@ function realScriptAttackRetargetFixtureFiles(): Array<{ file: string; required:
         'eventName: "battleTargeted"',
         "targetUid: spellcaster!.uid",
         "battleDamage).toMatchObject({ 1: 400 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-toon-defense-change-attack-target.test.ts",
+      required: [
+        'eventName: "attackDeclared"',
+        "currentAttack?.targetUid).toBeUndefined()",
+        "battleDamage).toMatchObject({ 1: 1800 })",
       ],
     },
     {
