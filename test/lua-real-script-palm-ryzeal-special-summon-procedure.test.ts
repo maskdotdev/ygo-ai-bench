@@ -10,6 +10,7 @@ import {
   serializeDuel,
   startDuel,
 } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -72,10 +73,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pa
     });
     expect(restored.session.state.eventHistory).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ eventName: "sentToDeck", eventCode: 1013, eventCardUid: cost!.uid, eventReason: 0x80 }),
         expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventCardUid: palm!.uid }),
       ]),
     );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToDeck" && event.eventCardUid === cost!.uid)).toEqual([
+      {
+        eventName: "sentToDeck",
+        eventCode: 1013,
+        eventCardUid: cost!.uid,
+        eventPreviousState: {
+          location: "graveyard",
+          controller: 0,
+          sequence: 0,
+          position: "faceDown",
+          faceUp: true,
+        },
+        eventCurrentState: {
+          location: "deck",
+          controller: 0,
+          sequence: 0,
+          position: "faceDown",
+          faceUp: true,
+        },
+        eventReason: duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: palm!.uid,
+        eventReasonEffectId: 2,
+      },
+    ]);
   });
 });
 
