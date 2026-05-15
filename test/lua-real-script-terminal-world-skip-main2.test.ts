@@ -32,17 +32,35 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Te
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(terminalWorldCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: terminalWorld.uid,
-          code: 184,
-          controller: 0,
-          targetRange: [1, 1],
-          range: ["spellTrapZone"],
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter((effect) => effect.sourceUid === terminalWorld.uid && effect.code === 184),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 184,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-2-184",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 2048,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:54631834:lua-2-184",
+          "sourceUid": "p0-deck-54631834-0",
+          "target": [Function],
+          "targetRange": [
+            1,
+            1,
+          ],
+        },
+      ]
+    `);
 
     const restoredMain1 = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredMain1.restoreComplete, restoredMain1.incompleteReasons.join("; ")).toBe(true);

@@ -49,9 +49,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pe
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: trapeze!.uid, code: 82, targetRange: [1, 0] })]),
-    );
+    expect(
+      restored.session.state.effects.filter((effect) => effect.sourceUid === trapeze!.uid && effect.code === 82),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 82,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-2-82",
+          "lifePointValue": [Function],
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 2048,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:17016362:lua-2-82",
+          "sourceUid": "p0-extraDeck-17016362-0",
+          "statValue": [Function],
+          "target": [Function],
+          "targetRange": [
+            1,
+            0,
+          ],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
     const fireActivation = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.uid === fire!.uid);
     expect(fireActivation, JSON.stringify(getLuaRestoreLegalActions(restored, 1), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restored, fireActivation!);

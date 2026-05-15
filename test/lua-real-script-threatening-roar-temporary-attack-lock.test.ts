@@ -105,34 +105,87 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
       location: "graveyard",
       previousLocation: "spellTrapZone",
     });
-    expect(restoredChain.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: roar!.uid,
-          code: 86,
-          property: effectFlagPlayerTarget,
-          targetRange: [0, 1],
-          reset: { flags: resetPhaseEnd },
-        }),
-      ]),
-    );
+    expect(
+      restoredChain.session.state.effects.filter((effect) => effect.sourceUid === roar!.uid && effect.code === 86),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 86,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-3-86",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "promptOperation": [Function],
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:36361633:lua-3-86",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-36361633-0",
+          "target": [Function],
+          "targetRange": [
+            0,
+            1,
+          ],
+        },
+      ]
+    `);
     expect(restoredChain.host.messages).not.toContain("threatening roar responder resolved");
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
     expect(restoredLock.missingRegistryKeys).toEqual([]);
     expect(restoredLock.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restoredLock.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: roar!.uid,
-          code: 86,
-          property: effectFlagPlayerTarget,
-          targetRange: [0, 1],
-          reset: { flags: resetPhaseEnd },
-        }),
-      ]),
-    );
+    expect(
+      restoredLock.session.state.effects.filter((effect) => effect.sourceUid === roar!.uid && effect.code === 86),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "code": 86,
+          "controller": 0,
+          "event": "continuous",
+          "id": "lua-3-86",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:36361633:lua-3-86",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-36361633-0",
+          "targetRange": [
+            0,
+            1,
+          ],
+        },
+      ]
+    `);
     const probe = restoredLock.host.loadScript(attackLockProbeScript(attackerCode), "threatening-roar-attack-lock-probe.lua");
     expect(probe.ok, probe.error).toBe(true);
     expect(restoredLock.host.messages).toContain("threatening roar attack false");

@@ -73,17 +73,53 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
     const totemPass = getLuaRestoreLegalActions(totemRestored, 1).find((action) => action.type === "passChain");
     expect(totemPass).toBeDefined();
     expect(applyLuaRestoreResponse(totemRestored, totemPass!).ok).toBe(true);
-    expect(totemRestored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 82,
-          controller: 0,
-          sourceUid: totemPole!.uid,
-          targetRange: [0, 1],
-        }),
-      ]),
-    );
+    expect(
+      totemRestored.session.state.effects.filter((effect) => effect.sourceUid === totemPole!.uid && effect.code === 82),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 82,
+          "controller": 0,
+          "cost": [Function],
+          "description": 765974354,
+          "event": "continuous",
+          "id": "lua-9-82",
+          "lifePointValue": [Function],
+          "luaTypeFlags": 2,
+          "luaValueDescriptor": "change-damage:effect-double",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "promptOperation": [Function],
+          "property": 67110912,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:47873397:lua-9-82",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-47873397-0",
+          "statValue": [Function],
+          "target": [Function],
+          "targetRange": [
+            0,
+            1,
+          ],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
     expect(serializeDuel(totemRestored.session).state.effects).toEqual(
       expect.arrayContaining([expect.objectContaining({ code: 82, luaValueDescriptor: "change-damage:effect-double" })]),
     );
@@ -119,17 +155,45 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
     expect(fireRestored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(fireRestored, 1)).toEqual(getGroupedDuelLegalActions(fireRestored.session, 1));
     expect(getLuaRestoreLegalActionGroups(fireRestored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(fireRestored, 1));
-    expect(fireRestored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 82,
-          controller: 0,
-          sourceUid: totemPole!.uid,
-          targetRange: [0, 1],
-        }),
-      ]),
-    );
+    expect(
+      fireRestored.session.state.effects.filter((effect) => effect.sourceUid === totemPole!.uid && effect.code === 82),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "code": 82,
+          "controller": 0,
+          "description": 765974354,
+          "event": "continuous",
+          "id": "lua-9-82",
+          "lifePointValue": [Function],
+          "luaValueDescriptor": "change-damage:effect-double",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "property": 67110912,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:47873397:lua-9-82",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-47873397-0",
+          "targetRange": [
+            0,
+            1,
+          ],
+        },
+      ]
+    `);
 
     const firePass = getLuaRestoreLegalActions(fireRestored, 1).find((action) => action.type === "passChain");
     expect(firePass).toBeDefined();
