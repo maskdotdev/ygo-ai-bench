@@ -186,6 +186,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       requiredSnippets: [
         "target:not-code:",
         "Duel.CreateToken",
+        "targetRange: [1, 0]",
         "jam slime token special 1",
         "jam hand special 0",
       ],
@@ -566,6 +567,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-isolde-zombie-special-summon-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "target:not-race:16"',
+        "targetRange: [1, 0]",
         "isolde fiend special 0",
         "isolde zombie special 1",
       ],
