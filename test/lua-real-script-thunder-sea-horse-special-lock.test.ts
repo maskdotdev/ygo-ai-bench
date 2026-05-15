@@ -92,17 +92,85 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
     const resolved = applyLuaRestoreResponse(restored, pass!);
     expect(resolved.ok, resolved.error).toBe(true);
     expect(restored.host.messages).not.toContain("thunder sea horse responder resolved");
-    expect(searchTargets.map((card) => restored.session.state.cards.find((candidate) => candidate.uid === card.uid))).toEqual(
-      expect.arrayContaining(searchTargets.map((card) => expect.objectContaining({ uid: card.uid, location: "hand", controller: 0 }))),
-    );
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: seaHorse.uid }),
-        expect.objectContaining({ eventName: "sentToHand", eventCardUid: searchTargets[0]!.uid }),
-        expect.objectContaining({ eventName: "sentToHand", eventCardUid: searchTargets[1]!.uid }),
-        expect.objectContaining({ eventName: "sentToHandConfirmed", eventPlayer: 1, eventUids: selectedSearchTargetUids }),
-      ]),
-    );
+    expect(searchTargets.map((card) => restored.session.state.cards.find((candidate) => candidate.uid === card.uid))).toEqual([
+      expect.objectContaining({ uid: searchTargets[0]!.uid, location: "hand", controller: 0 }),
+      expect.objectContaining({ uid: searchTargets[1]!.uid, location: "hand", controller: 0 }),
+    ]);
+    expect(restored.session.state.eventHistory.filter((event) => ["sentToGraveyard", "sentToHand", "confirmed", "sentToHandConfirmed"].includes(event.eventName))).toEqual([
+      {
+        eventName: "sentToGraveyard",
+        eventCode: 1014,
+        eventCardUid: seaHorse.uid,
+        eventReason: duelReason.cost | duelReason.discard,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: seaHorse.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: { controller: 0, location: "hand", sequence: 0, position: "faceDown", faceUp: false },
+        eventCurrentState: { controller: 0, location: "graveyard", sequence: 0, position: "faceDown", faceUp: true },
+      },
+      {
+        eventName: "sentToHand",
+        eventCode: 1012,
+        eventCardUid: searchTargets[1]!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: seaHorse.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: { controller: 0, location: "deck", sequence: 1, position: "faceDown", faceUp: false },
+        eventCurrentState: { controller: 0, location: "hand", sequence: 1, position: "faceDown", faceUp: false },
+      },
+      {
+        eventName: "sentToHand",
+        eventCode: 1012,
+        eventCardUid: searchTargets[0]!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: seaHorse.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: { controller: 0, location: "deck", sequence: 3, position: "faceDown", faceUp: false },
+        eventCurrentState: { controller: 0, location: "hand", sequence: 2, position: "faceDown", faceUp: false },
+      },
+      {
+        eventName: "sentToHand",
+        eventCode: 1012,
+        eventCardUid: searchTargets[1]!.uid,
+        eventUids: selectedSearchTargetUids,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: seaHorse.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: { controller: 0, location: "deck", sequence: 1, position: "faceDown", faceUp: false },
+        eventCurrentState: { controller: 0, location: "hand", sequence: 1, position: "faceDown", faceUp: false },
+      },
+      {
+        eventName: "confirmed",
+        eventCode: 1211,
+        eventPlayer: 1,
+        eventUids: selectedSearchTargetUids,
+        eventValue: 2,
+        eventCardUid: searchTargets[1]!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: seaHorse.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: { controller: 0, location: "deck", sequence: 1, position: "faceDown", faceUp: false },
+        eventCurrentState: { controller: 0, location: "hand", sequence: 1, position: "faceDown", faceUp: false },
+      },
+      {
+        eventName: "sentToHandConfirmed",
+        eventCode: 1212,
+        eventPlayer: 1,
+        eventUids: selectedSearchTargetUids,
+        eventValue: 2,
+        eventCardUid: searchTargets[1]!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: seaHorse.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: { controller: 0, location: "deck", sequence: 1, position: "faceDown", faceUp: false },
+        eventCurrentState: { controller: 0, location: "hand", sequence: 1, position: "faceDown", faceUp: false },
+      },
+    ]);
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
