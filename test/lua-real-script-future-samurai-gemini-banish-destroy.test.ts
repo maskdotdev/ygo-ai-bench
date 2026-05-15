@@ -88,9 +88,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
       previousLocation: "graveyard",
       reason: duelReason.cost,
     });
-    expect(restoredIgnition.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "banished", eventCode: 1011, eventCardUid: cost!.uid })]),
-    );
+    expect(restoredIgnition.session.state.eventHistory.filter((event) => event.eventName === "banished" && event.eventCardUid === cost!.uid)).toEqual([
+      {
+        eventName: "banished",
+        eventCode: 1011,
+        eventCardUid: cost!.uid,
+        eventReason: duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: samurai!.uid,
+        eventReasonEffectId: 4,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "banished",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredIgnition.session.state.chain[0]).toMatchObject({
       sourceUid: samurai!.uid,
       targetUids: [destroyTarget!.uid],
