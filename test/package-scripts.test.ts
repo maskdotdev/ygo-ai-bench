@@ -33,6 +33,7 @@ describe("package scripts", () => {
     expect(pkg.scripts?.["probe:fallback-decks"]).toContain("branded-dracotail-ycs-guatemala-2026.ydk --fail-on-errors --min-upstream-scripts 37 --min-actions 11 --min-activate-effects 2 --min-initial-effects 56 --min-registered-effects 138 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 0");
     expect(pkg.scripts?.["probe:fallback-decks"]).toContain("ritual-of-light-and-darkness-apr-2026.ydk --fail-on-errors --min-upstream-scripts 23 --min-actions 8 --min-activate-effects 1 --min-initial-effects 54 --min-registered-effects 141 --max-local-overrides 0 --max-local-fallbacks 10 --max-expected-missing-scripts 1 --expected-missing-script-code 46986414");
     expect(pkg.scripts?.["check:bridge-bundle"]).toContain("tools/check-bridge-bundle.mjs");
+    expect(pkg.scripts?.["check:pvp-bridge-bundle"]).toContain("tools/check-bridge-bundle.mjs --bridge dist/duel-pvp-engine.js");
     expect(pkg.scripts?.check?.split(" && ")).toEqual([
       "bun run check:loc",
       "bun run scan:lua-parity",
@@ -48,6 +49,7 @@ describe("package scripts", () => {
       "bun run test",
       "bun run build",
       "bun run check:bridge-bundle",
+      "bun run check:pvp-bridge-bundle",
     ]);
     expect(pkg.scripts?.check).not.toMatch(/\bnpm\b|\bnpx\b|\byarn\b|\bpnpm\b/);
     expect(pkg.scripts?.check?.split(" && ").filter((command) => command.includes("test"))).toEqual(["bun run test"]);

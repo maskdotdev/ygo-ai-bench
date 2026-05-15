@@ -1,9 +1,9 @@
 import fs from "node:fs";
 
 const bridgePath = bridgePathArg() ?? "dist/playtest-engine.js";
-const maxBytes = 128 * 1024;
+const maxBytes = maxBytesArg() ?? 128 * 1024;
 const forbiddenSnippets = ["child_process", "readline-sync", "node_modules/fengari", "Module \"fs\"", "from \"fs\"", "require(\"fs\")"];
-const requiredSnippets = ["window.duelDeckPlaytest", "legalActions", "legalActionGroups", "runScripted"];
+const requiredSnippets = requiredSnippetArgs();
 
 if (!fs.existsSync(bridgePath)) {
   console.error(`${bridgePath} does not exist. Run the bridge build before checking it.`);
@@ -33,4 +33,31 @@ function bridgePathArg() {
     process.exit(1);
   }
   return value;
+}
+
+function maxBytesArg() {
+  const index = process.argv.indexOf("--max-bytes");
+  if (index === -1) return undefined;
+  const value = process.argv[index + 1];
+  const parsed = Number(value);
+  if (!value || value.startsWith("--") || !Number.isSafeInteger(parsed) || parsed <= 0) {
+    console.error("Missing or invalid value for --max-bytes");
+    process.exit(1);
+  }
+  return parsed;
+}
+
+function requiredSnippetArgs() {
+  const snippets = [];
+  for (let index = 0; index < process.argv.length; index += 1) {
+    if (process.argv[index] !== "--required") continue;
+    const value = process.argv[index + 1];
+    if (!value || value.startsWith("--")) {
+      console.error("Missing value for --required");
+      process.exit(1);
+    }
+    snippets.push(value);
+    index += 1;
+  }
+  return snippets.length > 0 ? snippets : ["window.duelDeckPlaytest", "legalActions", "legalActionGroups", "runScripted"];
 }
