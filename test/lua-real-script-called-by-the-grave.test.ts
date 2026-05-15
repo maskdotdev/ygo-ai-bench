@@ -51,8 +51,15 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     expect(calledByAction).toBeDefined();
     const calledByResolved = applyResponse(session, calledByAction!);
     expect(calledByResolved.ok, calledByResolved.error).toBe(true);
+    expect(session.state.chain).toHaveLength(0);
     expect(session.state.cards.find((card) => card.uid === graveyardMonster!.uid)).toMatchObject({ location: "banished" });
     expect(session.state.cards.find((card) => card.uid === calledByCard!.uid)).toMatchObject({ location: "graveyard" });
+    expect(session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 2, sourceUid: calledByCard!.uid }),
+        expect.objectContaining({ code: 1020, sourceUid: calledByCard!.uid }),
+      ]),
+    );
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -71,6 +78,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     expect(restoredSameCodeAction).toBeDefined();
     const restoredSameCodeResolved = applyLuaRestoreResponse(restored, restoredSameCodeAction!);
     expect(restoredSameCodeResolved.ok, restoredSameCodeResolved.error).toBe(true);
+    expect(restored.session.state.chain).toHaveLength(0);
     expect(restored.host.messages).not.toContain("same-code monster resolved");
     expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "chainDisabled" })]));
 
@@ -78,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     expect(sameCodeAction).toBeDefined();
     const sameCodeResolved = applyResponse(session, sameCodeAction!);
     expect(sameCodeResolved.ok, sameCodeResolved.error).toBe(true);
+    expect(session.state.chain).toHaveLength(0);
     expect(host.messages).not.toContain("same-code monster resolved");
     expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "chainDisabled" })]));
   });

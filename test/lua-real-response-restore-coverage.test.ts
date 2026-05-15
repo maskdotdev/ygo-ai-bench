@@ -46,6 +46,18 @@ describe("Lua real response restore coverage", () => {
     expect(missing).toEqual([]);
   });
 
+  it("requires Called by the Grave to pin restored same-code lingering negation", () => {
+    const text = fs.readFileSync(path.join(root, "test", "lua-real-script-called-by-the-grave.test.ts"), "utf8");
+
+    expect(text).toContain("code: 2, sourceUid: calledByCard!.uid");
+    expect(text).toContain("code: 1020, sourceUid: calledByCard!.uid");
+    expect(text).toContain('location: "banished"');
+    expect(text).toContain('host.messages).not.toContain("same-code monster resolved")');
+    expect(text).toContain("expect(restored.session.state.chain).toHaveLength(0)");
+    expect(text).toContain("expect(session.state.chain).toHaveLength(0)");
+    expect(text).toContain('eventName: "chainDisabled"');
+  });
+
   it("requires chained response fixtures to prove restored chain shape and response suppression", () => {
     const files = realScriptChainedResponseFixtureFiles();
     expect(files).toHaveLength(chainedResponseFixtureCount);
