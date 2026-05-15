@@ -255,10 +255,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sy
     expect(summoned).toMatchObject({
       location: "monsterZone",
       summonType: "synchro",
-      summonMaterialUids: expect.arrayContaining(matchingMaterialCodes.map((code) => expect.stringContaining(code))),
     });
     if (!summoned) throw new Error("Expected Synchro Summoned monster");
-    expect(summonMaterialUids).toHaveLength(2);
+    expect(summonMaterialUids).toEqual(matchingMaterialCodes.map((code) => expect.stringContaining(code)));
   });
 
   it("skips material locks for Lua Duel.SynchroSummon default material selection", () => {
@@ -319,10 +318,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sy
     expect(summoned).toMatchObject({
       location: "monsterZone",
       summonType: "synchro",
-      summonMaterialUids: expect.arrayContaining([allowedTuner?.uid, nonTuner?.uid]),
     });
     if (!summoned) throw new Error("Expected Synchro Summoned monster");
-    expect(summonMaterialUids).toHaveLength(2);
+    expect(summonMaterialUids).toEqual([allowedTuner?.uid, nonTuner?.uid]);
     expect(summonMaterialUids).not.toContain(lockedTuner?.uid);
     expect(lockedTuner?.location).toBe("monsterZone");
   });

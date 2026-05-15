@@ -140,10 +140,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
     expect(restoredXyz).toMatchObject({
       location: "monsterZone",
       summonType: "xyz",
-      overlayUids: expect.arrayContaining(beastMaterialCodes.map((code) => expect.stringContaining(code))),
     });
     if (!restoredXyz) throw new Error("Expected Xyz Summoned monster");
-    expect(overlayUids).toHaveLength(3);
+    expect(overlayUids).toEqual(beastMaterialCodes.map((code) => expect.stringContaining(code)));
   });
 
   it("restores official Xyz.AddProcedure setcode filters for real extra deck summons", () => {
@@ -266,8 +265,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
       location: "monsterZone",
       summonType: "xyz",
     });
-    expect(summoned?.overlayUids).toEqual(expect.arrayContaining(normalMaterialUids));
-    expect(summoned?.overlayUids).toHaveLength(2);
+    expect(summoned?.overlayUids).toEqual(normalMaterialUids);
     expect(summoned?.overlayUids).not.toContain(effectMaterial?.uid);
   });
 
@@ -327,8 +325,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
       location: "monsterZone",
       summonType: "xyz",
     });
-    expect(summoned?.overlayUids).toEqual(expect.arrayContaining(allowedMaterialUids));
-    expect(summoned?.overlayUids).toHaveLength(2);
+    expect(summoned?.overlayUids).toEqual(allowedMaterialUids);
     expect(summoned?.overlayUids).not.toContain(blockedMaterial?.uid);
     expect(blockedMaterial?.location).toBe("monsterZone");
   });
