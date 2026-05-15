@@ -436,7 +436,9 @@ function valueCardPredicateDescriptor(snippet: string, params: string[] | undefi
   const effect = escapeRegExp(effectParam);
   const card = escapeRegExp(cardParam);
   const notHandler = new RegExp(`\\breturn\\s+${card}\\s*~=\\s*${effect}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*(?:end\\b|$)`);
-  return notHandler.test(snippet) ? "value-card:not-handler" : undefined;
+  if (notHandler.test(snippet)) return "value-card:not-handler";
+  if (new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsFacedown\\s*\\(\\s*\\)\\s*(?:end\\b|$)`).test(snippet)) return "value-card:not-facedown";
+  return undefined;
 }
 
 function specialSummonedMonsterActivationPredicateDescriptor(snippet: string, params: string[] | undefined): string | undefined {

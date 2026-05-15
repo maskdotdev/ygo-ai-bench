@@ -946,6 +946,7 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   if (effect.luaValueDescriptor === luaValueCardNotHandlerDescriptor) {
     return { valueCardPredicate: (_ctx, card) => card.uid !== effect.sourceUid };
   }
+  if (effect.luaValueDescriptor === "value-card:not-facedown") return { valueCardPredicate: (_ctx, card) => card.faceUp || !String(card.position).toLowerCase().includes("facedown") };
   if (effect.luaValueDescriptor === luaCannotActivateSpecialSummonedMonsterDescriptor) {
     return { valuePredicate: (ctx) => relatedEffectIsSpecialSummonedMonsterOnField(ctx) };
   }

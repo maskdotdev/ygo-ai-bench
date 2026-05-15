@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DIRECT_ATTACK_FIXTURE_COUNT = 3;
+const DIRECT_ATTACK_FIXTURE_COUNT = 4;
 
 describe("Lua real direct-attack restore coverage", () => {
   it("requires representative direct-attack fixtures to assert clean Lua restore and replayed legal actions", () => {
@@ -44,6 +44,16 @@ function realScriptDirectAttackFixtureFiles(): Array<{ file: string; required: s
         "directAttack: true",
         "targetUid: defender!.uid",
         "battleDamage).toEqual({ 0: 0, 1: 700 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-reverse-buster-direct-target-lock.test.ts",
+      required: [
+        "code === 332",
+        'luaValueDescriptor: "value-card:not-facedown"',
+        "hasDirectAttack(actions, buster.uid)).toBe(false)",
+        "hasAttack(actions, buster.uid, faceUpTarget.uid)).toBe(false)",
+        "hasAttack(actions, buster.uid, faceDownTarget.uid)).toBe(true)",
       ],
     },
     {
