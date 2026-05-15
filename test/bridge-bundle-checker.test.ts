@@ -23,6 +23,16 @@ describe("bridge bundle checker", () => {
     expect(result.stderr).toContain("is missing browser bridge API snippets: legalActions, legalActionGroups, runScripted");
   });
 
+  it("fails when the browser bridge bundle is missing", () => {
+    const root = makeTempRoot();
+    const bridge = path.join(root, "missing-playtest-engine.js");
+
+    const result = spawnSync(process.execPath, [checkerPath, "--bridge", bridge], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(`${bridge} does not exist. Run the bridge build before checking it.`);
+  });
+
   it("fails when the browser bridge bundle contains Node-facing snippets", () => {
     const root = makeTempRoot();
     const bridge = path.join(root, "playtest-engine.js");
