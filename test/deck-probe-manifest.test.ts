@@ -34,6 +34,10 @@ describe("Lua deck probe manifest", () => {
         !/--min-initial-effects \d+/.test(command) ||
         !/--min-registered-effects \d+/.test(command),
     );
+    const activateEffectFloorOmissions = packageProbeCommands
+      .filter((command) => !/--min-activate-effects \d+/.test(command))
+      .map((command) => command.match(/-- (\S+\.ydk) /)?.[1] ?? command)
+      .sort();
 
     const uncovered = deckNames.filter((name) => !packageProbeDecks.includes(name));
 
@@ -68,6 +72,7 @@ describe("Lua deck probe manifest", () => {
     expect(malformedProbeCommands).toEqual([]);
     expect(looseProbeCommands).toEqual([]);
     expect(unbudgetedProbeCommands).toEqual([]);
+    expect(activateEffectFloorOmissions).toEqual(["marincess-2026.ydk"]);
     expect(uncovered).toEqual([]);
   });
 });
