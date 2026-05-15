@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const equipFixtureCount = 1;
+const equipFixtureCount = 2;
 const equipRelationFixtureCount = 8;
 const equipProbeFixtureCount = 8;
 const equipOperationInfoFixtureCount = 6;
@@ -125,6 +125,7 @@ describe("Lua real equip restore coverage", () => {
 function realScriptEquipFixtureFiles(): string[] {
   return [
     "lua-real-script-equip-procedure-actions.test.ts",
+    "lua-real-script-train-connection-equip-cost.test.ts",
   ]
     .map((file) => path.join("test", file))
     .sort();
