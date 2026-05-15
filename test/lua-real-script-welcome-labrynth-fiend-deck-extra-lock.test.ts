@@ -69,6 +69,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script We
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(restored.session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
       description: 0x521b732,
+      luaTargetDescriptor: "special-summon-limit:not-race-deck-or-extra:8",
       property: 0x4000800,
       reset: { flags: 0x40000200, count: 2 },
       targetRange: [1, 0],

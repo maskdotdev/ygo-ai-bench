@@ -64,6 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wo
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(restored.session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      luaTargetDescriptor: "special-summon-limit:not-type-extra:67108864",
       property: 0x4000800,
       targetRange: [1, 0],
     });
