@@ -144,9 +144,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(restoredBattle.session.state.eventHistory).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ eventName: "leftField", eventCode: 1015, eventCardUid: bigBang!.uid }),
-        expect.objectContaining({ eventName: "banished", eventCode: 1011, eventCardUid: target!.uid }),
       ]),
     );
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "banished" && event.eventCardUid === target!.uid)).toEqual([
+      {
+        eventName: "banished",
+        eventCode: 1011,
+        eventCardUid: target!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: bigBang!.uid,
+        eventReasonEffectId: 5,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "banished",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
 
     const restoredCleanup = restoreDuelWithLuaScripts(serializeDuel(restoredBattle.session), source, reader);
     expectCleanRestore(restoredCleanup);
