@@ -271,6 +271,22 @@ describe("parity scanner CLIs", () => {
     expect(result.stderr).toContain("parity-zero-only-evidence.test.ts:3");
     expect(result.stderr).toContain("Zero-count legal-action evidence must move to absent expectations");
   });
+
+  it("rejects malformed provenance and legal-action scanner options", () => {
+    const missingProvenanceValue = spawnSync(process.execPath, [provenanceScannerPath, "--min-files"], { encoding: "utf8" });
+    const badProvenanceMinimum = spawnSync(process.execPath, [provenanceScannerPath, "--min-files", "-1"], { encoding: "utf8" });
+    const badLegalActionPercent = spawnSync(process.execPath, [legalActionScannerPath, "--min-action-evidence-percent", "101"], { encoding: "utf8" });
+    const unknownLegalActionFlag = spawnSync(process.execPath, [legalActionScannerPath, "--unknown"], { encoding: "utf8" });
+
+    expect(missingProvenanceValue.status).toBe(1);
+    expect(missingProvenanceValue.stderr).toContain("Missing value for --min-files");
+    expect(badProvenanceMinimum.status).toBe(1);
+    expect(badProvenanceMinimum.stderr).toContain("--min-files must be a non-negative integer");
+    expect(badLegalActionPercent.status).toBe(1);
+    expect(badLegalActionPercent.stderr).toContain("--min-action-evidence-percent must be a percentage from 0 to 100");
+    expect(unknownLegalActionFlag.status).toBe(1);
+    expect(unknownLegalActionFlag.stderr).toContain("Unknown argument: --unknown");
+  });
 });
 
 function makeTestRoot(files: Record<string, string>): string {
