@@ -94,5 +94,5 @@ function assertSpecialProbe(restored: ReturnType<typeof restoreDuelWithLuaScript
     `eldlixir-zombie-special-lock-${label}.lua`,
   );
   expect(probe.ok, probe.error).toBe(true);
-  expect(restored.host.messages).toEqual(expect.arrayContaining(expected));
+  expect(restored.host.messages.slice(-expected.length)).toEqual(expected);
 }

@@ -80,5 +80,5 @@ function assertSpecialProbe(restored: ReturnType<typeof restoreDuelWithLuaScript
     `thunder-sea-horse-${label.replace(/\\s+/g, "-")}-probe.lua`,
   );
   expect(probe.ok, probe.error).toBe(true);
-  expect(restored.host.messages).toEqual(expect.arrayContaining(expected));
+  expect(restored.host.messages.slice(-expected.length)).toEqual(expected);
 }
