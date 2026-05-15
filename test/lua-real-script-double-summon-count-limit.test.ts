@@ -41,6 +41,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Do
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
+    expect(restoredActivation.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredActivation, 0)).toEqual(getGroupedDuelLegalActions(restoredActivation.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredActivation, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredActivation, 0));
 
@@ -58,6 +59,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Do
     const restoredAfterFirstSummon = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), workspace, reader);
     expect(restoredAfterFirstSummon.restoreComplete, restoredAfterFirstSummon.incompleteReasons.join("; ")).toBe(true);
     expect(restoredAfterFirstSummon.missingRegistryKeys).toEqual([]);
+    expect(restoredAfterFirstSummon.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredAfterFirstSummon, 0)).toEqual(getGroupedDuelLegalActions(restoredAfterFirstSummon.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredAfterFirstSummon, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredAfterFirstSummon, 0));
 
@@ -106,6 +108,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Do
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ code: 28, value: 2, controller: 0 })]));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
