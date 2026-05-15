@@ -6,7 +6,7 @@ const root = process.cwd();
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(27);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(30);
   });
 
   it("requires representative Ritual/Fusion helper fixtures to assert clean Lua restore", () => {
@@ -273,6 +273,17 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
       ],
     },
     {
+      file: "test/lua-real-script-polymerization-fusion-summon.test.ts",
+      required: [
+        'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }]',
+        'summonType: "fusion"',
+        "summonMaterialUids: [materialA!.uid, materialB!.uid]",
+        "summonMaterialUids: [goddess!.uid, materialB!.uid]",
+        "reason: duelReason.effect | duelReason.material | duelReason.fusion",
+        'expect(restored.host.messages).not.toContain("polymerization responder resolved")',
+      ],
+    },
+    {
       file: "test/lua-real-script-prank-kids-pandemonium-stage2-oath.test.ts",
       required: [
         'summonType: "fusion"',
@@ -280,6 +291,28 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
         'luaTargetDescriptor: "target:not-setcode:288"',
         "actions.some((action) => action.type === \"normalSummon\" && action.uid === nonPrankNormal!.uid)).toBe(false)",
         "actions.some((action) => action.type === \"specialSummonProcedure\" && action.uid === nonPrankSpecial!.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-prayers-ritual-matfilter.test.ts",
+      required: [
+        'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }]',
+        'summonType: "ritual"',
+        "summonMaterialUids: [lightMaterialA!.uid, lightMaterialB!.uid]",
+        "expect(restored.session.state.cards.find((card) => card.uid === darkMaterial!.uid)).toMatchObject({ location: \"hand\" })",
+        "reason: duelReason.material | duelReason.ritual",
+        'expect(restored.host.messages).not.toContain("voiceless responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-primite-fusion-extra-check.test.ts",
+      required: [
+        "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }",
+        "{ category: 0x10, targetUids: [], count: 1, player: 0, parameter: 0x3c }",
+        'summonType: "fusion"',
+        "summonMaterialUids: [normalMaterial!.uid, effectMaterial!.uid]",
+        "reason: duelReason.effect | duelReason.material | duelReason.fusion",
+        "does not expose Primite Fusion when the selected material set has no Normal Monster",
       ],
     },
     {
