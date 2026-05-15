@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -77,11 +78,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
     resolveRestoredChain(restoredConfirm);
     expect(restoredConfirm.session.state.players[1].lifePoints).toBe(6300);
     expect(restoredConfirm.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleConfirmed", eventCode: 1133, eventUids: [attacker!.uid, bounder!.uid] }),
-        expect.objectContaining({ eventName: "damageDealt", eventCode: 1111, eventPlayer: 1, eventValue: 1700 }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ eventName: "battleConfirmed", eventCode: 1133, eventUids: [attacker!.uid, bounder!.uid] })]),
     );
+    expect(restoredConfirm.session.state.eventHistory.filter((event) => event.eventName === "damageDealt")).toEqual([
+      {
+        eventName: "damageDealt",
+        eventCode: 1111,
+        eventPlayer: 1,
+        eventValue: 1700,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: bounder!.uid,
+        eventReasonEffectId: 1,
+      },
+    ]);
 
     passRestoredUntilPendingTrigger(restoredConfirm, "afterDamageCalculation");
     expect(restoredConfirm.session.state.battleWindow?.kind).toBe("afterDamageCalculation");
@@ -104,11 +114,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
     expect(restoredBattled.session.state.cards.find((card) => card.uid === bounder!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(restoredBattled.session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
     expect(restoredBattled.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "afterDamageCalculation", eventCode: 1138, eventUids: [attacker!.uid, bounder!.uid] }),
-        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: bounder!.uid }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ eventName: "afterDamageCalculation", eventCode: 1138, eventUids: [attacker!.uid, bounder!.uid] })]),
     );
+    expect(restoredBattled.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === bounder!.uid)).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: bounder!.uid,
+        eventPreviousState: {
+          location: "monsterZone",
+          controller: 0,
+          sequence: 0,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventCurrentState: {
+          location: "graveyard",
+          controller: 0,
+          sequence: 0,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: bounder!.uid,
+        eventReasonEffectId: 2,
+      },
+    ]);
   });
 });
 
