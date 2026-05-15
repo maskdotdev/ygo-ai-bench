@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -77,10 +78,19 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     expect(resolved.ok, resolved.error).toBe(true);
 
     expect(restored.session.state.players[1].lifePoints).toBe(6300);
-    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([
-      expect.objectContaining({ eventName: "released", eventCardUid: releaseMaterial.uid }),
-      expect.objectContaining({ eventName: "damageDealt", eventPlayer: 1, eventValue: 1700 }),
-    ]));
+    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "released", eventCardUid: releaseMaterial.uid })]));
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "damageDealt")).toEqual([
+      {
+        eventName: "damageDealt",
+        eventCode: 1111,
+        eventPlayer: 1,
+        eventValue: 1700,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: castleGate.uid,
+        eventReasonEffectId: 2,
+      },
+    ]);
     expect(host.messages).not.toContain("castle gate responder resolved");
     expect(restored.host.messages).not.toContain("castle gate responder resolved");
   });
