@@ -107,6 +107,20 @@ describe("Lua real prompt helper restore coverage", () => {
     expect(missing).toEqual([]);
   });
 
+  it("requires representative prompt helper fixtures to prove restored grouped legal actions", () => {
+    const missing = representativePromptHelperFixtures()
+      .filter(({ file }) => {
+        const text = fs.readFileSync(path.join(root, file), "utf8");
+        return !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
+          || !text.includes("getLuaRestoreLegalActions");
+      })
+      .map(({ file }) => file);
+
+    expect(missing).toEqual([]);
+  });
+
   it("requires representative prompt helper fixtures to prove restored prompt semantics", () => {
     const weak = representativePromptHelperFixtures()
       .filter(({ file, required }) => {
