@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const damageStepStatFixtureCount = 2;
+const damageStepStatFixtureCount = 3;
 
 describe("Lua real damage-step stat restore coverage", () => {
   it("requires damage-step stat fixtures to assert clean restore and restored battle outcome", () => {
@@ -63,6 +63,17 @@ function damageStepStatFixtureFiles(): Array<{ file: string; required: string[] 
         "currentAttack(restoredCrow",
         "battleDamage[1]).toBe(200)",
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-cipher-soldier-pre-damage-calculate.test.ts",
+      required: [
+        "triggerEvent: \"beforeDamageCalculation\"",
+        "eventName: \"beforeDamageCalculation\"",
+        "currentAttack(restored.session.state.cards.find((card) => card.uid === cipherSoldier!.uid)",
+        "battleDamage[1]).toBe(1350)",
+        "value: 2000",
+        "finishBattle(restored.session)",
       ],
     },
   ];
