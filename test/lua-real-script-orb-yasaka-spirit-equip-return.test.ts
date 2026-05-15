@@ -177,9 +177,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
     expect(restoredRecoverChain.session.state.eventHistory).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 750, eventCardUid: susa!.uid }),
-        expect.objectContaining({ eventName: "recoveredLifePoints", eventCode: 1112, eventPlayer: 0, eventValue: 500 }),
       ]),
     );
+    expect(restoredRecoverChain.session.state.eventHistory.filter((event) => event.eventName === "recoveredLifePoints" && event.eventPlayer === 0)).toEqual([
+      {
+        eventName: "recoveredLifePoints",
+        eventCode: 1112,
+        eventPlayer: 0,
+        eventValue: 500,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: orb!.uid,
+        eventReasonEffectId: 3,
+      },
+    ]);
     passBattleUntilComplete(restoredRecoverChain);
 
     const restoredEndPhasePath = restoreDuelWithLuaScripts(serializeDuel(restoredRecoverChain.session), source, reader);
