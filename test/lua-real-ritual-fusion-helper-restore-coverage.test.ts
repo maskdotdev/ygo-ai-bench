@@ -43,7 +43,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
       required: [
         'operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }])',
         'summonType: "ritual"',
-        "expect.arrayContaining([handMaterial!.uid, graveMaterial!.uid])",
+        "summonMaterialUids: [handMaterial!.uid, graveMaterial!.uid]",
         "reason: duelReason.release | duelReason.material | duelReason.ritual",
         "reason: duelReason.effect | duelReason.material | duelReason.ritual",
         'expect(restored.host.messages).not.toContain("machine angel absolute responder resolved")',
@@ -54,7 +54,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
       required: [
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x22 }]',
         'summonType: "ritual"',
-        "expect.arrayContaining([nekrozExtraMaterialA!.uid, nekrozExtraMaterialB!.uid])",
+        "summonMaterialUids).toEqual([nekrozExtraMaterialA!.uid, nekrozExtraMaterialB!.uid])",
         "reason: duelReason.material | duelReason.ritual",
         'location: "extraDeck"',
         'expect(restored.host.messages).not.toContain("nekroz divinemirror responder resolved")',
@@ -160,8 +160,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
       required: [
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }]',
         'summonType: "ritual"',
-        "expect(summonedRitual!.summonMaterialUids).toHaveLength(2)",
-        "expect.arrayContaining([normalMaterialA!.uid, normalMaterialB!.uid])",
+        "summonMaterialUids).toEqual([normalMaterialB!.uid, normalMaterialA!.uid])",
         "reason: duelReason.effect | duelReason.material | duelReason.ritual",
         'eventName: "specialSummoned"',
       ],
@@ -230,7 +229,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
       file: "test/lua-real-script-vendread-reunion-custom-ritual.test.ts",
       required: [
         'summonType: "ritual"',
-        "expect(summonedRitual!.summonMaterialUids).toEqual(expect.arrayContaining([materialA!.uid, materialB!.uid]))",
+        "expect(summonedRitual!.summonMaterialUids).toEqual([materialA!.uid, materialB!.uid])",
         "reason: duelReason.release | duelReason.effect | duelReason.material | duelReason.ritual",
         "restores a custom Ritual operation that sets, releases, and Ritual Summons with banished materials",
       ],

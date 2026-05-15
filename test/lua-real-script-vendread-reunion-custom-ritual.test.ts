@@ -86,7 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ve
 
     const summonedRitual = restored.session.state.cards.find((card) => card.uid === ritualTarget!.uid);
     expect(summonedRitual).toMatchObject({ location: "monsterZone", controller: 0, position: "faceUpAttack", faceUp: true, summonType: "ritual" });
-    expect(summonedRitual!.summonMaterialUids).toEqual(expect.arrayContaining([materialA!.uid, materialB!.uid]));
+    expect(summonedRitual!.summonMaterialUids).toEqual([materialA!.uid, materialB!.uid]);
     expect(restored.session.state.cards.find((card) => card.uid === materialA!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.release | duelReason.effect | duelReason.material | duelReason.ritual });
     expect(restored.session.state.cards.find((card) => card.uid === materialB!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.release | duelReason.effect | duelReason.material | duelReason.ritual });
     expect(restored.session.state.cards.find((card) => card.uid === reunion!.uid)).toMatchObject({ location: "graveyard", controller: 0 });

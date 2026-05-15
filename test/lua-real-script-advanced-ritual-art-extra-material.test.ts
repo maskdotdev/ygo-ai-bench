@@ -94,8 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ad
       faceUp: true,
       summonType: "ritual",
     });
-    expect(summonedRitual!.summonMaterialUids).toHaveLength(2);
-    expect(summonedRitual!.summonMaterialUids).toEqual(expect.arrayContaining([normalMaterialA!.uid, normalMaterialB!.uid]));
+    expect(summonedRitual!.summonMaterialUids).toEqual([normalMaterialB!.uid, normalMaterialA!.uid]);
     expect(restored.session.state.cards.find((card) => card.uid === normalMaterialA!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.effect | duelReason.material | duelReason.ritual });
     expect(restored.session.state.cards.find((card) => card.uid === normalMaterialB!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.effect | duelReason.material | duelReason.ritual });
     expect(restored.session.state.cards.find((card) => card.uid === effectDeckMonster!.uid)).toMatchObject({ location: "deck" });

@@ -103,7 +103,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
       position: "faceUpAttack",
       faceUp: true,
       summonType: "ritual",
-      summonMaterialUids: expect.arrayContaining([handMaterial!.uid, graveMaterial!.uid]),
+      summonMaterialUids: [handMaterial!.uid, graveMaterial!.uid],
     });
     expect(restored.session.state.cards.find((card) => card.uid === handMaterial!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.release | duelReason.material | duelReason.ritual });
     expect(restored.session.state.cards.find((card) => card.uid === graveMaterial!.uid)).toMatchObject({ location: "deck", reason: duelReason.effect | duelReason.material | duelReason.ritual });
