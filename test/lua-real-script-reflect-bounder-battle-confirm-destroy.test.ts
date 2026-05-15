@@ -113,9 +113,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
     resolveRestoredChain(restoredBattled);
     expect(restoredBattled.session.state.cards.find((card) => card.uid === bounder!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(restoredBattled.session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
-    expect(restoredBattled.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "afterDamageCalculation", eventCode: 1138, eventUids: [attacker!.uid, bounder!.uid] })]),
-    );
+    expect(restoredBattled.session.state.eventHistory.filter((event) => event.eventName === "afterDamageCalculation")).toEqual([
+      {
+        eventName: "afterDamageCalculation",
+        eventCode: 1138,
+        eventCardUid: attacker!.uid,
+        eventUids: [attacker!.uid, bounder!.uid],
+        eventReason: 0,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredBattled.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === bounder!.uid)).toEqual([
       {
         eventName: "destroyed",

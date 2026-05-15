@@ -84,11 +84,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     expect(restored.session.state.pendingTriggers).toEqual([]);
     expect(restored.session.state.cards.find((card) => card.uid === ishzark!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(restored.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "banished", controller: 1 });
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "afterDamageCalculation", eventCode: 1138, eventUids: [ishzark!.uid, target!.uid] }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "afterDamageCalculation")).toEqual([
+      {
+        eventName: "afterDamageCalculation",
+        eventCode: 1138,
+        eventCardUid: ishzark!.uid,
+        eventUids: [ishzark!.uid, target!.uid],
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "banished" && event.eventCardUid === target!.uid)).toEqual([
       {
         eventName: "banished",

@@ -78,11 +78,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
     expect(activated.ok, activated.error).toBe(true);
     expect(restored.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
     expect(restored.session.state.players[1].lifePoints).toBe(5000);
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "afterDamageCalculation", eventCode: 1138, eventCardUid: bomber!.uid }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "afterDamageCalculation")).toEqual([
+      {
+        eventName: "afterDamageCalculation",
+        eventCode: 1138,
+        eventCardUid: bomber!.uid,
+        eventUids: [bomber!.uid, target!.uid],
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "extraDeck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "damageDealt")).toEqual([
       {
         eventName: "damageDealt",
