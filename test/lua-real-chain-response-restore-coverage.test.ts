@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const chainResponseFixtureCount = 2;
+const chainResponseFixtureCount = 3;
 
 describe("Lua real chain response restore coverage", () => {
   it("requires chain response fixtures to assert clean restore and restored response outcomes", () => {
@@ -52,6 +52,18 @@ function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }
         "restoredPendingResolution.session.state.chain).toHaveLength(0)",
         'location: "graveyard"',
         'location: "deck"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-raigeki-break-discard-cost.test.ts",
+      required: [
+        'action.type === "activateEffect" && action.uid === raigekiBreak!.uid',
+        'action.type === "passChain"',
+        "restored.session.state.chain).toHaveLength(2)",
+        'eventName: "destroyed"',
+        'eventName: "cardsDrawn"',
+        '["chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([])',
+        'location: "graveyard"',
       ],
     },
   ].sort((a, b) => a.file.localeCompare(b.file));
