@@ -54,15 +54,41 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     expect(session.state.cards.find((card) => card.uid === firstTarget!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
     expect(session.state.cards.find((card) => card.uid === followupTarget!.uid)).toMatchObject({ location: "monsterZone", controller: 1, position: "faceUpDefense" });
     expect(session.state.players[1].lifePoints).toBe(6200);
-    expect(session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        player: 0,
-        triggerBucket: "turnOptional",
-        eventName: "afterDamageCalculation",
-        eventCardUid: nitro!.uid,
-        sourceUid: nitro!.uid,
-      }),
-    ]);
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-6-1138",
+          "eventCardUid": "p0-extraDeck-18013090-0",
+          "eventCode": 1138,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "afterDamageCalculation",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "extraDeck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "eventUids": [
+            "p0-extraDeck-18013090-0",
+            "p1-deck-1801-0",
+          ],
+          "id": "trigger-5-1",
+          "player": 0,
+          "sourceUid": "p0-extraDeck-18013090-0",
+          "triggerBucket": "turnOptional",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

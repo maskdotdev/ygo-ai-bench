@@ -53,15 +53,42 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Al
     expect(session.state.battleDamage).toEqual({ 0: 0, 1: 600 });
     expect(session.state.players[1].lifePoints).toBe(7400);
     expect(session.state.cards.find((card) => card.uid === lightTarget!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
-    expect(session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        triggerBucket: "turnMandatory",
-        eventName: "afterDamageCalculation",
-        eventCode: 1138,
-        eventCardUid: nullfier!.uid,
-        sourceUid: nullfier!.uid,
-      }),
-    ]);
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-1-1138",
+          "effectLabelObjectUid": "p1-deck-7665-0",
+          "eventCardUid": "p0-deck-76650663-0",
+          "eventCode": 1138,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "afterDamageCalculation",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "eventUids": [
+            "p0-deck-76650663-0",
+            "p1-deck-7665-0",
+          ],
+          "id": "trigger-5-1",
+          "player": 0,
+          "sourceUid": "p0-deck-76650663-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

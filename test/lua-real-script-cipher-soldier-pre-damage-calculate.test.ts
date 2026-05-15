@@ -50,15 +50,41 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ci
 
     expect(session.state.battleWindow?.kind).toBe("beforeDamageCalculation");
     expect(session.state.pendingBattle).toMatchObject({ attackerUid: cipherSoldier!.uid, targetUid: warriorTarget!.uid });
-    expect(session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        triggerBucket: "turnMandatory",
-        eventName: "beforeDamageCalculation",
-        eventCode: 1134,
-        eventCardUid: cipherSoldier!.uid,
-        sourceUid: cipherSoldier!.uid,
-      }),
-    ]);
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-1-1134",
+          "eventCardUid": "p0-deck-79853073-0",
+          "eventCode": 1134,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "beforeDamageCalculation",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "eventUids": [
+            "p0-deck-79853073-0",
+            "p1-deck-7985-0",
+          ],
+          "id": "trigger-3-1",
+          "player": 0,
+          "sourceUid": "p0-deck-79853073-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

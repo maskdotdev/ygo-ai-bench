@@ -54,15 +54,37 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ga
     expect(attack).toBeDefined();
     applyAndAssert(session, attack!);
     expect(session.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid, targetUid: originalTarget!.uid });
-    expect(session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        player: 1,
-        triggerBucket: "opponentOptional",
-        eventName: "battleTargeted",
-        sourceUid: samurai!.uid,
-        eventCardUid: originalTarget!.uid,
-      }),
-    ]);
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-3-1131",
+          "eventCardUid": "p1-deck-9150-0",
+          "eventCode": 1131,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 1,
+          },
+          "eventName": "battleTargeted",
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 1,
+          "eventTriggerTiming": "when",
+          "id": "trigger-3-1",
+          "player": 1,
+          "sourceUid": "p1-extraDeck-91499077-0",
+          "triggerBucket": "opponentOptional",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

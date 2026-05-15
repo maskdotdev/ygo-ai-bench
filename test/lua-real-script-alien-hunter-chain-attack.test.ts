@@ -65,16 +65,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Al
     });
     expect(session.state.cards.find((card) => card.uid === alienHunter!.uid)).toMatchObject({ location: "monsterZone" });
     expect(session.state.cards.find((card) => card.uid === followupTarget!.uid)).toMatchObject({ location: "monsterZone" });
-    expect(session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        player: 0,
-        triggerBucket: "turnOptional",
-        eventName: "battleDestroyed",
-        eventCardUid: alienHunter!.uid,
-        eventPlayer: 1,
-        sourceUid: alienHunter!.uid,
-      }),
-    ]);
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-2-1139",
+          "eventCardUid": "p0-deck-62315111-0",
+          "eventCode": 1140,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "battleDestroyed",
+          "eventPlayer": 1,
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 33,
+          "eventReasonCardUid": "p0-deck-62315111-0",
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-7-1",
+          "player": 0,
+          "sourceUid": "p0-deck-62315111-0",
+          "triggerBucket": "turnOptional",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

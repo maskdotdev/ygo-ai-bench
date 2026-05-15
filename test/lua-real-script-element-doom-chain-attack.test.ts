@@ -73,16 +73,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script El
       reasonCardUid: elementDoom!.uid,
     });
     expect(session.state.players[1].lifePoints).toBe(7500);
-    expect(session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        player: 0,
-        triggerBucket: "turnOptional",
-        eventName: "battleDestroyed",
-        eventCardUid: elementDoom!.uid,
-        eventPlayer: 1,
-        sourceUid: elementDoom!.uid,
-      }),
-    ]);
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-2-1139",
+          "eventCardUid": "p0-deck-23118924-0",
+          "eventCode": 1140,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "battleDestroyed",
+          "eventPlayer": 1,
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 33,
+          "eventReasonCardUid": "p0-deck-23118924-0",
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-7-1",
+          "player": 0,
+          "sourceUid": "p0-deck-23118924-0",
+          "triggerBucket": "turnOptional",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
