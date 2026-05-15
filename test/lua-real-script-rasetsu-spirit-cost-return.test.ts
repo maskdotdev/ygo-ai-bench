@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -118,12 +119,55 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ra
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === attackTarget!.uid)).toMatchObject({ location: "hand", controller: 1 });
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === defenseTarget!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === revealSpirit!.uid)).toMatchObject({ location: "hand", controller: 0 });
-    expect(restoredChainWindow.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "confirmed", eventCode: 1211, eventPlayer: 1, eventUids: [revealSpirit!.uid] }),
-        expect.objectContaining({ eventName: "sentToHand", eventCode: 1012, eventCardUid: attackTarget!.uid }),
-      ]),
-    );
+    expect(restoredChainWindow.session.state.eventHistory.filter((event) => ["confirmed", "sentToHand"].includes(event.eventName))).toEqual([
+      {
+        eventName: "confirmed",
+        eventCode: 1211,
+        eventPlayer: 1,
+        eventCardUid: revealSpirit!.uid,
+        eventValue: 1,
+        eventUids: [revealSpirit!.uid],
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 1,
+        },
+      },
+      {
+        eventName: "sentToHand",
+        eventCode: 1012,
+        eventCardUid: attackTarget!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: rasetsu!.uid,
+        eventReasonEffectId: 7,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: false,
+          location: "hand",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+    ]);
     expect(restoredChainWindow.host.messages).not.toContain("rasetsu responder resolved");
   });
 });
