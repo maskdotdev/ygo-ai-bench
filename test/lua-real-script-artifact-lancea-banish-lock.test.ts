@@ -101,7 +101,7 @@ function assertBanishProbe(restored: LuaSnapshotRestoreResult, selfBanishCode: s
     `lancea-${label.replace(/\\s+/g, "-")}-probe.lua`,
   );
   expect(result.ok, result.error).toBe(true);
-  expect(restored.host.messages).toEqual(expect.arrayContaining(expected));
+  expect(restored.host.messages.slice(-expected.length)).toEqual(expected);
 }
 
 function applyAndAssert(session: DuelSession, action: DuelAction) {
