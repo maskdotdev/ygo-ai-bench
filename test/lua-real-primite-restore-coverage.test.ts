@@ -17,6 +17,7 @@ describe("Lua real Primite restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -35,7 +36,9 @@ function primiteFixtureFiles(): Array<{ file: string; required: string[] }> {
       file: "test/lua-real-script-primite-drillbeam.test.ts",
       required: [
         "restoredActivation.missingRegistryKeys).toEqual([])",
+        "restoredActivation.missingChainLimitRegistryKeys).toEqual([])",
         "restoredSet.missingRegistryKeys).toEqual([])",
+        "restoredSet.missingChainLimitRegistryKeys).toEqual([])",
         "category: 0x4000",
         "category: 0x4",
         'location: "banished", faceUp: true',
@@ -66,6 +69,7 @@ function primiteFixtureFiles(): Array<{ file: string; required: string[] }> {
       file: "test/lua-real-script-primite-dragon-ether-beryl.test.ts",
       required: [
         "restored.missingRegistryKeys).toEqual([])",
+        "restored.missingChainLimitRegistryKeys).toEqual([])",
         'eventName: "normalSummoned"',
         "operationInfos: [{ category: 0x20",
         'location: "spellTrapZone"',
@@ -77,6 +81,7 @@ function primiteFixtureFiles(): Array<{ file: string; required: string[] }> {
       file: "test/lua-real-script-primite-fusion-extra-check.test.ts",
       required: [
         "restored.missingRegistryKeys).toEqual([])",
+        "restored.missingChainLimitRegistryKeys).toEqual([])",
         'summonType: "fusion"',
         "summonMaterialUids: [normalMaterial!.uid, effectMaterial!.uid]",
         "reason: duelReason.effect | duelReason.material | duelReason.fusion",
@@ -97,8 +102,11 @@ function primiteFixtureFiles(): Array<{ file: string; required: string[] }> {
       file: "test/lua-real-script-primite-roar.test.ts",
       required: [
         "restoredActivation.missingRegistryKeys).toEqual([])",
+        "restoredActivation.missingChainLimitRegistryKeys).toEqual([])",
         "restoredProtection.missingRegistryKeys).toEqual([])",
+        "restoredProtection.missingChainLimitRegistryKeys).toEqual([])",
         "restoredTrigger.missingRegistryKeys).toEqual([])",
+        "restoredTrigger.missingChainLimitRegistryKeys).toEqual([])",
         "target:setcode-or-code-type:432:46986414:16",
         'location: "banished"',
         "getLuaRestoreLegalActionGroups",

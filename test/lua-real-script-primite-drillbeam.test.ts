@@ -74,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
+    expect(restoredActivation.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredActivation, 1)).toEqual(getGroupedDuelLegalActions(restoredActivation.session, 1));
     resolveOpenChain(restoredActivation.session);
     expect(restoredActivation.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "banished", faceUp: true });
@@ -89,6 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     const restoredSet = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredSet.restoreComplete, restoredSet.incompleteReasons.join("; ")).toBe(true);
     expect(restoredSet.missingRegistryKeys).toEqual([]);
+    expect(restoredSet.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredSet, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredSet, 0));
     resolveOpenChain(restoredSet.session);
     expect(restoredSet.session.state.cards.find((card) => card.uid === drillbeam!.uid)).toMatchObject({

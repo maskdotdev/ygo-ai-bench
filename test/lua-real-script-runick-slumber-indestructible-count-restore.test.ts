@@ -60,6 +60,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ru
     const restoredProtection = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredProtection.restoreComplete, restoredProtection.incompleteReasons.join("; ")).toBe(true);
     expect(restoredProtection.missingRegistryKeys).toEqual([]);
+    expect(restoredProtection.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredProtection, 0)).toEqual(getGroupedDuelLegalActions(restoredProtection.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredProtection, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restoredProtection, 0),

@@ -60,6 +60,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
+    expect(restoredActivation.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredActivation, 0);
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === sword!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
@@ -75,6 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredChain, 1);
     resolveRestoredChain(restoredChain);
 
@@ -89,6 +91,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
     const restoredPersistent = restoreDuelWithLuaScripts(persistentSnapshot, source, reader);
     expect(restoredPersistent.restoreComplete, restoredPersistent.incompleteReasons.join("; ")).toBe(true);
     expect(restoredPersistent.missingRegistryKeys).toEqual([]);
+    expect(restoredPersistent.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredPersistent, 0);
     const persistentProbe = restoredPersistent.host.loadScript(
       persistentReplacementProbeScript(swordCode, targetCode),
@@ -112,6 +115,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
     const restoredReplaced = restoreDuelWithLuaScripts(serializeDuel(restoredPersistent.session), source, reader);
     expect(restoredReplaced.restoreComplete, restoredReplaced.incompleteReasons.join("; ")).toBe(true);
     expect(restoredReplaced.missingRegistryKeys).toEqual([]);
+    expect(restoredReplaced.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredReplaced, 0);
   });
 });
