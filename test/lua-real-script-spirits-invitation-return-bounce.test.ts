@@ -66,6 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expectCleanRestore(restoredActivation);
+    expectRestoredLegalActions(restoredActivation, 0);
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     const activateTrap = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === invitation!.uid);
     expect(activateTrap, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
@@ -85,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
 
     const restoredSummonWindow = restoreDuelWithLuaScripts(serializeDuel(restoredActivationChain.session), source, reader);
     expectCleanRestore(restoredSummonWindow);
+    expectRestoredLegalActions(restoredSummonWindow, 0);
     const summon = getLuaRestoreLegalActions(restoredSummonWindow, 0).find((action) => action.type === "normalSummon" && action.uid === susa!.uid);
     expect(summon, JSON.stringify(getLuaRestoreLegalActions(restoredSummonWindow, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredSummonWindow, summon!);
@@ -96,6 +98,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
 
     const restoredEndPhasePath = restoreDuelWithLuaScripts(serializeDuel(restoredSummonWindow.session), source, reader);
     expectCleanRestore(restoredEndPhasePath);
+    expectRestoredLegalActions(restoredEndPhasePath, 0);
     changeRestoredPhase(restoredEndPhasePath, 0, "battle");
     changeRestoredPhase(restoredEndPhasePath, 0, "main2");
     changeRestoredPhase(restoredEndPhasePath, 0, "end");
@@ -107,6 +110,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
 
     const restoredSpiritReturn = restoreDuelWithLuaScripts(serializeDuel(restoredEndPhasePath.session), source, reader);
     expectCleanRestore(restoredSpiritReturn);
+    expectRestoredLegalActions(restoredSpiritReturn, 0);
     const spiritReturn = getLuaRestoreLegalActions(restoredSpiritReturn, 0).find((action) => action.type === "activateTrigger" && action.uid === susa!.uid);
     expect(spiritReturn, JSON.stringify(getLuaRestoreLegalActions(restoredSpiritReturn, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredSpiritReturn, spiritReturn!);
@@ -117,6 +121,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
 
     const restoredSpiritReturnChain = restoreDuelWithLuaScripts(serializeDuel(restoredSpiritReturn.session), source, reader);
     expectCleanRestore(restoredSpiritReturnChain);
+    expectRestoredLegalActions(restoredSpiritReturnChain, 1);
     resolveRestoredChain(restoredSpiritReturnChain);
     expect(restoredSpiritReturnChain.session.state.cards.find((card) => card.uid === susa!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restoredSpiritReturnChain.session.state.pendingTriggers).toEqual(
@@ -133,6 +138,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
 
     const restoredInvitationTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredSpiritReturnChain.session), source, reader);
     expectCleanRestore(restoredInvitationTrigger);
+    expectRestoredLegalActions(restoredInvitationTrigger, 0);
     const invitationTrigger = getLuaRestoreLegalActions(restoredInvitationTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === invitation!.uid);
     expect(invitationTrigger, JSON.stringify(getLuaRestoreLegalActions(restoredInvitationTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredInvitationTrigger, invitationTrigger!);
@@ -146,6 +152,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
 
     const restoredInvitationChain = restoreDuelWithLuaScripts(serializeDuel(restoredInvitationTrigger.session), source, reader);
     expectCleanRestore(restoredInvitationChain);
+    expectRestoredLegalActions(restoredInvitationChain, 1);
     expect(getLuaRestoreLegalActions(restoredInvitationChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredInvitationChain);
     expect(restoredInvitationChain.session.state.cards.find((card) => card.uid === opponentMonster!.uid)).toMatchObject({
@@ -169,6 +176,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     const paid = setupMaintenanceDuel(8000);
     const restoredPaid = restoreDuelWithLuaScripts(serializeDuel(paid.session), paid.source, paid.reader);
     expectCleanRestore(restoredPaid);
+    expectRestoredLegalActions(restoredPaid, 0);
     expect(restoredPaid.session.state.cards.find((card) => card.uid === paid.invitationUid)).toMatchObject({
       location: "spellTrapZone",
       faceUp: true,
@@ -194,10 +202,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     );
     const restoredAfterPaid = restoreDuelWithLuaScripts(serializeDuel(restoredPaid.session), paid.source, paid.reader);
     expectCleanRestore(restoredAfterPaid);
+    expectRestoredLegalActions(restoredAfterPaid, 0);
 
     const unpaid = setupMaintenanceDuel(300);
     const restoredUnpaid = restoreDuelWithLuaScripts(serializeDuel(unpaid.session), unpaid.source, unpaid.reader);
     expectCleanRestore(restoredUnpaid);
+    expectRestoredLegalActions(restoredUnpaid, 0);
     changeRestoredPhase(restoredUnpaid, 0, "standby");
     expect(restoredUnpaid.session.state.players[0].lifePoints).toBe(300);
     expect(restoredUnpaid.session.state.cards.find((card) => card.uid === unpaid.invitationUid)).toMatchObject({
@@ -218,6 +228,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     );
     const restoredAfterUnpaid = restoreDuelWithLuaScripts(serializeDuel(restoredUnpaid.session), unpaid.source, unpaid.reader);
     expectCleanRestore(restoredAfterUnpaid);
+    expectRestoredLegalActions(restoredAfterUnpaid, 0);
   });
 });
 
@@ -292,4 +303,9 @@ function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWit
 function expectCleanRestore(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
   expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
   expect(restored.missingRegistryKeys).toEqual([]);
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }

@@ -59,6 +59,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expectCleanRestore(restoredActivation);
+    expectRestoredLegalActions(restoredActivation, 0);
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === circle!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
@@ -86,6 +87,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expectCleanRestore(restoredLock);
+    expectRestoredLegalActions(restoredLock, 0);
     expect(restoredLock.session.state.cards.find((card) => card.uid === circle!.uid)).toMatchObject({ cardTargetUids: [target!.uid] });
 
     const endTurn = getLuaRestoreLegalActions(restoredLock, 0).find((action) => action.type === "endTurn");
@@ -117,6 +119,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     });
     const restoredDestroyed = restoreDuelWithLuaScripts(serializeDuel(restoredLock.session), source, reader);
     expectCleanRestore(restoredDestroyed);
+    expectRestoredLegalActions(restoredDestroyed, 1);
   });
 });
 
@@ -165,6 +168,11 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
 function expectCleanRestore(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
   expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
   expect(restored.missingRegistryKeys).toEqual([]);
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {

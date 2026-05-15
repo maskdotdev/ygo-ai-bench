@@ -63,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
     const restoredDelayed = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredDelayed.restoreComplete, restoredDelayed.incompleteReasons.join("; ")).toBe(true);
     expect(restoredDelayed.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredDelayed, 0);
     expect(restoredDelayed.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -109,6 +110,11 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function resolveChain(session: DuelSession): void {
