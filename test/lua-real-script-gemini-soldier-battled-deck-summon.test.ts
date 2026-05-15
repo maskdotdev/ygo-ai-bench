@@ -163,10 +163,50 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredPendingTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredPendingTrigger, trigger!);
     expect(restoredPendingTrigger.session.state.pendingTriggers).toEqual([]);
-    expect(restoredPendingTrigger.session.state.chain[0]).toMatchObject({
-      sourceUid: soldier!.uid,
-      operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x1 }],
-    });
+    expect(restoredPendingTrigger.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-5-1138",
+        "eventCardUid": "p0-deck-68366996-0",
+        "eventCode": 1138,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "afterDamageCalculation",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventReason": 0,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "eventUids": [
+          "p0-deck-68366996-0",
+          "p1-deck-68366997-0",
+        ],
+        "id": "chain-7",
+        "operationInfos": [
+          {
+            "category": 512,
+            "count": 1,
+            "parameter": 1,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-68366996-0",
+      }
+    `);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredPendingTrigger.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);

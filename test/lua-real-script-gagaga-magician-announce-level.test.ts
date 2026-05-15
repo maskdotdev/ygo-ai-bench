@@ -50,7 +50,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ga
     expect(ignition, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
     applyAndAssert(session, ignition!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({ sourceUid: gagaga.uid, effectLabel: 1 });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1",
+        "effectLabel": 1,
+        "id": "chain-2",
+        "player": 0,
+        "sourceUid": "p0-deck-26082117-0",
+      }
+    `);
     expect(host.promptDecisions).toEqual(expect.arrayContaining([
       expect.objectContaining({ api: "AnnounceLevel", player: 0, options: [1, 2, 3, 5, 6, 7, 8], returned: 1 }),
     ]));

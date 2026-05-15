@@ -113,11 +113,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
         },
       },
     ]);
-    expect(restoredIgnition.session.state.chain[0]).toMatchObject({
-      sourceUid: samurai!.uid,
-      targetUids: [destroyTarget!.uid],
-      operationInfos: [{ category: 0x1, targetUids: [destroyTarget!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restoredIgnition.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 1,
+        "chainIndex": 1,
+        "effectId": "lua-4",
+        "id": "chain-4",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-90642598-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-90642597-1",
+        "targetUids": [
+          "p0-deck-90642598-0",
+        ],
+      }
+    `);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredIgnition.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);

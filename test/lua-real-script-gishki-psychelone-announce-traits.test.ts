@@ -57,11 +57,22 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
     expect(ignition, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
     applyAndAssert(session, ignition!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: psychelone.uid,
-      effectLabel: raceWarrior,
-      effectLabels: [raceWarrior, attributeEarth],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-2",
+        "effectLabel": 1,
+        "effectLabels": [
+          1,
+          1,
+        ],
+        "id": "chain-2",
+        "player": 0,
+        "sourceUid": "p0-deck-30334522-0",
+      }
+    `);
     expect(host.promptDecisions).toEqual(expect.arrayContaining([
       expect.objectContaining({ api: "AnnounceRace", player: 0, options: expect.arrayContaining([raceWarrior]), returned: raceWarrior }),
       expect.objectContaining({ api: "AnnounceAttribute", player: 0, options: expect.arrayContaining([attributeEarth]), returned: attributeEarth }),

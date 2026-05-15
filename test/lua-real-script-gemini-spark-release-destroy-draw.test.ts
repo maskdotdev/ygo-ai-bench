@@ -76,7 +76,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     expect(activated.ok, activated.error).toBe(true);
     expect(restored.session.state.cards.find((card) => card.uid === gemini!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(restored.session.state.chain).toHaveLength(1);
-    expect(restored.session.state.chain[0]).toMatchObject({ sourceUid: spark!.uid });
+    expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "effectLabel": 1,
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-929-0",
+            ],
+          },
+          {
+            "category": 65536,
+            "count": 0,
+            "parameter": 1,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-33846209-0",
+        "targetUids": [
+          "p1-deck-929-0",
+        ],
+      }
+    `);
     expect(restored.session.state.chain[0]!.operationInfos).toEqual(
       expect.arrayContaining([
         { category: 0x1, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 },
