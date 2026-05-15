@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const defaultTestRoot = "test";
-const broadEventMatcherPattern = /expect\.objectContaining\(\{\s*eventName:\s*["'][^"']+["']/g;
+const broadEventMatcherStart = "expect.objectContaining({";
 
 function main(argv) {
   const options = parseArgs(argv);
@@ -19,8 +19,8 @@ function main(argv) {
 
   for (const file of realScriptFiles) {
     const text = fs.readFileSync(file, "utf8");
-    for (const match of text.matchAll(broadEventMatcherPattern)) {
-      broadMatchers.push(`${toRepoPath(file)}:${lineNumber(text, match.index ?? 0)}`);
+    for (const matcher of broadEventMatchers(text)) {
+      broadMatchers.push(`${toRepoPath(file)}:${lineNumber(text, matcher.index)}`);
     }
   }
 
@@ -29,6 +29,9 @@ function main(argv) {
   const failures = [];
   if (options.minFixtures !== undefined && realScriptFiles.length < options.minFixtures) {
     failures.push(`Real-script fixtures ${realScriptFiles.length} is below required ${options.minFixtures}`);
+  }
+  if (options.maxBroadEventMatchers !== undefined && broadMatchers.length > options.maxBroadEventMatchers) {
+    failures.push(`Broad event matchers ${broadMatchers.length} is above allowed ${options.maxBroadEventMatchers}:\n${formatList(broadMatchers)}`);
   }
   if (options.failOnBroadEventMatchers && broadMatchers.length > 0) {
     failures.push(`Broad event matchers must use exact event payload assertions:\n${formatList(broadMatchers)}`);
@@ -46,6 +49,7 @@ function parseArgs(argv) {
     if (arg === "--help" || arg === "-h") options.help = true;
     else if (arg === "--test-root") options.testRoot = requireOptionValue(argv, ++index, arg);
     else if (arg === "--min-fixtures") options.minFixtures = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
+    else if (arg === "--max-broad-event-matchers") options.maxBroadEventMatchers = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
     else if (arg === "--fail-on-broad-event-matchers") options.failOnBroadEventMatchers = true;
     else throw new Error(`Unknown argument: ${arg}`);
   }
@@ -71,6 +75,49 @@ function realScriptFixtureFiles(testRoot) {
     .sort();
 }
 
+function broadEventMatchers(text) {
+  const matches = [];
+  let searchIndex = 0;
+  while (searchIndex < text.length) {
+    const index = text.indexOf(broadEventMatcherStart, searchIndex);
+    if (index === -1) break;
+    const end = matchingCallEnd(text, index + broadEventMatcherStart.length);
+    if (end === -1) {
+      searchIndex = index + broadEventMatcherStart.length;
+      continue;
+    }
+    const body = text.slice(index, end);
+    if (/\beventName\s*:/.test(body)) matches.push({ index });
+    searchIndex = end;
+  }
+  return matches;
+}
+
+function matchingCallEnd(text, index) {
+  let depth = 1;
+  let quote = "";
+  let escaped = false;
+  for (let cursor = index; cursor < text.length; cursor += 1) {
+    const char = text[cursor];
+    if (quote !== "") {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === quote) quote = "";
+      continue;
+    }
+    if (char === "\"" || char === "'" || char === "`") {
+      quote = char;
+      continue;
+    }
+    if (char === "{") depth += 1;
+    else if (char === "}") {
+      depth -= 1;
+      if (depth === 0) return cursor + 1;
+    }
+  }
+  return -1;
+}
+
 function lineNumber(text, index) {
   return text.slice(0, index).split("\n").length;
 }
@@ -89,6 +136,7 @@ function printHelp() {
 Options:
   --test-root <path>                  Test directory to scan. Default: ${defaultTestRoot}
   --min-fixtures <count>              Fail unless at least this many real-script fixtures are scanned
+  --max-broad-event-matchers <count>  Fail when broad event matchers exceed this count
   --fail-on-broad-event-matchers      Fail when real-script tests use broad eventName objectContaining matchers
 `);
 }
