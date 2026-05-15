@@ -73,11 +73,15 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
 
     expect(restored.session.state.phase).toBe("main2");
     expect(restored.session.state.battlePairs).toEqual([{ attackerUid: giantOrc!.uid, targetUid: target!.uid }]);
-    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "phaseBattle", eventCode: 0x1080 })]));
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "phaseBattle")).toEqual([
+      {
+        eventName: "phaseBattle",
+        eventCode: 0x1080,
+      },
+    ]);
     expect(restored.session.state.cards.find((card) => card.uid === giantOrc!.uid)).toMatchObject({ location: "monsterZone", controller: 0, position: "faceUpDefense" });
     expect(restored.session.state.eventHistory).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ eventName: "phaseBattle", eventCode: 0x1080 }),
         expect.objectContaining({ eventName: "positionChanged", eventCode: 1016, eventCardUid: giantOrc!.uid }),
       ]),
     );

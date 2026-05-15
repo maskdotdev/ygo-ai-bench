@@ -97,7 +97,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     expect(standby, JSON.stringify(getLuaRestoreLegalActions(restoredPersistent, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredPersistent, standby!);
     expect(restoredPersistent.session.state.phase).toBe("standby");
-    expect(restoredPersistent.session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "phaseStandby", eventCode: 0x1002 }));
+    expect(restoredPersistent.session.state.eventHistory.filter((event) => event.eventName === "phaseStandby")).toEqual([
+      {
+        eventName: "phaseStandby",
+        eventCode: 0x1002,
+      },
+    ]);
 
     const restoredAfterStandby = restoreDuelWithLuaScripts(serializeDuel(restoredPersistent.session), source, reader);
     expectCleanRestore(restoredAfterStandby);

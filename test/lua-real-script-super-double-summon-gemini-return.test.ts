@@ -97,11 +97,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
     expect(changedToEnd.ok, changedToEnd.error).toBe(true);
     expect(preEndRestored.session.state.pendingTriggers).toEqual([]);
     expect(preEndRestored.session.state.cards.find((card) => card.uid === gemini!.uid)).toMatchObject({ location: "hand", controller: 0 });
-    expect(preEndRestored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "phaseEnd", eventCode: 0x1200 }),
-      ]),
-    );
+    expect(preEndRestored.session.state.eventHistory.filter((event) => event.eventName === "phaseEnd")).toEqual([
+      {
+        eventName: "phaseEnd",
+        eventCode: 0x1200,
+      },
+    ]);
     expect(preEndRestored.session.state.eventHistory.filter((event) => event.eventName === "sentToHand")).toEqual([
       {
         eventName: "sentToHand",

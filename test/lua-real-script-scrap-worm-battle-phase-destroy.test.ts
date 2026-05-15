@@ -90,9 +90,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sc
     expect(restoredTrigger.session.state.eventHistory).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ eventName: "attackDeclared", eventCode: 1130, eventCardUid: scrapWorm!.uid }),
-        expect.objectContaining({ eventName: "phaseBattle", eventCode: 0x1080 }),
       ]),
     );
+    expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "phaseBattle")).toEqual([
+      {
+        eventName: "phaseBattle",
+        eventCode: 0x1080,
+      },
+    ]);
     expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === scrapWorm!.uid)).toEqual([
       {
         eventName: "destroyed",
