@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -86,9 +87,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     expect(restored.session.state.eventHistory).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ eventName: "afterDamageCalculation", eventCode: 1138, eventUids: [ishzark!.uid, target!.uid] }),
-        expect.objectContaining({ eventName: "banished", eventCode: 1011, eventCardUid: target!.uid }),
       ]),
     );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "banished" && event.eventCardUid === target!.uid)).toEqual([
+      {
+        eventName: "banished",
+        eventCode: 1011,
+        eventCardUid: target!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: ishzark!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpDefense",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "banished",
+          position: "faceUpDefense",
+          sequence: 0,
+        },
+      },
+    ]);
 
     passBattleResponses(restored.session);
     expect(restored.session.state.pendingBattle).toBeUndefined();
