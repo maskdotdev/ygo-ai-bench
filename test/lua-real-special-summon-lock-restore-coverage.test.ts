@@ -238,6 +238,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-world-legacy-cliffhanger-link-summon-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: `target:special-summon-type-is:${luaSummonTypeLink}`',
+        "targetRange: [1, 1]",
         "cliffhanger link special 0",
         "cliffhanger fusion special 1",
         "cliffhanger hand special 1",
@@ -631,6 +632,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-grisaille-prison-synchro-xyz-summon-lock.test.ts",
       requiredSnippets: [
         "target:special-summon-type-is-any",
+        "targetRange: [1, 1]",
         "grisaille synchro special 0",
         "grisaille xyz special 0",
         "grisaille fusion special 1",
