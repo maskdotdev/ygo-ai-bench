@@ -82,6 +82,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bu
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredActivation, 0);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
+    expect(restoredActivation.missingChainLimitRegistryKeys).toEqual([]);
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === burden!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredActivation, activation!);
@@ -96,6 +97,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bu
     expectRestoredLegalActions(restoredChain, 1);
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredChain);
     expect(restoredChain.session.state.cards.find((card) => card.uid === burden!.uid)).toMatchObject({
       location: "spellTrapZone",
@@ -107,6 +109,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bu
     expect(restoredStat.restoreComplete, restoredStat.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredStat, 0);
     expect(restoredStat.missingRegistryKeys).toEqual([]);
+    expect(restoredStat.missingChainLimitRegistryKeys).toEqual([]);
     const probe = restoredStat.host.loadScript(statProbeScript(defenderCode, lowAttackerCode, highAttackerCode), "burden-mighty-stat-probe.lua");
     expect(probe.ok, probe.error).toBe(true);
     expect(restoredStat.host.messages).toContain("burden of the mighty attack 1000/1300/1800");

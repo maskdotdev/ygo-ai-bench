@@ -17,6 +17,7 @@ describe("Lua real damage-step stat restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("applyLuaRestoreResponse")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
@@ -37,9 +38,13 @@ function damageStepStatFixtureFiles(): Array<{ file: string; required: string[] 
       file: "test/lua-real-script-shinobird-crow-damage-step-stat.test.ts",
       required: [
         "restoredSetup.missingRegistryKeys).toEqual([])",
+        "restoredSetup.missingChainLimitRegistryKeys).toEqual([])",
         "restoredDamageStep.missingRegistryKeys).toEqual([])",
+        "restoredDamageStep.missingChainLimitRegistryKeys).toEqual([])",
         "restoredChain.missingRegistryKeys).toEqual([])",
+        "restoredChain.missingChainLimitRegistryKeys).toEqual([])",
         "restoredBattle.missingRegistryKeys).toEqual([])",
+        "restoredBattle.missingChainLimitRegistryKeys).toEqual([])",
         "effectLabelObjectUid: costSpirit!.uid",
         "currentAttack(restoredCrow",
         "battleDamage[1]).toBe(200)",

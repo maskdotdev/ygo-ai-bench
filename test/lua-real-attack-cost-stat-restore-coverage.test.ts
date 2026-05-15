@@ -18,6 +18,7 @@ describe("Lua real attack cost and attack-stat restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || required.some((snippet) => !text.includes(snippet));
       })
       .map(({ file }) => file);

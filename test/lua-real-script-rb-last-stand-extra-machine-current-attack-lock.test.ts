@@ -54,6 +54,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script R.
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const probe = restored.host.loadScript(
       `
