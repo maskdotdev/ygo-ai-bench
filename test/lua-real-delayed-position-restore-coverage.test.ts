@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const delayedPositionFixtureCount = 2;
+const delayedPositionFixtureCount = 3;
 
 describe("Lua real delayed position restore coverage", () => {
   it("requires delayed position fixtures to assert clean restore and restored delayed outcomes", () => {
@@ -68,6 +68,18 @@ function delayedPositionFixtureFiles(): Array<{ file: string; required: string[]
         'action.type === "changePhase"',
         'location: "hand", controller: 1',
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-giant-orc-battle-phase-position.test.ts",
+      required: [
+        "restored.missingRegistryKeys).toEqual([])",
+        "restored.missingChainLimitRegistryKeys).toEqual([])",
+        'action.type === "changePhase" && action.phase === "main2"',
+        'eventName: "phaseBattle"',
+        'eventName: "positionChanged"',
+        "position: \"faceUpDefense\"",
+        "battlePairs",
       ],
     },
   ];
