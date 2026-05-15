@@ -7,7 +7,7 @@ import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -58,6 +58,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restored, 0),
+    );
     expect(restored.session.state.players[0]!.lifePoints).toBe(7200);
     expect(restored.session.state.effects.find((effect) => effect.sourceUid === sasuke.uid && effect.code === 6)).toMatchObject({
       event: "continuous",
@@ -71,6 +75,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
     restoredLock.session.state.turnPlayer = 1;
     restoredLock.session.state.waitingFor = 1;
     restoredLock.session.state.phase = "main1";
+    expect(getLuaRestoreLegalActionGroups(restoredLock, 1)).toEqual(getGroupedDuelLegalActions(restoredLock.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restoredLock, 1).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restoredLock, 1),
+    );
     expect(getLuaRestoreLegalActions(restoredLock, 1).some((action) => action.type === "activateEffect" && action.uid === opponentSpell.uid)).toBe(false);
     expect(getLuaRestoreLegalActions(restoredLock, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
   });
