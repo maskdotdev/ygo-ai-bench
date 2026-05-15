@@ -155,10 +155,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
       },
     ]);
     expect(restoredDamageStep.session.state.chain).toHaveLength(1);
-    expect(restoredDamageStep.session.state.chain[0]).toMatchObject({
-      sourceUid: crow!.uid,
-      effectLabelObjectUid: costSpirit!.uid,
-    });
+    expect(restoredDamageStep.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-7-1002",
+        "effectLabelObjectUid": "p0-deck-39817920-1",
+        "id": "chain-4",
+        "player": 0,
+        "sourceUid": "p0-deck-39817919-0",
+      }
+    `);
     expect(getLuaRestoreLegalActions(restoredDamageStep, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredDamageStep.session), source, reader);

@@ -70,10 +70,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sn
     expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
 
-    expect(restoredEquipWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: snatch!.uid,
-      targetUids: [target!.uid],
-    });
+    expect(restoredEquipWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 8192,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-612501-0",
+            ],
+          },
+          {
+            "category": 262144,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-45986603-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-45986603-0",
+        "targetUids": [
+          "p1-deck-612501-0",
+        ],
+      }
+    `);
     expect(restoredEquipWindow.session.state.chain[0]?.operationInfos).toEqual([
       { category: 0x2000, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 },
       { category: 0x40000, targetUids: [snatch!.uid], count: 1, player: 0, parameter: 0 },
@@ -82,7 +112,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sn
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
     expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restoredChain.session.state.chain[0]).toMatchObject(restoredEquipWindow.session.state.chain[0]!);
+    expect(restoredChain.session.state.chain[0]).toEqual(restoredEquipWindow.session.state.chain[0]!);
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
     resolveRestoredChain(restoredChain);

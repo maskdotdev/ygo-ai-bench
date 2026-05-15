@@ -65,10 +65,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredActivation, activation!);
 
-    expect(restoredActivation.session.state.chain[0]).toMatchObject({
-      sourceUid: shatteredAxe!.uid,
-      targetUids: [target!.uid],
-    });
+    expect(restoredActivation.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 16384,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-613801-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-12117532-0",
+        "targetUids": [
+          "p1-deck-613801-0",
+        ],
+      }
+    `);
     expect(restoredActivation.session.state.chain[0]?.operationInfos).toEqual([
       { category: 0x4000, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 },
     ]);

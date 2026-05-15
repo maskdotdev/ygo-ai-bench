@@ -101,10 +101,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script GO
     );
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredDamageCalculation, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredDamageCalculation, activation!);
-    expect(restoredDamageCalculation.session.state.chain[0]).toMatchObject({
-      sourceUid: shadowSpell!.uid,
-      targetUids: [attacker!.uid],
-    });
+    expect(restoredDamageCalculation.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-3",
+        "player": 0,
+        "sourceUid": "p0-deck-504700050-0",
+        "targetUids": [
+          "p1-deck-613922-0",
+        ],
+      }
+    `);
     expect(getLuaRestoreLegalActions(restoredDamageCalculation, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredDamageCalculation.session), source, reader);

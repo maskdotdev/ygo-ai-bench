@@ -84,11 +84,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredIgnitionWindow, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredIgnitionWindow, activation!);
     expect(restoredIgnitionWindow.session.state.chain).toHaveLength(1);
-    expect(restoredIgnitionWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: pigeon!.uid,
-      targetUids: [targetSpirit!.uid],
-      operationInfos: [{ category: 0x8, targetUids: [targetSpirit!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restoredIgnitionWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 1,
+        "chainIndex": 1,
+        "effectId": "lua-7",
+        "id": "chain-4",
+        "operationInfos": [
+          {
+            "category": 8,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-92200613-1",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-92200612-0",
+        "targetUids": [
+          "p0-deck-92200613-1",
+        ],
+      }
+    `);
     expect(restoredIgnitionWindow.session.state.chain[0]?.targetUids).not.toContain(pigeon!.uid);
     expect(restoredIgnitionWindow.session.state.chain[0]?.targetUids).not.toContain(invalidMonster!.uid);
 
