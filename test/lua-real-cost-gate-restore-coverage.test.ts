@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const costGateFixtureCount = 2;
 
 describe("Lua real cost gate restore coverage", () => {
   it("requires summon and action cost fixtures to assert clean Lua registry restore and restored gates", () => {
-    const missing = costGateFixtureFiles()
+    const files = costGateFixtureFiles();
+    expect(files).toHaveLength(costGateFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")

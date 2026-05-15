@@ -3,10 +3,15 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const attackCostAndStatFixtureCount = 7;
+const legalActionFixtureCount = 4;
 
 describe("Lua real attack cost and attack-stat restore coverage", () => {
   it("requires attack-cost and ATK-threshold restore fixtures to assert clean Lua registry restore", () => {
-    const missing = attackCostAndStatFixtureFiles()
+    const files = attackCostAndStatFixtureFiles();
+    expect(files).toHaveLength(attackCostAndStatFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
@@ -21,7 +26,10 @@ describe("Lua real attack cost and attack-stat restore coverage", () => {
   });
 
   it("requires UI-facing legal-action parity where restored ATK-threshold locks expose actions", () => {
-    const missing = legalActionFixtureFiles()
+    const files = legalActionFixtureFiles();
+    expect(files).toHaveLength(legalActionFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("getLuaRestoreLegalActionGroups")
