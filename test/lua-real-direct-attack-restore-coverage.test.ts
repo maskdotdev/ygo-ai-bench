@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const DIRECT_ATTACK_FIXTURE_COUNT = 3;
 
 describe("Lua real direct-attack restore coverage", () => {
   it("requires representative direct-attack fixtures to assert clean Lua restore and replayed legal actions", () => {
-    const missing = realScriptDirectAttackFixtureFiles()
+    const files = realScriptDirectAttackFixtureFiles();
+    expect(files).toHaveLength(DIRECT_ATTACK_FIXTURE_COUNT);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
