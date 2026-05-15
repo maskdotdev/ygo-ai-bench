@@ -73,10 +73,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ri
     expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
 
-    expect(restoredEquipWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: rider!.uid,
-      targetUids: [normalDragon!.uid],
-    });
+    expect(restoredEquipWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1",
+        "id": "chain-2",
+        "player": 0,
+        "sourceUid": "p0-deck-14235211-0",
+        "targetUids": [
+          "p0-deck-14235-1",
+        ],
+      }
+    `);
     expect(restoredEquipWindow.session.state.chain[0]?.targetUids).not.toContain(effectDragon!.uid);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);

@@ -71,10 +71,26 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
     expect(effect, JSON.stringify(getLuaRestoreLegalActions(restoredOpenWindow, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredOpenWindow, effect!);
     expect(restoredOpenWindow.session.state.chain).toHaveLength(1);
-    expect(restoredOpenWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: sakitama!.uid,
-      operationInfos: [{ category: 0x100, targetUids: [], count: 1, player: 0, parameter: 0x2 }],
-    });
+    expect(restoredOpenWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 2,
+        "chainIndex": 1,
+        "effectId": "lua-7",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 256,
+            "count": 1,
+            "parameter": 2,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-67972302-0",
+      }
+    `);
     expect(restoredOpenWindow.host.messages).toContain(`confirmed 1: ${sakitamaCode}`);
 
     const restoredChainWindow = restoreDuelWithLuaScripts(serializeDuel(restoredOpenWindow.session), source, reader);

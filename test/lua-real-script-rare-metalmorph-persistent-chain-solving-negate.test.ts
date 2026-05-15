@@ -72,10 +72,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ra
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredActivation, activation!);
 
-    expect(restoredActivation.session.state.chain[0]).toMatchObject({
-      sourceUid: rareMetalmorph!.uid,
-      targetUids: [target!.uid],
-    });
+    expect(restoredActivation.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "player": 0,
+        "sourceUid": "p0-deck-12503902-0",
+        "targetUids": [
+          "p0-deck-613701-2",
+        ],
+      }
+    `);
     expect(restoredActivation.session.state.chain[0]?.operationInfos ?? []).toEqual([]);
 
     const restoredRareChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
@@ -108,10 +118,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ra
     const bookActivation = getLuaRestoreLegalActions(restoredPersistent, 0).find((action) => action.type === "activateEffect" && action.uid === bookOfMoon!.uid);
     expect(bookActivation, JSON.stringify(getLuaRestoreLegalActions(restoredPersistent, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredPersistent, bookActivation!);
-    expect(restoredPersistent.session.state.chain[0]).toMatchObject({
-      sourceUid: bookOfMoon!.uid,
-      targetUids: [target!.uid],
-    });
+    expect(restoredPersistent.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-5-1002",
+        "id": "chain-5",
+        "operationInfos": [
+          {
+            "category": 4096,
+            "count": 1,
+            "parameter": 8,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-613701-2",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-14087893-1",
+        "targetUids": [
+          "p0-deck-613701-2",
+        ],
+      }
+    `);
     expect(getLuaRestoreLegalActions(restoredPersistent, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
 
     const restoredBookChain = restoreDuelWithLuaScripts(serializeDuel(restoredPersistent.session), source, reader);
