@@ -61,10 +61,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
 
     const sourceAction = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === sourceCard!.uid);
     expect(sourceAction, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
-    expect(session.state.effects.find((effect) => effect.id === sourceAction!.effectId)).toMatchObject({
+    if (!sourceAction || sourceAction.type !== "activateEffect") throw new Error("Expected Tyrant Ogre source activation action");
+    expect(session.state.effects.find((effect) => effect.id === sourceAction.effectId)).toMatchObject({
       label: 1,
     });
-    const activated = applyResponse(session, sourceAction!);
+    const activated = applyResponse(session, sourceAction);
     expect(activated.ok, activated.error).toBe(true);
 
     const registryKey = `lua-chain-limit:${sourceCode}:0:link:known:closure:target-cards-not-handler:${encodeURIComponent(targetedResponder!.uid)}`;
@@ -78,7 +79,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restored.session.state.effects.find((effect) => effect.id === sourceAction!.effectId)).toMatchObject({
+    expect(restored.session.state.effects.find((effect) => effect.id === sourceAction.effectId)).toMatchObject({
       label: 1,
     });
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });

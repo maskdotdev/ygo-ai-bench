@@ -71,8 +71,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
 
     const searchAction = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === searcher!.uid);
     expect(searchAction).toBeDefined();
-    applyAndAssert(session, searchAction!);
-    expect(session.state.effects.find((effect) => effect.id === searchAction!.effectId)).toMatchObject({
+    if (!searchAction || searchAction.type !== "activateEffect") throw new Error("Expected Droll searcher activation action");
+    applyAndAssert(session, searchAction);
+    expect(session.state.effects.find((effect) => effect.id === searchAction.effectId)).toMatchObject({
       category: 0x8,
       range: ["monsterZone"],
     });
