@@ -68,11 +68,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Li
     expect(lightningStormAction).toBeDefined();
     applyAndAssert(session, lightningStormAction!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: lightningStorm!.uid,
-      effectLabel: 1,
-      operationInfos: [{ category: 0x1, count: 2, player: 0, parameter: 0 }],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "effectLabel": 1,
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 2,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-994-0",
+              "p1-deck-995-1",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-14532163-0",
+      }
+    `);
     expect(sortedUids(session.state.chain[0]!.operationInfos?.[0]?.targetUids ?? [])).toEqual(sortedUids([opponentAttacker!.uid, opponentSecondAttacker!.uid]));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
@@ -81,11 +100,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Li
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
-    expect(restored.session.state.chain[0]).toMatchObject({
-      sourceUid: lightningStorm!.uid,
-      effectLabel: 1,
-      operationInfos: [{ category: 0x1, count: 2, player: 0, parameter: 0 }],
-    });
+    expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "effectLabel": 1,
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 2,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-994-0",
+              "p1-deck-995-1",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-14532163-0",
+      }
+    `);
 
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
@@ -227,11 +265,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Li
     expect(lightningStormAction).toBeDefined();
     applyAndAssert(session, lightningStormAction!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: lightningStorm!.uid,
-      effectLabel: 2,
-      operationInfos: [{ category: 0x1, count: 2, player: 0, parameter: 0 }],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "effectLabel": 2,
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 2,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-1001-1",
+              "p1-deck-1002-2",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-14532163-0",
+      }
+    `);
     expect(sortedUids(session.state.chain[0]!.operationInfos?.[0]?.targetUids ?? [])).toEqual(sortedUids([opponentTrap!.uid, opponentSpell!.uid]));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
@@ -240,11 +297,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Li
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
-    expect(restored.session.state.chain[0]).toMatchObject({
-      sourceUid: lightningStorm!.uid,
-      effectLabel: 2,
-      operationInfos: [{ category: 0x1, count: 2, player: 0, parameter: 0 }],
-    });
+    expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "effectLabel": 2,
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 2,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-1001-1",
+              "p1-deck-1002-2",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-14532163-0",
+      }
+    `);
 
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
