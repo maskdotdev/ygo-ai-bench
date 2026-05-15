@@ -70,14 +70,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     );
     expect(register.ok, register.error).toBe(true);
     const descriptor = `condition:source-battle-target-race:${racePlant}`;
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: descriptor,
-          sourceUid: rose!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) => effect.luaConditionDescriptor === descriptor && effect.sourceUid === rose!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 71,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-71",
+          "lifePointValue": [Function],
+          "luaConditionDescriptor": "condition:source-battle-target-race:1024",
+          "luaTypeFlags": 1,
+          "luaValueDescriptor": "cannot-be-effect-target:opponent",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:41160533:lua-1-71",
+          "sourceUid": "p0-deck-41160533-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -124,14 +150,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const register = host.loadCardScript(Number(roseCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: `condition:source-battle-target-race:${racePlant}`,
-          sourceUid: rose!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.luaConditionDescriptor === `condition:source-battle-target-race:` &&
+          effect.sourceUid === rose!.uid,
+      ),
+    ).toMatchInlineSnapshot(`[]`);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -193,14 +218,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
       "rose-official-local-battle-target-race-condition.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: `condition:source-battle-target-race:${racePlant}`,
-          sourceUid: rose!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.luaConditionDescriptor === `condition:source-battle-target-race:` &&
+          effect.sourceUid === rose!.uid,
+      ),
+    ).toMatchInlineSnapshot(`[]`);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

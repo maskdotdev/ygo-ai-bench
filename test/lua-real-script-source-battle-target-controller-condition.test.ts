@@ -51,14 +51,45 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const register = host.loadCardScript(Number(puppyCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: "condition:source-battle-target-opponent",
-          sourceUid: puppy!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.luaConditionDescriptor === "condition:source-battle-target-opponent" && effect.sourceUid === puppy!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "category": 520,
+          "code": 1131,
+          "controller": 0,
+          "cost": [Function],
+          "countLimit": 1,
+          "countLimitCode": 20003027,
+          "description": 320048432,
+          "event": "trigger",
+          "id": "lua-3-1131",
+          "luaConditionDescriptor": "condition:source-battle-target-opponent",
+          "luaTypeFlags": 129,
+          "oncePerTurn": true,
+          "operation": [Function],
+          "optional": true,
+          "promptOperation": [Function],
+          "property": 65536,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:20003027:lua-3-1131",
+          "sourceUid": "p0-deck-20003027-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "triggerCode": 1131,
+          "triggerEvent": "battleTargeted",
+          "triggerSourceOnly": true,
+          "triggerTiming": "if",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -103,14 +134,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const register = host.loadCardScript(Number(sigmaCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: "condition:source-battle-target-opponent",
-          sourceUid: sigma!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.luaConditionDescriptor === "condition:source-battle-target-opponent" && effect.sourceUid === sigma!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 208,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-3-208",
+          "lifePointValue": [Function],
+          "luaConditionDescriptor": "condition:source-battle-target-opponent",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:42632209:lua-3-208",
+          "sourceUid": "p0-extraDeck-42632209-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -168,14 +225,35 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
       "sigma-official-local-source-battle-target-opponent-condition.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: "condition:source-battle-target-opponent",
-          sourceUid: sigma!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.luaConditionDescriptor === "condition:source-battle-target-opponent" && effect.sourceUid === sigma!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 100,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-100",
+          "luaConditionDescriptor": "condition:source-battle-target-opponent",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:42632209:lua-1-100",
+          "sourceUid": "p0-extraDeck-42632209-0",
+          "target": [Function],
+          "value": 300,
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

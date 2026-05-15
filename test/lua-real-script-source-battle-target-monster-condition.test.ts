@@ -64,15 +64,36 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
       "blizzard-warrior-comma-local-battle-target-monster-condition.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: "condition:source-relate-battle-target-monster",
-          sourceUid: blizzardWarrior!.uid,
-          value: 300,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.luaConditionDescriptor === "condition:source-relate-battle-target-monster" &&
+          effect.sourceUid === blizzardWarrior!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 100,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-100",
+          "luaConditionDescriptor": "condition:source-relate-battle-target-monster",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:96565487:lua-1-100",
+          "sourceUid": "p0-deck-96565487-0",
+          "target": [Function],
+          "value": 300,
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -119,14 +140,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const register = host.loadCardScript(Number(blizzardWarriorCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: "condition:source-relate-battle-target-monster",
-          sourceUid: blizzardWarrior!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.luaConditionDescriptor === "condition:source-relate-battle-target-monster" &&
+          effect.sourceUid === blizzardWarrior!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 1139,
+          "controller": 0,
+          "cost": [Function],
+          "description": 1545047792,
+          "event": "trigger",
+          "id": "lua-1-1139",
+          "luaConditionDescriptor": "condition:source-relate-battle-target-monster",
+          "luaTypeFlags": 513,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "optional": false,
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:96565487:lua-1-1139",
+          "sourceUid": "p0-deck-96565487-0",
+          "target": [Function],
+          "triggerCode": 1139,
+          "triggerEvent": "battleDestroyed",
+          "triggerTiming": "when",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -184,14 +231,36 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
       "blizzard-warrior-official-direct-battle-target-monster-condition.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: "condition:source-relate-battle-target-monster",
-          sourceUid: blizzardWarrior!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.luaConditionDescriptor === "condition:source-relate-battle-target-monster" &&
+          effect.sourceUid === blizzardWarrior!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 100,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-100",
+          "luaConditionDescriptor": "condition:source-relate-battle-target-monster",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:96565487:lua-1-100",
+          "sourceUid": "p0-deck-96565487-0",
+          "target": [Function],
+          "value": 300,
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
