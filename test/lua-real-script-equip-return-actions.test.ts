@@ -136,13 +136,64 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       sequence: 0,
     });
     expect(restoredDeckChain.host.messages).not.toContain("equip responder resolved");
-    expect(restoredDeckChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "sentToGraveyard", eventCode: 1014, eventCardUid: nuzzler!.uid }),
-        expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 0, eventValue: 500 }),
-        expect.objectContaining({ eventName: "sentToDeck", eventCode: 1013, eventCardUid: nuzzler!.uid }),
-      ]),
-    );
+    expect(restoredDeckChain.session.state.eventHistory.filter((event) => ["sentToGraveyard", "lifePointCostPaid", "sentToDeck"].includes(event.eventName))).toEqual([
+      {
+        eventName: "sentToGraveyard",
+        eventCode: 1014,
+        eventCardUid: nuzzler!.uid,
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: nuzzler!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "spellTrapZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "lifePointCostPaid",
+        eventCode: 1201,
+        eventPlayer: 0,
+        eventValue: 500,
+        eventReason: duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: nuzzler!.uid,
+        eventReasonEffectId: 4,
+      },
+      {
+        eventName: "sentToDeck",
+        eventCode: 1013,
+        eventCardUid: nuzzler!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: nuzzler!.uid,
+        eventReasonEffectId: 4,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "deck",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
   });
 
   it("restores Butterfly Dagger leave-field return trigger with previous equip target", () => {
@@ -363,12 +414,54 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       sequence: 0,
     });
     expect(restoredDeckChain.host.messages).not.toContain("equip responder resolved");
-    expect(restoredDeckChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "sentToGraveyard", eventCode: 1014, eventCardUid: horn!.uid }),
-        expect.objectContaining({ eventName: "sentToDeck", eventCode: 1013, eventCardUid: horn!.uid }),
-      ]),
-    );
+    expect(restoredDeckChain.session.state.eventHistory.filter((event) => ["sentToGraveyard", "sentToDeck"].includes(event.eventName))).toEqual([
+      {
+        eventName: "sentToGraveyard",
+        eventCode: 1014,
+        eventCardUid: horn!.uid,
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: horn!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "spellTrapZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "sentToDeck",
+        eventCode: 1013,
+        eventCardUid: horn!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: horn!.uid,
+        eventReasonEffectId: 5,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "deck",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
   });
 
   it("restores Smoke Grenade of the Thief destroyed equip hand discard trigger", () => {
