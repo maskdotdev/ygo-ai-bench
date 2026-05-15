@@ -76,7 +76,55 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Po
         reason: 0x80,
       });
     }
-    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "banished", eventCode: 1011, eventUids: costUids })]));
+    expect(session.state.eventHistory.filter((event) => event.eventName === "banished")).toEqual([
+      ...costUids.map((uid, sequence) => ({
+        eventName: "banished",
+        eventCode: 1011,
+        eventCardUid: uid,
+        eventReason: duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: pot!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: sequence < 2 ? sequence : sequence + 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "banished",
+          position: "faceDown",
+          sequence,
+        },
+      })),
+      {
+        eventName: "banished",
+        eventCode: 1011,
+        eventCardUid: costUids[0],
+        eventReason: duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: pot!.uid,
+        eventReasonEffectId: 1,
+        eventUids: costUids,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "banished",
+          position: "faceDownDefense",
+          sequence: 0,
+        },
+      },
+    ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
