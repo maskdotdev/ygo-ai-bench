@@ -2,12 +2,20 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import {
+  applyResponse,
+  createDuel,
+  getGroupedDuelLegalActions,
+  getLegalActions as getDuelLegalActions,
+  loadDecks,
+  serializeDuel,
+  startDuel,
+} from "#duel/core.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -64,6 +72,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     const restoredSameTurn = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredSameTurn.restoreComplete, restoredSameTurn.incompleteReasons.join("; ")).toBe(true);
     expect(restoredSameTurn.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restoredSameTurn, 0)).toEqual(getGroupedDuelLegalActions(restoredSameTurn.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredSameTurn, 0).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restoredSameTurn, 0),
+    );
     expect(getLuaRestoreLegalActions(restoredSameTurn, 0)).toEqual(getDuelLegalActions(restoredSameTurn.session, 0));
     expect(getLuaRestoreLegalActions(restoredSameTurn, 0)).toEqual(expect.arrayContaining([expect.objectContaining({ type: "changePhase", phase: "battle" })]));
 
@@ -71,10 +83,25 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     const restoredNextSelfTurn = restoreDuelWithLuaScripts(serializeDuel(restoredSameTurn.session), workspace, reader);
     expect(restoredNextSelfTurn.restoreComplete, restoredNextSelfTurn.incompleteReasons.join("; ")).toBe(true);
     expect(restoredNextSelfTurn.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restoredNextSelfTurn, 1)).toEqual(
+      getGroupedDuelLegalActions(restoredNextSelfTurn.session, 1),
+    );
+    expect(getLuaRestoreLegalActionGroups(restoredNextSelfTurn, 1).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restoredNextSelfTurn, 1),
+    );
     expect(restoredNextSelfTurn.session.state).toMatchObject({ turnPlayer: 1, phase: "main1" });
     applyActionAndAssert(restoredNextSelfTurn.session, getDuelLegalActions(restoredNextSelfTurn.session, 1).find((action) => action.type === "endTurn"));
     expect(restoredNextSelfTurn.session.state).toMatchObject({ turnPlayer: 0, phase: "main1" });
-    const selfTurnActions = getLuaRestoreLegalActions(restoreDuelWithLuaScripts(serializeDuel(restoredNextSelfTurn.session), workspace, reader), 0);
+    const restoredSkippedSelfTurn = restoreDuelWithLuaScripts(serializeDuel(restoredNextSelfTurn.session), workspace, reader);
+    expect(restoredSkippedSelfTurn.restoreComplete, restoredSkippedSelfTurn.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredSkippedSelfTurn.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restoredSkippedSelfTurn, 0)).toEqual(
+      getGroupedDuelLegalActions(restoredSkippedSelfTurn.session, 0),
+    );
+    expect(getLuaRestoreLegalActionGroups(restoredSkippedSelfTurn, 0).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restoredSkippedSelfTurn, 0),
+    );
+    const selfTurnActions = getLuaRestoreLegalActions(restoredSkippedSelfTurn, 0);
     expect(selfTurnActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "changePhase", phase: "main2" })]));
     expect(selfTurnActions).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "changePhase", phase: "battle" })]));
   });
