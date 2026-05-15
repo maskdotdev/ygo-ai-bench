@@ -151,9 +151,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
         },
       },
     ]);
-    expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "banished", eventCardUid: amaterasu!.uid })]),
-    );
+    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => event.eventName === "banished" && event.eventCardUid === amaterasu!.uid)).toEqual([]);
     expect(restoredPendingResolution.host.messages).not.toContain("amaterasu chain responder resolved");
   });
 });
