@@ -40,16 +40,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(fortressCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 68,
-          sourceUid: fortress!.uid,
-          targetRange: [1, 1],
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 68 && effect.sourceUid === fortress!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 68,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-68",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:1596508:lua-1-68",
+        "sourceUid": "p0-deck-1596508-0",
+        "target": [Function],
+        "targetRange": [
+          1,
+          1,
+        ],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
