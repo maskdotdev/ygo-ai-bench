@@ -14,6 +14,12 @@ const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Call of the Haunted revive destroy", () => {
   it("restores Call of the Haunted's Continuous Trap revive and mutual destruction", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
@@ -57,10 +63,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredActivation, 0);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restoredActivation, 0)).toEqual(getGroupedDuelLegalActions(restoredActivation.session, 0));
-    expect(getLuaRestoreLegalActionGroups(restoredActivation, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredActivation, 0));
-    expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === call!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredActivation, activation!);
@@ -74,9 +78,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredChain, 1);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
-    expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
     expect(restoredChain.session.state.chain[0]).toMatchObject(restoredActivation.session.state.chain[0]!);
     resolveRestoredChain(restoredChain);
 
@@ -97,6 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     const resolvedSnapshot = serializeDuel(restoredChain.session);
     const restoredRevive = restoreDuelWithLuaScripts(resolvedSnapshot, source, reader);
     expect(restoredRevive.restoreComplete, restoredRevive.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredRevive, 0);
     expect(restoredRevive.missingRegistryKeys).toEqual([]);
     expectLuaCallProbe(restoredRevive, targetCode, callCode, "call probe 0/612701/1");
 
@@ -109,10 +113,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     });
     const restoredTrapDestroyed = restoreDuelWithLuaScripts(serializeDuel(restoredRevive.session), source, reader);
     expect(restoredTrapDestroyed.restoreComplete, restoredTrapDestroyed.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredTrapDestroyed, 0);
     expect(restoredTrapDestroyed.missingRegistryKeys).toEqual([]);
 
     const restoredTargetDestroy = restoreDuelWithLuaScripts(resolvedSnapshot, source, reader);
     expect(restoredTargetDestroy.restoreComplete, restoredTargetDestroy.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredTargetDestroy, 0);
     expect(restoredTargetDestroy.missingRegistryKeys).toEqual([]);
     destroyDuelCard(restoredTargetDestroy.session.state, target!.uid, 0, duelReason.effect | duelReason.destroy, 0);
     expect(restoredTargetDestroy.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "graveyard" });
@@ -123,6 +129,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     });
     const restoredMonsterDestroyed = restoreDuelWithLuaScripts(serializeDuel(restoredTargetDestroy.session), source, reader);
     expect(restoredMonsterDestroyed.restoreComplete, restoredMonsterDestroyed.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredMonsterDestroyed, 0);
     expect(restoredMonsterDestroyed.missingRegistryKeys).toEqual([]);
   });
 });
