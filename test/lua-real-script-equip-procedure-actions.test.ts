@@ -205,9 +205,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(restoredDamageChain.session.state.players[1].lifePoints).toBe(7500);
     expect(restoredDamageChain.session.state.log).toContainEqual(expect.objectContaining({ action: "effectDamage", player: 1, detail: "500" }));
     expect(restoredDamageChain.host.messages).not.toContain("equip responder resolved");
-    expect(restoredDamageChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCode: 1014, eventCardUid: pendant!.uid })]),
-    );
+    expect(restoredDamageChain.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard" && event.eventCardUid === pendant!.uid)).toEqual([
+      {
+        eventName: "sentToGraveyard",
+        eventCode: 1014,
+        eventCardUid: pendant!.uid,
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: pendant!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "spellTrapZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredDamageChain.session.state.eventHistory.filter((event) => event.eventName === "damageDealt")).toEqual([
       {
         eventName: "damageDealt",
