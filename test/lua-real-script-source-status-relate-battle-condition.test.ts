@@ -65,15 +65,36 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
       "numeron-comma-local-status-relate-battle-condition.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: `condition:source-status-relate-battle:${statusOpposingBattle}`,
-          sourceUid: numeron!.uid,
-          value: 1000,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.luaConditionDescriptor === `condition:source-status-relate-battle:${statusOpposingBattle}` &&
+          effect.sourceUid === numeron!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 100,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-100",
+          "luaConditionDescriptor": "condition:source-status-relate-battle:268435456",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:42230449:lua-1-100",
+          "sourceUid": "p0-extraDeck-42230449-0",
+          "target": [Function],
+          "value": 1000,
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -117,14 +138,43 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const register = host.loadCardScript(Number(numeronCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: `condition:source-status-relate-battle:${statusOpposingBattle}`,
-          sourceUid: numeron!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.luaConditionDescriptor === `condition:source-status-relate-battle:${statusOpposingBattle}` &&
+          effect.sourceUid === numeron!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "category": 2097152,
+          "code": 1141,
+          "controller": 0,
+          "cost": [Function],
+          "description": 675687184,
+          "event": "trigger",
+          "id": "lua-3-1141",
+          "luaConditionDescriptor": "condition:source-status-relate-battle:268435456",
+          "luaTypeFlags": 129,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "optional": true,
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:42230449:lua-3-1141",
+          "sourceUid": "p0-extraDeck-42230449-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "triggerCode": 1141,
+          "triggerEvent": "damageStepEnded",
+          "triggerSourceOnly": true,
+          "triggerTiming": "when",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

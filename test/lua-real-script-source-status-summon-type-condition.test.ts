@@ -66,15 +66,38 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
       "sprind-comma-local-status-link-summon-condition.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: `condition:source-status-summon-type:${statusSpecialSummonTurn}:${summonTypeLink}`,
-          sourceUid: sprind!.uid,
-          value: 300,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.luaConditionDescriptor ===
+            `condition:source-status-summon-type:${statusSpecialSummonTurn}:${summonTypeLink}` &&
+          effect.sourceUid === sprind!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 100,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-100",
+          "luaConditionDescriptor": "condition:source-status-summon-type:1073741824:1275068416",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:72329844:lua-1-100",
+          "sourceUid": "p0-extraDeck-72329844-0",
+          "target": [Function],
+          "value": 300,
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -118,14 +141,38 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const register = host.loadCardScript(Number(sprindCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: `condition:source-status-summon-type:${statusSpecialSummonTurn}:${summonTypeLink}`,
-          sourceUid: sprind!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.luaConditionDescriptor ===
+            `condition:source-status-summon-type:${statusSpecialSummonTurn}:${summonTypeLink}` &&
+          effect.sourceUid === sprind!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 239,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-2-239",
+          "luaConditionDescriptor": "condition:source-status-summon-type:1073741824:1275068416",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 263168,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:72329844:lua-2-239",
+          "sourceUid": "p0-extraDeck-72329844-0",
+          "target": [Function],
+          "value": 1,
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
