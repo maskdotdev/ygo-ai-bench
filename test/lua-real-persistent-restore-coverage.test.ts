@@ -25,7 +25,8 @@ describe("Lua real persistent restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys")
-          || !text.includes("missingRegistryKeys).toEqual([])");
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])");
       });
 
     expect(missing).toEqual([]);
@@ -70,6 +71,7 @@ describe("Lua real persistent restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || required.some((snippet) => !text.includes(snippet));
       })
       .map(({ file }) => file);
@@ -90,6 +92,7 @@ describe("Lua real persistent restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || required.some((snippet) => !text.includes(snippet));
       })
       .map(({ file }) => file);

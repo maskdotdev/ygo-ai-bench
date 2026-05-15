@@ -60,6 +60,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
+    expect(restoredActivation.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredActivation, 0);
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === wheel!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
@@ -73,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredChain, 1);
     expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredChain);
@@ -87,6 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     const restoredPersistent = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredPersistent.restoreComplete, restoredPersistent.incompleteReasons.join("; ")).toBe(true);
     expect(restoredPersistent.missingRegistryKeys).toEqual([]);
+    expect(restoredPersistent.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredPersistent, 0);
     expectLuaPersistentProbe(restoredPersistent, wheelCode, targetCode);
 
@@ -99,6 +102,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredPersistent.session), source, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
     expect(restoredTrigger.missingRegistryKeys).toEqual([]);
+    expect(restoredTrigger.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredTrigger, 0);
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === wheel!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
@@ -114,6 +118,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     const restoredDamageChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);
     expect(restoredDamageChain.restoreComplete, restoredDamageChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredDamageChain.missingRegistryKeys).toEqual([]);
+    expect(restoredDamageChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredDamageChain, 1);
     resolveRestoredChain(restoredDamageChain);
     expect(restoredDamageChain.session.state.players[1].lifePoints).toBe(7500);
@@ -129,6 +134,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     const restoredDestroyed = restoreDuelWithLuaScripts(serializeDuel(restoredDamageChain.session), source, reader);
     expect(restoredDestroyed.restoreComplete, restoredDestroyed.incompleteReasons.join("; ")).toBe(true);
     expect(restoredDestroyed.missingRegistryKeys).toEqual([]);
+    expect(restoredDestroyed.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredDestroyed, 0);
   });
 });

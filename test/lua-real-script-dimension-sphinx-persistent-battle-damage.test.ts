@@ -195,6 +195,7 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
 function expectCleanRestore(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
   expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
   expect(restored.missingRegistryKeys).toEqual([]);
+  expect(restored.missingChainLimitRegistryKeys).toEqual([]);
 }
 
 function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
