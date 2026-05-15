@@ -82,11 +82,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Br
         eventReasonEffectId: 1,
       },
     ]);
-    expect(openedSnapshot.state.chain[0]).toMatchObject({
-      sourceUid: brainControl!.uid,
-      targetUids: [target!.uid],
-      operationInfos: [{ category: 0x2000, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(openedSnapshot.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 8192,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-612201-1",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-87910978-0",
+        "targetUids": [
+          "p1-deck-612201-1",
+        ],
+      }
+    `);
 
     const restoredResponseWindow = restoreDuelWithLuaScripts(openedSnapshot, source, reader);
     expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
