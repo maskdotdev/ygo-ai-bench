@@ -71,6 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
+    expect(restoredActivation.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredActivation, 0);
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === roar!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
@@ -84,6 +85,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
     resolveRestoredChain(restoredChain);
@@ -108,6 +110,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
     expect(restoredLock.missingRegistryKeys).toEqual([]);
+    expect(restoredLock.missingChainLimitRegistryKeys).toEqual([]);
     const probe = restoredLock.host.loadScript(attackLockProbeScript(attackerCode), "threatening-roar-attack-lock-probe.lua");
     expect(probe.ok, probe.error).toBe(true);
     expect(restoredLock.host.messages).toContain("threatening roar attack false");

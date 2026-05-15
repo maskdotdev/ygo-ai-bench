@@ -76,6 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Me
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
+    expect(restoredActivation.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredActivation, 0);
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === messenger!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
@@ -89,6 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Me
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredChain, 1);
     resolveRestoredChain(restoredChain);
     expect(restoredChain.session.state.cards.find((card) => card.uid === messenger!.uid)).toMatchObject({
@@ -126,6 +128,7 @@ function expectMaintenanceCostAfterRestore(
   const maintenanceSeed = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
   expect(maintenanceSeed.restoreComplete, maintenanceSeed.incompleteReasons.join("; ")).toBe(true);
   expect(maintenanceSeed.missingRegistryKeys).toEqual([]);
+  expect(maintenanceSeed.missingChainLimitRegistryKeys).toEqual([]);
   expectRestoredLegalActions(maintenanceSeed, 0);
   maintenanceSeed.session.state.phase = "draw";
   maintenanceSeed.session.state.waitingFor = 0;
@@ -133,6 +136,7 @@ function expectMaintenanceCostAfterRestore(
   const restoredDraw = restoreDuelWithLuaScripts(serializeDuel(maintenanceSeed.session), source, reader);
   expect(restoredDraw.restoreComplete, restoredDraw.incompleteReasons.join("; ")).toBe(true);
   expect(restoredDraw.missingRegistryKeys).toEqual([]);
+  expect(restoredDraw.missingChainLimitRegistryKeys).toEqual([]);
   expectRestoredLegalActions(restoredDraw, 0);
   const standby = getLuaRestoreLegalActions(restoredDraw, 0).find((action) => action.type === "changePhase" && action.phase === "standby");
   expect(standby, JSON.stringify(getLuaRestoreLegalActions(restoredDraw, 0), null, 2)).toBeDefined();
@@ -164,6 +168,7 @@ function expectAttackLockAfterRestore(
   const restoredPersistent = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
   expect(restoredPersistent.restoreComplete, restoredPersistent.incompleteReasons.join("; ")).toBe(true);
   expect(restoredPersistent.missingRegistryKeys).toEqual([]);
+  expect(restoredPersistent.missingChainLimitRegistryKeys).toEqual([]);
   expectRestoredLegalActions(restoredPersistent, 0);
   const endTurn = getLuaRestoreLegalActions(restoredPersistent, 0).find((action) => action.type === "endTurn");
   expect(endTurn, JSON.stringify(getLuaRestoreLegalActions(restoredPersistent, 0), null, 2)).toBeDefined();
@@ -174,6 +179,7 @@ function expectAttackLockAfterRestore(
   const restoredOpponentTurn = restoreDuelWithLuaScripts(serializeDuel(restoredPersistent.session), source, reader);
   expect(restoredOpponentTurn.restoreComplete, restoredOpponentTurn.incompleteReasons.join("; ")).toBe(true);
   expect(restoredOpponentTurn.missingRegistryKeys).toEqual([]);
+  expect(restoredOpponentTurn.missingChainLimitRegistryKeys).toEqual([]);
   expectRestoredLegalActions(restoredOpponentTurn, 1);
   const battle = getLuaRestoreLegalActions(restoredOpponentTurn, 1).find((action) => action.type === "changePhase" && action.phase === "battle");
   expect(battle, JSON.stringify(getLuaRestoreLegalActions(restoredOpponentTurn, 1), null, 2)).toBeDefined();
@@ -182,6 +188,7 @@ function expectAttackLockAfterRestore(
   const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredOpponentTurn.session), source, reader);
   expect(restoredBattle.restoreComplete, restoredBattle.incompleteReasons.join("; ")).toBe(true);
   expect(restoredBattle.missingRegistryKeys).toEqual([]);
+  expect(restoredBattle.missingChainLimitRegistryKeys).toEqual([]);
   expectRestoredLegalActions(restoredBattle, 1);
   const battleActions = getLuaRestoreLegalActions(restoredBattle, 1).filter((action) => action.type === "declareAttack");
   expect(battleActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "declareAttack", attackerUid: lowAttackerUid, targetUid: defenderUid })]));
