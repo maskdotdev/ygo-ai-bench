@@ -19,6 +19,12 @@ const typeMonster = 0x1;
 const typeEffect = 0x20;
 const counterSpell = 0x1;
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dark Valkyria", () => {
   it("restores Gemini Spell Counter placement, dynamic ATK, counter cost, and destruction", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
@@ -64,8 +70,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const restoredInitial = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredInitial.restoreComplete, restoredInitial.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredInitial, 0);
     expect(restoredInitial.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActions(restoredInitial, 0)).toEqual(getDuelLegalActions(restoredInitial.session, 0));
     assertGeminiStatus(restoredInitial, valkyriaCode, false);
     const geminiSummon = getLuaRestoreLegalActions(restoredInitial, 0).find((action) => action.type === "normalSummon" && action.uid === valkyria!.uid);
     expect(geminiSummon, JSON.stringify(getLuaRestoreLegalActions(restoredInitial, 0), null, 2)).toBeDefined();
@@ -73,8 +79,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const restoredCounterIgnition = restoreDuelWithLuaScripts(serializeDuel(restoredInitial.session), source, reader);
     expect(restoredCounterIgnition.restoreComplete, restoredCounterIgnition.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredCounterIgnition, 0);
     expect(restoredCounterIgnition.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActions(restoredCounterIgnition, 0)).toEqual(getDuelLegalActions(restoredCounterIgnition.session, 0));
     assertGeminiStatus(restoredCounterIgnition, valkyriaCode, true);
     expect(currentAttack(restoredCounterIgnition.session.state.cards.find((card) => card.uid === valkyria!.uid), restoredCounterIgnition.session.state)).toBe(1800);
     const counterIgnition = getLuaRestoreLegalActions(restoredCounterIgnition, 0).find((action) => action.type === "activateEffect" && action.uid === valkyria!.uid);
@@ -87,8 +93,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const restoredCounterChain = restoreDuelWithLuaScripts(serializeDuel(restoredCounterIgnition.session), source, reader);
     expect(restoredCounterChain.restoreComplete, restoredCounterChain.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredCounterChain, 1);
     expect(restoredCounterChain.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restoredCounterChain, 1)).toEqual(getGroupedDuelLegalActions(restoredCounterChain.session, 1));
     expect(getLuaRestoreLegalActions(restoredCounterChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredCounterChain);
     const restoredValkyriaAfterCounter = restoredCounterChain.session.state.cards.find((card) => card.uid === valkyria!.uid);
@@ -101,6 +107,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const restoredDestroyIgnition = restoreDuelWithLuaScripts(serializeDuel(restoredCounterChain.session), source, reader);
     expect(restoredDestroyIgnition.restoreComplete, restoredDestroyIgnition.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredDestroyIgnition, 0);
     expect(restoredDestroyIgnition.missingRegistryKeys).toEqual([]);
     expect(currentAttack(restoredDestroyIgnition.session.state.cards.find((card) => card.uid === valkyria!.uid), restoredDestroyIgnition.session.state)).toBe(2100);
     const destroyIgnition = getLuaRestoreLegalActions(restoredDestroyIgnition, 0)
@@ -122,8 +129,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const restoredDestroyChain = restoreDuelWithLuaScripts(serializeDuel(restoredDestroyIgnition.session), source, reader);
     expect(restoredDestroyChain.restoreComplete, restoredDestroyChain.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredDestroyChain, 1);
     expect(restoredDestroyChain.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restoredDestroyChain, 1)).toEqual(getGroupedDuelLegalActions(restoredDestroyChain.session, 1));
     resolveRestoredChain(restoredDestroyChain);
     expect(restoredDestroyChain.session.state.cards.find((card) => card.uid === destroyTarget!.uid)).toMatchObject({
       location: "graveyard",
@@ -137,6 +144,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const restoredAfterDestroy = restoreDuelWithLuaScripts(serializeDuel(restoredDestroyChain.session), source, reader);
     expect(restoredAfterDestroy.restoreComplete, restoredAfterDestroy.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredAfterDestroy, 0);
     expect(restoredAfterDestroy.missingRegistryKeys).toEqual([]);
     expect(getDuelCardCounter(restoredAfterDestroy.session.state.cards.find((card) => card.uid === valkyria!.uid), counterSpell)).toBe(0);
     expect(restoredAfterDestroy.session.state.cards.find((card) => card.uid === destroyTarget!.uid)).toMatchObject({ location: "graveyard" });

@@ -14,6 +14,12 @@ const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dark Fusion stage2 protection", () => {
   it("restores opponent targeting protection granted to the summoned Fusion monster", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
@@ -89,7 +95,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     expect(restoredChain.missingRegistryKeys).toEqual([]);
     const responsePlayer = restoredChain.session.state.waitingFor;
     expect(responsePlayer).toBeDefined();
-    expect(getLuaRestoreLegalActionGroups(restoredChain, responsePlayer!)).toEqual(getGroupedDuelLegalActions(restoredChain.session, responsePlayer!));
+    expectRestoredLegalActions(restoredChain, responsePlayer!);
 
     const pass = getLuaRestoreLegalActions(restoredChain, responsePlayer!).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
@@ -118,6 +124,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const restoredProtected = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredProtected.restoreComplete, restoredProtected.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredProtected, 0);
     expect(restoredProtected.missingRegistryKeys).toEqual([]);
     expect(restoredProtected.session.state.effects.find((effect) => effect.sourceUid === fusion!.uid && effect.code === 71)).toMatchObject({
       event: "continuous",
