@@ -103,32 +103,57 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ho
     const resolved = applyLuaRestoreResponse(restoredChain, pass!);
     expect(resolved.ok, resolved.error).toBe(true);
     expect(restoredChain.session.state.chain).toHaveLength(0);
-    expect(restoredChain.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 100,
-          sourceUid: attacker!.uid,
-          value: 1800,
-        }),
-      ]),
-    );
+    expect(restoredChain.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 100 && effect.sourceUid === attacker!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 100,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-4-100",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:1004:lua-4-100",
+        "reset": {
+          "flags": 1107169792,
+        },
+        "sourceUid": "p0-deck-1004-1",
+        "target": [Function],
+        "value": 1800,
+      }
+    `);
 
     const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredBattle.restoreComplete, restoredBattle.incompleteReasons.join("; ")).toBe(true);
     expect(restoredBattle.missingRegistryKeys).toEqual([]);
     expect(restoredBattle.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredBattle, restoredBattle.session.state.waitingFor ?? restoredBattle.session.state.turnPlayer);
-    expect(restoredBattle.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 100,
-          sourceUid: attacker!.uid,
-          value: 1800,
-        }),
-      ]),
-    );
+    expect(restoredBattle.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 100 && effect.sourceUid === attacker!.uid)).toMatchInlineSnapshot(`
+      {
+        "code": 100,
+        "controller": 0,
+        "event": "continuous",
+        "id": "lua-4-100",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:1004:lua-4-100",
+        "reset": {
+          "flags": 1107169792,
+        },
+        "sourceUid": "p0-deck-1004-1",
+        "value": 1800,
+      }
+    `);
 
     passBattleResponses(restoredBattle.session);
     expect(restoredBattle.session.state.battleDamage[1]).toBe(1000);

@@ -70,11 +70,42 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ku
       location: "graveyard",
       controller: 0,
     });
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ code: 201, controller: 0, targetRange: [1, 0] }),
-      ]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.code === 201 && effect.sourceUid === kuriboh!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 201,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-201",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 2048,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:40640057:lua-2-201",
+        "reset": {
+          "flags": 1073741856,
+        },
+        "sourceUid": "p0-deck-40640057-0",
+        "target": [Function],
+        "targetRange": [
+          1,
+          0,
+        ],
+      }
+    `);
 
     passRestoredBattleResponses(restored);
     expect(restored.session.state.pendingBattle).toBeUndefined();

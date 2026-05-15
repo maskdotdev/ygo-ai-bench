@@ -41,7 +41,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ci
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(cipherSoldierCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ event: "trigger", code: 1134, sourceUid: cipherSoldier!.uid })]));
+    expect(session.state.effects.find((effect) => effect.event === "trigger" && effect.code === 1134 && effect.sourceUid === cipherSoldier!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "category": 6291456,
+        "code": 1134,
+        "controller": 0,
+        "cost": [Function],
+        "description": 1277649168,
+        "event": "trigger",
+        "id": "lua-1-1134",
+        "luaTypeFlags": 513,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "optional": false,
+        "promptOperation": [Function],
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:79853073:lua-1-1134",
+        "sourceUid": "p0-deck-79853073-0",
+        "target": [Function],
+        "triggerCode": 1134,
+        "triggerEvent": "beforeDamageCalculation",
+        "triggerSourceOnly": true,
+        "triggerTiming": "when",
+      }
+    `);
 
     const attack = getLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === cipherSoldier!.uid && action.targetUid === warriorTarget!.uid);
     expect(attack).toBeDefined();
@@ -100,7 +133,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ci
     expect(triggered.ok, triggered.error).toBe(true);
 
     expect(restored.session.state.pendingTriggers).toEqual([]);
-    expect(restored.session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ event: "continuous", code: 100, sourceUid: cipherSoldier!.uid, value: 2000 })]));
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 100 && effect.sourceUid === cipherSoldier!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 100,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-100",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:79853073:lua-2-100",
+        "reset": {
+          "flags": 1073741888,
+        },
+        "sourceUid": "p0-deck-79853073-0",
+        "target": [Function],
+        "value": 2000,
+      }
+    `);
     expect(currentAttack(restored.session.state.cards.find((card) => card.uid === cipherSoldier!.uid), restored.session.state)).toBe(3350);
     expect(restored.session.state.cards.find((card) => card.uid === warriorTarget!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "beforeDamageCalculation")).toEqual([
