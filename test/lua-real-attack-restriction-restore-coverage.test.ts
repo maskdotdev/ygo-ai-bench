@@ -17,9 +17,11 @@ describe("Lua real attack-restriction restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)")
+          || !text.includes("applyLuaRestoreResponse")
           || !text.includes("CanAttack")
           || required.some((snippet) => !text.includes(snippet));
       })

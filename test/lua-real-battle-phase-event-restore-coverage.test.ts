@@ -16,7 +16,11 @@ describe("Lua real Battle Phase event restore coverage", () => {
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
-          || !text.includes("missingRegistryKeys).toEqual([])");
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)");
       })
       .map((fixture) => fixture.file);
 
