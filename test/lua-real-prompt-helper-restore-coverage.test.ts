@@ -185,7 +185,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
       file: "test/lua-real-script-inferno-ashened-field-zone-option.test.ts",
       required: [
         "restores a leading-false SelectOption branch that places Obsidim in the opponent Field Zone",
-        'expect.objectContaining({ api: "SelectOption", player: 0, options: [1, 2], descriptions: [expect.any(Number), expect.any(Number)], returned: 1 })',
+        "descriptions: [fieldZoneOptionDescription, opponentFieldZoneOptionDescription]",
         'location: "spellTrapZone"',
         'controller: 1',
         'expect(restored.host.messages).not.toContain("inferno ashened responder resolved")',
@@ -244,7 +244,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
       file: "test/lua-real-script-magikey-duo-defense-ritual.test.ts",
       required: [
         "restores a target-returning Ritual.Operation branch with sumpos face-up Defense",
-        'expect.objectContaining({ api: "SelectOption", player: 0, options: [1, 2], descriptions: [expect.any(Number), expect.any(Number)], returned: 1 })',
+        "descriptions: [returnOptionDescription, ritualOptionDescription]",
         'position: "faceUpDefense"',
         'summonType: "ritual"',
         'expect(restored.host.messages).not.toContain("magikey duo responder resolved")',
@@ -254,7 +254,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
       file: "test/lua-real-script-magikey-maftea-deck-ritual.test.ts",
       required: [
         "restores non-sentinel SelectOption into Ritual extra material extraop",
-        'expect.objectContaining({ api: "SelectOption", player: 0, options: [0], descriptions: [expect.any(Number)], returned: 0 })',
+        "descriptions: [ritualOptionDescription]",
         "summonMaterialUids).toEqual([handMaterial!.uid, faceupNormal!.uid, deckNormalMaterial!.uid])",
         "reason: duelReason.effect | duelReason.material | duelReason.ritual",
         'expect(restored.host.messages).not.toContain("magikey maftea responder resolved")',
