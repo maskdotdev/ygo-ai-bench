@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const searchSetLockFixtureCount = 6;
 
 describe("Lua real search and set-lock restore coverage", () => {
   it("requires representative search-created set locks to assert clean Lua registry restore", () => {
-    const missing = searchSetLockFixtureFiles()
+    const files = searchSetLockFixtureFiles();
+    expect(files).toHaveLength(searchSetLockFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
