@@ -62,6 +62,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
     }
     const yellowAlertAction = getLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.uid === yellowAlert!.uid);
     expect(yellowAlertAction).toBeDefined();
+    if (!yellowAlertAction || yellowAlertAction.type !== "activateEffect") throw new Error("Expected Yellow Alert activation action");
+    const delayedFieldId = 1;
     applyAndAssert(session, yellowAlertAction!);
     const passChain = getLegalActions(session, 0).find((action) => action.type === "passChain");
     if (passChain) applyAndAssert(session, passChain);
@@ -71,7 +73,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
     expect(session.state.cards.find((card) => card.uid === yellowAlert!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 0x1080, sourceUid: yellowAlert!.uid, label: expect.any(Number) }),
+        expect.objectContaining({
+          event: "continuous",
+          code: 0x1080,
+          sourceUid: yellowAlert!.uid,
+          label: delayedFieldId,
+        }),
         expect.objectContaining({ event: "continuous", code: 332, sourceUid: summonedTarget!.uid, luaValueDescriptor: "value-card:not-handler" }),
       ]),
     );
@@ -84,6 +91,16 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(restored.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          event: "continuous",
+          code: 0x1080,
+          sourceUid: yellowAlert!.uid,
+          label: delayedFieldId,
+        }),
+      ]),
+    );
     expectAttackTarget(restored.session, secondAttacker!.uid, summonedTarget!.uid, true);
     expectAttackTarget(restored.session, secondAttacker!.uid, originalTarget!.uid, false);
 
