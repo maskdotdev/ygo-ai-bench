@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const continuousOperationFixtureCount = 3;
+const continuousOperationFixtureCount = 4;
 
 describe("Lua real continuous operation restore coverage", () => {
   it("requires continuous operation fixtures to assert clean restore and restored outcomes", () => {
@@ -33,6 +33,18 @@ describe("Lua real continuous operation restore coverage", () => {
 
 function continuousOperationFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-change-of-heart-control-return.test.ts",
+      required: [
+        "restores Change of Heart's target, control operation, and End Phase return",
+        "temporary-control-return",
+        "operation: [Function]",
+        "previousController: 1",
+        "previousController: 0",
+        'action.type === "endTurn"',
+        "not.toContain(`lua:${targetCode}:temporary-control-return",
+      ],
+    },
     {
       file: "test/lua-real-script-core-of-chaos-faceup-redirect.test.ts",
       required: [
