@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const damageStepStatFixtureCount = 3;
+const damageStepStatFixtureCount = 4;
 
 describe("Lua real damage-step stat restore coverage", () => {
   it("requires damage-step stat fixtures to assert clean restore and restored battle outcome", () => {
@@ -62,6 +62,20 @@ function damageStepStatFixtureFiles(): Array<{ file: string; required: string[] 
         "effectLabelObjectUid: costSpirit!.uid",
         "currentAttack(restoredCrow",
         "battleDamage[1]).toBe(200)",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-miniaturize-persistent-damage-step-stat.test.ts",
+      required: [
+        "expectCleanRestore(restoredSetup)",
+        "expectCleanRestore(restoredDamageStep)",
+        "expectCleanRestore(restoredChain)",
+        "expectCleanRestore(restoredBattle)",
+        "property: 0x4000",
+        "miniaturize persistent true/true/1/800/3",
+        "battleDamage[0]).toBe(100)",
+        "eventHistory.filter((event) => event.eventName === \"battleDamageDealt\")",
         "host.messages).not.toContain",
       ],
     },
