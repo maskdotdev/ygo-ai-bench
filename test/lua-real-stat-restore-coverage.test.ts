@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 3;
+const statFixtureCount = 4;
 
 describe("Lua real stat restore coverage", () => {
   it("requires stat-changing fixtures to assert clean Lua registry restore and restored battle outcomes", () => {
@@ -34,6 +34,16 @@ describe("Lua real stat restore coverage", () => {
 
 function statFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-d-force-plasma-stat-extra-attack.test.ts",
+      required: [
+        "code ?? -1",
+        "d force plasma attack 2200",
+        "expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 1200 })",
+        "players[1].lifePoints).toBe(6800)",
+        "hasAttack(secondActions, plasma!.uid, secondTarget!.uid)).toBe(true)",
+      ],
+    },
     {
       file: "test/lua-real-script-fortune-lady-past-set-attack.test.ts",
       required: [

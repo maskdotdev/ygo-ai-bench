@@ -236,6 +236,8 @@ function mergeRestoredLuaEffectMetadata(effect: DuelEffectDefinition, snapshotEf
     ...(snapshotEffect.reset === undefined ? {} : { reset: { ...snapshotEffect.reset } }),
     ...(snapshotEffect.labelObjectUid === undefined ? {} : { labelObjectUid: snapshotEffect.labelObjectUid }),
     ...(snapshotEffect.labelObjectUids === undefined ? {} : { labelObjectUids: [...snapshotEffect.labelObjectUids] }),
+    ...restoredLuaValueCallbacks(snapshotEffect),
+    ...restoredLuaTargetCallbacks(snapshotEffect),
   };
 }
 
@@ -919,7 +921,10 @@ function luaHandlerReturnToHandOperation(effect: SerializedDuelEffect): DuelEffe
   };
 }
 
-function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "battleDamageValue" | "lifePointValue" | "valueCardPredicate" | "valuePredicate"> {
+function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "battleDamageValue" | "lifePointValue" | "statValue" | "valueCardPredicate" | "valuePredicate"> {
+  if (effect.luaValueDescriptor === "stat:all-grave-monster-count-x100") {
+    return { statValue: (ctx) => ctx.duel.cards.filter((card) => card.location === "graveyard" && (cardTypeFlags(card, ctx.duel) & luaTypeMonster) !== 0).length * 100 };
+  }
   if (effect.luaValueDescriptor === "cannot-be-effect-target:opponent") {
     return { valuePredicate: (_ctx, player) => player !== undefined && player !== effect.controller };
   }

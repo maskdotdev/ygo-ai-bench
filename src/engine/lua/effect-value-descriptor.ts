@@ -46,6 +46,9 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (cannotMaterialSummonTypesFromUpvalues) return cannotMaterialSummonTypesFromUpvalues;
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
+  if (/Duel\s*\.\s*GetMatchingGroupCount\s*\(\s*Card\s*\.\s*IsMonster\s*,\s*0\s*,\s*LOCATION_GRAVE\s*,\s*LOCATION_GRAVE\s*,\s*nil\s*\)\s*\*\s*100/.test(snippet)) {
+    return "stat:all-grave-monster-count-x100";
+  }
   const params = luaFunctionParams(snippet);
   const summonTypeCondition = specialSummonConditionDescriptor(L, index, snippet, params);
   if (summonTypeCondition) return summonTypeCondition;

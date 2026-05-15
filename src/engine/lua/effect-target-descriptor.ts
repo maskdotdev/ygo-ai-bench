@@ -305,6 +305,9 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notCode = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsCode\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`)) ?? snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*GetCode\\s*\\(\\s*\\)\\s*~=\\s*(${numericOrIdentifierPattern})`));
   const notCodeValue = notCode?.[1] ? luaNumberTokenValue(L, index, notCode[1]) : undefined;
   if (notCodeValue !== undefined) return `target:not-code:${notCodeValue}`;
+  const code = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsCode\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)(?!\\s+(?:and|or)\\b)`));
+  const codeValue = code?.[1] ? luaNumberTokenValue(L, index, code[1]) : undefined;
+  if (codeValue !== undefined) return `target:code:${codeValue}`;
   const effectParam = luaFunctionParams(snippet)?.[0];
   if (effectParam && new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsCode\\s*\\(\\s*${escapeRegExp(effectParam)}\\s*:\\s*GetLabel\\s*\\(\\s*\\)\\s*\\)`).test(snippet)) return "target:same-code-label";
   const summonTypeParam = luaFunctionParams(snippet)?.[3];

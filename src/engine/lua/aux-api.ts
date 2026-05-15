@@ -583,9 +583,11 @@ function pushFixedFilterWrapper(L: unknown, fieldName: string, readLuaError: (st
 }
 
 function knownFixedFilterDescriptor(L: unknown, requireFaceup: boolean): string | undefined {
-  if (!lua.lua_isnumber(L, 2) || !isNamedTableFunction(L, 1, "Card", "IsType")) return undefined;
+  if (!lua.lua_isnumber(L, 2)) return undefined;
   const value = lua.lua_tointeger(L, 2);
-  return `${requireFaceup ? "target:faceup-type" : "target:type"}:${value}`;
+  if (isNamedTableFunction(L, 1, "Card", "IsType")) return `${requireFaceup ? "target:faceup-type" : "target:type"}:${value}`;
+  if (!requireFaceup && isNamedTableFunction(L, 1, "Card", "IsCode")) return `target:code:${value}`;
+  return undefined;
 }
 
 function isNamedTableFunction(L: unknown, index: number, tableName: string, fieldName: string): boolean {
