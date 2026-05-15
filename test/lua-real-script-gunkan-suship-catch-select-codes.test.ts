@@ -97,6 +97,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gu
     expect(pass).toBeDefined();
     const resolved = applyLuaRestoreResponse(restored, pass!);
     expect(resolved.ok, resolved.error).toBe(true);
+    expect(restored.session.state.chain).toHaveLength(0);
     expect(restored.host.promptDecisions).toEqual(expect.arrayContaining([
       expect.objectContaining({
         api: "SelectCardsFromCodes",

@@ -143,6 +143,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
         'api: "SelectCardsFromCodes"',
         "options: [Number(sushipIkuraCode), Number(sushipUniCode), Number(sushipShirauoCode)]",
         "returned: Number(sushipIkuraCode)",
+        "expect(restored.session.state.chain).toHaveLength(0)",
         'location: "hand"',
         'expect(restored.host.messages).not.toContain("gunkan suship responder resolved")',
       ],
