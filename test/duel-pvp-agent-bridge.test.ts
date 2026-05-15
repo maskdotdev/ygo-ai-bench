@@ -13,6 +13,7 @@ describe("duel pvp agent bridge", () => {
     expect(started.state.status).toBe("awaiting");
     expect(started.legalActionGroups.flatMap((group) => group.actions)).toEqual(started.legalActions);
     expect(started.visibleBattlefield.actions).toHaveLength(4);
+    expect(started.visibleBattlefield.prompt).toBeUndefined();
     expect(started.visibleBattlefield.groups.flatMap((group) => group.actions).every((action) => (
       started.visibleBattlefield.actions.some((visible) => JSON.stringify(visible) === JSON.stringify(action))
     ))).toBe(true);

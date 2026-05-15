@@ -13,6 +13,7 @@ import { getBrowserDuelCardReader } from "../playtest-app/duel-pvp-card-reader.j
 import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "../playtest-app/duel-battlefield-actions.js";
 import { duelActionUiGroupLabel, type DuelActionUiGroup } from "../playtest-app/duel-action-anchors.js";
 import { runDuelBattlefieldScript, type DuelBattlefieldActionSelector } from "../playtest-app/duel-battlefield-script.js";
+import { duelPromptView, type DuelPromptView } from "../playtest-app/duel-prompt-view.js";
 
 export interface DuelPvpAgentStartOptions {
   player0Ydk: string;
@@ -31,6 +32,7 @@ export interface DuelPvpVisibleView {
   player: PlayerId;
   actions: DuelAction[];
   groups: DuelActionUiGroup[];
+  prompt?: DuelPromptView;
 }
 
 export interface DuelPvpVisibleAutoRunStep {
@@ -156,10 +158,13 @@ function visibleBattlefieldView(session: DuelSession, player: PlayerId): DuelPvp
     getLegalActions(session, player),
     getGroupedDuelLegalActions(session, player),
   );
+  const groups = view.orphanGroups.map(copyUiGroup);
+  const prompt = duelPromptView(state.prompt, groups);
   return {
     player,
     actions: visibleDuelBattlefieldActions(view).map(copyDuelAction),
-    groups: view.orphanGroups.map(copyUiGroup),
+    groups,
+    ...(prompt === undefined ? {} : { prompt: copyPromptView(prompt) }),
   };
 }
 
@@ -208,6 +213,13 @@ function copyUiGroup(group: DuelActionUiGroup): DuelActionUiGroup {
     ...group,
     label: duelActionUiGroupLabel(group),
     actions: group.actions.map(copyDuelAction),
+  };
+}
+
+function copyPromptView(prompt: DuelPromptView): DuelPromptView {
+  return {
+    ...prompt,
+    groups: prompt.groups.map(copyUiGroup),
   };
 }
 
