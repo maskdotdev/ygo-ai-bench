@@ -64,9 +64,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     applyLuaRestoreAndAssert(restoredActivation, activation!);
 
     expect(restoredActivation.session.state.players[0].lifePoints).toBe(7200);
-    expect(restoredActivation.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 0, eventValue: 800, eventReason: 0x80, eventReasonPlayer: 0 })]),
-    );
+    expect(restoredActivation.session.state.eventHistory.filter((event) => event.eventName === "lifePointCostPaid")).toEqual([
+      {
+        eventName: "lifePointCostPaid",
+        eventCode: 1201,
+        eventPlayer: 0,
+        eventValue: 800,
+        eventReason: duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: premature!.uid,
+        eventReasonEffectId: 1,
+      },
+    ]);
     expect(restoredActivation.session.state.chain[0]).toMatchObject({
       sourceUid: premature!.uid,
       targetUids: [target!.uid],
@@ -117,9 +126,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
       previousLocation: "monsterZone",
       reason: duelReason.effect | duelReason.destroy,
     });
-    expect(restoredEquipped.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "destroyed", eventCardUid: target!.uid })]),
-    );
+    expect(restoredEquipped.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === target!.uid)).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: target!.uid,
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: premature!.uid,
+        eventReasonEffectId: 2,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+    ]);
 
     const restoredDestroyed = restoreDuelWithLuaScripts(serializeDuel(restoredEquipped.session), source, reader);
     expect(restoredDestroyed.restoreComplete, restoredDestroyed.incompleteReasons.join("; ")).toBe(true);
