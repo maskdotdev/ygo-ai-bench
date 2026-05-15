@@ -148,6 +148,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-welcome-labrynth-fiend-deck-extra-lock.test.ts",
       requiredSnippets: [
         "special-summon-limit:not-race-deck-or-extra:8",
+        "reset: { flags: 0x40000200, count: 2 }",
         "targetRange: [1, 0]",
         "welcome labrynth fiend deck special 1",
         "welcome labrynth warrior deck special 0",
@@ -508,6 +509,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-link-devotee-link3-lock.test.ts",
       requiredSnippets: [
         "target:link-summon-link-above:3",
+        "reset: { flags: 0x40000200 }",
         "targetRange: [1, 0]",
         "link devotee link2 link special 1",
         "link devotee link3 link special 0",
@@ -555,6 +557,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-fiendish-portrait-deck-extra-summon-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "special-summon-limit:deck-or-extra"',
+        "reset: { flags: 0x40000200 }",
         "targetRange: [1, 0]",
         "Duel.SpecialSummon(deck,0,0,0,false,false,POS_FACEUP_ATTACK)",
         "Duel.SpecialSummon(extra,SUMMON_TYPE_FUSION,0,0,false,false,POS_FACEUP_ATTACK)",
@@ -673,6 +676,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       requiredSnippets: [
         "target:special-summon-type-not",
         "luaSummonTypeXyz",
+        "reset: { flags: 0x40000200 }",
         "targetRange: [1, 0]",
         "gagaga head xyz special 1",
         "gagaga head fusion special 0",
