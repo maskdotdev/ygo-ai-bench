@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -104,9 +105,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === targetSpirit!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === pigeon!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === invalidMonster!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
-    expect(restoredChainWindow.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "sentToHand", eventCode: 1012, eventCardUid: targetSpirit!.uid })]),
-    );
+    expect(restoredChainWindow.session.state.eventHistory.filter((event) => event.eventName === "sentToHand" && event.eventCardUid === targetSpirit!.uid)).toEqual([
+      {
+        eventName: "sentToHand",
+        eventCode: 1012,
+        eventCardUid: targetSpirit!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: pigeon!.uid,
+        eventReasonEffectId: 7,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredChainWindow.host.messages).not.toContain("shinobird pigeon responder resolved");
   });
 });
