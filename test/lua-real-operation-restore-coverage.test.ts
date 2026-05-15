@@ -5,7 +5,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const operationFixtureCount = 12;
-const summonTriggerOperationFixtureCount = 1;
+const summonTriggerOperationFixtureCount = 2;
 
 describe("Lua real operation restore coverage", () => {
   it("requires representative simple spell operations to assert clean Lua registry restore and restored operation metadata", () => {
@@ -197,6 +197,22 @@ function operationFixtureFiles(): Array<{ file: string; required: string[] }> {
 
 function summonTriggerOperationFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-shinobird-crane-spirit-summon-draw.test.ts",
+      required: [
+        "restoredSummonWindow.missingRegistryKeys).toEqual([])",
+        "restoredSummonWindow.missingChainLimitRegistryKeys).toEqual([])",
+        "restoredTriggerWindow.missingRegistryKeys).toEqual([])",
+        "restoredTriggerWindow.missingChainLimitRegistryKeys).toEqual([])",
+        "restoredChainWindow.missingRegistryKeys).toEqual([])",
+        "restoredChainWindow.missingChainLimitRegistryKeys).toEqual([])",
+        'eventName": "normalSummoned"',
+        'eventName: "cardsDrawn"',
+        "category: 65536",
+        "targetParam: 1",
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-dark-dust-spirit-destroy.test.ts",
       required: [
