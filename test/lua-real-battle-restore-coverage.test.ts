@@ -10,7 +10,7 @@ const realScriptBattleFixtureCount = 128;
 const battleLegalActionFixtureCount = 4;
 const attackDeclarationTrapFixtureCount = 6;
 const battleRoutingFixtureCount = 6;
-const damageStepRestoreFixtureCount = 3;
+const damageStepRestoreFixtureCount = 4;
 const battleDamageSemanticFixtureCount = 8;
 const battleTriggerSemanticFixtureCount = 7;
 
@@ -112,7 +112,7 @@ describe("Lua real battle restore coverage", () => {
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)")
           || !/battleWindow\?\.kind\)\.toBe\("(?:startDamageStep|duringDamageCalculation|afterDamageCalculation|endDamageStep)"\)/.test(text)
-          || (!text.includes("while (restored.session.state.pendingBattle)") && !text.includes("while (session.state.pendingBattle)"))
+          || !/while\s*\(\s*(?:restored\.session\.state|session\.state)\.pendingBattle/.test(text)
           || !text.includes("chainResponderScript")
           || !/host\.messages\)\.not\.toContain/.test(text);
       });
@@ -298,6 +298,7 @@ function realScriptBattleRoutingFixtureFiles(): Array<{ file: string; required: 
 
 function realScriptDamageStepRestoreFixtureFiles(): string[] {
   return [
+    "lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
     "lua-real-script-honest-damage-step.test.ts",
     "lua-real-script-miniaturize-persistent-damage-step-stat.test.ts",
     "lua-real-script-shadow-spell-goat-damage-calculation-persistent.test.ts",
