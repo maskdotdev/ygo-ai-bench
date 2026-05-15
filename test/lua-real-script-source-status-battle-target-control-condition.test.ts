@@ -72,6 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
         expect.objectContaining({
           luaConditionDescriptor: `condition:source-status-battle-target-control:${statusOpposingBattle}`,
           sourceUid: sarcoughagus!.uid,
+          value: 300,
         }),
       ]),
     );
@@ -87,6 +88,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const restoredSarcoughagus = restored.session.state.cards.find((card) => card.code === sarcoughagusCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === sarcoughagus!.uid && candidate.luaConditionDescriptor === `condition:source-status-battle-target-control:${statusOpposingBattle}`);
+    expect(effect).toMatchObject({ value: 300 });
     expect(effect?.canActivate).toBeDefined();
     const ctx = targetContext(restored.session.state, restoredSarcoughagus!);
     expect(effect!.canActivate!(ctx)).toBe(false);

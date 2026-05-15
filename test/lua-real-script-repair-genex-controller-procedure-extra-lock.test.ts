@@ -70,6 +70,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
+          event: "summonProcedure",
+          sourceUid: session.state.cards.find((card) => card.code === synchroCode)?.uid,
+          value: luaSummonTypeSynchro,
+        }),
+        expect.objectContaining({
           code: 22,
           luaTargetDescriptor: `target:extra-summon-type-not-or-no-procedure:${luaSummonTypeSynchro}`,
           property: 0x4000800,
@@ -87,7 +92,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
       getLuaRestoreLegalActions(restored, 0),
     );
     const synchro = restored.session.state.cards.find((card) => card.code === synchroCode);
-    const procedureEffectId = Number(restored.session.state.effects.find((effect) => effect.sourceUid === synchro?.uid && effect.event === "summonProcedure")?.id.match(/^lua-(\d+)/)?.[1]);
+    const procedureEffect = restored.session.state.effects.find((effect) => effect.sourceUid === synchro?.uid && effect.event === "summonProcedure");
+    expect(procedureEffect).toMatchObject({ value: luaSummonTypeSynchro });
+    const procedureEffectId = Number(procedureEffect?.id.match(/^lua-(\d+)/)?.[1]);
     expect(Number.isFinite(procedureEffectId)).toBe(true);
     expect(canPlayerSpecialSummon(restored.session.state, 0, synchro, luaSummonTypeSynchro, procedureEffectId)).toBe(true);
     expect(canPlayerSpecialSummon(restored.session.state, 0, synchro, luaSummonTypeSynchro)).toBe(false);
