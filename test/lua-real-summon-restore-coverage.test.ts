@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-const realScriptSummonFixtureCount = 143;
+const realScriptSummonFixtureCount = 144;
 const summonProcedureFixtureCount = 20;
 const typedSummonProcedureFixtureCount = 6;
 const pendulumGrantFixtureCount = 3;

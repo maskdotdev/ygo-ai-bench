@@ -24,6 +24,16 @@ describe("Lua real summon activity restore coverage", () => {
 function summonActivityFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-constellar-leonis-extra-summon-count.test.ts",
+      required: [
+        "extra Constellar Normal Summon",
+        "normalSummonAvailable).toBe(false)",
+        "getLuaRestoreLegalActionGroups",
+        'action.type === "normalSummon"',
+        "activityCounts[0].normalSummon).toBe(2)",
+      ],
+    },
+    {
       file: "test/lua-real-script-double-summon-count-limit.test.ts",
       required: [
         "code: 28",
