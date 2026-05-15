@@ -11,6 +11,7 @@ import {
 } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "../src/playtest-app/duel-battlefield-actions.js";
+import { runDuelBattlefieldScript } from "../src/playtest-app/duel-battlefield-script.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 import type { DuelAction, DuelSession, PlayerId } from "#duel/types.js";
 
@@ -49,7 +50,67 @@ describe("duel battlefield action view", () => {
     expect(state.players[1].lifePoints).toBe(6200);
     expect(state.attacksDeclared).toContain(attacker!.uid);
   });
+
+  it("runs fixture-style scripts through the visible battlefield action surface", () => {
+    const session = directBattleSession();
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "monsterZone" && card.code === "100");
+    expect(attacker).toBeDefined();
+
+    const result = runDuelBattlefieldScript(session, [
+      { player: 0, type: "changePhase", labelIncludes: "battle" },
+      { player: 0, type: "declareAttack", uid: attacker!.uid },
+      { player: 1, type: "passAttack", groupLabel: "Attack Response" },
+      { player: 0, type: "passAttack", groupLabel: "Attack Response" },
+      { player: 1, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 0, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 1, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 0, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 1, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 0, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 1, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 0, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 1, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 0, type: "passDamage", groupLabel: "Damage Step Response" },
+    ]);
+
+    expect(result.ok).toBe(true);
+    expect(result.failedStep).toBeUndefined();
+    expect(result.state.players[1].lifePoints).toBe(6200);
+    expect(result.state.attacksDeclared).toContain(attacker!.uid);
+  });
+
+  it("reports visible group labels when a battlefield script diverges", () => {
+    const session = directBattleSession();
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "monsterZone" && card.code === "100");
+    expect(attacker).toBeDefined();
+
+    const result = runDuelBattlefieldScript(session, [
+      { player: 0, type: "changePhase", labelIncludes: "battle" },
+      { player: 0, type: "declareAttack", uid: attacker!.uid },
+      { player: 1, type: "passDamage", groupLabel: "Damage Step Response" },
+    ]);
+
+    expect(result.ok).toBe(false);
+    expect(result.failedStep).toBe(2);
+    expect(result.failure).toBe("No visible battlefield action matched player=1 type=passDamage groupLabel=Damage Step Response");
+    expect(result.visibleGroups).toContainEqual(expect.objectContaining({ label: "Attack Response" }));
+    expect(result.visibleActions).toContainEqual(expect.objectContaining({ type: "passAttack" }));
+  });
 });
+
+function directBattleSession(): DuelSession {
+  const session = createDuel({ seed: 991, startingHandSize: 1, cardReader: createCardReader(cards) });
+  loadDecks(session, {
+    0: { main: ["100"] },
+    1: { main: ["400"] },
+  });
+  startDuel(session);
+
+  const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+  expect(attacker).toBeDefined();
+  specialSummonDuelCard(session.state, attacker!.uid, 0);
+  return session;
+}
 
 function visibleView(session: DuelSession, player: PlayerId) {
   return duelBattlefieldActionView(
