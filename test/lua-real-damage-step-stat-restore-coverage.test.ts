@@ -17,6 +17,12 @@ describe("Lua real damage-step stat restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("applyLuaRestoreResponse")
+          || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
+          || !text.includes("eventHistory")
           || required.some((snippet) => !text.includes(snippet));
       })
       .map(({ file }) => file);
