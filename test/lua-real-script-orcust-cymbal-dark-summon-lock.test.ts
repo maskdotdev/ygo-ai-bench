@@ -63,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
     expect(resolve.ok, resolve.error).toBe(true);
     expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
       luaTargetDescriptor: "target:not-attribute:32",
+      property: 0x4000800,
       targetRange: [1, 0],
     });
 
@@ -75,6 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
       getLuaRestoreLegalActions(restored, 0),
     );
     expect(restored.session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      property: 0x4000800,
       targetRange: [1, 0],
     });
     const probe = restored.host.loadScript(

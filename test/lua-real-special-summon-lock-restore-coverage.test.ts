@@ -111,6 +111,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-necro-vulture-rank-up-magic-xyz-lock.test.ts",
       requiredSnippets: [
         "target:xyz-summon-not-related-setcode:149",
+        "property: 0x4000800",
         "targetRange: [1, 0]",
         "targetCardPredicate",
       ],
@@ -589,6 +590,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-isolde-zombie-special-summon-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "target:not-race:16"',
+        "property: 0x800",
         "targetRange: [1, 0]",
         "isolde fiend special 0",
         "isolde zombie special 1",
@@ -598,6 +600,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-orcust-cymbal-dark-summon-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "target:not-attribute:32"',
+        "property: 0x4000800",
         "targetRange: [1, 0]",
         "orcust dark special 1",
         "orcust light special 0",

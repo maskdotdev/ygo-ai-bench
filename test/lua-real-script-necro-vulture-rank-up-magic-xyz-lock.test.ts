@@ -58,6 +58,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ne
     expect(resolve.ok, resolve.error).toBe(true);
     expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
       luaTargetDescriptor: "target:xyz-summon-not-related-setcode:149",
+      property: 0x4000800,
       targetRange: [1, 0],
     });
 
@@ -94,7 +95,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ne
     expect(rumEffectId).toBeDefined();
     expect(offSetEffectId).toBeDefined();
     const lock = restored.session.state.effects.find((effect) => effect.code === 22);
-    expect(lock).toMatchObject({ targetRange: [1, 0] });
+    expect(lock).toMatchObject({ property: 0x4000800, targetRange: [1, 0] });
     expect(lock?.targetCardPredicate?.(targetContext(restored.session.state, luaBaseEffectId(offSetEffectId!)), xyz!)).toBe(true);
     expect(lock?.targetCardPredicate?.(targetContext(restored.session.state, luaBaseEffectId(rumEffectId!)), xyz!)).toBe(false);
   });
