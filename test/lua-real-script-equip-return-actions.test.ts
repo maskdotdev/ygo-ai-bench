@@ -300,13 +300,80 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       controller: 0,
     });
     expect(restoredReturnChain.host.messages).not.toContain("equip responder resolved");
-    expect(restoredReturnChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "leftField", eventCode: 1015, eventCardUid: dagger!.uid }),
-        expect.objectContaining({ eventName: "sentToHand", eventCode: 1012, eventCardUid: dagger!.uid }),
-        expect.objectContaining({ eventName: "confirmed", eventCode: 1211, eventUids: [dagger!.uid] }),
-      ]),
-    );
+    expect(restoredReturnChain.session.state.eventHistory.filter((event) => ["leftField", "sentToHand", "confirmed"].includes(event.eventName))).toEqual([
+      {
+        eventName: "leftField",
+        eventCode: 1015,
+        eventCardUid: dagger!.uid,
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: dagger!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "spellTrapZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "sentToHand",
+        eventCode: 1012,
+        eventCardUid: dagger!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: dagger!.uid,
+        eventReasonEffectId: 4,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "confirmed",
+        eventCode: 1211,
+        eventPlayer: 1,
+        eventCardUid: dagger!.uid,
+        eventValue: 1,
+        eventUids: [dagger!.uid],
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: dagger!.uid,
+        eventReasonEffectId: 4,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
   });
 
   it("restores Horn of the Unicorn sent-from-field top-of-Deck trigger", () => {
