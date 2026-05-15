@@ -14,6 +14,7 @@ const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 const typeMonster = 0x1;
 const typeEffect = 0x20;
+const effectFlagPlayerTarget = 0x800;
 const resetPhaseEnd = 0x40000200;
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Threatening Roar temporary attack lock", () => {
@@ -99,7 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
         expect.objectContaining({
           sourceUid: roar!.uid,
           code: 86,
-          property: expect.any(Number),
+          property: effectFlagPlayerTarget,
           targetRange: [0, 1],
           reset: { flags: resetPhaseEnd },
         }),
@@ -111,6 +112,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
     expect(restoredLock.missingRegistryKeys).toEqual([]);
     expect(restoredLock.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restoredLock.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceUid: roar!.uid,
+          code: 86,
+          property: effectFlagPlayerTarget,
+          targetRange: [0, 1],
+          reset: { flags: resetPhaseEnd },
+        }),
+      ]),
+    );
     const probe = restoredLock.host.loadScript(attackLockProbeScript(attackerCode), "threatening-roar-attack-lock-probe.lua");
     expect(probe.ok, probe.error).toBe(true);
     expect(restoredLock.host.messages).toContain("threatening roar attack false");

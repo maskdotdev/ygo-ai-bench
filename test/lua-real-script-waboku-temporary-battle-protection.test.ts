@@ -102,7 +102,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wa
         expect.objectContaining({
           sourceUid: waboku!.uid,
           code: effectAvoidBattleDamage,
-          property: expect.any(Number),
+          property: effectFlagPlayerTarget,
           value: 1,
           targetRange: [1, 0],
           reset: { flags: resetPhaseEnd },
@@ -125,6 +125,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wa
     expect(restoredProtection.restoreComplete, restoredProtection.incompleteReasons.join("; ")).toBe(true);
     expect(restoredProtection.missingRegistryKeys).toEqual([]);
     expect(restoredProtection.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restoredProtection.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceUid: waboku!.uid,
+          code: effectAvoidBattleDamage,
+          property: effectFlagPlayerTarget,
+          value: 1,
+          targetRange: [1, 0],
+          reset: { flags: resetPhaseEnd },
+        }),
+      ]),
+    );
     restoredProtection.session.state.phase = "battle";
     restoredProtection.session.state.waitingFor = 1;
     expectRestoredLegalActions(restoredProtection, 1);
