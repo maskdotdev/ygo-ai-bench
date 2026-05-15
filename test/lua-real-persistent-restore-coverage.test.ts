@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const PERSISTENT_FIXTURE_COUNT = 16;
-const TARGETED_PERSISTENT_FIXTURE_COUNT = 12;
+const PERSISTENT_FIXTURE_COUNT = 17;
+const TARGETED_PERSISTENT_FIXTURE_COUNT = 13;
 const REVIVE_DESTROY_PERSISTENT_FIXTURE_COUNT = 1;
 const SPIRITS_INVITATION_PERSISTENT_FIXTURE_COUNT = 1;
-const ATTACK_LOCK_PERSISTENT_FIXTURE_COUNT = 8;
+const ATTACK_LOCK_PERSISTENT_FIXTURE_COUNT = 9;
 
 describe("Lua real persistent restore coverage", () => {
   it("requires representative persistent/remaining-field fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -123,6 +123,7 @@ function realScriptPersistentFixtureFiles(): string[] {
     "lua-real-script-dragons-bind-persistent-special-lock.test.ts",
     "lua-real-script-gravity-bind-persistent-attack-lock.test.ts",
     "lua-real-script-level-limit-area-b-position-lock.test.ts",
+    "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
     "lua-real-script-messenger-peace-maintenance-attack-lock.test.ts",
     "lua-real-script-miniaturize-persistent-damage-step-stat.test.ts",
     "lua-real-script-moon-dance-ritual-persistent-overlay.test.ts",
@@ -187,6 +188,7 @@ function realScriptAttackLockPersistentFixtureFiles(): string[] {
     "lua-real-script-fiendish-chain-persistent-disable.test.ts",
     "lua-real-script-gravity-bind-persistent-attack-lock.test.ts",
     "lua-real-script-level-limit-area-b-position-lock.test.ts",
+    "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
     "lua-real-script-messenger-peace-maintenance-attack-lock.test.ts",
     "lua-real-script-phantom-knights-fog-blade-persistent-battle-target.test.ts",
     "lua-real-script-safe-zone-persistent-protection.test.ts",
