@@ -102,6 +102,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script My
         ],
       }
     `);
+    expect(session.state.chain[1]?.operationInfos).toEqual([
+      { category: 0x1, targetUids: [targetTrap!.uid], count: 1, player: 1, parameter: 0 },
+    ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -135,6 +138,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script My
         ],
       }
     `);
+    expect(restored.session.state.chain[1]?.operationInfos).toEqual([
+      { category: 0x1, targetUids: [targetTrap!.uid], count: 1, player: 1, parameter: 0 },
+    ]);
 
     const pass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
