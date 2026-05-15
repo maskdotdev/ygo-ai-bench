@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const resourceGateFixtureCount = 3;
+const resourceGateFixtureCount = 4;
 
 describe("Lua real resource gate restore coverage", () => {
   it("requires resource gate fixtures to assert clean restore and restored blocked/allowed outcomes", () => {
@@ -52,6 +52,16 @@ function resourceGateFixtureFiles(): Array<{ file: string; required: string[] }>
         "protector draw main1 0/0",
         "protector can draw draw phase true",
         "protector draw draw phase 1/1",
+      ],
+    },
+    {
+      file: "test/lua-real-script-red-duston-unreleasable.test.ts",
+      required: [
+        "code === 43",
+        "code === 44",
+        "red duston release predicates false/false/false/false",
+        "red duston release result 0",
+        'location: "monsterZone"',
       ],
     },
     {
