@@ -83,11 +83,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gu
     expect(restoredTrigger.session.state.cards.find((card) => card.uid === gundari!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restoredTrigger.session.state.cards.find((card) => card.uid === synchro!.uid)).toMatchObject({ location: "hand", controller: 1 });
     expect(restoredTrigger.session.state.pendingBattle).toBeUndefined();
-    expect(restoredTrigger.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleStarted", eventCode: 1132, eventUids: [gundari!.uid, synchro!.uid] }),
-      ]),
-    );
+    expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "battleStarted")).toEqual([
+      {
+        eventName: "battleStarted",
+        eventCode: 1132,
+        eventCardUid: gundari!.uid,
+        eventUids: [gundari!.uid, synchro!.uid],
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "sentToHand")).toEqual([
       {
         eventName: "sentToHand",

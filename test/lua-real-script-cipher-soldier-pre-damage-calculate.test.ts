@@ -77,11 +77,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ci
     expect(restored.session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ event: "continuous", code: 100, sourceUid: cipherSoldier!.uid, value: 2000 })]));
     expect(currentAttack(restored.session.state.cards.find((card) => card.uid === cipherSoldier!.uid), restored.session.state)).toBe(3350);
     expect(restored.session.state.cards.find((card) => card.uid === warriorTarget!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "beforeDamageCalculation", eventCode: 1134, eventUids: [cipherSoldier!.uid, warriorTarget!.uid] }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "beforeDamageCalculation")).toEqual([
+      {
+        eventName: "beforeDamageCalculation",
+        eventCode: 1134,
+        eventCardUid: cipherSoldier!.uid,
+        eventUids: [cipherSoldier!.uid, warriorTarget!.uid],
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
 
     finishBattle(restored.session);
 

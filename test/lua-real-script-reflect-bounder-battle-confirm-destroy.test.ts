@@ -77,9 +77,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
     expect(result.ok, result.error).toBe(true);
     resolveRestoredChain(restoredConfirm);
     expect(restoredConfirm.session.state.players[1].lifePoints).toBe(6300);
-    expect(restoredConfirm.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "battleConfirmed", eventCode: 1133, eventUids: [attacker!.uid, bounder!.uid] })]),
-    );
+    expect(restoredConfirm.session.state.eventHistory.filter((event) => event.eventName === "battleConfirmed")).toEqual([
+      {
+        eventName: "battleConfirmed",
+        eventCode: 1133,
+        eventCardUid: attacker!.uid,
+        eventUids: [attacker!.uid, bounder!.uid],
+        eventReason: 0,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredConfirm.session.state.eventHistory.filter((event) => event.eventName === "damageDealt")).toEqual([
       {
         eventName: "damageDealt",
