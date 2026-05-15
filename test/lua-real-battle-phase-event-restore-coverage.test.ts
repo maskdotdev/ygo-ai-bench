@@ -61,7 +61,8 @@ function representativeBattlePhaseEventFixtures(): Array<{ file: string; require
         'eventName: "phaseBattle"',
         'triggerBucket: "turnMandatory"',
         'action.type === "activateTrigger"',
-        'eventName: "destroyed", eventCode: 1029',
+        'eventName: "destroyed"',
+        "eventCode: 1029",
       ],
     },
   ].sort((a, b) => a.file.localeCompare(b.file));
