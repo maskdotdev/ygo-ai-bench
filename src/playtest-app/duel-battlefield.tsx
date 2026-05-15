@@ -2,7 +2,8 @@ import cardBackUrl from "../../assets/card-back.webp";
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
 import type { DuelAction, DuelLocation, DuelLogEntry, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
-import { dedupeDuelActions, duelActionAnchorUids, duelActionUiKey, partitionDuelActionsByAnchor } from "./duel-action-anchors.js";
+import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
+import { duelActionAnchorUids, duelActionUiKey, orphanDuelActionGroups, partitionDuelActionsByAnchor } from "./duel-action-anchors.js";
 import type { CardImageInfo } from "./ui.js";
 
 function opposite(player: PlayerId): PlayerId {
@@ -189,6 +190,7 @@ export interface DuelBattlefieldProps {
   onViewPile: (title: string, icon: string, cards: PublicDuelCard[]) => void;
   /** When set, legal responses are chosen from the field (cyan ring). Shift+click always zooms. */
   legalActions?: readonly DuelAction[];
+  legalActionGroups?: readonly DuelLegalActionGroup[];
   onPlayAction?: (action: DuelAction) => void;
 }
 
@@ -259,7 +261,7 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
   const opponent = opposite(viewer);
   const hideOppHand = true;
 
-  const { byUid: actionByUid, orphans } = useMemo(() => {
+  const { byUid: actionByUid, orphanGroups } = useMemo(() => {
     const legal = props.legalActions ?? [];
     const raw = partitionDuelActionsByAnchor(legal);
     const interact = new Set<string>();
@@ -274,21 +276,8 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
     for (const [uid, list] of raw.byUid) {
       if (interact.has(uid)) byUid.set(uid, list);
     }
-    const unreachable: DuelAction[] = [];
-    const seenU = new Set<string>();
-    for (const action of legal) {
-      const anchors = duelActionAnchorUids(action);
-      if (!anchors.length) continue;
-      if (!anchors.some((uid) => interact.has(uid))) {
-        const k = duelActionUiKey(action);
-        if (!seenU.has(k)) {
-          seenU.add(k);
-          unreachable.push(action);
-        }
-      }
-    }
-    return { byUid, orphans: dedupeDuelActions([...raw.orphans, ...unreachable]) };
-  }, [hideOppHand, opponent, props.legalActions, state.cards, viewer]);
+    return { byUid, orphanGroups: orphanDuelActionGroups(legal, props.legalActionGroups, interact) };
+  }, [hideOppHand, opponent, props.legalActionGroups, props.legalActions, state.cards, viewer]);
 
   const cardHasLegalActions = useCallback((uid: string) => (actionByUid.get(uid)?.length ?? 0) > 0, [actionByUid]);
 
@@ -474,19 +463,23 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
               {triggerOrderLabel}
             </div>
           ) : null}
-          {orphans.length > 0 && props.onPlayAction ? (
+          {orphanGroups.length > 0 && props.onPlayAction ? (
             <div className="flex max-w-[min(96vw,860px)] justify-center px-1">
               <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-cyan-500/20 bg-slate-900/60 px-2 py-1.5 [scrollbar-width:thin]">
-                <span className="shrink-0 self-center pr-1 text-[8px] font-bold uppercase tracking-[0.12em] text-white/35">Other</span>
-                {orphans.map((action) => (
-                  <button
-                    key={`orphan-${duelActionUiKey(action)}`}
-                    type="button"
-                    className="shrink-0 rounded-md border border-cyan-500/25 bg-slate-800/80 px-2 py-1 text-left text-[9px] font-semibold leading-tight text-cyan-50/95 hover:border-cyan-400/50 hover:bg-cyan-900/35"
-                    onClick={() => props.onPlayAction?.(action)}
-                  >
-                    <span className="line-clamp-2 max-w-[200px]">{action.label}</span>
-                  </button>
+                {orphanGroups.map((group) => (
+                  <div key={group.key} className="flex shrink-0 items-center gap-1">
+                    <span className="shrink-0 self-center pr-1 text-[8px] font-bold uppercase tracking-[0.12em] text-white/35">{group.label}</span>
+                    {group.actions.map((action) => (
+                      <button
+                        key={`orphan-${group.key}-${duelActionUiKey(action)}`}
+                        type="button"
+                        className="shrink-0 rounded-md border border-cyan-500/25 bg-slate-800/80 px-2 py-1 text-left text-[9px] font-semibold leading-tight text-cyan-50/95 hover:border-cyan-400/50 hover:bg-cyan-900/35"
+                        onClick={() => props.onPlayAction?.(action)}
+                      >
+                        <span className="line-clamp-2 max-w-[200px]">{action.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 ))}
               </div>
             </div>

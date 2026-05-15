@@ -1,4 +1,11 @@
 import type { DuelAction } from "#duel/types.js";
+import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
+
+export interface DuelActionUiGroup {
+  key: string;
+  label: string;
+  actions: DuelAction[];
+}
 
 /** Stable key for de-duplicating action references in UI maps. */
 export function duelActionUiKey(action: DuelAction): string {
@@ -87,4 +94,27 @@ export function partitionDuelActionsByAnchor(actions: readonly DuelAction[]): {
     }
   }
   return { byUid, orphans };
+}
+
+export function orphanDuelActionGroups(
+  actions: readonly DuelAction[],
+  groups: readonly DuelLegalActionGroup[] | undefined,
+  interactiveUids: ReadonlySet<string>,
+): DuelActionUiGroup[] {
+  const partitioned = partitionDuelActionsByAnchor(actions);
+  const orphanKeys = new Set(partitioned.orphans.map(duelActionUiKey));
+  for (const action of actions) {
+    const anchors = duelActionAnchorUids(action);
+    if (anchors.length > 0 && !anchors.some((uid) => interactiveUids.has(uid))) orphanKeys.add(duelActionUiKey(action));
+  }
+  const sourceGroups = groups?.length
+    ? groups
+    : [{ key: "ungrouped", label: "Other", actions: [...actions] }];
+  return sourceGroups
+    .map((group) => ({
+      key: group.key,
+      label: group.label,
+      actions: dedupeDuelActions(group.actions.filter((action) => orphanKeys.has(duelActionUiKey(action)))),
+    }))
+    .filter((group) => group.actions.length > 0);
 }

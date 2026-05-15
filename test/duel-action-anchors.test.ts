@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { duelActionAnchorUids, isOrphanDuelAction, partitionDuelActionsByAnchor } from "../src/playtest-app/duel-action-anchors.js";
+import { duelActionAnchorUids, isOrphanDuelAction, orphanDuelActionGroups, partitionDuelActionsByAnchor } from "../src/playtest-app/duel-action-anchors.js";
 import type { DuelAction } from "#duel/types.js";
 
 describe("duel action anchors", () => {
@@ -88,5 +88,25 @@ describe("duel action anchors", () => {
     expect(partitioned.byUid.get("field-1")).toEqual([action]);
     expect(partitioned.byUid.get("hand-1")).toEqual([action]);
     expect(partitioned.orphans).toEqual([]);
+  });
+
+  it("keeps unanchored and unreachable actions grouped by engine legal-action groups", () => {
+    const pass: DuelAction = { type: "passChain", player: 1, label: "Pass", windowId: 6, windowKind: "chainResponse" };
+    const prompt: DuelAction = { type: "selectOption", player: 0, promptId: "prompt-a", option: 1, label: "Choose 1", windowId: 7, windowKind: "prompt" };
+    const hiddenHandEffect: DuelAction = { type: "activateEffect", player: 1, uid: "hidden-hand", effectId: "hand-effect", label: "Hidden hand effect", windowId: 6, windowKind: "chainResponse" };
+    const visibleEffect: DuelAction = { type: "activateEffect", player: 0, uid: "visible-field", effectId: "field-effect", label: "Visible effect", windowId: 6, windowKind: "chainResponse" };
+    const actions = [pass, prompt, hiddenHandEffect, visibleEffect];
+
+    const groups = orphanDuelActionGroups(actions, [
+      { key: "6:chainResponse:pass", label: "Pass", windowId: 6, windowKind: "chainResponse", actions: [pass] },
+      { key: "7:prompt:prompt:prompt-a", label: "Prompt", windowId: 7, windowKind: "prompt", actions: [prompt] },
+      { key: "6:chainResponse:effect", label: "Effects", windowId: 6, windowKind: "chainResponse", actions: [hiddenHandEffect, visibleEffect] },
+    ], new Set(["visible-field"]));
+
+    expect(groups).toEqual([
+      { key: "6:chainResponse:pass", label: "Pass", actions: [pass] },
+      { key: "7:prompt:prompt:prompt-a", label: "Prompt", actions: [prompt] },
+      { key: "6:chainResponse:effect", label: "Effects", actions: [hiddenHandEffect] },
+    ]);
   });
 });

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { applyResponse, createDuel, getLegalActions, loadDecks, queryPublicState, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, queryPublicState, startDuel } from "#duel/core.js";
 import type { DuelAction, DuelSession, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
 import { parseYdk } from "#playtest/ydk.js";
 import { getBrowserDuelCardReader } from "./duel-pvp-card-reader.js";
@@ -132,6 +132,10 @@ export function PvpArena() {
     if (publicState.status !== "awaiting" || waiting === undefined) return NO_LEGAL_ACTIONS;
     return getLegalActions(session, waiting);
   }, [publicState.status, session, waiting, revision]);
+  const legalActionGroups = useMemo(() => {
+    if (publicState.status !== "awaiting" || waiting === undefined) return [];
+    return getGroupedDuelLegalActions(session, waiting);
+  }, [publicState.status, session, waiting, revision]);
 
   const inspectCard = useCallback((card: PublicDuelCard) => {
     const image = cardImages.current.get(card.code);
@@ -204,6 +208,7 @@ export function PvpArena() {
                 onCardInspect={inspectCard}
                 onViewPile={(title, icon, cards) => setPileModal({ title, icon, cards })}
                 legalActions={legalActions}
+                legalActionGroups={legalActionGroups}
                 onPlayAction={apply}
               />
             </div>
