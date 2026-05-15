@@ -18,6 +18,7 @@ describe("Lua real operation restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -43,6 +44,7 @@ describe("Lua real operation restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -198,8 +200,11 @@ function summonTriggerOperationFixtureFiles(): Array<{ file: string; required: s
       file: "test/lua-real-script-dark-dust-spirit-destroy.test.ts",
       required: [
         "restoredSummonWindow.missingRegistryKeys).toEqual([])",
+        "restoredSummonWindow.missingChainLimitRegistryKeys).toEqual([])",
         "restoredTriggerWindow.missingRegistryKeys).toEqual([])",
+        "restoredTriggerWindow.missingChainLimitRegistryKeys).toEqual([])",
         "restoredChainWindow.missingRegistryKeys).toEqual([])",
+        "restoredChainWindow.missingChainLimitRegistryKeys).toEqual([])",
         'eventName: "normalSummoned"',
         'eventName: "destroyed"',
         "category: 0x1",
