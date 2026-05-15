@@ -13,7 +13,7 @@ const realScriptChainLimitFixtureCount = 13;
 const officialPatternRestoreCoverage: Record<string, string[]> = {
   "SetChainLimit:aux.FALSE": ["test/lua-real-script-anti-magic-arrows-chain-limit.test.ts"],
   "SetChainLimit:factory:handler-exclusion": ["test/lua-chain-limit-single-card-restore.test.ts"],
-  "SetChainLimit:factory:response-chain-player": ["test/lua-chain-limit-response-chain-player-restore.test.ts"],
+  "SetChainLimit:factory:response-chain-player": ["test/lua-real-script-forbidden-droplet-chain-limit.test.ts"],
   "SetChainLimit:inline:active-type": ["test/lua-real-script-forbidden-crown-chain-limit.test.ts"],
   "SetChainLimit:inline:handler-exclusion": ["test/lua-real-script-titanic-galaxy-chain-limit.test.ts"],
   "SetChainLimit:inline:response-chain-player": ["test/lua-real-script-borrelend-chain-limit.test.ts"],
