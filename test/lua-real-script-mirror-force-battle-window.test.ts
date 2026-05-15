@@ -77,7 +77,48 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     expect(mirrorForceAction).toBeDefined();
     applyAndAssert(session, mirrorForceAction!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({ sourceUid: mirrorForce!.uid });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-2-1130",
+        "eventCardUid": "p0-deck-100-0",
+        "eventCode": 1130,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "attackDeclared",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "deck",
+          "position": "faceDown",
+          "sequence": 2,
+        },
+        "eventReason": 0,
+        "eventReasonPlayer": 0,
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 2,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-100-0",
+              "p0-deck-101-1",
+            ],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-44095762-0",
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
