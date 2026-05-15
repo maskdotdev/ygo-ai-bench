@@ -1,10 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { createDuel, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { createDuel, getGroupedDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { luaSummonTypeSpecial } from "#duel/summon-type-codes.js";
 import type { DuelCardData, DuelEffectContext } from "#duel/types.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+
+function expectRestoredLegalActionGroups(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+  expect(restored.missingRegistryKeys).toEqual([]);
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
 
 describe("Lua Special Summon type codes", () => {
   it("normalizes SUMMON_WITH_* reasons into special summon type masks", () => {
@@ -117,6 +124,8 @@ describe("Lua Special Summon type codes", () => {
         c:RegisterEffect(e)
       end
       ` : undefined }, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     expect(restored.session.state.effects).toEqual([expect.objectContaining({ code: 92, luaCostDescriptor: `cost:special-summon-type-not:${luaSummonTypeSpecial + 182}`, cost: expect.any(Function) })]);
     expect(restored.host.loadScript(`
       local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 400), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
@@ -161,6 +170,8 @@ describe("Lua Special Summon type codes", () => {
     expect(session.state.effects[0]).toMatchObject({ code: 92, luaCostDescriptor: `cost:special-summon-type-is:${luaSummonTypeSpecial + 181}` });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c401.lua" ? script : undefined }, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     expect(restored.host.loadScript(`
       local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 401), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("restored equality open " .. tostring(target:IsCanBeSpecialSummoned(nil,181,0,false,false,POS_FACEUP_ATTACK)))
@@ -194,6 +205,7 @@ describe("Lua Special Summon type codes", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c402.lua" ? script : undefined }, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     expect(restored.session.state.effects[0]).toMatchObject({ code: 92, luaCostDescriptor: `cost:special-summon-type-not:${luaSummonTypeSpecial + 183}` });
     expect(restored.session.state.cards.find((card) => card.code === "402")).toMatchObject({ location: "hand" });
     const restoredEffect = restored.session.state.effects[0]!;
