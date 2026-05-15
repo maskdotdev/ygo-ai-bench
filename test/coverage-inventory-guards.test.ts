@@ -80,6 +80,20 @@ describe("coverage inventory guards", () => {
     expect(missingGroupedRestoreEvidence).toEqual([]);
   });
 
+  it("requires source-only event restore branches to prove grouped restored actions before consumption", () => {
+    const sourceOnlyFiles = fs.readdirSync(testRoot)
+      .filter((file) => /^lua-.*source-only-event\.test\.ts$/.test(file));
+    const restoreBranches = sourceOnlyFiles
+      .flatMap((file) => sourceOnlyRestoreBranches(file));
+    const missingGroupedRestoreEvidence = restoreBranches
+      .filter((branch) => !hasNearbyGroupedRestoreEvidence(branch.text, branch.variable))
+      .map((branch) => `${branch.file}:${branch.line}`);
+
+    expect(sourceOnlyFiles).toHaveLength(14);
+    expect(restoreBranches).toHaveLength(15);
+    expect(missingGroupedRestoreEvidence).toEqual([]);
+  });
+
   it("requires test proof floors to be exact", () => {
     const greaterThanAllowlist = new Set([
       "lua-field-query-helpers.test.ts:59",
@@ -100,6 +114,22 @@ describe("coverage inventory guards", () => {
     expect(loose).toEqual([]);
   });
 });
+
+function sourceOnlyRestoreBranches(file: string): Array<{ file: string; line: number; text: string; variable: string }> {
+  const text = fs.readFileSync(path.join(testRoot, file), "utf8");
+  return [...text.matchAll(/const (\w+) = restoreDuelWithLuaScripts\(/g)]
+    .map((match) => ({
+      file,
+      line: lineNumber(text, match.index ?? 0),
+      text: text.slice(match.index ?? 0, (match.index ?? 0) + 550),
+      variable: match[1]!,
+    }));
+}
+
+function hasNearbyGroupedRestoreEvidence(text: string, variable: string): boolean {
+  return new RegExp(`expectRestoredLegal(?:Action|Actions|ActionGroups)\\(${variable}\\)`).test(text)
+    || text.includes(`getLuaRestoreLegalActionGroups(${variable},`);
+}
 
 function hasInventoryGuard(text: string): boolean {
   return text.includes("toHaveLength(")
