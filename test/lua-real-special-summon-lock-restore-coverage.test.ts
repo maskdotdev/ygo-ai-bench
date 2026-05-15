@@ -521,6 +521,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-link-devotee-link3-lock.test.ts",
       requiredSnippets: [
         "target:link-summon-link-above:3",
+        "property: 0x4000800",
         "reset: { flags: 0x40000200 }",
         "targetRange: [1, 0]",
         "link devotee link2 link special 1",
@@ -682,6 +683,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-grisaille-prison-synchro-xyz-summon-lock.test.ts",
       requiredSnippets: [
         "target:special-summon-type-is-any",
+        "property: 0x4000800",
         "targetRange: [1, 1]",
         "grisaille synchro special 0",
         "grisaille xyz special 0",
@@ -733,6 +735,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       requiredSnippets: [
         "target:special-summon-type-is",
         "luaSummonTypePendulum",
+        "property: 0x4000800",
         "targetRange: [1, 0]",
         "phantasma pendulum special 0",
         "phantasma regular special 1",
