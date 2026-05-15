@@ -19,6 +19,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
   it("restores non-sentinel SelectOption into Ritual extra material extraop", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const mafteaCode = "99426088";
+    const ritualOptionDescription = Number(mafteaCode) * 16 + 1;
     const ritualTargetCode = "99426080";
     const handMaterialCode = "99426081";
     const deckNormalMaterialCode = "99426082";
@@ -88,7 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     const resolved = applyLuaRestoreResponse(restored, pass!);
     expect(resolved.ok, resolved.error).toBe(true);
     expect(restored.host.promptDecisions).toEqual(expect.arrayContaining([
-      expect.objectContaining({ api: "SelectOption", player: 0, options: [0], descriptions: [expect.any(Number)], returned: 0 }),
+      expect.objectContaining({ api: "SelectOption", player: 0, options: [0], descriptions: [ritualOptionDescription], returned: 0 }),
     ]));
 
     const summonedRitual = restored.session.state.cards.find((card) => card.uid === ritualTarget!.uid);

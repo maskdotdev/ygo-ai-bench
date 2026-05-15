@@ -17,6 +17,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
   it("restores a leading-false SelectOption branch that places Obsidim in the opponent Field Zone", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const infernoCode = "62767644";
+    const fieldZoneOptionDescription = Number(infernoCode) * 16 + 3;
+    const opponentFieldZoneOptionDescription = Number(infernoCode) * 16 + 4;
     const obsidimCode = "3055018";
     const responderCode = "62767645";
     const cards: DuelCardData[] = [
@@ -69,7 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
     const resolved = applyLuaRestoreResponse(restored, pass!);
     expect(resolved.ok, resolved.error).toBe(true);
     expect(restored.host.promptDecisions).toEqual(expect.arrayContaining([
-      expect.objectContaining({ api: "SelectOption", player: 0, options: [1, 2], descriptions: [expect.any(Number), expect.any(Number)], returned: 1 }),
+      expect.objectContaining({ api: "SelectOption", player: 0, options: [1, 2], descriptions: [fieldZoneOptionDescription, opponentFieldZoneOptionDescription], returned: 1 }),
     ]));
 
     expect(restored.session.state.cards.find((card) => card.uid === obsidim!.uid)).toMatchObject({
