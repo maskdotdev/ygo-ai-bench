@@ -9,6 +9,7 @@ const scannerPath = path.join(root, "tools/scan-lua-chain-limit-patterns.mjs");
 const upstreamOfficialScriptRoot = path.join(root, ".upstream/ignis/script/official");
 const noActiveRestoreWindowGroups = new Set(["SetChainLimit:aux.FALSE"]);
 const realScriptChainLimitFixtureCount = 13;
+const realScriptOwnedScannerGroupCount = 10;
 
 const officialPatternRestoreCoverage: Record<string, string[]> = {
   "SetChainLimit:aux.FALSE": ["test/lua-real-script-anti-magic-arrows-chain-limit.test.ts"],
@@ -86,6 +87,14 @@ describe("Lua chain-limit restore coverage", () => {
       });
 
     expect(missing).toEqual([]);
+  });
+
+  it("keeps most official chain-limit scanner groups owned by real-script fixtures", () => {
+    const realScriptOwnedGroups = Object.values(officialPatternRestoreCoverage)
+      .filter((files) => files.some((file) => file.includes("/lua-real-script-")))
+      .length;
+
+    expect(realScriptOwnedGroups).toBeGreaterThanOrEqual(realScriptOwnedScannerGroupCount);
   });
 });
 
