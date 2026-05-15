@@ -77,10 +77,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredActivation, activation!);
 
-    expect(restoredActivation.session.state.chain[0]).toMatchObject({
-      sourceUid: dimensionSphinx!.uid,
-      targetUids: [target!.uid],
-    });
+    expect(restoredActivation.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "player": 0,
+        "sourceUid": "p0-deck-17787975-0",
+        "targetUids": [
+          "p0-deck-613901-1",
+        ],
+      }
+    `);
 
     const restoredPersistentChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expectCleanRestore(restoredPersistentChain);
@@ -120,12 +130,28 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     const sphinxDamage = getLuaRestoreLegalActions(restoredBattleWindow, 0).find((action) => action.type === "activateEffect" && action.uid === dimensionSphinx!.uid);
     expect(sphinxDamage, JSON.stringify(getLuaRestoreLegalActions(restoredBattleWindow, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredBattleWindow, sphinxDamage!);
-    expect(restoredBattleWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: dimensionSphinx!.uid,
-      targetPlayer: 1,
-      targetParam: 800,
-      operationInfos: [{ category: 0x80000, targetUids: [], count: 0, player: 1, parameter: 800 }],
-    });
+    expect(restoredBattleWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-3-1002",
+        "id": "chain-6",
+        "operationInfos": [
+          {
+            "category": 524288,
+            "count": 0,
+            "parameter": 800,
+            "player": 1,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-17787975-0",
+        "targetParam": 800,
+        "targetPlayer": 1,
+      }
+    `);
     expectDimensionSphinxProbe(restoredBattleWindow, dimensionSphinxCode, targetCode, "dimension sphinx persistent true/true/1/1");
     expect(getLuaRestoreLegalActions(restoredBattleWindow, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
 

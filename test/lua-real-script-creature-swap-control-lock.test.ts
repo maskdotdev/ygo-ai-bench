@@ -68,10 +68,26 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cr
     applyAndAssert(session, activation!);
 
     const openedSnapshot = serializeDuel(session);
-    expect(openedSnapshot.state.chain[0]).toMatchObject({
-      sourceUid: creatureSwap!.uid,
-      operationInfos: [{ category: 0x2000, targetUids: [], count: 0, player: 0, parameter: 0 }],
-    });
+    expect(openedSnapshot.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 8192,
+            "count": 0,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-31036355-0",
+      }
+    `);
     expect(openedSnapshot.state.chain[0]?.targetUids ?? []).toEqual([]);
 
     const restoredResponseWindow = restoreDuelWithLuaScripts(openedSnapshot, source, reader);

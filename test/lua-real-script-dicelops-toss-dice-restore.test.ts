@@ -51,13 +51,37 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     expect(activation, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
     applyAndAssert(session, activation!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: dicelops.uid,
-      operationInfos: [
-        { category: categoryDice, count: 0, player: 0, parameter: 1 },
-        { category: categoryHandes, count: 1, player: 0, parameter: 0 },
-      ],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 33554432,
+            "count": 0,
+            "parameter": 1,
+            "player": 0,
+            "targetUids": [],
+          },
+          {
+            "category": 128,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-62893811-1",
+              "p1-deck-62893812-0",
+              "p1-deck-62893813-1",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-62893810-0",
+      }
+    `);
     expect(session.state.lastDiceResults).toEqual([]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
