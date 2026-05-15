@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { getCards, moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, drawDuelCards, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -106,10 +107,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Po
     expect(restored.session.state.eventHistory).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ eventName: "confirmed", eventCode: 1211, eventPlayer: 0, eventUids: topDeckUids }),
-        expect.objectContaining({ eventName: "sentToHand", eventCode: 1012, eventCardUid: selectedUid }),
         expect.objectContaining({ eventName: "sentToHandConfirmed", eventCode: 1212, eventPlayer: 1, eventUids: [selectedUid] }),
       ]),
     );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToHand")).toEqual([
+      {
+        eventName: "sentToHand",
+        eventCode: 1012,
+        eventCardUid: selectedUid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: pot!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.host.messages).toContain(`confirmed decktop 0: ${topDeckUids.map((uid) => cardsByUid(restored.session)[uid]).join(",")}`);
     expect(restored.host.messages).toContain(`confirmed 1: ${cardsByUid(restored.session)[selectedUid!]}`);
     expect(drawDuelCards(restored.session.state, 0, 1, "Blocked prosperity draw")).toBe(0);
