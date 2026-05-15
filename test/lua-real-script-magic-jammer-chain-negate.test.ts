@@ -78,6 +78,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     const restoredOpenChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredOpenChain.restoreComplete, restoredOpenChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredOpenChain.missingRegistryKeys).toEqual([]);
+    expect(restoredOpenChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredOpenChain, 1);
     const magicJammerAction = getLuaRestoreLegalActions(restoredOpenChain, 1).find((action) => action.type === "activateEffect" && action.uid === magicJammer!.uid);
     expect(magicJammerAction).toBeDefined();
@@ -97,6 +98,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredOpenChain.session), source, reader);
     expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
     expect(restoredPendingResolution.missingRegistryKeys).toEqual([]);
+    expect(restoredPendingResolution.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredPendingResolution, 0);
 
     for (let index = 0; index < 4 && restoredPendingResolution.session.state.chain.length > 0; index += 1) {

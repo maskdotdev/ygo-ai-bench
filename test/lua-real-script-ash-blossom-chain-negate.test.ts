@@ -56,6 +56,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
     expect(restoredOpen.restoreComplete, restoredOpen.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredOpen, 1);
     expect(restoredOpen.missingRegistryKeys).toEqual([]);
+    expect(restoredOpen.missingChainLimitRegistryKeys).toEqual([]);
     const ashResponse = getLuaRestoreLegalActions(restoredOpen, 1).find((action) => action.type === "activateEffect" && action.uid === ashBlossom!.uid);
     expect(ashResponse).toBeDefined();
     const chained = applyLuaRestoreResponse(restoredOpen, ashResponse!);
@@ -65,6 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), workspace, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     const responsePlayer = restoredChain.session.state.waitingFor;
     expect(responsePlayer).toBeDefined();
     expectRestoredLegalActions(restoredChain, responsePlayer!);

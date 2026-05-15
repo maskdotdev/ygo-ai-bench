@@ -86,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     expect(restoredOpenChain.restoreComplete, restoredOpenChain.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredOpenChain, 1);
     expect(restoredOpenChain.missingRegistryKeys).toEqual([]);
+    expect(restoredOpenChain.missingChainLimitRegistryKeys).toEqual([]);
     const divineWrathAction = getLuaRestoreLegalActions(restoredOpenChain, 1).find((action) => action.type === "activateEffect" && action.uid === divineWrath!.uid);
     expect(divineWrathAction).toBeDefined();
     const chained = applyLuaRestoreResponse(restoredOpenChain, divineWrathAction!);
@@ -105,6 +106,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredPendingResolution, 0);
     expect(restoredPendingResolution.missingRegistryKeys).toEqual([]);
+    expect(restoredPendingResolution.missingChainLimitRegistryKeys).toEqual([]);
 
     for (let index = 0; index < 4 && restoredPendingResolution.session.state.chain.length > 0; index += 1) {
       const passPlayer = restoredPendingResolution.session.state.waitingFor;

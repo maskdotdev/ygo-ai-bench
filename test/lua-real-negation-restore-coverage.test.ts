@@ -23,6 +23,7 @@ describe("Lua real negation restore coverage", () => {
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("applyLuaRestoreResponse");
       });
 
@@ -71,6 +72,7 @@ describe("Lua real negation restore coverage", () => {
         return !/state\.chain\)\.toHaveLength\(2\)/.test(text)
           || !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !/eventName:\s*["']destroyed["']/.test(text)
           || !/eventName:\s*["']cardsDrawn["']/.test(text)
           || !/eventName:\s*["']chainNegated["']/.test(text)
