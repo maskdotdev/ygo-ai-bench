@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -71,9 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     const chained = applyLuaRestoreResponse(restoredSummonWindow, warningAction!);
     expect(chained.ok, chained.error).toBe(true);
     expect(restoredSummonWindow.session.state.players[1].lifePoints).toBe(6000);
-    expect(restoredSummonWindow.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 1, eventValue: 2000, eventReason: 0x80, eventReasonPlayer: 1 })]),
-    );
+    expectWarningCost(restoredSummonWindow.session, warning!.uid, 2);
     expect(restoredSummonWindow.session.state.chain).toHaveLength(1);
     expect(restoredSummonWindow.session.state.chain[0]).toMatchObject({
       sourceUid: warning!.uid,
@@ -177,9 +176,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     const chained = applyLuaRestoreResponse(restoredSummonWindow, warningAction!);
     expect(chained.ok, chained.error).toBe(true);
     expect(restoredSummonWindow.session.state.players[1].lifePoints).toBe(6000);
-    expect(restoredSummonWindow.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 1, eventValue: 2000, eventReason: 0x80, eventReasonPlayer: 1 })]),
-    );
+    expectWarningCost(restoredSummonWindow.session, warning!.uid, 4);
     expect(restoredSummonWindow.session.state.chain).toHaveLength(1);
     expect(restoredSummonWindow.session.state.chain[0]).toMatchObject({
       sourceUid: warning!.uid,
@@ -280,9 +277,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     const chained = applyLuaRestoreResponse(restoredSummonWindow, warningAction!);
     expect(chained.ok, chained.error).toBe(true);
     expect(restoredSummonWindow.session.state.players[1].lifePoints).toBe(6000);
-    expect(restoredSummonWindow.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 1, eventValue: 2000, eventReason: 0x80, eventReasonPlayer: 1 })]),
-    );
+    expectWarningCost(restoredSummonWindow.session, warning!.uid, 3);
     expect(restoredSummonWindow.session.state.chain).toHaveLength(1);
     expect(restoredSummonWindow.session.state.chain[0]).toMatchObject({
       sourceUid: warning!.uid,
@@ -387,9 +382,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     const chained = applyLuaRestoreResponse(restoredOpenChain, warningAction!);
     expect(chained.ok, chained.error).toBe(true);
     expect(restoredOpenChain.session.state.players[1].lifePoints).toBe(6000);
-    expect(restoredOpenChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 1, eventValue: 2000, eventReason: 0x80, eventReasonPlayer: 1 })]),
-    );
+    expectWarningCost(restoredOpenChain.session, warning!.uid, 6);
     expect(restoredOpenChain.session.state.chain).toHaveLength(2);
     expect(restoredOpenChain.session.state.chain[1]).toMatchObject({
       sourceUid: warning!.uid,
@@ -494,9 +487,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     const chained = applyLuaRestoreResponse(restoredOpenChain, warningAction!);
     expect(chained.ok, chained.error).toBe(true);
     expect(restoredOpenChain.session.state.players[1].lifePoints).toBe(6000);
-    expect(restoredOpenChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 1, eventValue: 2000, eventReason: 0x80, eventReasonPlayer: 1 })]),
-    );
+    expectWarningCost(restoredOpenChain.session, warning!.uid, 6);
     expect(restoredOpenChain.session.state.chain).toHaveLength(2);
     expect(restoredOpenChain.session.state.chain[1]).toMatchObject({
       sourceUid: warning!.uid,
@@ -596,4 +587,19 @@ function applyAndAssert(session: DuelSession, action: DuelAction) {
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
+}
+
+function expectWarningCost(session: DuelSession, warningUid: string, effectId: number) {
+  expect(session.state.eventHistory.filter((event) => event.eventName === "lifePointCostPaid")).toEqual([
+    {
+      eventName: "lifePointCostPaid",
+      eventCode: 1201,
+      eventPlayer: 1,
+      eventValue: 2000,
+      eventReason: duelReason.cost,
+      eventReasonPlayer: 1,
+      eventReasonCardUid: warningUid,
+      eventReasonEffectId: effectId,
+    },
+  ]);
 }
