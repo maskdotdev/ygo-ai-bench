@@ -44,16 +44,27 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(slimeCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 202,
-          sourceUid: slime!.uid,
-          value: 1,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 202 && effect.sourceUid === slime!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 202,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-4-202",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:3918345:lua-4-202",
+        "sourceUid": "p0-deck-3918345-0",
+        "target": [Function],
+        "value": 1,
+      }
+    `);
 
     const restoredSummonWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredSummonWindow.restoreComplete, restoredSummonWindow.incompleteReasons.join("; ")).toBe(true);
@@ -72,16 +83,26 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     expect(restoredBattleEntry.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredBattleEntry, 0);
     assertGeminiStatus(restoredBattleEntry, slimeCode, true);
-    expect(restoredBattleEntry.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 202,
-          sourceUid: slime!.uid,
-          value: 1,
-        }),
-      ]),
-    );
+    expect(restoredBattleEntry.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 202 && effect.sourceUid === slime!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 202,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-4-202",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:3918345:lua-4-202",
+        "sourceUid": "p0-deck-3918345-0",
+        "target": [Function],
+        "value": 1,
+      }
+    `);
     const battlePhase = getLuaRestoreLegalActions(restoredBattleEntry, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
     expect(battlePhase, JSON.stringify(getLuaRestoreLegalActions(restoredBattleEntry, 0), null, 2)).toBeDefined();
     const enteredBattle = applyLuaRestoreResponse(restoredBattleEntry, battlePhase!);

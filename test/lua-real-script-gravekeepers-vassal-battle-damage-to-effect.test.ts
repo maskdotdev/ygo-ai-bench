@@ -50,11 +50,25 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 205, sourceUid: vassal!.uid }),
-      ]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 205 && effect.sourceUid === vassal!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 205,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-205",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:99690140:lua-1-205",
+        "sourceUid": "p0-deck-99690140-0",
+        "target": [Function],
+      }
+    `);
 
     passBattleResponses(restored.session);
     expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 700 });

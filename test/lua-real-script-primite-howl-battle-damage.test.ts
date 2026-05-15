@@ -49,15 +49,45 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(activate).toBeDefined();
     applyAndAssert(session, activate!);
     resolveOpenChain(session);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 201,
-          luaTargetDescriptor: "target:setcode-or-code-type:432:46986414:16",
-          targetRange: [4, 0],
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.sourceUid === howl!.uid && effect.code === 201)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 201,
+        "controller": 0,
+        "cost": [Function],
+        "description": 663811986,
+        "event": "continuous",
+        "id": "lua-3-201",
+        "luaTargetDescriptor": "target:setcode-or-code-type:432:46986414:16",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:41488249:lua-3-201",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p0-deck-41488249-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "targetRange": [
+          4,
+          0,
+        ],
+        "value": 1,
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -67,15 +97,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restored, 0),
     );
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 201,
-          luaTargetDescriptor: "target:setcode-or-code-type:432:46986414:16",
-          targetRange: [4, 0],
-        }),
-      ]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.sourceUid === howl!.uid && effect.code === 201)).toMatchInlineSnapshot(`
+      {
+        "code": 201,
+        "controller": 0,
+        "description": 663811986,
+        "event": "continuous",
+        "id": "lua-3-201",
+        "luaTargetDescriptor": "target:setcode-or-code-type:432:46986414:16",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:41488249:lua-3-201",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p0-deck-41488249-0",
+        "targetCardPredicate": [Function],
+        "targetRange": [
+          4,
+          0,
+        ],
+        "value": 1,
+      }
+    `);
 
     restored.session.state.turnPlayer = 1;
     restored.session.state.waitingFor = 1;

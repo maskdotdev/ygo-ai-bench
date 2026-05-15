@@ -40,12 +40,47 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(hexasaucerCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 206, sourceUid: hexasaucer!.uid }),
-        expect.objectContaining({ event: "continuous", code: 208, sourceUid: hexasaucer!.uid, value: 0x80000001 }),
-      ]),
-    );
+    expect(session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === hexasaucer!.uid && [206, 208].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 206,
+          "controller": 1,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-4-206",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:23792058:lua-4-206",
+          "sourceUid": "p1-deck-23792058-0",
+          "target": [Function],
+        },
+        {
+          "canActivate": [Function],
+          "code": 208,
+          "controller": 1,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-5-208",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:23792058:lua-5-208",
+          "sourceUid": "p1-deck-23792058-0",
+          "target": [Function],
+          "value": 2147483649,
+        },
+      ]
+    `);
 
     const attack = getLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && action.targetUid === hexasaucer!.uid);
     expect(attack).toBeDefined();
@@ -58,12 +93,45 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 206, sourceUid: hexasaucer!.uid }),
-        expect.objectContaining({ event: "continuous", code: 208, sourceUid: hexasaucer!.uid, value: 0x80000001 }),
-      ]),
-    );
+    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === hexasaucer!.uid && [206, 208].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 206,
+          "controller": 1,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-4-206",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:23792058:lua-4-206",
+          "sourceUid": "p1-deck-23792058-0",
+          "target": [Function],
+        },
+        {
+          "canActivate": [Function],
+          "code": 208,
+          "controller": 1,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-5-208",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:23792058:lua-5-208",
+          "sourceUid": "p1-deck-23792058-0",
+          "target": [Function],
+          "value": 2147483649,
+        },
+      ]
+    `);
 
     passBattleResponses(restored.session);
     expect(restored.session.state.battleDamage).toEqual({ 0: 950, 1: 950 });
