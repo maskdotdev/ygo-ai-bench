@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const DRAW_RECOVER_FIXTURE_COUNT = 3;
 
 describe("Lua real draw and recover restore coverage", () => {
   it("requires draw/recover fixtures to assert clean Lua registry restore and restored event outcomes", () => {
-    const missing = drawRecoverFixtureFiles()
+    const files = drawRecoverFixtureFiles();
+    expect(files).toHaveLength(DRAW_RECOVER_FIXTURE_COUNT);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")

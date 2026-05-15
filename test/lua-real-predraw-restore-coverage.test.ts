@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const PREDRAW_FIXTURE_COUNT = 2;
 
 describe("Lua real predraw restore coverage", () => {
   it("requires representative predraw delayed-effect fixtures to assert clean Lua restore", () => {
-    const missing = realScriptPredrawFixtureFiles()
+    const files = realScriptPredrawFixtureFiles();
+    expect(files).toHaveLength(PREDRAW_FIXTURE_COUNT);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")

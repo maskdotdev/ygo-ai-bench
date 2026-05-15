@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const PRIMITE_FIXTURE_COUNT = 7;
 
 describe("Lua real Primite restore coverage", () => {
   it("requires Primite fixtures to assert clean restore and restored outcomes", () => {
-    const missing = primiteFixtureFiles()
+    const files = primiteFixtureFiles();
+    expect(files).toHaveLength(PRIMITE_FIXTURE_COUNT);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
