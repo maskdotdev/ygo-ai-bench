@@ -96,11 +96,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     expect(restored.session.state.players[0].lifePoints).toBe(6500);
     expect(restored.session.state.players[1].lifePoints).toBe(8000);
     expect(restored.session.state.battleDamage).toEqual({ 0: 1500, 1: 0 });
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "controlChanged", eventCardUid: stolenTarget!.uid }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "controlChanged" && event.eventCardUid === stolenTarget!.uid)).toEqual([
+      {
+        eventName: "controlChanged",
+        eventCode: 1120,
+        eventCardUid: stolenTarget!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: shield!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          location: "monsterZone",
+          controller: 1,
+          sequence: 1,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventCurrentState: {
+          location: "monsterZone",
+          controller: 0,
+          sequence: 1,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => ["battleDamageDealt", "destroyed"].includes(event.eventName))).toEqual([
       {
         eventName: "battleDamageDealt",
