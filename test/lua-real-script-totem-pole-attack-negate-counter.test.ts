@@ -98,11 +98,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
     });
     expect(restored.session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(restored.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "attackDisabled", eventCode: 1142, eventCardUid: attacker!.uid, eventReasonCardUid: totemPole!.uid }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "attackDisabled")).toEqual([
+      {
+        eventName: "attackDisabled",
+        eventCode: 1142,
+        eventCardUid: attacker!.uid,
+        eventPlayer: 0,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: totemPole!.uid,
+        eventReasonEffectId: 4,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "counterAdded" && event.eventCardUid === totemPole!.uid)).toEqual([
       {
         eventName: "counterAdded",

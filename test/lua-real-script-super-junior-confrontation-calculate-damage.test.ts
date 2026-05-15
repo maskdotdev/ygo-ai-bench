@@ -105,12 +105,55 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
     expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
     expect(restored.session.state.players[0].lifePoints).toBe(8000);
     expect(restored.session.state.players[1].lifePoints).toBe(8000);
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "attackDeclared", eventCardUid: attacker!.uid }),
-        expect.objectContaining({ eventName: "attackDisabled", eventCardUid: attacker!.uid }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "attackDeclared")).toEqual([
+      {
+        eventName: "attackDeclared",
+        eventCode: 1130,
+        eventCardUid: attacker!.uid,
+        eventReason: 0,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "attackDisabled")).toEqual([
+      {
+        eventName: "attackDisabled",
+        eventCode: 1142,
+        eventCardUid: attacker!.uid,
+        eventPlayer: 1,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: confrontation!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === defender!.uid)).toEqual([
       {
         eventName: "destroyed",

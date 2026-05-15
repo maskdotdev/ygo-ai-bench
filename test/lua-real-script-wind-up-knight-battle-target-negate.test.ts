@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -87,12 +88,55 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wi
     expect(restored.session.state.players[1].lifePoints).toBe(8000);
     expect(restored.session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(restored.session.state.cards.find((card) => card.uid === knight!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleTargeted", eventCode: 1131, eventCardUid: knight!.uid }),
-        expect.objectContaining({ eventName: "attackDisabled", eventCode: 1142, eventCardUid: attacker!.uid }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleTargeted")).toEqual([
+      {
+        eventName: "battleTargeted",
+        eventCode: 1131,
+        eventCardUid: knight!.uid,
+        eventReason: 0,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "attackDisabled")).toEqual([
+      {
+        eventName: "attackDisabled",
+        eventCode: 1142,
+        eventCardUid: attacker!.uid,
+        eventPlayer: 0,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: knight!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
   });
 });
 
