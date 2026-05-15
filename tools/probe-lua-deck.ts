@@ -75,6 +75,20 @@ printReport({
 });
 
 function readArgs(argv: string[]): ProbeArgs {
+  const knownFlags = new Set([
+    "--upstream",
+    "--fail-on-errors",
+    "--min-upstream-scripts",
+    "--min-actions",
+    "--min-activate-effects",
+    "--min-initial-effects",
+    "--min-registered-effects",
+    "--max-local-overrides",
+    "--max-local-fallbacks",
+    "--max-expected-missing-scripts",
+    "--expected-missing-script-code",
+  ]);
+  const unknownFlag = argv.find((value) => value.startsWith("--") && !knownFlags.has(value));
   const upstreamFlag = argv.indexOf("--upstream");
   const upstreamRoot = upstreamFlag >= 0 ? argv[upstreamFlag + 1] : ".upstream/ignis";
   const minUpstreamScriptsFlag = argv.indexOf("--min-upstream-scripts");
@@ -93,7 +107,8 @@ function readArgs(argv: string[]): ProbeArgs {
   const maxLocalFallbacks = maxLocalFallbacksFlag >= 0 ? Number(argv[maxLocalFallbacksFlag + 1]) : undefined;
   const maxExpectedMissingScriptsFlag = argv.indexOf("--max-expected-missing-scripts");
   const maxExpectedMissingScripts = maxExpectedMissingScriptsFlag >= 0 ? Number(argv[maxExpectedMissingScriptsFlag + 1]) : undefined;
-  const expectedMissingScriptCodes = readRepeatedValues(argv, "--expected-missing-script-code")
+  const rawExpectedMissingScriptCodes = readRepeatedValues(argv, "--expected-missing-script-code");
+  const expectedMissingScriptCodes = rawExpectedMissingScriptCodes
     .flatMap((value) => value.split(","))
     .map((value) => value.trim())
     .filter(Boolean);
@@ -113,8 +128,8 @@ function readArgs(argv: string[]): ProbeArgs {
   });
   const ydkPath = positional[0];
   const invalidMinimum = [minUpstreamScripts, minActions, minActivateEffects, minInitialEffects, minRegisteredEffects, maxLocalOverrides, maxLocalFallbacks, maxExpectedMissingScripts].some((value) => value !== undefined && (!Number.isInteger(value) || value < 0));
-  const invalidExpectedMissingCode = expectedMissingScriptCodes.some((code) => !/^\d+$/.test(code));
-  if (!ydkPath || !upstreamRoot || invalidMinimum || invalidExpectedMissingCode) {
+  const invalidExpectedMissingCode = rawExpectedMissingScriptCodes.some((code) => !code.trim()) || expectedMissingScriptCodes.some((code) => !/^\d+$/.test(code));
+  if (unknownFlag || !ydkPath || !upstreamRoot || invalidMinimum || invalidExpectedMissingCode) {
     console.error("Usage: bun run probe:lua-deck -- <deck.ydk> [--upstream .upstream/ignis] [--fail-on-errors] [--min-upstream-scripts <count>] [--min-actions <count>] [--min-activate-effects <count>] [--min-initial-effects <count>] [--min-registered-effects <count>] [--max-local-overrides <count>] [--max-local-fallbacks <count>] [--max-expected-missing-scripts <count>] [--expected-missing-script-code <code>]");
     process.exit(1);
   }

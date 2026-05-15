@@ -14,6 +14,26 @@ const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 const deckProbeTimeoutMs = 30_000;
 
+describe("Lua deck probe CLI", () => {
+  it("rejects malformed probe options before loading a deck", () => {
+    const cases = [
+      ["--unknown"],
+      ["dark-magical-blast-master-duel-day1.ydk", "--unknown"],
+      ["dark-magical-blast-master-duel-day1.ydk", "--min-actions"],
+      ["dark-magical-blast-master-duel-day1.ydk", "--min-actions", "-1"],
+      ["dark-magical-blast-master-duel-day1.ydk", "--expected-missing-script-code"],
+      ["dark-magical-blast-master-duel-day1.ydk", "--expected-missing-script-code", "abc"],
+    ];
+
+    for (const args of cases) {
+      const result = spawnSync("node", ["--experimental-transform-types", "tools/probe-lua-deck.ts", ...args], { encoding: "utf8" });
+
+      expect(result.status, args.join(" ")).toBe(1);
+      expect(result.stderr).toContain("Usage: bun run probe:lua-deck");
+    }
+  });
+});
+
 describe.skipIf(!hasUpstreamScripts)("Dark Magical Blast Lua deck probe", () => {
   it("loads available scripts and exposes opening hand Lua actions", () => {
     const deck = parseYdk(fs.readFileSync("dark-magical-blast-master-duel-day1.ydk", "utf8"));
