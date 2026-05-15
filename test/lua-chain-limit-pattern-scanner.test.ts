@@ -100,6 +100,24 @@ describe("Lua chain-limit pattern scanner", () => {
     expect(result.stdout).toContain("calls: 1");
     expect(result.stderr).toContain("Calls 1 is below required 2");
   });
+
+  it("rejects malformed scanner options", () => {
+    const cases = [
+      { args: ["--scripts"], error: "Missing value for --scripts" },
+      { args: ["--limit"], error: "Missing value for --limit" },
+      { args: ["--min-files-with-calls"], error: "Missing value for --min-files-with-calls" },
+      { args: ["--min-files-with-calls", "-1"], error: "--min-files-with-calls must be a non-negative integer" },
+      { args: ["--min-calls"], error: "Missing value for --min-calls" },
+      { args: ["--min-calls", "1.5"], error: "--min-calls must be a non-negative integer" },
+      { args: ["--unknown"], error: "Unknown argument: --unknown" },
+    ];
+
+    for (const { args, error } of cases) {
+      const result = spawnSync(process.execPath, [scannerPath, ...args], { encoding: "utf8" });
+      expect(result.status, args.join(" ")).toBe(1);
+      expect(result.stderr, args.join(" ")).toContain(error);
+    }
+  });
 });
 
 function makeScriptRoot(files: Record<string, string>): string {

@@ -45,6 +45,7 @@ function parseArgs(argv) {
     else if (arg === "--limit") options.limit = Number(requireOptionValue(argv, ++index, arg));
     else if (arg === "--min-files-with-calls") options.minFilesWithCalls = readNonNegativeInteger(argv, ++index, arg);
     else if (arg === "--min-calls") options.minCalls = readNonNegativeInteger(argv, ++index, arg);
+    else if (arg.startsWith("--")) throw new Error(`Unknown argument: ${arg}`);
     else if (!options.scriptRoot) options.scriptRoot = arg;
     else throw new Error(`Unknown argument: ${arg}`);
   }
