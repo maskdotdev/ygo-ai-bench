@@ -17,8 +17,12 @@ describe("Lua real draw and recover restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
+          || !text.includes("applyLuaRestoreResponse")
+          || !text.includes("eventHistory")
           || !text.includes("operationInfos")
           || !text.includes('eventName: "cardsDrawn"')
           || required.some((snippet) => !text.includes(snippet));
