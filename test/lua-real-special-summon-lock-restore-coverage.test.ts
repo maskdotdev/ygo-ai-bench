@@ -201,6 +201,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       requiredSnippets: [
         "target:not-code:",
         "Duel.CreateToken",
+        "property: 0x800",
         "targetRange: [1, 0]",
         "jam slime token special 1",
         "jam hand special 0",
@@ -431,6 +432,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-heraldic-beast-gryphon-extra-xyz-only-lock.test.ts",
       requiredSnippets: [
         "target:extra-summon-type-not:",
+        "property: 0x4000800",
         "targetRange: [1, 0]",
         "gryphon xyz special 1",
         "gryphon fusion special 0",
@@ -696,6 +698,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       requiredSnippets: [
         "target:special-summon-type-not",
         "luaSummonTypeXyz",
+        "property: 0x4000800",
         "reset: { flags: 0x40000200 }",
         "targetRange: [1, 0]",
         "gagaga head xyz special 1",
