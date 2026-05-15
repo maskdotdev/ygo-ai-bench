@@ -36,6 +36,21 @@ describe("duel pvp agent bridge", () => {
     expect(fresh.groups.flatMap((group) => group.actions)[0]?.label).not.toBe("Mutated visible grouped action");
   });
 
+  it("restores serialized sessions with the same visible action surface", () => {
+    const agent = createDuelPvpAgent();
+    const started = agent.start({ player0Ydk: starterYdk, player1Ydk: starterYdk, seed: "pvp-agent-restore", handSize: 2 });
+    const before = agent.visibleBattlefield(0, started.sessionId);
+
+    const snapshot = agent.serialize(started.sessionId);
+    const restored = agent.restore(snapshot);
+
+    expect(restored.sessionId).toBe(started.sessionId);
+    expect(agent.status()).toMatchObject({ sessions: 1, activeSessionId: started.sessionId });
+    expect(restored.state).toEqual(started.state);
+    expect(restored.visibleBattlefield).toEqual(before);
+    expect(agent.visibleBattlefield(0, restored.sessionId)).toEqual(before);
+  });
+
   it("runs visible battlefield scripts and reports divergence through visible actions", () => {
     const agent = createDuelPvpAgent();
     const started = agent.start({ player0Ydk: starterYdk, player1Ydk: starterYdk, seed: "pvp-agent-script", handSize: 2 });

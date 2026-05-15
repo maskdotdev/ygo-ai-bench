@@ -5,9 +5,11 @@ import {
   getLegalActions,
   loadDecks,
   queryPublicState,
+  restoreDuel,
+  serializeDuel,
   startDuel,
 } from "#duel/core.js";
-import type { DuelAction, DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelAction, DuelSession, PlayerId, SerializedDuel } from "#duel/types.js";
 import { parseYdk } from "#playtest/ydk.js";
 import { getBrowserDuelCardReader } from "../playtest-app/duel-pvp-card-reader.js";
 import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "../playtest-app/duel-battlefield-actions.js";
@@ -55,6 +57,8 @@ export interface DuelPvpAgent {
   status(): { version: number; sessions: number; activeSessionId: string | null };
   start(options: DuelPvpAgentStartOptions): ReturnType<typeof duelSnapshot>;
   state(sessionId?: string): ReturnType<typeof duelSnapshot>;
+  serialize(sessionId?: string): SerializedDuel;
+  restore(snapshot: unknown): ReturnType<typeof duelSnapshot>;
   legalActions(player?: PlayerId, sessionId?: string): DuelAction[];
   visibleBattlefield(player?: PlayerId, sessionId?: string): DuelPvpVisibleView;
   action(action: unknown, sessionId?: string): ReturnType<typeof applyResponse>;
@@ -90,6 +94,12 @@ export function createDuelPvpAgent(): DuelPvpAgent {
     },
     state(sessionId) {
       return duelSnapshot(getSession(sessionId));
+    },
+    serialize(sessionId) {
+      return serializeDuel(getSession(sessionId));
+    },
+    restore(snapshot) {
+      return remember(restoreDuel(snapshot, getBrowserDuelCardReader()));
     },
     legalActions(player, sessionId) {
       const session = getSession(sessionId);
