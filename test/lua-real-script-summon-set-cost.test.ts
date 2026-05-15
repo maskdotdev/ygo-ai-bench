@@ -48,12 +48,100 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(chainEnergyCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
-    expect(session.state.effects).toEqual(expect.arrayContaining([
-      expect.objectContaining({ code: 90, sourceUid: source!.uid }),
-      expect.objectContaining({ code: 91, sourceUid: source!.uid }),
-      expect.objectContaining({ code: 94, sourceUid: source!.uid }),
-      expect.objectContaining({ code: 95, sourceUid: source!.uid }),
-    ]));
+    expect(session.state.effects.filter((effect) => effect.sourceUid === source!.uid && [90, 91, 94, 95].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 90,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-2-90",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 2048,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:79323590:lua-2-90",
+          "sourceUid": "p0-deck-79323590-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "targetRange": [
+            1,
+            1,
+          ],
+        },
+        {
+          "canActivate": [Function],
+          "code": 91,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-3-91",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:79323590:lua-3-91",
+          "sourceUid": "p0-deck-79323590-0",
+          "target": [Function],
+          "targetRange": [
+            2,
+            2,
+          ],
+        },
+        {
+          "canActivate": [Function],
+          "code": 94,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-5-94",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:79323590:lua-5-94",
+          "sourceUid": "p0-deck-79323590-0",
+          "target": [Function],
+          "targetRange": [
+            2,
+            2,
+          ],
+        },
+        {
+          "canActivate": [Function],
+          "code": 95,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-6-95",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:79323590:lua-6-95",
+          "sourceUid": "p0-deck-79323590-0",
+          "target": [Function],
+          "targetRange": [
+            2,
+            2,
+          ],
+        },
+      ]
+    `);
 
     setDuelPlayerLifePoints(session.state, 0, 500);
     let actions = getLegalActions(session, 0);

@@ -29,9 +29,27 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(kochiCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(expect.arrayContaining([
-      expect.objectContaining({ code: 92, sourceUid: kochi!.uid, luaCostDescriptor: `cost:special-summon-type-not:${luaSummonTypeSpecial + 182}` }),
-    ]));
+    expect(session.state.effects.find((effect) => effect.code === 92 && effect.sourceUid === kochi!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 92,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-92",
+        "luaCostDescriptor": "cost:special-summon-type-not:1073742006",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "hand",
+        ],
+        "registryKey": "lua:41902352:lua-2-92",
+        "sourceUid": "p0-deck-41902352-0",
+        "target": [Function],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -39,9 +57,23 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects).toEqual(expect.arrayContaining([
-      expect.objectContaining({ code: 92, sourceUid: kochi!.uid, luaCostDescriptor: `cost:special-summon-type-not:${luaSummonTypeSpecial + 182}` }),
-    ]));
+    expect(restored.session.state.effects.find((effect) => effect.code === 92 && effect.sourceUid === kochi!.uid)).toMatchInlineSnapshot(`
+      {
+        "code": 92,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-92",
+        "luaCostDescriptor": "cost:special-summon-type-not:1073742006",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "range": [
+          "hand",
+        ],
+        "registryKey": "lua:41902352:lua-2-92",
+        "sourceUid": "p0-deck-41902352-0",
+      }
+    `);
     expect(restored.host.loadScript(`
       local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, ${kochiCode}), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
       Debug.Message("kochi blocked " .. tostring(target:IsCanBeSpecialSummoned(nil,182,0,false,false,POS_FACEUP_ATTACK)))
@@ -66,9 +98,27 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(spiritMessageCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(expect.arrayContaining([
-      expect.objectContaining({ code: 92, sourceUid: spiritMessage!.uid, luaCostDescriptor: `cost:special-summon-type-is:${luaSummonTypeSpecial + 181}` }),
-    ]));
+    expect(session.state.effects.find((effect) => effect.code === 92 && effect.sourceUid === spiritMessage!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 92,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-92",
+        "luaCostDescriptor": "cost:special-summon-type-is:1073742005",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "hand",
+        ],
+        "registryKey": "lua:30170981:lua-2-92",
+        "sourceUid": "p0-deck-30170981-0",
+        "target": [Function],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -76,9 +126,26 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects).toEqual(expect.arrayContaining([
-      expect.objectContaining({ code: 92, sourceUid: spiritMessage!.uid, luaCostDescriptor: `cost:special-summon-type-is:${luaSummonTypeSpecial + 181}` }),
-    ]));
+    expect(restored.session.state.effects.find((effect) => effect.code === 92 && effect.sourceUid === spiritMessage!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 92,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-92",
+        "luaCostDescriptor": "cost:special-summon-type-is:1073742005",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "range": [
+          "hand",
+        ],
+        "registryKey": "lua:30170981:lua-2-92",
+        "sourceUid": "p0-deck-30170981-0",
+        "target": [Function],
+      }
+    `);
     const restoredCost = restored.session.state.effects.find((effect) => effect.sourceUid === spiritMessage!.uid && effect.code === 92)?.cost;
     expect(restoredCost?.({ summonTypeCode: luaSummonTypeSpecial + 181 } as never)).toBe(true);
     expect(restoredCost?.({ summonTypeCode: luaSummonTypeSpecial + 182 } as never)).toBe(false);

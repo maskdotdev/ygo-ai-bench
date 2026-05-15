@@ -49,7 +49,43 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Do
     expect(activate, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     const activated = applyLuaRestoreResponse(restoredActivation, activate!);
     expect(activated.ok, activated.error).toBe(true);
-    expect(restoredActivation.session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ code: 28, value: 2, controller: 0 })]));
+    expect(restoredActivation.session.state.effects.find((effect) => effect.code === 28 && effect.controller === 0)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 28,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-28",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 2048,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:43422537:lua-2-28",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p0-deck-43422537-0",
+        "target": [Function],
+        "targetRange": [
+          1,
+          0,
+        ],
+        "value": 2,
+      }
+    `);
 
     const firstSummon = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "normalSummon" && action.uid === first!.uid);
     expect(firstSummon).toBeDefined();
@@ -99,7 +135,43 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Do
     const activate = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === spell!.uid);
     expect(activate).toBeDefined();
     expect(applyResponse(session, activate!).ok).toBe(true);
-    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ code: 28, value: 2, controller: 0 })]));
+    expect(session.state.effects.find((effect) => effect.code === 28 && effect.controller === 0)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 28,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-28",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 2048,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:43422537:lua-2-28",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p0-deck-43422537-0",
+        "target": [Function],
+        "targetRange": [
+          1,
+          0,
+        ],
+        "value": 2,
+      }
+    `);
 
     const firstSummon = getLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === first!.uid);
     expect(firstSummon).toBeDefined();
@@ -109,7 +181,38 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Do
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restored.session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ code: 28, value: 2, controller: 0 })]));
+    expect(restored.session.state.effects.find((effect) => effect.code === 28 && effect.controller === 0)).toMatchInlineSnapshot(`
+      {
+        "code": 28,
+        "controller": 0,
+        "event": "continuous",
+        "id": "lua-2-28",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "property": 2048,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:43422537:lua-2-28",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p0-deck-43422537-0",
+        "targetRange": [
+          1,
+          0,
+        ],
+        "value": 2,
+      }
+    `);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
 
