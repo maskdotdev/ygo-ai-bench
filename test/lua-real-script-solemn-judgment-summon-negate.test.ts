@@ -512,9 +512,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     const chained = applyLuaRestoreResponse(restoredOpenChain, solemnAction!);
     expect(chained.ok, chained.error).toBe(true);
     expect(restoredOpenChain.session.state.players[1].lifePoints).toBe(4000);
-    expect(restoredOpenChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 1, eventValue: 4000, eventReason: 0x80, eventReasonPlayer: 1 })]),
-    );
+    expectSolemnCost(restoredOpenChain.session, solemn!.uid, 6);
     expect(restoredOpenChain.session.state.chain).toHaveLength(2);
     expect(restoredOpenChain.session.state.chain[1]).toMatchObject({
       sourceUid: solemn!.uid,
@@ -547,13 +545,51 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === drawn!.uid)).toMatchObject({ location: "deck" });
     expect(restoredPendingResolution.host.messages).not.toContain("solemn judgment draw spell resolved");
     expect(restoredPendingResolution.host.messages).not.toContain("solemn judgment chain responder resolved");
-    expect(restoredPendingResolution.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: starter!.uid }),
-        expect.objectContaining({ eventName: "chainNegated", eventCode: 1024, eventPlayer: 0 }),
-        expect.objectContaining({ eventName: "chainDisabled", eventCode: 1025, eventPlayer: 0 }),
-      ]),
-    );
+    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => ["destroyed", "chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: starter!.uid,
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: solemn!.uid,
+        eventReasonEffectId: 6,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "spellTrapZone",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "chainNegated",
+        eventCode: 1024,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReasonPlayer: 0,
+        eventChainDepth: 1,
+        eventChainLinkId: "chain-2",
+        relatedEffectId: 1,
+      },
+      {
+        eventName: "chainDisabled",
+        eventCode: 1025,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReasonPlayer: 0,
+        eventChainDepth: 1,
+        eventChainLinkId: "chain-2",
+        relatedEffectId: 1,
+      },
+    ]);
     expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventUids: [drawn!.uid] })]),
     );
@@ -627,9 +663,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     const chained = applyLuaRestoreResponse(restoredOpenChain, solemnAction!);
     expect(chained.ok, chained.error).toBe(true);
     expect(restoredOpenChain.session.state.players[1].lifePoints).toBe(4000);
-    expect(restoredOpenChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 1, eventValue: 4000, eventReason: 0x80, eventReasonPlayer: 1 })]),
-    );
+    expectSolemnCost(restoredOpenChain.session, solemn!.uid, 6);
     expect(restoredOpenChain.session.state.chain).toHaveLength(2);
     expect(restoredOpenChain.session.state.chain[1]).toMatchObject({
       sourceUid: solemn!.uid,
@@ -662,13 +696,51 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === drawn!.uid)).toMatchObject({ location: "deck" });
     expect(restoredPendingResolution.host.messages).not.toContain("solemn judgment draw trap resolved");
     expect(restoredPendingResolution.host.messages).not.toContain("solemn judgment chain responder resolved");
-    expect(restoredPendingResolution.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: starter!.uid }),
-        expect.objectContaining({ eventName: "chainNegated", eventCode: 1024, eventPlayer: 0 }),
-        expect.objectContaining({ eventName: "chainDisabled", eventCode: 1025, eventPlayer: 0 }),
-      ]),
-    );
+    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => ["destroyed", "chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: starter!.uid,
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: solemn!.uid,
+        eventReasonEffectId: 6,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "spellTrapZone",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "chainNegated",
+        eventCode: 1024,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReasonPlayer: 0,
+        eventChainDepth: 1,
+        eventChainLinkId: "chain-2",
+        relatedEffectId: 1,
+      },
+      {
+        eventName: "chainDisabled",
+        eventCode: 1025,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReasonPlayer: 0,
+        eventChainDepth: 1,
+        eventChainLinkId: "chain-2",
+        relatedEffectId: 1,
+      },
+    ]);
     expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventUids: [drawn!.uid] })]),
     );
