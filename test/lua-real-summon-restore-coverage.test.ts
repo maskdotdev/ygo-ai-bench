@@ -56,7 +56,15 @@ describe("Lua real summon restore coverage", () => {
     const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
-        return !/location:\s*["']monsterZone["']/.test(text)
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys")
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
+          || !/location:\s*["']monsterZone["']/.test(text)
           || !/summonType:\s*["'](?:fusion|synchro|xyz|link|ritual)["']/.test(text);
       });
 
