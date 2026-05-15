@@ -74,7 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expectCleanRestore(restoredActivation);
-    assertRestoredLegalActions(restoredActivation, 0);
+    expectRestoredLegalActions(restoredActivation, 0);
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === gravityBind!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredActivation, activation!);
@@ -86,8 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expectCleanRestore(restoredChain);
-    expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
-    expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
+    expectRestoredLegalActions(restoredChain, 1);
     resolveRestoredChain(restoredChain);
     expect(restoredChain.session.state.cards.find((card) => card.uid === gravityBind!.uid)).toMatchObject({
       location: "spellTrapZone",
@@ -97,6 +96,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
 
     const restoredPersistent = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expectCleanRestore(restoredPersistent);
+    expectRestoredLegalActions(restoredPersistent, 0);
     const endTurn = getLuaRestoreLegalActions(restoredPersistent, 0).find((action) => action.type === "endTurn");
     expect(endTurn, JSON.stringify(getLuaRestoreLegalActions(restoredPersistent, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredPersistent, endTurn!);
@@ -105,13 +105,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
 
     const restoredOpponentTurn = restoreDuelWithLuaScripts(serializeDuel(restoredPersistent.session), source, reader);
     expectCleanRestore(restoredOpponentTurn);
+    expectRestoredLegalActions(restoredOpponentTurn, 1);
     const battle = getLuaRestoreLegalActions(restoredOpponentTurn, 1).find((action) => action.type === "changePhase" && action.phase === "battle");
     expect(battle, JSON.stringify(getLuaRestoreLegalActions(restoredOpponentTurn, 1), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredOpponentTurn, battle!);
 
     const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredOpponentTurn.session), source, reader);
     expectCleanRestore(restoredBattle);
-    assertRestoredLegalActions(restoredBattle, 1);
+    expectRestoredLegalActions(restoredBattle, 1);
     const battleActions = getLuaRestoreLegalActions(restoredBattle, 1).filter((action) => action.type === "declareAttack");
     expect(battleActions).toEqual(
       expect.arrayContaining([expect.objectContaining({ type: "declareAttack", attackerUid: lowAttacker!.uid, targetUid: defender!.uid })]),
@@ -163,7 +164,7 @@ function expectCleanRestore(restored: ReturnType<typeof restoreDuelWithLuaScript
   expect(restored.missingRegistryKeys).toEqual([]);
 }
 
-function assertRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
   expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
   expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
   expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));

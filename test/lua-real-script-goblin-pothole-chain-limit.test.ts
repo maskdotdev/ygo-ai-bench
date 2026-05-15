@@ -72,7 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(restoredOpenWindow.missingRegistryKeys).toEqual([]);
     expect(restoredOpenWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredOpenWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
-    expect(getLuaRestoreLegalActionGroups(restoredOpenWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredOpenWindow.session, 0));
+    expectRestoredLegalActions(restoredOpenWindow, 0);
 
     const startChain = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === starter!.uid);
     expect(startChain).toBeDefined();
@@ -85,10 +85,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(restoredResponseWindow.missingRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
+    expectRestoredLegalActions(restoredResponseWindow, 0);
+    expectRestoredLegalActions(restoredResponseWindow, 1);
     expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === blockedTrap!.uid)).toBe(false);
     expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === allowedTrap!.uid)).toBe(true);
-    expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 0));
-    expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 1));
   });
 
   it("restores the cloned field Trap Hole activation limit from the Project Ignis script", () => {
@@ -163,7 +163,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(restoredOpenWindow.missingRegistryKeys).toEqual([]);
     expect(restoredOpenWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredOpenWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
-    expect(getLuaRestoreLegalActionGroups(restoredOpenWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredOpenWindow.session, 0));
+    expectRestoredLegalActions(restoredOpenWindow, 0);
 
     const startChain = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === starter!.uid);
     expect(startChain).toBeDefined();
@@ -177,11 +177,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(restoredResponseWindow.missingRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
+    expectRestoredLegalActions(restoredResponseWindow, 0);
+    expectRestoredLegalActions(restoredResponseWindow, 1);
     expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === blockedTrapHole!.uid)).toBe(false);
     expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === allowedTrapHoleQuick!.uid)).toBe(true);
     expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === allowedOffSetTrap!.uid)).toBe(true);
-    expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 0));
-    expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 1));
   });
 
   it("restores the chain-end Trap Hole activation limit after a Project Ignis special-summon event", () => {
@@ -269,7 +269,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(restoredOpenWindow.missingRegistryKeys).toEqual([]);
     expect(restoredOpenWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredOpenWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
-    expect(getLuaRestoreLegalActionGroups(restoredOpenWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredOpenWindow.session, 0));
+    expectRestoredLegalActions(restoredOpenWindow, 0);
 
     const startChain = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === followUpStarter!.uid);
     expect(startChain).toBeDefined();
@@ -283,11 +283,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(restoredResponseWindow.missingRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });
+    expectRestoredLegalActions(restoredResponseWindow, 0);
+    expectRestoredLegalActions(restoredResponseWindow, 1);
     expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === blockedTrapHole!.uid)).toBe(false);
     expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === allowedTrapHoleQuick!.uid)).toBe(true);
     expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === allowedOffSetTrap!.uid)).toBe(true);
-    expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 0));
-    expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 1));
   });
 });
 
@@ -339,4 +339,10 @@ function passChain(session: ReturnType<typeof createDuel>, player: 0 | 1): void 
   const pass = getLegalActions(session, player).find((action) => action.type === "passChain");
   expect(pass).toBeDefined();
   expect(applyResponse(session, pass!).ok).toBe(true);
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
