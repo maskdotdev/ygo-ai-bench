@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -84,14 +85,48 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
     expect(restored.session.state.cards.find((card) => card.uid === warrior!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restored.session.state.cards.find((card) => card.uid === invalid!.uid)).toMatchObject({ location: "deck", controller: 0 });
     expect(restored.session.state.cards.find((card) => card.uid === reinforcement!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "sentToHand", eventCode: 1012, eventCardUid: warrior!.uid }),
-        expect.objectContaining({ eventName: "confirmed", eventCode: 1211, eventPlayer: 1, eventUids: [warrior!.uid] }),
-        expect.objectContaining({ eventName: "sentToHandConfirmed", eventCode: 1212, eventPlayer: 1, eventUids: [warrior!.uid] }),
-      ]),
-    );
-    expect(restored.host.messages).toContain(`confirmed 1: ${warriorCode}`);
+    expect(restored.session.state.eventHistory.filter((event) => ["sentToHand", "confirmed", "sentToHandConfirmed"].includes(event.eventName))).toEqual([
+      {
+        eventName: "sentToHand",
+        eventCode: 1012,
+        eventCardUid: warrior!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: reinforcement!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: { controller: 0, location: "deck", sequence: 2, position: "faceDown", faceUp: false },
+        eventCurrentState: { controller: 0, location: "hand", sequence: 0, position: "faceDown", faceUp: false },
+      },
+      {
+        eventName: "confirmed",
+        eventCode: 1211,
+        eventPlayer: 1,
+        eventUids: [warrior!.uid],
+        eventValue: 1,
+        eventCardUid: warrior!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: reinforcement!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: { controller: 0, location: "deck", sequence: 2, position: "faceDown", faceUp: false },
+        eventCurrentState: { controller: 0, location: "hand", sequence: 0, position: "faceDown", faceUp: false },
+      },
+      {
+        eventName: "sentToHandConfirmed",
+        eventCode: 1212,
+        eventPlayer: 1,
+        eventUids: [warrior!.uid],
+        eventValue: 1,
+        eventCardUid: warrior!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: reinforcement!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: { controller: 0, location: "deck", sequence: 2, position: "faceDown", faceUp: false },
+        eventCurrentState: { controller: 0, location: "hand", sequence: 0, position: "faceDown", faceUp: false },
+      },
+    ]);
+    expect(restored.host.messages).toEqual([`confirmed 1: ${warriorCode}`]);
     expect(restored.host.messages).not.toContain("reinforcement responder resolved");
   });
 });

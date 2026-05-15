@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -102,14 +103,48 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ar
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === searchedSpirit!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === invalidMonster!.uid)).toMatchObject({ location: "deck", controller: 0 });
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === aratama!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
-    expect(restoredChainWindow.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "sentToHand", eventCode: 1012, eventCardUid: searchedSpirit!.uid }),
-        expect.objectContaining({ eventName: "confirmed", eventCode: 1211, eventPlayer: 1, eventUids: [searchedSpirit!.uid] }),
-        expect.objectContaining({ eventName: "sentToHandConfirmed", eventCode: 1212, eventPlayer: 1, eventUids: [searchedSpirit!.uid] }),
-      ]),
-    );
-    expect(restoredChainWindow.host.messages).toContain(`confirmed 1: ${searchedSpiritCode}`);
+    expect(restoredChainWindow.session.state.eventHistory.filter((event) => ["sentToHand", "confirmed", "sentToHandConfirmed"].includes(event.eventName))).toEqual([
+      {
+        eventName: "sentToHand",
+        eventCode: 1012,
+        eventCardUid: searchedSpirit!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: aratama!.uid,
+        eventReasonEffectId: 7,
+        eventPreviousState: { controller: 0, location: "deck", sequence: 2, position: "faceDown", faceUp: false },
+        eventCurrentState: { controller: 0, location: "hand", sequence: 0, position: "faceDown", faceUp: false },
+      },
+      {
+        eventName: "confirmed",
+        eventCode: 1211,
+        eventPlayer: 1,
+        eventUids: [searchedSpirit!.uid],
+        eventValue: 1,
+        eventCardUid: searchedSpirit!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: aratama!.uid,
+        eventReasonEffectId: 7,
+        eventPreviousState: { controller: 0, location: "deck", sequence: 2, position: "faceDown", faceUp: false },
+        eventCurrentState: { controller: 0, location: "hand", sequence: 0, position: "faceDown", faceUp: false },
+      },
+      {
+        eventName: "sentToHandConfirmed",
+        eventCode: 1212,
+        eventPlayer: 1,
+        eventUids: [searchedSpirit!.uid],
+        eventValue: 1,
+        eventCardUid: searchedSpirit!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: aratama!.uid,
+        eventReasonEffectId: 7,
+        eventPreviousState: { controller: 0, location: "deck", sequence: 2, position: "faceDown", faceUp: false },
+        eventCurrentState: { controller: 0, location: "hand", sequence: 0, position: "faceDown", faceUp: false },
+      },
+    ]);
+    expect(restoredChainWindow.host.messages).toEqual([`confirmed 1: ${searchedSpiritCode}`]);
     expect(restoredChainWindow.host.messages).not.toContain("aratama responder resolved");
   });
 });
