@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const attackPermissionFixtureCount = 4;
+const attackPermissionFixtureCount = 5;
 
 describe("Lua real attack-permission restore coverage", () => {
   it("requires representative attack permission and cost fixtures to assert clean Lua restore", () => {
@@ -33,6 +33,14 @@ describe("Lua real attack-permission restore coverage", () => {
 
 function realScriptAttackPermissionFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-big-tusked-mammoth-summon-turn-attack-lock.test.ts",
+      required: [
+        "code: 85",
+        "hasAttack(actions, freshAttacker.uid, mammoth.uid)).toBe(false)",
+        "big tusked mammoth can attack false/true",
+      ],
+    },
     {
       file: "test/lua-real-script-dark-elf-attack-cost.test.ts",
       required: [
