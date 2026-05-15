@@ -74,11 +74,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
     for (const cost of [fieldCost, handCost]) {
       expect(restored.session.state.cards.find((card) => card.uid === cost!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     }
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventCardUid: gandora!.uid }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned")).toEqual([
+      {
+        eventName: "specialSummoned",
+        eventCode: 1102,
+        eventCardUid: gandora!.uid,
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard")).toEqual([
       {
         eventName: "sentToGraveyard",

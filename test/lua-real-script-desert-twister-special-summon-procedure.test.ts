@@ -10,6 +10,7 @@ import {
   serializeDuel,
   startDuel,
 } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -78,9 +79,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script De
     for (const cost of [windA, windB, earth]) {
       expect(restored.session.state.cards.find((card) => card.uid === cost!.uid)).toMatchObject({ location: "banished", faceUp: true });
     }
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventCardUid: twister!.uid })]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned")).toEqual([
+      {
+        eventName: "specialSummoned",
+        eventCode: 1102,
+        eventCardUid: twister!.uid,
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
   });
 });
 
