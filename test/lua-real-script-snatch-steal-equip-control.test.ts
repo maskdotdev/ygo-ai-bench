@@ -63,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sn
     const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredEquipWindow.restoreComplete, restoredEquipWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredEquipWindow.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredEquipWindow, 0);
     expect(getLuaRestoreLegalActions(restoredEquipWindow, 0)).toEqual(getDuelLegalActions(restoredEquipWindow.session, 0));
     const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === snatch!.uid);
     expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
@@ -100,6 +101,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sn
     const restoredControl = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredControl.restoreComplete, restoredControl.incompleteReasons.join("; ")).toBe(true);
     expect(restoredControl.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredControl, 0);
     expectLuaSnatchProbe(restoredControl, targetCode, snatchCode, "snatch probe 0/45986603/612501");
 
     sendDuelCardToGraveyard(restoredControl.session.state, snatch!.uid, 0);
@@ -117,6 +119,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sn
     const restoredReturned = restoreDuelWithLuaScripts(serializeDuel(restoredControl.session), source, reader);
     expect(restoredReturned.restoreComplete, restoredReturned.incompleteReasons.join("; ")).toBe(true);
     expect(restoredReturned.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredReturned, 0);
     expectLuaSnatchProbe(restoredReturned, targetCode, snatchCode, "snatch probe 1/nil/nil");
   });
 });
@@ -145,6 +148,11 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
     expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   }
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {

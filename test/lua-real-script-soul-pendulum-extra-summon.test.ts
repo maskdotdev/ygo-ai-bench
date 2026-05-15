@@ -60,7 +60,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    assertLegalActions(restored);
+    expectRestoredLegalActions(restored);
     expect(findPendulumSummon(restored.session, getLuaRestoreLegalActions(restored, 0), candidate!.uid)).toBeUndefined();
 
     const grantExtraSummon = findSoulPendulumExtraSummon(restored.session, getLuaRestoreLegalActions(restored, 0), soulPendulum!.uid);
@@ -72,7 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     const restoredAfterGrant = restoreDuelWithLuaScripts(serializeDuel(restored.session), workspace, reader);
     expect(restoredAfterGrant.restoreComplete, restoredAfterGrant.incompleteReasons.join("; ")).toBe(true);
     expect(restoredAfterGrant.missingRegistryKeys).toEqual([]);
-    assertLegalActions(restoredAfterGrant);
+    expectRestoredLegalActions(restoredAfterGrant);
     const pendulumSummon = findPendulumSummon(restoredAfterGrant.session, getLuaRestoreLegalActions(restoredAfterGrant, 0), candidate!.uid);
     expect(pendulumSummon, JSON.stringify(getLuaRestoreLegalActions(restoredAfterGrant, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredAfterGrant, { ...pendulumSummon!, summonUids: [candidate!.uid] });
@@ -103,7 +103,7 @@ function findPendulumSummon(session: DuelSession, actions: DuelAction[], uid: st
 function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: DuelAction) {
   const response = applyLuaRestoreResponse(restored, action);
   expect(response.ok, response.error).toBe(true);
-  assertLegalActions(restored);
+  expectRestoredLegalActions(restored);
   return response;
 }
 
@@ -118,7 +118,7 @@ function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScri
   }
 }
 
-function assertLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
   const waitingFor = restored.session.state.waitingFor;
   if (waitingFor === undefined) return;
   expect(getLuaRestoreLegalActions(restored, waitingFor)).toEqual(getLegalActions(restored.session, waitingFor));
