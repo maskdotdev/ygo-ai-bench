@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { addDuelCardCounter } from "#duel/counters.js";
-import { createDuel, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { createDuel, getGroupedDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { luaSummonTypeFusion, luaSummonTypeLink, luaSummonTypePendulum, luaSummonTypeRitual, luaSummonTypeSpecial, luaSummonTypeXyz } from "#duel/summon-type-codes.js";
 import type { DuelCardData, DuelEffectContext } from "#duel/types.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 function valueContext(duel: DuelEffectContext["duel"], source: DuelEffectContext["source"], summonTypeCode: number, relatedEffectId?: number): DuelEffectContext {
   return {
@@ -24,6 +24,13 @@ function valueContext(duel: DuelEffectContext["duel"], source: DuelEffectContext
     setTargetPlayer: () => {},
     setTargetParam: () => {},
   };
+}
+
+function expectRestoredLegalActionGroups(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+  expect(restored.missingRegistryKeys).toEqual([]);
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 describe("Lua official special summon condition restore", () => {
@@ -51,6 +58,7 @@ describe("Lua official special summon condition restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c946.lua" ? script : undefined }, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     const restoredSource = restored.session.state.cards.find((card) => card.code === "946")!;
     const restoredEffect = restored.session.state.effects.find((effect) => effect.code === 30 && effect.sourceUid === restoredSource.uid);
     expect(restoredEffect).toMatchObject({ luaValueDescriptor: "special-summon-condition:false" });
@@ -89,6 +97,7 @@ describe("Lua official special summon condition restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c950.lua" ? script : undefined }, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     const restoredSource = restored.session.state.cards.find((card) => card.code === "950")!;
     const matchingSpell = restored.session.state.cards.find((card) => card.code === "1784686")!;
     const otherSpell = restored.session.state.cards.find((card) => card.code === "951")!;
@@ -135,6 +144,7 @@ describe("Lua official special summon condition restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c947.lua" ? script : undefined }, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     const restoredSource = restored.session.state.cards.find((card) => card.code === "947")!;
     const hazyEffectSource = restored.session.state.cards.find((card) => card.code === "948")!;
     const otherEffectSource = restored.session.state.cards.find((card) => card.code === "949")!;
@@ -179,6 +189,7 @@ describe("Lua official special summon condition restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c952.lua" ? script : undefined }, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     const restoredSource = restored.session.state.cards.find((card) => card.code === "952")!;
     const wyrmEffectSource = restored.session.state.cards.find((card) => card.code === "953")!;
     const spellEffectSource = restored.session.state.cards.find((card) => card.code === "954")!;
@@ -218,6 +229,7 @@ describe("Lua official special summon condition restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c955.lua" ? script : undefined }, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     const restoredSource = restored.session.state.cards.find((card) => card.code === "955")!;
     const restoredEffect = restored.session.state.effects.find((effect) => effect.code === 30 && effect.sourceUid === restoredSource.uid);
     expect(restoredEffect).toMatchObject({ luaValueDescriptor: `special-summon-condition:source-location-and-type:2:${luaSummonTypeRitual}` });
@@ -257,6 +269,7 @@ describe("Lua official special summon condition restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c956.lua" ? script : undefined }, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     const restoredSource = restored.session.state.cards.find((card) => card.code === "956")!;
     const restoredEffect = restored.session.state.effects.find((effect) => effect.code === 30 && effect.sourceUid === restoredSource.uid);
     expect(restoredEffect).toMatchObject({ luaValueDescriptor: "special-summon-condition:source-location-and-previous-location:16:12" });
@@ -295,6 +308,7 @@ describe("Lua official special summon condition restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c957.lua" ? script : undefined }, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     const restoredSource = restored.session.state.cards.find((card) => card.code === "957")!;
     const blocker = restored.session.state.cards.find((card) => card.code === "958")!;
     const restoredEffect = restored.session.state.effects.find((effect) => effect.code === 30 && effect.sourceUid === restoredSource.uid);
@@ -338,6 +352,7 @@ describe("Lua official special summon condition restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c959.lua" ? script : undefined }, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     const restoredSource = restored.session.state.cards.find((card) => card.code === "959")!;
     const ninjaMonster = restored.session.state.cards.find((card) => card.code === "960")!;
     const ninjitsuSpell = restored.session.state.cards.find((card) => card.code === "961")!;
@@ -380,6 +395,7 @@ describe("Lua official special summon condition restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c963.lua" ? script : undefined }, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     const restoredSource = restored.session.state.cards.find((card) => card.code === "963")!;
     const restoredEffect = restored.session.state.effects.find((effect) => effect.code === 30 && effect.sourceUid === restoredSource.uid);
     expect(restoredEffect).toMatchObject({ luaValueDescriptor: `special-summon-condition:type-or-source-location-and-type:${luaSummonTypeRitual}:2:${luaSummonTypePendulum}` });
@@ -443,6 +459,8 @@ describe("Lua official special summon condition restore", () => {
     expect(session.state.effects).toEqual([expect.objectContaining({ code: 30, sourceUid: source.uid, luaValueDescriptor: "special-summon-condition:not-related-handler-monster" })]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c965.lua" ? script : undefined }, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     const monster = restored.session.state.cards.find((card) => card.code === "966")!;
     const spell = restored.session.state.cards.find((card) => card.code === "967")!;
     restored.session.state.effects.push({ id: "lua-6050", sourceUid: monster.uid, controller: 0, ownerPlayer: 0, event: "ignition", luaTypeFlags: 0x80, range: ["hand"], operation: () => undefined });
@@ -508,6 +526,8 @@ describe("Lua official special summon condition restore", () => {
     const source = session.state.cards.find((card) => card.code === "970")!;
     expect(session.state.effects).toEqual([expect.objectContaining({ code: 30, sourceUid: source.uid, luaValueDescriptor: `special-summon-condition:not-type-or-player-grave-setcode:${luaSummonTypeLink}:${worldLegacy}` })]);
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c970.lua" ? script : undefined }, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     const restoredSource = restored.session.state.cards.find((card) => card.code === "970")!;
     const legacy = restored.session.state.cards.find((card) => card.code === "971")!;
     const restoredEffect = restored.session.state.effects.find((effect) => effect.code === 30 && effect.sourceUid === restoredSource.uid)!;
@@ -542,6 +562,8 @@ describe("Lua official special summon condition restore", () => {
     const source = session.state.cards.find((card) => card.code === "972")!;
     expect(session.state.effects).toEqual([expect.objectContaining({ code: 30, sourceUid: source.uid, luaValueDescriptor: `special-summon-condition:not-type-or-phase:${luaSummonTypeLink}:256` })]);
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c972.lua" ? script : undefined }, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     const restoredSource = restored.session.state.cards.find((card) => card.code === "972")!;
     const restoredEffect = restored.session.state.effects.find((effect) => effect.code === 30 && effect.sourceUid === restoredSource.uid)!;
     restored.session.state.phase = "main1";
@@ -622,6 +644,7 @@ describe("Lua official special summon condition restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c976.lua" ? script : undefined }, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     const [restoredSource, duplicate] = restored.session.state.cards.filter((card) => card.code === "976");
     const restoredEffect = restored.session.state.effects.find((effect) => effect.code === 30 && effect.sourceUid === restoredSource!.uid);
     expect(restoredEffect).toMatchObject({ luaValueDescriptor: "special-summon-condition:target-player-no-field-faceup-code:976" });
@@ -663,6 +686,7 @@ describe("Lua official special summon condition restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c977.lua" ? script : undefined }, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     const restoredSource = restored.session.state.cards.find((card) => card.code === "977")!;
     const restoredEffect = restored.session.state.effects.find((effect) => effect.code === 30 && effect.sourceUid === restoredSource.uid);
     expect(restoredEffect!.valuePredicate!(valueContext(restored.session.state, restoredSource, luaSummonTypeLink))).toBe(false);
@@ -701,6 +725,7 @@ describe("Lua official special summon condition restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c981.lua" ? script : undefined }, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored);
     const restoredSource = restored.session.state.cards.find((card) => card.code === "981")!;
     const scale = restored.session.state.cards.find((card) => card.code === "982")!;
     const restoredEffect = restored.session.state.effects.find((effect) => effect.code === 30 && effect.sourceUid === restoredSource.uid);
