@@ -6,14 +6,14 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-const realScriptSummonFixtureCount = 147;
+const realScriptSummonFixtureCount = 148;
 const summonProcedureFixtureCount = 20;
 const typedSummonProcedureFixtureCount = 6;
 const pendulumGrantFixtureCount = 3;
 const pendulumHelperFixtureCount = 13;
 const unionProcedureFixtureCount = 1;
 const materialLockFixtureCount = 4;
-const flipSummonSuccessTrapFixtureCount = 1;
+const flipSummonSuccessTrapFixtureCount = 2;
 
 describe("Lua real summon restore coverage", () => {
   it("requires real-script summon and procedure fixtures to assert Lua-aware complete restore with diagnostics", () => {
@@ -192,6 +192,17 @@ function realScriptFlipSummonSuccessTrapFixtureSnippets(): Array<{ file: string;
         'effectId).toContain("-1101"',
         'windowKind).toBe("chainResponse")',
         'type === "activateEffect"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-adhesion-trap-hole-flip-summon.test.ts",
+      required: [
+        'eventName: "flipSummoned"',
+        'effectId).toContain("-1101"',
+        'windowKind).toBe("chainResponse")',
+        'type === "activateEffect"',
+        "code === 103",
+        "value: 500",
       ],
     },
   ];
