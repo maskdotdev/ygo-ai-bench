@@ -90,7 +90,7 @@ describe("Lua real prompt helper restore coverage", () => {
   });
 
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(16);
+    expect(representativePromptHelperFixtures()).toHaveLength(17);
   });
 
   it("requires representative prompt helper fixtures to assert clean Lua restore", () => {
@@ -182,6 +182,17 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
         "targetParam: Number(darkMagicianCode)",
         'position: "faceUpDefense"',
         "cannot-activate:special-summoned-monster-on-field",
+      ],
+    },
+    {
+      file: "test/lua-real-script-primathmech-laplacian-dynamic-select-effect.test.ts",
+      required: [
+        "restores table-unpacked SelectEffect choices from its Xyz Summon trigger",
+        'api: "SelectEffect"',
+        "options: [1, 2, 3]",
+        "returned: 1",
+        'triggerBucket: "turnOptional"',
+        'location: "graveyard"',
       ],
     },
     {
