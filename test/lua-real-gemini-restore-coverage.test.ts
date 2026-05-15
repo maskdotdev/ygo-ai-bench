@@ -3,10 +3,17 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const geminiFixtureCount = 13;
+const geminiStatusFixtureCount = 11;
+const geminiOperationFixtureCount = 10;
+const geminiStateFixtureCount = 4;
 
 describe("Lua real Gemini restore coverage", () => {
   it("requires representative Gemini fixtures to assert clean Lua registry restore", () => {
-    const missing = geminiFixtureFiles()
+    const files = geminiFixtureFiles();
+    expect(files).toHaveLength(geminiFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreComplete")
@@ -19,7 +26,10 @@ describe("Lua real Gemini restore coverage", () => {
   });
 
   it("requires representative Gemini fixtures to prove grouped restored legal-action parity", () => {
-    const missing = geminiFixtureFiles()
+    const files = geminiFixtureFiles();
+    expect(files).toHaveLength(geminiFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("getLuaRestoreLegalActionGroups")
@@ -31,7 +41,10 @@ describe("Lua real Gemini restore coverage", () => {
   });
 
   it("requires Gemini status fixtures to probe restored IsGeminiStatus behavior", () => {
-    const missing = geminiStatusFixtureFiles()
+    const files = geminiStatusFixtureFiles();
+    expect(files).toHaveLength(geminiStatusFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("IsGeminiStatus")
@@ -43,7 +56,10 @@ describe("Lua real Gemini restore coverage", () => {
   });
 
   it("requires Gemini operation fixtures to pin operation info and final event history", () => {
-    const missing = geminiOperationFixtureFiles()
+    const files = geminiOperationFixtureFiles();
+    expect(files).toHaveLength(geminiOperationFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("operationInfos")
@@ -55,7 +71,10 @@ describe("Lua real Gemini restore coverage", () => {
   });
 
   it("requires Gemini state fixtures to pin restored delayed, equip, and battle outcomes", () => {
-    const missing = geminiStateFixtureFiles()
+    const files = geminiStateFixtureFiles();
+    expect(files).toHaveLength(geminiStateFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return required.some((snippet) => !text.includes(snippet));
