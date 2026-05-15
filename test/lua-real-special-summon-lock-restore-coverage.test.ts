@@ -566,6 +566,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-token-collector-token-summon-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "target:type:16384"',
+        "targetRange: [1, 1]",
         "token collector token special 0",
         "token collector hand special 1",
       ],
