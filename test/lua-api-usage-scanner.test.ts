@@ -20,12 +20,33 @@ const expectedFallbackScripts = [
   "c97462632.lua",
   "c98684220.lua",
 ];
+const expectedAliasFallbackScripts = [
+  "c100452013.lua",
+  "c100452015.lua",
+  "c101303089.lua",
+];
+const expectedProvisionalFallbackScripts = [
+  "c2372506.lua",
+  "c24088928.lua",
+  "c24461358.lua",
+  "c24749710.lua",
+  "c33599853.lua",
+  "c44001993.lua",
+  "c50073633.lua",
+  "c70405001.lua",
+  "c97462632.lua",
+  "c98684220.lua",
+];
 
 describe("Lua API usage scanner", () => {
   it("keeps the local fallback inventory explicit", () => {
     const fallbackNames = fallbackScripts().map((file) => path.basename(file)).sort();
+    const aliasFallbackNames = aliasFallbackScripts().map((file) => path.basename(file)).sort();
+    const provisionalFallbackNames = provisionalFallbackScripts().map((file) => path.basename(file)).sort();
 
     expect(fallbackNames).toEqual(expectedFallbackScripts);
+    expect(aliasFallbackNames).toEqual(expectedAliasFallbackScripts);
+    expect(provisionalFallbackNames).toEqual(expectedProvisionalFallbackScripts);
   });
 
   it("keeps local fallbacks from duplicating exact upstream scripts", () => {
@@ -155,6 +176,10 @@ describe("Lua API usage scanner", () => {
 
 function provisionalFallbackScripts(): string[] {
   return fallbackScripts().filter((file) => fs.readFileSync(file, "utf8").includes("local-fallback-provisional"));
+}
+
+function aliasFallbackScripts(): string[] {
+  return fallbackScripts().filter((file) => fs.readFileSync(file, "utf8").includes("Duel.LoadCardScriptAlias"));
 }
 
 function fallbackScripts(): string[] {
