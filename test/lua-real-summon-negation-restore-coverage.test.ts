@@ -40,15 +40,46 @@ describe("Lua real summon-negation restore coverage", () => {
         const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
         return ![
           "state.chain).toHaveLength(1)",
-          "category: 0x8000",
-          "category: 0x1",
+          '"category": 32768',
+          '"category": 1',
           'location: "graveyard"',
-          "eventHistory).not.toEqual",
+          "eventHistory.filter",
           "host.messages).not.toContain",
           ...fixture.requiredSnippets,
         ].every((snippet) => text.includes(snippet));
       })
       .map((fixture) => fixture.file);
+
+    expect(weak).toEqual([]);
+  });
+
+  it("keeps split summon-negation continuation fixtures under restore coverage ownership", () => {
+    const fixtures = realScriptSummonNegationContinuationFixtures();
+    expect(fixtures).toHaveLength(2);
+
+    const weak = fixtures
+      .filter((file) => {
+        const text = fs.readFileSync(path.join(root, file), "utf8");
+        return ![
+          "restoreDuelWithLuaScripts",
+          "applyLuaRestoreResponse",
+          "getLuaRestoreLegalActions",
+          "getLuaRestoreLegalActionGroups",
+          "getGroupedDuelLegalActions",
+          "flatMap((group) => group.actions)",
+          "restoreComplete",
+          'incompleteReasons.join("; ")',
+          "missingRegistryKeys).toEqual([])",
+          "missingChainLimitRegistryKeys).toEqual([])",
+          "eventHistory",
+          "operationInfos",
+          'location: "graveyard"',
+          'eventName: "chainNegated"',
+          'eventName: "chainDisabled"',
+          'eventName: "lifePointCostPaid"',
+          "host.messages).not.toContain",
+        ].every((snippet) => text.includes(snippet));
+      });
 
     expect(weak).toEqual([]);
   });
@@ -122,4 +153,11 @@ function realScriptSummonNegationFixtures(): Array<{ file: string; requiredSnipp
       ],
     },
   ].sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function realScriptSummonNegationContinuationFixtures(): string[] {
+  return [
+    "test/lua-real-script-solemn-judgment-summon-negate-part2.test.ts",
+    "test/lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
+  ].sort();
 }

@@ -58,7 +58,7 @@ describe("Lua real equip restore coverage", () => {
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("operationInfos")
-          || !/category:\s*0x40000/.test(text);
+          || !/"category":\s*262144/.test(text);
       });
 
     expect(missing).toEqual([]);
@@ -95,6 +95,26 @@ describe("Lua real equip restore coverage", () => {
           || !text.includes("missingRegistryKeys).toEqual([])")
           || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !/eventName:\s*["']sentToGraveyard["']|eventName:\s*["']destroyed["']|previousController/.test(text);
+      });
+
+    expect(missing).toEqual([]);
+  });
+
+  it("keeps split equip continuation fixtures under restore coverage ownership", () => {
+    const files = realScriptEquipContinuationFixtureFiles();
+    expect(files).toHaveLength(2);
+
+    const missing = files
+      .filter((file) => {
+        const text = fs.readFileSync(path.join(root, file), "utf8");
+        return !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("applyLuaRestoreResponse")
+          || !text.includes("restoreComplete")
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
+          || !text.includes("operationInfos");
       });
 
     expect(missing).toEqual([]);
@@ -160,6 +180,15 @@ function realScriptEquipCleanupFixtureFiles(): string[] {
     "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
     "lua-real-script-supervise-gemini-equip-revive.test.ts",
+  ]
+    .map((file) => path.join("test", file))
+    .sort();
+}
+
+function realScriptEquipContinuationFixtureFiles(): string[] {
+  return [
+    "lua-real-script-equip-procedure-actions-part2.test.ts",
+    "lua-real-script-equip-return-actions-part2.test.ts",
   ]
     .map((file) => path.join("test", file))
     .sort();
