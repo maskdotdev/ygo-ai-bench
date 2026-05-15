@@ -7,6 +7,54 @@ const provenanceScannerPath = path.resolve("tools/scan-parity-fixture-provenance
 const legalActionScannerPath = path.resolve("tools/scan-legal-action-evidence.mjs");
 
 describe("parity scanner CLIs", () => {
+  it("fails on missing, invalid, missing-note, and weak-note provenance when requested", () => {
+    const testRoot = makeTestRoot({
+      "parity-provenance-errors.test.ts": `
+        runScriptedDuelFixture({
+          before: {
+            note: "EDOPro observed a missing source.",
+          },
+          after: {
+            source: "local",
+            note: "EDOPro observed an invalid source.",
+          },
+          expected: {
+            source: "edopro",
+          },
+        });
+      `,
+      "parity-weak-note.test.ts": `
+        runScriptedDuelFixture({
+          expected: {
+            source: "edopro",
+            note: "Local-only note.",
+          },
+        });
+      `,
+    });
+
+    const result = spawnSync(process.execPath, [
+      provenanceScannerPath,
+      "--test-root",
+      testRoot,
+      "--fail-on-missing-source",
+      "--fail-on-invalid-source",
+      "--fail-on-missing-note",
+      "--fail-on-weak-note",
+    ], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("Parity fixture provenance: 2 files, 4 expectation blocks, 2 EDOPro, 0 backlog");
+    expect(result.stderr).toContain("Expectation blocks missing source");
+    expect(result.stderr).toContain("parity-provenance-errors.test.ts:3");
+    expect(result.stderr).toContain("Expectation blocks with invalid source");
+    expect(result.stderr).toContain("parity-provenance-errors.test.ts:6");
+    expect(result.stderr).toContain("Sourced expectation blocks missing observation note");
+    expect(result.stderr).toContain("parity-provenance-errors.test.ts:10");
+    expect(result.stderr).toContain("Observation notes that do not reference EDOPro");
+    expect(result.stderr).toContain("parity-weak-note.test.ts:3");
+  });
+
   it("fails on remaining parity-backlog expectation blocks when requested", () => {
     const testRoot = makeTestRoot({
       "parity-backlog-case.test.ts": `
@@ -25,6 +73,26 @@ describe("parity scanner CLIs", () => {
     expect(result.status).toBe(1);
     expect(result.stdout).toContain("Parity fixture provenance: 1 files, 1 expectation blocks, 0 EDOPro, 1 backlog");
     expect(result.stderr).toContain("Parity backlog expectation blocks remain: 1");
+  });
+
+  it("fails on scripted parity fixtures missing snapshot restore when requested", () => {
+    const testRoot = makeTestRoot({
+      "parity-no-restore.test.ts": `
+        runScriptedDuelFixture({
+          expected: {
+            source: "edopro",
+            note: "EDOPro observed this state.",
+          },
+        });
+      `,
+    });
+
+    const result = spawnSync(process.execPath, [provenanceScannerPath, "--test-root", testRoot, "--fail-on-missing-restore"], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("Parity fixture provenance: 1 files, 1 expectation blocks, 1 EDOPro, 0 backlog, 0 restored scripted fixtures");
+    expect(result.stderr).toContain("Scripted parity fixtures missing snapshotRestore");
+    expect(result.stderr).toContain("parity-no-restore.test.ts");
   });
 
   it("fails when the scanned provenance corpus is below required floors", () => {
@@ -158,6 +226,48 @@ describe("parity scanner CLIs", () => {
     expect(result.stdout).toContain("EDOPro legal-action evidence: 1 parity files, 2 EDOPro expectation blocks, 1 action evidence blocks, 1 group evidence blocks");
     expect(result.stderr).toContain("Action evidence coverage 50.0% is below required 75.0%");
     expect(result.stderr).toContain("Group evidence coverage 50.0% is below required 75.0%");
+  });
+
+  it("fails when positive aggregate counts have empty or zero-only evidence", () => {
+    const testRoot = makeTestRoot({
+      "parity-empty-evidence.test.ts": `
+        runScriptedDuelFixture({
+          expected: {
+            source: "edopro",
+            note: "EDOPro observed empty evidence should not prove positive counts.",
+            legalActionCounts: { normalSummon: 1 },
+            legalActions: [],
+          },
+        });
+      `,
+      "parity-zero-only-evidence.test.ts": `
+        runScriptedDuelFixture({
+          expected: {
+            source: "edopro",
+            note: "EDOPro observed zero-only evidence should not prove positive counts.",
+            legalActionGroupCounts: { summon: 1 },
+            legalActionGroups: [{ group: "summon", count: 0 }],
+          },
+        });
+      `,
+    });
+
+    const result = spawnSync(process.execPath, [
+      legalActionScannerPath,
+      "--test-root",
+      testRoot,
+      "--fail-on-empty",
+      "--fail-on-zero-only",
+      "--fail-on-zero-evidence",
+    ], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("EDOPro legal-action evidence: 2 parity files, 2 EDOPro expectation blocks, 1 action evidence blocks, 1 group evidence blocks");
+    expect(result.stderr).toContain("Positive aggregate counts with empty legal-action evidence");
+    expect(result.stderr).toContain("parity-empty-evidence.test.ts:3");
+    expect(result.stderr).toContain("Positive aggregate counts with only zero-count legal-action evidence");
+    expect(result.stderr).toContain("parity-zero-only-evidence.test.ts:3");
+    expect(result.stderr).toContain("Zero-count legal-action evidence must move to absent expectations");
   });
 });
 
