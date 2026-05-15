@@ -72,15 +72,35 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ba
     expect(upstartAction).toBeDefined();
     applyAndAssert(session, upstartAction!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: upstart!.uid,
-      targetPlayer: 0,
-      targetParam: 1,
-      operationInfos: [
-        { category: 0x10000, targetUids: [], count: 0, player: 0, parameter: 1 },
-        { category: 0x100000, targetUids: [], count: 0, player: 1, parameter: 1000 },
-      ],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-3-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 65536,
+            "count": 0,
+            "parameter": 1,
+            "player": 0,
+            "targetUids": [],
+          },
+          {
+            "category": 1048576,
+            "count": 0,
+            "parameter": 1000,
+            "player": 1,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-70368879-1",
+        "targetParam": 1,
+        "targetPlayer": 0,
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

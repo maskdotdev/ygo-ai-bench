@@ -63,7 +63,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Me
     expect(activate).toBeDefined();
     const activated = applyAndAssert(session, activate!);
     expect(activated.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({ sourceUid: angineer!.uid, targetUids: [target!.uid] });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-2-1002",
+        "id": "chain-3",
+        "player": 0,
+        "sourceUid": "p0-extraDeck-15914410-0",
+        "targetUids": [
+          "p0-deck-1592-1",
+        ],
+      }
+    `);
     expect(session.state.cards.find((card) => card.uid === angineer!.uid)?.overlayUids).toEqual([]);
     expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({
       location: "graveyard",

@@ -86,18 +86,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bo
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredActivation, activation!);
 
-    expect(restoredActivation.session.state.chain[0]).toMatchObject({
-      sourceUid: book!.uid,
-      operationInfos: [
-        expect.objectContaining({
-          category: 0x1000,
-          targetUids: [ownMonster!.uid, opponentMonster!.uid],
-          count: 2,
-          player: 0,
-          parameter: 0x8,
-        }),
-      ],
-    });
+    expect(restoredActivation.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 4096,
+            "count": 2,
+            "parameter": 8,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-614601-1",
+              "p1-deck-614602-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-35480699-0",
+      }
+    `);
     expect(getLuaRestoreLegalActions(restoredActivation, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
