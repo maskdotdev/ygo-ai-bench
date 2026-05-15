@@ -69,12 +69,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Po
     applyAndAssert(session, potAction!);
     expect(session.state.randomCounter).toBe(1);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: pot!.uid,
-      targetPlayer: 0,
-      targetParam: 1,
-      operationInfos: [{ category: 0x10000, targetUids: [], count: 0, player: 0, parameter: 1 }],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "effectLabel": 100,
+        "id": "chain-5",
+        "operationInfos": [
+          {
+            "category": 65536,
+            "count": 0,
+            "parameter": 1,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-49238328-0",
+        "targetParam": 1,
+        "targetPlayer": 0,
+      }
+    `);
     const banishedCostEvent = session.state.eventHistory.find(
       (event) => event.eventName === "banished" && event.eventUids?.length === 3 && event.eventUids.every((uid) => originalExtraUids.includes(uid)),
     );
@@ -99,12 +116,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Po
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expect(restored.session.state.chain).toHaveLength(1);
-    expect(restored.session.state.chain[0]).toMatchObject({
-      sourceUid: pot!.uid,
-      targetPlayer: 0,
-      targetParam: 1,
-      operationInfos: [{ category: 0x10000, targetUids: [], count: 0, player: 0, parameter: 1 }],
-    });
+    expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "effectLabel": 100,
+        "id": "chain-5",
+        "operationInfos": [
+          {
+            "category": 65536,
+            "count": 0,
+            "parameter": 1,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-49238328-0",
+        "targetParam": 1,
+        "targetPlayer": 0,
+      }
+    `);
     for (const uid of costUids) {
       expect(restored.session.state.cards.find((card) => card.uid === uid)).toMatchObject({
         location: "banished",
