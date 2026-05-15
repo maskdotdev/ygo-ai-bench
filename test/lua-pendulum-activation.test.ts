@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, createDuel, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData } from "#duel/types.js";
 
 const pendulumCards: DuelCardData[] = [
@@ -77,6 +77,9 @@ describe("Lua Pendulum activation", () => {
 
     const restoredAfterLowScale = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(pendulumCards));
     expect(restoredAfterLowScale.restoreComplete).toBe(true);
+    expect(restoredAfterLowScale.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restoredAfterLowScale, 0)).toEqual(getGroupedDuelLegalActions(restoredAfterLowScale.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredAfterLowScale, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredAfterLowScale, 0));
     expect(restoredAfterLowScale.registeredEffects).toBe(2);
     expect(getLuaRestoreLegalActions(restoredAfterLowScale, 0).some((action) => action.type === "activateEffect" && action.uid === lowScale!.uid)).toBe(false);
 
@@ -88,6 +91,9 @@ describe("Lua Pendulum activation", () => {
 
     const restoredAfterBothScales = restoreDuelWithLuaScripts(serializeDuel(restoredAfterLowScale.session), source, createCardReader(pendulumCards));
     expect(restoredAfterBothScales.restoreComplete).toBe(true);
+    expect(restoredAfterBothScales.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restoredAfterBothScales, 0)).toEqual(getGroupedDuelLegalActions(restoredAfterBothScales.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredAfterBothScales, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredAfterBothScales, 0));
 
     const restoredPendulumSummon = getLuaRestoreLegalActions(restoredAfterBothScales, 0).find((action) => action.type === "pendulumSummon" && action.summonUids.includes(candidate!.uid));
     expect(restoredPendulumSummon).toBeDefined();
@@ -132,6 +138,9 @@ describe("Lua Pendulum activation", () => {
 
     const restoredAfterOneScale = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(pendulumCards));
     expect(restoredAfterOneScale.restoreComplete).toBe(true);
+    expect(restoredAfterOneScale.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restoredAfterOneScale, 0)).toEqual(getGroupedDuelLegalActions(restoredAfterOneScale.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredAfterOneScale, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredAfterOneScale, 0));
     expect(getLuaRestoreLegalActions(restoredAfterOneScale, 0).some((action) => action.type === "activateEffect" && action.uid === highScale!.uid)).toBe(false);
   });
 });
