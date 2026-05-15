@@ -159,9 +159,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
         relatedEffectId: 1,
       },
     ]);
-    expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "recoveredLifePoints", eventCode: 1112, eventPlayer: 1, eventValue: 1000 })]),
-    );
+    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => event.eventName === "recoveredLifePoints")).toEqual([]);
   });
 });
 

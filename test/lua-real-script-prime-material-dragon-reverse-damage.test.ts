@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -96,12 +97,28 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
 
     expect(restored.session.state.players[0].lifePoints).toBe(8500);
     expect(restored.session.state.players[1].lifePoints).toBe(9000);
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "recoveredLifePoints", eventCode: 1112, eventPlayer: 0, eventValue: 500 }),
-        expect.objectContaining({ eventName: "recoveredLifePoints", eventCode: 1112, eventPlayer: 1, eventValue: 1000 }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "recoveredLifePoints")).toEqual([
+      {
+        eventName: "recoveredLifePoints",
+        eventCode: 1112,
+        eventPlayer: 1,
+        eventValue: 1000,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: tremendousFire!.uid,
+        eventReasonEffectId: 3,
+      },
+      {
+        eventName: "recoveredLifePoints",
+        eventCode: 1112,
+        eventPlayer: 0,
+        eventValue: 500,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: tremendousFire!.uid,
+        eventReasonEffectId: 3,
+      },
+    ]);
     expect(restored.session.state.cards.find((card) => card.uid === tremendousFire!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.host.messages).not.toContain("prime material responder resolved");
   });
