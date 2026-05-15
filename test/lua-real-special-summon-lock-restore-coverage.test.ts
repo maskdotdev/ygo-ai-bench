@@ -595,6 +595,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-world-legacy-survivor-extra-link-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "special-summon-limit:not-type-extra:67108864"',
+        "targetRange: [1, 0]",
         "world legacy survivor fusion special 0",
         "world legacy survivor synchro special 0",
         "world legacy survivor link special 1",
@@ -623,6 +624,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-sunvine-shrine-extra-plant-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "special-summon-limit:not-race-extra:1024"',
+        "targetRange: [1, 0]",
         "sunvine warrior extra special 0",
         "sunvine plant extra special 1",
         "sunvine deck special 1",
