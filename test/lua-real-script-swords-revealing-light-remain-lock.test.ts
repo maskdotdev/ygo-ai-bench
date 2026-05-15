@@ -73,6 +73,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sw
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredActivation, 0);
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === swords!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
@@ -106,6 +107,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sw
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
     expect(restoredLock.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredLock, 0);
     const probe = restoredLock.host.loadScript(attackLockProbeScript(attackerCode, hiddenCode), "swords-revealing-light-probe.lua");
     expect(probe.ok, probe.error).toBe(true);
     expect(restoredLock.host.messages).toContain("swords of revealing light state false/true/4");
@@ -182,6 +184,11 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
     expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   }
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {

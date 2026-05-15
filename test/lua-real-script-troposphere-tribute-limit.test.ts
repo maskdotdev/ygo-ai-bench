@@ -65,8 +65,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tr
     const allowed = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(allowed.restoreComplete, allowed.incompleteReasons.join("; ")).toBe(true);
     expect(allowed.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(allowed, 0);
     tributeSummonDuelCard(allowed.session.state, 0, troposphere!.uid, [wingedBeast!.uid]);
     expect(allowed.session.state.cards.find((card) => card.uid === troposphere!.uid)).toMatchObject({ location: "monsterZone", summonType: "tribute" });
     expect(allowed.session.state.cards.find((card) => card.uid === wingedBeast!.uid)).toMatchObject({ location: "graveyard" });
   });
 });
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}

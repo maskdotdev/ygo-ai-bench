@@ -105,6 +105,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
     expect(restoredLock.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredLock, 0);
     expect(getLuaRestoreLegalActions(restoredLock, 0).some((action) => action.type === "specialSummonProcedure" && action.uid === procedure.uid)).toBe(false);
   });
 });
@@ -135,6 +136,11 @@ function chainResponderScript(): string {
       c:RegisterEffect(e)
     end
   `;
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function requireCard(session: DuelSession, code: string) {

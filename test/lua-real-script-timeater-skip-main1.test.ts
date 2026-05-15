@@ -67,6 +67,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ti
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), workspace, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
     expect(restoredLock.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredLock, 0);
     passBattleUntilOpen(restoredLock.session);
     moveToMain2AndEndTurn(restoredLock.session, 0);
     expect(restoredLock.session.state).toMatchObject({ turnPlayer: 1, phase: "main1", waitingFor: 1 });
@@ -85,6 +86,11 @@ function requireCard(session: DuelSession, code: string) {
   const card = session.state.cards.find((candidate) => candidate.code === code);
   expect(card).toBeDefined();
   return card!;
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function passBattleUntilTrigger(session: DuelSession): void {

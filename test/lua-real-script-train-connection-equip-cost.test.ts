@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import {
   createDuel,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   serializeDuel,
@@ -110,6 +111,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tr
     const restoredEquipState = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredEquipState.restoreComplete, restoredEquipState.incompleteReasons.join("; ")).toBe(true);
     expect(restoredEquipState.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredEquipState, 0);
     expectLuaTrainConnectionProbe(restoredEquipState, targetCode, trainConnectionCode, "train connection probe 60879050/96080101/3000");
   });
 });
@@ -131,6 +133,11 @@ function chainResponderScript(): string {
       c:RegisterEffect(e)
     end
   `;
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, response: DuelResponse): void {
