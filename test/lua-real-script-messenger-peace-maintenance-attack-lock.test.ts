@@ -148,11 +148,18 @@ function expectMaintenanceCostAfterRestore(
     location: "spellTrapZone",
     faceUp: true,
   });
-  expect(restoredDraw.session.state.eventHistory).toEqual(
-    expect.arrayContaining([
-      expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 0, eventValue: 100, eventReason: duelReason.cost, eventReasonPlayer: 0 }),
-    ]),
-  );
+  expect(restoredDraw.session.state.eventHistory.filter((event) => event.eventName === "lifePointCostPaid")).toEqual([
+    {
+      eventName: "lifePointCostPaid",
+      eventCode: 1201,
+      eventPlayer: 0,
+      eventValue: 100,
+      eventReason: duelReason.cost,
+      eventReasonPlayer: 0,
+      eventReasonCardUid: messengerUid,
+      eventReasonEffectId: 3,
+    },
+  ]);
 }
 
 function expectAttackLockAfterRestore(
