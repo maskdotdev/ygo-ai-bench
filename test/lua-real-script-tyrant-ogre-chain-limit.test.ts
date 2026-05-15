@@ -61,6 +61,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
 
     const sourceAction = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === sourceCard!.uid);
     expect(sourceAction, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
+    expect(session.state.effects.find((effect) => effect.id === sourceAction!.effectId)).toMatchObject({
+      label: 1,
+    });
     const activated = applyResponse(session, sourceAction!);
     expect(activated.ok, activated.error).toBe(true);
 
@@ -75,6 +78,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restored.session.state.effects.find((effect) => effect.id === sourceAction!.effectId)).toMatchObject({
+      label: 1,
+    });
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));

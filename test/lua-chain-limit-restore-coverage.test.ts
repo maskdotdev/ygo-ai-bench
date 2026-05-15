@@ -109,6 +109,7 @@ function assertRestoreCoverageFile(group: string, file: string): void {
     ["missingChainLimitRegistryKeys", text.includes("missingChainLimitRegistryKeys")],
     ["no missing registry keys assertion", text.includes("missingChainLimitRegistryKeys).toEqual([])")],
     ["serialized chain-limit assertion", noActiveRestoreWindowGroups.has(group) || /state\.chainLimits\[0\][\s\S]{0,160}(registryKey|toMatchObject)/.test(text)],
+    ["registered effect label assertion", group !== "SetChainLimit:inline:target-card-handler-exclusion" || text.includes("label: 1")],
     ["restored legal-action assertion", text.includes("getLuaRestoreLegalActions") || text.includes("getLuaRestoreLegalActionGroups")],
     ["restored grouped legal-action assertion", text.includes("getLuaRestoreLegalActionGroups") && text.includes("getGroupedDuelLegalActions")],
     ["flattened grouped action assertion", text.includes("flatMap((group) => group.actions)") && text.includes("getLuaRestoreLegalActions")],
