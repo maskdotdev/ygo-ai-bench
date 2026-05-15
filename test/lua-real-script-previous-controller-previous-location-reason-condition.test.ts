@@ -72,6 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredAsmodeus = restored.session.state.cards.find((card) => card.code === asmodeusCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === asmodeus!.uid && candidate.luaConditionDescriptor === descriptor);
@@ -127,6 +128,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredAsmodeus = restored.session.state.cards.find((card) => card.code === asmodeusCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === asmodeus!.uid && candidate.luaConditionDescriptor === descriptor);
@@ -174,6 +176,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredAsmodeus = restored.session.state.cards.find((card) => card.code === asmodeusCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === asmodeus!.uid && candidate.luaConditionDescriptor === descriptor);
@@ -237,6 +240,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredAsmodeus = restored.session.state.cards.find((card) => card.code === asmodeusCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === asmodeus!.uid && candidate.luaConditionDescriptor === descriptor);
@@ -289,6 +293,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredAsmodeus = restored.session.state.cards.find((card) => card.code === asmodeusCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === asmodeus!.uid && candidate.luaConditionDescriptor === descriptor);

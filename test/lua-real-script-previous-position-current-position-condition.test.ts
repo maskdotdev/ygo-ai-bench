@@ -76,6 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredSamurai = restored.session.state.cards.find((card) => card.code === samuraiCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === samurai!.uid && candidate.luaConditionDescriptor === descriptor);
@@ -123,6 +124,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredTaintedWisdom = restored.session.state.cards.find((card) => card.code === taintedWisdomCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === taintedWisdom!.uid && candidate.luaConditionDescriptor === descriptor);
@@ -163,6 +165,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredSamurai = restored.session.state.cards.find((card) => card.code === samuraiCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === samurai!.uid && candidate.luaConditionDescriptor === descriptor);

@@ -74,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredBlueEyesJetDragon = restored.session.state.cards.find((card) => card.code === blueEyesJetDragonCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === blueEyesJetDragon!.uid && candidate.luaConditionDescriptor === descriptor);
@@ -120,6 +121,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredSupervise = restored.session.state.cards.find((card) => card.code === superviseCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === supervise!.uid && candidate.luaConditionDescriptor === descriptor);
@@ -166,6 +168,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredBlueEyesJetDragon = restored.session.state.cards.find((card) => card.code === blueEyesJetDragonCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === blueEyesJetDragon!.uid && candidate.luaConditionDescriptor === descriptor);

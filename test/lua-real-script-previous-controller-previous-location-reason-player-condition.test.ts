@@ -71,6 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredCoppelia = restored.session.state.cards.find((card) => card.code === coppeliaCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === coppelia!.uid && candidate.luaConditionDescriptor === descriptor);
@@ -119,6 +120,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredRanshin = restored.session.state.cards.find((card) => card.code === ranshinCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === ranshin!.uid && candidate.luaConditionDescriptor === descriptor);
@@ -159,6 +161,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredCoppelia = restored.session.state.cards.find((card) => card.code === coppeliaCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === coppelia!.uid && candidate.luaConditionDescriptor === descriptor);
@@ -196,6 +199,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredAscalon = restored.session.state.cards.find((card) => card.code === ascalonCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === ascalon!.uid && candidate.luaConditionDescriptor === descriptor);

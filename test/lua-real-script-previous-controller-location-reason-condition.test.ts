@@ -71,6 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredDefender = restored.session.state.cards.find((card) => card.code === defenderCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === defender!.uid && candidate.luaConditionDescriptor === descriptor);
@@ -118,6 +119,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredDefender = restored.session.state.cards.find((card) => card.code === defenderCode);
     const descriptor = `condition:source-previous-controller-location-reason:${locationGraveyard}:${duelReason.battle}`;
@@ -174,6 +176,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredDefender = restored.session.state.cards.find((card) => card.code === defenderCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === defender!.uid && candidate.luaConditionDescriptor === descriptor);
