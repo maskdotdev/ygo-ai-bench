@@ -12,6 +12,12 @@ const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ash Blossom & Joyous Spring", () => {
   it("restores its hand response to a Deck search and suppresses the negated operation", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
@@ -48,6 +54,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
 
     const restoredOpen = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredOpen.restoreComplete, restoredOpen.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredOpen, 1);
     expect(restoredOpen.missingRegistryKeys).toEqual([]);
     const ashResponse = getLuaRestoreLegalActions(restoredOpen, 1).find((action) => action.type === "activateEffect" && action.uid === ashBlossom!.uid);
     expect(ashResponse).toBeDefined();
@@ -60,8 +67,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
     expect(restoredChain.missingRegistryKeys).toEqual([]);
     const responsePlayer = restoredChain.session.state.waitingFor;
     expect(responsePlayer).toBeDefined();
-    expect(getLuaRestoreLegalActionGroups(restoredChain, responsePlayer!)).toEqual(getGroupedDuelLegalActions(restoredChain.session, responsePlayer!));
-    expect(getLuaRestoreLegalActionGroups(restoredChain, responsePlayer!).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, responsePlayer!));
+    expectRestoredLegalActions(restoredChain, responsePlayer!);
     resolveOpenChain(restoredChain);
 
     expect(restoredChain.session.state.cards.find((card) => card.uid === ashBlossom!.uid)).toMatchObject({ location: "graveyard" });
