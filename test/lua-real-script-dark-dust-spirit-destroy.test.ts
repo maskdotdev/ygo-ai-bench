@@ -114,11 +114,50 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
 
     const destroyedUids = [ownFaceup!.uid, opponentAttack!.uid, opponentDefense!.uid];
     expect(restoredTriggerWindow.session.state.chain).toHaveLength(1);
-    expect(restoredTriggerWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: darkDust!.uid,
-      eventName: "normalSummoned",
-      eventCardUid: darkDust!.uid,
-    });
+    expect(restoredTriggerWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 1,
+        "chainIndex": 1,
+        "effectId": "lua-7-1100",
+        "eventCardUid": "p0-deck-89111398-0",
+        "eventCode": 1100,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 1,
+        },
+        "eventName": "normalSummoned",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReason": 16,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-6",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 3,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-89111400-2",
+              "p1-deck-89111401-0",
+              "p1-deck-89111402-1",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-89111398-0",
+      }
+    `);
     assertDestroyOperationInfo(restoredTriggerWindow.session.state.chain[0]!, destroyedUids);
 
     const restoredChainWindow = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), source, reader);

@@ -86,12 +86,51 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Iz
 
     expect(restoredTriggerWindow.session.state.cards.find((card) => card.uid === cost!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(restoredTriggerWindow.session.state.chain).toHaveLength(1);
-    expect(restoredTriggerWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: izanami!.uid,
-      eventName: "normalSummoned",
-      eventCardUid: izanami!.uid,
-      operationInfos: [{ category: 0x8, targetUids: [targetSpirit!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restoredTriggerWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-7-1100",
+        "eventCardUid": "p0-deck-43543777-0",
+        "eventCode": 1100,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "normalSummoned",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReason": 16,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-5",
+        "operationInfos": [
+          {
+            "category": 8,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-43543779-2",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-43543777-0",
+        "targetUids": [
+          "p0-deck-43543779-2",
+        ],
+      }
+    `);
     expect(restoredTriggerWindow.session.state.eventHistory.filter((event) => event.eventName === "discarded")).toEqual([{
       eventName: "discarded",
       eventCode: 1018,

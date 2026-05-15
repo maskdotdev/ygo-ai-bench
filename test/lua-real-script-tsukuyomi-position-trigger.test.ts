@@ -75,12 +75,51 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ts
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTriggerWindow, trigger!);
     expect(restoredTriggerWindow.session.state.chain).toHaveLength(1);
-    expect(restoredTriggerWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: tsukuyomi!.uid,
-      eventName: "normalSummoned",
-      eventCardUid: tsukuyomi!.uid,
-      operationInfos: [{ category: 0x1000, targetUids: [target!.uid], count: 1, player: 0, parameter: 0x8 }],
-    });
+    expect(restoredTriggerWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-7-1100",
+        "eventCardUid": "p0-deck-34853266-0",
+        "eventCode": 1100,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "normalSummoned",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReason": 16,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-4",
+        "operationInfos": [
+          {
+            "category": 4096,
+            "count": 1,
+            "parameter": 8,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-34853267-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-34853266-0",
+        "targetUids": [
+          "p1-deck-34853267-0",
+        ],
+      }
+    `);
 
     const restoredChainWindow = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), source, reader);
     expect(restoredChainWindow.restoreComplete, restoredChainWindow.incompleteReasons.join("; ")).toBe(true);
