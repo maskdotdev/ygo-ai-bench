@@ -106,6 +106,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
     expect(getLuaRestoreLegalActionGroups(restoredProtected, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredProtected, 1));
     const destroyAction = getLuaRestoreLegalActions(restoredProtected, 1).find((action) => action.type === "activateEffect" && action.uid === destroyer!.uid);
     expect(destroyAction).toBeDefined();
+    expect(restoredProtected.session.state.effects.find((effect) => effect.id === destroyAction!.effectId)).toMatchObject({
+      category: 0x1,
+      range: ["hand"],
+    });
     const destroyStarted = applyLuaRestoreResponse(restoredProtected, destroyAction!);
     expect(destroyStarted.ok, destroyStarted.error).toBe(true);
 

@@ -76,6 +76,8 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
       file: "lua-real-script-red-gardna-indestructible-restore.test.ts",
       required: [
         'luaValueDescriptor: "indestructible:opponent"',
+        "category: 0x1",
+        'range: ["hand"]',
         "red gardna destroy resolved 0",
         "expect(restoredProtected.session.state.cards.find((card) => card.uid === protectedMonster!.uid)).toMatchObject({ location: \"monsterZone\", controller: 0 })",
         "expect(ownDestroy).toMatchObject({ uid: protectedMonster!.uid, location: \"graveyard\" })",
