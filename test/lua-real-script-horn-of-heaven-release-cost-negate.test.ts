@@ -80,7 +80,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ho
     expect(released).toMatchObject({ location: "graveyard", previousLocation: "monsterZone", previousController: 1, reasonPlayer: 1 });
     expect((released!.reason! & duelReason.release) !== 0).toBe(true);
     expect((released!.reason! & duelReason.cost) !== 0).toBe(true);
-    expect(restoredSummonWindow.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "released", eventCode: 1017, eventCardUid: releaseCost!.uid })]));
+    expect(restoredSummonWindow.session.state.eventHistory.filter((event) => event.eventName === "released" && event.eventCardUid === releaseCost!.uid)).toEqual([
+      {
+        eventName: "released",
+        eventCode: 1017,
+        eventCardUid: releaseCost!.uid,
+        eventPreviousState: {
+          location: "monsterZone",
+          controller: 1,
+          sequence: 0,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventCurrentState: {
+          location: "graveyard",
+          controller: 1,
+          sequence: 0,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventReason: duelReason.cost | duelReason.release,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: horn!.uid,
+        eventReasonEffectId: 4,
+      },
+    ]);
     expect(restoredSummonWindow.session.state.chain).toHaveLength(1);
     expect(restoredSummonWindow.session.state.chain[0]).toMatchObject({
       sourceUid: horn!.uid,
@@ -114,12 +138,54 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ho
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === horn!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredPendingResolution.host.messages).not.toContain("horn of heaven chain responder resolved");
-    expect(restoredPendingResolution.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "specialSummonNegated", eventCode: 1116, eventCardUid: summoned!.uid }),
-        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: summoned!.uid }),
-      ]),
-    );
+    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => ["specialSummonNegated", "destroyed"].includes(event.eventName))).toEqual([
+      {
+        eventName: "specialSummonNegated",
+        eventCode: 1116,
+        eventCardUid: summoned!.uid,
+        eventReason: duelReason.disSummon,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: horn!.uid,
+        eventReasonEffectId: 4,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: summoned!.uid,
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: horn!.uid,
+        eventReasonEffectId: 4,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "specialSummoned", eventCardUid: summoned!.uid })]));
   });
 });
