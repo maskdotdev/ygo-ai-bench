@@ -18,7 +18,7 @@ const officialPatternRestoreCoverage: Record<string, string[]> = {
   "SetChainLimit:inline:handler-exclusion": ["test/lua-real-script-titanic-galaxy-chain-limit.test.ts"],
   "SetChainLimit:inline:response-chain-player": ["test/lua-chain-limit-response-chain-player-restore.test.ts"],
   "SetChainLimit:inline:target-card-handler-exclusion": ["test/lua-chain-limit-target-cards-restore.test.ts"],
-  "SetChainLimit:named:active-type": ["test/lua-chain-limit-active-type-restore.test.ts"],
+  "SetChainLimit:named:active-type": ["test/lua-real-script-giant-starfall-chain-limit.test.ts"],
   "SetChainLimit:named:effect-type": ["test/lua-chain-limit-named-predicate-restore.test.ts"],
   "SetChainLimit:named:response-chain-player": ["test/lua-chain-limit-response-chain-player-restore.test.ts"],
   "SetChainLimitTillChainEnd:aux.FALSE": ["test/lua-chain-limit-chain-end-restore.test.ts"],
