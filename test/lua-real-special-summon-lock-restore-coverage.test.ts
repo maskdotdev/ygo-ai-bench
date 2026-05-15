@@ -428,6 +428,8 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     {
       file: "test/lua-real-script-virtual-world-lulu-level-rank3-summon-lock.test.ts",
       requiredSnippets: [
+        "target:not-level-or-rank-above:3",
+        "targetRange: [1, 0]",
         "lulu level2 special 0",
         "lulu link2 special 0",
         "lulu level4 special 1",
@@ -494,6 +496,8 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     {
       file: "test/lua-real-script-link-devotee-link3-lock.test.ts",
       requiredSnippets: [
+        "target:link-summon-link-above:3",
+        "targetRange: [1, 0]",
         "link devotee link2 link special 1",
         "link devotee link3 link special 0",
         "link devotee link3 fusion special 1",
