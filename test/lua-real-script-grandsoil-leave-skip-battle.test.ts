@@ -46,6 +46,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(grandsoilCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
+    const skipLabel = session.state.turn;
     const leave = host.loadScript(
       `
       local grandsoil=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, ${grandsoilCode}), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
@@ -64,7 +65,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
           controller: 0,
           targetRange: [1, 0],
           reset: { flags: 0x50000200, count: 2 },
-          label: expect.any(Number),
+          label: skipLabel,
         }),
       ]),
     );
@@ -73,6 +74,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     expect(restoredSameTurn.restoreComplete, restoredSameTurn.incompleteReasons.join("; ")).toBe(true);
     expect(restoredSameTurn.missingRegistryKeys).toEqual([]);
     expect(restoredSameTurn.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restoredSameTurn.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceUid: grandsoil.uid,
+          code: 183,
+          controller: 0,
+          targetRange: [1, 0],
+          reset: { flags: 0x50000200, count: 2 },
+          label: skipLabel,
+        }),
+      ]),
+    );
     expect(getLuaRestoreLegalActionGroups(restoredSameTurn, 0)).toEqual(getGroupedDuelLegalActions(restoredSameTurn.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredSameTurn, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restoredSameTurn, 0),

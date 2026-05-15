@@ -49,6 +49,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(amorphactorCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
+    const skipLabel = session.state.turn;
     const summonSuccess = host.loadScript(
       `
       local amorphactor=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, ${amorphactorCode}), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
@@ -67,7 +68,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
           controller: 0,
           targetRange: [0, 1],
           reset: { flags: 0x60000200, count: 1 },
-          label: expect.any(Number),
+          label: skipLabel,
         }),
       ]),
     );
@@ -77,6 +78,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     expectRestoredLegalActions(restoredEffect, 0);
     expect(restoredEffect.missingRegistryKeys).toEqual([]);
     expect(restoredEffect.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restoredEffect.session.state.effects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceUid: amorphactor.uid,
+          code: 182,
+          controller: 0,
+          targetRange: [0, 1],
+          reset: { flags: 0x60000200, count: 1 },
+          label: skipLabel,
+        }),
+      ]),
+    );
     applyActionAndAssert(restoredEffect.session, getLuaRestoreLegalActions(restoredEffect, 0).find((action) => action.type === "endTurn"));
 
     const restoredOpponentMain = restoreDuelWithLuaScripts(serializeDuel(restoredEffect.session), workspace, reader);
