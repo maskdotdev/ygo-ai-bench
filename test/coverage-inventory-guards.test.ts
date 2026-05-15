@@ -76,7 +76,7 @@ describe("coverage inventory guards", () => {
         return !text.includes("getLuaRestoreLegalActionGroups");
       });
 
-    expect(restoreFiles).toHaveLength(693);
+    expect(restoreFiles).toHaveLength(697);
     expect(missingGroupedRestoreEvidence).toEqual([]);
   });
 

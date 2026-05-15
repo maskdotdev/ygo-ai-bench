@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
 const scannerPath = path.join(root, "tools/scan-lua-clean-restore.mjs");
-const realScriptFixtureCount = 544;
+const realScriptFixtureCount = 548;
 
 describe("Lua real-script clean restore coverage", () => {
   it("requires every real-script fixture to assert no missing Lua registry keys after restore", () => {
