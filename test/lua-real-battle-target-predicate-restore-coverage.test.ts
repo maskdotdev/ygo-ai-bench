@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTargetPredicateFixtureCount = 2;
+const battleTargetPredicateFixtureCount = 3;
 
 describe("Lua real battle target predicate restore coverage", () => {
   it("requires battle-target predicate fixtures to assert clean Lua registry restore and restored predicates", () => {
@@ -50,6 +50,15 @@ function battleTargetPredicateFixtureFiles(): Array<{ file: string; required: st
         "hasAttack(actions, attacker.uid, windAlly.uid)).toBe(true)",
         "hunter owl target/stat protected",
         "valueCardPredicate",
+      ],
+    },
+    {
+      file: "test/lua-real-script-solar-flare-end-damage-target-lock.test.ts",
+      required: [
+        "hasAttack(battleActions, attacker.uid, solarFlare.uid)).toBe(false)",
+        "hasAttack(battleActions, attacker.uid, pyroAlly.uid)).toBe(true)",
+        "triggerBucket: \"turnMandatory\"",
+        'eventName: "damageDealt"',
       ],
     },
   ].sort((a, b) => a.file.localeCompare(b.file));
