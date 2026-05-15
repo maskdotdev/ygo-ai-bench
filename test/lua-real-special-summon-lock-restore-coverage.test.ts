@@ -662,6 +662,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-sunvine-shrine-extra-plant-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "special-summon-limit:not-race-extra:1024"',
+        "property: 0x4000800",
         "targetRange: [1, 0]",
         "sunvine warrior extra special 0",
         "sunvine plant extra special 1",
