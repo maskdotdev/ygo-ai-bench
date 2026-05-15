@@ -238,6 +238,28 @@ describe("Lua prompt pattern scanner", () => {
     expect(result.stdout).toContain("SelectEffect:effect-table-options");
     expect(result.stderr).toContain("SelectEffect:dynamic-options calls 0 is below required 1");
   });
+
+  it("rejects malformed scanner options", () => {
+    const cases = [
+      { args: ["--scripts"], error: "Missing value for --scripts" },
+      { args: ["--limit"], error: "Missing value for --limit" },
+      { args: ["--min-files-with-calls"], error: "Missing value for --min-files-with-calls" },
+      { args: ["--min-files-with-calls", "-1"], error: "--min-files-with-calls must be a non-negative integer" },
+      { args: ["--min-select-option-calls"], error: "Missing value for --min-select-option-calls" },
+      { args: ["--min-api-count"], error: "Missing value for --min-api-count" },
+      { args: ["--min-api-count", "AnnounceCard"], error: "Missing value for --min-api-count" },
+      { args: ["--min-api-count", "AnnounceCard", "1.5"], error: "--min-api-count must be a non-negative integer" },
+      { args: ["--min-pattern-count"], error: "Missing value for --min-pattern-count" },
+      { args: ["--min-pattern-count", "SelectOption:table-unpack"], error: "Missing value for --min-pattern-count" },
+      { args: ["--unknown"], error: "Unknown argument: --unknown" },
+    ];
+
+    for (const { args, error } of cases) {
+      const result = spawnSync(process.execPath, [scannerPath, ...args], { encoding: "utf8" });
+      expect(result.status, args.join(" ")).toBe(1);
+      expect(result.stderr, args.join(" ")).toContain(error);
+    }
+  });
 });
 
 function makeScriptRoot(files: Record<string, string>): string {

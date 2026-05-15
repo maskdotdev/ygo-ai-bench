@@ -100,6 +100,7 @@ function parseArgs(argv) {
       const count = readNonNegativeInteger(argv, ++index, arg);
       options.minPatternCounts = [...(options.minPatternCounts ?? []), { pattern, count }];
     }
+    else if (arg.startsWith("--")) throw new Error(`Unknown argument: ${arg}`);
     else if (!options.scriptRoot) options.scriptRoot = arg;
     else throw new Error(`Unknown argument: ${arg}`);
   }
