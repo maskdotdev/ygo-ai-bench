@@ -60,16 +60,41 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gu
     passAttackResponsesUntilTrigger(restoredSetup);
 
     expect(restoredSetup.session.state.battleWindow?.kind).toBe("startDamageStep");
-    expect(restoredSetup.session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: gundari!.uid,
-          eventName: "battleStarted",
-          eventCode: 1132,
-          eventCardUid: gundari!.uid,
-        }),
-      ]),
-    );
+    expect(restoredSetup.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-7-1132",
+          "eventCardUid": "p0-deck-38975369-0",
+          "eventCode": 1132,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "battleStarted",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "eventUids": [
+            "p0-deck-38975369-0",
+            "p1-deck-38975370-0",
+          ],
+          "id": "trigger-3-1",
+          "player": 0,
+          "sourceUid": "p0-deck-38975369-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredSetup.session), workspace, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);

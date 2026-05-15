@@ -99,15 +99,38 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
         },
       },
     ]);
-    expect(restored.session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        player: 1,
-        triggerBucket: "opponentOptional",
-        eventName: "destroyed",
-        sourceUid: dispatch!.uid,
-        eventCardUid: dispatch!.uid,
-      }),
-    ]);
+    expect(restored.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-3-1029",
+          "eventCardUid": "p1-extraDeck-64966519-0",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 33,
+          "eventReasonCardUid": "p0-deck-6496-0",
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-7-1",
+          "player": 1,
+          "sourceUid": "p1-extraDeck-64966519-0",
+          "triggerBucket": "opponentOptional",
+        },
+      ]
+    `);
 
     const destroyed = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger" && action.uid === dispatch!.uid && action.effectId.endsWith("-1029"));
     expect(destroyed).toBeDefined();

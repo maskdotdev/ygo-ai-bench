@@ -100,11 +100,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
     passBattleUntilTrigger(restoredBattleWindow);
 
     expect(restoredBattleWindow.session.state.cards.find((card) => card.uid === defender!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
-    expect(restoredBattleWindow.session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: yamato!.uid, eventName: "battleDestroyed", eventCode: 1140, eventCardUid: yamato!.uid, player: 0 }),
-      ]),
-    );
+    expect(restoredBattleWindow.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-8-1139",
+          "eventCardUid": "p0-deck-82841979-0",
+          "eventCode": 1140,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "battleDestroyed",
+          "eventPlayer": 1,
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 33,
+          "eventReasonCardUid": "p0-deck-82841979-0",
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "if",
+          "id": "trigger-11-1",
+          "player": 0,
+          "sourceUid": "p0-deck-82841979-0",
+          "triggerBucket": "turnOptional",
+        },
+      ]
+    `);
 
     const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredBattleWindow.session), source, reader);
     expect(restoredTriggerWindow.restoreComplete, restoredTriggerWindow.incompleteReasons.join("; ")).toBe(true);

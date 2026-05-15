@@ -82,17 +82,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
 
     expect(restoredSetup.session.state.players[0].lifePoints).toBe(8000);
     expect(restoredSetup.session.state.players[1].lifePoints).toBe(7300);
-    expect(restoredSetup.session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: fushi!.uid,
-          eventName: "battleDamageDealt",
-          eventCode: 1143,
-          eventPlayer: 1,
-          eventValue: 700,
-        }),
-      ]),
-    );
+    expect(restoredSetup.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-7-1143",
+          "eventCardUid": "p0-deck-38538445-0",
+          "eventCode": 1143,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "battleDamageDealt",
+          "eventPlayer": 1,
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 32,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "eventValue": 700,
+          "id": "trigger-5-1",
+          "player": 0,
+          "sourceUid": "p0-deck-38538445-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredSetup.session), source, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
