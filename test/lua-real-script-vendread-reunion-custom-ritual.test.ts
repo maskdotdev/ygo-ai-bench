@@ -90,7 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ve
     expect(restored.session.state.cards.find((card) => card.uid === materialA!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.release | duelReason.effect | duelReason.material | duelReason.ritual });
     expect(restored.session.state.cards.find((card) => card.uid === materialB!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.release | duelReason.effect | duelReason.material | duelReason.ritual });
     expect(restored.session.state.cards.find((card) => card.uid === reunion!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
-    expect(restored.host.messages).toEqual(expect.arrayContaining([`confirmed 1: ${ritualTargetCode}`, expect.stringContaining(`confirmed 1: ${materialACode}`)]));
+    expect(restored.host.messages).toEqual([`confirmed 1: ${ritualTargetCode}`, `confirmed 1: ${materialACode},${materialBCode}`]);
     expect(restored.host.messages).not.toContain("vendread reunion responder resolved");
   });
 });
