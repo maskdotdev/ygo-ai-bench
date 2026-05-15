@@ -96,12 +96,82 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Po
     expect(restored.session.state.cards.find((card) => card.uid === selectedUid)).toMatchObject({ location: "hand", controller: 0 });
     expect(getCards(restored.session.state, 0, "deck").map((card) => card.uid).sort()).toEqual(remainingUids);
     expect(restored.session.state.cards.find((card) => card.uid === pot!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "confirmed", eventCode: 1211, eventPlayer: 0, eventUids: topDeckUids }),
-        expect.objectContaining({ eventName: "sentToHandConfirmed", eventCode: 1212, eventPlayer: 1, eventUids: [selectedUid] }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => ["confirmed", "sentToHandConfirmed"].includes(event.eventName))).toEqual([
+      {
+        eventName: "confirmed",
+        eventCode: 1211,
+        eventPlayer: 0,
+        eventCardUid: selectedUid,
+        eventValue: 3,
+        eventUids: topDeckUids,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "confirmed",
+        eventCode: 1211,
+        eventPlayer: 1,
+        eventCardUid: selectedUid,
+        eventValue: 1,
+        eventUids: [selectedUid],
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: pot!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 1,
+        },
+      },
+      {
+        eventName: "sentToHandConfirmed",
+        eventCode: 1212,
+        eventPlayer: 1,
+        eventCardUid: selectedUid,
+        eventValue: 1,
+        eventUids: [selectedUid],
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: pot!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 1,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToHand")).toEqual([
       {
         eventName: "sentToHand",
