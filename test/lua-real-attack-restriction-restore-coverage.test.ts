@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const attackRestrictionFixtureCount = 5;
+const attackRestrictionFixtureCount = 6;
 
 describe("Lua real attack-restriction restore coverage", () => {
   it("requires representative field, player, and remain-field attack locks to assert clean Lua restore", () => {
@@ -41,6 +41,16 @@ function realScriptAttackRestrictionFixtureFiles(): Array<{ file: string; requir
         "gravity bind attack true/false",
         "highAttacker!.uid)).toBe(false)",
         "faceUp: true",
+      ],
+    },
+    {
+      file: "test/lua-real-script-heliosphere-attack-announce-lock.test.ts",
+      required: [
+        "code === 86",
+        "heliosphere locked CanAttack false",
+        "heliosphere open CanAttack true",
+        "hasAttack(actions, attacker.uid, heliosphere.uid)).toBe(false)",
+        "hasAttack(actions, attacker.uid, heliosphere.uid)).toBe(true)",
       ],
     },
     {
