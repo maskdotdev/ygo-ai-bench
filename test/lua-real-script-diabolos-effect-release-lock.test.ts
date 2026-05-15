@@ -2,12 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { createDuel, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { createDuel, getGroupedDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -46,6 +46,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restored, 0),
+    );
     const probe = restored.host.loadScript(
       `
       local diabolos=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${diabolosCode}),0,LOCATION_MZONE,0,1,1,nil):GetFirst()
@@ -64,6 +68,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     const costRestored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(costRestored.restoreComplete, costRestored.incompleteReasons.join("; ")).toBe(true);
     expect(costRestored.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(costRestored, 0)).toEqual(getGroupedDuelLegalActions(costRestored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(costRestored, 0).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(costRestored, 0),
+    );
     const costProbe = costRestored.host.loadScript(
       `
       local diabolos=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${diabolosCode}),0,LOCATION_MZONE,0,1,1,nil):GetFirst()
