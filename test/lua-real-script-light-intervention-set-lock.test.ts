@@ -71,7 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Li
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
+    expectRestoredLegalActions(restoredActivation, 0);
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(
       expect.arrayContaining([expect.objectContaining({ type: "setMonster", uid: playerHandMonster!.uid })]),
     );
@@ -85,8 +85,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Li
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
-    expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
+    expectRestoredLegalActions(restoredChain, 1);
     resolveRestoredChain(restoredChain);
     expect(restoredChain.session.state.cards.find((card) => card.uid === light!.uid)).toMatchObject({
       location: "spellTrapZone",
@@ -97,6 +96,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Li
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
     expect(restoredLock.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredLock, 0);
     const playerActions = getLuaRestoreLegalActions(restoredLock, 0);
     expect(playerActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "normalSummon", uid: playerHandMonster!.uid })]));
     expect(playerActions.some((action) => action.type === "setMonster" && action.uid === playerHandMonster!.uid)).toBe(false);
@@ -161,4 +161,10 @@ function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScri
     expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restored, pass!);
   }
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }

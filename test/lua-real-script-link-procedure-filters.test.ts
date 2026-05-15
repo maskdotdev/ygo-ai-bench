@@ -129,7 +129,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Li
       const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
       expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
       expect(restored.missingRegistryKeys).toEqual([]);
-      expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+      expectRestoredLegalActions(restored, 0);
       return { restored, link };
     };
 
@@ -189,7 +189,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Li
       });
       const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
       expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
-      expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+      expect(restored.missingRegistryKeys).toEqual([]);
+      expectRestoredLegalActions(restored, 0);
       return { restored, link };
     };
 
@@ -241,7 +242,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Li
       });
       const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
       expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
-      expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+      expect(restored.missingRegistryKeys).toEqual([]);
+      expectRestoredLegalActions(restored, 0);
       return { restored, link };
     };
 
@@ -414,7 +416,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Li
       });
       const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
       expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
-      expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+      expect(restored.missingRegistryKeys).toEqual([]);
+      expectRestoredLegalActions(restored, 0);
       return { restored, link };
     };
 
@@ -435,3 +438,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Li
     });
   });
 });
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
