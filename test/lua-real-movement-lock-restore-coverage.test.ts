@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const MOVEMENT_LOCK_FIXTURE_COUNT = 3;
 
 describe("Lua real movement-lock restore coverage", () => {
   it("requires representative movement locks to assert clean Lua restore and blocked movement probes", () => {
-    const missing = movementLockFixtureFiles()
+    const files = movementLockFixtureFiles();
+    expect(files).toHaveLength(MOVEMENT_LOCK_FIXTURE_COUNT);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
