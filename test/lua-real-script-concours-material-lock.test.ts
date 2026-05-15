@@ -85,6 +85,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
           code: 248,
           luaTargetDescriptor: `target:not-setcode-any:${setNouvelles},${setPatissciel}`,
           luaValueDescriptor: `cannot-material:controller-summon-types:${luaSummonTypeFusion},${luaSummonTypeSynchro},${luaSummonTypeXyz},${luaSummonTypeLink}`,
+          targetRange: [0x3ff, 0x3ff],
         }),
       ]),
     );
@@ -104,6 +105,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
           sourceUid: concours!.uid,
           luaTargetDescriptor: `target:not-setcode-any:${setNouvelles},${setPatissciel}`,
           luaValueDescriptor: `cannot-material:controller-summon-types:${luaSummonTypeFusion},${luaSummonTypeSynchro},${luaSummonTypeXyz},${luaSummonTypeLink}`,
+          targetRange: [0x3ff, 0x3ff],
         }),
       ]),
     );

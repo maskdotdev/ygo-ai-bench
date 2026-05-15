@@ -50,6 +50,7 @@ function restrictionFixtureFiles(): Array<{ file: string; required: string[] }> 
         "code: 248",
         "target:not-setcode-any:",
         "cannot-material:controller-summon-types:",
+        "targetRange: [0x3ff, 0x3ff]",
         "fusionSummonDuelCard(restored.session.state, 0, blockedFusion!.uid",
         "cannot be used as fusion material",
         "fusionSummonDuelCard(restored.session.state, 1, opponentFusion!.uid",
