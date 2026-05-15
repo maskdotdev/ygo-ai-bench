@@ -63,9 +63,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     expect(host.loadCardScript(Number(susaCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(3);
+    expect(session.state.effects.find((effect) => effect.sourceUid === responder!.uid)).toMatchObject({
+      hintTiming: [0x20],
+      range: ["hand"],
+    });
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expectCleanRestore(restoredActivation);
+    expect(restoredActivation.session.state.effects.find((effect) => effect.sourceUid === responder!.uid)).toMatchObject({
+      hintTiming: [0x20],
+      range: ["hand"],
+    });
     expectRestoredLegalActions(restoredActivation, 0);
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     const activateTrap = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === invitation!.uid);

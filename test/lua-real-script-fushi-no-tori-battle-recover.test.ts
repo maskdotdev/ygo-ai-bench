@@ -57,6 +57,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
     expect(session.state.effects.find((effect) => effect.sourceUid === responder!.uid)).toMatchObject({
+      hintTiming: [0x1000000],
       property: 0xc000,
       range: ["hand"],
     });
@@ -66,6 +67,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
     expect(restoredSetup.missingRegistryKeys).toEqual([]);
     expect(restoredSetup.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredSetup.session.state.effects.find((effect) => effect.sourceUid === responder!.uid)).toMatchObject({
+      hintTiming: [0x1000000],
       property: 0xc000,
       range: ["hand"],
     });

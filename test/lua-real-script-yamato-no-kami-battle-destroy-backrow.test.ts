@@ -129,6 +129,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
     expect(restoredChainWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredChainWindow, 1);
     expect(restoredChainWindow.session.state.effects.find((effect) => effect.sourceUid === responder!.uid && effect.event === "quick")).toMatchObject({
+      hintTiming: [0x1000000],
       property: 0xc000,
       range: ["hand"],
     });
