@@ -81,6 +81,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-numen-erat-testudo-attack-summon-lock.test.ts",
       requiredSnippets: [
         "target:attack-below:1800",
+        "property: 0x800",
         "targetRange: [1, 1]",
         "testudo low special 0",
         "testudo equal special 0",
@@ -118,6 +119,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-repair-genex-controller-procedure-extra-lock.test.ts",
       requiredSnippets: [
         "target:extra-summon-type-not-or-no-procedure:",
+        "property: 0x4000800",
         "targetRange: [1, 0]",
         "canPlayerSpecialSummon(restored.session.state, 0, synchro, luaSummonTypeSynchro, procedureEffectId)).toBe(true)",
         "canPlayerSpecialSummon(restored.session.state, 0, synchro, luaSummonTypeSynchro)).toBe(false)",
@@ -554,6 +556,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-pendulum-area-summon-type-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: `target:special-summon-type-not:${luaSummonTypePendulum}`',
+        "property: 0x4000800",
         "targetRange: [1, 1]",
         "pendulum area generic special 0",
         "pendulum area pendulum special 1",

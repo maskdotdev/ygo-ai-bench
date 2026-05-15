@@ -64,6 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pe
     expect(resolve.ok, resolve.error).toBe(true);
     expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
       luaTargetDescriptor: `target:special-summon-type-not:${luaSummonTypePendulum}`,
+      property: 0x4000800,
       targetRange: [1, 1],
     });
 
@@ -76,7 +77,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pe
       getLuaRestoreLegalActions(restored, 0),
     );
     const restoredLock = restored.session.state.effects.find((effect) => effect.code === 22);
-    expect(restoredLock).toMatchObject({ targetRange: [1, 1] });
+    expect(restoredLock).toMatchObject({ property: 0x4000800, targetRange: [1, 1] });
     const pendulumProbe = restored.session.state.cards.find((card) => card.code === pendulumCode);
     expect(restoredLock?.targetCardPredicate?.({ summonTypeCode: luaSummonTypePendulum } as never, pendulumProbe!)).toBe(false);
     const probe = restored.host.loadScript(

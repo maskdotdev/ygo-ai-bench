@@ -72,6 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
         expect.objectContaining({
           code: 22,
           luaTargetDescriptor: `target:extra-summon-type-not-or-no-procedure:${luaSummonTypeSynchro}`,
+          property: 0x4000800,
           targetRange: [1, 0],
         }),
       ]),
@@ -91,6 +92,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
     expect(canPlayerSpecialSummon(restored.session.state, 0, synchro, luaSummonTypeSynchro, procedureEffectId)).toBe(true);
     expect(canPlayerSpecialSummon(restored.session.state, 0, synchro, luaSummonTypeSynchro)).toBe(false);
     expect(restored.session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      property: 0x4000800,
       targetRange: [1, 0],
     });
     const rawProbe = restored.host.loadScript(

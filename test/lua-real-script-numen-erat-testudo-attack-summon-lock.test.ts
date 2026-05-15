@@ -65,6 +65,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Nu
     expect(resolve.ok, resolve.error).toBe(true);
     expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
       luaTargetDescriptor: "target:attack-below:1800",
+      property: 0x800,
       targetRange: [1, 1],
     });
 
@@ -77,6 +78,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Nu
       getLuaRestoreLegalActions(restored, 0),
     );
     expect(restored.session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      property: 0x800,
       targetRange: [1, 1],
     });
     const probe = restored.host.loadScript(
