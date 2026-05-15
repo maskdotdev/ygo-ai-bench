@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { getCards, moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, drawDuelCards, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -120,9 +121,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Po
     expect(resolved.ok, resolved.error).toBe(true);
 
     expect(restored.session.state.cards.find((card) => card.uid === drawUid)).toMatchObject({ location: "hand", controller: 0 });
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventValue: 1, eventUids: [drawUid] })]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "cardsDrawn")).toEqual([
+      {
+        eventName: "cardsDrawn",
+        eventCode: 1110,
+        eventPlayer: 0,
+        eventCardUid: drawUid,
+        eventValue: 1,
+        eventUids: [drawUid],
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: pot!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.cards.find((card) => card.uid === pot!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.effects).toEqual(
       expect.arrayContaining([expect.objectContaining({ sourceUid: pot!.uid, controller: 0, event: "continuous", code: 25, targetRange: [1, 0] })]),
