@@ -87,9 +87,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
 
     expect(restoredSkip.session.state).toMatchObject({ turnPlayer: 1, phase: "main1", waitingFor: 1, skippedPhases: [] });
     expect(restoredSkip.session.state.cards.find((card) => card.uid === drawCard!.uid)).toMatchObject({ location: "deck", controller: 1 });
-    expect(restoredSkip.session.state.eventHistory).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "preDraw", eventPlayer: 1 })]),
-    );
+    expect(restoredSkip.session.state.eventHistory.filter((event) => event.eventName === "preDraw" && event.eventPlayer === 1)).toEqual([]);
   });
 });
 

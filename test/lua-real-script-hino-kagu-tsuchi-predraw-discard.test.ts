@@ -119,9 +119,16 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
     expect(restoredBattle.session.state.effects).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ sourceUid: hino!.uid, event: "continuous", code: 1113, controller: 0 })]),
     );
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "preDraw" && event.eventPlayer === 1)).toEqual([
+      {
+        eventName: "preDraw",
+        eventCode: 1113,
+        eventPlayer: 1,
+        eventValue: 1,
+      },
+    ]);
     expect(restoredBattle.session.state.eventHistory).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ eventName: "preDraw", eventCode: 1113, eventPlayer: 1, eventValue: 1 }),
         expect.objectContaining({ eventName: "discarded", eventCode: 1018, eventCardUid: discardA!.uid }),
         expect.objectContaining({ eventName: "discarded", eventCode: 1018, eventCardUid: discardB!.uid }),
       ]),
