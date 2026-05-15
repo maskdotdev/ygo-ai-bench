@@ -60,7 +60,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Py
     expect(host.loadCardScript(Number(pyroClockCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(turnEffectCarrierCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(3);
+    expect(host.registerInitialEffects()).toBe(3);
 
     const activate = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === pyroClock!.uid);
     expect(activate, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();

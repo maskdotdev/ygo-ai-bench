@@ -94,7 +94,7 @@ describe("Lua chain-limit restore coverage", () => {
       .filter((files) => files.some((file) => file.includes("/lua-real-script-")))
       .length;
 
-    expect(realScriptOwnedGroups).toBeGreaterThanOrEqual(realScriptOwnedScannerGroupCount);
+    expect(realScriptOwnedGroups).toBe(realScriptOwnedScannerGroupCount);
   });
 });
 
