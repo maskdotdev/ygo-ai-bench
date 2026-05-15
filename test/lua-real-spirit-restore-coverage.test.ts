@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 5;
+const spiritFixtureCount = 6;
 
 describe("Lua real Spirit restore coverage", () => {
   it("requires representative Spirit fixtures to prove clean Lua restore and replayed legal actions", () => {
@@ -86,6 +86,17 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
         'eventName: "normalSummoned"',
         'eventName: "sentToHand"',
         'eventName: "sentToHandConfirmed"',
+      ],
+    },
+    {
+      file: "lua-real-script-shinobird-pigeon-spirit-return.test.ts",
+      required: [
+        'action.type === "normalSummon"',
+        'action.type === "activateEffect"',
+        'action.type === "passChain"',
+        'eventName: "sentToHand"',
+        'location: "hand", controller: 0',
+        'host.messages).not.toContain("shinobird pigeon responder resolved")',
       ],
     },
   ].map(({ file, required }) => ({ file: path.join("test", file), required }));
