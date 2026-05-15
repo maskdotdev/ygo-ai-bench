@@ -152,6 +152,8 @@ describe("Lua real battle restore coverage", () => {
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys")
+          || !text.includes("missingRegistryKeys).toEqual([])")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)")
