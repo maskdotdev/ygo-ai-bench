@@ -240,16 +240,40 @@ describe("Lua constant scanner", () => {
   });
 
   it("rejects constant scanner options that are missing required values", () => {
-    const result = spawnSync(process.execPath, [scannerPath, "--upstream", "--source", "src"], { encoding: "utf8" });
+    const cases = [
+      { args: ["--upstream", "--source", "src"], error: "Missing value for --upstream" },
+      { args: ["--source"], error: "Missing value for --source" },
+      { args: ["--min-upstream-constants"], error: "Missing value for --min-upstream-constants" },
+      { args: ["--min-upstream-constants", "-1"], error: "--min-upstream-constants must be a non-negative integer" },
+      { args: ["--min-local-constants"], error: "Missing value for --min-local-constants" },
+      { args: ["--min-local-constants", "1.5"], error: "--min-local-constants must be a non-negative integer" },
+      { args: ["--unknown"], error: "Unknown argument: --unknown" },
+    ];
 
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain("Missing value for --upstream");
+    for (const { args, error } of cases) {
+      const result = spawnSync(process.execPath, [scannerPath, ...args], { encoding: "utf8" });
+      expect(result.status, args.join(" ")).toBe(1);
+      expect(result.stderr, args.join(" ")).toContain(error);
+    }
   });
 
   it("rejects combined parity scanner options that are missing required values", () => {
-    const result = spawnSync(process.execPath, [parityScannerPath, "--limit"], { encoding: "utf8" });
+    const cases = [
+      { args: ["--scripts"], error: "Missing value for --scripts" },
+      { args: ["--upstream"], error: "Missing value for --upstream" },
+      { args: ["--source"], error: "Missing value for --source" },
+      { args: ["--limit"], error: "Missing value for --limit" },
+      { args: ["--min-used-apis"], error: "Missing value for --min-used-apis" },
+      { args: ["--min-implemented-apis"], error: "Missing value for --min-implemented-apis" },
+      { args: ["--min-upstream-constants"], error: "Missing value for --min-upstream-constants" },
+      { args: ["--min-local-constants"], error: "Missing value for --min-local-constants" },
+      { args: ["--unknown"], error: "Unknown argument: --unknown" },
+    ];
 
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain("Missing value for --limit");
+    for (const { args, error } of cases) {
+      const result = spawnSync(process.execPath, [parityScannerPath, ...args], { encoding: "utf8" });
+      expect(result.status, args.join(" ")).toBe(1);
+      expect(result.stderr, args.join(" ")).toContain(error);
+    }
   });
 });

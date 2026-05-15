@@ -51,6 +51,7 @@ function parseArgs(argv) {
     else if (arg === "--source") options.sourceRoot = requireOptionValue(argv, ++index, arg);
     else if (arg === "--min-upstream-constants") options.minUpstreamConstants = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
     else if (arg === "--min-local-constants") options.minLocalConstants = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
+    else if (arg.startsWith("--")) throw new Error(`Unknown argument: ${arg}`);
     else if (!options.upstreamConstants?.length) options.upstreamConstants = [arg];
     else throw new Error(`Unknown argument: ${arg}`);
   }
