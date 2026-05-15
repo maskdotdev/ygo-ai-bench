@@ -184,9 +184,43 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Po
       },
     ]);
     expect(restored.session.state.cards.find((card) => card.uid === pot!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: pot!.uid, controller: 0, event: "continuous", code: 25, targetRange: [1, 0] })]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.sourceUid === pot!.uid && effect.controller === 0 && effect.event === "continuous" && effect.code === 25)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 25,
+        "controller": 0,
+        "cost": [Function],
+        "description": 787813250,
+        "event": "continuous",
+        "id": "lua-3-25",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 67110912,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:49238328:lua-3-25",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p0-deck-49238328-0",
+        "target": [Function],
+        "targetRange": [
+          1,
+          0,
+        ],
+      }
+    `);
     expect(drawDuelCards(restored.session.state, 0, 1, "Blocked effect draw")).toBe(0);
     expect(restored.session.state.cards.find((card) => card.uid === blockedDrawUid)).toMatchObject({ location: "deck", controller: 0 });
     expect(restored.host.messages).not.toContain("pot of extravagance responder resolved");

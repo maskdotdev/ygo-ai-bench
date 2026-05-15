@@ -106,9 +106,42 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ne
       { player: 1, phase: "battle", remaining: 1 },
       { player: 1, phase: "main2", remaining: 1 },
     ]);
-    expect(restoredTrigger.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: neko.uid, event: "continuous", code: 185, targetRange: [0, 1], reset: { flags: 0x40000200 } })]),
-    );
+    expect(restoredTrigger.session.state.effects.find((effect) => effect.sourceUid === neko.uid && effect.event === "continuous" && effect.code === 185)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 185,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-185",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 2048,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:11021521:lua-2-185",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p0-deck-11021521-0",
+        "target": [Function],
+        "targetRange": [
+          0,
+          1,
+        ],
+      }
+    `);
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), workspace, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);

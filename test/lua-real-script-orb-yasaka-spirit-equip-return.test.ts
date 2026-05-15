@@ -139,12 +139,85 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
     expect(restoredEquippedState.missingRegistryKeys).toEqual([]);
     expect(restoredEquippedState.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredEquippedState, 0);
-    expect(restoredEquippedState.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: orb!.uid, event: "continuous", code: 76 }),
-        expect.objectContaining({ sourceUid: orb!.uid, event: "trigger", triggerCode: 1139 }),
-      ]),
-    );
+    expect(restoredEquippedState.session.state.effects.filter((effect) => effect.sourceUid === orb!.uid && (effect.code === 76 || effect.triggerCode === 1139))).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 76,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-2-76",
+          "lifePointValue": [Function],
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 1024,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:74115234:lua-2-76",
+          "sourceUid": "p0-deck-74115234-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+        {
+          "canActivate": [Function],
+          "category": 1048576,
+          "code": 1139,
+          "controller": 0,
+          "cost": [Function],
+          "description": 1185843744,
+          "event": "trigger",
+          "id": "lua-3-1139",
+          "luaConditionDescriptor": "condition:source-equipped",
+          "luaTypeFlags": 514,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "optional": false,
+          "property": 2048,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:74115234:lua-3-1139",
+          "sourceUid": "p0-deck-74115234-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "triggerCode": 1139,
+          "triggerEvent": "battleDestroyed",
+          "triggerTiming": "when",
+        },
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 76,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-13-76",
+          "lifePointValue": [Function],
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 1024,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:74115234:lua-13-76",
+          "reset": {
+            "flags": 33427456,
+          },
+          "sourceUid": "p0-deck-74115234-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
     expectLuaEquipProbe(restoredEquippedState, orbCode, susaCode, "orb equip probe true/40473581");
     changeRestoredPhase(restoredEquippedState, 0, "battle");
 
