@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTargetPredicateFixtureCount = 5;
+const battleTargetPredicateFixtureCount = 6;
 
 describe("Lua real battle target predicate restore coverage", () => {
   it("requires battle-target predicate fixtures to assert clean Lua registry restore and restored predicates", () => {
@@ -41,6 +41,17 @@ function battleTargetPredicateFixtureFiles(): Array<{ file: string; required: st
         "target:source-battle-target",
         "currentAttack = { attackerUid:",
         "targetCardPredicate",
+      ],
+    },
+    {
+      file: "test/lua-real-script-battle-protection.test.ts",
+      required: [
+        "restores Machina Sniper and removes other Machina monsters from battle targets",
+        "restores Soul-Absorbing Bone Tower and keeps aux.imval2 battle targeting scoped to the attacker",
+        "targetCardPredicate",
+        "valueCardPredicate",
+        "expectAttackTarget(restored.session, attacker!.uid, boneTower!.uid, false)",
+        "expectAttackTarget(restored.session, attacker!.uid, zombie!.uid, true)",
       ],
     },
     {
