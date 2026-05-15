@@ -51,14 +51,38 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Yo
       reasonCardUid: attacker!.uid,
     });
     expect(session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "monsterZone" });
-    expect(session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        eventName: "battleDestroyed",
-        eventCode: 1140,
-        eventCardUid: yomiShip!.uid,
-        sourceUid: yomiShip!.uid,
-      }),
-    ]);
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-1-1140",
+          "eventCardUid": "p1-deck-51534754-0",
+          "eventCode": 1140,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "battleDestroyed",
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 33,
+          "eventReasonCardUid": "p0-deck-5153-0",
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-6-1",
+          "player": 1,
+          "sourceUid": "p1-deck-51534754-0",
+          "triggerBucket": "opponentMandatory",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -67,14 +91,38 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Yo
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
-    expect(restored.session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        eventName: "battleDestroyed",
-        eventCode: 1140,
-        eventCardUid: yomiShip!.uid,
-        sourceUid: yomiShip!.uid,
-      }),
-    ]);
+    expect(restored.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-1-1140",
+          "eventCardUid": "p1-deck-51534754-0",
+          "eventCode": 1140,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "battleDestroyed",
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 33,
+          "eventReasonCardUid": "p0-deck-5153-0",
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-6-1",
+          "player": 1,
+          "sourceUid": "p1-deck-51534754-0",
+          "triggerBucket": "opponentMandatory",
+        },
+      ]
+    `);
 
     const trigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger" && action.uid === yomiShip!.uid);
     expect(trigger).toBeDefined();

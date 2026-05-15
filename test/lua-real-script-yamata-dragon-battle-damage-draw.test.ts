@@ -105,17 +105,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
     for (const card of [handA, handB, drawA, drawB, drawC]) {
       expect(restoredTrigger.session.state.cards.find((candidate) => candidate.uid === card!.uid)).toMatchObject({ location: "hand", controller: 0 });
     }
-    expect(restoredTrigger.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          eventName: "cardsDrawn",
-          eventCode: 1110,
-          eventPlayer: 0,
-          eventValue: 3,
-          eventUids: [drawA!.uid, drawB!.uid, drawC!.uid],
-        }),
-      ]),
-    );
+    expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "cardsDrawn")).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-76862293-3",
+          "eventCode": 1110,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 2,
+          },
+          "eventName": "cardsDrawn",
+          "eventPlayer": 0,
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 64,
+          "eventReasonCardUid": "p0-deck-76862289-0",
+          "eventReasonEffectId": 7,
+          "eventReasonPlayer": 0,
+          "eventUids": [
+            "p0-deck-76862293-3",
+            "p0-deck-76862294-4",
+            "p0-deck-76862295-5",
+          ],
+          "eventValue": 3,
+        },
+      ]
+    `);
   });
 });
 

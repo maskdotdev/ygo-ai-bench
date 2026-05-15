@@ -118,14 +118,41 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     expectRestoredLegalActions(restoredBattleTrigger, 1);
     passBattleResponsesUntilTrigger(restoredBattleTrigger.session);
     expect(restoredBattleTrigger.session.state.cards.find((card) => card.uid === soldier!.uid)).toMatchObject({ location: "monsterZone" });
-    expect(restoredBattleTrigger.session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        eventName: "afterDamageCalculation",
-        eventCode: 1138,
-        eventCardUid: soldier!.uid,
-        sourceUid: soldier!.uid,
-      }),
-    ]);
+    expect(restoredBattleTrigger.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-5-1138",
+          "eventCardUid": "p0-deck-68366996-0",
+          "eventCode": 1138,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "afterDamageCalculation",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "eventUids": [
+            "p0-deck-68366996-0",
+            "p1-deck-68366997-0",
+          ],
+          "id": "trigger-7-1",
+          "player": 0,
+          "sourceUid": "p0-deck-68366996-0",
+          "triggerBucket": "turnOptional",
+        },
+      ]
+    `);
 
     const restoredPendingTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredBattleTrigger.session), source, reader);
     expect(restoredPendingTrigger.restoreComplete, restoredPendingTrigger.incompleteReasons.join("; ")).toBe(true);

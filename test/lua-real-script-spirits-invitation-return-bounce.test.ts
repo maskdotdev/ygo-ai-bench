@@ -237,19 +237,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
       location: "spellTrapZone",
       faceUp: true,
     });
-    expect(restoredPaid.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          eventName: "lifePointCostPaid",
-          eventCode: 1201,
-          eventPlayer: 0,
-          eventValue: 500,
-          eventReason: duelReason.cost,
-          eventReasonPlayer: 0,
-          eventReasonCardUid: paid.invitationUid,
-        }),
-      ]),
-    );
+    expect(restoredPaid.session.state.eventHistory.filter((event) => event.eventName === "lifePointCostPaid")).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCode": 1201,
+          "eventName": "lifePointCostPaid",
+          "eventPlayer": 0,
+          "eventReason": 128,
+          "eventReasonCardUid": "p0-deck-92394653-0",
+          "eventReasonEffectId": 3,
+          "eventReasonPlayer": 0,
+          "eventValue": 500,
+        },
+      ]
+    `);
     const restoredAfterPaid = restoreDuelWithLuaScripts(serializeDuel(restoredPaid.session), paid.source, paid.reader);
     expectCleanRestore(restoredAfterPaid);
     expectRestoredLegalActions(restoredAfterPaid, 0);
@@ -265,17 +266,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
       previousLocation: "spellTrapZone",
       reason: duelReason.destroy | duelReason.cost,
     });
-    expect(restoredUnpaid.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          eventName: "destroyed",
-          eventCode: 1029,
-          eventCardUid: unpaid.invitationUid,
-          eventReason: duelReason.destroy | duelReason.cost,
-          eventReasonPlayer: 0,
-        }),
-      ]),
-    );
+    expect(restoredUnpaid.session.state.eventHistory.filter((event) => event.eventName === "destroyed")).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-92394653-0",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 129,
+          "eventReasonCardUid": "p0-deck-92394653-0",
+          "eventReasonEffectId": 3,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     const restoredAfterUnpaid = restoreDuelWithLuaScripts(serializeDuel(restoredUnpaid.session), unpaid.source, unpaid.reader);
     expectCleanRestore(restoredAfterUnpaid);
     expectRestoredLegalActions(restoredAfterUnpaid, 0);

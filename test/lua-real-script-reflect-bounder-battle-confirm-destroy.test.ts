@@ -54,14 +54,41 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
     passUntilPendingTrigger(session, "battleConfirmed");
 
     expect(session.state.battleWindow?.kind).toBe("startDamageStep");
-    expect(session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        eventName: "battleConfirmed",
-        eventCode: 1133,
-        eventCardUid: bounder!.uid,
-        sourceUid: bounder!.uid,
-      }),
-    ]);
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-1-1133",
+          "eventCardUid": "p0-deck-2851070-0",
+          "eventCode": 1133,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "battleConfirmed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "eventUids": [
+            "p1-deck-28510700-0",
+            "p0-deck-2851070-0",
+          ],
+          "id": "trigger-3-1",
+          "player": 0,
+          "sourceUid": "p0-deck-2851070-0",
+          "triggerBucket": "opponentMandatory",
+        },
+      ]
+    `);
 
     const restoredConfirm = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredConfirm.restoreComplete, restoredConfirm.incompleteReasons.join("; ")).toBe(true);

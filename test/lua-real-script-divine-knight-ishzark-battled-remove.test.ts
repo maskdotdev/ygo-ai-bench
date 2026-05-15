@@ -56,14 +56,41 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     expect(session.state.players[1].lifePoints).toBe(8000);
     expect(session.state.cards.find((card) => card.uid === ishzark!.uid)).toMatchObject({ location: "monsterZone" });
     expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone" });
-    expect(session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        eventName: "afterDamageCalculation",
-        eventCode: 1138,
-        eventCardUid: ishzark!.uid,
-        sourceUid: ishzark!.uid,
-      }),
-    ]);
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-1-1138",
+          "eventCardUid": "p0-deck-57902462-0",
+          "eventCode": 1138,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "afterDamageCalculation",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "eventUids": [
+            "p0-deck-57902462-0",
+            "p1-deck-5790-0",
+          ],
+          "id": "trigger-3-1",
+          "player": 0,
+          "sourceUid": "p0-deck-57902462-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

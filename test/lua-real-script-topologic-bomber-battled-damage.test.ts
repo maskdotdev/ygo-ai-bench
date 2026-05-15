@@ -55,14 +55,41 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
     expect(session.state.battleWindow?.kind).toBe("afterDamageCalculation");
     expect(session.state.battleDamage).toEqual({ 0: 0, 1: 1800 });
     expect(session.state.players[1].lifePoints).toBe(6200);
-    expect(session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        eventName: "afterDamageCalculation",
-        eventCode: 1138,
-        eventCardUid: bomber!.uid,
-        sourceUid: bomber!.uid,
-      }),
-    ]);
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-3-1138",
+          "eventCardUid": "p0-extraDeck-5821478-0",
+          "eventCode": 1138,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "afterDamageCalculation",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "extraDeck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "eventUids": [
+            "p0-extraDeck-5821478-0",
+            "p1-deck-58214780-0",
+          ],
+          "id": "trigger-5-1",
+          "player": 0,
+          "sourceUid": "p0-extraDeck-5821478-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

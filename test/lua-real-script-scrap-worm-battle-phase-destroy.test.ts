@@ -61,14 +61,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sc
     const phaseChanged = applyLuaRestoreResponse(restoredBattle, main2!);
     expect(phaseChanged.ok, phaseChanged.error).toBe(true);
     expect(restoredBattle.session.state.phase).toBe("main2");
-    expect(restoredBattle.session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        eventName: "phaseBattle",
-        eventCode: 0x1080,
-        sourceUid: scrapWorm!.uid,
-        triggerBucket: "turnMandatory",
-      }),
-    ]);
+    expect(restoredBattle.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-2-4224",
+          "eventCode": 4224,
+          "eventName": "phaseBattle",
+          "eventTriggerTiming": "when",
+          "id": "trigger-6-1",
+          "player": 0,
+          "sourceUid": "p0-deck-32761286-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredBattle.session), workspace, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);

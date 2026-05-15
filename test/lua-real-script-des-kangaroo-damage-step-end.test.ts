@@ -52,28 +52,82 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script De
     expect(session.state.players[0].lifePoints).toBe(7500);
     expect(session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(session.state.cards.find((card) => card.uid === kangaroo!.uid)).toMatchObject({ location: "monsterZone", controller: 1, position: "faceUpDefense" });
-    expect(session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        eventName: "damageStepEnded",
-        eventCode: 1141,
-        eventCardUid: kangaroo!.uid,
-        sourceUid: kangaroo!.uid,
-      }),
-    ]);
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-1-1141",
+          "eventCardUid": "p1-deck-78613627-0",
+          "eventCode": 1141,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpDefense",
+            "sequence": 0,
+          },
+          "eventName": "damageStepEnded",
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 1,
+          "eventTriggerTiming": "when",
+          "eventUids": [
+            "p0-deck-7861-0",
+            "p1-deck-78613627-0",
+          ],
+          "id": "trigger-5-1",
+          "player": 1,
+          "sourceUid": "p1-deck-78613627-0",
+          "triggerBucket": "opponentMandatory",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.battleWindow?.kind).toBe("endDamageStep");
-    expect(restored.session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        eventName: "damageStepEnded",
-        eventCode: 1141,
-        eventCardUid: kangaroo!.uid,
-        sourceUid: kangaroo!.uid,
-      }),
-    ]);
+    expect(restored.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-1-1141",
+          "eventCardUid": "p1-deck-78613627-0",
+          "eventCode": 1141,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpDefense",
+            "sequence": 0,
+          },
+          "eventName": "damageStepEnded",
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 1,
+          "eventTriggerTiming": "when",
+          "eventUids": [
+            "p0-deck-7861-0",
+            "p1-deck-78613627-0",
+          ],
+          "id": "trigger-5-1",
+          "player": 1,
+          "sourceUid": "p1-deck-78613627-0",
+          "triggerBucket": "opponentMandatory",
+        },
+      ]
+    `);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);

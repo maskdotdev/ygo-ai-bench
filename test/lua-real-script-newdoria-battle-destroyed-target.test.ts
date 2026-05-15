@@ -51,14 +51,38 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ne
       reasonCardUid: attacker!.uid,
     });
     expect(session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "monsterZone" });
-    expect(session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        eventName: "battleDestroyed",
-        eventCode: 1140,
-        eventCardUid: newdoria!.uid,
-        sourceUid: newdoria!.uid,
-      }),
-    ]);
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-1-1140",
+          "eventCardUid": "p1-deck-4335645-0",
+          "eventCode": 1140,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "battleDestroyed",
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 33,
+          "eventReasonCardUid": "p0-deck-4335-0",
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-6-1",
+          "player": 1,
+          "sourceUid": "p1-deck-4335645-0",
+          "triggerBucket": "opponentMandatory",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
