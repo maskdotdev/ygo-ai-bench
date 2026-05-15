@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const attackNegationFixtureCount = 4;
+const attackNegationFixtureCount = 5;
 
 describe("Lua real attack negation restore coverage", () => {
   it("requires representative attack-negation fixtures to assert clean Lua restore and legal-action parity", () => {
@@ -75,6 +75,18 @@ function realScriptAttackNegationFixtureFiles(): Array<{ file: string; required:
         "attackCanceledUids).toEqual([firstAttacker!.uid])",
         'location: "graveyard"',
         "skippedPhases).toEqual([{ player: 0, phase: \"battle\", remaining: 1 }])",
+      ],
+    },
+    {
+      file: "lua-real-script-draining-shield-battle-window.test.ts",
+      required: [
+        'action.type === "activateEffect" && action.uid === drainingShield!.uid',
+        'eventName": "attackDeclared"',
+      ],
+      outcome: [
+        "attackCanceledUids).toEqual([attacker!.uid])",
+        'location: "graveyard"',
+        "players[1].lifePoints).toBe(9800)",
       ],
     },
     {
