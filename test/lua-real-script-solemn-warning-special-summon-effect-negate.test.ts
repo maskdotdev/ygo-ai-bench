@@ -102,16 +102,57 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     expect(restoredSummonWindow.session.state.players[1].lifePoints).toBe(6000);
     expectWarningCost(restoredSummonWindow.session, warning!.uid, 2);
     expect(restoredSummonWindow.session.state.chain).toHaveLength(1);
-    expect(restoredSummonWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: warning!.uid,
-      eventName: "normalSummoning",
-      eventCode: 1103,
-      eventCardUid: summoned!.uid,
-      operationInfos: [
-        { category: 0x8000, targetUids: [summoned!.uid], count: 1, player: 0, parameter: 0 },
-        { category: 0x1, targetUids: [summoned!.uid], count: 1, player: 0, parameter: 0 },
-      ],
-    });
+    expect(restoredSummonWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-2-1103",
+        "eventCardUid": "p0-deck-946-0",
+        "eventCode": 1103,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventName": "normalSummoning",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "deck",
+          "position": "faceDown",
+          "sequence": 1,
+        },
+        "eventReason": 0,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-4",
+        "operationInfos": [
+          {
+            "category": 32768,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-946-0",
+            ],
+          },
+          {
+            "category": 1,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-946-0",
+            ],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-84749824-0",
+      }
+    `);
 
     const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredSummonWindow.session), source, reader);
     expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
@@ -297,16 +338,57 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     expect(restoredSummonWindow.session.state.players[1].lifePoints).toBe(6000);
     expectWarningCost(restoredSummonWindow.session, warning!.uid, 4);
     expect(restoredSummonWindow.session.state.chain).toHaveLength(1);
-    expect(restoredSummonWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: warning!.uid,
-      eventName: "specialSummoning",
-      eventCode: 1105,
-      eventCardUid: summoned!.uid,
-      operationInfos: [
-        { category: 0x8000, targetUids: [summoned!.uid], count: 1, player: 0, parameter: 0 },
-        { category: 0x1, targetUids: [summoned!.uid], count: 1, player: 0, parameter: 0 },
-      ],
-    });
+    expect(restoredSummonWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-4-1105",
+        "eventCardUid": "p0-deck-948-0",
+        "eventCode": 1105,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventName": "specialSummoning",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "deck",
+          "position": "faceDown",
+          "sequence": 1,
+        },
+        "eventReason": 0,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-4",
+        "operationInfos": [
+          {
+            "category": 32768,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-948-0",
+            ],
+          },
+          {
+            "category": 1,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-948-0",
+            ],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-84749824-0",
+      }
+    `);
 
     const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredSummonWindow.session), source, reader);
     expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
@@ -468,16 +550,57 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     expect(restoredSummonWindow.session.state.players[1].lifePoints).toBe(6000);
     expectWarningCost(restoredSummonWindow.session, warning!.uid, 3);
     expect(restoredSummonWindow.session.state.chain).toHaveLength(1);
-    expect(restoredSummonWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: warning!.uid,
-      eventName: "flipSummoning",
-      eventCode: 1104,
-      eventCardUid: summoned!.uid,
-      operationInfos: [
-        { category: 0x8000, targetUids: [summoned!.uid], count: 1, player: 0, parameter: 0 },
-        { category: 0x1, targetUids: [summoned!.uid], count: 1, player: 0, parameter: 0 },
-      ],
-    });
+    expect(restoredSummonWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-3-1104",
+        "eventCardUid": "p0-deck-964-0",
+        "eventCode": 1104,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "monsterZone",
+          "position": "faceDownDefense",
+          "sequence": 0,
+        },
+        "eventName": "flipSummoning",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "deck",
+          "position": "faceDown",
+          "sequence": 1,
+        },
+        "eventReason": 0,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-4",
+        "operationInfos": [
+          {
+            "category": 32768,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-964-0",
+            ],
+          },
+          {
+            "category": 1,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-964-0",
+            ],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-84749824-0",
+      }
+    `);
 
     const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredSummonWindow.session), source, reader);
     expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);

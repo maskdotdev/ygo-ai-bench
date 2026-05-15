@@ -126,16 +126,57 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
     expect(chained.ok, chained.error).toBe(true);
     expect(restoredSummonWindow.session.state.players[1].lifePoints).toBe(8000);
     expect(restoredSummonWindow.session.state.chain).toHaveLength(1);
-    expect(restoredSummonWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: horn!.uid,
-      eventName: "specialSummoning",
-      eventCode: 1105,
-      eventCardUid: summoned!.uid,
-      operationInfos: [
-        { category: 0x8000, targetUids: [summoned!.uid], count: 1, player: 0, parameter: 0 },
-        { category: 0x1, targetUids: [summoned!.uid], count: 1, player: 0, parameter: 0 },
-      ],
-    });
+    expect(restoredSummonWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-2-1105",
+        "eventCardUid": "p0-deck-966-0",
+        "eventCode": 1105,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventName": "specialSummoning",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "deck",
+          "position": "faceDown",
+          "sequence": 1,
+        },
+        "eventReason": 0,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 32768,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-966-0",
+            ],
+          },
+          {
+            "category": 1,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-966-0",
+            ],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-50323155-0",
+      }
+    `);
 
     const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredSummonWindow.session), source, reader);
     expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
