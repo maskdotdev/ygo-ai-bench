@@ -464,9 +464,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       location: "spellTrapZone",
       faceUp: true,
     });
-    expect(restoredUnlocked.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventCardUid: guardian!.uid })]),
-    );
+    expect(restoredUnlocked.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned")).toEqual([
+      {
+        eventName: "specialSummoned",
+        eventCode: 1102,
+        eventCardUid: guardian!.uid,
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
   });
 });
 

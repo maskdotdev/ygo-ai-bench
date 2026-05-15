@@ -394,7 +394,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
         },
       },
     ]);
-    expect(restoredTriggerWindow.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventCardUid: graveMachine!.uid })]));
+    expect(restoredTriggerWindow.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned")).toEqual([
+      {
+        eventName: "specialSummoned",
+        eventCode: 1102,
+        eventCardUid: graveMachine!.uid,
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: trigon!.uid,
+        eventReasonEffectId: 5,
+        eventUids: [graveMachine!.uid],
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+    ]);
   });
 });
 

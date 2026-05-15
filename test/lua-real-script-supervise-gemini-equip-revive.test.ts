@@ -155,11 +155,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
       faceUp: true,
     });
     expect(restoredReviveChain.session.state.cards.find((card) => card.uid === supervise!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restoredReviveChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventCardUid: normal!.uid }),
-      ]),
-    );
+    expect(restoredReviveChain.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned")).toEqual([
+      {
+        eventName: "specialSummoned",
+        eventCode: 1102,
+        eventCardUid: normal!.uid,
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: supervise!.uid,
+        eventReasonEffectId: 4,
+        eventUids: [normal!.uid],
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+    ]);
     expect(restoredReviveChain.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard" && event.eventCardUid === supervise!.uid)).toEqual([
       {
         eventName: "sentToGraveyard",
