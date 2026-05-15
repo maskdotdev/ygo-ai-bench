@@ -114,7 +114,8 @@ function runBattleDestroyedSourceOnly(eventCode: string, label: string): string[
 
   const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
   expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
-    expect(restored.missingRegistryKeys).toEqual([]);
+  expect(restored.missingRegistryKeys).toEqual([]);
+  expectRestoredLegalActions(restored);
   const restoredBattleTriggers = restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "battleDestroyed");
   expect(restoredBattleTriggers).toHaveLength(2);
   expect(restoredBattleTriggers).toEqual(
@@ -174,6 +175,12 @@ function activateAllRestoredTriggers(restored: ReturnType<typeof restoreDuelWith
     if (!trigger) break;
     applyLuaRestoreAndAssert(restored, trigger);
   }
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function passBattleResponses(session: DuelSession): void {

@@ -57,6 +57,7 @@ describe("Lua source-only battle timing events", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restored);
     assertTimingTriggers(restored.session, "battleStarted", 1132, attacker!.uid, target!.uid, genericWatcher!.uid, singleWatcher!.uid);
     assertTimingTriggers(restored.session, "battleConfirmed", 1133, attacker!.uid, target!.uid, genericWatcher!.uid, singleWatcher!.uid);
     activateAllRestoredTriggers(restored);
@@ -177,6 +178,12 @@ function activateAllRestoredTriggers(restored: ReturnType<typeof restoreDuelWith
     if (!trigger) break;
     applyLuaRestoreAndAssert(restored, trigger);
   }
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function activateAllTriggers(session: DuelSession): void {

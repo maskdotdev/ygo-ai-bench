@@ -92,6 +92,7 @@ describe("Lua source-only battle events", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restored);
     const restoredAttackTriggers = restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "attackDeclared");
     expect(restoredAttackTriggers).toHaveLength(2);
     expect(restoredAttackTriggers).toEqual(
@@ -199,6 +200,7 @@ describe("Lua source-only battle events", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restored);
     const restoredTargetTriggers = restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "battleTargeted");
     expect(restoredTargetTriggers).toHaveLength(2);
     expect(restoredTargetTriggers).toEqual(
@@ -260,6 +262,12 @@ function drainRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScript
     expect(pass).toBeDefined();
     applyLuaRestoreAndAssert(restored, pass!);
   }
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function applyAndAssert(session: DuelSession, action: Parameters<typeof applyResponse>[1]) {
