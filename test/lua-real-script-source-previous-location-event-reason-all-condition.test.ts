@@ -52,14 +52,49 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-location-reason-all:${locationHand}:${discardEffectReason}`;
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: descriptor,
-          sourceUid: kahkki!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) => effect.luaConditionDescriptor === descriptor && effect.sourceUid === kahkki!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "category": 1,
+          "code": 1014,
+          "controller": 0,
+          "cost": [Function],
+          "description": 413559472,
+          "event": "trigger",
+          "id": "lua-1-1014",
+          "luaConditionDescriptor": "condition:source-previous-location-reason-all:2:16448",
+          "luaTypeFlags": 513,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "optional": false,
+          "promptOperation": [Function],
+          "property": 16,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:25847467:lua-1-1014",
+          "sourceUid": "p0-deck-25847467-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "triggerCode": 1014,
+          "triggerEvent": "sentToGraveyard",
+          "triggerSourceOnly": true,
+          "triggerTiming": "when",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

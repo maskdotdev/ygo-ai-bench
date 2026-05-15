@@ -52,14 +52,49 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-location-reason-all-player:${locationHand}:${discardEffectReason}:opponent`;
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: descriptor,
-          sourceUid: minar!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) => effect.luaConditionDescriptor === descriptor && effect.sourceUid === minar!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "category": 524288,
+          "code": 1014,
+          "controller": 0,
+          "cost": [Function],
+          "description": 520638272,
+          "event": "trigger",
+          "id": "lua-1-1014",
+          "luaConditionDescriptor": "condition:source-previous-location-reason-all-player:2:16448:opponent",
+          "luaTypeFlags": 513,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "optional": false,
+          "promptOperation": [Function],
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:32539892:lua-1-1014",
+          "sourceUid": "p0-deck-32539892-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "triggerCode": 1014,
+          "triggerEvent": "sentToGraveyard",
+          "triggerSourceOnly": true,
+          "triggerTiming": "when",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
