@@ -264,7 +264,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
           legalActionGroups: [
             {
               player: 1,
-              label: "Prompt",
+              label: "Option Prompt",
               windowKind: "prompt",
               actions: [
                 { type: "selectOption", player: 1, promptId: "fixture-option-prompt", option: 2, count: 1 },
@@ -274,7 +274,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
           ],
           absentLegalActions: [{ type: "selectOption", player: 0, promptId: "fixture-option-prompt" }],
           absentLegalActionGroups: [
-            { player: 0, label: "Prompt", windowKind: "prompt", actions: [{ type: "selectOption", player: 0, promptId: "fixture-option-prompt" }] },
+            { player: 0, label: "Option Prompt", windowKind: "prompt", actions: [{ type: "selectOption", player: 0, promptId: "fixture-option-prompt" }] },
           ],
         },
         responses: [
@@ -285,7 +285,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               waitingFor: 0,
               absentLegalActions: [{ type: "selectOption", player: 1, promptId: "fixture-option-prompt" }],
               absentLegalActionGroups: [
-                { player: 1, label: "Prompt", windowKind: "prompt", actions: [{ type: "selectOption", player: 1, promptId: "fixture-option-prompt" }] },
+                { player: 1, label: "Option Prompt", windowKind: "prompt", actions: [{ type: "selectOption", player: 1, promptId: "fixture-option-prompt" }] },
               ],
               logIncludes: ["Selected option 4"],
             },
@@ -328,7 +328,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
           legalActionGroups: [
             {
               player: 0,
-              label: "Prompt",
+              label: "Yes / No Prompt",
               windowKind: "prompt",
               actions: [
                 { type: "selectYesNo", player: 0, promptId: "fixture-yes-no-prompt", yes: true, count: 1 },
@@ -338,7 +338,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
           ],
           absentLegalActions: [{ type: "selectYesNo", player: 1, promptId: "fixture-yes-no-prompt" }],
           absentLegalActionGroups: [
-            { player: 1, label: "Prompt", windowKind: "prompt", actions: [{ type: "selectYesNo", player: 1, promptId: "fixture-yes-no-prompt" }] },
+            { player: 1, label: "Yes / No Prompt", windowKind: "prompt", actions: [{ type: "selectYesNo", player: 1, promptId: "fixture-yes-no-prompt" }] },
           ],
         },
         responses: [
@@ -349,7 +349,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               waitingFor: 1,
               absentLegalActions: [{ type: "selectYesNo", player: 0, promptId: "fixture-yes-no-prompt" }],
               absentLegalActionGroups: [
-                { player: 0, label: "Prompt", windowKind: "prompt", actions: [{ type: "selectYesNo", player: 0, promptId: "fixture-yes-no-prompt" }] },
+                { player: 0, label: "Yes / No Prompt", windowKind: "prompt", actions: [{ type: "selectYesNo", player: 0, promptId: "fixture-yes-no-prompt" }] },
               ],
               logIncludes: ["Selected yes"],
             },
