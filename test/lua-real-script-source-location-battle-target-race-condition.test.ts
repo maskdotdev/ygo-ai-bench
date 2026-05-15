@@ -55,15 +55,51 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const register = host.loadCardScript(Number(oxygeddonCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          category: 0x80000,
-          luaConditionDescriptor: `condition:source-battle-target-race-source-location:${racePyro}:${locationGraveyard}`,
-          sourceUid: oxygeddon!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.luaConditionDescriptor ===
+            `condition:source-battle-target-race-source-location:${racePyro}:${locationGraveyard}` &&
+          effect.sourceUid === oxygeddon!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "category": 524288,
+          "code": 1140,
+          "controller": 0,
+          "cost": [Function],
+          "description": 929137968,
+          "event": "trigger",
+          "id": "lua-1-1140",
+          "luaConditionDescriptor": "condition:source-battle-target-race-source-location:128:16",
+          "luaTypeFlags": 513,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "optional": false,
+          "promptOperation": [Function],
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:58071123:lua-1-1140",
+          "sourceUid": "p0-deck-58071123-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "triggerCode": 1140,
+          "triggerEvent": "battleDestroyed",
+          "triggerSourceOnly": true,
+          "triggerTiming": "when",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -128,15 +164,50 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
       "oxygeddon-official-local-location-battle-target-race-condition.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          category: 0x80000,
-          luaConditionDescriptor: `condition:source-battle-target-race-source-location:${racePyro}:${locationGraveyard}`,
-          sourceUid: oxygeddon!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.luaConditionDescriptor ===
+            `condition:source-battle-target-race-source-location:${racePyro}:${locationGraveyard}` &&
+          effect.sourceUid === oxygeddon!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "category": 524288,
+          "code": 1140,
+          "controller": 0,
+          "cost": [Function],
+          "event": "trigger",
+          "id": "lua-1-1140",
+          "luaConditionDescriptor": "condition:source-battle-target-race-source-location:128:16",
+          "luaTypeFlags": 513,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "optional": false,
+          "promptOperation": [Function],
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:58071123:lua-1-1140",
+          "sourceUid": "p0-deck-58071123-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "triggerCode": 1140,
+          "triggerEvent": "battleDestroyed",
+          "triggerSourceOnly": true,
+          "triggerTiming": "when",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
