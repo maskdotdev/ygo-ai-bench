@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const battlePhaseEventFixtureCount = 2;
 
 describe("Lua real Battle Phase event restore coverage", () => {
   it("requires representative Battle Phase event fixtures to assert clean Lua restore", () => {
-    const missing = representativeBattlePhaseEventFixtures()
+    const fixtures = representativeBattlePhaseEventFixtures();
+    expect(fixtures).toHaveLength(battlePhaseEventFixtureCount);
+
+    const missing = fixtures
       .filter((fixture) => {
         const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
@@ -20,7 +24,10 @@ describe("Lua real Battle Phase event restore coverage", () => {
   });
 
   it("requires representative Battle Phase event fixtures to prove restored phase-event behavior", () => {
-    const weak = representativeBattlePhaseEventFixtures()
+    const fixtures = representativeBattlePhaseEventFixtures();
+    expect(fixtures).toHaveLength(battlePhaseEventFixtureCount);
+
+    const weak = fixtures
       .filter((fixture) => {
         const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
         return !fixture.requiredSnippets.every((snippet) => text.includes(snippet));
