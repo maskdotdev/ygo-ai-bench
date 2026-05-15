@@ -90,11 +90,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script De
       reason: effectDestroyReason,
     });
     expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "damageStepEnded", eventCode: 1141, eventCardUid: attacker!.uid, eventUids: [attacker!.uid, kangaroo!.uid] }),
-        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: attacker!.uid }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ eventName: "damageStepEnded", eventCode: 1141, eventCardUid: attacker!.uid, eventUids: [attacker!.uid, kangaroo!.uid] })]),
     );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === attacker!.uid)).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: attacker!.uid,
+        eventPreviousState: {
+          location: "monsterZone",
+          controller: 0,
+          sequence: 0,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventCurrentState: {
+          location: "graveyard",
+          controller: 0,
+          sequence: 0,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventReason: effectDestroyReason,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: kangaroo!.uid,
+        eventReasonEffectId: 1,
+      },
+    ]);
   });
 });
 
