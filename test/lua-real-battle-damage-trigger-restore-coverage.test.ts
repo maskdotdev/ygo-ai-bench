@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const battleDamageTriggerFixtureCount = 4;
 
 describe("Lua real battle-damage trigger restore coverage", () => {
   it("requires battle-damage trigger fixtures to assert clean Lua registry restore and carried event payloads", () => {
-    const missing = battleDamageTriggerFixtureFiles()
+    const files = battleDamageTriggerFixtureFiles();
+    expect(files).toHaveLength(battleDamageTriggerFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
@@ -21,7 +25,10 @@ describe("Lua real battle-damage trigger restore coverage", () => {
   });
 
   it("requires UI-facing legal-action parity while restored battle-damage triggers are pending or chained", () => {
-    const missing = battleDamageTriggerFixtureFiles()
+    const files = battleDamageTriggerFixtureFiles();
+    expect(files).toHaveLength(battleDamageTriggerFixtureCount);
+
+    const missing = files
       .filter(({ file }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("getLuaRestoreLegalActionGroups")
