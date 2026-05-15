@@ -127,11 +127,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
     expect(restoredChain.session.state.players[1].lifePoints).toBe(7300);
     expect(restoredChain.session.state.cards.find((card) => card.uid === defender!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restoredChain.session.state.cards.find((card) => card.uid === fushi!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
-    expect(restoredChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 700, eventCardUid: fushi!.uid }),
-      ]),
-    );
+    expect(restoredChain.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: fushi!.uid,
+        eventPlayer: 1,
+        eventValue: 700,
+        eventReason: duelReason.battle,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredChain.session.state.eventHistory.filter((event) => event.eventName === "recoveredLifePoints" && event.eventPlayer === 0)).toEqual([
       {
         eventName: "recoveredLifePoints",

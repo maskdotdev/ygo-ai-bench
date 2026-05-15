@@ -174,11 +174,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
     resolveRestoredChain(restoredRecoverChain);
     expect(restoredRecoverChain.session.state.players[0].lifePoints).toBe(8500);
     expect(restoredRecoverChain.session.state.players[1].lifePoints).toBe(7250);
-    expect(restoredRecoverChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 750, eventCardUid: susa!.uid }),
-      ]),
-    );
+    expect(restoredRecoverChain.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: susa!.uid,
+        eventPlayer: 1,
+        eventValue: 750,
+        eventReason: duelReason.battle,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredRecoverChain.session.state.eventHistory.filter((event) => event.eventName === "recoveredLifePoints" && event.eventPlayer === 0)).toEqual([
       {
         eventName: "recoveredLifePoints",
