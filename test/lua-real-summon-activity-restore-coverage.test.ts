@@ -44,6 +44,17 @@ function summonActivityFixtureFiles(): Array<{ file: string; required: string[] 
       ],
     },
     {
+      file: "test/lua-real-script-nikitama-extra-spirit-summon.test.ts",
+      required: [
+        "additional Spirit Normal Summon",
+        "normalSummonAvailable).toBe(false)",
+        "getLuaRestoreLegalActionGroups",
+        'action.type === "normalSummon"',
+        "activityCounts[0].normalSummon).toBe(2)",
+        "overLimit).toBeUndefined()",
+      ],
+    },
+    {
       file: "test/lua-real-script-thunder-sea-horse-special-oath.test.ts",
       required: [
         "sea horse can special locked false",
