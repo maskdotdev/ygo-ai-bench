@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const continuousOperationFixtureCount = 3;
 
 describe("Lua real continuous operation restore coverage", () => {
   it("requires continuous operation fixtures to assert clean restore and restored outcomes", () => {
-    const missing = continuousOperationFixtureFiles()
+    const files = continuousOperationFixtureFiles();
+    expect(files).toHaveLength(continuousOperationFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
