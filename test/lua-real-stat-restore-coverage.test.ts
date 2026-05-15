@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const statFixtureCount = 3;
 
 describe("Lua real stat restore coverage", () => {
   it("requires stat-changing fixtures to assert clean Lua registry restore and restored battle outcomes", () => {
-    const missing = statFixtureFiles()
+    const files = statFixtureFiles();
+    expect(files).toHaveLength(statFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
