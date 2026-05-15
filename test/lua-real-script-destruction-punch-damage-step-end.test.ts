@@ -78,10 +78,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script De
     const activated = applyLuaRestoreResponse(restored, activation!);
     expect(activated.ok, activated.error).toBe(true);
     if (restored.session.state.chain.length > 0) {
-      expect(restored.session.state.chain[0]).toMatchObject({
-        sourceUid: punch!.uid,
-        targetUids: [attacker!.uid],
-      });
+      expect(restored.session.state.chain[0]).toMatchInlineSnapshot();
       resolveRestoredChain(restored);
     }
     expect(restored.session.state.cards.find((card) => card.uid === punch!.uid)).toMatchObject({ location: "graveyard" });

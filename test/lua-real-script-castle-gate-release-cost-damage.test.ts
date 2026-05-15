@@ -50,13 +50,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
       reason: duelReason.release | duelReason.cost,
     });
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: castleGate.uid,
-      effectLabel: 1700,
-      targetPlayer: 1,
-      targetParam: 1700,
-      operationInfos: [{ category: categoryDamage, count: 0, player: 1, parameter: 1700 }],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-2",
+        "effectLabel": 1700,
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 524288,
+            "count": 0,
+            "parameter": 1700,
+            "player": 1,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-36931229-0",
+        "targetParam": 1700,
+        "targetPlayer": 1,
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -64,13 +80,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
-    expect(restored.session.state.chain[0]).toMatchObject({
-      sourceUid: castleGate.uid,
-      effectLabel: 1700,
-      targetPlayer: 1,
-      targetParam: 1700,
-      operationInfos: [{ category: categoryDamage, count: 0, player: 1, parameter: 1700 }],
-    });
+    expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-2",
+        "effectLabel": 1700,
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 524288,
+            "count": 0,
+            "parameter": 1700,
+            "player": 1,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-36931229-0",
+        "targetParam": 1700,
+        "targetPlayer": 1,
+      }
+    `);
 
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();

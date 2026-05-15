@@ -67,10 +67,26 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script De
     expect(fireAction).toBeDefined();
     applyAndAssert(session, fireAction!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: tremendousFire!.uid,
-      operationInfos: [{ category: 0x80000, targetUids: [], count: 0, player: 0, parameter: 500 }],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-3-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 524288,
+            "count": 0,
+            "parameter": 500,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-46918794-1",
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
