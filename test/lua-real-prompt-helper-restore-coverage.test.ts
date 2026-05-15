@@ -90,7 +90,7 @@ describe("Lua real prompt helper restore coverage", () => {
   });
 
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(17);
+    expect(representativePromptHelperFixtures()).toHaveLength(18);
   });
 
   it("requires representative prompt helper fixtures to assert clean Lua restore", () => {
@@ -197,6 +197,17 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
         "targetParam: Number(darkMagicianCode)",
         'position: "faceUpDefense"',
         "cannot-activate:special-summoned-monster-on-field",
+      ],
+    },
+    {
+      file: "test/lua-real-script-pyro-clock-select-option-table-unpack.test.ts",
+      required: [
+        "restores table-unpacked SelectOption into the selected turn-count effect operation",
+        'api: "SelectOption"',
+        "options: [0, 1]",
+        "descriptions: [801, 802]",
+        "returned: 0",
+        'expect(restored.host.messages).toContain("pyro clock selected first turn effect")',
       ],
     },
     {
