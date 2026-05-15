@@ -55,6 +55,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script We
     expect(script.ok, script.error).toBe(true);
     expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
       luaTargetDescriptor: "special-summon-limit:not-race-deck-or-extra:8",
+      targetRange: [1, 0],
     });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
@@ -63,6 +64,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script We
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(restored.session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      targetRange: [1, 0],
+    });
     const probe = restored.host.loadScript(
       `
       local fiendDeck=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${fiendDeckCode}),0,LOCATION_DECK,0,nil)

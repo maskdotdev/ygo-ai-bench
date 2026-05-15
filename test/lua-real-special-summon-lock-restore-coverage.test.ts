@@ -138,6 +138,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-welcome-labrynth-fiend-deck-extra-lock.test.ts",
       requiredSnippets: [
         "special-summon-limit:not-race-deck-or-extra:8",
+        "targetRange: [1, 0]",
         "welcome labrynth fiend deck special 1",
         "welcome labrynth warrior deck special 0",
         "welcome labrynth fiend extra special 1",
@@ -533,6 +534,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-fiendish-portrait-deck-extra-summon-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "special-summon-limit:deck-or-extra"',
+        "targetRange: [1, 0]",
         "Duel.SpecialSummon(deck,0,0,0,false,false,POS_FACEUP_ATTACK)",
         "Duel.SpecialSummon(extra,SUMMON_TYPE_FUSION,0,0,false,false,POS_FACEUP_ATTACK)",
         "Duel.SpecialSummon(hand,0,0,0,false,false,POS_FACEUP_ATTACK)",

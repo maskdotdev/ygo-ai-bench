@@ -57,6 +57,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fi
     expect(script.ok, script.error).toBe(true);
     expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
       luaTargetDescriptor: "special-summon-limit:deck-or-extra",
+      targetRange: [1, 0],
     });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
@@ -67,6 +68,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fi
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restored, 0),
     );
+    expect(restored.session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      targetRange: [1, 0],
+    });
     const probe = restored.host.loadScript(
       `
       local deck=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${deckCode}),0,LOCATION_DECK,0,nil)
