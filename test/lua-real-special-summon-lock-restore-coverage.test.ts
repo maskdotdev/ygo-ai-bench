@@ -148,6 +148,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-welcome-labrynth-fiend-deck-extra-lock.test.ts",
       requiredSnippets: [
         "special-summon-limit:not-race-deck-or-extra:8",
+        "property: 0x4000800",
         "reset: { flags: 0x40000200, count: 2 }",
         "targetRange: [1, 0]",
         "welcome labrynth fiend deck special 1",
