@@ -94,6 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script He
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     const restoredChainLink = restored.session.state.chain[0]!;
     expect(restoredChainLink.operationInfos).toEqual(expect.arrayContaining([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }]));
     expect(restoredChainLink.possibleOperationInfos).toEqual(expect.arrayContaining([{ category: 0x4, targetUids: [], count: 1, player: 0, parameter: 0x40 }]));

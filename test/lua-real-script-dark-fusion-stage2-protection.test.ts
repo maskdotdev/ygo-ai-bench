@@ -93,6 +93,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     const responsePlayer = restoredChain.session.state.waitingFor;
     expect(responsePlayer).toBeDefined();
     expectRestoredLegalActions(restoredChain, responsePlayer!);
@@ -126,6 +127,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     expect(restoredProtected.restoreComplete, restoredProtected.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredProtected, 0);
     expect(restoredProtected.missingRegistryKeys).toEqual([]);
+    expect(restoredProtected.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredProtected.session.state.effects.find((effect) => effect.sourceUid === fusion!.uid && effect.code === 71)).toMatchObject({
       event: "continuous",
       luaValueDescriptor: "cannot-be-effect-target:opponent",
