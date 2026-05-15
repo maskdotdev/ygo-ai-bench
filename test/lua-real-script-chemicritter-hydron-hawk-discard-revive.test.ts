@@ -90,9 +90,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
       previousLocation: "hand",
       reason: duelReason.cost | duelReason.discard,
     });
-    expect(restoredIgnition.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "discarded", eventCardUid: discard!.uid })]),
-    );
+    expect(restoredIgnition.session.state.eventHistory.filter((event) => event.eventName === "discarded" && event.eventCardUid === discard!.uid)).toEqual([
+      {
+        eventName: "discarded",
+        eventCode: 1018,
+        eventCardUid: discard!.uid,
+        eventReason: duelReason.cost | duelReason.discard,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: hydronHawk!.uid,
+        eventReasonEffectId: 4,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 1,
+        },
+      },
+    ]);
     expect(restoredIgnition.session.state.chain[0]).toMatchObject({
       sourceUid: hydronHawk!.uid,
       targetUids: [target!.uid],

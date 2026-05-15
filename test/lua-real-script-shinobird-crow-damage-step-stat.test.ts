@@ -104,11 +104,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
       location: "graveyard",
       controller: 0,
     });
-    expect(restoredDamageStep.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "discarded", eventCode: 1018, eventCardUid: costSpirit!.uid }),
-      ]),
-    );
+    expect(restoredDamageStep.session.state.eventHistory.filter((event) => event.eventName === "discarded" && event.eventCardUid === costSpirit!.uid)).toEqual([
+      {
+        eventName: "discarded",
+        eventCode: 1018,
+        eventCardUid: costSpirit!.uid,
+        eventReason: duelReason.cost | duelReason.discard,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: crow!.uid,
+        eventReasonEffectId: 7,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredDamageStep.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard" && event.eventCardUid === costSpirit!.uid)).toEqual([
       {
         eventName: "sentToGraveyard",
