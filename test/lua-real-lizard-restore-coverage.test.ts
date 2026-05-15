@@ -3,10 +3,15 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const LIZARD_DESCRIPTOR_FIXTURE_COUNT = 18;
+const LIZARD_ALL_CARD_FIXTURE_COUNT = 1;
 
 describe("Lua real Clock Lizard restore coverage", () => {
   it("requires representative Clock Lizard target descriptor fixtures to assert clean Lua registry restore", () => {
-    const missing = representativeLizardDescriptorFixtures()
+    const fixtures = representativeLizardDescriptorFixtures();
+    expect(fixtures).toHaveLength(LIZARD_DESCRIPTOR_FIXTURE_COUNT);
+
+    const missing = fixtures
       .filter(({ file, requireFalse = true, requiredSnippets }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
@@ -25,7 +30,10 @@ describe("Lua real Clock Lizard restore coverage", () => {
   });
 
   it("requires all-card Clock Lizard fixtures to assert clean restore without descriptor predicates", () => {
-    const missing = allCardLizardFixtures()
+    const fixtures = allCardLizardFixtures();
+    expect(fixtures).toHaveLength(LIZARD_ALL_CARD_FIXTURE_COUNT);
+
+    const missing = fixtures
       .filter(({ file, requiredSnippets }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")

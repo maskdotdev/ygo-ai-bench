@@ -3,10 +3,16 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const FREE_CHAIN_FIXTURE_COUNT = 11;
+const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 10;
+const CHAINED_FREE_CHAIN_FIXTURE_COUNT = 6;
 
 describe("Lua real free-chain restore coverage", () => {
   it("requires representative free-chain fixtures to assert grouped actions and clean Lua registry restore", () => {
-    const missing = realScriptFreeChainFixtureFiles()
+    const files = realScriptFreeChainFixtureFiles();
+    expect(files).toHaveLength(FREE_CHAIN_FIXTURE_COUNT);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("getLuaRestoreLegalActionGroups")
@@ -22,7 +28,10 @@ describe("Lua real free-chain restore coverage", () => {
   });
 
   it("requires representative free-chain fixtures to prove restored chain targets and outcomes", () => {
-    const missing = realScriptFreeChainFixtureFiles()
+    const files = realScriptFreeChainFixtureFiles();
+    expect(files).toHaveLength(FREE_CHAIN_FIXTURE_COUNT);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("applyLuaRestoreResponse")
@@ -36,7 +45,10 @@ describe("Lua real free-chain restore coverage", () => {
   });
 
   it("requires operation-info metadata for free-chain fixtures whose scripts announce operation categories", () => {
-    const missing = realScriptFreeChainOperationInfoFixtureFiles()
+    const files = realScriptFreeChainOperationInfoFixtureFiles();
+    expect(files).toHaveLength(FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("operationInfos")
@@ -50,7 +62,10 @@ describe("Lua real free-chain restore coverage", () => {
   });
 
   it("requires chained free-chain fixtures to prove restored response suppression", () => {
-    const missing = realScriptChainedFreeChainFixtureFiles()
+    const files = realScriptChainedFreeChainFixtureFiles();
+    expect(files).toHaveLength(CHAINED_FREE_CHAIN_FIXTURE_COUNT);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("chainStarterScript")
