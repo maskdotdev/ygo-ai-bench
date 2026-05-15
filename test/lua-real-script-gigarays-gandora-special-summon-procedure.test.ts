@@ -10,6 +10,7 @@ import {
   serializeDuel,
   startDuel,
 } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -75,11 +76,81 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
     }
     expect(restored.session.state.eventHistory).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: fieldCost!.uid, eventReason: 0x80 }),
-        expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: handCost!.uid, eventReason: 0x80 }),
         expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventCardUid: gandora!.uid }),
       ]),
     );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard")).toEqual([
+      {
+        eventName: "sentToGraveyard",
+        eventCode: 1014,
+        eventCardUid: fieldCost!.uid,
+        eventReason: duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: gandora!.uid,
+        eventReasonEffectId: 2,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "sentToGraveyard",
+        eventCode: 1014,
+        eventCardUid: handCost!.uid,
+        eventReason: duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: gandora!.uid,
+        eventReasonEffectId: 2,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 1,
+        },
+      },
+      {
+        eventName: "sentToGraveyard",
+        eventCode: 1014,
+        eventCardUid: fieldCost!.uid,
+        eventReason: duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: gandora!.uid,
+        eventReasonEffectId: 2,
+        eventUids: [fieldCost!.uid, handCost!.uid],
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
   });
 });
 
