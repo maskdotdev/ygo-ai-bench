@@ -91,12 +91,56 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Na
     applyAndAssert(session, ragweedAction!);
     expect(session.state.chain).toHaveLength(1);
     expect(session.state.cards.find((card) => card.uid === ragweed!.uid)).toMatchObject({ location: "graveyard" });
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: ragweed!.uid,
-      targetPlayer: 1,
-      targetParam: 2,
-      operationInfos: [{ category: 0x10000, targetUids: [], count: 0, player: 1, parameter: 2 }],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "graveyard",
+        "activationSequence": 1,
+        "chainIndex": 1,
+        "effectId": "lua-3-1110",
+        "eventCardUid": "p0-deck-913-0",
+        "eventCode": 1110,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 1,
+        },
+        "eventName": "cardsDrawn",
+        "eventPlayer": 0,
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "deck",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReason": 64,
+        "eventReasonCardUid": "p1-deck-5915629-0",
+        "eventReasonEffectId": 2,
+        "eventReasonPlayer": 1,
+        "eventTriggerTiming": "when",
+        "eventUids": [
+          "p0-deck-913-0",
+          "p0-deck-914-1",
+        ],
+        "eventValue": 2,
+        "id": "chain-8",
+        "operationInfos": [
+          {
+            "category": 65536,
+            "count": 0,
+            "parameter": 2,
+            "player": 1,
+            "targetUids": [],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-87649699-1",
+        "targetParam": 2,
+        "targetPlayer": 1,
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -105,12 +149,56 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Na
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(restored.session.state.chain).toHaveLength(1);
-    expect(restored.session.state.chain[0]).toMatchObject({
-      sourceUid: ragweed!.uid,
-      targetPlayer: 1,
-      targetParam: 2,
-      operationInfos: [{ category: 0x10000, targetUids: [], count: 0, player: 1, parameter: 2 }],
-    });
+    expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "graveyard",
+        "activationSequence": 1,
+        "chainIndex": 1,
+        "effectId": "lua-3-1110",
+        "eventCardUid": "p0-deck-913-0",
+        "eventCode": 1110,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 1,
+        },
+        "eventName": "cardsDrawn",
+        "eventPlayer": 0,
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "deck",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReason": 64,
+        "eventReasonCardUid": "p1-deck-5915629-0",
+        "eventReasonEffectId": 2,
+        "eventReasonPlayer": 1,
+        "eventTriggerTiming": "when",
+        "eventUids": [
+          "p0-deck-913-0",
+          "p0-deck-914-1",
+        ],
+        "eventValue": 2,
+        "id": "chain-8",
+        "operationInfos": [
+          {
+            "category": 65536,
+            "count": 0,
+            "parameter": 2,
+            "player": 1,
+            "targetUids": [],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-87649699-1",
+        "targetParam": 2,
+        "targetPlayer": 1,
+      }
+    `);
 
     const passRagweed = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(passRagweed).toBeDefined();
