@@ -99,9 +99,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ad
     expect(restored.session.state.cards.find((card) => card.uid === normalMaterialB!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.effect | duelReason.material | duelReason.ritual });
     expect(restored.session.state.cards.find((card) => card.uid === effectDeckMonster!.uid)).toMatchObject({ location: "deck" });
     expect(restored.session.state.cards.find((card) => card.uid === advancedRitualArt!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "specialSummoned", eventCardUid: ritualTarget!.uid, eventReason: duelReason.summon | duelReason.specialSummon | duelReason.ritual })]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned")).toEqual([
+      {
+        eventName: "specialSummoned",
+        eventCode: 1102,
+        eventCardUid: ritualTarget!.uid,
+        eventReason: duelReason.summon | duelReason.specialSummon | duelReason.ritual,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: advancedRitualArt!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.host.messages).not.toContain("advanced ritual art responder resolved");
   });
 });

@@ -114,9 +114,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Me
       controller: 0,
       reason: duelReason.material | duelReason.ritual,
     });
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "specialSummoned", eventCardUid: ritualTarget!.uid, eventReason: duelReason.summon | duelReason.specialSummon | duelReason.ritual })]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned")).toEqual([
+      {
+        eventName: "specialSummoned",
+        eventCode: 1102,
+        eventCardUid: ritualTarget!.uid,
+        eventReason: duelReason.summon | duelReason.specialSummon | duelReason.ritual,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: bethor!.uid,
+        eventReasonEffectId: 2,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.host.messages).not.toContain("megalith responder resolved");
   });
 });
