@@ -61,6 +61,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ga
     expect(resolve.ok, resolve.error).toBe(true);
     expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
       luaTargetDescriptor: "special-summon-limit:not-type-extra:8192",
+      targetRange: [1, 0],
     });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);

@@ -302,6 +302,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
         "garden rose flora xyz special 0",
         "garden rose flora synchro special 1",
         "garden rose flora deck special 1",
+        "targetRange: [1, 0]",
       ],
     },
     {
