@@ -15,6 +15,12 @@ const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 const typeMonster = 0x1;
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Amorphactor Pain Main Phase 1 skip", () => {
   it("restores its ritual-summon opponent Main Phase 1 skip as legal-action lockout", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
@@ -68,11 +74,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
 
     const restoredEffect = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredEffect.restoreComplete, restoredEffect.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredEffect, 0);
     expect(restoredEffect.missingRegistryKeys).toEqual([]);
     applyActionAndAssert(restoredEffect.session, getLuaRestoreLegalActions(restoredEffect, 0).find((action) => action.type === "endTurn"));
 
     const restoredOpponentMain = restoreDuelWithLuaScripts(serializeDuel(restoredEffect.session), workspace, reader);
     expect(restoredOpponentMain.restoreComplete, restoredOpponentMain.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredOpponentMain, 1);
     expect(restoredOpponentMain.missingRegistryKeys).toEqual([]);
     expect(restoredOpponentMain.session.state).toMatchObject({ turnPlayer: 1, phase: "main1", waitingFor: 1 });
     expect(getLuaRestoreLegalActionGroups(restoredOpponentMain, 1)).toEqual(getGroupedDuelLegalActions(restoredOpponentMain.session, 1));

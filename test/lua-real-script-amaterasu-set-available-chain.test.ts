@@ -14,6 +14,12 @@ const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 const typeMonster = 0x1;
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Amaterasu set-available chain", () => {
   it("restores its face-down Quick Effect response to an opponent's targeting chain", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
@@ -75,6 +81,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
 
     const restoredOpenChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredOpenChain.restoreComplete, restoredOpenChain.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredOpenChain, 0);
     expect(restoredOpenChain.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredOpenChain, 0)).toEqual(getGroupedDuelLegalActions(restoredOpenChain.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredOpenChain, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredOpenChain, 0));
@@ -98,6 +105,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
 
     const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredOpenChain.session), source, reader);
     expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredPendingResolution, 1);
     expect(restoredPendingResolution.missingRegistryKeys).toEqual([]);
     passUntilResolved(restoredPendingResolution);
 

@@ -17,6 +17,12 @@ const typeSpell = 0x2;
 const typeEffect = 0x20;
 const typeSpirit = 0x200;
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Amano-Iwato activation lock", () => {
   it("restores its field lock that blocks non-Spirit monster effects but allows Spirit effects", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
@@ -67,6 +73,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
 
     const restoredSummonWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredSummonWindow.restoreComplete, restoredSummonWindow.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredSummonWindow, 0);
     expect(restoredSummonWindow.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredSummonWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredSummonWindow.session, 0));
     const summon = getLuaRestoreLegalActions(restoredSummonWindow, 0).find((action) => action.type === "normalSummon" && action.uid === amano!.uid);
@@ -75,6 +82,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
 
     const restoredOpenWindow = restoreDuelWithLuaScripts(serializeDuel(restoredSummonWindow.session), source, reader);
     expect(restoredOpenWindow.restoreComplete, restoredOpenWindow.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredOpenWindow, 0);
     expect(restoredOpenWindow.missingRegistryKeys).toEqual([]);
     expect(restoredOpenWindow.session.state.effects).toEqual(
       expect.arrayContaining([
@@ -93,6 +101,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
 
     const restoredResponseWindow = restoreDuelWithLuaScripts(serializeDuel(restoredOpenWindow.session), source, reader);
     expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredResponseWindow, 1);
     expect(restoredResponseWindow.missingRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.session.state.chain).toHaveLength(1);
     expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 1));
@@ -114,6 +123,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     applyRestoredActionAndAssert(restoredResponseWindow, allowed!);
     const restoredTwoLinkWindow = restoreDuelWithLuaScripts(serializeDuel(restoredResponseWindow.session), source, reader);
     expect(restoredTwoLinkWindow.restoreComplete, restoredTwoLinkWindow.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredTwoLinkWindow, 1);
     expect(restoredTwoLinkWindow.missingRegistryKeys).toEqual([]);
     expect(restoredTwoLinkWindow.session.state.chain).toHaveLength(2);
     const pass = getLuaRestoreLegalActions(restoredTwoLinkWindow, 1).find((action) => action.type === "passChain");
