@@ -99,9 +99,36 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
       getLuaRestoreLegalActions(restoredRegistrationChain, registrationPlayer),
     );
     drainRestoredChain(restoredRegistrationChain);
-    expect(restoredRegistrationChain.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: maharaghi!.uid, event: "continuous", code: 1113, controller: 0 })]),
-    );
+    expect(restoredRegistrationChain.session.state.effects.find((effect) => effect.sourceUid === maharaghi!.uid && effect.event === "continuous" && effect.code === 1113 && effect.controller === 0)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 1113,
+        "controller": 0,
+        "event": "continuous",
+        "id": "lua-9-1113",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:40695128:lua-9-1113",
+        "reset": {
+          "count": 1,
+          "flags": 1342177281,
+        },
+        "sourceUid": "p0-deck-40695128-0",
+        "triggerCode": 1113,
+        "triggerEvent": "preDraw",
+      }
+    `);
 
     endTurn(restoredRegistrationChain.session, 0);
     expect(restoredRegistrationChain.session.state.turnPlayer).toBe(1);
@@ -135,9 +162,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     ]);
     expect(restoredRegistrationChain.session.state.cards.find((card) => card.uid === firstDraw!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restoredRegistrationChain.session.state.cards.find((card) => card.uid === secondDraw!.uid)).toMatchObject({ location: "deck", controller: 0 });
-    expect(restoredRegistrationChain.session.state.effects).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: maharaghi!.uid, event: "continuous", code: 1113, controller: 0 })]),
-    );
+    expect(restoredRegistrationChain.session.state.effects.find((effect) => effect.sourceUid === maharaghi!.uid && effect.event === "continuous" && effect.code === 1113 && effect.controller === 0)).toBeUndefined();
   });
 });
 

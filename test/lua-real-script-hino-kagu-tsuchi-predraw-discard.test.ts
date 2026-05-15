@@ -164,9 +164,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
     expect(restoredBattle.session.state.cards.find((card) => card.uid === discardA!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restoredBattle.session.state.cards.find((card) => card.uid === discardB!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restoredBattle.session.state.cards.find((card) => card.uid === draw!.uid)).toMatchObject({ location: "hand", controller: 1 });
-    expect(restoredBattle.session.state.effects).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: hino!.uid, event: "continuous", code: 1113, controller: 0 })]),
-    );
+    expect(restoredBattle.session.state.effects.find((effect) => effect.sourceUid === hino!.uid && effect.event === "continuous" && effect.code === 1113 && effect.controller === 0)).toBeUndefined();
     expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "preDraw" && event.eventPlayer === 1)).toEqual([
       {
         eventName: "preDraw",

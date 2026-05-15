@@ -130,12 +130,50 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Le
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(lesserFiendCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 204, sourceUid: p0Fiend!.uid, value: 0x20 }),
-        expect.objectContaining({ event: "continuous", code: 204, sourceUid: p1Fiend!.uid, value: 0x20 }),
-      ]),
-    );
+    expect(session.state.effects.filter((effect) => effect.event === "continuous" && effect.code === 204 && [p0Fiend!.uid, p1Fiend!.uid].includes(effect.sourceUid))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 204,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-204",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:16475472:lua-1-204",
+          "sourceUid": "p0-deck-16475472-0",
+          "target": [Function],
+          "value": 32,
+        },
+        {
+          "canActivate": [Function],
+          "code": 204,
+          "controller": 1,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-2-204",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:16475472:lua-2-204",
+          "sourceUid": "p1-deck-16475472-0",
+          "target": [Function],
+          "value": 32,
+        },
+      ]
+    `);
 
     const attack = getLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === p0Fiend!.uid && action.targetUid === p1Fiend!.uid);
     expect(attack).toBeDefined();
@@ -148,12 +186,48 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Le
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 204, sourceUid: p0Fiend!.uid, value: 0x20 }),
-        expect.objectContaining({ event: "continuous", code: 204, sourceUid: p1Fiend!.uid, value: 0x20 }),
-      ]),
-    );
+    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.code === 204 && [p0Fiend!.uid, p1Fiend!.uid].includes(effect.sourceUid))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 204,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-204",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:16475472:lua-1-204",
+          "sourceUid": "p0-deck-16475472-0",
+          "target": [Function],
+          "value": 32,
+        },
+        {
+          "canActivate": [Function],
+          "code": 204,
+          "controller": 1,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-2-204",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:16475472:lua-2-204",
+          "sourceUid": "p1-deck-16475472-0",
+          "target": [Function],
+          "value": 32,
+        },
+      ]
+    `);
 
     passBattleResponses(restored.session);
     expect(restored.session.state.players[0].lifePoints).toBe(8000);
