@@ -18,7 +18,8 @@ describe("Lua real Union restore coverage", () => {
         return !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys")
-          || !text.includes("missingRegistryKeys).toEqual([])");
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])");
       });
 
     expect(missing).toEqual([]);
@@ -70,7 +71,8 @@ describe("Lua real Union restore coverage", () => {
           || !/range:\s*\[\s*["']spellTrapZone["']\s*\]/.test(text)
           || !text.includes("targetRange: [0, 0xff]")
           || !text.includes("canActivate")
-          || !text.includes("missingRegistryKeys).toEqual([])");
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])");
       });
 
     expect(missing).toEqual([]);
