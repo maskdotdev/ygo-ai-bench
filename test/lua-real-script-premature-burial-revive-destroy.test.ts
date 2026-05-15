@@ -76,10 +76,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
         eventReasonEffectId: 1,
       },
     ]);
-    expect(restoredActivation.session.state.chain[0]).toMatchObject({
-      sourceUid: premature!.uid,
-      targetUids: [target!.uid],
-    });
+    expect(restoredActivation.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 512,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-612601-1",
+            ],
+          },
+          {
+            "category": 262144,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-70828912-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-70828912-0",
+        "targetUids": [
+          "p0-deck-612601-1",
+        ],
+      }
+    `);
     expect(restoredActivation.session.state.chain[0]?.operationInfos).toEqual([
       { category: 0x200, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 },
       { category: 0x40000, targetUids: [premature!.uid], count: 1, player: 0, parameter: 0 },
@@ -91,7 +121,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(restoredChain.missingRegistryKeys).toEqual([]);
     expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredChain, restoredChain.session.state.waitingFor ?? restoredChain.session.state.turnPlayer);
-    expect(restoredChain.session.state.chain[0]).toMatchObject(restoredActivation.session.state.chain[0]!);
+    expect(restoredChain.session.state.chain[0]).toEqual(restoredActivation.session.state.chain[0]!);
     resolveRestoredChain(restoredChain);
 
     expect(restoredChain.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({

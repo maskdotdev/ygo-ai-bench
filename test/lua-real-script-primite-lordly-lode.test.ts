@@ -70,14 +70,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     const summoned = applyResponse(session, summonNormal!);
     expect(summoned.ok, summoned.error).toBe(true);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: lordlyLode!.uid,
-      targetParam: Number(darkMagicianCode),
-      operationInfos: [
-        expect.objectContaining({ category: 0x20000000, player: 0, parameter: 0x8 }),
-        expect.objectContaining({ category: 0x200, player: 0, parameter: 0x13 }),
-      ],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-2",
+        "id": "chain-4",
+        "operationInfos": [
+          {
+            "category": 536870912,
+            "count": 0,
+            "parameter": 8,
+            "player": 0,
+            "targetUids": [],
+          },
+          {
+            "category": 512,
+            "count": 1,
+            "parameter": 19,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-56506740-0",
+        "targetParam": 46986414,
+      }
+    `);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
@@ -85,7 +105,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getDuelLegalActionGroups(restoredChain.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
-    expect(restoredChain.session.state.chain[0]).toMatchObject({ sourceUid: lordlyLode!.uid, targetParam: Number(darkMagicianCode) });
+    expect(restoredChain.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-2",
+        "id": "chain-4",
+        "operationInfos": [
+          {
+            "category": 536870912,
+            "count": 0,
+            "parameter": 8,
+            "player": 0,
+            "targetUids": [],
+          },
+          {
+            "category": 512,
+            "count": 1,
+            "parameter": 19,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-56506740-0",
+        "targetParam": 46986414,
+      }
+    `);
     const pass = getLuaRestoreLegalActions(restoredChain, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
     const resolved = applyLuaRestoreResponse(restoredChain, pass!);
