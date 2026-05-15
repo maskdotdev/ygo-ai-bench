@@ -61,13 +61,27 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     expect(ignition, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
     applyAndAssert(session, ignition!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: exblowrer.uid,
-      effectLabel: 1 << 16,
-      operationInfos: [
-        expect.objectContaining({ category: 0x1, targetUids: [] }),
-      ],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-2",
+        "effectLabel": 65536,
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-extraDeck-62941499-0",
+      }
+    `);
     expect(session.state.cards.find((card) => card.uid === target.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
     expect(session.state.cards.find((card) => card.uid === material.uid)).toMatchObject({ location: "overlay", controller: 0 });
     expect(host.promptDecisions).toEqual(expect.arrayContaining([

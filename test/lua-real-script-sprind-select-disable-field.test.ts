@@ -57,12 +57,26 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     expect(ignition, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
     applyAndAssert(session, ignition!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: sprind.uid,
-      possibleOperationInfos: [
-        expect.objectContaining({ category: 0x1, targetUids: [] }),
-      ],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 2,
+        "chainIndex": 1,
+        "effectId": "lua-2",
+        "id": "chain-2",
+        "player": 0,
+        "possibleOperationInfos": [
+          {
+            "category": 1,
+            "count": 1,
+            "parameter": 12,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "sourceUid": "p0-extraDeck-1906812-0",
+      }
+    `);
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);

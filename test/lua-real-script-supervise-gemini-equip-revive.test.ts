@@ -72,11 +72,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
     const equip = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === supervise!.uid);
     expect(equip, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredEquipWindow, equip!);
-    expect(restoredEquipWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: supervise!.uid,
-      targetUids: [gemini!.uid],
-      operationInfos: [{ category: 0x40000, targetUids: [supervise!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restoredEquipWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 262144,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-95750695-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-95750695-0",
+        "targetUids": [
+          "p0-deck-3918345-1",
+        ],
+      }
+    `);
 
     const restoredEquipChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
     expect(restoredEquipChain.restoreComplete, restoredEquipChain.incompleteReasons.join("; ")).toBe(true);

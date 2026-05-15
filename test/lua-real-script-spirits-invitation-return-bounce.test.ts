@@ -79,7 +79,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     const activateTrap = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === invitation!.uid);
     expect(activateTrap, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredActivation, activateTrap!);
-    expect(restoredActivation.session.state.chain[0]).toMatchObject({ sourceUid: invitation!.uid });
+    expect(restoredActivation.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "player": 0,
+        "sourceUid": "p0-deck-92394653-0",
+      }
+    `);
 
     const restoredActivationChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expectCleanRestore(restoredActivationChain);
@@ -131,10 +141,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     const spiritReturn = getLuaRestoreLegalActions(restoredSpiritReturn, 0).find((action) => action.type === "activateTrigger" && action.uid === susa!.uid);
     expect(spiritReturn, JSON.stringify(getLuaRestoreLegalActions(restoredSpiritReturn, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredSpiritReturn, spiritReturn!);
-    expect(restoredSpiritReturn.session.state.chain[0]).toMatchObject({
-      sourceUid: susa!.uid,
-      operationInfos: [{ category: 0x8, targetUids: [susa!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restoredSpiritReturn.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-4-4608",
+        "eventCode": 4608,
+        "eventName": "phaseEnd",
+        "eventTriggerTiming": "when",
+        "id": "chain-9",
+        "operationInfos": [
+          {
+            "category": 8,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-40473581-1",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-40473581-1",
+      }
+    `);
 
     const restoredSpiritReturnChain = restoreDuelWithLuaScripts(serializeDuel(restoredSpiritReturn.session), source, reader);
     expectCleanRestore(restoredSpiritReturnChain);

@@ -67,10 +67,26 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
       location: "graveyard",
       reason: duelReason.cost | duelReason.discard,
     });
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: seaHorse.uid,
-      operationInfos: [{ category: 0x8, targetUids: [], count: 2, player: 0, parameter: 0x1 }],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "graveyard",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1",
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 8,
+            "count": 2,
+            "parameter": 1,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-48049769-0",
+      }
+    `);
     expect(session.state.effects.find((effect) => effect.sourceUid === seaHorse.uid && effect.code === 22)).toMatchObject({
       event: "continuous",
       targetRange: [1, 0],

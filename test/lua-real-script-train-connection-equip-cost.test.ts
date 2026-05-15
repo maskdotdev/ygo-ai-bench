@@ -86,18 +86,38 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tr
 
     expect(restoredEquipWindow.session.state.cards.find((card) => card.uid === costA!.uid)).toMatchObject({ location: "banished", faceUp: true });
     expect(restoredEquipWindow.session.state.cards.find((card) => card.uid === costB!.uid)).toMatchObject({ location: "banished", faceUp: true });
-    expect(restoredEquipWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: trainConnection!.uid,
-      targetUids: [target!.uid],
-      operationInfos: [{ category: 0x40000, targetUids: [trainConnection!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restoredEquipWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-4",
+        "operationInfos": [
+          {
+            "category": 262144,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-60879050-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-60879050-0",
+        "targetUids": [
+          "p0-deck-96080101-1",
+        ],
+      }
+    `);
     expect(restoredEquipWindow.session.state.chain[0]?.targetUids).not.toContain(wrongTarget!.uid);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
     expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restoredChain.session.state.chain[0]).toMatchObject(restoredEquipWindow.session.state.chain[0]!);
+    expect(restoredChain.session.state.chain[0]).toEqual(restoredEquipWindow.session.state.chain[0]!);
     expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
     resolveRestoredChain(restoredChain);

@@ -230,9 +230,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
       controller: 0,
       previousEquippedToUid: target!.uid,
     });
-    expect(restoredEquippedState.session.state.chain[0]).toMatchObject({
-      sourceUid: unionPilot!.uid,
-    });
+    expect(restoredEquippedState.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-5",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 262144,
+            "count": 1,
+            "parameter": 32,
+            "player": 0,
+            "targetUids": [],
+          },
+          {
+            "category": 512,
+            "count": 1,
+            "parameter": 2,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-89357740-0",
+      }
+    `);
     expect(restoredEquippedState.session.state.chain[0]?.operationInfos).toEqual([
       { category: 0x40000, targetUids: [], count: 1, player: 0, parameter: 0x20 },
       { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 },
@@ -243,7 +267,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     expect(restoredChain.missingRegistryKeys).toEqual([]);
     expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredChain);
-    expect(restoredChain.session.state.chain[0]).toMatchObject(restoredEquippedState.session.state.chain[0]!);
+    expect(restoredChain.session.state.chain[0]).toEqual(restoredEquippedState.session.state.chain[0]!);
     expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredChain);
 

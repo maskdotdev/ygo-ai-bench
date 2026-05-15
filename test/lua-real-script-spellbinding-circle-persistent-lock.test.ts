@@ -65,15 +65,25 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredActivation, activation!);
 
-    expect(restoredActivation.session.state.chain[0]).toMatchObject({
-      sourceUid: circle!.uid,
-      targetUids: [target!.uid],
-    });
+    expect(restoredActivation.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "player": 0,
+        "sourceUid": "p0-deck-18807108-0",
+        "targetUids": [
+          "p1-deck-612901-0",
+        ],
+      }
+    `);
     expect(getLuaRestoreLegalActions(restoredActivation, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expectCleanRestore(restoredChain);
-    expect(restoredChain.session.state.chain[0]).toMatchObject(restoredActivation.session.state.chain[0]!);
+    expect(restoredChain.session.state.chain[0]).toEqual(restoredActivation.session.state.chain[0]!);
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
     resolveRestoredChain(restoredChain);
