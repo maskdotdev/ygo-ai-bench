@@ -1,10 +1,70 @@
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const scannerPath = path.join(root, "tools/scan-lua-prompt-patterns.mjs");
+const upstreamOfficialScriptRoot = path.join(root, ".upstream/ignis/script/official");
+
+const officialPromptScannerSummary = {
+  filesWithCalls: 1957,
+  promptCalls: 2458,
+  announcementCalls: 247,
+  unclassifiedPromptCalls: 0,
+};
+
+const officialPromptApiCounts: Record<string, number> = {
+  SelectOption: 437,
+  SelectYesNo: 1172,
+  SelectEffect: 352,
+  SelectEffectYesNo: 250,
+  AnnounceNumber: 58,
+  AnnounceNumberRange: 24,
+  AnnounceCard: 33,
+  AnnounceType: 0,
+  AnnounceRace: 24,
+  AnnounceAttribute: 33,
+  AnnounceLevel: 29,
+  SelectCardsFromCodes: 1,
+  SelectDisableField: 41,
+  SelectField: 0,
+  SelectFieldZone: 4,
+};
+
+const officialPromptPatternCounts: Record<string, number> = {
+  "SelectYesNo:description": 1172,
+  "SelectOption:literal-options": 416,
+  "SelectEffect:effect-table-options": 349,
+  "SelectEffectYesNo:description": 250,
+  "SelectDisableField:zone-mask": 41,
+  "AnnounceNumber:table-unpack": 39,
+  "AnnounceAttribute:literal-options": 33,
+  "AnnounceLevel:literal-options": 26,
+  "AnnounceNumberRange:literal-options": 24,
+  "AnnounceRace:literal-options": 24,
+  "AnnounceNumber:literal-options": 19,
+  "SelectOption:table-unpack": 19,
+  "AnnounceCard:table-unpack": 18,
+  "AnnounceCard:literal-options": 8,
+  "AnnounceCard:default": 7,
+  "SelectFieldZone:zone-mask": 4,
+  "AnnounceLevel:default": 3,
+  "SelectEffect:dynamic-options": 3,
+  "SelectCardsFromCodes:code-literals": 1,
+  "SelectOption:leading-boolean-literals": 1,
+  "SelectOption:leading-boolean-table-unpack": 1,
+};
 
 describe("Lua real prompt helper restore coverage", () => {
+  it.skipIf(!fs.existsSync(upstreamOfficialScriptRoot))("pins the official prompt helper scanner corpus", () => {
+    const report = JSON.parse(execFileSync(process.execPath, [scannerPath, "--scripts", upstreamOfficialScriptRoot, "--json"], { encoding: "utf8" }));
+
+    expect(report).toMatchObject(officialPromptScannerSummary);
+    expect(report.apiCounts).toEqual(officialPromptApiCounts);
+    expect(report.patternCounts).toEqual(officialPromptPatternCounts);
+  });
+
   it("keeps the representative prompt helper fixture inventory broad", () => {
     expect(representativePromptHelperFixtures()).toHaveLength(16);
   });
