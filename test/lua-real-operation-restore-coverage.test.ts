@@ -3,10 +3,15 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const operationFixtureCount = 12;
+const summonTriggerOperationFixtureCount = 1;
 
 describe("Lua real operation restore coverage", () => {
   it("requires representative simple spell operations to assert clean Lua registry restore and restored operation metadata", () => {
-    const missing = operationFixtureFiles()
+    const files = operationFixtureFiles();
+    expect(files).toHaveLength(operationFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
@@ -25,7 +30,10 @@ describe("Lua real operation restore coverage", () => {
   });
 
   it("requires summon-trigger operations to assert clean Lua registry restore and restored operation metadata", () => {
-    const missing = summonTriggerOperationFixtureFiles()
+    const files = summonTriggerOperationFixtureFiles();
+    expect(files).toHaveLength(summonTriggerOperationFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
