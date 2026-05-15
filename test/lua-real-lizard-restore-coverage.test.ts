@@ -129,6 +129,7 @@ function representativeLizardDescriptorFixtures(): Array<{ file: string; require
       requiredSnippets: [
         "continuous positive original Type Clock Lizard lock",
         'luaTargetDescriptor: "target:original-type:67108864"',
+        "reset: { flags: 0x3fe1000 }",
         "continuous-positive-original-type-official-lizard.lua",
       ],
     },
@@ -137,6 +138,7 @@ function representativeLizardDescriptorFixtures(): Array<{ file: string; require
       requiredSnippets: [
         "continuous positive original setcode Clock Lizard lock",
         'luaTargetDescriptor: `target:original-setcode:${setAesir}`',
+        "reset: { flags: 0x1fe1000 }",
         "continuous-positive-original-setcode-official-lizard.lua",
       ],
     },
@@ -145,6 +147,7 @@ function representativeLizardDescriptorFixtures(): Array<{ file: string; require
       requiredSnippets: [
         "Icejade Ran Aegirine continuous Clock Lizard lock",
         'luaTargetDescriptor: "target:not-attribute:2"',
+        "reset: { flags: 0x1fe1000 }",
         "icejade-ran-official-continuous-lizard.lua",
       ],
     },

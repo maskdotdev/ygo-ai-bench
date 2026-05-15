@@ -69,6 +69,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script co
     expect(session.state.effects.find((effect) => effect.code === 51476410)).toMatchObject({
       luaTargetDescriptor: `target:original-setcode:${setAesir}`,
       range: ["monsterZone"],
+      reset: { flags: 0x1fe1000 },
       value: 1,
     });
 
@@ -79,6 +80,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script co
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const effect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
+    expect(effect).toMatchObject({ reset: { flags: 0x1fe1000 } });
     const restoredSource = restored.session.state.cards.find((card) => card.code === sourceCode);
     const aesir = restored.session.state.cards.find((card) => card.code === aesirCode);
     const offSet = restored.session.state.cards.find((card) => card.code === offSetCode);

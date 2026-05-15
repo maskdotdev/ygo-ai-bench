@@ -68,6 +68,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ic
     expect(session.state.effects.find((effect) => effect.code === 51476410)).toMatchObject({
       luaTargetDescriptor: "target:not-attribute:2",
       range: ["monsterZone"],
+      reset: { flags: 0x1fe1000 },
       value: 1,
     });
 
@@ -80,6 +81,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ic
       getLuaRestoreLegalActions(restored, 0),
     );
     const effect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
+    expect(effect).toMatchObject({ reset: { flags: 0x1fe1000 } });
     const source = restored.session.state.cards.find((card) => card.code === icejadeCode);
     const water = restored.session.state.cards.find((card) => card.code === waterCode);
     const fire = restored.session.state.cards.find((card) => card.code === fireCode);
