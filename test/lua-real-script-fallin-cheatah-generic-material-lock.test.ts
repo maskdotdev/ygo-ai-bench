@@ -73,16 +73,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(cheatahCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 248,
-          sourceUid: cheatah!.uid,
-          luaValueDescriptor: `cannot-material:summon-types:${luaSummonTypeFusion},${luaSummonTypeSynchro},${luaSummonTypeXyz},${luaSummonTypeLink}`,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 248 && effect.sourceUid === cheatah!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 248,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-3-248",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 1,
+        "luaValueDescriptor": "cannot-material:summon-types:1124073472,1174405120,1224736768,1275068416",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 131072,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:59011257:lua-3-248",
+        "sourceUid": "p0-deck-59011257-0",
+        "statValue": [Function],
+        "target": [Function],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

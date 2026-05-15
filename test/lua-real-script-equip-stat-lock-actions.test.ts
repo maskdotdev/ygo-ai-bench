@@ -121,12 +121,45 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     const restoredEquipState = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expectCleanRestore(restoredEquipState);
     expectRestoredLegalActions(restoredEquipState, restoredEquipState.session.state.waitingFor ?? restoredEquipState.session.state.turnPlayer);
-    expect(restoredEquipState.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: bigBang!.uid, event: "continuous", code: 100 }),
-        expect.objectContaining({ sourceUid: bigBang!.uid, event: "continuous", code: 203 }),
-      ]),
-    );
+    expect(restoredEquipState.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === bigBang!.uid && [100, 203].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 100,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-3-100",
+          "luaTypeFlags": 4,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:61127349:lua-3-100",
+          "sourceUid": "p0-deck-61127349-0",
+          "target": [Function],
+          "value": 400,
+        },
+        {
+          "canActivate": [Function],
+          "code": 203,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-4-203",
+          "luaTypeFlags": 4,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:61127349:lua-4-203",
+          "sourceUid": "p0-deck-61127349-0",
+          "target": [Function],
+        },
+      ]
+    `);
     expectLuaEquipProbe(restoredEquipState, targetCode, bigBangCode, "equip probe 61127349/2000");
 
     restoredEquipState.session.state.turnPlayer = 0;
@@ -327,11 +360,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     const restoredEqualLp = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expectCleanRestore(restoredEqualLp);
     expectRestoredLegalActions(restoredEqualLp, restoredEqualLp.session.state.waitingFor ?? restoredEqualLp.session.state.turnPlayer);
-    expect(restoredEqualLp.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: megamorph!.uid, event: "continuous", code: 101 }),
-      ]),
-    );
+    expect(restoredEqualLp.session.state.effects.find((effect) => effect.event === "continuous" && effect.sourceUid === megamorph!.uid && effect.code === 101)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 101,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-3-101",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 4,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "range": [
+          "spellTrapZone",
+        ],
+        "registryKey": "lua:22046459:lua-3-101",
+        "sourceUid": "p0-deck-22046459-0",
+        "statValue": [Function],
+        "target": [Function],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
     expectLuaEquipStatProbe(restoredEqualLp, targetCode, megamorphCode, "equip stat probe 22046459/1000/1000");
 
     restoredEqualLp.session.state.players[0].lifePoints = 6000;
@@ -443,12 +495,50 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     const restoredEquipState = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expectCleanRestore(restoredEquipState);
     expectRestoredLegalActions(restoredEquipState, restoredEquipState.session.state.waitingFor ?? restoredEquipState.session.state.turnPlayer);
-    expect(restoredEquipState.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: gravityAxe!.uid, event: "continuous", code: 100 }),
-        expect.objectContaining({ sourceUid: gravityAxe!.uid, event: "continuous", code: 14, targetRange: [0, 4] }),
-      ]),
-    );
+    expect(restoredEquipState.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === gravityAxe!.uid && [14, 100].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 100,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-3-100",
+          "luaTypeFlags": 4,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:32022366:lua-3-100",
+          "sourceUid": "p0-deck-32022366-0",
+          "target": [Function],
+          "value": 500,
+        },
+        {
+          "canActivate": [Function],
+          "code": 14,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-4-14",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 256,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:32022366:lua-4-14",
+          "sourceUid": "p0-deck-32022366-0",
+          "target": [Function],
+          "targetRange": [
+            0,
+            4,
+          ],
+        },
+      ]
+    `);
     expectLuaEquipProbe(restoredEquipState, targetCode, gravityAxeCode, "equip probe 32022366/1500");
 
     restoredEquipState.session.state.turnPlayer = 1;

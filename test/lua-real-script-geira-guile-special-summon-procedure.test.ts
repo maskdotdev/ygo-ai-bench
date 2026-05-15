@@ -119,9 +119,37 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
         },
       },
     ]);
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: geira!.uid, event: "continuous", code: 100, value: 800 })]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 100 && effect.sourceUid === geira!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 100,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-5-100",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:40392714:lua-5-100",
+        "reset": {
+          "flags": 16715776,
+        },
+        "sourceUid": "p0-deck-40392714-0",
+        "target": [Function],
+        "value": 800,
+      }
+    `);
   });
 });
 

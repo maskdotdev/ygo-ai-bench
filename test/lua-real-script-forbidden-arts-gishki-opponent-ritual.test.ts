@@ -121,11 +121,37 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fo
     expect(restored.session.state.cards.find((card) => card.uid === opponentFieldMaterial!.uid)).toMatchObject({ location: "graveyard", controller: 1, reason: duelReason.release | duelReason.material | duelReason.ritual });
     expect(restored.session.state.cards.find((card) => card.uid === handDecoy!.uid)).toMatchObject({ location: "hand" });
     expect(restored.session.state.cards.find((card) => card.uid === forbiddenArts!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 101, sourceUid: ritualTarget!.uid, value: 1300 }),
-      ]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 101 && effect.sourceUid === ritualTarget!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 101,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-4-101",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:28421:lua-4-101",
+        "reset": {
+          "flags": 16650240,
+        },
+        "sourceUid": "p0-deck-28421-1",
+        "target": [Function],
+        "value": 1300,
+      }
+    `);
     expect(restored.host.messages).not.toContain("forbidden arts responder resolved");
   });
 });
