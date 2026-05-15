@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -25,11 +26,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pa
     expect(session.state.cards.find((card) => card.uid === release.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(session.state.cards.find((card) => card.uid === panther.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(session.state.battleWindow?.kind).toBe("attackNegationResponse");
-    expect(session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "released", eventCardUid: release.uid, eventReason: 0x82, eventReasonPlayer: 0 }),
-      ]),
-    );
+    expect(session.state.eventHistory.filter((event) => event.eventName === "released" && event.eventCardUid === release.uid)).toEqual([
+      {
+        eventName: "released",
+        eventCode: 1017,
+        eventCardUid: release.uid,
+        eventReason: duelReason.release | duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: panther.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
