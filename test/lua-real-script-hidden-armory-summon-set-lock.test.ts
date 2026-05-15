@@ -86,10 +86,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
     expect(restored.session.state.cards.find((card) => card.uid === hiddenArmory.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.eventHistory).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: milledCard!.uid }),
         expect.objectContaining({ eventName: "sentToHandConfirmed", eventPlayer: 1, eventUids: [equip.uid] }),
       ]),
     );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard" && event.eventCardUid === milledCard!.uid)).toEqual([
+      {
+        eventName: "sentToGraveyard",
+        eventCode: 1014,
+        eventCardUid: milledCard!.uid,
+        eventReason: duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: hiddenArmory.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 2,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToHand")).toEqual([
       {
         eventName: "sentToHand",
