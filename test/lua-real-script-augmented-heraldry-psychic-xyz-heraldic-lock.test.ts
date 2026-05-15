@@ -57,6 +57,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Au
     expect(resolve.ok, resolve.error).toBe(true);
     expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
       luaTargetDescriptor: "target:not-race-type-or-setcode:1048576:8388608:118",
+      targetRange: [1, 0],
     });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
@@ -65,6 +66,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Au
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(restored.session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      targetRange: [1, 0],
+    });
     const probe = restored.host.loadScript(
       `
       local psychic_xyz=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${psychicXyzCode}),0,LOCATION_EXTRA,0,nil)

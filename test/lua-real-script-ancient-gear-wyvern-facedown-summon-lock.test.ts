@@ -55,6 +55,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script An
     expect(resolve.ok, resolve.error).toBe(true);
     expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
       luaTargetDescriptor: "target:special-summon-position-facedown",
+      targetRange: [1, 0],
     });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
@@ -63,6 +64,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script An
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(restored.session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      targetRange: [1, 0],
+    });
     const probe = restored.host.loadScript(
       `
       local facedown=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${faceDownProbeCode}),0,LOCATION_HAND,0,nil)
