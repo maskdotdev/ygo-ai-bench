@@ -104,22 +104,55 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     expect(resolved.ok, resolved.error).toBe(true);
     expect(restoredChain.session.state.chain).toHaveLength(0);
     expect(restoredChain.session.state.cards.find((card) => card.uid === shrink!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restoredChain.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 103, sourceUid: attacker!.uid, value: 1000 }),
-      ]),
-    );
+    expect(restoredChain.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 103 && effect.sourceUid === attacker!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 103,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-3-103",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:1110:lua-3-103",
+        "reset": {
+          "flags": 1107169792,
+        },
+        "sourceUid": "p0-deck-1110-1",
+        "target": [Function],
+        "value": 1000,
+      }
+    `);
 
     const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredBattle.restoreComplete, restoredBattle.incompleteReasons.join("; ")).toBe(true);
     expect(restoredBattle.missingRegistryKeys).toEqual([]);
     expect(restoredBattle.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredBattle, 0);
-    expect(restoredBattle.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 103, sourceUid: attacker!.uid, value: 1000 }),
-      ]),
-    );
+    expect(restoredBattle.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 103 && effect.sourceUid === attacker!.uid)).toMatchInlineSnapshot(`
+      {
+        "code": 103,
+        "controller": 0,
+        "event": "continuous",
+        "id": "lua-3-103",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:1110:lua-3-103",
+        "reset": {
+          "flags": 1107169792,
+        },
+        "sourceUid": "p0-deck-1110-1",
+        "value": 1000,
+      }
+    `);
     moveDuelCard(restoredBattle.session.state, defender!.uid, "monsterZone", 1).position = "faceUpAttack";
     restoredBattle.session.state.phase = "battle";
     restoredBattle.session.state.waitingFor = 0;

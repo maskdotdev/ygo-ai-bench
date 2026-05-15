@@ -105,12 +105,60 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fo
     expect(resolved.ok, resolved.error).toBe(true);
     expect(restored.session.state.chain).toHaveLength(0);
     expect(restored.session.state.cards.find((card) => card.uid === lance!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 100, sourceUid: attacker!.uid, value: -800 }),
-        expect.objectContaining({ event: "continuous", code: 1, sourceUid: attacker!.uid }),
-      ]),
-    );
+    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === attacker!.uid && [1, 100].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 100,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-3-100",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:1100:lua-3-100",
+          "reset": {
+            "flags": 1107169792,
+          },
+          "sourceUid": "p0-deck-1100-1",
+          "target": [Function],
+          "value": -800,
+        },
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 1,
+          "controller": 0,
+          "cost": [Function],
+          "description": 3104,
+          "event": "continuous",
+          "id": "lua-4-1",
+          "lifePointValue": [Function],
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 67239936,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:1100:lua-4-1",
+          "reset": {
+            "flags": 1107169792,
+          },
+          "sourceUid": "p0-deck-1100-1",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
 
     restored.session.state.phase = "battle";
     restored.session.state.waitingFor = 0;
