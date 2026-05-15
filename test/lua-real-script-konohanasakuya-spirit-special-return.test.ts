@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import {
   createDuel,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   serializeDuel,
@@ -13,7 +14,12 @@ import type { DuelAction } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import {
+  applyLuaRestoreResponse,
+  getLuaRestoreLegalActionGroups,
+  getLuaRestoreLegalActions,
+  restoreDuelWithLuaScripts,
+} from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -60,6 +66,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ko
     const restoredProcedureWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredProcedureWindow.restoreComplete, restoredProcedureWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredProcedureWindow.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restoredProcedureWindow, 0)).toEqual(
+      getGroupedDuelLegalActions(restoredProcedureWindow.session, 0),
+    );
+    expect(getLuaRestoreLegalActionGroups(restoredProcedureWindow, 0).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restoredProcedureWindow, 0),
+    );
     expect(getLuaRestoreLegalActions(restoredProcedureWindow, 0)).toEqual(getDuelLegalActions(restoredProcedureWindow.session, 0));
     const procedure = getLuaRestoreLegalActions(restoredProcedureWindow, 0).find(
       (action) => action.type === "specialSummonProcedure" && action.uid === konohanasakuya!.uid,
@@ -75,6 +87,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ko
     const restoredAfterSummon = restoreDuelWithLuaScripts(serializeDuel(restoredProcedureWindow.session), workspace, reader);
     expect(restoredAfterSummon.restoreComplete, restoredAfterSummon.incompleteReasons.join("; ")).toBe(true);
     expect(restoredAfterSummon.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restoredAfterSummon, 0)).toEqual(getGroupedDuelLegalActions(restoredAfterSummon.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredAfterSummon, 0).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restoredAfterSummon, 0),
+    );
     advanceRestoredToEndPhase(restoredAfterSummon);
 
     expect(restoredAfterSummon.session.state.pendingTriggers).toEqual([
