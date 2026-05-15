@@ -38,6 +38,18 @@ describe("Lua deck probe manifest", () => {
       .filter((command) => !/--min-activate-effects \d+/.test(command))
       .map((command) => command.match(/-- (\S+\.ydk) /)?.[1] ?? command)
       .sort();
+    const expectedMissingBudgetMismatches = packageProbeCommands
+      .filter((command) => {
+        const maximum = Number(command.match(/--max-expected-missing-scripts (\d+)/)?.[1] ?? -1);
+        const codes = [...command.matchAll(/--expected-missing-script-code \d+/g)];
+        return maximum !== codes.length;
+      })
+      .map((command) => command.match(/-- (\S+\.ydk) /)?.[1] ?? command)
+      .sort();
+    const localFallbackBudgetDecks = packageProbeCommands
+      .filter((command) => Number(command.match(/--max-local-fallbacks (\d+)/)?.[1] ?? 0) > 0)
+      .map((command) => command.match(/-- (\S+\.ydk) /)?.[1] ?? command)
+      .sort();
 
     const uncovered = deckNames.filter((name) => !packageProbeDecks.includes(name));
 
@@ -73,6 +85,13 @@ describe("Lua deck probe manifest", () => {
     expect(looseProbeCommands).toEqual([]);
     expect(unbudgetedProbeCommands).toEqual([]);
     expect(activateEffectFloorOmissions).toEqual(["marincess-2026.ydk"]);
+    expect(expectedMissingBudgetMismatches).toEqual([]);
+    expect(localFallbackBudgetDecks).toEqual([
+      "magician-pendulum-mar-2026.ydk",
+      "phantom-knights-mar-2026-v4.ydk",
+      "ritual-of-light-and-darkness-apr-2026.ydk",
+      "rokket-2026.ydk",
+    ]);
     expect(uncovered).toEqual([]);
   });
 });
