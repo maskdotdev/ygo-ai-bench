@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createDuel, destroyDuelCard, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { createDuel, destroyDuelCard, getGroupedDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData } from "#duel/types.js";
 
 describe("Lua replacement restore", () => {
@@ -42,9 +42,15 @@ describe("Lua replacement restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }]);
     expect(restored.registeredEffects).toBe(1);
     expect(restored.session.state.usedCountKeys).toEqual(session.state.usedCountKeys);
+    const restoredPlayer = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    expect(getLuaRestoreLegalActionGroups(restored, restoredPlayer)).toEqual(getGroupedDuelLegalActions(restored.session, restoredPlayer));
+    expect(getLuaRestoreLegalActionGroups(restored, restoredPlayer).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restored, restoredPlayer),
+    );
 
     destroyDuelCard(restored.session.state, secondThreatened!.uid, 0);
     expect(restored.host.messages).not.toContain("counted replacement op 301");
@@ -89,9 +95,15 @@ describe("Lua replacement restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }, { ok: true, name: "c101.lua" }]);
     expect(restored.registeredEffects).toBe(2);
     expect(restored.session.state.usedCountKeys).toEqual(session.state.usedCountKeys);
+    const restoredPlayer = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    expect(getLuaRestoreLegalActionGroups(restored, restoredPlayer)).toEqual(getGroupedDuelLegalActions(restored.session, restoredPlayer));
+    expect(getLuaRestoreLegalActionGroups(restored, restoredPlayer).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restored, restoredPlayer),
+    );
 
     destroyDuelCard(restored.session.state, secondThreatened!.uid, 0);
     expect(restored.host.messages).toContain("backup replacement op 301");
