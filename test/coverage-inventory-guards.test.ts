@@ -94,6 +94,21 @@ describe("coverage inventory guards", () => {
     expect(missingGroupedRestoreEvidence).toEqual([]);
   });
 
+  it("requires event restore branches to prove grouped restored actions before consumption", () => {
+    const eventFiles = fs.readdirSync(testRoot)
+      .filter((file) => /^lua-.*(?:grouped-event|event)\.test\.ts$/.test(file))
+      .filter((file) => !file.includes("source-only"));
+    const restoreBranches = eventFiles
+      .flatMap((file) => restoreBranchesIn(file));
+    const missingGroupedRestoreEvidence = restoreBranches
+      .filter((branch) => !hasNearbyGroupedRestoreEvidence(branch.text, branch.variable))
+      .map((branch) => `${branch.file}:${branch.line}`);
+
+    expect(eventFiles).toHaveLength(40);
+    expect(restoreBranches).toHaveLength(58);
+    expect(missingGroupedRestoreEvidence).toEqual([]);
+  });
+
   it("requires test proof floors to be exact", () => {
     const greaterThanAllowlist = new Set([
       "lua-field-query-helpers.test.ts:59",
@@ -116,18 +131,22 @@ describe("coverage inventory guards", () => {
 });
 
 function sourceOnlyRestoreBranches(file: string): Array<{ file: string; line: number; text: string; variable: string }> {
+  return restoreBranchesIn(file, 550);
+}
+
+function restoreBranchesIn(file: string, window = 650): Array<{ file: string; line: number; text: string; variable: string }> {
   const text = fs.readFileSync(path.join(testRoot, file), "utf8");
   return [...text.matchAll(/const (\w+) = restoreDuelWithLuaScripts\(/g)]
     .map((match) => ({
       file,
       line: lineNumber(text, match.index ?? 0),
-      text: text.slice(match.index ?? 0, (match.index ?? 0) + 550),
+      text: text.slice(match.index ?? 0, (match.index ?? 0) + window),
       variable: match[1]!,
     }));
 }
 
 function hasNearbyGroupedRestoreEvidence(text: string, variable: string): boolean {
-  return new RegExp(`expectRestoredLegal(?:Action|Actions|ActionGroups)\\(${variable}\\)`).test(text)
+  return new RegExp(`expectRestoredLegal(?:Action|Actions|ActionGroups)\\(${variable}(?:\\)|,)`).test(text)
     || text.includes(`getLuaRestoreLegalActionGroups(${variable},`);
 }
 

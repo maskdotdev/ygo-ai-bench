@@ -266,6 +266,7 @@ function activateNegator(fixture: { session: ReturnType<typeof createDuel> }): v
 function assertRestoredNegatedTrigger(fixture: NegatedSummonFixture, message: string, originalTrigger: Parameters<typeof applyLuaRestoreResponse>[1]): void {
   const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.scriptSource, createCardReader(fixture.cards));
   expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+  expectRestoredLegalActions(restored, 0);
   expect(restored.loadedScripts.map((script) => script.name).sort()).toEqual(["c200.lua", "c300.lua"]);
   expect(restored.loadedScripts.every((script) => script.ok)).toBe(true);
   expect(restored.session.state.pendingTriggers).toEqual(fixture.session.state.pendingTriggers);
@@ -335,6 +336,12 @@ function applyLuaRestoreAndAssert(restored: LuaSnapshotRestoreResult, action: Pa
   expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, result.state.waitingFor!));
   expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   return result;
+}
+
+function expectRestoredLegalActions(restored: LuaSnapshotRestoreResult, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function assertPublicRestoreMetadata(restored: LuaSnapshotRestoreResult, result: ReturnType<typeof applyLuaRestoreResponse>): void {
