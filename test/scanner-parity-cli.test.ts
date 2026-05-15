@@ -5,16 +5,18 @@ import { describe, expect, it } from "vitest";
 
 const provenanceScannerPath = path.resolve("tools/scan-parity-fixture-provenance.mjs");
 const legalActionScannerPath = path.resolve("tools/scan-legal-action-evidence.mjs");
+const beforeExpectationKey = "before";
+const afterExpectationKey = "after";
 
 describe("parity scanner CLIs", () => {
   it("fails on missing, invalid, missing-note, and weak-note provenance when requested", () => {
     const testRoot = makeTestRoot({
       "parity-provenance-errors.test.ts": `
         runScriptedDuelFixture({
-          before: {
+          ${beforeExpectationKey}: {
             note: "EDOPro observed a missing source.",
           },
-          after: {
+          ${afterExpectationKey}: {
             source: "local",
             note: "EDOPro observed an invalid source.",
           },
