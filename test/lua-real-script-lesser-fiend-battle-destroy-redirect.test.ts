@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -125,15 +126,67 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Le
     expect(restored.session.state.players[0].lifePoints).toBe(8000);
     expect(restored.session.state.players[1].lifePoints).toBe(8000);
     expect(restored.session.state.pendingTriggers).toEqual([]);
-    expect(restored.session.state.cards.find((card) => card.uid === p0Fiend!.uid)).toMatchObject({ location: "banished", reason: 0x4000021, reasonCardUid: p1Fiend!.uid });
-    expect(restored.session.state.cards.find((card) => card.uid === p1Fiend!.uid)).toMatchObject({ location: "banished", reason: 0x4000021, reasonCardUid: p0Fiend!.uid });
+    expect(restored.session.state.cards.find((card) => card.uid === p0Fiend!.uid)).toMatchObject({
+      location: "banished",
+      reason: duelReason.destroy | duelReason.battle | duelReason.redirect,
+      reasonCardUid: p1Fiend!.uid,
+    });
+    expect(restored.session.state.cards.find((card) => card.uid === p1Fiend!.uid)).toMatchObject({
+      location: "banished",
+      reason: duelReason.destroy | duelReason.battle | duelReason.redirect,
+      reasonCardUid: p0Fiend!.uid,
+    });
     expect(restored.session.state.eventHistory).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ eventName: "battleDestroyed", eventCode: 1140, eventUids: [p0Fiend!.uid, p1Fiend!.uid] }),
-        expect.objectContaining({ eventName: "banished", eventCode: 1011, eventCardUid: p0Fiend!.uid }),
-        expect.objectContaining({ eventName: "banished", eventCode: 1011, eventCardUid: p1Fiend!.uid }),
       ]),
     );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "banished")).toEqual([
+      {
+        eventName: "banished",
+        eventCode: 1011,
+        eventCardUid: p0Fiend!.uid,
+        eventReason: duelReason.destroy | duelReason.battle | duelReason.redirect,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: p1Fiend!.uid,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "banished",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "banished",
+        eventCode: 1011,
+        eventCardUid: p1Fiend!.uid,
+        eventReason: duelReason.destroy | duelReason.battle | duelReason.redirect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: p0Fiend!.uid,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "banished",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
   });
 });
 
