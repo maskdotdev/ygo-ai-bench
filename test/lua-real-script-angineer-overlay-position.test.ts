@@ -99,10 +99,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Me
     );
     expect(restored.session.state.eventHistory).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ eventName: "detachedMaterial", eventCode: 1202, eventCardUid: material!.uid }),
         expect.objectContaining({ eventName: "positionChanged", eventCardUid: target!.uid }),
       ]),
     );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "detachedMaterial" && event.eventCardUid === material!.uid)).toEqual([
+      {
+        eventName: "detachedMaterial",
+        eventCode: 1202,
+        eventCardUid: material!.uid,
+        eventReason: duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: angineer!.uid,
+        eventReasonEffectId: 2,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "overlay",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.host.messages).not.toContain("angineer responder resolved");
   });
 });
