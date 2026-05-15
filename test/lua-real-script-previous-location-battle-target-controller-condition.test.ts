@@ -54,14 +54,44 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const register = host.loadCardScript(Number(dispatchparazziCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: `condition:source-battle-target-opponent-previous-location-reason-player:${locationMonsterZone}:${duelReason.battle}:opponent`,
-          sourceUid: dispatchparazzi!.uid,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.luaConditionDescriptor === `condition:source-battle-target-opponent-previous-location-reason-player:${locationMonsterZone}:${duelReason.battle}:opponent` && effect.sourceUid === dispatchparazzi!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "category": 1048577,
+        "code": 1029,
+        "controller": 0,
+        "cost": [Function],
+        "countLimit": 1,
+        "countLimitCode": 266102861840,
+        "description": 1039464305,
+        "event": "trigger",
+        "id": "lua-3-1029",
+        "luaConditionDescriptor": "condition:source-battle-target-opponent-previous-location-reason-player:4:32:opponent",
+        "luaTypeFlags": 129,
+        "oncePerTurn": true,
+        "operation": [Function],
+        "optional": true,
+        "promptOperation": [Function],
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:64966519:lua-3-1029",
+        "sourceUid": "p0-extraDeck-64966519-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "triggerCode": 1029,
+        "triggerEvent": "destroyed",
+        "triggerSourceOnly": true,
+        "triggerTiming": "when",
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
