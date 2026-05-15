@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { duelActionAnchorUids, isOrphanDuelAction, orphanDuelActionGroups, partitionDuelActionsByAnchor } from "../src/playtest-app/duel-action-anchors.js";
+import { duelActionAnchorUids, duelActionUiGroupLabel, isOrphanDuelAction, orphanDuelActionGroups, partitionDuelActionsByAnchor } from "../src/playtest-app/duel-action-anchors.js";
 import type { DuelAction } from "#duel/types.js";
 
 describe("duel action anchors", () => {
@@ -108,5 +108,28 @@ describe("duel action anchors", () => {
       { key: "7:prompt:prompt:prompt-a", label: "Option Prompt", promptId: "prompt-a", promptType: "selectOption", windowId: 7, windowKind: "prompt", windowToken: "prompt-window", actions: [prompt] },
       { key: "6:chainResponse:effect", label: "Effects", windowId: 6, windowKind: "chainResponse", actions: [hiddenHandEffect] },
     ]);
+  });
+
+  it("uses app-facing battle group labels without changing engine labels", () => {
+    expect(duelActionUiGroupLabel({
+      label: "Pass",
+      windowKind: "battle",
+      actions: [{ type: "passAttack", player: 1, label: "Pass", windowKind: "battle" }],
+    })).toBe("Attack Response");
+    expect(duelActionUiGroupLabel({
+      label: "Pass",
+      windowKind: "battle",
+      actions: [{ type: "passDamage", player: 1, label: "Pass", windowKind: "battle" }],
+    })).toBe("Damage Step Response");
+    expect(duelActionUiGroupLabel({
+      label: "Attacks",
+      windowKind: "battle",
+      actions: [{ type: "replayAttack", player: 0, attackerUid: "attacker", directAttack: true, label: "Direct Attack", windowKind: "battle" }],
+    })).toBe("Replay Choice");
+    expect(duelActionUiGroupLabel({
+      label: "Pass",
+      windowKind: "chainResponse",
+      actions: [{ type: "passChain", player: 1, label: "Pass", windowKind: "chainResponse" }],
+    })).toBe("Pass");
   });
 });

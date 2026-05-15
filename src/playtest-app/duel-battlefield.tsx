@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
 import type { DuelAction, DuelLocation, DuelLogEntry, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
-import { duelActionAnchorUids, duelActionUiKey } from "./duel-action-anchors.js";
+import { duelActionAnchorUids, duelActionUiGroupLabel, duelActionUiKey } from "./duel-action-anchors.js";
 import { duelBattlefieldActionView } from "./duel-battlefield-actions.js";
 import { duelPromptView, splitPromptGroups } from "./duel-prompt-view.js";
 import { duelTriggerOrderView } from "./duel-trigger-order-view.js";
@@ -506,7 +506,7 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
               <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-cyan-500/20 bg-slate-900/60 px-2 py-1.5 [scrollbar-width:thin]">
                 {globalOrphanGroups.map((group) => (
                   <div key={group.key} className="flex shrink-0 items-center gap-1">
-                    <span className="shrink-0 self-center pr-1 text-[8px] font-bold uppercase tracking-[0.12em] text-white/35">{group.label}</span>
+                    <span className="shrink-0 self-center pr-1 text-[8px] font-bold uppercase tracking-[0.12em] text-white/35">{duelActionUiGroupLabel(group)}</span>
                     {group.actions.map((action) => (
                       <button
                         key={`orphan-${group.key}-${duelActionUiKey(action)}`}

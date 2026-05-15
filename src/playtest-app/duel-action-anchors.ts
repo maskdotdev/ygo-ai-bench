@@ -128,3 +128,11 @@ export function orphanDuelActionGroups(
     }))
     .filter((group) => group.actions.length > 0);
 }
+
+export function duelActionUiGroupLabel(group: Pick<DuelActionUiGroup, "label" | "windowKind" | "actions">): string {
+  if (group.windowKind !== "battle") return group.label;
+  if (group.actions.some((action) => action.type === "replayAttack" || action.type === "cancelAttack")) return "Replay Choice";
+  if (group.actions.some((action) => action.type === "passDamage")) return "Damage Step Response";
+  if (group.actions.some((action) => action.type === "passAttack")) return "Attack Response";
+  return group.label;
+}
