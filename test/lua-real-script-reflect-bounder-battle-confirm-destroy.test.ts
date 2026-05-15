@@ -65,6 +65,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
     const restoredConfirm = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredConfirm.restoreComplete, restoredConfirm.incompleteReasons.join("; ")).toBe(true);
     expect(restoredConfirm.missingRegistryKeys).toEqual([]);
+    expect(restoredConfirm.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredConfirm.session.state.battleWindow?.kind).toBe("startDamageStep");
     expect(getLuaRestoreLegalActionGroups(restoredConfirm, 0)).toEqual(getGroupedDuelLegalActions(restoredConfirm.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredConfirm, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredConfirm, 0));
@@ -90,6 +91,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
     const restoredBattled = restoreDuelWithLuaScripts(serializeDuel(restoredConfirm.session), workspace, reader);
     expect(restoredBattled.restoreComplete, restoredBattled.incompleteReasons.join("; ")).toBe(true);
     expect(restoredBattled.missingRegistryKeys).toEqual([]);
+    expect(restoredBattled.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredBattled.session.state.battleWindow?.kind).toBe("afterDamageCalculation");
     expect(getLuaRestoreLegalActionGroups(restoredBattled, 0)).toEqual(getGroupedDuelLegalActions(restoredBattled.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredBattled, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredBattled, 0));

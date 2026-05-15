@@ -17,6 +17,7 @@ describe("Lua real battle timing restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -75,7 +76,9 @@ function battleTimingFixtureFiles(): Array<{ file: string; required: string[] }>
       file: "test/lua-real-script-gundari-battle-start-synchro-bounce.test.ts",
       required: [
         "restoredSetup.missingRegistryKeys).toEqual([])",
+        "restoredSetup.missingChainLimitRegistryKeys).toEqual([])",
         "restoredTrigger.missingRegistryKeys).toEqual([])",
+        "restoredTrigger.missingChainLimitRegistryKeys).toEqual([])",
         'battleWindow?.kind).toBe("startDamageStep")',
         'eventName: "battleStarted"',
         'eventName: "sentToHand"',
