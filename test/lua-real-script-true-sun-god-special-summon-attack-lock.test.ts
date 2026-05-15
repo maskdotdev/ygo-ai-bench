@@ -67,7 +67,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
         "cost": [Function],
         "event": "continuous",
         "id": "lua-2-85",
-        "luaTargetDescriptor": "target:not-code:10000010",
+        "luaTargetDescriptor": "target:not-code-status:10000010:1073741824",
         "luaTypeFlags": 2,
         "oncePerTurn": false,
         "operation": [Function],

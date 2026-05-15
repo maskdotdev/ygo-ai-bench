@@ -42,6 +42,8 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (setcodeOrCodeType !== undefined) {
     return { targetCardPredicate: (ctx, card) => currentCardMatchesSetcode(card, ctx.duel, setcodeOrCodeType.setcode) || (currentCardMatchesCode(card, ctx.duel, String(setcodeOrCodeType.code)) && (cardTypeFlags(card, ctx.duel) & setcodeOrCodeType.type) !== 0) };
   }
+  const notCodeStatus = notCodeStatusDescriptor(effect.luaTargetDescriptor);
+  if (notCodeStatus) return { targetCardPredicate: (ctx, card) => !currentCardMatchesCode(card, ctx.duel, String(notCodeStatus.code)) && (targetCardStatusMask(card) & notCodeStatus.status) !== 0 };
   const notSetcode = notSetcodeTargetDescriptor(effect.luaTargetDescriptor); const notSetcodeAny = notSetcodeAnyTargetDescriptor(effect.luaTargetDescriptor); const notRaceExtra = effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-race-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-race-extra:".length)) : undefined; const notAttributeExtra = effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-attribute-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-attribute-extra:".length)) : undefined; const notAttribute = effect.luaTargetDescriptor?.startsWith("target:not-attribute:") ? Number(effect.luaTargetDescriptor.slice("target:not-attribute:".length)) : undefined; const notRace = effect.luaTargetDescriptor?.startsWith("target:not-race:") ? Number(effect.luaTargetDescriptor.slice("target:not-race:".length)) : undefined; const notCode = effect.luaTargetDescriptor?.startsWith("target:not-code:") ? Number(effect.luaTargetDescriptor.slice("target:not-code:".length)) : undefined; const code = effect.luaTargetDescriptor?.startsWith("target:code:") ? Number(effect.luaTargetDescriptor.slice("target:code:".length)) : undefined;
   if (notSetcode !== undefined) return { targetCardPredicate: (_ctx, card) => !cardSetcodes(card).some((setcode) => isSetcodeMatch(notSetcode, setcode)) }; if (notRaceExtra !== undefined && Number.isSafeInteger(notRaceExtra) && notRaceExtra > 0) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && (currentRace(card, ctx.duel) & notRaceExtra) === 0 }; if (notAttributeExtra !== undefined && Number.isSafeInteger(notAttributeExtra) && notAttributeExtra > 0) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && (currentAttribute(card, ctx.duel) & notAttributeExtra) === 0 }; if (notAttribute !== undefined && Number.isSafeInteger(notAttribute) && notAttribute > 0) return { targetCardPredicate: (ctx, card) => (currentAttribute(card, ctx.duel) & notAttribute) === 0 }; if (notRace !== undefined && Number.isSafeInteger(notRace) && notRace > 0) return { targetCardPredicate: (ctx, card) => (currentRace(card, ctx.duel) & notRace) === 0 }; if (notCode !== undefined && Number.isSafeInteger(notCode) && notCode > 0) return { targetCardPredicate: (ctx, card) => !currentCardMatchesCode(card, ctx.duel, String(notCode)) }; if (code !== undefined && Number.isSafeInteger(code) && code > 0) return { targetCardPredicate: (ctx, card) => currentCardMatchesCode(card, ctx.duel, String(code)) };
   const notOriginalAttribute = effect.luaTargetDescriptor?.startsWith("target:not-original-attribute:") ? Number(effect.luaTargetDescriptor.slice("target:not-original-attribute:".length)) : undefined;
@@ -140,6 +142,12 @@ function statusDescriptor(descriptor: string | undefined): number | undefined {
   if (!descriptor?.startsWith("target:status:")) return undefined;
   const status = Number(descriptor.slice("target:status:".length));
   return Number.isSafeInteger(status) && status > 0 ? status : undefined;
+}
+
+function notCodeStatusDescriptor(descriptor: string | undefined): { code: number; status: number } | undefined {
+  if (!descriptor?.startsWith("target:not-code-status:")) return undefined;
+  const [code, status] = descriptor.slice("target:not-code-status:".length).split(":").map(Number);
+  return code !== undefined && status !== undefined && [code, status].every((value) => Number.isSafeInteger(value) && value > 0) ? { code, status } : undefined;
 }
 
 function xyzSummonNotRelatedSetcodeDescriptor(descriptor: string | undefined): number | undefined {
