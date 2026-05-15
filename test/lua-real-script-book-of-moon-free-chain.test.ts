@@ -57,7 +57,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bo
     applyAndAssert(session, bookAction!);
     expect(queryPublicState(session)).toMatchObject({ phase: "main1", waitingFor: 1, windowKind: "chainResponse" });
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({ sourceUid: bookOfMoon!.uid, targetUids: [target!.uid] });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 4096,
+            "count": 1,
+            "parameter": 8,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-200-1",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-14087893-0",
+        "targetUids": [
+          "p1-deck-200-1",
+        ],
+      }
+    `);
     expect(session.state.cards.find((card) => card.uid === bookOfMoon!.uid)).toMatchObject({ location: "spellTrapZone", faceUp: true });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
@@ -67,7 +91,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bo
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expect(restored.session.state.chain).toHaveLength(1);
-    expect(restored.session.state.chain[0]).toMatchObject({ sourceUid: bookOfMoon!.uid, targetUids: [target!.uid] });
+    expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 4096,
+            "count": 1,
+            "parameter": 8,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-200-1",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-14087893-0",
+        "targetUids": [
+          "p1-deck-200-1",
+        ],
+      }
+    `);
 
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();

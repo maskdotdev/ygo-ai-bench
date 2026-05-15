@@ -60,7 +60,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     expect(shrinkAction).toBeDefined();
     applyAndAssert(session, shrinkAction!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({ sourceUid: shrink!.uid, targetUids: [attacker!.uid] });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "player": 0,
+        "sourceUid": "p0-deck-55713623-0",
+        "targetUids": [
+          "p0-deck-1110-1",
+        ],
+      }
+    `);
     expect(session.state.cards.find((card) => card.uid === shrink!.uid)).toMatchObject({ location: "spellTrapZone", faceUp: true });
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
@@ -70,7 +83,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
     expect(restoredChain.session.state.chain).toHaveLength(1);
-    expect(restoredChain.session.state.chain[0]).toMatchObject({ sourceUid: shrink!.uid, targetUids: [attacker!.uid] });
+    expect(restoredChain.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "player": 0,
+        "sourceUid": "p0-deck-55713623-0",
+        "targetUids": [
+          "p0-deck-1110-1",
+        ],
+      }
+    `);
 
     const pass = getLuaRestoreLegalActions(restoredChain, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
