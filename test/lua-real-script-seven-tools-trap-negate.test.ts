@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -81,9 +82,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Se
     const chained = applyLuaRestoreResponse(restoredOpenChain, sevenToolsAction!);
     expect(chained.ok, chained.error).toBe(true);
     expect(restoredOpenChain.session.state.players[1].lifePoints).toBe(7000);
-    expect(restoredOpenChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 1, eventValue: 1000, eventReason: 0x80, eventReasonPlayer: 1 })]),
-    );
+    expect(restoredOpenChain.session.state.eventHistory.filter((event) => event.eventName === "lifePointCostPaid")).toEqual([
+      {
+        eventName: "lifePointCostPaid",
+        eventCode: 1201,
+        eventPlayer: 1,
+        eventValue: 1000,
+        eventReason: duelReason.cost,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: sevenTools!.uid,
+        eventReasonEffectId: 3,
+      },
+    ]);
     expect(restoredOpenChain.session.state.chain).toHaveLength(2);
     expect(restoredOpenChain.session.state.chain[1]).toMatchObject({
       sourceUid: sevenTools!.uid,
@@ -116,13 +126,51 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Se
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === drawn!.uid)).toMatchObject({ location: "deck" });
     expect(restoredPendingResolution.host.messages).not.toContain("seven tools trap effect resolved");
     expect(restoredPendingResolution.host.messages).not.toContain("seven tools chain responder resolved");
-    expect(restoredPendingResolution.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: starterTrap!.uid }),
-        expect.objectContaining({ eventName: "chainNegated", eventCode: 1024, eventPlayer: 0 }),
-        expect.objectContaining({ eventName: "chainDisabled", eventCode: 1025, eventPlayer: 0 }),
-      ]),
-    );
+    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => ["destroyed", "chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: starterTrap!.uid,
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: sevenTools!.uid,
+        eventReasonEffectId: 3,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "spellTrapZone",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "chainNegated",
+        eventCode: 1024,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReasonPlayer: 0,
+        eventChainDepth: 1,
+        eventChainLinkId: "chain-2",
+        relatedEffectId: 1,
+      },
+      {
+        eventName: "chainDisabled",
+        eventCode: 1025,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReasonPlayer: 0,
+        eventChainDepth: 1,
+        eventChainLinkId: "chain-2",
+        relatedEffectId: 1,
+      },
+    ]);
     expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventUids: [drawn!.uid] })]),
     );
