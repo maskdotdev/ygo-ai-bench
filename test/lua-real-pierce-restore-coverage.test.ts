@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const PIERCING_FIXTURE_COUNT = 2;
+const PIERCING_FIXTURE_COUNT = 3;
 
 describe("Lua real piercing damage restore coverage", () => {
   it("requires piercing damage fixtures to assert clean Lua registry restore and restored damage semantics", () => {
@@ -37,6 +37,18 @@ describe("Lua real piercing damage restore coverage", () => {
 
 function piercingFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-ancient-gear-golem-pierce-battle-damage.test.ts",
+      required: [
+        "code: 203",
+        '"range": [',
+        '"monsterZone"',
+        "battleDamage).toEqual({ 0: 0, 1: 1500 })",
+        "players[1].lifePoints).toBe(6500)",
+        'eventName: "battleDamageDealt"',
+        "eventReason: duelReason.battle",
+      ],
+    },
     {
       file: "test/lua-real-script-enraged-battle-ox-pierce.test.ts",
       required: [
