@@ -78,6 +78,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ti
     restoredLock.session.state.phase = "battle";
     restoredLock.session.state.waitingFor = 1;
     expect(getLuaRestoreLegalActionGroups(restoredLock, 1)).toEqual(getGroupedDuelLegalActions(restoredLock.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restoredLock, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredLock, 1));
     expect(getLuaRestoreLegalActions(restoredLock, 1)).toEqual(getDuelLegalActions(restoredLock.session, 1));
     expect(getLuaRestoreLegalActions(restoredLock, 1).some((action) => action.type === "activateEffect" && action.uid === spell.uid)).toBe(true);
     expect(getLuaRestoreLegalActions(restoredLock, 1).some((action) => action.type === "activateEffect" && action.uid === trap.uid)).toBe(false);

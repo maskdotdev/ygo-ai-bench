@@ -85,6 +85,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ti
     expect(hasActivateEffect(getLuaRestoreLegalActions(restoredResponseWindow, 1), allowedResponder!.uid)).toBe(true);
     expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredResponseWindow, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredResponseWindow, 1));
 
     const restoredAction = getLuaRestoreLegalActions(restoredResponseWindow, 1).find((action) => action.type === "activateEffect" && action.uid === allowedResponder!.uid);
     expect(restoredAction).toBeDefined();

@@ -48,6 +48,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Te
     expect(restoredMain1.restoreComplete, restoredMain1.incompleteReasons.join("; ")).toBe(true);
     expect(restoredMain1.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredMain1, 0)).toEqual(getGroupedDuelLegalActions(restoredMain1.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredMain1, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredMain1, 0));
     expect(getLuaRestoreLegalActions(restoredMain1, 0)).toEqual(getDuelLegalActions(restoredMain1.session, 0));
     applyActionAndAssert(restoredMain1.session, getLuaRestoreLegalActions(restoredMain1, 0).find((action) => action.type === "changePhase" && action.phase === "battle"));
 
@@ -56,6 +57,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Te
     expect(restoredBattle.missingRegistryKeys).toEqual([]);
     expect(restoredBattle.session.state).toMatchObject({ phase: "battle", waitingFor: 0 });
     expect(getLuaRestoreLegalActionGroups(restoredBattle, 0)).toEqual(getGroupedDuelLegalActions(restoredBattle.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredBattle, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredBattle, 0));
     const battleActions = getLuaRestoreLegalActions(restoredBattle, 0);
     expect(battleActions).toEqual(getDuelLegalActions(restoredBattle.session, 0));
     expect(battleActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "endTurn" })]));

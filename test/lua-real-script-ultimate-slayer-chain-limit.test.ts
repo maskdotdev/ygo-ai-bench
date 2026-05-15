@@ -88,6 +88,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ul
     expect(hasActivateEffect(getLuaRestoreLegalActions(restoredOpponentWindow, 1), blockedMonster!.uid)).toBe(false);
     expect(hasActivateEffect(getLuaRestoreLegalActions(restoredOpponentWindow, 1), allowedSpell!.uid)).toBe(true);
     expect(getLuaRestoreLegalActionGroups(restoredOpponentWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredOpponentWindow.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restoredOpponentWindow, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredOpponentWindow, 1));
 
     const opponentPass = getLegalActions(session, 1).find((action) => action.type === "passChain");
     expect(opponentPass).toBeDefined();
@@ -101,6 +102,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ul
     expect(restoredChainPlayerWindow.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(hasActivateEffect(getLuaRestoreLegalActions(restoredChainPlayerWindow, 0), chainPlayerMonster!.uid)).toBe(true);
     expect(getLuaRestoreLegalActionGroups(restoredChainPlayerWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredChainPlayerWindow.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredChainPlayerWindow, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChainPlayerWindow, 0));
   });
 });
 

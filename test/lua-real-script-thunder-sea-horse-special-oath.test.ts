@@ -57,6 +57,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
     expect(restoredLock.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredLock, 0)).toEqual(getGroupedDuelLegalActions(restoredLock.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredLock, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredLock, 0));
     expect(getLuaRestoreLegalActions(restoredLock, 0)).toEqual(getLegalActions(restoredLock.session, 0));
     assertSpecialProbe(restoredLock, summonProbeCode, "locked", ["sea horse can special locked false", "sea horse special locked 0"]);
 

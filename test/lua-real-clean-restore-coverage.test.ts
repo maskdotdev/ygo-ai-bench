@@ -39,7 +39,8 @@ describe("Lua real-script clean restore coverage", () => {
         const text = readTestFile(file);
         return !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
-          || !text.includes("getGroupedDuelLegalActions");
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)");
       });
 
     expect(missing).toEqual([]);
