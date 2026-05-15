@@ -1,13 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { canPlayerSpecialSummon, createDuel, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { canPlayerSpecialSummon, createDuel, getGroupedDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { luaSummonTypeSynchro } from "#duel/summon-type-codes.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -79,6 +79,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restored, 0),
+    );
     const synchro = restored.session.state.cards.find((card) => card.code === synchroCode);
     const procedureEffectId = Number(restored.session.state.effects.find((effect) => effect.sourceUid === synchro?.uid && effect.event === "summonProcedure")?.id.match(/^lua-(\d+)/)?.[1]);
     expect(Number.isFinite(procedureEffectId)).toBe(true);
