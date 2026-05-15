@@ -48,6 +48,7 @@ describe("Lua effect value descriptor hex restore", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.effects.find((effect) => effect.sourceUid === lock.uid && effect.code === 6)).toMatchObject({
       event: "continuous",
       targetRange: [0, 1],

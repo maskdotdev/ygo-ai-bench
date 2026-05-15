@@ -96,6 +96,7 @@ describe("Lua source-only Set events", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScripts, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored);
     const restoredSetTriggers = restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === eventName);
     expect(restoredSetTriggers).toHaveLength(2);

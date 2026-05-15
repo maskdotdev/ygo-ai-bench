@@ -88,6 +88,7 @@ describe("Node upstream snapshot restore", () => {
     expect(restored.registeredEffects).toBe(1);
     expect(restored.restoredRegistryKeys).toEqual(["lua:100:lua-1-1014"]);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.effects.map((effect) => effect.registryKey)).toEqual(["lua:100:lua-1-1014"]);
     expect(restored.session.state.effects[0]).toMatchObject({ event: "trigger", triggerEvent: "sentToGraveyard", triggerTiming: "if" });
 
@@ -767,6 +768,7 @@ describe("Node upstream snapshot restore", () => {
     expect(restored.restoreComplete).toBe(true);
     expect(restored.restoredRegistryKeys).toEqual(["lua:100:lua-1"]);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.effects.map((effect) => effect.registryKey)).toEqual(["lua:100:lua-1"]);
   });
 

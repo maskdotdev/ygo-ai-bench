@@ -64,6 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredCupidVolley = restored.session.state.cards.find((card) => card.code === cupidVolleyCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === cupidVolley!.uid && candidate.luaConditionDescriptor === descriptor);
@@ -104,6 +105,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const restoredZhugeKong = restored.session.state.cards.find((card) => card.code === zhugeKongCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === zhugeKong!.uid && candidate.luaConditionDescriptor === descriptor);

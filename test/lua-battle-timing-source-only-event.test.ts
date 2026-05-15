@@ -57,6 +57,7 @@ describe("Lua source-only battle timing events", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored);
     assertTimingTriggers(restored.session, "battleStarted", 1132, attacker!.uid, target!.uid, genericWatcher!.uid, singleWatcher!.uid);
     assertTimingTriggers(restored.session, "battleConfirmed", 1133, attacker!.uid, target!.uid, genericWatcher!.uid, singleWatcher!.uid);

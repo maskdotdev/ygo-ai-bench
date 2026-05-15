@@ -90,6 +90,7 @@ describe("Lua source-only Flip Summon events", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), sourceScripts, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored);
     const restoredFlipTriggers = restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "flipSummoned");
     expect(restoredFlipTriggers).toHaveLength(2);

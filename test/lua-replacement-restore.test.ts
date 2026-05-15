@@ -43,6 +43,7 @@ describe("Lua replacement restore", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }]);
     expect(restored.registeredEffects).toBe(1);
     expect(restored.session.state.usedCountKeys).toEqual(session.state.usedCountKeys);
@@ -96,6 +97,7 @@ describe("Lua replacement restore", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }, { ok: true, name: "c101.lua" }]);
     expect(restored.registeredEffects).toBe(2);
     expect(restored.session.state.usedCountKeys).toEqual(session.state.usedCountKeys);

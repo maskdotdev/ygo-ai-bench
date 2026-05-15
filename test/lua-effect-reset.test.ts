@@ -276,6 +276,7 @@ describe("Lua effect reset", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c23106.lua" ? script : undefined }, createCardReader(cardData));
     expect(restored.restoreComplete).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.effects).toEqual([expect.objectContaining({ reset: { flags: 0x40000000 + 0x200 + 0x10000000, count: 1 } })]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
@@ -593,6 +594,7 @@ describe("Lua effect reset", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c26110.lua" ? script : undefined }, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.effects).toEqual([expect.objectContaining({ id: expect.any(String), reset: { flags: 0x1000 + 0x1000000, count: 1 } })]);
     const restoredPlayer = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
     expect(getLuaRestoreLegalActionGroups(restored, restoredPlayer)).toEqual(getGroupedDuelLegalActions(restored.session, restoredPlayer));

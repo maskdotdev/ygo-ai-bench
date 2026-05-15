@@ -53,6 +53,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pe
     const restoredLowScaleWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredLowScaleWindow.restoreComplete, restoredLowScaleWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredLowScaleWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredLowScaleWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredLowScaleWindow, 0);
     assertLegalActions(restoredLowScaleWindow);
     const lowScaleActivation = findPendulumActivation(restoredLowScaleWindow.session, getLuaRestoreLegalActions(restoredLowScaleWindow, 0), lowScale!.uid);
@@ -64,6 +65,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pe
     const restoredHighScaleWindow = restoreDuelWithLuaScripts(serializeDuel(restoredLowScaleWindow.session), workspace, reader);
     expect(restoredHighScaleWindow.restoreComplete, restoredHighScaleWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredHighScaleWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredHighScaleWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredHighScaleWindow, 0);
     assertLegalActions(restoredHighScaleWindow);
     const highScaleActivation = findPendulumActivation(restoredHighScaleWindow.session, getLuaRestoreLegalActions(restoredHighScaleWindow, 0), highScale!.uid);
@@ -75,6 +77,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pe
     const restoredPendulumWindow = restoreDuelWithLuaScripts(serializeDuel(restoredHighScaleWindow.session), workspace, reader);
     expect(restoredPendulumWindow.restoreComplete, restoredPendulumWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredPendulumWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredPendulumWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredPendulumWindow, 0);
     assertLegalActions(restoredPendulumWindow);
     const pendulumSummon = getLuaRestoreLegalActions(restoredPendulumWindow, 0).find(
@@ -92,6 +95,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pe
     const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredPendulumWindow.session), workspace, reader);
     expect(restoredTriggerWindow.restoreComplete, restoredTriggerWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredTriggerWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredTriggerWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredTriggerWindow, 0);
     assertLegalActions(restoredTriggerWindow);
     expect(restoredTriggerWindow.session.state.pendingTriggers).toEqual([

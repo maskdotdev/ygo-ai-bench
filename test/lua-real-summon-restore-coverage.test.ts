@@ -62,6 +62,7 @@ describe("Lua real summon restore coverage", () => {
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -89,6 +90,7 @@ describe("Lua real summon restore coverage", () => {
           || !text.includes("pendulumSummonAvailable")
           || !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !/location:\s*["']monsterZone["']/.test(text)
           || !/summonType:\s*["']pendulum["']/.test(text);
       });
@@ -105,6 +107,7 @@ describe("Lua real summon restore coverage", () => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || required.some((snippet) => !text.includes(snippet));
       })
       .map(({ file }) => file);
@@ -121,6 +124,7 @@ describe("Lua real summon restore coverage", () => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || required.some((snippet) => !text.includes(snippet));
       })
       .map(({ file }) => file);
@@ -137,6 +141,7 @@ describe("Lua real summon restore coverage", () => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || required.some((snippet) => !text.includes(snippet));
       })
       .map(({ file }) => file);
@@ -155,6 +160,7 @@ describe("Lua real summon restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("applyLuaRestoreResponse")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")

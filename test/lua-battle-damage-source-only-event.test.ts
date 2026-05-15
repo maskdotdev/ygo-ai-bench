@@ -94,6 +94,7 @@ describe("Lua source-only battle-damage events", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored);
     const restoredDamageTriggers = restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "battleDamageDealt");
     expect(restoredDamageTriggers).toHaveLength(2);

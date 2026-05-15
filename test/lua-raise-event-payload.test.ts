@@ -448,6 +448,7 @@ describe("Lua raised event payloads", () => {
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c200.lua" }]);
     expect(restored.restoreComplete).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(restored.session.state.eventHistory).toEqual(session.state.eventHistory);
     expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
@@ -599,6 +600,7 @@ describe("Lua raised event payloads", () => {
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }, { ok: true, name: "c200.lua" }]);
     expect(restored.restoreComplete).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(restored.session.state.eventHistory).toEqual(session.state.eventHistory);
     expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);
@@ -675,6 +677,7 @@ describe("Lua raised event payloads", () => {
     expect(restored.loadedScripts).toEqual([{ ok: true, name: "c100.lua" }, { ok: true, name: "c200.lua" }]);
     expect(restored.restoreComplete).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
     expect(restored.session.state.eventHistory).toEqual(session.state.eventHistory);
     expect(queryPublicState(restored.session).pendingTriggerBuckets).toEqual(queryPublicState(session).pendingTriggerBuckets);

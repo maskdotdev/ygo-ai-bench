@@ -126,6 +126,7 @@ describe("Lua source-only grouped move events", () => {
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restored, 0);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "moved")).toHaveLength(3);
     expect(restored.session.state.pendingTriggers).toEqual(
       expect.arrayContaining([

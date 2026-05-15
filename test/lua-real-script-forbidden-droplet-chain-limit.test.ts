@@ -103,6 +103,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fo
     const restoredResolvedState = restoreDuelWithLuaScripts(serializeDuel(restoredResponseWindow.session), source, reader);
     expect(restoredResolvedState.restoreComplete, restoredResolvedState.incompleteReasons.join("; ")).toBe(true);
     expect(restoredResolvedState.missingRegistryKeys).toEqual([]);
+    expect(restoredResolvedState.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredResolvedState, 0);
     expectLuaTargetProbe(restoredResolvedState, targetCode, "droplet target probe 1000/true");
   });

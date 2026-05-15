@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
 const scannerPath = path.join(root, "tools/scan-lua-clean-restore.mjs");
-const realScriptFixtureCount = 537;
+const realScriptFixtureCount = 544;
 
 describe("Lua real-script clean restore coverage", () => {
   it("requires every real-script fixture to assert no missing Lua registry keys after restore", () => {
@@ -13,6 +13,15 @@ describe("Lua real-script clean restore coverage", () => {
     expect(files).toHaveLength(realScriptFixtureCount);
 
     const missing = files.filter((file) => !readTestFile(file).includes("missingRegistryKeys).toEqual([])"));
+
+    expect(missing).toEqual([]);
+  });
+
+  it("requires every real-script fixture to assert no missing Lua chain-limit registry keys after restore", () => {
+    const files = realScriptFixtureFiles();
+    expect(files).toHaveLength(realScriptFixtureCount);
+
+    const missing = files.filter((file) => !readTestFile(file).includes("missingChainLimitRegistryKeys).toEqual([])"));
 
     expect(missing).toEqual([]);
   });

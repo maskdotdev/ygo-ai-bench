@@ -110,6 +110,7 @@ describe("Lua source-only become-target events", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored);
     const restoredTargetTriggers = restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "becameTarget");
     expect(restoredTargetTriggers).toHaveLength(2);

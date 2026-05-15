@@ -98,6 +98,7 @@ describe("Lua source-only attack-disabled events", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored);
     const restoredDisabledTriggers = restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "attackDisabled");
     expect(restoredDisabledTriggers).toHaveLength(2);

@@ -127,6 +127,7 @@ describe("Lua source-only grouped leave-field events", () => {
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restored, 0);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "leftField")).toHaveLength(3);
     for (const trigger of restored.session.state.pendingTriggers.filter((candidate) => candidate.eventName === "leftField")) expect(trigger.eventUids).toEqual([first!.uid, second!.uid]);
     expect(restored.session.state.pendingTriggers).toEqual(
