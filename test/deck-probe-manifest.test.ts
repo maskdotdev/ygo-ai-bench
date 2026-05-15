@@ -50,6 +50,23 @@ describe("Lua deck probe manifest", () => {
       .filter((command) => Number(command.match(/--max-local-fallbacks (\d+)/)?.[1] ?? 0) > 0)
       .map((command) => command.match(/-- (\S+\.ydk) /)?.[1] ?? command)
       .sort();
+    const localFallbackBudgets = Object.fromEntries(
+      packageProbeCommands
+        .map((command): [string, number] => [
+          command.match(/-- (\S+\.ydk) /)?.[1] ?? command,
+          Number(command.match(/--max-local-fallbacks (\d+)/)?.[1] ?? -1),
+        ])
+        .sort(([a], [b]) => a.localeCompare(b)),
+    );
+    const expectedMissingScriptCodesByDeck = Object.fromEntries(
+      packageProbeCommands
+        .map((command) => [
+          command.match(/-- (\S+\.ydk) /)?.[1] ?? command,
+          [...command.matchAll(/--expected-missing-script-code (\d+)/g)].map((match) => match[1]).sort(),
+        ] as const)
+        .filter(([, codes]) => codes.length > 0)
+        .sort(([a], [b]) => a.localeCompare(b)),
+    );
 
     const uncovered = deckNames.filter((name) => !packageProbeDecks.includes(name));
 
@@ -92,6 +109,37 @@ describe("Lua deck probe manifest", () => {
       "ritual-of-light-and-darkness-apr-2026.ydk",
       "rokket-2026.ydk",
     ]);
+    expect(localFallbackBudgets).toEqual({
+      "ancient-gear-legend-anthology-2026.ydk": 0,
+      "branded-dracotail-ycs-guatemala-2026.ydk": 0,
+      "dark-magical-blast-master-duel-day1.ydk": 0,
+      "dark-magical-blast-tcg-branded-dm.ydk": 0,
+      "exosister-ots-mar-2026.ydk": 0,
+      "hero-competitive-may-2026.ydk": 0,
+      "kashtira-2026.ydk": 0,
+      "kewl-tune-may-2026.ydk": 0,
+      "labrynth-2026.ydk": 0,
+      "magician-pendulum-mar-2026.ydk": 1,
+      "marincess-2026.ydk": 0,
+      "mikanko-2026.ydk": 0,
+      "monarch-genesys-proto-ycs-dortmund-2026.ydk": 0,
+      "onomat-ryzeal-ycs-guatemala-2026.ydk": 0,
+      "phantom-knights-mar-2026-v4.ydk": 1,
+      "rikka-sunavalon-2026.ydk": 0,
+      "ritual-of-light-and-darkness-apr-2026.ydk": 10,
+      "rokket-2026.ydk": 1,
+      "solfachord-2026.ydk": 0,
+      "top_tier_dark_magician_primite_azamina.ydk": 0,
+      "voiceless-voice-2026.ydk": 0,
+    });
+    expect(expectedMissingScriptCodesByDeck).toEqual({
+      "dark-magical-blast-master-duel-day1.ydk": ["46986414", "74677422"],
+      "dark-magical-blast-tcg-branded-dm.ydk": ["46986414", "74677422"],
+      "hero-competitive-may-2026.ydk": ["89943723"],
+      "rikka-sunavalon-2026.ydk": ["27520594"],
+      "ritual-of-light-and-darkness-apr-2026.ydk": ["46986414"],
+      "top_tier_dark_magician_primite_azamina.ydk": ["46986414", "89631139"],
+    });
     expect(uncovered).toEqual([]);
   });
 });
