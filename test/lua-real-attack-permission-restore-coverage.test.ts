@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const attackPermissionFixtureCount = 4;
 
 describe("Lua real attack-permission restore coverage", () => {
   it("requires representative attack permission and cost fixtures to assert clean Lua restore", () => {
-    const missing = realScriptAttackPermissionFixtureFiles()
+    const files = realScriptAttackPermissionFixtureFiles();
+    expect(files).toHaveLength(attackPermissionFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
