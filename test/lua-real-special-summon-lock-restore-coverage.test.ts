@@ -557,6 +557,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-edea-extra-deck-summon-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "special-summon-limit:extra"',
+        "targetRange: [1, 0]",
         "edea extra special 0",
         "edea hand special 1",
       ],
@@ -659,6 +660,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       requiredSnippets: [
         "target:special-summon-type-not",
         "luaSummonTypeXyz",
+        "targetRange: [1, 0]",
         "gagaga head xyz special 1",
         "gagaga head fusion special 0",
         "gagaga head hand special 0",
