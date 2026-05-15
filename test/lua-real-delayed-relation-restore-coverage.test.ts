@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const delayedRelationFixtureCount = 3;
 
 describe("Lua real delayed relation restore coverage", () => {
   it("requires delayed relation fixtures to assert clean Lua registry restore and restored delayed outcomes", () => {
-    const missing = delayedRelationFixtureFiles()
+    const files = delayedRelationFixtureFiles();
+    expect(files).toHaveLength(delayedRelationFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")

@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const delayedPositionFixtureCount = 1;
 
 describe("Lua real delayed position restore coverage", () => {
   it("requires delayed position fixtures to assert clean restore and restored delayed outcomes", () => {
-    const missing = delayedPositionFixtureFiles()
+    const files = delayedPositionFixtureFiles();
+    expect(files).toHaveLength(delayedPositionFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
