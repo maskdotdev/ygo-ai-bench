@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -143,9 +144,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
     expect(restoredChainWindow.session.state.eventHistory).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ eventName: "battleDestroyed", eventCode: 1140, eventCardUid: defender!.uid }),
-        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: backrow!.uid }),
       ]),
     );
+    expect(restoredChainWindow.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === backrow!.uid)).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: backrow!.uid,
+        eventPreviousState: {
+          location: "spellTrapZone",
+          controller: 1,
+          sequence: 0,
+          position: "faceDown",
+          faceUp: false,
+        },
+        eventCurrentState: {
+          location: "graveyard",
+          controller: 1,
+          sequence: 1,
+          position: "faceDown",
+          faceUp: true,
+        },
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: yamato!.uid,
+        eventReasonEffectId: 8,
+      },
+    ]);
     expect(restoredChainWindow.host.messages).not.toContain("yamato responder resolved");
   });
 });
