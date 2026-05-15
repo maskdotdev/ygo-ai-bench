@@ -112,7 +112,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ga
     expect(restoredAction).toBeDefined();
     const chained = applyLuaRestoreResponse(restored, restoredAction!);
     expect(chained.ok, chained.error).toBe(true);
-    expect(restored.session.state.chain).toEqual(expect.arrayContaining([expect.objectContaining({ sourceUid: opponentMonsterResponder!.uid })]));
+    expect(restored.session.state.chain).toHaveLength(2);
+    expect(restored.session.state.chain[1]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 2,
+        "effectId": "lua-5-1002",
+        "id": "chain-4",
+        "player": 1,
+        "sourceUid": "p1-deck-665235444-2",
+      }
+    `);
     expect(restored.host.messages).not.toContain("blocked opponent trap resolved");
     expect(restored.host.messages).not.toContain("allowed chain-player trap resolved");
   });

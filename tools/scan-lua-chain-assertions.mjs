@@ -15,15 +15,22 @@ function main(argv) {
   const testRoot = path.resolve(options.testRoot ?? defaultTestRoot);
   const realScriptFiles = realScriptFixtureFiles(testRoot);
   const partialChainAssertions = [];
+  const broadChainObjectContainingAssertions = [];
 
   for (const file of realScriptFiles) {
     const text = fs.readFileSync(file, "utf8");
     for (const assertion of chainMatchObjectAssertions(text, file)) {
       partialChainAssertions.push(`${toRepoPath(file)}:${assertion.line}`);
     }
+    for (const assertion of broadChainObjectContainingAssertionsIn(text, file)) {
+      broadChainObjectContainingAssertions.push(`${toRepoPath(file)}:${assertion.line}`);
+    }
   }
 
-  console.log(`Lua real-script chain assertions: ${realScriptFiles.length} fixtures, ${partialChainAssertions.length} partial chain matchObjects`);
+  console.log(
+    `Lua real-script chain assertions: ${realScriptFiles.length} fixtures, ${partialChainAssertions.length} partial chain matchObjects, ` +
+      `${broadChainObjectContainingAssertions.length} broad chain objectContaining assertions`,
+  );
 
   const failures = [];
   if (options.minFixtures !== undefined && realScriptFiles.length < options.minFixtures) {
@@ -32,6 +39,11 @@ function main(argv) {
   if (options.maxPartialChainMatchObjects !== undefined && partialChainAssertions.length > options.maxPartialChainMatchObjects) {
     failures.push(
       `Partial chain matchObject assertions ${partialChainAssertions.length} is above allowed ${options.maxPartialChainMatchObjects}:\n${formatList(partialChainAssertions)}`,
+    );
+  }
+  if (options.maxBroadChainObjectContaining !== undefined && broadChainObjectContainingAssertions.length > options.maxBroadChainObjectContaining) {
+    failures.push(
+      `Broad chain objectContaining assertions ${broadChainObjectContainingAssertions.length} is above allowed ${options.maxBroadChainObjectContaining}:\n${formatList(broadChainObjectContainingAssertions)}`,
     );
   }
 
@@ -48,6 +60,7 @@ function parseArgs(argv) {
     else if (arg === "--test-root") options.testRoot = requireOptionValue(argv, ++index, arg);
     else if (arg === "--min-fixtures") options.minFixtures = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
     else if (arg === "--max-partial-chain-match-objects") options.maxPartialChainMatchObjects = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
+    else if (arg === "--max-broad-chain-object-containing") options.maxBroadChainObjectContaining = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
     else throw new Error(`Unknown argument: ${arg}`);
   }
   return options;
@@ -81,6 +94,33 @@ function chainMatchObjectAssertions(text) {
   return matches;
 }
 
+function broadChainObjectContainingAssertionsIn(text) {
+  const matches = [];
+  for (const assertion of expectAssertions(text)) {
+    if (/expect\([^)]*state\.chain(?!\s*\[)[^)]*\)/.test(assertion.text) && assertion.text.includes("objectContaining(")) matches.push({ line: assertion.line });
+  }
+  return matches;
+}
+
+function expectAssertions(text) {
+  const assertions = [];
+  const lines = text.split("\n");
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const start = line.indexOf("expect(");
+    if (start === -1) continue;
+
+    let statement = line.slice(start);
+    const startLine = index + 1;
+    while (!statement.includes(";") && index + 1 < lines.length) {
+      index += 1;
+      statement += `\n${lines[index]}`;
+    }
+    assertions.push({ line: startLine, text: statement });
+  }
+  return assertions;
+}
+
 function toRepoPath(file) {
   return path.relative(process.cwd(), file).split(path.sep).join("/");
 }
@@ -97,6 +137,8 @@ Options:
   --min-fixtures <count>                   Fail unless at least this many real-script fixtures are scanned
   --max-partial-chain-match-objects <count>
                                            Fail when partial chain matchObjects exceed this count
+  --max-broad-chain-object-containing <count>
+                                           Fail when broad chain objectContaining assertions exceed this count
 `);
 }
 

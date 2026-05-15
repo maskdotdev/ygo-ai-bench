@@ -151,12 +151,27 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(ignition).toBeDefined();
     applyAndAssert(session, ignition!);
     expect(session.state.cards.find((card) => card.uid === etherBeryl!.uid)).toMatchObject({ location: "graveyard" });
-    expect(session.state.chain).toEqual([
-      expect.objectContaining({
-        sourceUid: etherBeryl!.uid,
-        operationInfos: [{ category: 0x20, targetUids: [], count: 1, player: 0, parameter: 0x1 }],
-      }),
-    ]);
+    expect(session.state.chain).toHaveLength(1);
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "graveyard",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-2",
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 32,
+            "count": 1,
+            "parameter": 1,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-63198739-0",
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

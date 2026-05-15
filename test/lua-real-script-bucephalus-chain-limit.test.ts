@@ -96,7 +96,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tr
     expect(quickAction).toBeDefined();
     const response = applyLuaRestoreResponse(restored, quickAction!);
     expect(response.ok, response.error).toBe(true);
-    expect(restored.session.state.chain).toEqual(expect.arrayContaining([expect.objectContaining({ sourceUid: controllerQuick!.uid })]));
+    expect(restored.session.state.chain).toHaveLength(2);
+    expect(restored.session.state.chain[1]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 1,
+        "chainIndex": 2,
+        "effectId": "lua-2-1002",
+        "id": "chain-4",
+        "player": 0,
+        "sourceUid": "p0-deck-10019088-1",
+      }
+    `);
     expect(restored.host.messages).not.toContain("bucephalus opponent quick resolved");
   });
 });

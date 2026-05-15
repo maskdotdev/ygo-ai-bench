@@ -99,7 +99,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     expect(response).toBeDefined();
     const chained = applyLuaRestoreResponse(restoredWatcher, response!);
     expect(chained.ok, chained.error).toBe(true);
-    expect(restoredWatcher.session.state.chain).toEqual(expect.arrayContaining([expect.objectContaining({ sourceUid: ownQuick.uid })]));
+    expect(restoredWatcher.session.state.chain).toHaveLength(2);
+    expect(restoredWatcher.session.state.chain[1]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 2,
+        "chainIndex": 2,
+        "effectId": "lua-3-1002",
+        "id": "chain-6",
+        "player": 0,
+        "sourceUid": "p0-deck-111283-5",
+      }
+    `);
   });
 });
 

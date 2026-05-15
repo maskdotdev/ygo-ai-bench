@@ -134,7 +134,54 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D.
     expect(warriorTrigger).toBeDefined();
     let response = applyLuaRestoreResponse(restored, warriorTrigger!);
     expect(response.ok, response.error).toBe(true);
-    expect(restored.session.state.chain).toEqual([expect.objectContaining({ sourceUid: warrior!.uid })]);
+    expect(restored.session.state.chain).toHaveLength(1);
+    expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1138",
+        "eventCardUid": "p0-deck-37043180-0",
+        "eventCode": 1138,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "afterDamageCalculation",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "deck",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReason": 0,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "eventUids": [
+          "p0-deck-37043180-0",
+          "p1-deck-13945283-0",
+        ],
+        "id": "chain-5",
+        "operationInfos": [
+          {
+            "category": 4,
+            "count": 2,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-37043180-0",
+              "p1-deck-13945283-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-37043180-0",
+      }
+    `);
     expect(queryPublicState(restored.session).pendingTriggerBuckets).toMatchObject([{ player: 1, triggerBucket: "opponentMandatory" }]);
 
     const wallTrigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger" && action.uid === wall!.uid);

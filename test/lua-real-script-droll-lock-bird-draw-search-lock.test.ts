@@ -78,11 +78,27 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
       category: 0x8,
       range: ["monsterZone"],
     });
-    expect(session.state.chain).toEqual([
-      expect.objectContaining({
-        operationInfos: [{ category: 0x8, targetUids: [], count: 1, player: 0, parameter: 0x1 }],
-      }),
-    ]);
+    expect(session.state.chain).toHaveLength(1);
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 8,
+            "count": 1,
+            "parameter": 1,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-923-0",
+      }
+    `);
     resolveLiveChain(session);
     expect(session.state.cards.find((card) => card.uid === searched!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(host.messages).toContain("droll searcher resolved");
