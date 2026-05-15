@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -121,12 +122,35 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === drawCard!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === nobleman!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === responder!.uid)).toMatchObject({ location: "hand", controller: 1 });
-    expect(restoredPendingResolution.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "positionChanged", eventCardUid: amaterasu!.uid }),
-        expect.objectContaining({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventUids: [drawCard!.uid] }),
-      ]),
-    );
+    expect(restoredPendingResolution.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "positionChanged", eventCardUid: amaterasu!.uid })]));
+    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => event.eventName === "cardsDrawn")).toEqual([
+      {
+        eventName: "cardsDrawn",
+        eventCode: 1110,
+        eventCardUid: drawCard!.uid,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventUids: [drawCard!.uid],
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: amaterasu!.uid,
+        eventReasonEffectId: 7,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ eventName: "banished", eventCardUid: amaterasu!.uid })]),
     );
