@@ -5,7 +5,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const operationFixtureCount = 12;
-const summonTriggerOperationFixtureCount = 2;
+const summonTriggerOperationFixtureCount = 3;
 
 describe("Lua real operation restore coverage", () => {
   it("requires representative simple spell operations to assert clean Lua registry restore and restored operation metadata", () => {
@@ -225,6 +225,22 @@ function summonTriggerOperationFixtureFiles(): Array<{ file: string; required: s
         'eventName: "normalSummoned"',
         'eventName: "destroyed"',
         "category: 0x1",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-aratama-spirit-search.test.ts",
+      required: [
+        "restoredSummonWindow.missingRegistryKeys).toEqual([])",
+        "restoredSummonWindow.missingChainLimitRegistryKeys).toEqual([])",
+        "restoredTriggerWindow.missingRegistryKeys).toEqual([])",
+        "restoredTriggerWindow.missingChainLimitRegistryKeys).toEqual([])",
+        "restoredChainWindow.missingRegistryKeys).toEqual([])",
+        "restoredChainWindow.missingChainLimitRegistryKeys).toEqual([])",
+        'eventName": "normalSummoned"',
+        'eventName: "sentToHand"',
+        "category: 8",
+        "eventName: \"sentToHandConfirmed\"",
         "host.messages).not.toContain",
       ],
     },
