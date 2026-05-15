@@ -71,6 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
         expect.objectContaining({
           luaConditionDescriptor: `condition:source-status-summon-type:${statusSpecialSummonTurn}:${summonTypeLink}`,
           sourceUid: sprind!.uid,
+          value: 300,
         }),
       ]),
     );
@@ -83,6 +84,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const restoredSprind = restored.session.state.cards.find((card) => card.code === sprindCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === sprind!.uid && candidate.luaConditionDescriptor === `condition:source-status-summon-type:${statusSpecialSummonTurn}:${summonTypeLink}`);
+    expect(effect).toMatchObject({ value: 300 });
     expect(effect?.canActivate).toBeDefined();
     const ctx = targetContext(restored.session.state, restoredSprind!);
     restoredSprind!.summonType = "link";

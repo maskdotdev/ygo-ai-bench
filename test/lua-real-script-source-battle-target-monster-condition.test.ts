@@ -69,6 +69,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
         expect.objectContaining({
           luaConditionDescriptor: "condition:source-relate-battle-target-monster",
           sourceUid: blizzardWarrior!.uid,
+          value: 300,
         }),
       ]),
     );
@@ -84,6 +85,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const restoredBlizzardWarrior = restored.session.state.cards.find((card) => card.code === blizzardWarriorCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === blizzardWarrior!.uid && candidate.luaConditionDescriptor === "condition:source-relate-battle-target-monster");
+    expect(effect).toMatchObject({ value: 300 });
     expect(effect?.canActivate).toBeDefined();
     const ctx = targetContext(restored.session.state, restoredBlizzardWarrior!);
     expect(effect!.canActivate!(ctx)).toBe(false);

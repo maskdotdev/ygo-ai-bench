@@ -70,6 +70,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
         expect.objectContaining({
           luaConditionDescriptor: descriptor,
           sourceUid: basilisk!.uid,
+          value: 300,
         }),
       ]),
     );
@@ -85,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const restoredBasilisk = restored.session.state.cards.find((card) => card.code === basiliskCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === basilisk!.uid && candidate.luaConditionDescriptor === descriptor);
+    expect(effect).toMatchObject({ value: 300 });
     expect(effect?.canActivate).toBeDefined();
     const ctx = targetContext(restored.session.state, restoredBasilisk!);
     expect(effect!.canActivate!(ctx)).toBe(false);
