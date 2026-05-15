@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -156,10 +157,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
     expect(restoredReviveChain.session.state.cards.find((card) => card.uid === supervise!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredReviveChain.session.state.eventHistory).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ eventName: "sentToGraveyard", eventCode: 1014, eventCardUid: supervise!.uid }),
         expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventCardUid: normal!.uid }),
       ]),
     );
+    expect(restoredReviveChain.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard" && event.eventCardUid === supervise!.uid)).toEqual([
+      {
+        eventName: "sentToGraveyard",
+        eventCode: 1014,
+        eventCardUid: supervise!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: supervise!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "spellTrapZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+    ]);
     expect(restoredReviveChain.host.messages).not.toContain("supervise responder resolved");
   });
 });
