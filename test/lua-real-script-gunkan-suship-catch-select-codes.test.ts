@@ -72,16 +72,46 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gu
     expect(activation, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
     applyAndAssert(session, activation!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: catchCard.uid,
-      operationInfos: [
-        expect.objectContaining({ category: 0x800000, player: 0, parameter: 0x20d }),
-      ],
-      possibleOperationInfos: [
-        expect.objectContaining({ category: 0x8, player: 0, parameter: 1 }),
-        expect.objectContaining({ category: 0x10, player: 0, targetUids: [catchCard.uid] }),
-      ],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-3",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 8388608,
+            "count": 1,
+            "parameter": 525,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-83008724-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "possibleOperationInfos": [
+          {
+            "category": 8,
+            "count": 1,
+            "parameter": 1,
+            "player": 0,
+            "targetUids": [],
+          },
+          {
+            "category": 16,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-83008724-0",
+            ],
+          },
+        ],
+        "sourceUid": "p0-deck-83008724-0",
+      }
+    `);
     expect(session.state.cards.find((card) => card.uid === shari.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(session.state.cards.find((card) => card.uid === ikura.uid)).toMatchObject({ location: "deck", controller: 0 });
     expect(session.state.cards.find((card) => card.uid === extraSuship.uid)).toMatchObject({ location: "extraDeck", controller: 0 });

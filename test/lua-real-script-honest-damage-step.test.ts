@@ -74,7 +74,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ho
     applyAndAssert(session, honestAction!);
     expect(session.state.cards.find((card) => card.uid === honest!.uid)).toMatchObject({ location: "graveyard" });
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({ sourceUid: honest!.uid });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "graveyard",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-2-1002",
+        "id": "chain-4",
+        "player": 0,
+        "sourceUid": "p0-deck-37742478-0",
+      }
+    `);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);

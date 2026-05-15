@@ -56,7 +56,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
     expect(activate).toBeDefined();
     applyAndAssert(session, activate!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({ sourceUid: inferno!.uid });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "player": 0,
+        "sourceUid": "p0-deck-62767644-0",
+      }
+    `);
     expect(session.state.cards.find((card) => card.uid === obsidim!.uid)).toMatchObject({ location: "deck", controller: 0 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);

@@ -81,10 +81,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script He
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTriggerWindow, trigger!);
     expect(restoredTriggerWindow.session.state.chain).toHaveLength(1);
-    expect(restoredTriggerWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: hebo!.uid,
-      targetUids: [target!.uid],
-    });
+    expect(restoredTriggerWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 1,
+        "chainIndex": 1,
+        "effectId": "lua-7-1100",
+        "eventCardUid": "p0-deck-90365482-0",
+        "eventCode": 1100,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 1,
+        },
+        "eventName": "normalSummoned",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReason": 16,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "if",
+        "id": "chain-4",
+        "player": 0,
+        "sourceUid": "p0-deck-90365482-0",
+        "targetUids": [
+          "p0-deck-90365483-1",
+        ],
+      }
+    `);
 
     const restoredChainWindow = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), source, reader);
     expect(restoredChainWindow.restoreComplete, restoredChainWindow.incompleteReasons.join("; ")).toBe(true);

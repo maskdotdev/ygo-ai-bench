@@ -64,10 +64,26 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
     applyAndAssert(session, activation!);
     const milledCard = session.state.cards.find((card) => card.location === "graveyard" && card.reason === duelReason.cost && card.reasonPlayer === 0);
     expect(milledCard).toBeDefined();
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: hiddenArmory.uid,
-      operationInfos: [{ category: 0x8, targetUids: [], count: 1, player: 0, parameter: 0x11 }],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 8,
+            "count": 1,
+            "parameter": 17,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-52105192-0",
+      }
+    `);
     expect(lockCodes(session, hiddenArmory.uid)).toEqual([20, 23]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
