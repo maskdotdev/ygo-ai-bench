@@ -70,12 +70,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script En
     applyAndAssert(session, activation!);
 
     const openedSnapshot = serializeDuel(session);
-    expect(openedSnapshot.state.chain[0]).toMatchObject({
-      sourceUid: enemyController!.uid,
-      targetUids: [target!.uid],
-      effectLabel: 2,
-      operationInfos: [{ category: 0x2000, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(openedSnapshot.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "effectLabel": 2,
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 8192,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-612302-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-98045062-0",
+        "targetUids": [
+          "p1-deck-612302-0",
+        ],
+      }
+    `);
     expect(openedSnapshot.state.chain[0]?.operationInfos).not.toEqual(expect.arrayContaining([expect.objectContaining({ category: 0x1000 })]));
     expect(openedSnapshot.state.cards.find((card) => card.uid === releaseCost!.uid)).toMatchObject({
       location: "graveyard",
@@ -117,7 +137,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script En
     expectRestoredLegalActions(restoredResponseWindow, 1);
     expect(restoredResponseWindow.missingRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restoredResponseWindow.session.state.chain[0]).toMatchObject({ effectLabel: 2, targetUids: [target!.uid] });
+    expect(restoredResponseWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "effectLabel": 2,
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 8192,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-612302-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-98045062-0",
+        "targetUids": [
+          "p1-deck-612302-0",
+        ],
+      }
+    `);
     expect(restoredResponseWindow.session.state.cards.find((card) => card.uid === releaseCost!.uid)).toMatchObject({
       location: "graveyard",
       previousLocation: "monsterZone",

@@ -52,18 +52,48 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ef
     expect(targetAction).toBeDefined();
     applyAndAssert(session, targetAction!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({ sourceUid: target!.uid });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "player": 0,
+        "sourceUid": "p0-deck-916-0",
+      }
+    `);
 
     const veilerAction = getLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.uid === effectVeiler!.uid);
     expect(veilerAction).toBeDefined();
     applyAndAssert(session, veilerAction!);
     expect(session.state.cards.find((card) => card.uid === effectVeiler!.uid)).toMatchObject({ location: "graveyard" });
     expect(session.state.chain).toHaveLength(2);
-    expect(session.state.chain[1]).toMatchObject({
-      sourceUid: effectVeiler!.uid,
-      targetUids: [target!.uid],
-      operationInfos: [{ category: 0x4000, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(session.state.chain[1]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "graveyard",
+        "activationSequence": 0,
+        "chainIndex": 2,
+        "effectId": "lua-2-1002",
+        "id": "chain-4",
+        "operationInfos": [
+          {
+            "category": 16384,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-916-0",
+            ],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-97268402-0",
+        "targetUids": [
+          "p0-deck-916-0",
+        ],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
