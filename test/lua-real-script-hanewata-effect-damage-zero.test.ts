@@ -141,7 +141,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ha
     expect(restoredFire.session.state.players[0].lifePoints).toBe(6200);
     expect(restoredFire.session.state.players[1].lifePoints).toBe(7500);
     expect(restoredFire.session.state.battleDamage).toEqual({ 0: 1800, 1: 0 });
-    expect(restoredFire.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "battleDamageDealt", eventPlayer: 0, eventValue: 1800 })]));
+    expect(restoredFire.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: attacker!.uid,
+        eventPlayer: 0,
+        eventValue: 1800,
+        eventReason: duelReason.battle,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 2,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
   });
 });
 

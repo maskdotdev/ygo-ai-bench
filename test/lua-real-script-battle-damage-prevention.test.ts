@@ -64,11 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ba
         expect.objectContaining({ action: "battleDamage", player: 1, detail: "0" }),
       ]),
     );
-    expect(restored.session.state.eventHistory).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleDamageDealt", eventPlayer: 1 }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt" && event.eventPlayer === 1)).toEqual([]);
     expect(restored.session.state.cards.find((card) => card.uid === ur!.uid)).toMatchObject({ location: "monsterZone" });
   });
 
@@ -124,11 +120,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ba
     expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
     expect(restored.session.state.players[0].lifePoints).toBe(8000);
     expect(restored.session.state.players[1].lifePoints).toBe(8000);
-    expect(restored.session.state.eventHistory).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleDamageDealt", eventPlayer: 0 }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt" && event.eventPlayer === 0)).toEqual([]);
     expect(restored.session.state.cards.find((card) => card.uid === rescue!.uid)).toMatchObject({ location: "monsterZone" });
     expect(restored.session.state.cards.find((card) => card.uid === wall!.uid)).toMatchObject({ location: "monsterZone" });
   });
