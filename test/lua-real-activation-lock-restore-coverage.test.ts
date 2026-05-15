@@ -3,10 +3,16 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const activationLockFixtureCount = 3;
+const activationLockAllowListFixtureCount = 2;
+const activationLockVariantFixtureCount = 14;
 
 describe("Lua real activation-lock restore coverage", () => {
   it("requires representative activation-lock fixtures to assert clean Lua registry restore", () => {
-    const missing = realScriptActivationLockFixtureFiles()
+    const files = realScriptActivationLockFixtureFiles();
+    expect(files).toHaveLength(activationLockFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreComplete")
@@ -19,7 +25,10 @@ describe("Lua real activation-lock restore coverage", () => {
   });
 
   it("requires representative activation-lock fixtures to prove restored lock effects and legal-action filtering", () => {
-    const missing = realScriptActivationLockFixtureFiles()
+    const files = realScriptActivationLockFixtureFiles();
+    expect(files).toHaveLength(activationLockFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("code === 6")
@@ -34,7 +43,10 @@ describe("Lua real activation-lock restore coverage", () => {
   });
 
   it("requires activation-lock fixtures with exclusions to prove allowed actions remain legal", () => {
-    const missing = realScriptActivationLockAllowListFixtureFiles()
+    const files = realScriptActivationLockAllowListFixtureFiles();
+    expect(files).toHaveLength(activationLockAllowListFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("toBe(true)");
@@ -44,7 +56,10 @@ describe("Lua real activation-lock restore coverage", () => {
   });
 
   it("requires representative activation-lock variants to prove exact blocked and allowed action classes", () => {
-    const missing = realScriptActivationLockVariantFixtures()
+    const fixtures = realScriptActivationLockVariantFixtures();
+    expect(fixtures).toHaveLength(activationLockVariantFixtureCount);
+
+    const missing = fixtures
       .filter((fixture) => {
         const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
         return !text.includes("restoreComplete")
