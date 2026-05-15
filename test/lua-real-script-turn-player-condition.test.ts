@@ -50,12 +50,72 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script tu
     const host = createLuaScriptHost(session, workspace);
     for (const code of [tirasCode, springCode]) expect(host.loadCardScript(Number(code), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ luaConditionDescriptor: "condition:turn-player:self", sourceUid: tiras!.uid, triggerEvent: "phaseEnd" }),
-        expect.objectContaining({ luaConditionDescriptor: "condition:turn-player:opponent", sourceUid: spring!.uid, triggerEvent: "phaseEnd" }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          (effect.luaConditionDescriptor === "condition:turn-player:self" &&
+            effect.sourceUid === tiras!.uid &&
+            effect.triggerEvent === "phaseEnd") ||
+          (effect.luaConditionDescriptor === "condition:turn-player:opponent" &&
+            effect.sourceUid === spring!.uid &&
+            effect.triggerEvent === "phaseEnd"),
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "category": 8388608,
+          "code": 4608,
+          "controller": 0,
+          "cost": [Function],
+          "countLimit": 1,
+          "description": 969613137,
+          "event": "trigger",
+          "id": "lua-5-4608",
+          "luaConditionDescriptor": "condition:turn-player:opponent",
+          "luaTypeFlags": 130,
+          "oncePerTurn": true,
+          "operation": [Function],
+          "optional": true,
+          "promptOperation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:60600821:lua-5-4608",
+          "sourceUid": "p0-deck-60600821-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "triggerCode": 4608,
+          "triggerEvent": "phaseEnd",
+          "triggerTiming": "when",
+        },
+        {
+          "canActivate": [Function],
+          "code": 4608,
+          "controller": 0,
+          "cost": [Function],
+          "countLimit": 1,
+          "description": 502178881,
+          "event": "trigger",
+          "id": "lua-9-4608",
+          "luaConditionDescriptor": "condition:turn-player:self",
+          "luaTypeFlags": 514,
+          "oncePerTurn": true,
+          "operation": [Function],
+          "optional": false,
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:31386180:lua-9-4608",
+          "sourceUid": "p0-extraDeck-31386180-0",
+          "target": [Function],
+          "triggerCode": 4608,
+          "triggerEvent": "phaseEnd",
+          "triggerTiming": "when",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

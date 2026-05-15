@@ -50,12 +50,65 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script tu
     const host = createLuaScriptHost(session, workspace);
     for (const code of [hiFiveCode, terraFirmaGravityCode]) expect(host.loadCardScript(Number(code), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ luaConditionDescriptor: "condition:turn-player:self-battle-phase", sourceUid: hiFive!.uid }),
-        expect.objectContaining({ luaConditionDescriptor: "condition:turn-player:opponent-battle-phase", sourceUid: terraFirmaGravity!.uid }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          (effect.luaConditionDescriptor === "condition:turn-player:self-battle-phase" && effect.sourceUid === hiFive!.uid) ||
+          (effect.luaConditionDescriptor === "condition:turn-player:opponent-battle-phase" &&
+            effect.sourceUid === terraFirmaGravity!.uid),
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 1002,
+          "controller": 0,
+          "cost": [Function],
+          "event": "quick",
+          "hintTiming": [
+            16777216,
+          ],
+          "id": "lua-1-1002",
+          "luaConditionDescriptor": "condition:turn-player:self-battle-phase",
+          "luaTypeFlags": 16,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 16,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:91677585:lua-1-1002",
+          "sourceUid": "p0-deck-91677585-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+        },
+        {
+          "canActivate": [Function],
+          "code": 1002,
+          "controller": 0,
+          "cost": [Function],
+          "event": "quick",
+          "hintTiming": [
+            0,
+            8,
+          ],
+          "id": "lua-2-1002",
+          "luaConditionDescriptor": "condition:turn-player:opponent-battle-phase",
+          "luaTypeFlags": 16,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:26509612:lua-2-1002",
+          "sourceUid": "p0-deck-26509612-1",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

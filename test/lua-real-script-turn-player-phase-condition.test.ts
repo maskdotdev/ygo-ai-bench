@@ -50,12 +50,64 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script tu
     const host = createLuaScriptHost(session, workspace);
     for (const code of [battleManiaCode, elephunCode]) expect(host.loadCardScript(Number(code), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ luaConditionDescriptor: "condition:turn-player-phase:opponent:2", sourceUid: battleMania!.uid }),
-        expect.objectContaining({ luaConditionDescriptor: "condition:turn-player-phase:self:2", sourceUid: elephun!.uid }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          (effect.luaConditionDescriptor === "condition:turn-player-phase:opponent:2" &&
+            effect.sourceUid === battleMania!.uid) ||
+          (effect.luaConditionDescriptor === "condition:turn-player-phase:self:2" && effect.sourceUid === elephun!.uid),
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "category": 4096,
+          "code": 1002,
+          "controller": 0,
+          "cost": [Function],
+          "event": "quick",
+          "hintTiming": [
+            0,
+            2,
+          ],
+          "id": "lua-1-1002",
+          "luaConditionDescriptor": "condition:turn-player-phase:opponent:2",
+          "luaTypeFlags": 16,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:31245780:lua-1-1002",
+          "sourceUid": "p0-deck-31245780-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+        },
+        {
+          "canActivate": [Function],
+          "code": 1002,
+          "controller": 0,
+          "cost": [Function],
+          "event": "quick",
+          "hintTiming": [
+            2,
+          ],
+          "id": "lua-2-1002",
+          "luaConditionDescriptor": "condition:turn-player-phase:self:2",
+          "luaTypeFlags": 16,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:76848240:lua-2-1002",
+          "sourceUid": "p0-deck-76848240-1",
+          "target": [Function],
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

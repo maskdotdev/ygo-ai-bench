@@ -50,12 +50,121 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script tu
     const host = createLuaScriptHost(session, workspace);
     for (const code of [maliciousmagnetCode, shiningStarCode]) expect(host.loadCardScript(Number(code), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ luaConditionDescriptor: "condition:turn-player:self-main-phase", sourceUid: maliciousmagnet!.uid }),
-        expect.objectContaining({ luaConditionDescriptor: "condition:turn-player:opponent-main-phase", sourceUid: shiningStar!.uid }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          (effect.luaConditionDescriptor === "condition:turn-player:self-main-phase" &&
+            effect.sourceUid === maliciousmagnet!.uid) ||
+          (effect.luaConditionDescriptor === "condition:turn-player:opponent-main-phase" &&
+            effect.sourceUid === shiningStar!.uid),
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "category": 512,
+          "code": 1100,
+          "controller": 0,
+          "cost": [Function],
+          "countLimit": 1,
+          "countLimitCode": 62899696,
+          "description": 1006395137,
+          "event": "trigger",
+          "id": "lua-2-1100",
+          "luaConditionDescriptor": "condition:turn-player:self-main-phase",
+          "luaTypeFlags": 129,
+          "oncePerTurn": true,
+          "operation": [Function],
+          "optional": true,
+          "promptOperation": [Function],
+          "property": 65552,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:62899696:lua-2-1100",
+          "sourceUid": "p0-deck-62899696-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "triggerCode": 1100,
+          "triggerEvent": "normalSummoned",
+          "triggerSourceOnly": true,
+          "triggerTiming": "if",
+        },
+        {
+          "canActivate": [Function],
+          "category": 512,
+          "code": 1102,
+          "controller": 0,
+          "cost": [Function],
+          "countLimit": 1,
+          "countLimitCode": 62899696,
+          "description": 1006395137,
+          "event": "trigger",
+          "id": "lua-3-1102",
+          "luaConditionDescriptor": "condition:turn-player:self-main-phase",
+          "luaTypeFlags": 129,
+          "oncePerTurn": true,
+          "operation": [Function],
+          "optional": true,
+          "promptOperation": [Function],
+          "property": 65552,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:62899696:lua-3-1102",
+          "sourceUid": "p0-deck-62899696-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "triggerCode": 1102,
+          "triggerEvent": "specialSummoned",
+          "triggerSourceOnly": true,
+          "triggerTiming": "if",
+        },
+        {
+          "canActivate": [Function],
+          "category": 512,
+          "code": 1002,
+          "controller": 0,
+          "cost": [Function],
+          "countLimit": 1,
+          "countLimitCode": 75874514,
+          "description": 1213992224,
+          "event": "quick",
+          "hintTiming": [
+            0,
+            452,
+          ],
+          "id": "lua-4-1002",
+          "luaConditionDescriptor": "condition:turn-player:opponent-main-phase",
+          "luaTypeFlags": 256,
+          "oncePerTurn": true,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 16,
+          "range": [
+            "hand",
+          ],
+          "registryKey": "lua:75874514:lua-4-1002",
+          "sourceUid": "p0-deck-75874514-1",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
