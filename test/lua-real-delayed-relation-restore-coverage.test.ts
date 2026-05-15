@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const delayedRelationFixtureCount = 3;
+const delayedRelationFixtureCount = 4;
 
 describe("Lua real delayed relation restore coverage", () => {
   it("requires delayed relation fixtures to assert clean Lua registry restore and restored delayed outcomes", () => {
@@ -49,6 +49,16 @@ function delayedRelationFixtureFiles(): Array<{ file: string; required: string[]
         'eventName: "specialSummoned"',
         'eventName: "banished"',
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-call-of-the-haunted-revive-destroy.test.ts",
+      required: [
+        "cardTargetUids: [target!.uid]",
+        "call probe 0/612701/1",
+        "destroyDuelCard(restoredRevive.session.state, call!.uid",
+        "destroyDuelCard(restoredTargetDestroy.session.state, target!.uid",
+        "previousLocation: \"spellTrapZone\"",
       ],
     },
     {
