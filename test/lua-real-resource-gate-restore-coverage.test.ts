@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const resourceGateFixtureCount = 4;
+const resourceGateFixtureCount = 5;
 
 describe("Lua real resource gate restore coverage", () => {
   it("requires resource gate fixtures to assert clean restore and restored blocked/allowed outcomes", () => {
@@ -33,6 +33,16 @@ describe("Lua real resource gate restore coverage", () => {
 
 function resourceGateFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-d-force-plasma-cannot-draw.test.ts",
+      required: [
+        "code === 25",
+        "d force can draw with plasma draw phase false",
+        "d force draw with plasma draw phase 0/0",
+        "d force can draw with plasma main1 true",
+        "d force draw without plasma draw phase 1/1",
+      ],
+    },
     {
       file: "test/lua-real-script-diabolos-effect-release-lock.test.ts",
       required: [
