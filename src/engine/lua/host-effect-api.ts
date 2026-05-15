@@ -560,8 +560,8 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
       else { delete duelEffect.labelObjectUid; delete duelEffect.labelObjectUids; }
       return result;
     },
-    cost: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.costRef, true, "cost", ctx),
-    target: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.targetRef, true, "target", ctx),
+    cost: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, event === "summonProcedure" && ctx.source !== undefined ? ctx.source : card, luaEffect.costRef, true, "cost", ctx),
+    target: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, event === "summonProcedure" && ctx.source !== undefined ? ctx.source : card, luaEffect.targetRef, true, "target", ctx),
     operation: (ctx) => {
       const operationRef = luaEffect.operationRef;
       if (operationRef === undefined) {
@@ -571,7 +571,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
       withLuaCallbackContext(hostState, ctx, luaEffect.id, "operation", () => {
         if (ctx.chainLink?.effectLabel !== undefined) luaEffect.label = ctx.chainLink.effectLabel;
         if (ctx.chainLink?.effectLabels !== undefined) luaEffect.labels = [...ctx.chainLink.effectLabels];
-        callLuaEffectOperation(L, hostState, luaEffect, card, operationRef, ctx, readLuaError);
+        callLuaEffectOperation(L, hostState, luaEffect, event === "summonProcedure" && ctx.source !== undefined ? ctx.source : card, operationRef, ctx, readLuaError);
         ctx.log("Lua effect operation resolved");
       });
     },

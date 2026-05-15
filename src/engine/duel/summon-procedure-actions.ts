@@ -15,10 +15,10 @@ type SpecialSummonProcedurePredicate = (uid: string, summonTypeCode?: number, re
 export function normalSummonProcedureActions(state: DuelState, player: PlayerId, canChooseEffect: EffectChoicePredicate, canNormalSummon: NormalSummonPredicate): DuelAction[] {
   const actions: DuelAction[] = [];
   for (const effect of state.effects) {
-    if (effect.controller !== player || !isLuaNormalSummonProcedure(effect.code)) continue;
+    if (!isLuaNormalSummonProcedure(effect.code) || !procedureAffectsPlayer(effect, player)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !canUseEffectCount(state, effect)) continue;
-    const candidates = source.controller === player && source.location === "hand" && effect.range.includes(source.location) ? [source] : state.cards.filter((card) => card.controller === player && card.location === "hand" && ((effect.targetRange?.[0] ?? 0) & 0x02) !== 0);
+    const candidates = source.controller === player && source.location === "hand" && effect.range.includes(source.location) ? [source] : state.cards.filter((card) => card.controller === player && card.location === "hand" && procedureTargetsHand(effect, player));
     for (const candidate of candidates) {
       if (!hasNormalSummonCountAvailable(state, player, candidate) || !canNormalSummon(player, candidate)) continue;
       const ctx = createEffectContext(state, candidate, player);
@@ -43,7 +43,13 @@ export function specialSummonProcedureActions(state: DuelState, player: PlayerId
 }
 
 export function hasLuaLimitNormalSummonProcedure(state: DuelState, player: PlayerId, card: DuelCardInstance): boolean {
-  return !hasNormalTributeMetadata(card) && state.effects.some((effect) => effect.controller === player && effect.sourceUid === card.uid && effect.code === luaEffectLimitSummonProc && effect.range.includes(card.location));
+  if (hasNormalTributeMetadata(card)) return false;
+  return state.effects.some((effect) => {
+    if (effect.code !== luaEffectLimitSummonProc || !procedureAffectsPlayer(effect, player)) return false;
+    if (effect.sourceUid === card.uid && effect.range.includes(card.location)) return true;
+    if (!procedureTargetsHand(effect, player) || card.location !== "hand") return false;
+    return !effect.targetCardPredicate || effect.targetCardPredicate(createEffectContext(state, card, player), card);
+  });
 }
 
 export function luaLimitNormalSummonProcedureValue(state: DuelState, player: PlayerId, sourceUid: string): number | undefined {
@@ -57,6 +63,16 @@ function hasNormalTributeMetadata(card: DuelCardInstance): boolean {
 
 function isLuaNormalSummonProcedure(code: number | undefined): boolean {
   return code === luaEffectSummonProc || code === luaEffectLimitSummonProc;
+}
+
+function procedureAffectsPlayer(effect: DuelEffectDefinition, player: PlayerId): boolean {
+  if (effect.targetRange === undefined) return effect.controller === player;
+  return procedureTargetsHand(effect, player);
+}
+
+function procedureTargetsHand(effect: DuelEffectDefinition, player: PlayerId): boolean {
+  const index = effect.controller === player ? 0 : 1;
+  return ((effect.targetRange?.[index] ?? 0) & 0x02) !== 0;
 }
 
 function luaRelatedEffectId(effect: DuelEffectDefinition): number | undefined {
