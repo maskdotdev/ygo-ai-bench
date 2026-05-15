@@ -575,6 +575,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-crimson-blader-level5-summon-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "target:level-above:5"',
+        "targetRange: [1, 0]",
         "crimson blader level5 special 0",
         "crimson blader level4 special 1",
       ],
