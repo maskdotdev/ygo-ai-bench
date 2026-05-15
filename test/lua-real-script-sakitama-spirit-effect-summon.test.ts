@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, PlayerId } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -166,9 +167,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
     const releaseResolved = applyLuaRestoreResponse(restoredReleaseChain, releasePass!);
     expect(releaseResolved.ok, releaseResolved.error).toBe(true);
     expect(restoredReleaseChain.session.state.cards.find((card) => card.uid === sakitama!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
-    expect(restoredReleaseChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "released", eventCode: 1017, eventCardUid: sakitama!.uid })]),
-    );
+    expect(restoredReleaseChain.session.state.eventHistory.filter((event) => event.eventName === "released" && event.eventCardUid === sakitama!.uid)).toEqual([
+      {
+        eventName: "released",
+        eventCode: 1017,
+        eventCardUid: sakitama!.uid,
+        eventReason: duelReason.effect | duelReason.release,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: starter!.uid,
+        eventReasonEffectId: 9,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+    ]);
 
     const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredReleaseChain.session), source, reader);
     expect(restoredTriggerWindow.restoreComplete, restoredTriggerWindow.incompleteReasons.join("; ")).toBe(true);
