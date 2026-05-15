@@ -63,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sn
     const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredEquipWindow.restoreComplete, restoredEquipWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredEquipWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredEquipWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredEquipWindow, 0);
     expect(getLuaRestoreLegalActions(restoredEquipWindow, 0)).toEqual(getDuelLegalActions(restoredEquipWindow.session, 0));
     const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === snatch!.uid);
@@ -80,6 +81,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sn
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredChain.session.state.chain[0]).toMatchObject(restoredEquipWindow.session.state.chain[0]!);
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
@@ -101,6 +103,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sn
     const restoredControl = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredControl.restoreComplete, restoredControl.incompleteReasons.join("; ")).toBe(true);
     expect(restoredControl.missingRegistryKeys).toEqual([]);
+    expect(restoredControl.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredControl, 0);
     expectLuaSnatchProbe(restoredControl, targetCode, snatchCode, "snatch probe 0/45986603/612501");
 
@@ -119,6 +122,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sn
     const restoredReturned = restoreDuelWithLuaScripts(serializeDuel(restoredControl.session), source, reader);
     expect(restoredReturned.restoreComplete, restoredReturned.incompleteReasons.join("; ")).toBe(true);
     expect(restoredReturned.missingRegistryKeys).toEqual([]);
+    expect(restoredReturned.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredReturned, 0);
     expectLuaSnatchProbe(restoredReturned, targetCode, snatchCode, "snatch probe 1/nil/nil");
   });

@@ -25,7 +25,8 @@ describe("Lua real equip restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys")
-          || !text.includes("missingRegistryKeys).toEqual([])");
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])");
       });
 
     expect(missing).toEqual([]);
@@ -42,6 +43,7 @@ describe("Lua real equip restore coverage", () => {
           || !text.includes("equippedToUid")
           || !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !/host\.messages\)\.not\.toContain/.test(text);
       });
 
@@ -73,6 +75,7 @@ describe("Lua real equip restore coverage", () => {
           || !/probe/.test(text)
           || !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !/GetEquipTarget|GetFirstCardTarget|IsHasEffect|GetAttack|GetControler/.test(text);
       });
 
@@ -90,6 +93,7 @@ describe("Lua real equip restore coverage", () => {
           || !/location:\s*["']graveyard["']/.test(text)
           || !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !/eventName:\s*["']sentToGraveyard["']|eventName:\s*["']destroyed["']|previousController/.test(text);
       });
 
