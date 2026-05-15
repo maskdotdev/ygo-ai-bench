@@ -14,10 +14,15 @@ describe("Lua real condition restore coverage", () => {
     const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
-        return !text.includes("restoreComplete")
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys")
-          || !text.includes("missingRegistryKeys).toEqual([])");
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)");
       });
 
     expect(missing).toEqual([]);
@@ -54,6 +59,10 @@ describe("Lua real condition restore coverage", () => {
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
           || !text.includes("luaConditionDescriptor")
           || !text.includes("canActivate")
           || !text.includes("targetContext(restored.session.state")
