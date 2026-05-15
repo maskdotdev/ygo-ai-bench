@@ -103,9 +103,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     const restoredValkyriaAfterCounter = restoredCounterChain.session.state.cards.find((card) => card.uid === valkyria!.uid);
     expect(getDuelCardCounter(restoredValkyriaAfterCounter, counterSpell)).toBe(1);
     expect(currentAttack(restoredValkyriaAfterCounter, restoredCounterChain.session.state)).toBe(2100);
-    expect(restoredCounterChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "counterAdded", eventCode: 0x10000, eventCardUid: valkyria!.uid })]),
-    );
+    expect(restoredCounterChain.session.state.eventHistory.filter((event) => event.eventName === "counterAdded" && event.eventCardUid === valkyria!.uid)).toEqual([
+      {
+        eventName: "counterAdded",
+        eventCode: 0x10000,
+        eventCardUid: valkyria!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: valkyria!.uid,
+        eventReasonEffectId: 6,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+    ]);
     expect(restoredCounterChain.host.messages).not.toContain("dark valkyria responder resolved");
 
     const restoredDestroyIgnition = restoreDuelWithLuaScripts(serializeDuel(restoredCounterChain.session), source, reader);
@@ -122,9 +144,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     const valkyriaAfterCost = restoredDestroyIgnition.session.state.cards.find((card) => card.uid === valkyria!.uid);
     expect(getDuelCardCounter(valkyriaAfterCost, counterSpell)).toBe(0);
     expect(currentAttack(valkyriaAfterCost, restoredDestroyIgnition.session.state)).toBe(1800);
-    expect(restoredDestroyIgnition.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "counterRemoved", eventCode: 0x20000, eventCardUid: valkyria!.uid, eventReason: duelReason.cost })]),
-    );
+    expect(restoredDestroyIgnition.session.state.eventHistory.filter((event) => event.eventName === "counterRemoved" && event.eventCardUid === valkyria!.uid)).toEqual([
+      {
+        eventName: "counterRemoved",
+        eventCode: 0x20000,
+        eventCardUid: valkyria!.uid,
+        eventReason: duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: valkyria!.uid,
+        eventReasonEffectId: 7,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+    ]);
     expect(restoredDestroyIgnition.session.state.chain[0]).toMatchObject({
       sourceUid: valkyria!.uid,
       targetUids: [destroyTarget!.uid],
