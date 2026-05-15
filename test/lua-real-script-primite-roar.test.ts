@@ -76,6 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     const restoredProtection = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), workspace, reader);
     expect(restoredProtection.restoreComplete, restoredProtection.incompleteReasons.join("; ")).toBe(true);
     expect(restoredProtection.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredProtection, 0);
     expect(restoredProtection.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -119,6 +120,11 @@ function resolveOpenChain(session: DuelSession): void {
     applyAndAssert(session, pass!);
   }
   expect(session.state.chain).toHaveLength(0);
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function applyAndAssert(session: DuelSession, action: DuelAction): void {
