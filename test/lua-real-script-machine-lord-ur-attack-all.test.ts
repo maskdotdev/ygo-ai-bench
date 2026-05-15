@@ -44,12 +44,47 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(urCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 193, sourceUid: ur!.uid }),
-        expect.objectContaining({ event: "continuous", code: 200, sourceUid: ur!.uid }),
-      ]),
-    );
+    expect(session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === ur!.uid && [193, 200].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 193,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-193",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:96938777:lua-1-193",
+          "sourceUid": "p0-deck-96938777-0",
+          "target": [Function],
+          "value": 1,
+        },
+        {
+          "canActivate": [Function],
+          "code": 200,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-2-200",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:96938777:lua-2-200",
+          "sourceUid": "p0-deck-96938777-0",
+          "target": [Function],
+        },
+      ]
+    `);
 
     const openingActions = getLegalActions(session, 0);
     expect(hasAttack(openingActions, ur!.uid, firstTarget!.uid)).toBe(true);
@@ -72,12 +107,45 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 193, sourceUid: ur!.uid }),
-        expect.objectContaining({ event: "continuous", code: 200, sourceUid: ur!.uid }),
-      ]),
-    );
+    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === ur!.uid && [193, 200].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 193,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-193",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:96938777:lua-1-193",
+          "sourceUid": "p0-deck-96938777-0",
+          "target": [Function],
+          "value": 1,
+        },
+        {
+          "canActivate": [Function],
+          "code": 200,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-2-200",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:96938777:lua-2-200",
+          "sourceUid": "p0-deck-96938777-0",
+          "target": [Function],
+        },
+      ]
+    `);
     const restoredActions = getLuaRestoreLegalActions(restored, 0);
     expect(hasAttack(restoredActions, ur!.uid, secondTarget!.uid)).toBe(true);
     expect(hasAttack(restoredActions, ur!.uid, firstTarget!.uid)).toBe(false);

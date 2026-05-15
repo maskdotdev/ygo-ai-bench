@@ -59,15 +59,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script El
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restored, 1),
     );
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 344,
-          sourceUid: rhapsodia.uid,
-        }),
-      ]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 344 && effect.sourceUid === rhapsodia.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 344,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-344",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "range": [
+          "spellTrapZone",
+        ],
+        "registryKey": "lua:24092792:lua-2-344",
+        "sourceUid": "p0-deck-24092792-0",
+        "statValue": [Function],
+        "target": [Function],
+        "targetRange": [
+          0,
+          4,
+        ],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
     const mustAttackEffects = restored.session.state.effects.filter((effect) => effect.code === 344 && effect.sourceUid === rhapsodia.uid);
     expect(mustAttackEffects).toHaveLength(1);
     expect(mustAttackEffects[0]?.range).toContain("spellTrapZone");

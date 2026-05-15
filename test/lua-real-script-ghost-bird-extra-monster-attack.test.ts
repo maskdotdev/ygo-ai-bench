@@ -44,9 +44,27 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gh
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ event: "continuous", code: 346, sourceUid: ghostBird.uid })]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 346 && effect.sourceUid === ghostBird.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 346,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-3-346",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "property": 131072,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:15419596:lua-3-346",
+        "sourceUid": "p0-deck-15419596-0",
+        "target": [Function],
+        "value": 1,
+      }
+    `);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const actions = getLuaRestoreLegalActions(restored, 0);

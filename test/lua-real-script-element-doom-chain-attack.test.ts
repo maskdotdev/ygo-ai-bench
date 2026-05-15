@@ -56,12 +56,60 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script El
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(elementDoomCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 1138, sourceUid: elementDoom!.uid }),
-        expect.objectContaining({ event: "trigger", code: 1139, sourceUid: elementDoom!.uid }),
-      ]),
-    );
+    expect(session.state.effects.filter((effect) => effect.sourceUid === elementDoom!.uid && [1138, 1139].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 1138,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-1138",
+          "luaTypeFlags": 2049,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:23118924:lua-1-1138",
+          "sourceUid": "p0-deck-23118924-0",
+          "target": [Function],
+          "triggerCode": 1138,
+          "triggerEvent": "afterDamageCalculation",
+        },
+        {
+          "canActivate": [Function],
+          "code": 1139,
+          "controller": 0,
+          "cost": [Function],
+          "description": 369902784,
+          "event": "trigger",
+          "id": "lua-2-1139",
+          "luaTypeFlags": 129,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "optional": true,
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:23118924:lua-2-1139",
+          "sourceUid": "p0-deck-23118924-0",
+          "target": [Function],
+          "triggerCode": 1139,
+          "triggerEvent": "battleDestroyed",
+          "triggerTiming": "when",
+        },
+      ]
+    `);
 
     const attack = getLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === elementDoom!.uid && action.targetUid === firstTarget!.uid);
     expect(attack).toBeDefined();
