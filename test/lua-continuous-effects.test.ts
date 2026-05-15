@@ -14,7 +14,7 @@ import { duelReason } from "#duel/reasons.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua continuous effects", () => {
   it("checks whether cards are immune to Lua effects", () => {
@@ -566,6 +566,12 @@ describe("Lua continuous effects", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c900.lua" ? script : undefined }, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    const restoredPlayer = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    expect(getLuaRestoreLegalActionGroups(restored, restoredPlayer)).toEqual(getGroupedDuelLegalActions(restored.session, restoredPlayer));
+    expect(getLuaRestoreLegalActionGroups(restored, restoredPlayer).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restored, restoredPlayer),
+    );
     const restoredCheck = restored.host.loadScript(
       `
       Debug.Message("restored synthetic locked " .. tostring(Duel.IsPlayerCanSpecialSummonMonster(0,123,0,TYPE_MONSTER|TYPE_NORMAL,0,0,1,RACE_WARRIOR,ATTRIBUTE_LIGHT,POS_FACEUP_ATTACK,0)))
