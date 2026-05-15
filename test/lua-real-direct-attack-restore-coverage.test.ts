@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DIRECT_ATTACK_FIXTURE_COUNT = 4;
+const DIRECT_ATTACK_FIXTURE_COUNT = 5;
 
 describe("Lua real direct-attack restore coverage", () => {
   it("requires representative direct-attack fixtures to assert clean Lua restore and replayed legal actions", () => {
@@ -44,6 +44,13 @@ function realScriptDirectAttackFixtureFiles(): Array<{ file: string; required: s
         "directAttack: true",
         "targetUid: defender!.uid",
         "battleDamage).toEqual({ 0: 0, 1: 700 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-jinzo-seven-direct-attack.test.ts",
+      required: [
+        "hasAttack(actions, jinzo.uid, defender.uid)).toBe(true)",
+        "hasDirectAttack(actions, jinzo.uid)).toBe(true)",
       ],
     },
     {
