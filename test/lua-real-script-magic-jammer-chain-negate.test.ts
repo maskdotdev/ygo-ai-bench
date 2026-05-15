@@ -174,9 +174,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
       },
     ]);
     expect(restoredPendingResolution.session.state.eventHistory.filter((event) => event.eventName === "cardsDrawn" && event.eventPlayer === 0 && event.eventUids?.includes(drawn!.uid))).toEqual([]);
-    expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "recoveredLifePoints", eventCode: 1112, eventPlayer: 1, eventValue: 1000 })]),
-    );
+    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => event.eventName === "recoveredLifePoints" && event.eventPlayer === 1 && event.eventValue === 1000)).toEqual([]);
   });
 });
 
