@@ -58,6 +58,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
     const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredEquipWindow.restoreComplete, restoredEquipWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredEquipWindow.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredEquipWindow, 0);
     const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === axe.uid);
     expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredEquipWindow, equipAction!);
@@ -65,6 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredChain, 1);
     const pass = getLuaRestoreLegalActions(restoredChain, 1).find((action) => action.type === "passChain");
     expect(pass, JSON.stringify(getLuaRestoreLegalActions(restoredChain, 1), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredChain, pass!);
@@ -79,6 +81,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
     const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredBattle.restoreComplete, restoredBattle.incompleteReasons.join("; ")).toBe(true);
     expect(restoredBattle.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredBattle, 0);
     const attack = getLuaRestoreLegalActions(restoredBattle, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker.uid && !action.targetUid);
     expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredBattle, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredBattle, attack!);
@@ -86,6 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
     const restoredAttackWindow = restoreDuelWithLuaScripts(serializeDuel(restoredBattle.session), source, reader);
     expect(restoredAttackWindow.restoreComplete, restoredAttackWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredAttackWindow.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredAttackWindow, 1);
     expect(restoredAttackWindow.session.state.effects.find((effect) => effect.sourceUid === axe.uid && effect.code === 6)).toMatchObject({
       event: "continuous",
       targetRange: [1, 1],
@@ -141,4 +145,10 @@ function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWit
     expect(result.legalActions).toEqual(getDuelLegalActions(restored.session, waitingFor));
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, waitingFor));
   }
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
