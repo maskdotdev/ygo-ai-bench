@@ -121,7 +121,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
 
     expect(restored.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "deck", controller: 0 });
     expect(getCards(restored.session.state, 0, "deck").map((card) => card.uid)[0]).toBe(target!.uid);
-    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "sentToDeck", eventCode: 1013, eventCardUid: target!.uid })]));
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToDeck")).toEqual([
+      {
+        eventName: "sentToDeck",
+        eventCode: 1013,
+        eventCardUid: target!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: phoenixWing!.uid,
+        eventReasonEffectId: 3,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "deck",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+    ]);
     expect(restored.session.state.cards.find((card) => card.uid === phoenixWing!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.host.messages).toContain("phoenix wing chain starter resolved");
     expect(restored.host.messages).not.toContain("phoenix wing chain responder resolved");
