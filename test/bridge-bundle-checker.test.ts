@@ -23,6 +23,17 @@ describe("bridge bundle checker", () => {
     expect(result.stderr).toContain("is missing browser bridge API snippets: legalActions, legalActionGroups, runScripted");
   });
 
+  it("fails when the browser bridge bundle contains Node-facing snippets", () => {
+    const root = makeTempRoot();
+    const bridge = path.join(root, "playtest-engine.js");
+    fs.writeFileSync(bridge, "window.duelDeckPlaytest = { legalActions(){}, legalActionGroups(){}, runScripted(){} }; require(\"fs\");\n");
+
+    const result = spawnSync(process.execPath, [checkerPath, "--bridge", bridge], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("contains Node-facing snippets: require(\"fs\")");
+  });
+
   it("passes when the browser bridge API surface is present", () => {
     const root = makeTempRoot();
     const bridge = path.join(root, "playtest-engine.js");
