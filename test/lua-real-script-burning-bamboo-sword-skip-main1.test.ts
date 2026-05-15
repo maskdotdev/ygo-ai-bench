@@ -102,9 +102,42 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bu
     const result = applyLuaRestoreResponse(restoredTrigger, trigger!);
     expect(result.ok, result.error).toBe(true);
     passChainUntilOpen(restoredTrigger.session);
-    expect(restoredTrigger.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: burning.uid, event: "continuous", code: 182, targetRange: [0, 1], reset: { flags: 0x60000200 } })]),
-    );
+    expect(restoredTrigger.session.state.effects.find((effect) => effect.sourceUid === burning.uid && effect.event === "continuous" && effect.code === 182)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 182,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-7-182",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 2048,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:55870497:lua-7-182",
+        "reset": {
+          "flags": 1610613248,
+        },
+        "sourceUid": "p0-deck-55870497-0",
+        "target": [Function],
+        "targetRange": [
+          0,
+          1,
+        ],
+      }
+    `);
     // Isolate the generated phase lock; the chain event can leave Burning's optional watcher available again.
     restoredTrigger.session.state.pendingTriggers = [];
 

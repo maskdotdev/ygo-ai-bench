@@ -98,18 +98,83 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === nose!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTrigger, trigger!);
-    expect(restoredTrigger.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: nose!.uid, event: "continuous", code: 183, controller: 0, targetRange: [0, 1] })]),
-    );
+    expect(restoredTrigger.session.state.effects.find((effect) => effect.sourceUid === nose!.uid && effect.event === "continuous" && effect.code === 183)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 183,
+        "controller": 0,
+        "cost": [Function],
+        "description": 37711905,
+        "event": "continuous",
+        "id": "lua-8-183",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 67110912,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:2356994:lua-8-183",
+        "reset": {
+          "count": 1,
+          "flags": 1610613248,
+        },
+        "sourceUid": "p0-deck-2356994-0",
+        "target": [Function],
+        "targetRange": [
+          0,
+          1,
+        ],
+      }
+    `);
 
     const restoredPhaseLock = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), workspace, reader);
     expect(restoredPhaseLock.restoreComplete, restoredPhaseLock.incompleteReasons.join("; ")).toBe(true);
     expect(restoredPhaseLock.missingRegistryKeys).toEqual([]);
     expect(restoredPhaseLock.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredPhaseLock, 0);
-    expect(restoredPhaseLock.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: nose!.uid, event: "continuous", code: 183, controller: 0, targetRange: [0, 1] })]),
-    );
+    expect(restoredPhaseLock.session.state.effects.find((effect) => effect.sourceUid === nose!.uid && effect.event === "continuous" && effect.code === 183)).toMatchInlineSnapshot(`
+      {
+        "code": 183,
+        "controller": 0,
+        "description": 37711905,
+        "event": "continuous",
+        "id": "lua-8-183",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "property": 67110912,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:2356994:lua-8-183",
+        "reset": {
+          "count": 1,
+          "flags": 1610613248,
+        },
+        "sourceUid": "p0-deck-2356994-0",
+        "targetRange": [
+          0,
+          1,
+        ],
+      }
+    `);
     passBattleResponses(restoredPhaseLock);
     moveToMain2AndEndTurn(restoredPhaseLock.session, 0);
 

@@ -57,35 +57,83 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     );
     expect(leave.ok, leave.error).toBe(true);
     expect(host.messages).toContain("grandsoil leave event raised");
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: grandsoil.uid,
-          code: 183,
-          controller: 0,
-          targetRange: [1, 0],
-          reset: { flags: 0x50000200, count: 2 },
-          label: skipLabel,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.sourceUid === grandsoil.uid && effect.code === 183 && effect.label === skipLabel)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 183,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-6-183",
+        "label": 1,
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 2048,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:61468779:lua-6-183",
+        "reset": {
+          "count": 2,
+          "flags": 1342177792,
+        },
+        "sourceUid": "p0-deck-61468779-0",
+        "target": [Function],
+        "targetRange": [
+          1,
+          0,
+        ],
+      }
+    `);
 
     const restoredSameTurn = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredSameTurn.restoreComplete, restoredSameTurn.incompleteReasons.join("; ")).toBe(true);
     expect(restoredSameTurn.missingRegistryKeys).toEqual([]);
     expect(restoredSameTurn.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restoredSameTurn.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: grandsoil.uid,
-          code: 183,
-          controller: 0,
-          targetRange: [1, 0],
-          reset: { flags: 0x50000200, count: 2 },
-          label: skipLabel,
-        }),
-      ]),
-    );
+    expect(restoredSameTurn.session.state.effects.find((effect) => effect.sourceUid === grandsoil.uid && effect.code === 183 && effect.label === skipLabel)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 183,
+        "controller": 0,
+        "event": "continuous",
+        "id": "lua-6-183",
+        "label": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "property": 2048,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:61468779:lua-6-183",
+        "reset": {
+          "count": 2,
+          "flags": 1342177792,
+        },
+        "sourceUid": "p0-deck-61468779-0",
+        "targetRange": [
+          1,
+          0,
+        ],
+      }
+    `);
     expect(getLuaRestoreLegalActionGroups(restoredSameTurn, 0)).toEqual(getGroupedDuelLegalActions(restoredSameTurn.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredSameTurn, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restoredSameTurn, 0),

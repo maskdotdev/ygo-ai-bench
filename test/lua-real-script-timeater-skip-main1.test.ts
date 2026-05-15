@@ -91,9 +91,42 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ti
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     const result = applyLuaRestoreResponse(restoredTrigger, trigger!);
     expect(result.ok, result.error).toBe(true);
-    expect(restoredTrigger.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: timeater.uid, event: "continuous", code: 182, targetRange: [0, 1], reset: { flags: 0x60000004 } })]),
-    );
+    expect(restoredTrigger.session.state.effects.find((effect) => effect.sourceUid === timeater.uid && effect.event === "continuous" && effect.code === 182)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 182,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-182",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 2048,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:44913552:lua-2-182",
+        "reset": {
+          "flags": 1610612740,
+        },
+        "sourceUid": "p0-deck-44913552-0",
+        "target": [Function],
+        "targetRange": [
+          0,
+          1,
+        ],
+      }
+    `);
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), workspace, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);

@@ -104,9 +104,44 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     const result = applyLuaRestoreResponse(restoredTrigger, trigger!);
     expect(result.ok, result.error).toBe(true);
     passChainUntilOpen(restoredTrigger.session);
-    expect(restoredTrigger.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: master.uid, event: "continuous", code: 184, targetRange: [0, 1], reset: expect.objectContaining({ flags: 0x60000200 }) })]),
-    );
+    expect(restoredTrigger.session.state.effects.find((effect) => effect.sourceUid === master.uid && effect.event === "continuous" && effect.code === 184)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 184,
+        "controller": 0,
+        "cost": [Function],
+        "description": 204809027,
+        "event": "continuous",
+        "id": "lua-6-184",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 67110912,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:12800564:lua-6-184",
+        "reset": {
+          "count": 1,
+          "flags": 1610613248,
+        },
+        "sourceUid": "p0-deck-12800564-0",
+        "target": [Function],
+        "targetRange": [
+          0,
+          1,
+        ],
+      }
+    `);
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), workspace, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
