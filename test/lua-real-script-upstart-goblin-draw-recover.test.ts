@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -89,12 +90,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Up
 
     expect(restored.session.state.cards.find((card) => card.uid === drawn!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restored.session.state.players[1].lifePoints).toBe(9000);
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventValue: 1, eventUids: [drawn!.uid] }),
-        expect.objectContaining({ eventName: "recoveredLifePoints", eventCode: 1112, eventPlayer: 1, eventValue: 1000 }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => ["cardsDrawn", "recoveredLifePoints"].includes(event.eventName))).toEqual([
+      {
+        eventName: "cardsDrawn",
+        eventCode: 1110,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventUids: [drawn!.uid],
+        eventCardUid: drawn!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: upstart!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: { controller: 0, location: "deck", sequence: 0, position: "faceDown", faceUp: false },
+        eventCurrentState: { controller: 0, location: "hand", sequence: 0, position: "faceDown", faceUp: false },
+      },
+      {
+        eventName: "recoveredLifePoints",
+        eventCode: 1112,
+        eventPlayer: 1,
+        eventValue: 1000,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: upstart!.uid,
+        eventReasonEffectId: 1,
+      },
+    ]);
     expect(restored.session.state.cards.find((card) => card.uid === upstart!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.host.messages).not.toContain("upstart goblin responder resolved");
   });
