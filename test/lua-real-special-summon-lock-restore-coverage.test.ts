@@ -394,6 +394,9 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     {
       file: "test/lua-real-script-astral-kuriboh-extra-number-xyz-lock.test.ts",
       requiredSnippets: [
+        "SetLabelObject(number_xyz)",
+        "special-summon-limit:not-setcode-type-extra:72:8388608",
+        "targetRange: [1, 0]",
         "astral off-set xyz special 0",
         "astral number fusion special 0",
         "astral number xyz special 1",
