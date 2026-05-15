@@ -70,23 +70,96 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bo
     expect(starterAction).toBeDefined();
     applyAndAssert(session, starterAction!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({ sourceUid: starter!.uid, eventName: "normalSummoned", eventCardUid: summoned!.uid });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 1,
+        "chainIndex": 1,
+        "effectId": "lua-1-1100",
+        "eventCardUid": "p0-deck-872-0",
+        "eventCode": 1100,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "normalSummoned",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReason": 16,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-3",
+        "player": 0,
+        "sourceUid": "p0-deck-870-1",
+      }
+    `);
 
     const bottomlessAction = getLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.uid === bottomless!.uid);
     expect(bottomlessAction).toBeDefined();
     applyAndAssert(session, bottomlessAction!);
     expect(session.state.chain).toHaveLength(2);
-    expect(session.state.chain[1]).toMatchObject({
-      sourceUid: bottomless!.uid,
-      eventName: "normalSummoned",
-      eventCode: 1100,
-      eventCardUid: summoned!.uid,
-      targetUids: [summoned!.uid],
-      operationInfos: [
-        { category: 0x1, targetUids: [summoned!.uid], count: 1, player: 0, parameter: 0 },
-        { category: 0x4, targetUids: [summoned!.uid], count: 1, player: 0, parameter: 0 },
-      ],
-    });
+    expect(session.state.chain[1]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 2,
+        "effectId": "lua-3-1100",
+        "eventCardUid": "p0-deck-872-0",
+        "eventCode": 1100,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "normalSummoned",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReason": 16,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-4",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-872-0",
+            ],
+          },
+          {
+            "category": 4,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-872-0",
+            ],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-29401950-0",
+        "targetUids": [
+          "p0-deck-872-0",
+        ],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -95,17 +168,60 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bo
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(restored.session.state.chain).toHaveLength(2);
-    expect(restored.session.state.chain[1]).toMatchObject({
-      sourceUid: bottomless!.uid,
-      eventName: "normalSummoned",
-      eventCode: 1100,
-      eventCardUid: summoned!.uid,
-      targetUids: [summoned!.uid],
-      operationInfos: [
-        { category: 0x1, targetUids: [summoned!.uid], count: 1, player: 0, parameter: 0 },
-        { category: 0x4, targetUids: [summoned!.uid], count: 1, player: 0, parameter: 0 },
-      ],
-    });
+    expect(restored.session.state.chain[1]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 2,
+        "effectId": "lua-3-1100",
+        "eventCardUid": "p0-deck-872-0",
+        "eventCode": 1100,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "normalSummoned",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReason": 16,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-4",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-872-0",
+            ],
+          },
+          {
+            "category": 4,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-872-0",
+            ],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-29401950-0",
+        "targetUids": [
+          "p0-deck-872-0",
+        ],
+      }
+    `);
 
     const pass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();

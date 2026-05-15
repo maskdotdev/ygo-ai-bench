@@ -90,19 +90,88 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
     expect(starterAction).toBeDefined();
     applyAndAssert(session, starterAction!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({ sourceUid: starter!.uid, eventName: "normalSummoned", eventCardUid: summoned!.uid });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 1,
+        "chainIndex": 1,
+        "effectId": "lua-1-1100",
+        "eventCardUid": "p0-deck-884-0",
+        "eventCode": 1100,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 1,
+        },
+        "eventName": "normalSummoned",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReason": 16,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-3",
+        "player": 0,
+        "sourceUid": "p0-deck-882-1",
+      }
+    `);
 
     const torrentialAction = getLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.uid === torrential!.uid);
     expect(torrentialAction).toBeDefined();
     applyAndAssert(session, torrentialAction!);
     expect(session.state.chain).toHaveLength(2);
     const destroyedUids = [summoned!.uid, turnAlly!.uid, opponentFirst!.uid, opponentSecond!.uid];
-    expect(session.state.chain[1]).toMatchObject({
-      sourceUid: torrential!.uid,
-      eventName: "normalSummoned",
-      eventCode: 1100,
-      eventCardUid: summoned!.uid,
-    });
+    expect(session.state.chain[1]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 2,
+        "effectId": "lua-3-1100",
+        "eventCardUid": "p0-deck-884-0",
+        "eventCode": 1100,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 1,
+        },
+        "eventName": "normalSummoned",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReason": 16,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-4",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 4,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-886-1",
+              "p1-deck-887-2",
+              "p0-deck-885-3",
+              "p0-deck-884-0",
+            ],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-53582587-0",
+      }
+    `);
     assertDestroyOperationInfo(session.state.chain[1]!, destroyedUids);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
@@ -112,12 +181,51 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(restored.session.state.chain).toHaveLength(2);
-    expect(restored.session.state.chain[1]).toMatchObject({
-      sourceUid: torrential!.uid,
-      eventName: "normalSummoned",
-      eventCode: 1100,
-      eventCardUid: summoned!.uid,
-    });
+    expect(restored.session.state.chain[1]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 2,
+        "effectId": "lua-3-1100",
+        "eventCardUid": "p0-deck-884-0",
+        "eventCode": 1100,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 1,
+        },
+        "eventName": "normalSummoned",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReason": 16,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-4",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 4,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-886-1",
+              "p1-deck-887-2",
+              "p0-deck-885-3",
+              "p0-deck-884-0",
+            ],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-53582587-0",
+      }
+    `);
     assertDestroyOperationInfo(restored.session.state.chain[1]!, destroyedUids);
 
     const pass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");

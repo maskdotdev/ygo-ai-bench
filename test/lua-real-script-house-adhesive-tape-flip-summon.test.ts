@@ -90,7 +90,37 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ho
     expect(starterAction).toBeDefined();
     applyAndAssert(session, starterAction!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({ sourceUid: starter.uid, eventName: "flipSummoned", eventCardUid: flipTarget.uid });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-3-1101",
+        "eventCardUid": "p1-deck-15083729-0",
+        "eventCode": 1101,
+        "eventCurrentState": {
+          "controller": 1,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "flipSummoned",
+        "eventPreviousState": {
+          "controller": 1,
+          "faceUp": false,
+          "location": "deck",
+          "position": "faceDown",
+          "sequence": 1,
+        },
+        "eventReason": 0,
+        "eventReasonPlayer": 1,
+        "eventTriggerTiming": "when",
+        "id": "chain-3",
+        "player": 1,
+        "sourceUid": "p1-deck-15083730-1",
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

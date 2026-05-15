@@ -16,15 +16,21 @@ function main(argv) {
   const testRoot = path.resolve(options.testRoot ?? defaultTestRoot);
   const realScriptFiles = realScriptFixtureFiles(testRoot);
   const broadMatchers = [];
+  const partialEventMatchObjects = [];
 
   for (const file of realScriptFiles) {
     const text = fs.readFileSync(file, "utf8");
     for (const matcher of broadEventMatchers(text)) {
       broadMatchers.push(`${toRepoPath(file)}:${lineNumber(text, matcher.index)}`);
     }
+    for (const matcher of partialEventToMatchObjects(text)) {
+      partialEventMatchObjects.push(`${toRepoPath(file)}:${lineNumber(text, matcher.index)}`);
+    }
   }
 
-  console.log(`Lua real-script event assertions: ${realScriptFiles.length} fixtures, ${broadMatchers.length} broad event matchers`);
+  console.log(
+    `Lua real-script event assertions: ${realScriptFiles.length} fixtures, ${broadMatchers.length} broad event matchers, ${partialEventMatchObjects.length} partial event matchObjects`,
+  );
 
   const failures = [];
   if (options.minFixtures !== undefined && realScriptFiles.length < options.minFixtures) {
@@ -35,6 +41,14 @@ function main(argv) {
   }
   if (options.failOnBroadEventMatchers && broadMatchers.length > 0) {
     failures.push(`Broad event matchers must use exact event payload assertions:\n${formatList(broadMatchers)}`);
+  }
+  if (options.maxPartialEventMatchObjects !== undefined && partialEventMatchObjects.length > options.maxPartialEventMatchObjects) {
+    failures.push(
+      `Partial event matchObject assertions ${partialEventMatchObjects.length} is above allowed ${options.maxPartialEventMatchObjects}:\n${formatList(partialEventMatchObjects)}`,
+    );
+  }
+  if (options.failOnPartialEventMatchObjects && partialEventMatchObjects.length > 0) {
+    failures.push(`Partial event matchObject assertions must use exact event payload assertions:\n${formatList(partialEventMatchObjects)}`);
   }
 
   if (failures.length === 0) return 0;
@@ -50,7 +64,9 @@ function parseArgs(argv) {
     else if (arg === "--test-root") options.testRoot = requireOptionValue(argv, ++index, arg);
     else if (arg === "--min-fixtures") options.minFixtures = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
     else if (arg === "--max-broad-event-matchers") options.maxBroadEventMatchers = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
+    else if (arg === "--max-partial-event-match-objects") options.maxPartialEventMatchObjects = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
     else if (arg === "--fail-on-broad-event-matchers") options.failOnBroadEventMatchers = true;
+    else if (arg === "--fail-on-partial-event-match-objects") options.failOnPartialEventMatchObjects = true;
     else throw new Error(`Unknown argument: ${arg}`);
   }
   return options;
@@ -88,6 +104,25 @@ function broadEventMatchers(text) {
     }
     const body = text.slice(index, end);
     if (/\beventName\s*:/.test(body)) matches.push({ index });
+    searchIndex = end;
+  }
+  return matches;
+}
+
+function partialEventToMatchObjects(text) {
+  const matches = [];
+  let searchIndex = 0;
+  const marker = ".toMatchObject({";
+  while (searchIndex < text.length) {
+    const index = text.indexOf(marker, searchIndex);
+    if (index === -1) break;
+    const end = matchingCallEnd(text, index + marker.length);
+    if (end === -1) {
+      searchIndex = index + marker.length;
+      continue;
+    }
+    const body = text.slice(index, end);
+    if (/\beventName\s*:/.test(body) || /\beventCode\s*:/.test(body)) matches.push({ index });
     searchIndex = end;
   }
   return matches;
@@ -137,7 +172,11 @@ Options:
   --test-root <path>                  Test directory to scan. Default: ${defaultTestRoot}
   --min-fixtures <count>              Fail unless at least this many real-script fixtures are scanned
   --max-broad-event-matchers <count>  Fail when broad event matchers exceed this count
+  --max-partial-event-match-objects <count>
+                                      Fail when partial event matchObjects exceed this count
   --fail-on-broad-event-matchers      Fail when real-script tests use broad eventName objectContaining matchers
+  --fail-on-partial-event-match-objects
+                                      Fail when real-script tests use event toMatchObject partials
 `);
 }
 

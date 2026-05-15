@@ -111,7 +111,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mo
     expect(endPhase, JSON.stringify(getLuaRestoreLegalActions(restoredPersistent, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredPersistent, endPhase!);
     expect(restoredPersistent.session.state.phase).toBe("end");
-    expect(restoredPersistent.session.state.pendingTriggers[0]).toMatchObject({ eventName: "phaseEnd", eventCode: 0x1200 });
+    expect(restoredPersistent.session.state.pendingTriggers[0]).toMatchInlineSnapshot(`
+      {
+        "effectId": "lua-3-4608",
+        "eventCode": 4608,
+        "eventName": "phaseEnd",
+        "eventTriggerTiming": "when",
+        "id": "trigger-6-1",
+        "player": 0,
+        "sourceUid": "p0-deck-14005031-0",
+        "triggerBucket": "turnMandatory",
+      }
+    `);
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredPersistent.session), source, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
