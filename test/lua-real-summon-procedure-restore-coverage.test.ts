@@ -16,6 +16,7 @@ describe("Lua real summon procedure restore coverage", () => {
     expect(text.includes("restoreComplete")).toBe(true);
     expect(text.includes('incompleteReasons.join("; ")')).toBe(true);
     expect(text.includes("missingRegistryKeys).toEqual([])")).toBe(true);
+    expect(text.includes("missingChainLimitRegistryKeys).toEqual([])")).toBe(true);
     expect(text.includes("getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0))")).toBe(true);
     expect(text.includes('action.type === "specialSummonProcedure"')).toBe(true);
     expect(text.includes('action.type === "xyzSummon"')).toBe(true);
@@ -28,5 +29,6 @@ describe("Lua real summon procedure restore coverage", () => {
     expect(text.includes("real cannot-be-Special-Summoned conditions for Spirit monsters")).toBe(true);
     expect(text.includes("real Gemini second Normal Summon triggers")).toBe(true);
     expect(text.includes("triggerRestored.missingRegistryKeys).toEqual([])")).toBe(true);
+    expect(text.includes("triggerRestored.missingChainLimitRegistryKeys).toEqual([])")).toBe(true);
   });
 });
