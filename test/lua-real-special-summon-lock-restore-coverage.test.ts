@@ -409,6 +409,8 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     {
       file: "test/lua-real-script-heraldic-beast-gryphon-extra-xyz-only-lock.test.ts",
       requiredSnippets: [
+        "target:extra-summon-type-not:",
+        "targetRange: [1, 0]",
         "gryphon xyz special 1",
         "gryphon fusion special 0",
         "gryphon hand special 1",
@@ -443,6 +445,8 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     {
       file: "test/lua-real-script-nebula-dragon-light-dark-dragon-lock.test.ts",
       requiredSnippets: [
+        "target:not-race-attribute:8192:48",
+        "targetRange: [1, 0]",
         "nebula fire dragon special 0",
         "nebula light warrior special 0",
         "nebula light dragon special 1",
