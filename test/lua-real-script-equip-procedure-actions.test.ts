@@ -642,12 +642,35 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(restoredTriggerWindow.session.state.chain).toEqual([]);
     expect(restoredTriggerWindow.session.state.pendingTriggers).toEqual([]);
     expect(restoredTriggerWindow.session.state.cards.find((card) => card.uid === drawCard!.uid)).toMatchObject({ location: "hand", controller: 0 });
-    expect(restoredTriggerWindow.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleDestroyed", eventCode: 1140, eventCardUid: battleTarget!.uid }),
-        expect.objectContaining({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventValue: 1, eventUids: [drawCard!.uid] }),
-      ]),
-    );
+    expect(restoredTriggerWindow.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "battleDestroyed", eventCode: 1140, eventCardUid: battleTarget!.uid })]));
+    expect(restoredTriggerWindow.session.state.eventHistory.filter((event) => event.eventName === "cardsDrawn")).toEqual([
+      {
+        eventName: "cardsDrawn",
+        eventCode: 1110,
+        eventCardUid: drawCard!.uid,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventUids: [drawCard!.uid],
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: base!.uid,
+        eventReasonEffectId: 5,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 4,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
   });
 
   it("restores Hercules Base graveyard trigger target and to-Deck operation", () => {
