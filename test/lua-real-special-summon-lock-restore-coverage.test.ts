@@ -523,6 +523,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-pendulum-area-summon-type-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: `target:special-summon-type-not:${luaSummonTypePendulum}`',
+        "targetRange: [1, 1]",
         "pendulum area generic special 0",
         "pendulum area pendulum special 1",
       ],
@@ -677,6 +678,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       requiredSnippets: [
         "target:special-summon-type-is",
         "luaSummonTypePendulum",
+        "targetRange: [1, 0]",
         "phantasma pendulum special 0",
         "phantasma regular special 1",
       ],
