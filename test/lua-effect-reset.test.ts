@@ -3,7 +3,7 @@ import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, restoreDuel, serializeDuel } from "#duel/core.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createCardReader } from "#engine/data-loaders.js";
-import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import { setupLuaChainFixture } from "./lua-chain-fixtures.js";
 
 describe("Lua effect reset", () => {
@@ -275,7 +275,10 @@ describe("Lua effect reset", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c23106.lua" ? script : undefined }, createCardReader(cardData));
     expect(restored.restoreComplete).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.session.state.effects).toEqual([expect.objectContaining({ reset: { flags: 0x40000000 + 0x200 + 0x10000000, count: 1 } })]);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 
     const restoredOpponentEnd = getDuelLegalActions(restored.session, 1).find((candidate) => candidate.type === "endTurn");
     expect(getGroupedDuelLegalActions(restored.session, 1).flatMap((group) => group.actions)).toContainEqual(restoredOpponentEnd);
@@ -589,7 +592,13 @@ describe("Lua effect reset", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: (name) => name === "c26110.lua" ? script : undefined }, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.session.state.effects).toEqual([expect.objectContaining({ id: expect.any(String), reset: { flags: 0x1000 + 0x1000000, count: 1 } })]);
+    const restoredPlayer = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    expect(getLuaRestoreLegalActionGroups(restored, restoredPlayer)).toEqual(getGroupedDuelLegalActions(restored.session, restoredPlayer));
+    expect(getLuaRestoreLegalActionGroups(restored, restoredPlayer).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restored, restoredPlayer),
+    );
     const restoredSource = restored.session.state.cards.find((card) => card.controller === 0 && card.code === "26110");
     expect(restoredSource).toBeDefined();
     moveDuelCard(restored.session.state, restoredSource!.uid, "hand", 0);
