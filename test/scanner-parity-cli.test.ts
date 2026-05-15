@@ -273,15 +273,27 @@ describe("parity scanner CLIs", () => {
   });
 
   it("rejects malformed provenance and legal-action scanner options", () => {
+    const missingProvenanceRoot = spawnSync(process.execPath, [provenanceScannerPath, "--test-root"], { encoding: "utf8" });
     const missingProvenanceValue = spawnSync(process.execPath, [provenanceScannerPath, "--min-files"], { encoding: "utf8" });
     const badProvenanceMinimum = spawnSync(process.execPath, [provenanceScannerPath, "--min-files", "-1"], { encoding: "utf8" });
+    const unknownProvenanceFlag = spawnSync(process.execPath, [provenanceScannerPath, "--unknown"], { encoding: "utf8" });
+    const missingLegalActionRoot = spawnSync(process.execPath, [legalActionScannerPath, "--test-root"], { encoding: "utf8" });
+    const missingLegalActionPercent = spawnSync(process.execPath, [legalActionScannerPath, "--min-action-evidence-percent"], { encoding: "utf8" });
     const badLegalActionPercent = spawnSync(process.execPath, [legalActionScannerPath, "--min-action-evidence-percent", "101"], { encoding: "utf8" });
     const unknownLegalActionFlag = spawnSync(process.execPath, [legalActionScannerPath, "--unknown"], { encoding: "utf8" });
 
+    expect(missingProvenanceRoot.status).toBe(1);
+    expect(missingProvenanceRoot.stderr).toContain("Missing value for --test-root");
     expect(missingProvenanceValue.status).toBe(1);
     expect(missingProvenanceValue.stderr).toContain("Missing value for --min-files");
     expect(badProvenanceMinimum.status).toBe(1);
     expect(badProvenanceMinimum.stderr).toContain("--min-files must be a non-negative integer");
+    expect(unknownProvenanceFlag.status).toBe(1);
+    expect(unknownProvenanceFlag.stderr).toContain("Unknown argument: --unknown");
+    expect(missingLegalActionRoot.status).toBe(1);
+    expect(missingLegalActionRoot.stderr).toContain("Missing value for --test-root");
+    expect(missingLegalActionPercent.status).toBe(1);
+    expect(missingLegalActionPercent.stderr).toContain("Missing value for --min-action-evidence-percent");
     expect(badLegalActionPercent.status).toBe(1);
     expect(badLegalActionPercent.stderr).toContain("--min-action-evidence-percent must be a percentage from 0 to 100");
     expect(unknownLegalActionFlag.status).toBe(1);
