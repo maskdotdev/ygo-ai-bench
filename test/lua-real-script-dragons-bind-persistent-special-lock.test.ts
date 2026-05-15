@@ -94,10 +94,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredActivation, activation!);
 
-    expect(restoredActivation.session.state.chain[0]).toMatchObject({
-      sourceUid: bind!.uid,
-      targetUids: [target!.uid],
-    });
+    expect(restoredActivation.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "player": 0,
+        "sourceUid": "p0-deck-16278116-0",
+        "targetUids": [
+          "p0-deck-613501-1",
+        ],
+      }
+    `);
     expect(restoredActivation.session.state.chain[0]?.operationInfos ?? []).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredActivation, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
 
