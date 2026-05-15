@@ -88,10 +88,26 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     const counterIgnition = getLuaRestoreLegalActions(restoredCounterIgnition, 0).find((action) => action.type === "activateEffect" && action.uid === valkyria!.uid);
     expect(counterIgnition, JSON.stringify(getLuaRestoreLegalActions(restoredCounterIgnition, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredCounterIgnition, counterIgnition!);
-    expect(restoredCounterIgnition.session.state.chain[0]).toMatchObject({
-      sourceUid: valkyria!.uid,
-      operationInfos: [{ category: 0x800000, targetUids: [], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restoredCounterIgnition.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 1,
+        "chainIndex": 1,
+        "effectId": "lua-6",
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 8388608,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-83269557-1",
+      }
+    `);
 
     const restoredCounterChain = restoreDuelWithLuaScripts(serializeDuel(restoredCounterIgnition.session), source, reader);
     expect(restoredCounterChain.restoreComplete, restoredCounterChain.incompleteReasons.join("; ")).toBe(true);
@@ -169,11 +185,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
         },
       },
     ]);
-    expect(restoredDestroyIgnition.session.state.chain[0]).toMatchObject({
-      sourceUid: valkyria!.uid,
-      targetUids: [destroyTarget!.uid],
-      operationInfos: [{ category: 0x1, targetUids: [destroyTarget!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restoredDestroyIgnition.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 1,
+        "chainIndex": 1,
+        "effectId": "lua-7",
+        "id": "chain-5",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-83269558-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-83269557-1",
+        "targetUids": [
+          "p0-deck-83269558-0",
+        ],
+      }
+    `);
 
     const restoredDestroyChain = restoreDuelWithLuaScripts(serializeDuel(restoredDestroyIgnition.session), source, reader);
     expect(restoredDestroyChain.restoreComplete, restoredDestroyChain.incompleteReasons.join("; ")).toBe(true);

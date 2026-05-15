@@ -73,11 +73,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const activate = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === booster!.uid);
     expect(activate, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredActivation, activate!);
-    expect(restoredActivation.session.state.chain[0]).toMatchObject({
-      sourceUid: booster!.uid,
-      targetUids: [slime!.uid],
-      operationInfos: [{ category: 0x40000, targetUids: [booster!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restoredActivation.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 262144,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-18096222-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-18096222-0",
+        "targetUids": [
+          "p0-deck-3918345-1",
+        ],
+      }
+    `);
     expect(restoredActivation.session.state.effects).toEqual(
       expect.arrayContaining([expect.objectContaining({ sourceUid: booster!.uid, event: "continuous", code: 17, range: ["spellTrapZone"] })]),
     );
