@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -87,11 +88,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script De
     expect(restored.session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restored.session.state.cards.find((card) => card.uid === defender!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "damageStepEnded", eventCode: 1141, eventCardUid: attacker!.uid, eventUids: [attacker!.uid, defender!.uid] }),
-        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: attacker!.uid }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ eventName: "damageStepEnded", eventCode: 1141, eventCardUid: attacker!.uid, eventUids: [attacker!.uid, defender!.uid] })]),
     );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === attacker!.uid)).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: attacker!.uid,
+        eventPreviousState: {
+          location: "monsterZone",
+          controller: 1,
+          sequence: 0,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventCurrentState: {
+          location: "graveyard",
+          controller: 1,
+          sequence: 0,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: punch!.uid,
+        eventReasonEffectId: 1,
+      },
+    ]);
   });
 });
 
