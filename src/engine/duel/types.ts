@@ -730,8 +730,10 @@ export interface ScriptedDuelRunResult extends ApplyDuelResponseResult {
   divergencePlayer?: PlayerId;
   divergenceWindowId?: number;
   divergenceWindowKind?: DuelActionWindowKind;
+  divergenceWindowToken?: string;
   divergenceGroupKey?: string;
   divergenceGroupLabel?: string;
+  divergenceActions?: DuelAction[];
 }
 
 export interface SerializedDuel {

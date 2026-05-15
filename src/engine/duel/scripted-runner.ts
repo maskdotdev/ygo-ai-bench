@@ -38,11 +38,24 @@ function scriptedRunResult(
   return {
     ok: failure === undefined,
     ...(failedStep === undefined ? {} : { failedStep }),
-    ...(failure === undefined ? {} : { failure, error: failure, divergencePlayer: player, divergenceWindowId: session.state.actionWindowId }),
+    ...(failure === undefined
+      ? {}
+      : {
+          failure,
+          error: failure,
+          divergencePlayer: player,
+          divergenceWindowId: session.state.actionWindowId,
+          divergenceWindowToken: session.state.actionWindowToken,
+          divergenceActions: legalActions.map(copyDuelAction),
+        }),
     ...(failure === undefined || state.windowKind === undefined ? {} : { divergenceWindowKind: state.windowKind }),
     ...(failure === undefined || divergenceGroup === undefined ? {} : { divergenceGroupKey: divergenceGroup.key, divergenceGroupLabel: divergenceGroup.label }),
     state,
     legalActions,
     legalActionGroups,
   };
+}
+
+function copyDuelAction(action: DuelAction): DuelAction {
+  return { ...action };
 }

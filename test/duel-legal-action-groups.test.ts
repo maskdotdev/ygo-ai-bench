@@ -237,8 +237,13 @@ describe("duel legal action groups", () => {
     expect(failure.divergencePlayer).toBe(0);
     expect(failure.divergenceWindowId).toBe(session.state.actionWindowId);
     expect(failure.divergenceWindowKind).toBe("open");
+    expect(failure.divergenceWindowToken).toBe(session.state.actionWindowToken);
     expect(failure.divergenceGroupKey).toBe(failure.legalActionGroups[0]?.key);
     expect(failure.divergenceGroupLabel).toBe(failure.legalActionGroups[0]?.label);
+    expect(failure.divergenceActions).toEqual(failure.legalActions);
+    expect(failure.divergenceActions).not.toBe(failure.legalActions);
+    failure.divergenceActions![0]!.label = "Mutated divergence action";
+    expect(failure.legalActions[0]?.label).not.toBe("Mutated divergence action");
 
     const wrongPlayer = runScriptedDuelResponses(session, [{ type: "normalSummon", player: 1, code: "300", location: "hand" }]);
     expect(wrongPlayer.ok).toBe(false);
@@ -246,9 +251,11 @@ describe("duel legal action groups", () => {
     expect(wrongPlayer.divergencePlayer).toBe(1);
     expect(wrongPlayer.divergenceWindowId).toBe(session.state.actionWindowId);
     expect(wrongPlayer.divergenceWindowKind).toBe("open");
+    expect(wrongPlayer.divergenceWindowToken).toBe(session.state.actionWindowToken);
     expect(wrongPlayer.legalActions).toEqual(getDuelLegalActions(session, 1));
     expect(wrongPlayer.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 1));
     expect(wrongPlayer.legalActionGroups.flatMap((group) => group.actions)).toEqual(wrongPlayer.legalActions);
+    expect(wrongPlayer.divergenceActions).toEqual(wrongPlayer.legalActions);
     expect(wrongPlayer.divergenceGroupKey).toBeUndefined();
     expect(wrongPlayer.divergenceGroupLabel).toBeUndefined();
   });
