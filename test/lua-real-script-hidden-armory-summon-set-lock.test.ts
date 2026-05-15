@@ -87,10 +87,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
     expect(restored.session.state.eventHistory).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: milledCard!.uid }),
-        expect.objectContaining({ eventName: "sentToHand", eventCardUid: equip.uid }),
         expect.objectContaining({ eventName: "sentToHandConfirmed", eventPlayer: 1, eventUids: [equip.uid] }),
       ]),
     );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToHand")).toEqual([
+      {
+        eventName: "sentToHand",
+        eventCode: 1012,
+        eventCardUid: equip.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: hiddenArmory.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 1,
+        },
+      },
+    ]);
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
