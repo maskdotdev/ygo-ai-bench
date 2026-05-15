@@ -51,6 +51,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sc
     const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredBattle.restoreComplete, restoredBattle.incompleteReasons.join("; ")).toBe(true);
     expect(restoredBattle.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredBattle, 0);
     expect(restoredBattle.session.state.flagEffects).toEqual(expect.arrayContaining([expect.objectContaining({ ownerId: scrapWorm!.uid, code: Number(scrapWormCode) })]));
     const main2 = getLuaRestoreLegalActions(restoredBattle, 0).find((action) => action.type === "changePhase" && action.phase === "main2");
     expect(main2).toBeDefined();
@@ -100,6 +101,11 @@ function passBattleResponses(session: DuelSession): void {
     expect(pass).toBeDefined();
     applyAndAssert(session, pass!);
   }
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function applyAndAssert(session: DuelSession, action: DuelAction) {

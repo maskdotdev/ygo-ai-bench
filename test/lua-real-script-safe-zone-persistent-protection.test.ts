@@ -59,6 +59,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expectCleanRestore(restoredActivation);
+    expectRestoredLegalActions(restoredActivation, 0);
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === safeZone!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
@@ -85,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
 
     const restoredProtection = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expectCleanRestore(restoredProtection);
+    expectRestoredLegalActions(restoredProtection, 0);
     const protectionProbe = restoredProtection.host.loadScript(
       protectionProbeScript(safeZoneCode, targetCode, responderCode),
       "safe-zone-persistent-protection-probe.lua",
@@ -101,6 +103,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
 
     const restoredTargetLeaves = restoreDuelWithLuaScripts(protectedSnapshot, source, reader);
     expectCleanRestore(restoredTargetLeaves);
+    expectRestoredLegalActions(restoredTargetLeaves, 0);
     sendDuelCardToGraveyard(restoredTargetLeaves.session.state, target!.uid, 0, duelReason.effect, 0);
     expect(restoredTargetLeaves.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredTargetLeaves.session.state.cards.find((card) => card.uid === safeZone!.uid)).toMatchObject({
@@ -111,6 +114,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
 
     const restoredHandlerLeaves = restoreDuelWithLuaScripts(protectedSnapshot, source, reader);
     expectCleanRestore(restoredHandlerLeaves);
+    expectRestoredLegalActions(restoredHandlerLeaves, 0);
     destroyDuelCard(restoredHandlerLeaves.session.state, safeZone!.uid, 0, duelReason.effect | duelReason.destroy, 1);
     expect(restoredHandlerLeaves.session.state.cards.find((card) => card.uid === safeZone!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredHandlerLeaves.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({
@@ -120,6 +124,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
     });
     const restoredDestroyed = restoreDuelWithLuaScripts(serializeDuel(restoredHandlerLeaves.session), source, reader);
     expectCleanRestore(restoredDestroyed);
+    expectRestoredLegalActions(restoredDestroyed, 0);
   });
 });
 
@@ -175,6 +180,11 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
 function expectCleanRestore(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
   expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
   expect(restored.missingRegistryKeys).toEqual([]);
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
