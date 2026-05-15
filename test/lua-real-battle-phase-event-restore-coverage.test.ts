@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battlePhaseEventFixtureCount = 3;
+const battlePhaseEventFixtureCount = 4;
 
 describe("Lua real Battle Phase event restore coverage", () => {
   it("requires representative Battle Phase event fixtures to assert clean Lua restore", () => {
@@ -64,6 +64,17 @@ function representativeBattlePhaseEventFixtures(): Array<{ file: string; require
         'action.type === "activateTrigger"',
         'eventName: "destroyed"',
         "eventCode: 1029",
+      ],
+    },
+    {
+      file: "test/lua-real-script-skull-conductor-battle-phase-destroy.test.ts",
+      requiredSnippets: [
+        'event: "trigger"',
+        'triggerEvent: "phaseBattle"',
+        'eventName: "phaseBattle"',
+        'triggerBucket: "turnMandatory"',
+        'action.type === "activateTrigger"',
+        'eventName: "destroyed"',
       ],
     },
     {
