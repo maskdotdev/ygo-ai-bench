@@ -6,6 +6,12 @@ import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost, type LuaScriptSource } from "#lua/host.js";
 import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe("Lua battle target value callbacks", () => {
   it("applies aux.imval1 attacker immunity checks to battle target locks before and after restore", () => {
     const cards: DuelCardData[] = [
@@ -133,6 +139,7 @@ describe("Lua battle target value callbacks", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: () => undefined }, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     expect(restored.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

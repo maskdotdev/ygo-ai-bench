@@ -6,6 +6,12 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 import type { DuelCardData, DuelResponse } from "#duel/types.js";
 import { setupLuaChainFixture } from "./lua-chain-fixtures.js";
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe("Lua trigger chain windows", () => {
   it("offers Lua trigger controller quick responses when the opponent cannot chain", () => {
     const { session, host } = setupLuaChainFixture({
@@ -335,6 +341,7 @@ describe("Lua trigger chain windows", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 1);
     expect(restored.session.state.chain.map((link) => link.effectId)).toEqual([firstEffectId]);
     expect(restored.session.state.pendingTriggers.map((trigger) => restored.session.state.cards.find((card) => card.uid === trigger.sourceUid)?.code)).toEqual(["16300"]);
     expect(getLuaRestoreLegalActions(restored, 0).filter((action) => action.type === "activateTrigger")).toHaveLength(0);
@@ -446,6 +453,7 @@ describe("Lua trigger chain windows", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 1);
     const turnOpenQuickId = effectIdForSourceCode(restored.session, "17400");
     const opponentChainQuickId = effectIdForSourceCode(restored.session, "17500");
     expect(restored.session.state.chain).toHaveLength(1);
@@ -467,6 +475,7 @@ describe("Lua trigger chain windows", () => {
 
     const restoredAfterOpponentTrigger = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, createCardReader(cards));
     expect(restoredAfterOpponentTrigger.restoreComplete, restoredAfterOpponentTrigger.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredAfterOpponentTrigger, 1);
     expect(restoredAfterOpponentTrigger.session.state.chain).toHaveLength(2);
     expect(restoredAfterOpponentTrigger.session.state.pendingTriggers).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredAfterOpponentTrigger, 1).filter((action) => action.type === "activateEffect").map((action) => action.effectId)).toEqual([opponentChainQuickId]);

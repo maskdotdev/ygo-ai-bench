@@ -702,6 +702,7 @@ function assertLuaFinalOpenRestore(restored: ReturnType<typeof restoreDuelWithLu
   const publicFinalOpen = queryPublicState(restoredFinalOpen.session);
   expect(publicFinalOpen).toMatchObject({ windowKind: "open", pendingTriggerBuckets: [] });
   expect(publicFinalOpen).not.toHaveProperty("triggerOrderPrompt");
+  expectRestoredLegalActions(restoredFinalOpen, 0);
   expect(actionsWithoutWindowToken(getLuaRestoreLegalActions(restoredFinalOpen, 0))).toEqual(actionsWithoutWindowToken(getLuaRestoreLegalActions(restored, 0)));
   expect(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restoredFinalOpen, 0))).toEqual(groupsWithoutWindowToken(getLuaRestoreLegalActionGroups(restored, 0)));
   expect(getLuaRestoreLegalActionGroups(restoredFinalOpen, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredFinalOpen, 0));
