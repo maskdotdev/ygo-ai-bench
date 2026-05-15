@@ -73,6 +73,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
     const restoredSetup = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredSetup.restoreComplete, restoredSetup.incompleteReasons.join("; ")).toBe(true);
     expect(restoredSetup.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredSetup, 0);
     const attack = getLuaRestoreLegalActions(restoredSetup, 0).find(
       (action) => action.type === "declareAttack" && action.attackerUid === yamata!.uid && action.targetUid === defender!.uid,
     );
@@ -94,7 +95,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredSetup.session), workspace, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
     expect(restoredTrigger.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restoredTrigger, 0)).toEqual(getGroupedDuelLegalActions(restoredTrigger.session, 0));
+    expectRestoredLegalActions(restoredTrigger, 0);
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === yamata!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTrigger, trigger!);
@@ -126,6 +127,11 @@ function passBattleUntilTrigger(restored: ReturnType<typeof restoreDuelWithLuaSc
     expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restored, pass!);
   }
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: DuelAction): void {

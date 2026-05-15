@@ -66,7 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ze
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    assertLegalActions(restored);
+    expectRestoredLegalActions(restored);
     expect(restored.session.state.flagEffects).toEqual(expect.arrayContaining([expect.objectContaining({ ownerType: "player", ownerId: "0", code: Number(zefraathCode) })]));
     const pendulumSummon = findPendulumSummon(getLuaRestoreLegalActions(restored, 0), allowedCandidate!.uid);
     expect(pendulumSummon, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
@@ -92,11 +92,11 @@ function findPendulumSummon(actions: DuelAction[], uid: string): Extract<DuelAct
 function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: DuelAction) {
   const response = applyLuaRestoreResponse(restored, action);
   expect(response.ok, response.error).toBe(true);
-  assertLegalActions(restored);
+  expectRestoredLegalActions(restored);
   return response;
 }
 
-function assertLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
   const waitingFor = restored.session.state.waitingFor;
   if (waitingFor === undefined) return;
   expect(getLuaRestoreLegalActions(restored, waitingFor)).toEqual(getLegalActions(restored.session, waitingFor));

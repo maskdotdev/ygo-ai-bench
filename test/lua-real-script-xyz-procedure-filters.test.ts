@@ -12,6 +12,11 @@ const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xyz procedure filters", () => {
   it("restores official Xyz.AddProcedure FilterBoolFunction race filters for real extra deck summons", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
@@ -122,6 +127,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
     });
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     const action = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "xyzSummon" && candidate.uid === xyz!.uid && candidate.materialUids.length === 3);
     expect(action, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
@@ -186,7 +192,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
       });
       const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
       expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
-      expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+      expectRestoredLegalActions(restored, 0);
       return { restored, xyz };
     };
 
@@ -371,7 +377,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
       });
       const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
       expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
-      expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+      expectRestoredLegalActions(restored, 0);
       return { restored, xyz };
     };
 

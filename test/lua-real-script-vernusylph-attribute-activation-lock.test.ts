@@ -71,7 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ve
     expect(restored.missingRegistryKeys).toEqual([]);
     const noSpecialSummon = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "selectYesNo" && !action.yes);
     if (noSpecialSummon) {
-      expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+      expectRestoredLegalActions(restored, 0);
       const response = applyLuaRestoreResponse(restored, noSpecialSummon);
       expect(response.ok, response.error).toBe(true);
       restored = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
@@ -90,6 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ve
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
     expect(restoredLock.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredLock, 0);
     expect(getLuaRestoreLegalActions(restoredLock, 0).some((action) => action.type === "activateEffect" && action.uid === fireResponder.uid)).toBe(false);
     expect(getLuaRestoreLegalActions(restoredLock, 0).some((action) => action.type === "activateEffect" && action.uid === earthResponder.uid)).toBe(true);
   });
@@ -112,6 +113,11 @@ function requireCard(session: DuelSession, code: string) {
   const card = session.state.cards.find((candidate) => candidate.code === code);
   expect(card).toBeDefined();
   return card!;
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function applyAndAssert(session: DuelSession, action: DuelAction) {
