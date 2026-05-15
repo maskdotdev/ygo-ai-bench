@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const attackRestrictionFixtureCount = 4;
+const attackRestrictionFixtureCount = 5;
 
 describe("Lua real attack-restriction restore coverage", () => {
   it("requires representative field, player, and remain-field attack locks to assert clean Lua restore", () => {
@@ -41,6 +41,14 @@ function realScriptAttackRestrictionFixtureFiles(): Array<{ file: string; requir
         "gravity bind attack true/false",
         "highAttacker!.uid)).toBe(false)",
         "faceUp: true",
+      ],
+    },
+    {
+      file: "test/lua-real-script-alien-psychic-counter-attack-lock.test.ts",
+      required: [
+        "alien psychic CanAttack false/true",
+        "position: \"faceUpDefense\"",
+        "addDuelCardCounter(counteredAttacker",
       ],
     },
     {
