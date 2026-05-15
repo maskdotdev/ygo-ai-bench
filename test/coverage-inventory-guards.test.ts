@@ -62,6 +62,24 @@ describe("coverage inventory guards", () => {
     expect(exactCount).toBe(1256);
   });
 
+  it("requires non-coverage Lua restore tests to prove grouped restored actions", () => {
+    const restoreFiles = fs.readdirSync(testRoot)
+      .filter((file) => /^lua-.*\.test\.ts$/.test(file))
+      .filter((file) => !/coverage\.test\.ts$/.test(file))
+      .filter((file) => {
+        const text = fs.readFileSync(path.join(testRoot, file), "utf8");
+        return text.includes("restoreDuelWithLuaScripts");
+      });
+    const missingGroupedRestoreEvidence = restoreFiles
+      .filter((file) => {
+        const text = fs.readFileSync(path.join(testRoot, file), "utf8");
+        return !text.includes("getLuaRestoreLegalActionGroups");
+      });
+
+    expect(restoreFiles).toHaveLength(686);
+    expect(missingGroupedRestoreEvidence).toEqual([]);
+  });
+
   it("requires test proof floors to be exact", () => {
     const greaterThanAllowlist = new Set([
       "lua-field-query-helpers.test.ts:59",
