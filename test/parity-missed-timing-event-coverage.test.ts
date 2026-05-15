@@ -10,6 +10,7 @@ const testRoot = path.resolve("test");
 const sharedDeclineFixtureHelper = "parity-missed-timing-decline-fixture-helper.ts";
 const canonicalDuelEventCount = 84;
 const missedTimingFixtureFileCount = 171;
+const missedTimingActivationFixtureCount = 86;
 const missedTimingDeclineFixtureCount = 85;
 
 describe("EDOPro parity missed-timing event coverage", () => {
@@ -39,6 +40,17 @@ describe("EDOPro parity missed-timing event coverage", () => {
 
     expect(weak).toEqual([]);
   });
+
+  it("requires activation fixtures to prove restored trigger activation with stale trigger suppression", () => {
+    const activationFiles = fs.readdirSync(testRoot)
+      .filter((file) => file.startsWith("parity-missed-timing-") && file.endsWith("-fixture.test.ts") && !file.endsWith("-decline-fixture.test.ts"));
+    expect(activationFiles).toHaveLength(missedTimingActivationFixtureCount);
+
+    const weak = activationFiles
+      .filter((file) => !hasActivationRestoreProof(file));
+
+    expect(weak).toEqual([]);
+  });
 });
 
 function camelToKebab(value: string): string {
@@ -55,6 +67,21 @@ function hasDeclineOpenFastRestoreProof(file: string): boolean {
     /after:\s*\{[\s\S]*?windowKind:\s*["']open["']/.test(text) &&
     /pendingTriggers:\s*\[\]/.test(text) &&
     /pendingTriggerBuckets:\s*\[\]/.test(text) &&
+    /legalActions:\s*\[/.test(text) &&
+    /legalActionGroups:\s*\[/.test(text) &&
+    /absentLegalActions:\s*\[/.test(text) &&
+    /absentLegalActionGroups:\s*\[/.test(text)
+  );
+}
+
+function hasActivationRestoreProof(file: string): boolean {
+  const text = readTestFile(file);
+  return (
+    /source:\s*["']edopro["']/.test(text) &&
+    /snapshotRestore:\s*["']both["']/.test(text) &&
+    /makeResponseSelector\(\s*["']activateTrigger["']/.test(text) &&
+    /after:\s*\{[\s\S]*?windowKind:\s*["']open["']/.test(text) &&
+    /pendingTriggers:\s*\[\]/.test(text) &&
     /legalActions:\s*\[/.test(text) &&
     /legalActionGroups:\s*\[/.test(text) &&
     /absentLegalActions:\s*\[/.test(text) &&
