@@ -132,12 +132,50 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
       position: "faceUpAttack",
     });
     expect(restoredStatus.session.state.effects).not.toEqual(expect.arrayContaining([expect.objectContaining({ sourceUid: unleash!.uid, event: "continuous", code: 0x1200 })]));
-    expect(restoredStatus.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "positionChanged", eventCode: 1016, eventCardUid: slime!.uid }),
-        expect.objectContaining({ eventName: "positionChanged", eventCode: 1016, eventCardUid: soldier!.uid }),
-      ]),
-    );
+    expect(restoredStatus.session.state.eventHistory.filter((event) => event.eventName === "positionChanged")).toEqual([
+      {
+        eventName: "positionChanged",
+        eventCode: 1016,
+        eventCardUid: slime!.uid,
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "monsterZone",
+          position: "faceDownDefense",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "positionChanged",
+        eventCode: 1016,
+        eventCardUid: soldier!.uid,
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpDefense",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "monsterZone",
+          position: "faceDownDefense",
+          sequence: 1,
+        },
+      },
+    ]);
 
     const restoredAfterEnd = restoreDuelWithLuaScripts(serializeDuel(restoredStatus.session), source, reader);
     expect(restoredAfterEnd.restoreComplete, restoredAfterEnd.incompleteReasons.join("; ")).toBe(true);

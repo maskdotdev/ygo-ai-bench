@@ -122,7 +122,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === drawCard!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === nobleman!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === responder!.uid)).toMatchObject({ location: "hand", controller: 1 });
-    expect(restoredPendingResolution.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "positionChanged", eventCardUid: amaterasu!.uid })]));
+    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => event.eventName === "positionChanged")).toEqual([
+      {
+        eventName: "positionChanged",
+        eventCode: 1016,
+        eventCardUid: amaterasu!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: amaterasu!.uid,
+        eventReasonEffectId: 7,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "monsterZone",
+          position: "faceDownDefense",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpDefense",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredPendingResolution.session.state.eventHistory.filter((event) => event.eventName === "cardsDrawn")).toEqual([
       {
         eventName: "cardsDrawn",

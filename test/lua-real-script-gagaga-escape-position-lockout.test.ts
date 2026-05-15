@@ -96,11 +96,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ga
     expect(restored.session.state.cards.find((card) => card.uid === attacked!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpAttack", faceUp: true });
     expect(restored.session.state.cards.find((card) => card.uid === changed!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpAttack", faceUp: true });
     expect(restored.session.state.positionsChanged).toEqual([changed!.uid, eligible!.uid]);
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "positionChanged", eventCardUid: eligible!.uid }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "positionChanged")).toEqual([
+      {
+        eventName: "positionChanged",
+        eventCode: 1016,
+        eventCardUid: eligible!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: escape!.uid,
+        eventReasonEffectId: 2,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpDefense",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "banished" && event.eventCardUid === escape!.uid)).toEqual([
       {
         eventName: "banished",
