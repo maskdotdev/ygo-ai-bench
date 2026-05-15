@@ -64,6 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
     const restoredZone = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredZone.restoreComplete, restoredZone.incompleteReasons.join("; ")).toBe(true);
     expect(restoredZone.missingRegistryKeys).toEqual([]);
+    expect(restoredZone.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredZone, 0)).toEqual(getDuelLegalActions(restoredZone.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredZone, 0)).toEqual(getGroupedDuelLegalActions(restoredZone.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredZone, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredZone, 0));
@@ -83,6 +84,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(restoredZone.session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
+    expect(restoredActivation.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredActivation.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: effectExtraReleaseNonsum, sourceUid: assaultZone!.uid, targetRange: [locationExtra, 0] }),

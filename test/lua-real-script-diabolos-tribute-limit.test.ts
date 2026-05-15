@@ -60,6 +60,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restored, 0);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     const actions = getLegalActions(restored.session, 0);
     expect(actions.some((action) => action.type === "tributeSummon" && action.uid === lightTarget!.uid)).toBe(false);
     expect(actions.some((action) => action.type === "tributeSummon" && action.uid === darkTarget!.uid)).toBe(true);
@@ -71,6 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     expect(allowed.restoreComplete, allowed.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(allowed, 0);
     expect(allowed.missingRegistryKeys).toEqual([]);
+    expect(allowed.missingChainLimitRegistryKeys).toEqual([]);
     tributeSummonDuelCard(allowed.session.state, 0, darkTarget!.uid, [diabolos!.uid]);
     expect(allowed.session.state.cards.find((card) => card.uid === darkTarget!.uid)).toMatchObject({ location: "monsterZone", summonType: "tribute" });
     expect(allowed.session.state.cards.find((card) => card.uid === diabolos!.uid)).toMatchObject({ location: "graveyard" });

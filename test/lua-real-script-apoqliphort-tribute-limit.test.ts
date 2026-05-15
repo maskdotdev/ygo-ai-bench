@@ -60,6 +60,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ap
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restored, 0);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const actions = getLegalActions(restored.session, 0);
@@ -71,6 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ap
     expect(allowed.restoreComplete, allowed.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(allowed, 0);
     expect(allowed.missingRegistryKeys).toEqual([]);
+    expect(allowed.missingChainLimitRegistryKeys).toEqual([]);
     tributeSummonDuelCard(allowed.session.state, 0, skybase!.uid, qlis.map((material) => material!.uid));
     expect(allowed.session.state.cards.find((card) => card.uid === skybase!.uid)).toMatchObject({ location: "monsterZone", summonType: "tribute" });
     for (const material of qlis) expect(allowed.session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "graveyard" });

@@ -53,6 +53,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const actions = getLegalActions(restored.session, 0);
@@ -65,6 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tr
     const allowed = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(allowed.restoreComplete, allowed.incompleteReasons.join("; ")).toBe(true);
     expect(allowed.missingRegistryKeys).toEqual([]);
+    expect(allowed.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(allowed, 0);
     tributeSummonDuelCard(allowed.session.state, 0, troposphere!.uid, [wingedBeast!.uid]);
     expect(allowed.session.state.cards.find((card) => card.uid === troposphere!.uid)).toMatchObject({ location: "monsterZone", summonType: "tribute" });
