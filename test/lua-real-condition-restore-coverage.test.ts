@@ -258,6 +258,7 @@ function realScriptSourceConditionFixtureFiles(): Array<{ file: string; required
       file: "test/lua-real-script-xyz-armor-torpedo-equipped-target-type-condition.test.ts",
       requiredSnippets: [
         "condition:equipped-target-type:",
+        "property: 0x80",
         "xyz-armor-torpedo-official-local-handler-equipped-target-type.lua",
         "restoredArmor!.equippedToUid = restoredNonXyz!.uid",
         "delete restoredArmor!.equippedToUid",

@@ -82,6 +82,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
       code: 71,
       luaConditionDescriptor: `condition:equipped-target-type:${typeXyz}`,
       luaValueDescriptor: "cannot-be-effect-target:opponent",
+      property: 0x80,
       range: ["spellTrapZone"],
     });
 
@@ -154,6 +155,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
       code: 71,
       luaConditionDescriptor: `condition:equipped-target-type:${typeXyz}`,
       luaValueDescriptor: "cannot-be-effect-target:opponent",
+      property: 0x80,
       range: ["spellTrapZone"],
     });
 
@@ -223,6 +225,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
       code: 71,
       luaConditionDescriptor: `condition:equipped-target-type:${typeXyz}`,
       luaValueDescriptor: "cannot-be-effect-target:opponent",
+      property: 0x80,
       range: ["spellTrapZone"],
     });
 
@@ -244,6 +247,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
       code: 71,
       luaConditionDescriptor: `condition:equipped-target-type:${typeXyz}`,
       luaValueDescriptor: "cannot-be-effect-target:opponent",
+      property: 0x80,
       range: ["spellTrapZone"],
     });
     expect(restoredEffect?.canActivate).toBeDefined();

@@ -251,6 +251,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-world-legacy-cliffhanger-link-summon-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: `target:special-summon-type-is:${luaSummonTypeLink}`',
+        "property: 0x4000800",
         "targetRange: [1, 1]",
         "cliffhanger link special 0",
         "cliffhanger fusion special 1",
