@@ -87,11 +87,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sc
       controller: 0,
       reason: effectDestroyReason,
     });
-    expect(restoredTrigger.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "attackDeclared", eventCode: 1130, eventCardUid: scrapWorm!.uid }),
-      ]),
-    );
+    expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "attackDeclared")).toEqual([
+      {
+        eventName: "attackDeclared",
+        eventCode: 1130,
+        eventCardUid: scrapWorm!.uid,
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "phaseBattle")).toEqual([
       {
         eventName: "phaseBattle",

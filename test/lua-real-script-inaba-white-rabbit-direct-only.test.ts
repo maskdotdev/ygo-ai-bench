@@ -71,7 +71,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
     expect(restored.session.state.players[0].lifePoints).toBe(8000);
     expect(restored.session.state.players[1].lifePoints).toBe(7300);
     expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 700 });
-    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "attackDeclared", eventCode: 1130, eventCardUid: inaba!.uid })]));
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "attackDeclared")).toEqual([
+      {
+        eventName: "attackDeclared",
+        eventCode: 1130,
+        eventCardUid: inaba!.uid,
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
       {
         eventName: "battleDamageDealt",
