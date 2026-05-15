@@ -3,10 +3,18 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const PERSISTENT_FIXTURE_COUNT = 16;
+const TARGETED_PERSISTENT_FIXTURE_COUNT = 12;
+const REVIVE_DESTROY_PERSISTENT_FIXTURE_COUNT = 1;
+const SPIRITS_INVITATION_PERSISTENT_FIXTURE_COUNT = 1;
+const ATTACK_LOCK_PERSISTENT_FIXTURE_COUNT = 8;
 
 describe("Lua real persistent restore coverage", () => {
   it("requires representative persistent/remaining-field fixtures to assert grouped legal actions and clean Lua registry restore", () => {
-    const missing = realScriptPersistentFixtureFiles()
+    const files = realScriptPersistentFixtureFiles();
+    expect(files).toHaveLength(PERSISTENT_FIXTURE_COUNT);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("getLuaRestoreLegalActionGroups")
@@ -22,7 +30,10 @@ describe("Lua real persistent restore coverage", () => {
   });
 
   it("requires representative persistent/remaining-field fixtures to prove restored field state and response suppression", () => {
-    const missing = realScriptPersistentFixtureFiles()
+    const files = realScriptPersistentFixtureFiles();
+    expect(files).toHaveLength(PERSISTENT_FIXTURE_COUNT);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !/location:\s*["']spellTrapZone["']/.test(text)
@@ -34,7 +45,10 @@ describe("Lua real persistent restore coverage", () => {
   });
 
   it("requires targeted persistent fixtures to prove card target relations survive restore", () => {
-    const missing = realScriptTargetedPersistentFixtureFiles()
+    const files = realScriptTargetedPersistentFixtureFiles();
+    expect(files).toHaveLength(TARGETED_PERSISTENT_FIXTURE_COUNT);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("cardTargetUids");
@@ -44,7 +58,10 @@ describe("Lua real persistent restore coverage", () => {
   });
 
   it("requires revive-destroy persistent fixtures to prove restored relation cleanup and clean Lua registry restore", () => {
-    const missing = realScriptReviveDestroyPersistentFixtureFiles()
+    const fixtures = realScriptReviveDestroyPersistentFixtureFiles();
+    expect(fixtures).toHaveLength(REVIVE_DESTROY_PERSISTENT_FIXTURE_COUNT);
+
+    const missing = fixtures
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
@@ -59,7 +76,10 @@ describe("Lua real persistent restore coverage", () => {
   });
 
   it("requires Spirit's Invitation to prove restored previous-state bounce and maintenance branches", () => {
-    const missing = spiritsInvitationPersistentFixtureFiles()
+    const fixtures = spiritsInvitationPersistentFixtureFiles();
+    expect(fixtures).toHaveLength(SPIRITS_INVITATION_PERSISTENT_FIXTURE_COUNT);
+
+    const missing = fixtures
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("getLuaRestoreLegalActionGroups")
@@ -76,7 +96,10 @@ describe("Lua real persistent restore coverage", () => {
   });
 
   it("requires attack-lock persistent fixtures to prove restored illegal attacks stay hidden", () => {
-    const missing = realScriptAttackLockPersistentFixtureFiles()
+    const files = realScriptAttackLockPersistentFixtureFiles();
+    expect(files).toHaveLength(ATTACK_LOCK_PERSISTENT_FIXTURE_COUNT);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes('type === "declareAttack"')
