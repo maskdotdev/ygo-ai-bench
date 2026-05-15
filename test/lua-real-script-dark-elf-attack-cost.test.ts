@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -23,11 +24,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     expect(session.state.attackCostPaid).toBe(1);
     expect(session.state.players[0].lifePoints).toBe(7000);
     expect(session.state.battleWindow?.kind).toBe("attackNegationResponse");
-    expect(session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 0, eventValue: 1000, eventReason: 0x80, eventReasonPlayer: 0 }),
-      ]),
-    );
+    expect(session.state.eventHistory.filter((event) => event.eventName === "lifePointCostPaid")).toEqual([
+      {
+        eventName: "lifePointCostPaid",
+        eventCode: 1201,
+        eventPlayer: 0,
+        eventValue: 1000,
+        eventReason: duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: darkElf.uid,
+        eventReasonEffectId: 1,
+      },
+    ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
