@@ -48,11 +48,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(toonDefenseCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "trigger", code: 1130, sourceUid: toonDefense!.uid }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "trigger" && effect.code === 1130 && effect.sourceUid === toonDefense!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 1130,
+        "controller": 1,
+        "cost": [Function],
+        "description": 696144304,
+        "event": "trigger",
+        "id": "lua-2-1130",
+        "luaTypeFlags": 130,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "optional": true,
+        "promptOperation": [Function],
+        "range": [
+          "spellTrapZone",
+        ],
+        "registryKey": "lua:43509019:lua-2-1130",
+        "sourceUid": "p1-deck-43509019-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "triggerCode": 1130,
+        "triggerEvent": "attackDeclared",
+        "triggerTiming": "when",
+      }
+    `);
 
     const attack = getLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && action.targetUid === toonTarget!.uid);
     expect(attack).toBeDefined();

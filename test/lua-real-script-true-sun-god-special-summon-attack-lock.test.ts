@@ -59,7 +59,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ event: "continuous", code: 85, sourceUid: sunGod.uid })]));
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 85 && effect.sourceUid === sunGod.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 85,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-85",
+        "luaTargetDescriptor": "target:not-code:10000010",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "range": [
+          "spellTrapZone",
+        ],
+        "registryKey": "lua:11587414:lua-2-85",
+        "sourceUid": "p0-deck-11587414-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "targetRange": [
+          4,
+          4,
+        ],
+      }
+    `);
     const actions = getLuaRestoreLegalActions(restored, 0);
     expect(hasAttack(actions, specialAttacker.uid, target.uid)).toBe(false);
     expect(hasAttack(actions, normalAttacker.uid, target.uid)).toBe(true);

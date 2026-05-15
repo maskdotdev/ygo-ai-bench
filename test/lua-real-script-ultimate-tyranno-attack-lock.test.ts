@@ -59,12 +59,51 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ul
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 85, sourceUid: tyranno.uid }),
-        expect.objectContaining({ event: "continuous", code: 193, sourceUid: tyranno.uid }),
-      ]),
-    );
+    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === tyranno.uid && [85, 193].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 85,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-85",
+          "luaTargetDescriptor": "target:not-code:15894048",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:15894048:lua-1-85",
+          "sourceUid": "p0-deck-15894048-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "targetRange": [
+            4,
+            0,
+          ],
+        },
+        {
+          "canActivate": [Function],
+          "code": 193,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-2-193",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:15894048:lua-2-193",
+          "sourceUid": "p0-deck-15894048-0",
+          "target": [Function],
+          "value": 1,
+        },
+      ]
+    `);
     const actions = getLuaRestoreLegalActions(restored, 0);
     expect(hasAttack(actions, tyranno.uid, firstTarget.uid)).toBe(true);
     expect(hasAttack(actions, tyranno.uid, secondTarget.uid)).toBe(true);

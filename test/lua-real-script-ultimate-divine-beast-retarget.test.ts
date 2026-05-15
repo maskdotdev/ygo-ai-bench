@@ -54,11 +54,35 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ul
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(ultimateDivineBeastCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "trigger", code: 1130, sourceUid: ultimateDivineBeast!.uid }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "trigger" && effect.code === 1130 && effect.sourceUid === ultimateDivineBeast!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "category": 512,
+        "code": 1130,
+        "controller": 1,
+        "cost": [Function],
+        "countLimit": 1,
+        "countLimitCode": 32247099,
+        "event": "trigger",
+        "id": "lua-2-1130",
+        "luaTypeFlags": 130,
+        "oncePerTurn": true,
+        "operation": [Function],
+        "optional": true,
+        "promptOperation": [Function],
+        "property": 16,
+        "range": [
+          "spellTrapZone",
+        ],
+        "registryKey": "lua:32247099:lua-2-1130",
+        "sourceUid": "p1-deck-32247099-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "triggerCode": 1130,
+        "triggerEvent": "attackDeclared",
+        "triggerTiming": "when",
+      }
+    `);
 
     const attack = getLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && action.targetUid === originalTarget!.uid);
     expect(attack).toBeDefined();

@@ -51,12 +51,49 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ri
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 196, sourceUid: ring.uid }),
-        expect.objectContaining({ event: "continuous", code: 343, sourceUid: ring.uid }),
-      ]),
-    );
+    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === ring.uid && [196, 343].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 196,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-5-196",
+          "luaTypeFlags": 4,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:20436034:lua-5-196",
+          "sourceUid": "p0-deck-20436034-0",
+          "target": [Function],
+        },
+        {
+          "canActivate": [Function],
+          "code": 343,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-6-343",
+          "luaConditionDescriptor": "condition:source-equipped",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:20436034:lua-6-343",
+          "sourceUid": "p0-deck-20436034-0",
+          "target": [Function],
+          "targetRange": [
+            0,
+            4,
+          ],
+        },
+      ]
+    `);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     const actions = getLuaRestoreLegalActions(restored, 1);

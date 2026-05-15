@@ -46,9 +46,27 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ZW
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restored, 0),
     );
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ event: "continuous", code: 73, sourceUid: halberd.uid })]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 73 && effect.sourceUid === halberd.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 73,
+        "controller": 0,
+        "cost": [Function],
+        "description": 3207,
+        "event": "continuous",
+        "id": "lua-2-73",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "property": 131072,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:2896663:lua-2-73",
+        "sourceUid": "p0-deck-2896663-0",
+        "target": [Function],
+      }
+    `);
     const actions = getLuaRestoreLegalActions(restored, 0);
     expect(hasDirectAttack(actions, halberd.uid)).toBe(false);
     expect(hasDirectAttack(actions, ordinary.uid)).toBe(true);
