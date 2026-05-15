@@ -66,10 +66,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredActivation, activation!);
 
-    expect(restoredActivation.session.state.chain[0]).toMatchObject({
-      sourceUid: wheel!.uid,
-      targetUids: [target!.uid],
-    });
+    expect(restoredActivation.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "player": 0,
+        "sourceUid": "p0-deck-54704216-0",
+        "targetUids": [
+          "p1-deck-613001-0",
+        ],
+      }
+    `);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
@@ -118,12 +128,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === wheel!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredTrigger, trigger!);
-    expect(restoredTrigger.session.state.chain[0]).toMatchObject({
-      sourceUid: wheel!.uid,
-      targetPlayer: 1,
-      targetParam: 500,
-      operationInfos: [{ category: 0x80000, targetUids: [], count: 0, player: 1, parameter: 500 }],
-    });
+    expect(restoredTrigger.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-5-4098",
+        "eventCode": 4098,
+        "eventName": "phaseStandby",
+        "eventTriggerTiming": "when",
+        "id": "chain-6",
+        "operationInfos": [
+          {
+            "category": 524288,
+            "count": 0,
+            "parameter": 500,
+            "player": 1,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-54704216-0",
+        "targetParam": 500,
+        "targetPlayer": 1,
+      }
+    `);
     expect(getLuaRestoreLegalActions(restoredTrigger, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
 
     const restoredDamageChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);
