@@ -65,15 +65,28 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     );
     expect(register.ok, register.error).toBe(true);
     const descriptor = "condition:source-battle-target";
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: descriptor,
-          sourceUid: basilisk!.uid,
-          value: 300,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.luaConditionDescriptor === descriptor && effect.sourceUid === basilisk!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 100,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-100",
+        "luaConditionDescriptor": "condition:source-battle-target",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:56921677:lua-1-100",
+        "sourceUid": "p0-deck-56921677-0",
+        "target": [Function],
+        "value": 300,
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -117,14 +130,42 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const register = host.loadCardScript(Number(basiliskCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: "condition:source-battle-target",
-          sourceUid: basilisk!.uid,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.luaConditionDescriptor === "condition:source-battle-target" && effect.sourceUid === basilisk!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "category": 1,
+        "code": 1138,
+        "controller": 0,
+        "cost": [Function],
+        "description": 910746832,
+        "event": "trigger",
+        "id": "lua-1-1138",
+        "luaConditionDescriptor": "condition:source-battle-target",
+        "luaTypeFlags": 513,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "optional": false,
+        "promptOperation": [Function],
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:56921677:lua-1-1138",
+        "sourceUid": "p0-deck-56921677-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "triggerCode": 1138,
+        "triggerEvent": "afterDamageCalculation",
+        "triggerSourceOnly": true,
+        "triggerTiming": "when",
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -182,14 +223,28 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
       "basilisk-official-local-battle-target-condition.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: "condition:source-battle-target",
-          sourceUid: basilisk!.uid,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.luaConditionDescriptor === "condition:source-battle-target" && effect.sourceUid === basilisk!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 100,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-100",
+        "luaConditionDescriptor": "condition:source-battle-target",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:56921677:lua-1-100",
+        "sourceUid": "p0-deck-56921677-0",
+        "target": [Function],
+        "value": 300,
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
