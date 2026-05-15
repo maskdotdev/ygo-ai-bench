@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const DIRECT_ATTACK_FIXTURE_COUNT = 3;
@@ -12,14 +13,14 @@ describe("Lua real direct-attack restore coverage", () => {
 
     const missing = files
       .filter(({ file, required }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
           || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("getLuaRestoreLegalActions")
-          || required.some((snippet) => !text.includes(snippet));
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 

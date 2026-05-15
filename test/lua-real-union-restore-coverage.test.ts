@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const UNION_FIXTURE_COUNT = 2;
@@ -14,7 +15,7 @@ describe("Lua real Union restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys")
@@ -31,7 +32,7 @@ describe("Lua real Union restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("flatMap((group) => group.actions)")
@@ -47,7 +48,7 @@ describe("Lua real Union restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !/location:\s*["']spellTrapZone["']/.test(text)
           || !text.includes("equippedToUid")
           || !text.includes("previousEquippedToUid")
@@ -66,7 +67,7 @@ describe("Lua real Union restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes('luaConditionDescriptor: "condition:source-equipped"')
           || !/range:\s*\[\s*["']spellTrapZone["']\s*\]/.test(text)
           || !text.includes("targetRange: [0, 0xff]")

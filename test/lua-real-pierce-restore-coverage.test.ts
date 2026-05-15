@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const PIERCING_FIXTURE_COUNT = 2;
@@ -12,7 +13,7 @@ describe("Lua real piercing damage restore coverage", () => {
 
     const missing = files
       .filter(({ file, required }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -26,7 +27,7 @@ describe("Lua real piercing damage restore coverage", () => {
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)")
-          || required.some((snippet) => !text.includes(snippet));
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 
@@ -53,7 +54,7 @@ function piercingFixtureFiles(): Array<{ file: string; required: string[] }> {
         "equippedToUid: equippedAttacker!.uid",
         "battleDamage).toEqual({ 0: 0, 1: 800 })",
         "players[1].lifePoints).toBe(7200)",
-        "not.toEqual(",
+        'eventName === "battleDamageDealt" && event.eventPlayer === 1)).toEqual([])',
       ],
     },
   ].sort((a, b) => a.file.localeCompare(b.file));

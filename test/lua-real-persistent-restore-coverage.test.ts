@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const PERSISTENT_FIXTURE_COUNT = 16;
@@ -16,7 +17,7 @@ describe("Lua real persistent restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -38,7 +39,7 @@ describe("Lua real persistent restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !/location:\s*["']spellTrapZone["']/.test(text)
           || !text.includes("host.messages).not.toContain")
           || !text.includes("host.messages).toContain");
@@ -53,7 +54,7 @@ describe("Lua real persistent restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("cardTargetUids");
       });
 
@@ -66,13 +67,13 @@ describe("Lua real persistent restore coverage", () => {
 
     const missing = fixtures
       .filter(({ file, required }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
           || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
-          || required.some((snippet) => !text.includes(snippet));
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 
@@ -85,7 +86,7 @@ describe("Lua real persistent restore coverage", () => {
 
     const missing = fixtures
       .filter(({ file, required }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)")
@@ -93,7 +94,7 @@ describe("Lua real persistent restore coverage", () => {
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
           || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
-          || required.some((snippet) => !text.includes(snippet));
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 
@@ -106,7 +107,7 @@ describe("Lua real persistent restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes('type === "declareAttack"')
           || !text.includes("toBe(false)");
       });

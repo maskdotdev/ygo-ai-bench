@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 
@@ -18,6 +19,7 @@ const reasonSourceFixtureFiles = [
   "test/lua-level-up-event.test.ts",
   "test/lua-move-event.test.ts",
   "test/lua-raise-event-payload.test.ts",
+  "test/lua-real-script-naturia-ragweed-event-draw-trigger.test.ts",
   "test/lua-release-grouped-event.test.ts",
   "test/lua-remove-grouped-event.test.ts",
   "test/lua-return-to-grave-event.test.ts",
@@ -59,7 +61,7 @@ describe("Lua event reason source coverage", () => {
 
   it("requires reason-source fixtures to assert both card and effect reason metadata", () => {
     const missing = reasonSourceFixtureFiles.filter((file) => {
-      const text = fs.readFileSync(path.join(root, file), "utf8");
+      const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
       return !text.includes("eventReasonCardUid") || !text.includes("eventReasonEffectId");
     });
 
@@ -72,7 +74,7 @@ describe("Lua event reason source coverage", () => {
 
   it("requires event-reason condition fixtures to prove restored predicates read event cause metadata", () => {
     const missing = eventReasonConditionFixtureFiles.filter((file) => {
-      const text = fs.readFileSync(path.join(root, file), "utf8");
+      const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
       return !text.includes("restoreDuelWithLuaScripts")
         || !text.includes("restoreComplete")
         || !text.includes('incompleteReasons.join("; ")')
@@ -100,7 +102,7 @@ describe("Lua event reason source coverage", () => {
     const missing = sourceReasonConditionFixtureFiles
       .filter((file) => !fs.readFileSync(path.join(root, file), "utf8").includes("source-reason-player"))
       .filter((file) => {
-      const text = fs.readFileSync(path.join(root, file), "utf8");
+      const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
       return !text.includes("restoreDuelWithLuaScripts")
         || !text.includes("restoreComplete")
         || !text.includes('incompleteReasons.join("; ")')
@@ -130,7 +132,7 @@ describe("Lua event reason source coverage", () => {
     const missing = sourceReasonConditionFixtureFiles
       .filter((file) => fs.readFileSync(path.join(root, file), "utf8").includes("source-reason-player"))
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes(".reasonPlayer =")
           || !text.includes("condition:source-reason-player:opponent")
           || !text.includes("condition:source-reason-player:self")
@@ -146,7 +148,7 @@ describe("Lua event reason source coverage", () => {
 
   it("requires chain-event metadata fixtures to prove restore-safe related-effect causality", () => {
     const missing = chainEventMetadataFixtureFiles.filter((file) => {
-      const text = fs.readFileSync(path.join(root, file), "utf8");
+      const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
       return !text.includes("restoreDuelWithLuaScripts")
         || !text.includes("restoreComplete")
         || !text.includes('incompleteReasons.join("; ")')
@@ -164,11 +166,11 @@ describe("Lua event reason source coverage", () => {
   it("requires chain-window event fixtures to assert chain depth and chain link identity", () => {
     const missing = chainEventMetadataFixtureFiles
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return text.includes("EVENT_CHAINING") || text.includes("EVENT_CHAIN_SOLVING");
       })
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("eventChainDepth") || !text.includes("eventChainLinkId");
       });
 
@@ -182,7 +184,7 @@ function discoveredReasonSourceFixtureFiles(): string[] {
     .map((file) => path.join("test", file))
     .filter((file) => file !== "test/lua-event-reason-source-coverage.test.ts")
     .filter((file) => {
-      const text = fs.readFileSync(path.join(root, file), "utf8");
+      const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
       return text.includes("eventReasonCardUid") || text.includes("eventReasonEffectId") || text.includes("reason source");
     })
     .sort();
@@ -200,7 +202,7 @@ function discoveredSourceReasonConditionFixtureFiles(): string[] {
     .filter((file) => /^lua-real-script-.*reason.*condition\.test\.ts$/.test(file))
     .map((file) => path.join("test", file))
     .filter((file) => {
-      const text = fs.readFileSync(path.join(root, file), "utf8");
+      const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
       return text.includes("condition:source-reason");
     })
     .sort();

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const negationFixtureCount = 7;
@@ -14,7 +15,7 @@ describe("Lua real negation restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -36,7 +37,7 @@ describe("Lua real negation restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !/state\.chain\)\.toHaveLength\(0\)/.test(text)
           || !/eventName:\s*["']chainDisabled["']/.test(text)
           || !/location:\s*["']graveyard["']/.test(text)
@@ -52,7 +53,7 @@ describe("Lua real negation restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !/state\.chain\)\.toHaveLength\(2\)/.test(text)
           || (!/eventName:\s*["']chainNegated["']/.test(text) && !text.includes('"chainNegated"'))
           || (!/eventName:\s*["']chainDisabled["']/.test(text) && !text.includes('"chainDisabled"'))
@@ -68,7 +69,7 @@ describe("Lua real negation restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !/state\.chain\)\.toHaveLength\(2\)/.test(text)
           || !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")

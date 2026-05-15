@@ -1,11 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-const realScriptSummonFixtureCount = 145;
+const realScriptSummonFixtureCount = 147;
 const summonProcedureFixtureCount = 20;
 const typedSummonProcedureFixtureCount = 6;
 const pendulumGrantFixtureCount = 3;
@@ -21,7 +22,7 @@ describe("Lua real summon restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")');
@@ -36,7 +37,7 @@ describe("Lua real summon restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -56,7 +57,7 @@ describe("Lua real summon restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -80,7 +81,7 @@ describe("Lua real summon restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("findPendulumSummon")
           || !text.includes("applyLuaRestoreAndAssert")
           || !text.includes("getLuaRestoreLegalActions")
@@ -104,11 +105,11 @@ describe("Lua real summon restore coverage", () => {
 
     const weak = files
       .filter(({ file, required }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
           || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
-          || required.some((snippet) => !text.includes(snippet));
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 
@@ -121,11 +122,11 @@ describe("Lua real summon restore coverage", () => {
 
     const weak = files
       .filter(({ file, required }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
           || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
-          || required.some((snippet) => !text.includes(snippet));
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 
@@ -138,11 +139,11 @@ describe("Lua real summon restore coverage", () => {
 
     const weak = files
       .filter(({ file, required }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
           || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
-          || required.some((snippet) => !text.includes(snippet));
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 
@@ -155,7 +156,7 @@ describe("Lua real summon restore coverage", () => {
 
     const weak = files
       .filter(({ file, required }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -166,7 +167,7 @@ describe("Lua real summon restore coverage", () => {
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)")
-          || required.some((snippet) => !text.includes(snippet));
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const PREDRAW_FIXTURE_COUNT = 2;
@@ -12,7 +13,7 @@ describe("Lua real predraw restore coverage", () => {
 
     const missing = files
       .filter(({ file, required }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -20,7 +21,7 @@ describe("Lua real predraw restore coverage", () => {
           || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("applyLuaRestoreResponse")
-          || required.some((snippet) => !text.includes(snippet));
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const SUMMON_PROCEDURE_FIXTURE_COUNT = 1;
@@ -10,7 +11,7 @@ describe("Lua real summon procedure restore coverage", () => {
     const file = "test/lua-real-script-summon-procedure.test.ts";
     expect([file]).toHaveLength(SUMMON_PROCEDURE_FIXTURE_COUNT);
 
-    const text = fs.readFileSync(path.join(root, file), "utf8");
+    const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
 
     expect(text.includes("restoreDuelWithLuaScripts")).toBe(true);
     expect(text.includes("restoreComplete")).toBe(true);

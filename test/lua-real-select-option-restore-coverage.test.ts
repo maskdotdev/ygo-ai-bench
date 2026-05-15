@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const upstreamOfficialRoot = path.join(root, ".upstream/ignis/script/official");
@@ -20,7 +21,7 @@ describe("Lua real SelectOption restore coverage", () => {
   it("requires representative restore fixtures for leading-boolean SelectOption scripts", () => {
     const missing = leadingBooleanSelectOptionFixtures()
       .filter(({ file, required }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -30,7 +31,7 @@ describe("Lua real SelectOption restore coverage", () => {
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)")
-          || required.some((snippet) => !text.includes(snippet));
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 
@@ -40,7 +41,7 @@ describe("Lua real SelectOption restore coverage", () => {
   it("requires representative restore fixtures for table-unpacked SelectOption scripts", () => {
     const missing = tableUnpackedSelectOptionFixtures()
       .filter(({ file, required }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -50,7 +51,7 @@ describe("Lua real SelectOption restore coverage", () => {
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)")
-          || required.some((snippet) => !text.includes(snippet));
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 
@@ -67,7 +68,7 @@ function officialScriptsWithLeadingBooleanSelectOption(): string[] {
 
 function officialLeadingBooleanSelectOptionShapes(): Array<{ file: string; shape: "literal-options" | "table-unpack" }> {
   return officialScriptsWithLeadingBooleanSelectOption().map((file) => {
-    const text = fs.readFileSync(path.join(upstreamOfficialRoot, file), "utf8");
+    const text = coverageText(fs.readFileSync(path.join(upstreamOfficialRoot, file), "utf8"));
     const shape = /SelectOption\(tp,false,table\.unpack\(/.test(text) ? "table-unpack" : "literal-options";
     return { file, shape };
   });

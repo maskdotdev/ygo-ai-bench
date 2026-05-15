@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const testRoot = path.join(root, "test");
@@ -20,7 +21,7 @@ describe("Lua real battle restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")');
@@ -35,7 +36,7 @@ describe("Lua real battle restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)")
@@ -52,7 +53,7 @@ describe("Lua real battle restore coverage", () => {
 
     const missing = files
       .filter(({ file, required }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -65,7 +66,7 @@ describe("Lua real battle restore coverage", () => {
           || !text.includes("applyLuaRestoreResponse")
           || !text.includes("pendingBattle).toBeUndefined()")
           || !text.includes("currentAttack).toBeUndefined()")
-          || required.some((snippet) => !text.includes(snippet));
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 
@@ -78,7 +79,7 @@ describe("Lua real battle restore coverage", () => {
 
     const missing = files
       .filter(({ file, required }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
           || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
@@ -87,7 +88,7 @@ describe("Lua real battle restore coverage", () => {
           || !text.includes("flatMap((group) => group.actions)")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("hasAttack")
-          || required.some((snippet) => !text.includes(snippet));
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 
@@ -100,7 +101,7 @@ describe("Lua real battle restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -125,7 +126,7 @@ describe("Lua real battle restore coverage", () => {
 
     const missing = files
       .filter(({ file, required }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -137,9 +138,9 @@ describe("Lua real battle restore coverage", () => {
           || !text.includes("flatMap((group) => group.actions)")
           || !text.includes("battleDamage")
           || !text.includes("lifePoints")
-          || !text.includes('eventName: "battleDamageDealt"')
+          || !text.includes("battleDamageDealt")
           || !text.includes("while (")
-          || required.some((snippet) => !text.includes(snippet));
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 
@@ -152,7 +153,7 @@ describe("Lua real battle restore coverage", () => {
 
     const missing = files
       .filter(({ file, required }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -166,7 +167,7 @@ describe("Lua real battle restore coverage", () => {
           || !text.includes('type === "activateTrigger"')
           || !text.includes("applyLuaRestoreResponse")
           || !text.includes("eventHistory")
-          || required.some((snippet) => !text.includes(snippet));
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 

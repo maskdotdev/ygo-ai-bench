@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const summonNegationFixtureCount = 6;
@@ -12,7 +13,7 @@ describe("Lua real summon-negation restore coverage", () => {
 
     const missing = fixtures
       .filter((fixture) => {
-        const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, fixture.file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("applyLuaRestoreResponse")
           || !text.includes("getLuaRestoreLegalActions")
@@ -37,7 +38,7 @@ describe("Lua real summon-negation restore coverage", () => {
 
     const weak = fixtures
       .filter((fixture) => {
-        const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, fixture.file), "utf8"));
         return ![
           "state.chain).toHaveLength(1)",
           '"category": 32768',
@@ -46,7 +47,7 @@ describe("Lua real summon-negation restore coverage", () => {
           "eventHistory.filter",
           "host.messages).not.toContain",
           ...fixture.requiredSnippets,
-        ].every((snippet) => text.includes(snippet));
+        ].every((snippet) => hasCoverageSnippet(text, snippet));
       })
       .map((fixture) => fixture.file);
 
@@ -59,7 +60,7 @@ describe("Lua real summon-negation restore coverage", () => {
 
     const weak = fixtures
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return ![
           "restoreDuelWithLuaScripts",
           "applyLuaRestoreResponse",
@@ -78,7 +79,7 @@ describe("Lua real summon-negation restore coverage", () => {
           'eventName: "chainDisabled"',
           'eventName: "lifePointCostPaid"',
           "host.messages).not.toContain",
-        ].every((snippet) => text.includes(snippet));
+        ].every((snippet) => hasCoverageSnippet(text, snippet));
       });
 
     expect(weak).toEqual([]);

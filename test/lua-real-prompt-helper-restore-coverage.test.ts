@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const scannerPath = path.join(root, "tools/scan-lua-prompt-patterns.mjs");
@@ -96,7 +97,7 @@ describe("Lua real prompt helper restore coverage", () => {
   it("requires representative prompt helper fixtures to assert clean Lua restore", () => {
     const missing = representativePromptHelperFixtures()
       .filter(({ file }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -111,7 +112,7 @@ describe("Lua real prompt helper restore coverage", () => {
   it("requires representative prompt helper fixtures to prove restored grouped legal actions", () => {
     const missing = representativePromptHelperFixtures()
       .filter(({ file }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)")
@@ -125,8 +126,8 @@ describe("Lua real prompt helper restore coverage", () => {
   it("requires representative prompt helper fixtures to prove restored prompt semantics", () => {
     const weak = representativePromptHelperFixtures()
       .filter(({ file, required }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
-        return required.some((snippet) => !text.includes(snippet));
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 

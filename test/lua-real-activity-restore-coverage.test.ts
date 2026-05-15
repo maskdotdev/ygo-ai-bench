@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 
@@ -8,7 +9,7 @@ describe("Lua real activity restore coverage", () => {
   it("requires representative activity fixtures to assert clean Lua restore", () => {
     const missing = realScriptActivityFixtureFiles()
       .filter(({ file }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -25,11 +26,11 @@ describe("Lua real activity restore coverage", () => {
   it("requires representative activity fixtures to prove restored activity counters and delayed operations", () => {
     const missing = realScriptActivityFixtureFiles()
       .filter(({ file, requiredSnippets }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("activityHistory")
           || !text.includes("duelActivity.chain")
           || !text.includes("effectId?.startsWith(\"lua-\")")
-          || requiredSnippets.some((snippet) => !text.includes(snippet));
+          || requiredSnippets.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 

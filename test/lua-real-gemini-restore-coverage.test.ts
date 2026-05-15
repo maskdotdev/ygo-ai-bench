@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const geminiFixtureCount = 13;
@@ -15,7 +16,7 @@ describe("Lua real Gemini restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys")
@@ -32,7 +33,7 @@ describe("Lua real Gemini restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("flatMap((group) => group.actions)")
@@ -50,7 +51,7 @@ describe("Lua real Gemini restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("IsGeminiStatus")
           || !/status .*true|status true|gemini status true/.test(text)
           || !/status .*false|status false|gemini status false/.test(text);
@@ -65,7 +66,7 @@ describe("Lua real Gemini restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("operationInfos")
           || !text.includes("eventHistory")
           || !/eventName:\s*["'](released|counterAdded|sentToGraveyard|banished|destroyed|specialSummoned|cardsDrawn)["']/.test(text);
@@ -80,8 +81,8 @@ describe("Lua real Gemini restore coverage", () => {
 
     const missing = files
       .filter(({ file, required }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
-        return required.some((snippet) => !text.includes(snippet));
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
       });
 
     expect(missing).toEqual([]);

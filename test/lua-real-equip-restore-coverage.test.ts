@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const equipFixtureCount = 1;
@@ -16,7 +17,7 @@ describe("Lua real equip restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -38,7 +39,7 @@ describe("Lua real equip restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !/location:\s*["']spellTrapZone["']/.test(text)
           || !text.includes("equippedToUid")
           || !text.includes("missingRegistryKeys")
@@ -56,7 +57,7 @@ describe("Lua real equip restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("operationInfos")
           || !/"category":\s*262144/.test(text);
       });
@@ -70,7 +71,7 @@ describe("Lua real equip restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !/host\.messages\)\.toContain/.test(text)
           || !/probe/.test(text)
           || !text.includes("missingRegistryKeys")
@@ -88,7 +89,7 @@ describe("Lua real equip restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !/previousEquippedToUid/.test(text)
           || !/location:\s*["']graveyard["']/.test(text)
           || !text.includes("missingRegistryKeys")
@@ -106,7 +107,7 @@ describe("Lua real equip restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const activationLockFixtureCount = 3;
@@ -14,7 +15,7 @@ describe("Lua real activation-lock restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys")
@@ -31,7 +32,7 @@ describe("Lua real activation-lock restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("code === 6")
           || !text.includes('event: "continuous"')
           || !text.includes("targetRange")
@@ -49,7 +50,7 @@ describe("Lua real activation-lock restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("toBe(true)");
       });
 
@@ -62,13 +63,13 @@ describe("Lua real activation-lock restore coverage", () => {
 
     const missing = fixtures
       .filter((fixture) => {
-        const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, fixture.file), "utf8"));
         return !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
           || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
-          || !fixture.requiredSnippets.every((snippet) => text.includes(snippet));
+          || !fixture.requiredSnippets.every((snippet) => hasCoverageSnippet(text, snippet));
       })
       .map((fixture) => fixture.file);
 

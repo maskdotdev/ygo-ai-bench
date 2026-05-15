@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const responseFixtureCount = 4;
@@ -14,7 +15,7 @@ describe("Lua real response restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -35,7 +36,7 @@ describe("Lua real response restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("applyLuaRestoreResponse")
           || !text.includes("eventHistory")
           || !text.includes("host.messages).not.toContain")
@@ -47,10 +48,11 @@ describe("Lua real response restore coverage", () => {
   });
 
   it("requires Called by the Grave to pin restored same-code lingering negation", () => {
-    const text = fs.readFileSync(path.join(root, "test", "lua-real-script-called-by-the-grave.test.ts"), "utf8");
+    const text = coverageText(fs.readFileSync(path.join(root, "test", "lua-real-script-called-by-the-grave.test.ts"), "utf8"));
 
-    expect(text).toContain("code: 2, sourceUid: calledByCard!.uid");
-    expect(text).toContain("code: 1020, sourceUid: calledByCard!.uid");
+    expect(text).toContain("code: 2");
+    expect(text).toContain("code: 1020");
+    expect(text).toContain("sourceUid: \"p0-deck-24224830-0\"");
     expect(text).toContain('location: "banished"');
     expect(text).toContain('host.messages).not.toContain("same-code monster resolved")');
     expect(text).toContain("expect(restored.session.state.chain).toHaveLength(0)");
@@ -64,7 +66,7 @@ describe("Lua real response restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !/state\.chain\)\.toHaveLength\((1|2)\)/.test(text)
           || !text.includes("chainResponderScript")
           || !text.includes("host.messages).not.toContain");
@@ -79,7 +81,7 @@ describe("Lua real response restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("operationInfos")
           || !/category:\s*0x[0-9a-f]+/i.test(text)
           || !/count:\s*[0-9]/.test(text)

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const LIZARD_DESCRIPTOR_FIXTURE_COUNT = 18;
@@ -13,7 +14,7 @@ describe("Lua real Clock Lizard restore coverage", () => {
 
     const missing = fixtures
       .filter(({ file, requireFalse = true, requiredSnippets }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -26,7 +27,7 @@ describe("Lua real Clock Lizard restore coverage", () => {
           || !text.includes("targetContext(restored.session.state")
           || !text.includes("toBe(true)")
           || (requireFalse && !text.includes("toBe(false)"))
-          || !requiredSnippets.every((snippet) => text.includes(snippet));
+          || !requiredSnippets.every((snippet) => hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 
@@ -39,7 +40,7 @@ describe("Lua real Clock Lizard restore coverage", () => {
 
     const missing = fixtures
       .filter(({ file, requiredSnippets }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -50,7 +51,7 @@ describe("Lua real Clock Lizard restore coverage", () => {
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("luaTargetDescriptor).toBeUndefined()")
           || !text.includes("targetCardPredicate).toBeUndefined()")
-          || !requiredSnippets.every((snippet) => text.includes(snippet));
+          || !requiredSnippets.every((snippet) => hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 

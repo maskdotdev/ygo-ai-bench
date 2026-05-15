@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const FREE_CHAIN_FIXTURE_COUNT = 11;
@@ -14,7 +15,7 @@ describe("Lua real free-chain restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -35,7 +36,7 @@ describe("Lua real free-chain restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("applyLuaRestoreResponse")
           || !/state\.chain\)\.toHaveLength\((1|2)\)/.test(text)
           || !text.includes("targetUids")
@@ -52,7 +53,7 @@ describe("Lua real free-chain restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("operationInfos")
           || !/category:\s*0x[0-9a-f]+/i.test(text)
           || !/count:\s*[1-9]/.test(text)
@@ -69,7 +70,7 @@ describe("Lua real free-chain restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("chainStarterScript")
           || !text.includes("chainResponderScript")
           || !text.includes("host.messages).toContain")

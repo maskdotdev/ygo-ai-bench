@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const SPECIAL_SUMMON_LOCK_FIXTURE_COUNT = 70;
@@ -13,7 +14,7 @@ describe("Lua real special-summon lock restore coverage", () => {
 
     const missing = fixtures
       .filter((fixture) => {
-        const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, fixture.file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -34,8 +35,8 @@ describe("Lua real special-summon lock restore coverage", () => {
 
     const weak = fixtures
       .filter((fixture) => {
-        const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
-        return !fixture.requiredSnippets.every((snippet) => text.includes(snippet));
+        const text = coverageText(fs.readFileSync(path.join(root, fixture.file), "utf8"));
+        return !fixture.requiredSnippets.every((snippet) => hasCoverageSnippet(text, snippet));
       })
       .map((fixture) => fixture.file);
 
@@ -48,7 +49,7 @@ describe("Lua real special-summon lock restore coverage", () => {
 
     const missing = fixtures
       .filter((fixture) => {
-        const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, fixture.file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -57,7 +58,7 @@ describe("Lua real special-summon lock restore coverage", () => {
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
-          || !fixture.requiredSnippets.every((snippet) => text.includes(snippet));
+          || !fixture.requiredSnippets.every((snippet) => hasCoverageSnippet(text, snippet));
       })
       .map((fixture) => fixture.file);
 

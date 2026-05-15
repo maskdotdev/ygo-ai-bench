@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const conditionFixtureCount = 7;
@@ -13,7 +14,7 @@ describe("Lua real condition restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -35,7 +36,7 @@ describe("Lua real condition restore coverage", () => {
 
     const missing = files
       .filter((file) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("luaConditionDescriptor")
           || !text.includes("canActivate")
           || !text.includes("targetContext(restored.session.state")
@@ -54,7 +55,7 @@ describe("Lua real condition restore coverage", () => {
 
     const missing = files
       .filter(({ file, requiredSnippets }) => {
-        const text = fs.readFileSync(path.join(root, file), "utf8");
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -70,7 +71,7 @@ describe("Lua real condition restore coverage", () => {
           || !text.includes("targetContext(restored.session.state")
           || !text.includes("toBe(true)")
           || !text.includes("toBe(false)")
-          || !requiredSnippets.every((snippet) => text.includes(snippet));
+          || !requiredSnippets.every((snippet) => hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
 
