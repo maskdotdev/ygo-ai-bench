@@ -29,13 +29,17 @@ describe("Lua real-script clean restore coverage", () => {
     expect(unreferenced).toEqual([]);
   });
 
-  it("requires every Lua-restored real-script fixture to assert grouped legal-action restore evidence", () => {
+  it("requires every Lua-restored real-script fixture to assert raw and grouped legal-action restore evidence", () => {
     const files = realScriptFixtureFiles();
     expect(files).toHaveLength(realScriptFixtureCount);
 
     const missing = files
       .filter((file) => readTestFile(file).includes("restoreDuelWithLuaScripts"))
-      .filter((file) => !readTestFile(file).includes("getLuaRestoreLegalActionGroups"));
+      .filter((file) => {
+        const text = readTestFile(file);
+        return !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups");
+      });
 
     expect(missing).toEqual([]);
   });
