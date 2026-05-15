@@ -32,6 +32,8 @@ const officialPromptApiCounts: Record<string, number> = {
   SelectFieldZone: 4,
 };
 
+const officialPromptApisWithoutOfficialUsage = ["AnnounceType", "SelectField"].sort();
+
 const officialPromptPatternCounts: Record<string, number> = {
   "SelectYesNo:description": 1172,
   "SelectOption:literal-options": 416,
@@ -63,6 +65,28 @@ describe("Lua real prompt helper restore coverage", () => {
     expect(report).toMatchObject(officialPromptScannerSummary);
     expect(report.apiCounts).toEqual(officialPromptApiCounts);
     expect(report.patternCounts).toEqual(officialPromptPatternCounts);
+  });
+
+  it("keeps zero-use official prompt APIs covered by browser prompt shims", () => {
+    const zeroUseApis = Object.entries(officialPromptApiCounts)
+      .filter(([, count]) => count === 0)
+      .map(([api]) => api)
+      .sort();
+
+    expect(zeroUseApis).toEqual(officialPromptApisWithoutOfficialUsage);
+
+    const shimTelemetryText = fs.readFileSync(path.join(root, "test/lua-prompt-shim-telemetry.test.ts"), "utf8");
+    const scannerText = fs.readFileSync(path.join(root, "test/lua-prompt-pattern-scanner.test.ts"), "utf8");
+    const publicApiText = fs.readFileSync(path.join(root, "test/public-api.test.ts"), "utf8");
+
+    const missingShimCoverage = zeroUseApis.filter((api) =>
+      !shimTelemetryText.includes(`api: "${api}"`)
+      || !shimTelemetryText.includes(`Duel.${api}`)
+      || !scannerText.includes(`Duel.${api}`)
+      || !publicApiText.includes(`"${api}"`)
+    );
+
+    expect(missingShimCoverage).toEqual([]);
   });
 
   it("keeps the representative prompt helper fixture inventory broad", () => {
