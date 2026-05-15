@@ -54,6 +54,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(host.loadCardScript(Number(effectNormalCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(3);
+    expect(session.state.effects.find((effect) => effect.sourceUid === effectNormal!.uid)).toMatchObject({
+      description: Number(effectNormalCode),
+    });
 
     const activateField = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === lordlyLode!.uid);
     expect(activateField).toBeDefined();
@@ -109,6 +112,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restored.session.state.effects.find((effect) => effect.sourceUid === effectNormal!.uid)).toMatchObject({
+      description: Number(effectNormalCode),
+    });
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getDuelLegalActionGroups(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(restored.session.state.effects).toEqual(

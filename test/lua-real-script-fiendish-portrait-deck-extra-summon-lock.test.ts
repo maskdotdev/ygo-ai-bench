@@ -56,6 +56,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fi
     );
     expect(script.ok, script.error).toBe(true);
     expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      description: 0x1ada402,
       luaTargetDescriptor: "special-summon-limit:deck-or-extra",
       property: 0x4000800,
       reset: { flags: 0x40000200 },
@@ -71,6 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fi
       getLuaRestoreLegalActions(restored, 0),
     );
     expect(restored.session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      description: 0x1ada402,
       property: 0x4000800,
       reset: { flags: 0x40000200 },
       targetRange: [1, 0],

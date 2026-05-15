@@ -61,6 +61,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Py
     expect(host.loadCardScript(Number(turnEffectCarrierCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(3);
+    expect(session.state.effects.filter((effect) => effect.sourceUid === carrier!.uid)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ description: 801 }),
+        expect.objectContaining({ description: 802 }),
+      ]),
+    );
 
     const activate = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === pyroClock!.uid);
     expect(activate, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
@@ -72,6 +78,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Py
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restored.session.state.effects.filter((effect) => effect.sourceUid === carrier!.uid)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ description: 801 }),
+        expect.objectContaining({ description: 802 }),
+      ]),
+    );
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 

@@ -63,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(sourceAction, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
     if (!sourceAction || sourceAction.type !== "activateEffect") throw new Error("Expected Tyrant Ogre source activation action");
     expect(session.state.effects.find((effect) => effect.id === sourceAction.effectId)).toMatchObject({
+      description: 0x76beb50,
       label: 1,
       property: 0x10,
     });
@@ -81,6 +82,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.effects.find((effect) => effect.id === sourceAction.effectId)).toMatchObject({
+      description: 0x76beb50,
       label: 1,
       property: 0x10,
     });

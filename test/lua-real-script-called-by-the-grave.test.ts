@@ -46,6 +46,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     expect(host.loadCardScript(Number(calledByCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(sameCodeMonster), source).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(3);
+    expect(session.state.effects.find((effect) => effect.sourceUid === activeMonster!.uid)).toMatchObject({
+      description: Number(sameCodeMonster),
+    });
 
     const calledByAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === calledByCard!.uid);
     expect(calledByAction).toBeDefined();
@@ -68,6 +71,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(restored.session.state.cards.find((card) => card.uid === graveyardMonster!.uid)).toMatchObject({ location: "banished" });
+    expect(restored.session.state.effects.find((effect) => effect.sourceUid === activeMonster!.uid)).toMatchObject({
+      description: Number(sameCodeMonster),
+    });
     expect(restored.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: 2, sourceUid: calledByCard!.uid }),
