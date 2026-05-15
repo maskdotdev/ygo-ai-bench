@@ -97,11 +97,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Me
         expect.objectContaining({ event: "continuous", code: 41, sourceUid: target!.uid, reset: { flags: 0x41fe1200 } }),
       ]),
     );
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "positionChanged", eventCardUid: target!.uid }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "positionChanged" && event.eventCardUid === target!.uid)).toEqual([
+      {
+        eventName: "positionChanged",
+        eventCode: 1016,
+        eventCardUid: target!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: angineer!.uid,
+        eventReasonEffectId: 2,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpDefense",
+          sequence: 1,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "detachedMaterial" && event.eventCardUid === material!.uid)).toEqual([
       {
         eventName: "detachedMaterial",

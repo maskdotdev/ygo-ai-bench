@@ -80,11 +80,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
       },
     ]);
     expect(restored.session.state.cards.find((card) => card.uid === giantOrc!.uid)).toMatchObject({ location: "monsterZone", controller: 0, position: "faceUpDefense" });
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "positionChanged", eventCode: 1016, eventCardUid: giantOrc!.uid }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "positionChanged" && event.eventCardUid === giantOrc!.uid)).toEqual([
+      {
+        eventName: "positionChanged",
+        eventCode: 1016,
+        eventCardUid: giantOrc!.uid,
+        eventReason: 64,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: giantOrc!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpDefense",
+          sequence: 0,
+        },
+      },
+    ]);
   });
 });
 
