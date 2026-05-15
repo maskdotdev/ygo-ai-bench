@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -100,10 +101,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     expect(chainRestored.session.state.eventHistory).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ eventName: "released", eventCardUid: gemini!.uid }),
-        expect.objectContaining({ eventName: "destroyed", eventCardUid: target!.uid }),
         expect.objectContaining({ eventName: "cardsDrawn", eventPlayer: 0, eventValue: 1, eventUids: [drawn!.uid] }),
       ]),
     );
+    expect(chainRestored.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === target!.uid)).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: target!.uid,
+        eventPreviousState: {
+          location: "monsterZone",
+          controller: 1,
+          sequence: 0,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventCurrentState: {
+          location: "graveyard",
+          controller: 1,
+          sequence: 0,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: spark!.uid,
+        eventReasonEffectId: 1,
+      },
+    ]);
     expect(chainRestored.host.messages).not.toContain("gemini spark responder resolved");
   });
 });
