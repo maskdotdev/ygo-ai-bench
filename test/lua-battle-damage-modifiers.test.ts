@@ -3,7 +3,7 @@ import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelCardData, DuelCardInstance, DuelCardReader, DuelSession } from "#duel/types.js";
 import type { LuaScriptSource } from "#lua/host.js";
 
@@ -628,6 +628,11 @@ describe("Lua battle damage modifiers", () => {
         .filter((effect) => effect.code === 204)
         .map((effect) => restored.session.state.cards.find((card) => card.uid === effect.sourceUid)?.code),
     ).toEqual(["300", "400"]);
+    const restoredPlayer = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    expect(getLuaRestoreLegalActionGroups(restored, restoredPlayer)).toEqual(getGroupedDuelLegalActions(restored.session, restoredPlayer));
+    expect(getLuaRestoreLegalActionGroups(restored, restoredPlayer).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restored, restoredPlayer),
+    );
     passBattleResponses(restored.session);
 
     expect(restored.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "banished", reason: 0x4000021 });
