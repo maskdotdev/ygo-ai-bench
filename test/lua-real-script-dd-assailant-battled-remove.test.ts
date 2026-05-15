@@ -86,7 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D.
     expect(restored.session.state.eventHistory).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ eventName: "afterDamageCalculation", eventCode: 1138, eventUids: [attacker!.uid, assailant!.uid] }),
-        expect.objectContaining({ eventName: "banished", eventCode: 1011, eventUids: expect.arrayContaining([attacker!.uid, assailant!.uid]) }),
+        expect.objectContaining({ eventName: "banished", eventCode: 1011, eventUids: [attacker!.uid, assailant!.uid] }),
       ]),
     );
 

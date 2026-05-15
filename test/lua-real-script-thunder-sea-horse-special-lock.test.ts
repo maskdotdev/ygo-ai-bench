@@ -38,6 +38,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
     const procedure = requireCard(session, procedureCode);
     const responder = requireCard(session, responderCode);
     const searchTargets = session.state.cards.filter((card) => card.code === searchCode).sort((a, b) => a.uid.localeCompare(b.uid));
+    const selectedSearchTargetUids = searchTargets.map((card) => card.uid).reverse();
     expect(searchTargets).toHaveLength(2);
     moveDuelCard(session.state, seaHorse.uid, "hand", 0);
     moveDuelCard(session.state, procedure.uid, "hand", 0);
@@ -99,7 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
         expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: seaHorse.uid }),
         expect.objectContaining({ eventName: "sentToHand", eventCardUid: searchTargets[0]!.uid }),
         expect.objectContaining({ eventName: "sentToHand", eventCardUid: searchTargets[1]!.uid }),
-        expect.objectContaining({ eventName: "sentToHandConfirmed", eventPlayer: 1, eventUids: expect.arrayContaining(searchTargets.map((card) => card.uid)) }),
+        expect.objectContaining({ eventName: "sentToHandConfirmed", eventPlayer: 1, eventUids: selectedSearchTargetUids }),
       ]),
     );
 

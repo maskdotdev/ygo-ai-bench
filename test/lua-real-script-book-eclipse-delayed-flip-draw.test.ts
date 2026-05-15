@@ -91,7 +91,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bo
       operationInfos: [
         expect.objectContaining({
           category: 0x1000,
-          targetUids: expect.arrayContaining([ownMonster!.uid, opponentMonster!.uid]),
+          targetUids: [ownMonster!.uid, opponentMonster!.uid],
           count: 2,
           player: 0,
           parameter: 0x8,

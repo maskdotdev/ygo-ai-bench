@@ -400,6 +400,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(discardA).toBeDefined();
     expect(discardB).toBeDefined();
     expect(responder).toBeDefined();
+    const confirmedOpponentHandUids = [discardA!.uid, discardB!.uid, responder!.uid];
     moveDuelCard(session.state, smoke!.uid, "hand", 0);
     moveDuelCard(session.state, target!.uid, "monsterZone", 0).position = "faceUpAttack";
     moveDuelCard(session.state, discardA!.uid, "hand", 1);
@@ -492,7 +493,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(restoredDiscardChain.session.state.eventHistory).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ eventName: "leftField", eventCode: 1015, eventCardUid: smoke!.uid }),
-        expect.objectContaining({ eventName: "confirmed", eventCode: 1211, eventPlayer: 0, eventUids: expect.arrayContaining([discardA!.uid, discardB!.uid]) }),
+        expect.objectContaining({ eventName: "confirmed", eventCode: 1211, eventPlayer: 0, eventUids: confirmedOpponentHandUids }),
         expect.objectContaining({ eventName: "discarded", eventCode: 1018, eventCardUid: discardedCards[0]!.uid }),
       ]),
     );
