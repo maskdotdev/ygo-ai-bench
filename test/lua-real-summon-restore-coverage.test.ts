@@ -11,7 +11,7 @@ const summonProcedureFixtureCount = 20;
 const typedSummonProcedureFixtureCount = 6;
 const pendulumGrantFixtureCount = 3;
 const pendulumHelperFixtureCount = 13;
-const unionProcedureFixtureCount = 2;
+const unionProcedureFixtureCount = 4;
 const materialLockFixtureCount = 4;
 const flipSummonSuccessTrapFixtureCount = 3;
 
@@ -401,8 +401,24 @@ function realScriptUnionProcedureFixtureSnippets(): Array<{ file: string; requir
         "findEffectAction(restoredSummonWindow.session, getLuaRestoreLegalActions(restoredSummonWindow, 0), unionDriver!.uid, 2)",
         'location: "monsterZone"',
         "previousEquippedToUid: target!.uid",
+      ],
+    },
+    {
+      file: "lua-real-script-union-procedure-actions.test.ts",
+      required: [
+        "const platformCode = \"23265594\"",
         "findEffectActionByCategory(restoredDriverDeckEquipWindow.session, getLuaRestoreLegalActions(restoredDriverDeckEquipWindow, 0), unionDriver!.uid, 0x40000)",
+        'location: "banished", previousEquippedToUid: target!.uid',
+        'location: "spellTrapZone", equippedToUid: target!.uid',
+        "effect.sourceUid === platform!.uid && (effect.code === 76 || effect.code === 347)",
+      ],
+    },
+    {
+      file: "lua-real-script-union-procedure-actions.test.ts",
+      required: [
+        "const unionPilotCode = \"89357740\"",
         "findEffectActionByCategory(restoredEquippedState.session, getLuaRestoreLegalActions(restoredEquippedState, 0), unionPilot!.uid, 0x40200)",
+        "previousEquippedToUid: target!.uid",
         '{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }',
         'eventName: "specialSummoned", eventCode: 1102',
       ],
