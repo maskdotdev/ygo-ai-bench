@@ -105,7 +105,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fo
     expect(resolved.ok, resolved.error).toBe(true);
     expect(restored.session.state.chain).toHaveLength(0);
     expect(restored.session.state.cards.find((card) => card.uid === lance!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === attacker!.uid && [1, 100].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === attacker!.uid && [1, 100].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "canActivate": [Function],

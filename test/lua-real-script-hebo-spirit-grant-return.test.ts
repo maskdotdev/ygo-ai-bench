@@ -132,7 +132,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script He
     expect(restoredGrantedState.missingRegistryKeys).toEqual([]);
     expect(restoredGrantedState.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredGrantedState, 0);
-    expect(restoredGrantedState.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === target!.uid && [effectAddType, phaseEndEvent].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restoredGrantedState.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === target!.uid && [effectAddType, phaseEndEvent].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "code": 115,

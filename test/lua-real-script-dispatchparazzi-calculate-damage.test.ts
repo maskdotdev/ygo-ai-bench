@@ -45,7 +45,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(dispatchCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects.filter((effect) => effect.event === "trigger" && effect.sourceUid === dispatch!.uid && [1029, 1131].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(session.state.effects.filter((effect) => effect.event === "trigger" && effect.sourceUid === dispatch!.uid && [1029, 1131].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "canActivate": [Function],

@@ -83,7 +83,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ha
     expectRestoredLegalActions(restoredChain, 1);
     resolveRestoredChain(restoredChain);
 
-    expect(restoredChain.session.state.effects.filter((effect) => effect.sourceUid === hanewata!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restoredChain.session.state.effects.filter((effect) => effect.sourceUid === hanewata!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "battleDamageValue": [Function],
@@ -174,7 +174,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ha
     expect(restoredEffects.missingRegistryKeys).toEqual([]);
     expect(restoredEffects.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredEffects, 0);
-    expect(restoredEffects.session.state.effects.filter((effect) => effect.sourceUid === hanewata!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restoredEffects.session.state.effects.filter((effect) => effect.sourceUid === hanewata!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "battleDamageValue": [Function],

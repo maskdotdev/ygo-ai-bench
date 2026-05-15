@@ -104,7 +104,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Me
     expect(restored.session.state.cards.find((card) => card.uid === angineer!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpDefense", overlayUids: [] });
     expect(restored.session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "graveyard", controller: 0, reason: duelReason.cost });
     expect(restored.session.state.positionsChanged).toEqual([target!.uid]);
-    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === target!.uid && [41, 42].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === target!.uid && [41, 42].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "canActivate": [Function],

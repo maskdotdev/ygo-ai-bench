@@ -51,7 +51,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ri
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === ring.uid && [196, 343].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === ring.uid && [196, 343].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "canActivate": [Function],

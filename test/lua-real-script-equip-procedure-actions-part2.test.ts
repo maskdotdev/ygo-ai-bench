@@ -227,7 +227,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       const restoredEquipState = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
       expectCleanRestore(restoredEquipState);
       expectRestoredLegalActions(restoredEquipState, restoredEquipState.session.state.waitingFor ?? restoredEquipState.session.state.turnPlayer);
-      expect(restoredEquipState.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === base!.uid && [73, 346].includes(effect.code))).toMatchInlineSnapshot(`
+      expect(restoredEquipState.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === base!.uid && [73, 346].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
         [
           {
             "canActivate": [Function],

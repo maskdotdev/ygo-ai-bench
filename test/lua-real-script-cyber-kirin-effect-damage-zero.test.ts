@@ -68,7 +68,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cy
     expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredChain);
 
-    expect(restoredChain.session.state.effects.filter((effect) => effect.sourceUid === cyberKirin!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restoredChain.session.state.effects.filter((effect) => effect.sourceUid === cyberKirin!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "battleDamageValue": [Function],
@@ -142,7 +142,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cy
     expectRestoredLegalActions(restoredEffects, restoredEffects.session.state.waitingFor ?? restoredEffects.session.state.turnPlayer);
     expect(restoredEffects.missingRegistryKeys).toEqual([]);
     expect(restoredEffects.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restoredEffects.session.state.effects.filter((effect) => effect.sourceUid === cyberKirin!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restoredEffects.session.state.effects.filter((effect) => effect.sourceUid === cyberKirin!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "battleDamageValue": [Function],

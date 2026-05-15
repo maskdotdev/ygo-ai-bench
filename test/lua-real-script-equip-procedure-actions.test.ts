@@ -447,7 +447,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       const restoredTwoMonsters = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
       expectCleanRestore(restoredTwoMonsters);
       expectRestoredLegalActions(restoredTwoMonsters, restoredTwoMonsters.session.state.waitingFor ?? restoredTwoMonsters.session.state.turnPlayer);
-      expect(restoredTwoMonsters.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === united!.uid && [100, 104].includes(effect.code))).toMatchInlineSnapshot(`
+      expect(restoredTwoMonsters.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === united!.uid && [100, 104].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
         [
           {
             "battleDamageValue": [Function],
@@ -598,7 +598,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       const restoredTwoBackrow = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
       expectCleanRestore(restoredTwoBackrow);
       expectRestoredLegalActions(restoredTwoBackrow, restoredTwoBackrow.session.state.waitingFor ?? restoredTwoBackrow.session.state.turnPlayer);
-      expect(restoredTwoBackrow.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === magePower!.uid && [100, 104].includes(effect.code))).toMatchInlineSnapshot(`
+      expect(restoredTwoBackrow.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === magePower!.uid && [100, 104].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
         [
           {
             "battleDamageValue": [Function],

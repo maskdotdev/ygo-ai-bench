@@ -59,7 +59,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ul
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === tyranno.uid && [85, 193].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === tyranno.uid && [85, 193].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "canActivate": [Function],

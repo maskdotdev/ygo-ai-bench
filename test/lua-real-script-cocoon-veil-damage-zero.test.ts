@@ -81,7 +81,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
     expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredChain);
     expect(restoredChain.session.state.cards.find((card) => card.uid === summon!.uid)).toMatchObject({ location: "monsterZone", controller: 0, summonType: "special" });
-    expect(restoredChain.session.state.effects.filter((effect) => effect.sourceUid === cocoonVeil!.uid && [82, 335].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restoredChain.session.state.effects.filter((effect) => effect.sourceUid === cocoonVeil!.uid && [82, 335].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "battleDamageValue": [Function],

@@ -121,7 +121,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
     expect(restoredActivation.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restoredActivation.session.state.effects.filter((effect) => effect.sourceUid === assaultZone!.uid && [effectExtraReleaseNonsum, 1017].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restoredActivation.session.state.effects.filter((effect) => effect.sourceUid === assaultZone!.uid && [effectExtraReleaseNonsum, 1017].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "code": 158,

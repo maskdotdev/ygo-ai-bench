@@ -137,7 +137,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Al
     expect(triggered.ok, triggered.error).toBe(true);
 
     expect(restored.session.state.pendingTriggers).toEqual([]);
-    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === lightTarget!.uid && [2, 8].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === lightTarget!.uid && [2, 8].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "canActivate": [Function],

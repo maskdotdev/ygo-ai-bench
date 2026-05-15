@@ -47,7 +47,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Al
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(alienHunterCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects.filter((effect) => effect.sourceUid === alienHunter!.uid && [1138, 1139].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(session.state.effects.filter((effect) => effect.sourceUid === alienHunter!.uid && [1138, 1139].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "canActivate": [Function],

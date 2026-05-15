@@ -71,7 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
     applyAndAssert(session, rhapsodyAction!);
     expect(session.state.cards.find((card) => card.uid === normalDragon!.uid)).toMatchObject({ location: "monsterZone", controller: 0, summonType: "special" });
     expect(session.state.cards.find((card) => card.uid === rhapsody!.uid)).toMatchObject({ location: "graveyard" });
-    expect(session.state.effects.filter((effect) => effect.sourceUid === rhapsody!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(session.state.effects.filter((effect) => effect.sourceUid === rhapsody!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "canActivate": [Function],

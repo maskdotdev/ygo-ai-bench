@@ -124,7 +124,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Me
         },
       },
     ]);
-    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === megarock!.uid && [103, 107].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === megarock!.uid && [103, 107].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "canActivate": [Function],

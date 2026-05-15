@@ -108,7 +108,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ri
     expect(restoredEquipState.missingRegistryKeys).toEqual([]);
     expect(restoredEquipState.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredEquipState, 0);
-    expect(restoredEquipState.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === rider!.uid && [76, 203].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restoredEquipState.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === rider!.uid && [76, 203].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "canActivate": [Function],
@@ -272,7 +272,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ri
     expect(restoredEquippedState.missingRegistryKeys).toEqual([]);
     expect(restoredEquippedState.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredEquippedState, 0);
-    expect(restoredEquippedState.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === rider!.uid && [45, 76].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restoredEquippedState.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === rider!.uid && [45, 76].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "canActivate": [Function],

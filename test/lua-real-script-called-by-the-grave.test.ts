@@ -57,7 +57,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     expect(session.state.chain).toHaveLength(0);
     expect(session.state.cards.find((card) => card.uid === graveyardMonster!.uid)).toMatchObject({ location: "banished" });
     expect(session.state.cards.find((card) => card.uid === calledByCard!.uid)).toMatchObject({ location: "graveyard" });
-    expect(session.state.effects.filter((effect) => effect.sourceUid === calledByCard!.uid && [2, 1020].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(session.state.effects.filter((effect) => effect.sourceUid === calledByCard!.uid && [2, 1020].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "canActivate": [Function],
@@ -142,7 +142,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     expect(restored.session.state.effects.find((effect) => effect.sourceUid === activeMonster!.uid)).toMatchObject({
       description: Number(sameCodeMonster),
     });
-    expect(restored.session.state.effects.filter((effect) => effect.sourceUid === calledByCard!.uid && [2, 1020].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restored.session.state.effects.filter((effect) => effect.sourceUid === calledByCard!.uid && [2, 1020].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "code": 2,

@@ -90,7 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     expect(restoredDamageLockChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredDamageLockChain, restoredDamageLockChain.session.state.waitingFor ?? restoredDamageLockChain.session.state.turnPlayer);
     resolveRestoredChain(restoredDamageLockChain);
-    expect(restoredDamageLockChain.session.state.effects.filter((effect) => effect.sourceUid === samsara!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restoredDamageLockChain.session.state.effects.filter((effect) => effect.sourceUid === samsara!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "code": 82,

@@ -39,7 +39,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fo
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(pastCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === past!.uid && [101, 105].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === past!.uid && [101, 105].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "battleDamageValue": [Function],
@@ -100,7 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fo
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restored, 0),
     );
-    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === past!.uid && [101, 105].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === past!.uid && [101, 105].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "battleDamageValue": [Function],

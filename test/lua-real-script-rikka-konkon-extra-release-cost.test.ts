@@ -49,7 +49,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ri
     const registrations = host.registerInitialEffectsDetailed();
     expect(registrations.filter((result) => !result.skipped).every((result) => result.ok), JSON.stringify(registrations, null, 2)).toBe(true);
     expect(registrations.filter((result) => result.ok && !result.skipped).length).toBe(2);
-    expect(session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === konkon!.uid && [158, Number(konkonCode)].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === konkon!.uid && [158, Number(konkonCode)].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "canActivate": [Function],

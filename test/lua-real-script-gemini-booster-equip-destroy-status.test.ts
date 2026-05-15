@@ -143,7 +143,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     expect(restoredEquipped.missingRegistryKeys).toEqual([]);
     expect(restoredEquipped.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredEquipped, 0);
-    expect(restoredEquipped.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === booster!.uid && [76, 100].includes(effect.code))).toMatchInlineSnapshot(`
+    expect(restoredEquipped.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === booster!.uid && [76, 100].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
           "battleDamageValue": [Function],
