@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 
 const pendulumCards: DuelCardData[] = [
@@ -117,6 +117,9 @@ describe("Lua dynamic Pendulum traits", () => {
     expect(action?.type === "pendulumSummon" ? action.summonUids : []).toEqual([bypassCandidate!.uid]);
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const restoredAction = getLuaRestoreLegalActions(restored, 0).find((candidateAction) => candidateAction.type === "pendulumSummon");
     expect(restoredAction?.type === "pendulumSummon" ? restoredAction.summonUids : []).toEqual([bypassCandidate!.uid]);
 
@@ -204,6 +207,9 @@ describe("Lua dynamic Pendulum traits", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(pendulumSummonActions(restored.session)).toEqual([
       expect.objectContaining({ maxSummons: 5, summonUids: [regular!.uid] }),
       expect.objectContaining({ maxSummons: 1, summonUids: [anyLevel!.uid, secondAnyLevel!.uid] }),
