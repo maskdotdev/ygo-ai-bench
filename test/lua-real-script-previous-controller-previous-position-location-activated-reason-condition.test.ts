@@ -52,14 +52,43 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-controller-previous-position-location-reason-player-reason:${positionFaceDown}:${locationOnField}:${duelReason.effect}:opponent`;
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: descriptor,
-          sourceUid: struggle!.uid,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.luaConditionDescriptor === descriptor && effect.sourceUid === struggle!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "category": 16,
+        "code": 1029,
+        "controller": 0,
+        "cost": [Function],
+        "description": 1079323825,
+        "event": "trigger",
+        "id": "lua-2-1029",
+        "luaConditionDescriptor": "condition:source-previous-controller-previous-position-location-reason-player-reason:10:12:64:opponent",
+        "luaTypeFlags": 129,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "optional": true,
+        "promptOperation": [Function],
+        "property": 65536,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:67457739:lua-2-1029",
+        "sourceUid": "p0-deck-67457739-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "triggerCode": 1029,
+        "triggerEvent": "destroyed",
+        "triggerSourceOnly": true,
+        "triggerTiming": "if",
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

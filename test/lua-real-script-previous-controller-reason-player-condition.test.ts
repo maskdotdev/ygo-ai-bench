@@ -49,14 +49,43 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const register = host.loadCardScript(Number(windaCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: "condition:source-previous-controller-reason-player:opponent",
-          sourceUid: winda!.uid,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.luaConditionDescriptor === "condition:source-previous-controller-reason-player:opponent" && effect.sourceUid === winda!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "category": 512,
+        "code": 1029,
+        "controller": 0,
+        "cost": [Function],
+        "description": 1043093856,
+        "event": "trigger",
+        "id": "lua-1-1029",
+        "luaConditionDescriptor": "condition:source-previous-controller-reason-player:opponent",
+        "luaTypeFlags": 129,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "optional": true,
+        "promptOperation": [Function],
+        "property": 65536,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:65193366:lua-1-1029",
+        "sourceUid": "p0-deck-65193366-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "triggerCode": 1029,
+        "triggerEvent": "destroyed",
+        "triggerSourceOnly": true,
+        "triggerTiming": "if",
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
