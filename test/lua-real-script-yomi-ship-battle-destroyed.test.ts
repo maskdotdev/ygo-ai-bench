@@ -86,11 +86,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Yo
       location: "graveyard",
       reason: effectDestroyReason,
     });
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleDestroyed", eventCode: 1140, eventCardUid: yomiShip!.uid }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDestroyed")).toEqual([
+      {
+        eventName: "battleDestroyed",
+        eventCode: 1140,
+        eventCardUid: yomiShip!.uid,
+        eventReason: duelReason.battle | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: attacker!.uid,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === attacker!.uid)).toEqual([
       {
         eventName: "destroyed",

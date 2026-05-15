@@ -141,11 +141,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
 
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === backrow!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === yamato!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
-    expect(restoredChainWindow.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleDestroyed", eventCode: 1140, eventCardUid: defender!.uid }),
-      ]),
-    );
+    expect(restoredChainWindow.session.state.eventHistory.filter((event) => event.eventName === "battleDestroyed")).toEqual([
+      {
+        eventName: "battleDestroyed",
+        eventCode: 1140,
+        eventCardUid: defender!.uid,
+        eventReason: duelReason.battle | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: yamato!.uid,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredChainWindow.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === backrow!.uid)).toEqual([
       {
         eventName: "destroyed",
