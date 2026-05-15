@@ -55,6 +55,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
     expect(resolve.ok, resolve.error).toBe(true);
     expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
       luaTargetDescriptor: "target:type:16384",
+      property: 0x800,
       targetRange: [1, 1],
     });
 
@@ -65,6 +66,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getLegalActions(restored.session, 0));
+    expect(restored.session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      property: 0x800,
+      targetRange: [1, 1],
+    });
     const probe = restored.host.loadScript(
       `
       local token=Duel.CreateToken(0,${tokenCode})

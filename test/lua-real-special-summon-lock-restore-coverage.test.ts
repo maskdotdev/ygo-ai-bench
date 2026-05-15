@@ -446,6 +446,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-virtual-world-lulu-level-rank3-summon-lock.test.ts",
       requiredSnippets: [
         "target:not-level-or-rank-above:3",
+        "property: 0x800",
         "targetRange: [1, 0]",
         "lulu level2 special 0",
         "lulu link2 special 0",
@@ -603,6 +604,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-token-collector-token-summon-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "target:type:16384"',
+        "property: 0x800",
         "targetRange: [1, 1]",
         "token collector token special 0",
         "token collector hand special 1",
