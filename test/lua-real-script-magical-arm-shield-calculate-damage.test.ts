@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -98,10 +99,56 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     expect(restored.session.state.eventHistory).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ eventName: "controlChanged", eventCardUid: stolenTarget!.uid }),
-        expect.objectContaining({ eventName: "battleDamageDealt", eventPlayer: 0, eventValue: 1500 }),
-        expect.objectContaining({ eventName: "destroyed", eventCardUid: stolenTarget!.uid }),
       ]),
     );
+    expect(restored.session.state.eventHistory.filter((event) => ["battleDamageDealt", "destroyed"].includes(event.eventName))).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: attacker!.uid,
+        eventPlayer: 0,
+        eventValue: 1500,
+        eventPreviousState: {
+          location: "deck",
+          controller: 1,
+          sequence: 1,
+          position: "faceDown",
+          faceUp: false,
+        },
+        eventCurrentState: {
+          location: "monsterZone",
+          controller: 1,
+          sequence: 0,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventReason: duelReason.battle,
+        eventReasonPlayer: 1,
+      },
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: stolenTarget!.uid,
+        eventPreviousState: {
+          location: "monsterZone",
+          controller: 0,
+          sequence: 1,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventCurrentState: {
+          location: "graveyard",
+          controller: 0,
+          sequence: 0,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventReason: duelReason.battle | duelReason.destroy,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: attacker!.uid,
+        eventReasonEffectId: 1,
+      },
+    ]);
   });
 });
 
