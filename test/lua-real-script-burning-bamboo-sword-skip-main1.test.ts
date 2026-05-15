@@ -55,9 +55,42 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bu
     expect(activateBroken, JSON.stringify(getDuelLegalActions(session, 0), null, 2)).toBeDefined();
     applyActionAndAssert(session, activateBroken);
     passChainUntilOpen(session);
-    expect(session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: burning.uid, eventName: "chaining", eventCode: 1027, player: 0 })]),
-    );
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-2-1027",
+          "eventCardUid": "p0-deck-41587307-1",
+          "eventChainDepth": 1,
+          "eventChainLinkId": "chain-2",
+          "eventCode": 1027,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "chaining",
+          "eventPlayer": 0,
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 2,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "if",
+          "eventValue": 1,
+          "id": "trigger-2-1",
+          "player": 0,
+          "relatedEffectId": 3,
+          "sourceUid": "p0-deck-55870497-0",
+          "triggerBucket": "turnOptional",
+        },
+      ]
+    `);
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);

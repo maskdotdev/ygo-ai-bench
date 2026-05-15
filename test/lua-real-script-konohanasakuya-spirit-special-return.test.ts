@@ -95,14 +95,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ko
     );
     advanceRestoredToEndPhase(restoredAfterSummon);
 
-    expect(restoredAfterSummon.session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        eventCode: 0x1200,
-        eventName: "phaseEnd",
-        effectId: expect.stringMatching(/^lua-\d+-4608$/),
-        sourceUid: konohanasakuya!.uid,
-      }),
-    ]);
+    expect(restoredAfterSummon.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-3-4608",
+          "eventCode": 4608,
+          "eventName": "phaseEnd",
+          "eventTriggerTiming": "when",
+          "id": "trigger-8-1",
+          "player": 0,
+          "sourceUid": "p0-deck-57722593-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
     const returnTrigger = getLuaRestoreLegalActions(restoredAfterSummon, 0).find((action) => action.type === "activateTrigger" && action.uid === konohanasakuya!.uid);
     expect(returnTrigger, JSON.stringify(getLuaRestoreLegalActions(restoredAfterSummon, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredAfterSummon, returnTrigger!);

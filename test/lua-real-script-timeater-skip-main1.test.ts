@@ -47,9 +47,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ti
     expect(attack, JSON.stringify(getDuelLegalActions(session, 0), null, 2)).toBeDefined();
     applyActionAndAssert(session, attack);
     passBattleUntilTrigger(session);
-    expect(session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: timeater.uid, eventName: "battleDestroyed", eventCode: 1140, eventCardUid: timeater.uid })]),
-    );
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-1-1139",
+          "eventCardUid": "p0-deck-44913552-0",
+          "eventCode": 1140,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "battleDestroyed",
+          "eventPlayer": 1,
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 33,
+          "eventReasonCardUid": "p0-deck-44913552-0",
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-6-1",
+          "player": 0,
+          "sourceUid": "p0-deck-44913552-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);

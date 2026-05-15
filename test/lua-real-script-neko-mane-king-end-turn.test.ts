@@ -55,9 +55,37 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ne
     );
     expect(sent.ok, sent.error).toBe(true);
     expect(host.messages).toContain("neko sent 1");
-    expect(session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: neko.uid, eventName: "sentToGraveyard", eventCode: 1014, player: 0 })]),
-    );
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-1-1014",
+          "eventCardUid": "p0-deck-11021521-0",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 64,
+          "eventReasonPlayer": 1,
+          "eventTriggerTiming": "when",
+          "id": "trigger-3-1",
+          "player": 0,
+          "sourceUid": "p0-deck-11021521-0",
+          "triggerBucket": "opponentMandatory",
+        },
+      ]
+    `);
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);

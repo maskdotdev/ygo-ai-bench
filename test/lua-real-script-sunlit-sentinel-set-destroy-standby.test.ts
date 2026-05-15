@@ -83,9 +83,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
     const standby = getLuaRestoreLegalActions(restoredDelayed, 0).find((action) => action.type === "changePhase" && action.phase === "standby");
     expect(standby, JSON.stringify(getLuaRestoreLegalActions(restoredDelayed, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredDelayed, standby!);
-    expect(restoredDelayed.session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: sentinel!.uid, eventName: "phaseStandby", eventCode: 0x1002 })]),
-    );
+    expect(restoredDelayed.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-3-4098",
+          "eventCode": 4098,
+          "eventName": "phaseStandby",
+          "eventTriggerTiming": "when",
+          "id": "trigger-5-1",
+          "player": 0,
+          "sourceUid": "p0-deck-78360952-0",
+          "triggerBucket": "turnOptional",
+        },
+      ]
+    `);
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredDelayed.session), workspace, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);

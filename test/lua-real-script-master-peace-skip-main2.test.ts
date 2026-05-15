@@ -59,9 +59,37 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     );
     expect(destroyed.ok, destroyed.error).toBe(true);
     expect(host.messages).toContain("master destroyed 1");
-    expect(session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: master.uid, eventName: "destroyed", eventCode: 1029, player: 0 })]),
-    );
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-5-1029",
+          "eventCardUid": "p0-deck-12800564-0",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonPlayer": 1,
+          "eventTriggerTiming": "if",
+          "id": "trigger-3-1",
+          "player": 0,
+          "sourceUid": "p0-deck-12800564-0",
+          "triggerBucket": "opponentOptional",
+        },
+      ]
+    `);
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
