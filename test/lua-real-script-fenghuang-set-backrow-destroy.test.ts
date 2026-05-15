@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -134,12 +135,78 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fe
     expect(restoredChain.session.state.cards.find((card) => card.uid === opponentSetSpell!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredChain.session.state.cards.find((card) => card.uid === opponentFaceupSpell!.uid)).toMatchObject({ location: "spellTrapZone" });
     expect(restoredChain.session.state.cards.find((card) => card.uid === opponentSetMonster!.uid)).toMatchObject({ location: "monsterZone" });
-    expect(restoredChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: opponentSetTrap!.uid }),
-        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: opponentSetSpell!.uid }),
-      ]),
-    );
+    expect(restoredChain.session.state.eventHistory.filter((event) => event.eventName === "destroyed")).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: opponentSetTrap!.uid,
+        eventPreviousState: {
+          location: "spellTrapZone",
+          controller: 1,
+          sequence: 0,
+          position: "faceDown",
+          faceUp: false,
+        },
+        eventCurrentState: {
+          location: "graveyard",
+          controller: 1,
+          sequence: 0,
+          position: "faceDown",
+          faceUp: true,
+        },
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: fenghuang!.uid,
+        eventReasonEffectId: 7,
+      },
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: opponentSetSpell!.uid,
+        eventPreviousState: {
+          location: "spellTrapZone",
+          controller: 1,
+          sequence: 1,
+          position: "faceDown",
+          faceUp: false,
+        },
+        eventCurrentState: {
+          location: "graveyard",
+          controller: 1,
+          sequence: 1,
+          position: "faceDown",
+          faceUp: true,
+        },
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: fenghuang!.uid,
+        eventReasonEffectId: 7,
+      },
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: opponentSetTrap!.uid,
+        eventUids: [opponentSetTrap!.uid, opponentSetSpell!.uid],
+        eventPreviousState: {
+          location: "spellTrapZone",
+          controller: 1,
+          sequence: 0,
+          position: "faceDown",
+          faceUp: false,
+        },
+        eventCurrentState: {
+          location: "graveyard",
+          controller: 1,
+          sequence: 0,
+          position: "faceDown",
+          faceUp: true,
+        },
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: fenghuang!.uid,
+        eventReasonEffectId: 7,
+      },
+    ]);
     expect(restoredChain.host.messages).not.toContain("fenghuang responder resolved");
   });
 });
