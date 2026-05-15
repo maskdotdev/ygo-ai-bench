@@ -57,6 +57,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     const restoredDamageCalc = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredDamageCalc.restoreComplete, restoredDamageCalc.incompleteReasons.join("; ")).toBe(true);
     expect(restoredDamageCalc.missingRegistryKeys).toEqual([]);
+    expect(restoredDamageCalc.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredDamageCalc.session.state.battleWindow?.kind).toBe("duringDamageCalculation");
     expect(currentAttack(restoredDamageCalc.session.state.cards.find((card) => card.uid === mirage!.uid)!, restoredDamageCalc.session.state)).toBe(4700);
     expectRestoredLegalActions(restoredDamageCalc, 0);
@@ -72,6 +73,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     const restoredEndPhase = restoreDuelWithLuaScripts(serializeDuel(restoredDamageCalc.session), workspace, reader);
     expect(restoredEndPhase.restoreComplete, restoredEndPhase.incompleteReasons.join("; ")).toBe(true);
     expect(restoredEndPhase.missingRegistryKeys).toEqual([]);
+    expect(restoredEndPhase.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredEndPhase, 0);
     expect(restoredEndPhase.session.state.phase).toBe("end");
     const trigger = getLuaRestoreLegalActions(restoredEndPhase, 0).find((action) => action.type === "activateTrigger" && action.uid === mirage!.uid);

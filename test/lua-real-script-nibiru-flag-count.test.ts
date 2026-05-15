@@ -27,6 +27,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     const restoredBelowThreshold = restoreDuelWithLuaScripts(serializeDuel(belowThreshold.session), belowThreshold.workspace, belowThreshold.reader);
     expect(restoredBelowThreshold.restoreComplete, restoredBelowThreshold.incompleteReasons.join("; ")).toBe(true);
     expect(restoredBelowThreshold.missingRegistryKeys).toEqual([]);
+    expect(restoredBelowThreshold.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredBelowThreshold, 0)).toEqual(getGroupedDuelLegalActions(restoredBelowThreshold.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredBelowThreshold, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restoredBelowThreshold, 0),
@@ -39,6 +40,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     const restoredAtThreshold = restoreDuelWithLuaScripts(serializeDuel(atThreshold.session), atThreshold.workspace, atThreshold.reader);
     expect(restoredAtThreshold.restoreComplete, restoredAtThreshold.incompleteReasons.join("; ")).toBe(true);
     expect(restoredAtThreshold.missingRegistryKeys).toEqual([]);
+    expect(restoredAtThreshold.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredAtThreshold, 0)).toEqual(getGroupedDuelLegalActions(restoredAtThreshold.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredAtThreshold, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restoredAtThreshold, 0),

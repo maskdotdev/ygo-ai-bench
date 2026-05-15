@@ -17,6 +17,7 @@ describe("Lua real stateful gate restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -35,7 +36,9 @@ function statefulGateFixtureFiles(): Array<{ file: string; required: string[] }>
       file: "test/lua-real-script-earthshattering-event-deck-grave-lock.test.ts",
       required: [
         "restoredTrigger.missingRegistryKeys).toEqual([])",
+        "restoredTrigger.missingChainLimitRegistryKeys).toEqual([])",
         "restoredLock.missingRegistryKeys).toEqual([])",
+        "restoredLock.missingChainLimitRegistryKeys).toEqual([])",
         "earthshattering self able grave locked false",
         "earthshattering opp able grave locked false",
         "earthshattering self able grave after end true",
@@ -56,7 +59,9 @@ function statefulGateFixtureFiles(): Array<{ file: string; required: string[] }>
       file: "test/lua-real-script-nibiru-flag-count.test.ts",
       required: [
         "restoredBelowThreshold.missingRegistryKeys).toEqual([])",
+        "restoredBelowThreshold.missingChainLimitRegistryKeys).toEqual([])",
         "restoredAtThreshold.missingRegistryKeys).toEqual([])",
+        "restoredAtThreshold.missingChainLimitRegistryKeys).toEqual([])",
         "toHaveLength(4)",
         "toHaveLength(5)",
         "nibiruRestoreActions(restoredAtThreshold",

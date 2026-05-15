@@ -17,6 +17,7 @@ describe("Lua real stat restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -55,7 +56,9 @@ function statFixtureFiles(): Array<{ file: string; required: string[] }> {
       file: "test/lua-real-script-shrink-set-base-attack.test.ts",
       required: [
         "restoredChain.missingRegistryKeys).toEqual([])",
+        "restoredChain.missingChainLimitRegistryKeys).toEqual([])",
         "restoredBattle.missingRegistryKeys).toEqual([])",
+        "restoredBattle.missingChainLimitRegistryKeys).toEqual([])",
         "code: 103",
         "value: 1000",
         'type === "passChain"',
