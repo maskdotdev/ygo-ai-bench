@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const summonNegationFixtureCount = 6;
 
 describe("Lua real summon-negation restore coverage", () => {
   it("requires representative summon-negation fixtures to assert grouped legal actions and clean Lua restore", () => {
-    const missing = realScriptSummonNegationFixtures()
+    const fixtures = realScriptSummonNegationFixtures();
+    expect(fixtures).toHaveLength(summonNegationFixtureCount);
+
+    const missing = fixtures
       .filter((fixture) => {
         const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
@@ -23,7 +27,10 @@ describe("Lua real summon-negation restore coverage", () => {
   });
 
   it("requires representative summon-negation fixtures to prove restored summon-attempt chain metadata and cleanup", () => {
-    const weak = realScriptSummonNegationFixtures()
+    const fixtures = realScriptSummonNegationFixtures();
+    expect(fixtures).toHaveLength(summonNegationFixtureCount);
+
+    const weak = fixtures
       .filter((fixture) => {
         const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
         return ![

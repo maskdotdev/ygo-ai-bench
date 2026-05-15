@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const chainResponseFixtureCount = 1;
 
 describe("Lua real chain response restore coverage", () => {
   it("requires chain response fixtures to assert clean restore and restored response outcomes", () => {
-    const missing = chainResponseFixtureFiles()
+    const files = chainResponseFixtureFiles();
+    expect(files).toHaveLength(chainResponseFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
