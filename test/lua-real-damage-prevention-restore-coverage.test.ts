@@ -19,6 +19,9 @@ describe("Lua real damage-prevention restore coverage", () => {
           || !text.includes("missingRegistryKeys).toEqual([])")
           || !text.includes("applyLuaRestoreResponse")
           || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
           || !text.includes('type === "activateEffect"');
       })
       .map(({ file }) => file);
