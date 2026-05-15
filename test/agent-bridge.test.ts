@@ -103,6 +103,26 @@ ${IDS.theDarkMagicians}
     expect(agent.state(started.sessionId).legalActions[0]?.label).not.toBe("Mutated action");
   });
 
+  it("copies raw legal action payloads at the agent boundary", () => {
+    const agent = createPlaytestAgent({
+      deck: {
+        main: {
+          [IDS.magiciansRod]: 1,
+          [IDS.darkMagicalCircle]: 1,
+          [IDS.darkMagician]: 1,
+        },
+      },
+    });
+    const started = agent.start({ seed: 1, handSize: 2 });
+    const action = started.legalActions[0];
+    expect(action).toBeDefined();
+
+    action!.label = "Mutated raw action";
+
+    expect(agent.legalActions(started.sessionId)[0]?.label).not.toBe("Mutated raw action");
+    expect(agent.state(started.sessionId).legalActionGroups.flatMap((group) => group.actions)[0]?.label).not.toBe("Mutated raw action");
+  });
+
   it("copies grouped legal action payloads away from the source action list", () => {
     const actions: PlaytestAction[] = [{ type: "normalSummon", uid: "card-a", label: "Normal Summon card-a" }];
     const groups = groupLegalActions(actions);
