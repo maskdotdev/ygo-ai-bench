@@ -109,9 +109,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
 
     endTurn(restoredRegistrationChain.session, 1);
 
-    expect(restoredRegistrationChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "confirmed", eventCode: 1211, eventPlayer: 0, eventUids: [firstDraw!.uid] })]),
-    );
+    expect(restoredRegistrationChain.session.state.eventHistory.filter((event) => event.eventName === "confirmed" && event.eventCardUid === firstDraw!.uid)).toEqual([
+      {
+        eventName: "confirmed",
+        eventCode: 1211,
+        eventPlayer: 0,
+        eventCardUid: firstDraw!.uid,
+        eventValue: 1,
+        eventUids: [firstDraw!.uid],
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredRegistrationChain.session.state.cards.find((card) => card.uid === firstDraw!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restoredRegistrationChain.session.state.cards.find((card) => card.uid === secondDraw!.uid)).toMatchObject({ location: "deck", controller: 0 });
     expect(restoredRegistrationChain.session.state.effects).not.toEqual(
