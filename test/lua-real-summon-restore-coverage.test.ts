@@ -9,7 +9,7 @@ const realScriptSummonFixtureCount = 145;
 const summonProcedureFixtureCount = 20;
 const typedSummonProcedureFixtureCount = 6;
 const pendulumGrantFixtureCount = 3;
-const pendulumHelperFixtureCount = 10;
+const pendulumHelperFixtureCount = 13;
 const unionProcedureFixtureCount = 1;
 const materialLockFixtureCount = 4;
 const flipSummonSuccessTrapFixtureCount = 1;
@@ -228,6 +228,35 @@ function realScriptPendulumGrantFixtureFiles(): string[] {
 
 function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; required: string[] }> {
   return [
+    {
+      file: "lua-real-script-abyss-actor-twinkle-pendulum-setcode-lock.test.ts",
+      required: [
+        `luaTargetDescriptor: \`target:pendulum-summon-not-setcode:\${setAbyssActor}\``,
+        "twinkle abyss actor pendulum special 1",
+        "twinkle generic pendulum special 0",
+        "twinkle regular special 1",
+        "getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)",
+      ],
+    },
+    {
+      file: "lua-real-script-couplet-pendulum-light-lock.test.ts",
+      required: [
+        `luaTargetDescriptor: \`target:pendulum-summon-not-attribute:\${attributeLight}\``,
+        "couplet light pendulum special 1",
+        "couplet dark pendulum special 0",
+        "couplet dark regular special 1",
+        "getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)",
+      ],
+    },
+    {
+      file: "lua-real-script-odd-eyes-phantasma-pendulum-summon-lock.test.ts",
+      required: [
+        `luaTargetDescriptor: \`target:special-summon-type-is:\${luaSummonTypePendulum}\``,
+        "phantasma pendulum special 0",
+        "phantasma regular special 1",
+        "getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)",
+      ],
+    },
     {
       file: "lua-real-script-pendulum-procedure-actions.test.ts",
       required: [
