@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battlePhaseEventFixtureCount = 2;
+const battlePhaseEventFixtureCount = 3;
 
 describe("Lua real Battle Phase event restore coverage", () => {
   it("requires representative Battle Phase event fixtures to assert clean Lua restore", () => {
@@ -64,6 +64,17 @@ function representativeBattlePhaseEventFixtures(): Array<{ file: string; require
         'action.type === "activateTrigger"',
         'eventName: "destroyed"',
         "eventCode: 1029",
+      ],
+    },
+    {
+      file: "test/lua-real-script-yellow-alert-delayed-return.test.ts",
+      requiredSnippets: [
+        'event: "continuous"',
+        'triggerEvent": "phaseBattle"',
+        'action.type === "changePhase" && action.phase === "main2"',
+        'location: "hand", controller: 1',
+        "expectAttackTarget(restored.session, secondAttacker!.uid, summonedTarget!.uid, true)",
+        "expectAttackTarget(restored.session, secondAttacker!.uid, originalTarget!.uid, false)",
       ],
     },
   ].sort((a, b) => a.file.localeCompare(b.file));
