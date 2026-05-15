@@ -82,6 +82,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Br
     expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredResponseWindow, 1);
     expect(restoredResponseWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredResponseWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredResponseWindow.session.state.players[0].lifePoints).toBe(7200);
     expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
 
@@ -112,6 +113,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Br
     expect(restoredReturnWindow.restoreComplete, restoredReturnWindow.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredReturnWindow, 0);
     expect(restoredReturnWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredReturnWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredReturnWindow.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ controller: 0, previousController: 1 });
     expect(restoredReturnWindow.session.state.players[0].lifePoints).toBe(7200);
 

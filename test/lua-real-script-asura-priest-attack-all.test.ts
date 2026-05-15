@@ -62,6 +62,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
     expect(restoredSetup.restoreComplete, restoredSetup.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredSetup, 0);
     expect(restoredSetup.missingRegistryKeys).toEqual([]);
+    expect(restoredSetup.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredSetup.session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ event: "continuous", code: 193, sourceUid: asura!.uid })]));
     const openingActions = getLuaRestoreLegalActions(restoredSetup, 0);
     expect(hasAttack(openingActions, asura!.uid, firstTarget!.uid)).toBe(true);
@@ -80,6 +81,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
     expect(restoredSecondAttack.restoreComplete, restoredSecondAttack.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredSecondAttack, 0);
     expect(restoredSecondAttack.missingRegistryKeys).toEqual([]);
+    expect(restoredSecondAttack.missingChainLimitRegistryKeys).toEqual([]);
     const secondActions = getLuaRestoreLegalActions(restoredSecondAttack, 0);
     expect(hasAttack(secondActions, asura!.uid, firstTarget!.uid)).toBe(false);
     expect(hasAttack(secondActions, asura!.uid, secondTarget!.uid)).toBe(true);

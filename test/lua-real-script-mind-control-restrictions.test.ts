@@ -66,6 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     const restoredResponseWindow = restoreDuelWithLuaScripts(openedSnapshot, source, reader);
     expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredResponseWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredResponseWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredResponseWindow, 1);
     expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
 
@@ -95,6 +96,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     const restoredRestrictionWindow = restoreDuelWithLuaScripts(serializeDuel(restoredResponseWindow.session), source, reader);
     expect(restoredRestrictionWindow.restoreComplete, restoredRestrictionWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredRestrictionWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredRestrictionWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredRestrictionWindow, 0);
     expect(restoredRestrictionWindow.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ controller: 0, previousController: 1 });
     expect(restoredRestrictionWindow.session.state.effects.map((effect) => effect.registryKey)).toContain(`lua:${targetCode}:temporary-control-return:${target!.uid}`);
