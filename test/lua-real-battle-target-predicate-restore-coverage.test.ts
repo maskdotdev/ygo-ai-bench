@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTargetPredicateFixtureCount = 3;
+const battleTargetPredicateFixtureCount = 4;
 
 describe("Lua real battle target predicate restore coverage", () => {
   it("requires battle-target predicate fixtures to assert clean Lua registry restore and restored predicates", () => {
@@ -41,6 +41,16 @@ function battleTargetPredicateFixtureFiles(): Array<{ file: string; required: st
         "target:source-battle-target",
         "currentAttack = { attackerUid:",
         "targetCardPredicate",
+      ],
+    },
+    {
+      file: "test/lua-real-script-decoyroid-battle-target-selection-lock.test.ts",
+      required: [
+        "restores its non-Decoyroid battle target selection lock",
+        "code === 332",
+        "valueCardPredicate",
+        "hasAttack(actions, attacker.uid, decoyroid.uid)).toBe(true)",
+        "hasAttack(actions, attacker.uid, protectedTarget.uid)).toBe(false)",
       ],
     },
     {
