@@ -45,6 +45,7 @@ function damageStepStatFixtureFiles(): Array<{ file: string; required: string[] 
         "restoredChain.missingChainLimitRegistryKeys).toEqual([])",
         "restoredBattle.missingRegistryKeys).toEqual([])",
         "restoredBattle.missingChainLimitRegistryKeys).toEqual([])",
+        "property: 0x4000",
         "effectLabelObjectUid: costSpirit!.uid",
         "currentAttack(restoredCrow",
         "battleDamage[1]).toBe(200)",

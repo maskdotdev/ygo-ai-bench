@@ -65,9 +65,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script GO
     expect(host.loadCardScript(Number(shadowSpellCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
+    expect(session.state.effects.find((effect) => effect.sourceUid === responder!.uid)).toMatchObject({
+      property: 0x8000,
+      range: ["hand"],
+    });
 
     const restoredSetup = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expectCleanRestore(restoredSetup);
+    expect(restoredSetup.session.state.effects.find((effect) => effect.sourceUid === responder!.uid)).toMatchObject({
+      property: 0x8000,
+      range: ["hand"],
+    });
     expectRestoredLegalActions(restoredSetup, 1);
     const attack = getLuaRestoreLegalActions(restoredSetup, 1).find(
       (action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && action.targetUid === target!.uid,

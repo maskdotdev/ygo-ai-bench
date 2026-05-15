@@ -66,6 +66,7 @@ function damageCalculationFixtureFiles(): Array<{ file: string; required: string
       required: [
         'battleWindow?.kind).toBe("duringDamageCalculation")',
         "EFFECT_FLAG_DAMAGE_CAL",
+        "property: 0x8000",
         "shadow spell persistent true/true/1/1500",
         "host.messages).not.toContain(\"shadow spell responder resolved\")",
         "battleDamage[0]).toBe(500)",
