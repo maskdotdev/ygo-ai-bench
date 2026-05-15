@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -77,7 +78,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ra
     expect(raigekiBreakAction).toBeDefined();
     applyAndAssert(session, raigekiBreakAction!);
     expect(session.state.cards.find((card) => card.uid === discard!.uid)).toMatchObject({ location: "graveyard" });
-    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "discarded", eventCode: 1018, eventCardUid: discard!.uid })]));
+    const discardEvent = {
+      eventName: "discarded",
+      eventCode: 1018,
+      eventCardUid: discard!.uid,
+      eventReason: duelReason.cost | duelReason.discard,
+      eventReasonPlayer: 1,
+      eventReasonCardUid: raigekiBreak!.uid,
+      eventReasonEffectId: 3,
+      eventPreviousState: { controller: 1, location: "hand", sequence: 0, position: "faceDown", faceUp: false },
+      eventCurrentState: { controller: 1, location: "graveyard", sequence: 0, position: "faceDown", faceUp: true },
+    };
+    expect(session.state.eventHistory.filter((event) => event.eventName === "discarded")).toEqual([discardEvent]);
     expect(session.state.chain).toHaveLength(2);
     expect(session.state.chain[1]).toMatchObject({
       sourceUid: raigekiBreak!.uid,
@@ -90,7 +102,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ra
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.cards.find((card) => card.uid === discard!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "discarded", eventCode: 1018, eventCardUid: discard!.uid })]));
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "discarded")).toEqual([discardEvent]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(restored.session.state.chain).toHaveLength(2);
