@@ -57,7 +57,35 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
 
     specialSummonDuelCard(session.state, summoned!.uid, 0);
     expect(session.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, position: "faceUpAttack" });
-    expect(session.state.pendingTriggers).toEqual([expect.objectContaining({ eventName: "specialSummoning", eventCode: 1105, eventCardUid: summoned!.uid })]);
+    expect(session.state.pendingTriggers).toEqual([
+      {
+        player: 1,
+        id: "trigger-2-1",
+        effectId: "lua-3-1105",
+        sourceUid: strike!.uid,
+        triggerBucket: "opponentOptional",
+        eventTriggerTiming: "when",
+        eventName: "specialSummoning",
+        eventCode: 1105,
+        eventCardUid: summoned!.uid,
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(session.state.eventHistory.filter((event) => ["specialSummoning", "specialSummoned"].includes(event.eventName))).toEqual([
       {
         eventName: "specialSummoning",
@@ -207,7 +235,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
         },
       },
     ]);
-    expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "specialSummoned", eventCardUid: summoned!.uid })]));
+    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === summoned!.uid)).toEqual([]);
   });
 
   it("restores Solemn Strike's monster-effect negation, fixed LP cost, and source destruction", () => {

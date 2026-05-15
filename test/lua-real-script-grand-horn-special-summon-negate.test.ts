@@ -62,7 +62,38 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
 
     specialSummonDuelCard(session.state, summoned!.uid, 0);
     expect(session.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, position: "faceUpAttack" });
-    expect(session.state.pendingTriggers).toEqual([expect.objectContaining({ eventName: "specialSummoning", eventCode: 1105, eventCardUid: summoned!.uid, eventReasonPlayer: 0 })]);
+    const specialSummoningEvent = {
+      eventName: "specialSummoning",
+      eventCode: 1105,
+      eventCardUid: summoned!.uid,
+      eventReason: 0,
+      eventReasonPlayer: 0,
+      eventPreviousState: {
+        controller: 0,
+        faceUp: false,
+        location: "deck",
+        position: "faceDown",
+        sequence: 1,
+      },
+      eventCurrentState: {
+        controller: 0,
+        faceUp: false,
+        location: "hand",
+        position: "faceDown",
+        sequence: 0,
+      },
+    };
+    expect(session.state.pendingTriggers).toEqual([
+      {
+        player: 1,
+        id: "trigger-2-1",
+        effectId: "lua-2-1105",
+        sourceUid: horn!.uid,
+        triggerBucket: "opponentOptional",
+        eventTriggerTiming: "when",
+        ...specialSummoningEvent,
+      },
+    ]);
 
     const restoredSummonWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredSummonWindow.restoreComplete, restoredSummonWindow.incompleteReasons.join("; ")).toBe(true);
@@ -185,7 +216,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
         eventUids: [drawn!.uid],
       },
     ]);
-    expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "specialSummoned", eventCardUid: summoned!.uid })]));
+    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === summoned!.uid)).toEqual([]);
     const postResolutionActions = getLuaRestoreLegalActions(restoredPendingResolution, 0);
     expect(postResolutionActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "changePhase", phase: "battle" })]));
     expect(postResolutionActions).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "normalSummon", uid: responder!.uid })]));
