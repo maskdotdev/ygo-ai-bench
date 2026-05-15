@@ -78,10 +78,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ha
     expect(featherDusterAction).toBeDefined();
     applyAndAssert(session, featherDusterAction!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: featherDuster!.uid,
-      operationInfos: [{ category: 0x1, count: 2, player: 0, parameter: 0 }],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 2,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-990-0",
+              "p1-deck-991-1",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-18144506-0",
+      }
+    `);
     expect(sortedUids(session.state.chain[0]!.operationInfos?.[0]?.targetUids ?? [])).toEqual(sortedUids([opponentTrap!.uid, opponentSpell!.uid]));
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
@@ -91,10 +110,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ha
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expect(restored.session.state.chain).toHaveLength(1);
-    expect(restored.session.state.chain[0]).toMatchObject({
-      sourceUid: featherDuster!.uid,
-      operationInfos: [{ category: 0x1, count: 2, player: 0, parameter: 0 }],
-    });
+    expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 2,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p1-deck-990-0",
+              "p1-deck-991-1",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-18144506-0",
+      }
+    `);
     expect(sortedUids(restored.session.state.chain[0]!.operationInfos?.[0]?.targetUids ?? [])).toEqual(sortedUids([opponentTrap!.uid, opponentSpell!.uid]));
 
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
