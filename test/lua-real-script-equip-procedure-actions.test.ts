@@ -206,11 +206,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(restoredDamageChain.session.state.log).toContainEqual(expect.objectContaining({ action: "effectDamage", player: 1, detail: "500" }));
     expect(restoredDamageChain.host.messages).not.toContain("equip responder resolved");
     expect(restoredDamageChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "sentToGraveyard", eventCode: 1014, eventCardUid: pendant!.uid }),
-        expect.objectContaining({ eventName: "damageDealt", eventCode: 1111, eventPlayer: 1, eventValue: 500 }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ eventName: "sentToGraveyard", eventCode: 1014, eventCardUid: pendant!.uid })]),
     );
+    expect(restoredDamageChain.session.state.eventHistory.filter((event) => event.eventName === "damageDealt")).toEqual([
+      {
+        eventName: "damageDealt",
+        eventCode: 1111,
+        eventPlayer: 1,
+        eventValue: 500,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: pendant!.uid,
+        eventReasonEffectId: 4,
+      },
+    ]);
   });
 
   it("restores United We Stand dynamic equip stat callbacks", () => {
@@ -723,9 +732,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(restoredChain.session.state.cards.find((card) => card.uid === offSet!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(restoredChain.session.state.cards.find((card) => card.uid === base!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(restoredChain.host.messages).not.toContain("equip responder resolved");
-    expect(restoredChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "sentToDeck", eventCode: 1013, eventCardUid: skyStriker!.uid })]),
-    );
+    expect(restoredChain.session.state.eventHistory.filter((event) => event.eventName === "sentToDeck" && event.eventCardUid === skyStriker!.uid)).toEqual([
+      {
+        eventName: "sentToDeck",
+        eventCode: 1013,
+        eventCardUid: skyStriker!.uid,
+        eventPreviousState: {
+          location: "graveyard",
+          controller: 0,
+          sequence: 0,
+          position: "faceDown",
+          faceUp: true,
+        },
+        eventCurrentState: {
+          location: "deck",
+          controller: 0,
+          sequence: 0,
+          position: "faceDown",
+          faceUp: true,
+        },
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: base!.uid,
+        eventReasonEffectId: 6,
+      },
+    ]);
   });
 });
 
