@@ -56,7 +56,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ev
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
+    expectRestoredLegalActions(restored, 0);
     const geminiSummon = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "normalSummon" && action.uid === eveque!.uid);
     expect(geminiSummon, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
     expect(applyLuaRestoreResponse(restored, geminiSummon!).ok).toBe(true);
@@ -64,9 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ev
     const triggerRestored = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(triggerRestored.restoreComplete, triggerRestored.incompleteReasons.join("; ")).toBe(true);
     expect(triggerRestored.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(triggerRestored, 0)).toEqual(getGroupedDuelLegalActions(triggerRestored.session, 0));
-    expect(getLuaRestoreLegalActionGroups(triggerRestored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(triggerRestored, 0));
-    expect(getLuaRestoreLegalActions(triggerRestored, 0)).toEqual(getDuelLegalActions(triggerRestored.session, 0));
+    expectRestoredLegalActions(triggerRestored, 0);
     const trigger = getLuaRestoreLegalActions(triggerRestored, 0).find((action) => action.type === "activateTrigger" && action.uid === eveque!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(triggerRestored, 0), null, 2)).toBeDefined();
     expect(applyLuaRestoreResponse(triggerRestored, trigger!).ok).toBe(true);
@@ -79,9 +77,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ev
     const chainRestored = restoreDuelWithLuaScripts(serializeDuel(triggerRestored.session), source, reader);
     expect(chainRestored.restoreComplete, chainRestored.incompleteReasons.join("; ")).toBe(true);
     expect(chainRestored.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(chainRestored, 1)).toEqual(getGroupedDuelLegalActions(chainRestored.session, 1));
-    expect(getLuaRestoreLegalActionGroups(chainRestored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(chainRestored, 1));
-    expect(getLuaRestoreLegalActions(chainRestored, 1)).toEqual(getDuelLegalActions(chainRestored.session, 1));
+    expectRestoredLegalActions(chainRestored, 1);
     expect(getLuaRestoreLegalActions(chainRestored, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     const pass = getLuaRestoreLegalActions(chainRestored, 1).find((action) => action.type === "passChain");
     expect(pass, JSON.stringify(getLuaRestoreLegalActions(chainRestored, 1), null, 2)).toBeDefined();
@@ -98,6 +94,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ev
     expect(chainRestored.host.messages).not.toContain("evocator eveque responder resolved");
   });
 });
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
 
 function chainResponderScript(): string {
   return `
