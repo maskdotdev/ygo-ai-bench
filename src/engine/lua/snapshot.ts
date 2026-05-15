@@ -3,7 +3,7 @@ import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
-import { applyResponse, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
+import { addDuelChainLimit, applyResponse, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
 import { duelLocations } from "#duel/location-kinds.js";
 import { duelReason } from "#duel/reasons.js";
 import { effectiveSpecialSummonTypeCode, isSummonTypeMaskMatch, luaSummonTypeRitual, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
@@ -53,6 +53,7 @@ const luaSourceEquippedConditionDescriptor = "condition:source-equipped";
 const luaMaharaghiCode = "40695128";
 const luaHinoKaguTsuchiCode = "75745607";
 const luaGreatLongNoseCode = "2356994";
+const luaDarkMagicExpandedCode = "111280";
 const luaMegalithUnformedCode = "69003792";
 const luaSetMegalith = 0x138;
 const luaCategorySpecialSummon = 0x200;
@@ -540,6 +541,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownUnleashYourPowerDelayedSetEffect(effect) ||
         isKnownMulcharmyDrawWatcherEffect(effect) ||
         isKnownMulcharmyEndPhaseShuffleEffect(effect) ||
+        isKnownDarkMagicExpandedChainingLimitEffect(effect) ||
         isKnownRemainFieldEffect(effect) ||
         isKnownCannotActivateSpecialSummonedMonsterEffect(effect) ||
         isKnownCannotActivateNonSpiritMonsterEffect(effect) ||
@@ -702,6 +704,32 @@ function isKnownHinoKaguTsuchiPredrawDiscardEffect(effect: SerializedDuelEffect)
   );
 }
 
+function isKnownDarkMagicExpandedChainingLimitEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaDarkMagicExpandedCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === 1027 &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
+function darkMagicExpandedChainingLimitOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const chainLink = ctx.chainLink ?? ctx.duel.chain[ctx.duel.chain.length - 1];
+    if (!chainLink || chainLink.player !== effect.controller) return;
+    const chainSource = ctx.duel.cards.find((card) => card.uid === chainLink.sourceUid);
+    if (!chainSource || (cardTypeFlags(chainSource, ctx.duel) & 0x6) === 0) return;
+    addDuelChainLimit(ctx.duel, {
+      registryKey: `lua-chain-limit:${luaDarkMagicExpandedCode}:${effect.controller}:link:known:closure:response-matches-chain-player`,
+      untilChainEnd: false,
+      expiresAtChainLength: ctx.duel.chain.length,
+      allows: (_candidate, player, chainPlayer) => player === chainPlayer,
+    });
+  };
+}
+
 function isKnownGreatLongNoseSkipBattlePhaseEffect(effect: SerializedDuelEffect): boolean {
   return (
     Boolean(effect.registryKey?.startsWith(`lua:${luaGreatLongNoseCode}:`)) &&
@@ -816,6 +844,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownUnleashYourPowerDelayedSetEffect(effect)) return unleashYourPowerDelayedSetOperation(effect);
   if (isKnownMulcharmyDrawWatcherEffect(effect)) return mulcharmyDrawWatcherOperation(effect);
   if (isKnownMulcharmyEndPhaseShuffleEffect(effect)) return mulcharmyEndPhaseShuffleOperation(effect);
+  if (isKnownDarkMagicExpandedChainingLimitEffect(effect)) return darkMagicExpandedChainingLimitOperation(effect);
   if (effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor) {
     const returnPlayer = effect.value === 0 || effect.value === 1 ? effect.value : undefined;
     return luaTemporaryControlReturnOperation(returnPlayer);

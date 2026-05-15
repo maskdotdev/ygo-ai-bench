@@ -8,8 +8,8 @@ const testRoot = path.join(root, "test");
 const scannerPath = path.join(root, "tools/scan-lua-chain-limit-patterns.mjs");
 const upstreamOfficialScriptRoot = path.join(root, ".upstream/ignis/script/official");
 const noActiveRestoreWindowGroups = new Set(["SetChainLimit:aux.FALSE"]);
-const realScriptChainLimitFixtureCount = 13;
-const realScriptOwnedScannerGroupCount = 10;
+const realScriptChainLimitFixtureCount = 14;
+const realScriptOwnedScannerGroupCount = 11;
 
 const officialPatternRestoreCoverage: Record<string, string[]> = {
   "SetChainLimit:aux.FALSE": ["test/lua-real-script-anti-magic-arrows-chain-limit.test.ts"],
@@ -21,7 +21,7 @@ const officialPatternRestoreCoverage: Record<string, string[]> = {
   "SetChainLimit:inline:target-card-handler-exclusion": ["test/lua-chain-limit-target-cards-restore.test.ts"],
   "SetChainLimit:named:active-type": ["test/lua-real-script-giant-starfall-chain-limit.test.ts"],
   "SetChainLimit:named:effect-type": ["test/lua-real-script-galaxy-destroyer-chain-limit.test.ts"],
-  "SetChainLimit:named:response-chain-player": ["test/lua-chain-limit-response-chain-player-restore.test.ts"],
+  "SetChainLimit:named:response-chain-player": ["test/lua-real-script-dark-magic-expanded-chain-limit.test.ts"],
   "SetChainLimitTillChainEnd:aux.FALSE": ["test/lua-real-script-obelisk-chain-limit.test.ts"],
   "SetChainLimitTillChainEnd:factory:handler-only": ["test/lua-real-script-ra-chain-limit.test.ts"],
   "SetChainLimitTillChainEnd:inline:response-chain-player": ["test/lua-chain-limit-response-chain-player-restore.test.ts"],
