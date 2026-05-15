@@ -13,7 +13,7 @@ const pendulumGrantFixtureCount = 4;
 const pendulumHelperFixtureCount = 13;
 const unionProcedureFixtureCount = 4;
 const materialLockFixtureCount = 4;
-const flipSummonSuccessTrapFixtureCount = 3;
+const flipSummonSuccessTrapFixtureCount = 4;
 
 describe("Lua real summon restore coverage", () => {
   it("requires real-script summon and procedure fixtures to assert Lua-aware complete restore with diagnostics", () => {
@@ -185,6 +185,17 @@ function realScriptSummonFixtureFiles(): string[] {
 
 function realScriptFlipSummonSuccessTrapFixtureSnippets(): Array<{ file: string; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-bottomless-trap-hole-summon-success.test.ts",
+      required: [
+        'eventName: "flipSummoned"',
+        'effectId).toContain("-1101"',
+        'windowKind).toBe("chainResponse")',
+        'type === "activateEffect"',
+        'location: "banished"',
+        "category: 0x4",
+      ],
+    },
     {
       file: "test/lua-real-script-house-adhesive-tape-flip-summon.test.ts",
       required: [

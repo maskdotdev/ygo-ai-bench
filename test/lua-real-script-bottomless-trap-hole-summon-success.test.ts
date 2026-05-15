@@ -234,6 +234,136 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bo
     expect(restored.host.messages).not.toContain("bottomless chain responder resolved");
   });
 
+  it("restores Bottomless Trap Hole's Flip Summon success chain response and banishes the destroyed monster", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const bottomlessCode = "29401950";
+    const starterCode = "29401951";
+    const flipTargetCode = "29401952";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === bottomlessCode),
+      { code: starterCode, name: "Bottomless Flip Chain Starter", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: flipTargetCode, name: "Bottomless Flip Summoned Monster", kind: "monster", typeFlags: 0x1, level: 4, attack: 1500, defense: 1200 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 464, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [flipTargetCode, starterCode] }, 1: { main: [bottomlessCode] } });
+    startDuel(session);
+
+    const flipTarget = session.state.cards.find((card) => card.code === flipTargetCode);
+    const starter = session.state.cards.find((card) => card.code === starterCode);
+    const bottomless = session.state.cards.find((card) => card.code === bottomlessCode);
+    expect(flipTarget).toBeDefined();
+    expect(starter).toBeDefined();
+    expect(bottomless).toBeDefined();
+    moveDuelCard(session.state, flipTarget!.uid, "monsterZone", 0).position = "faceDownDefense";
+    flipTarget!.faceUp = false;
+    moveDuelCard(session.state, starter!.uid, "hand", 0);
+    moveDuelCard(session.state, bottomless!.uid, "spellTrapZone", 1);
+    bottomless!.position = "faceDown";
+    bottomless!.faceUp = false;
+    session.state.phase = "main1";
+    session.state.turnPlayer = 0;
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${starterCode}.lua`) return flipSummonChainStarterScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(bottomlessCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(starterCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const flip = getLegalActions(session, 0).find((action) => action.type === "flipSummon" && action.uid === flipTarget!.uid);
+    expect(flip, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
+    applyAndAssert(session, flip!);
+
+    const starterAction = getLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.uid === starter!.uid);
+    expect(starterAction).toBeDefined();
+    applyAndAssert(session, starterAction!);
+    expect(session.state.chain).toHaveLength(1);
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1101",
+        "eventCardUid": "p0-deck-29401952-0",
+        "eventCode": 1101,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "flipSummoned",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "deck",
+          "position": "faceDown",
+          "sequence": 1,
+        },
+        "eventReason": 0,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "when",
+        "id": "chain-3",
+        "player": 0,
+        "sourceUid": "p0-deck-29401951-1",
+      }
+    `);
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+
+    const bottomlessAction = getLuaRestoreLegalActions(restored, 1).find(
+      (action): action is Extract<DuelAction, { type: "activateEffect" }> => action.type === "activateEffect" && action.uid === bottomless!.uid,
+    );
+    expect(bottomlessAction, JSON.stringify(getLuaRestoreLegalActions(restored, 1), null, 2)).toBeDefined();
+    expect(bottomlessAction?.type).toBe("activateEffect");
+    expect(bottomlessAction?.uid).toBe(bottomless!.uid);
+    expect(bottomlessAction?.effectId).toContain("-1101");
+    expect(bottomlessAction?.windowKind).toBe("chainResponse");
+    const activated = applyLuaRestoreResponse(restored, bottomlessAction!);
+    expect(activated.ok, activated.error).toBe(true);
+
+    expect(restored.session.state.cards.find((card) => card.uid === flipTarget!.uid)).toMatchObject({ location: "banished" });
+    expect(restored.session.state.cards.find((card) => card.uid === bottomless!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "flipSummoned")).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-29401952-0",
+          "eventCode": 1101,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "flipSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
+    expect(restored.host.messages).toContain("bottomless flip chain starter resolved");
+  });
+
   it("restores Bottomless Trap Hole's special-summon group target and banishes every eligible monster", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const bottomlessCode = "29401950";
@@ -456,6 +586,20 @@ function chainResponderScript(): string {
       e:SetRange(LOCATION_HAND)
       e:SetCondition(function(e,tp) return Duel.GetCurrentChain()>1 end)
       e:SetOperation(function(e,tp) Debug.Message("bottomless chain responder resolved") end)
+      c:RegisterEffect(e)
+    end
+  `;
+}
+
+function flipSummonChainStarterScript(): string {
+  return `
+    local s,id=GetID()
+    function s.initial_effect(c)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_TRIGGER_O)
+      e:SetCode(EVENT_FLIP_SUMMON_SUCCESS)
+      e:SetRange(LOCATION_HAND)
+      e:SetOperation(function(e,tp) Debug.Message("bottomless flip chain starter resolved") end)
       c:RegisterEffect(e)
     end
   `;
