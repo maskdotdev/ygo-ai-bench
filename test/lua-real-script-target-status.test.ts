@@ -37,15 +37,41 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ta
     const register = host.loadCardScript(Number(mammothCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 85,
-          luaTargetDescriptor: `target:status:${statusSummonedThisTurn}`,
-          sourceUid: mammoth!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.code === 85 &&
+          effect.luaTargetDescriptor === `target:status:${statusSummonedThisTurn}` &&
+          effect.sourceUid === mammoth!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 85,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-85",
+          "luaTargetDescriptor": "target:status:1610614784",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:59380081:lua-1-85",
+          "sourceUid": "p0-deck-59380081-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "targetRange": [
+            0,
+            4,
+          ],
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

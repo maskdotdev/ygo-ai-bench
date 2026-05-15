@@ -36,15 +36,42 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ta
     const register = host.loadCardScript(Number(invitationCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 122,
-          luaTargetDescriptor: `target:not-status:${statusSummonedThisTurn}`,
-          sourceUid: invitation!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.code === 122 &&
+          effect.luaTargetDescriptor === `target:not-status:${statusSummonedThisTurn}` &&
+          effect.sourceUid === invitation!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 122,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-2-122",
+          "luaTargetDescriptor": "target:not-status:1610614784",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:86527709:lua-2-122",
+          "sourceUid": "p0-deck-86527709-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "targetRange": [
+            0,
+            4,
+          ],
+          "value": 2048,
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

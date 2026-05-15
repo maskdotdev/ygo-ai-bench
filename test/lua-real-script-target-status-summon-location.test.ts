@@ -39,15 +39,41 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ta
     const register = host.loadCardScript(Number(legacyCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 85,
-          luaTargetDescriptor: `target:status-summon-location:${statusSpecialSummonTurn}:${locationExtra}`,
-          sourceUid: legacy!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.code === 85 &&
+          effect.luaTargetDescriptor === `target:status-summon-location:${statusSpecialSummonTurn}:${locationExtra}` &&
+          effect.sourceUid === legacy!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 85,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-5-85",
+          "luaTargetDescriptor": "target:status-summon-location:1073741824:64",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:88851326:lua-5-85",
+          "sourceUid": "p0-deck-88851326-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "targetRange": [
+            4,
+            4,
+          ],
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
