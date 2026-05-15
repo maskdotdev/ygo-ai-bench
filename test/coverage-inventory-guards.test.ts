@@ -109,6 +109,31 @@ describe("coverage inventory guards", () => {
     expect(missingGroupedRestoreEvidence).toEqual([]);
   });
 
+  it("requires chain-limit restore helpers to prove restored actions and groups", () => {
+    const chainLimitRestoreFiles = fs.readdirSync(testRoot)
+      .filter((file) => /^lua-chain-limit-.*restore\.test\.ts$/.test(file));
+    const helperFiles = chainLimitRestoreFiles
+      .filter((file) => fs.readFileSync(path.join(testRoot, file), "utf8").includes("function expectRestoredChainLimit"));
+    const weakHelpers = helperFiles
+      .filter((file) => {
+        const text = fs.readFileSync(path.join(testRoot, file), "utf8");
+        const helper = text.slice(text.indexOf("function expectRestoredChainLimit"), text.indexOf("function expectRestoredChainLimit") + 1200);
+        return !helper.includes("getLuaRestoreLegalActions")
+          || !helper.includes("getLegalActions(restored.session")
+          || !helper.includes("getLuaRestoreLegalActionGroups");
+      });
+    const helperCalls = chainLimitRestoreFiles
+      .reduce((count, file) => {
+        const text = fs.readFileSync(path.join(testRoot, file), "utf8");
+        return count + (text.match(/expectRestoredChainLimit\(/g)?.length ?? 0);
+      }, 0);
+
+    expect(chainLimitRestoreFiles).toHaveLength(24);
+    expect(helperFiles).toHaveLength(12);
+    expect(helperCalls).toBe(81);
+    expect(weakHelpers).toEqual([]);
+  });
+
   it("requires test proof floors to be exact", () => {
     const greaterThanAllowlist = new Set([
       "lua-field-query-helpers.test.ts:59",
