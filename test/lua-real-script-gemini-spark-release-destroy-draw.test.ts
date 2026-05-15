@@ -98,12 +98,57 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     expect(chainRestored.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(chainRestored.session.state.cards.find((card) => card.uid === drawn!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(chainRestored.session.state.cards.find((card) => card.uid === spark!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
-    expect(chainRestored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "released", eventCardUid: gemini!.uid }),
-        expect.objectContaining({ eventName: "cardsDrawn", eventPlayer: 0, eventValue: 1, eventUids: [drawn!.uid] }),
-      ]),
-    );
+    expect(chainRestored.session.state.eventHistory.filter((event) => ["released", "cardsDrawn"].includes(event.eventName))).toEqual([
+      {
+        eventName: "released",
+        eventCode: 1017,
+        eventCardUid: gemini!.uid,
+        eventReason: duelReason.cost | duelReason.release,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: spark!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "cardsDrawn",
+        eventCode: 1110,
+        eventCardUid: drawn!.uid,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventUids: [drawn!.uid],
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: spark!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(chainRestored.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === target!.uid)).toEqual([
       {
         eventName: "destroyed",
