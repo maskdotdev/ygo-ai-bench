@@ -124,11 +124,81 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     expect(restored.session.state.cards.find((card) => card.uid === miracleFusion!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(restored.session.state.eventHistory).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ eventName: "banished", eventCardUid: materialA!.uid }),
-        expect.objectContaining({ eventName: "banished", eventCardUid: materialB!.uid }),
         expect.objectContaining({ eventName: "specialSummoned", eventCardUid: fusion!.uid }),
       ]),
     );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "banished")).toEqual([
+      {
+        eventName: "banished",
+        eventCode: 1011,
+        eventCardUid: materialA!.uid,
+        eventReason: duelReason.effect | duelReason.material | duelReason.fusion,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: miracleFusion!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "banished",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "banished",
+        eventCode: 1011,
+        eventCardUid: materialB!.uid,
+        eventReason: duelReason.effect | duelReason.material | duelReason.fusion,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: miracleFusion!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "banished",
+          position: "faceDown",
+          sequence: 1,
+        },
+      },
+      {
+        eventName: "banished",
+        eventCode: 1011,
+        eventCardUid: materialA!.uid,
+        eventReason: duelReason.effect | duelReason.material | duelReason.fusion,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: miracleFusion!.uid,
+        eventReasonEffectId: 1,
+        eventUids: [materialA!.uid, materialB!.uid],
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "banished",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.host.messages).not.toContain("miracle fusion responder resolved");
   });
 });
