@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "reac
 import type { DuelAction, DuelLocation, DuelLogEntry, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import { duelActionAnchorUids, duelActionUiKey, orphanDuelActionGroups, partitionDuelActionsByAnchor } from "./duel-action-anchors.js";
+import { duelPromptView, splitPromptGroups } from "./duel-prompt-view.js";
 import type { CardImageInfo } from "./ui.js";
 
 function opposite(player: PlayerId): PlayerId {
@@ -323,6 +324,9 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
   }, [props.legalActions]);
 
   const triggerOrderLabel = triggerOrderPromptLabel(state);
+  const splitOrphanGroups = splitPromptGroups(state.prompt, orphanGroups);
+  const promptView = duelPromptView(state.prompt, splitOrphanGroups.promptGroups);
+  const globalOrphanGroups = splitOrphanGroups.globalGroups;
 
   const oppMz = cardsInZone(state, opponent, "monsterZone");
   const oppSt = cardsInZone(state, opponent, "spellTrapZone");
@@ -463,10 +467,32 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
               {triggerOrderLabel}
             </div>
           ) : null}
-          {orphanGroups.length > 0 && props.onPlayAction ? (
+          {promptView && props.onPlayAction ? (
+            <div className="flex max-w-[min(96vw,760px)] justify-center px-1">
+              <div className="flex max-w-full flex-wrap items-center justify-center gap-1.5 rounded-lg border border-violet-400/35 bg-violet-950/55 px-2.5 py-1.5 shadow-lg shadow-violet-950/30">
+                <div className="min-w-[140px] max-w-[260px] flex-1">
+                  <p className="truncate text-[9px] font-bold uppercase tracking-[0.12em] text-violet-100">{promptView.label}</p>
+                  <p className="truncate text-[10px] font-semibold text-violet-50/65">{promptView.detail}</p>
+                </div>
+                {promptView.groups.flatMap((group) =>
+                  group.actions.map((action) => (
+                    <button
+                      key={`prompt-${group.key}-${duelActionUiKey(action)}`}
+                      type="button"
+                      className="shrink-0 rounded-md border border-violet-300/35 bg-violet-800/65 px-2.5 py-1 text-left text-[10px] font-bold leading-tight text-violet-50 hover:border-violet-200/70 hover:bg-violet-700/75"
+                      onClick={() => props.onPlayAction?.(action)}
+                    >
+                      <span className="line-clamp-2 max-w-[220px]">{action.label}</span>
+                    </button>
+                  )),
+                )}
+              </div>
+            </div>
+          ) : null}
+          {globalOrphanGroups.length > 0 && props.onPlayAction ? (
             <div className="flex max-w-[min(96vw,860px)] justify-center px-1">
               <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-cyan-500/20 bg-slate-900/60 px-2 py-1.5 [scrollbar-width:thin]">
-                {orphanGroups.map((group) => (
+                {globalOrphanGroups.map((group) => (
                   <div key={group.key} className="flex shrink-0 items-center gap-1">
                     <span className="shrink-0 self-center pr-1 text-[8px] font-bold uppercase tracking-[0.12em] text-white/35">{group.label}</span>
                     {group.actions.map((action) => (
