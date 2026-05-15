@@ -86,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mu
     const restoredAfterPurulia = restoreDuelWithLuaScripts(serializeDuel(restoredAfterFuwalos.session), workspace, reader);
     expect(restoredAfterPurulia.restoreComplete, restoredAfterPurulia.incompleteReasons.join("; ")).toBe(true);
     expect(restoredAfterPurulia.missingRegistryKeys).toEqual([]);
+    expect(restoredAfterPurulia.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredAfterPurulia, 0)).toEqual(getGroupedDuelLegalActions(restoredAfterPurulia.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredAfterPurulia, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restoredAfterPurulia, 0),

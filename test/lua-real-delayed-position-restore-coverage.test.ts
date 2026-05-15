@@ -17,6 +17,7 @@ describe("Lua real delayed position restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -35,8 +36,11 @@ function delayedPositionFixtureFiles(): Array<{ file: string; required: string[]
       file: "test/lua-real-script-book-eclipse-delayed-flip-draw.test.ts",
       required: [
         "restoredActivation.missingRegistryKeys).toEqual([])",
+        "restoredActivation.missingChainLimitRegistryKeys).toEqual([])",
         "restoredChain.missingRegistryKeys).toEqual([])",
+        "restoredChain.missingChainLimitRegistryKeys).toEqual([])",
         "restoredEnd.missingRegistryKeys).toEqual([])",
+        "restoredEnd.missingChainLimitRegistryKeys).toEqual([])",
         "operationInfos: [",
         "position: \"faceDownDefense\"",
         "position: \"faceUpDefense\"",
