@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -66,10 +67,50 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
       summonType: "normal",
     });
     expect(restored.session.state.activityCounts[0].normalSummon).toBe(2);
-    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([
-      expect.objectContaining({ eventName: "normalSummoned", eventCardUid: firstSummon.uid }),
-      expect.objectContaining({ eventName: "normalSummoned", eventCardUid: extraSummon.uid }),
-    ]));
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "normalSummoned")).toEqual([
+      {
+        eventName: "normalSummoned",
+        eventCode: 1100,
+        eventCardUid: firstSummon.uid,
+        eventReason: duelReason.summon,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+      {
+        eventName: "normalSummoned",
+        eventCode: 1100,
+        eventCardUid: extraSummon.uid,
+        eventReason: duelReason.summon,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 2,
+        },
+      },
+    ]);
   });
 });
 

@@ -84,9 +84,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ho
 
     expect(restored.session.state.cards.find((card) => card.uid === flipTarget.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.cards.find((card) => card.uid === trap.uid)).toMatchObject({ location: "graveyard" });
-    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([
-      expect.objectContaining({ eventName: "flipSummoned", eventCardUid: flipTarget.uid }),
-    ]));
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "flipSummoned")).toEqual([
+      {
+        eventName: "flipSummoned",
+        eventCode: 1101,
+        eventCardUid: flipTarget.uid,
+        eventReason: 0,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === flipTarget.uid)).toEqual([
       {
         eventName: "destroyed",

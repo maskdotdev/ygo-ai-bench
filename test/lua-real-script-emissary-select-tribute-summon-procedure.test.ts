@@ -95,7 +95,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Em
         },
       },
     ]);
-    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "normalSummoned", eventCardUid: emissary.uid })]));
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "normalSummoned")).toEqual([
+      {
+        eventName: "normalSummoned",
+        eventCode: 1100,
+        eventCardUid: emissary.uid,
+        eventReason: duelReason.summon,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
   });
 });
 
