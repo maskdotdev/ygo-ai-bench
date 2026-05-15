@@ -86,7 +86,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script En
     const released = openedSnapshot.state.cards.find((card) => card.uid === releaseCost!.uid);
     expect((released!.reason! & duelReason.release) !== 0).toBe(true);
     expect((released!.reason! & duelReason.cost) !== 0).toBe(true);
-    expect(openedSnapshot.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "released", eventCode: 1017 })]));
+    expect(openedSnapshot.state.eventHistory.filter((event) => event.eventName === "released" && event.eventCardUid === releaseCost!.uid)).toEqual([
+      {
+        eventName: "released",
+        eventCode: 1017,
+        eventCardUid: releaseCost!.uid,
+        eventReason: duelReason.release | duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: enemyController!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
 
     const restoredResponseWindow = restoreDuelWithLuaScripts(openedSnapshot, source, reader);
     expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
