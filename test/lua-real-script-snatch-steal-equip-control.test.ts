@@ -74,10 +74,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sn
       sourceUid: snatch!.uid,
       targetUids: [target!.uid],
     });
-    expect(restoredEquipWindow.session.state.chain[0]?.operationInfos).toEqual(expect.arrayContaining([
+    expect(restoredEquipWindow.session.state.chain[0]?.operationInfos).toEqual([
       { category: 0x2000, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 },
       { category: 0x40000, targetUids: [snatch!.uid], count: 1, player: 0, parameter: 0 },
-    ]));
+    ]);
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);

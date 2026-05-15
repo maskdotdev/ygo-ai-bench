@@ -71,10 +71,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
       sourceUid: premature!.uid,
       targetUids: [target!.uid],
     });
-    expect(restoredActivation.session.state.chain[0]?.operationInfos).toEqual(expect.arrayContaining([
+    expect(restoredActivation.session.state.chain[0]?.operationInfos).toEqual([
       { category: 0x200, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 },
       { category: 0x40000, targetUids: [premature!.uid], count: 1, player: 0, parameter: 0 },
-    ]));
+    ]);
     expect(getLuaRestoreLegalActions(restoredActivation, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
