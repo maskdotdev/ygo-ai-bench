@@ -94,6 +94,7 @@ describe("Lua source-only pre-battle-damage events", () => {
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restored);
     const restoredDamageTriggers = restored.session.state.pendingTriggers.filter((trigger) => trigger.eventName === "beforeBattleDamage");
     expect(restoredDamageTriggers).toHaveLength(2);
     expect(restoredDamageTriggers).toEqual(
@@ -145,6 +146,12 @@ function activateAllRestoredTriggers(restored: ReturnType<typeof restoreDuelWith
     if (!trigger) break;
     applyLuaRestoreAndAssert(restored, trigger);
   }
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function applyAndAssert(session: DuelSession, action: Parameters<typeof applyResponse>[1]) {
