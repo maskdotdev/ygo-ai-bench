@@ -3,10 +3,16 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const negationFixtureCount = 7;
+const chainResponseNegationFixtureCount = 6;
+const destroyOnlyResponseFixtureCount = 1;
 
 describe("Lua real negation restore coverage", () => {
   it("requires representative real-script negation fixtures to assert grouped legal actions and clean Lua registry restore", () => {
-    const missing = realScriptNegationFixtureFiles()
+    const files = realScriptNegationFixtureFiles();
+    expect(files).toHaveLength(negationFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("getLuaRestoreLegalActionGroups")
@@ -22,7 +28,10 @@ describe("Lua real negation restore coverage", () => {
   });
 
   it("requires representative real-script negation fixtures to prove restored chain suppression outcomes", () => {
-    const missing = realScriptNegationFixtureFiles()
+    const files = realScriptNegationFixtureFiles();
+    expect(files).toHaveLength(negationFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !/state\.chain\)\.toHaveLength\(0\)/.test(text)
@@ -35,7 +44,10 @@ describe("Lua real negation restore coverage", () => {
   });
 
   it("requires chain-response negation fixtures to pin negated-link events and suppressed follow-up operations", () => {
-    const missing = realScriptChainResponseNegationFixtureFiles()
+    const files = realScriptChainResponseNegationFixtureFiles();
+    expect(files).toHaveLength(chainResponseNegationFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !/state\.chain\)\.toHaveLength\(2\)/.test(text)
@@ -48,7 +60,10 @@ describe("Lua real negation restore coverage", () => {
   });
 
   it("requires destroy-only chain-response fixtures to prove restored destruction does not imply negation", () => {
-    const missing = realScriptDestroyOnlyResponseFixtureFiles()
+    const files = realScriptDestroyOnlyResponseFixtureFiles();
+    expect(files).toHaveLength(destroyOnlyResponseFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !/state\.chain\)\.toHaveLength\(2\)/.test(text)
