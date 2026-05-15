@@ -79,9 +79,28 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ef
     expect(restored.session.state.cards.find((card) => card.uid === effectVeiler!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone" });
     expect(restored.host.messages).not.toContain("veiler target resolved");
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "chainNegated" }), expect.objectContaining({ eventName: "chainDisabled" })]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => ["chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([
+      {
+        eventName: "chainNegated",
+        eventCode: 1024,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReasonPlayer: 0,
+        eventChainDepth: 1,
+        eventChainLinkId: "chain-2",
+        relatedEffectId: 1,
+      },
+      {
+        eventName: "chainDisabled",
+        eventCode: 1025,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReasonPlayer: 0,
+        eventChainDepth: 1,
+        eventChainLinkId: "chain-2",
+        relatedEffectId: 1,
+      },
+    ]);
 
     const probe = restored.host.loadScript(
       `
