@@ -56,9 +56,35 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cy
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restored, 1),
     );
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: cyberseMagician!.uid, code: 82, targetRange: [1, 0] })]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.sourceUid === cyberseMagician!.uid && effect.code === 82)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 82,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-82",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "property": 2048,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:24731391:lua-2-82",
+        "sourceUid": "p0-deck-24731391-0",
+        "statValue": [Function],
+        "target": [Function],
+        "targetRange": [
+          1,
+          0,
+        ],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
     const fireActivation = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.uid === fire!.uid);
     expect(fireActivation, JSON.stringify(getLuaRestoreLegalActions(restored, 1), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restored, fireActivation!);

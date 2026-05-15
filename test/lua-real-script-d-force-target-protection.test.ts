@@ -52,16 +52,37 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(dForceCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 71,
-          sourceUid: dForce!.uid,
-          luaValueDescriptor: "cannot-be-effect-target:opponent",
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 71 && effect.sourceUid === dForce!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 71,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-4-71",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 2,
+        "luaValueDescriptor": "cannot-be-effect-target:opponent",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 384,
+        "range": [
+          "spellTrapZone",
+        ],
+        "registryKey": "lua:6186304:lua-4-71",
+        "sourceUid": "p0-deck-6186304-0",
+        "statValue": [Function],
+        "target": [Function],
+        "targetRange": [
+          12,
+          0,
+        ],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

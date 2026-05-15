@@ -66,17 +66,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
       "darklord-eveningstar-official-comma-local-fusion-summon-condition.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 71,
-          luaConditionDescriptor: `condition:source-summon-type:${luaSummonTypeFusion}`,
-          luaValueDescriptor: "cannot-be-effect-target:opponent",
-          range: ["monsterZone"],
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 71 && effect.luaConditionDescriptor === `condition:source-summon-type:${luaSummonTypeFusion}`)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 71,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-71",
+        "lifePointValue": [Function],
+        "luaConditionDescriptor": "condition:source-summon-type:1124073472",
+        "luaTypeFlags": 1,
+        "luaValueDescriptor": "cannot-be-effect-target:opponent",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 131072,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:10136446:lua-1-71",
+        "sourceUid": "p0-extraDeck-10136446-0",
+        "statValue": [Function],
+        "target": [Function],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -139,17 +156,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
       "darklord-eveningstar-official-fusion-summon-condition.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 71,
-          luaConditionDescriptor: `condition:source-summon-type:${luaSummonTypeFusion}`,
-          luaValueDescriptor: "cannot-be-effect-target:opponent",
-          range: ["monsterZone"],
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 71 && effect.luaConditionDescriptor === `condition:source-summon-type:${luaSummonTypeFusion}`)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 71,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-71",
+        "lifePointValue": [Function],
+        "luaConditionDescriptor": "condition:source-summon-type:1124073472",
+        "luaTypeFlags": 1,
+        "luaValueDescriptor": "cannot-be-effect-target:opponent",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 131072,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:10136446:lua-1-71",
+        "sourceUid": "p0-extraDeck-10136446-0",
+        "statValue": [Function],
+        "target": [Function],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -215,17 +249,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
       "darklord-eveningstar-official-local-fusion-summon-condition.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 71,
-          luaConditionDescriptor: `condition:source-summon-type:${luaSummonTypeFusion}`,
-          luaValueDescriptor: "cannot-be-effect-target:opponent",
-          range: ["monsterZone"],
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 71 && effect.luaConditionDescriptor === `condition:source-summon-type:${luaSummonTypeFusion}`)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 71,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-71",
+        "lifePointValue": [Function],
+        "luaConditionDescriptor": "condition:source-summon-type:1124073472",
+        "luaTypeFlags": 1,
+        "luaValueDescriptor": "cannot-be-effect-target:opponent",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 131072,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:10136446:lua-1-71",
+        "sourceUid": "p0-extraDeck-10136446-0",
+        "statValue": [Function],
+        "target": [Function],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

@@ -79,17 +79,47 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
     );
     expect(setup.error).toBeUndefined();
     expect(setup.ok).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 248,
-          luaTargetDescriptor: `target:not-setcode-any:${setNouvelles},${setPatissciel}`,
-          luaValueDescriptor: `cannot-material:controller-summon-types:${luaSummonTypeFusion},${luaSummonTypeSynchro},${luaSummonTypeXyz},${luaSummonTypeLink}`,
-          property: 0x180,
-          targetRange: [0x3ff, 0x3ff],
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.code === 248 && effect.sourceUid === concours!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 248,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-248",
+        "lifePointValue": [Function],
+        "luaTargetDescriptor": "target:not-setcode-any:407,518",
+        "luaTypeFlags": 2,
+        "luaValueDescriptor": "cannot-material:controller-summon-types:1124073472,1174405120,1224736768,1275068416",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 384,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:14283055:lua-1-248",
+        "sourceUid": "p0-deck-14283055-0",
+        "statValue": [Function],
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "targetRange": [
+          1023,
+          1023,
+        ],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
     const materialLock = session.state.effects.find((effect) => effect.code === 248 && effect.sourceUid === concours!.uid);
     expect(materialLock).toBeDefined();
 
@@ -99,18 +129,38 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 248,
-          sourceUid: concours!.uid,
-          luaTargetDescriptor: `target:not-setcode-any:${setNouvelles},${setPatissciel}`,
-          luaValueDescriptor: `cannot-material:controller-summon-types:${luaSummonTypeFusion},${luaSummonTypeSynchro},${luaSummonTypeXyz},${luaSummonTypeLink}`,
-          property: 0x180,
-          targetRange: [0x3ff, 0x3ff],
-        }),
-      ]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.code === 248 && effect.sourceUid === concours!.uid)).toMatchInlineSnapshot(`
+      {
+        "code": 248,
+        "controller": 0,
+        "event": "continuous",
+        "id": "lua-1-248",
+        "luaTargetDescriptor": "target:not-setcode-any:407,518",
+        "luaValueDescriptor": "cannot-material:controller-summon-types:1124073472,1174405120,1224736768,1275068416",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "property": 384,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:14283055:lua-1-248",
+        "sourceUid": "p0-deck-14283055-0",
+        "targetCardPredicate": [Function],
+        "targetRange": [
+          1023,
+          1023,
+        ],
+        "valuePredicate": [Function],
+      }
+    `);
     expect(() => fusionSummonDuelCard(restored.session.state, 0, blockedFusion!.uid, [blocked!.uid, helper!.uid])).toThrow("cannot be used as fusion material");
     expect(() => fusionSummonDuelCard(restored.session.state, 1, opponentFusion!.uid, [opponentBlocked!.uid, opponentHelper!.uid])).not.toThrow();
     expect(() => fusionSummonDuelCard(restored.session.state, 0, allowedFusion!.uid, [nouvelles!.uid, patissciel!.uid])).not.toThrow();

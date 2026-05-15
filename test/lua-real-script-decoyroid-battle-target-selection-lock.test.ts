@@ -46,15 +46,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script De
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 332,
-          sourceUid: decoyroid.uid,
-        }),
-      ]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 332 && effect.sourceUid === decoyroid.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 332,
+        "controller": 1,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-332",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:25034083:lua-1-332",
+        "sourceUid": "p1-deck-25034083-0",
+        "statValue": [Function],
+        "target": [Function],
+        "targetRange": [
+          0,
+          4,
+        ],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const actions = getLuaRestoreLegalActions(restored, 0);

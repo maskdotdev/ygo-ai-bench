@@ -51,14 +51,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script da
     const register = host.loadCardScript(Number(roboyarouCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: "condition:damage-source-relate-battle-target",
-          sourceUid: roboyarou!.uid,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.luaConditionDescriptor === "condition:damage-source-relate-battle-target" && effect.sourceUid === roboyarou!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 100,
+        "controller": 0,
+        "cost": [Function],
+        "description": 22594528,
+        "event": "continuous",
+        "id": "lua-2-100",
+        "luaConditionDescriptor": "condition:damage-source-relate-battle-target",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 131072,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:1412158:lua-2-100",
+        "sourceUid": "p0-extraDeck-1412158-0",
+        "target": [Function],
+        "value": 1000,
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
