@@ -81,6 +81,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
     expect(restoredEffects.restoreComplete, restoredEffects.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredEffects, restoredEffects.session.state.waitingFor ?? restoredEffects.session.state.turnPlayer);
     expect(restoredEffects.missingRegistryKeys).toEqual([]);
+    expect(restoredEffects.missingChainLimitRegistryKeys).toEqual([]);
     restoredEffects.session.state.turnPlayer = 1;
     restoredEffects.session.state.phase = "main1";
     restoredEffects.session.state.waitingFor = 1;
@@ -92,6 +93,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
     expect(restoredFire.restoreComplete, restoredFire.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredFire, restoredFire.session.state.waitingFor ?? restoredFire.session.state.turnPlayer);
     expect(restoredFire.missingRegistryKeys).toEqual([]);
+    expect(restoredFire.missingChainLimitRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredFire);
     expect(restoredFire.session.state.players[0].lifePoints).toBe(7000);
     expect(restoredFire.session.state.players[1].lifePoints).toBe(8000);

@@ -67,6 +67,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredActivation, 0);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
+    expect(restoredActivation.missingChainLimitRegistryKeys).toEqual([]);
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === cocoonVeil!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredActivation, activation!);
@@ -76,6 +77,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredChain, restoredChain.session.state.waitingFor ?? restoredChain.session.state.turnPlayer);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredChain);
     expect(restoredChain.session.state.cards.find((card) => card.uid === summon!.uid)).toMatchObject({ location: "monsterZone", controller: 0, summonType: "special" });
     expect(restoredChain.session.state.effects).toEqual(
@@ -89,6 +91,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
     expect(restoredEffects.restoreComplete, restoredEffects.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredEffects, restoredEffects.session.state.waitingFor ?? restoredEffects.session.state.turnPlayer);
     expect(restoredEffects.missingRegistryKeys).toEqual([]);
+    expect(restoredEffects.missingChainLimitRegistryKeys).toEqual([]);
     restoredEffects.session.state.turnPlayer = 1;
     restoredEffects.session.state.phase = "main1";
     restoredEffects.session.state.waitingFor = 1;
@@ -101,6 +104,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
     expect(restoredFire.restoreComplete, restoredFire.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredFire, restoredFire.session.state.waitingFor ?? restoredFire.session.state.turnPlayer);
     expect(restoredFire.missingRegistryKeys).toEqual([]);
+    expect(restoredFire.missingChainLimitRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredFire);
     expect(restoredFire.session.state.players[0].lifePoints).toBe(8000);
     expect(restoredFire.session.state.players[1].lifePoints).toBe(7500);

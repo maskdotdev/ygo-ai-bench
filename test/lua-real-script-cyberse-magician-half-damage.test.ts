@@ -50,6 +50,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cy
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restored, 1),
@@ -64,6 +65,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cy
     const restoredFire = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(restoredFire.restoreComplete, restoredFire.incompleteReasons.join("; ")).toBe(true);
     expect(restoredFire.missingRegistryKeys).toEqual([]);
+    expect(restoredFire.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredFire, 1)).toEqual(getGroupedDuelLegalActions(restoredFire.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredFire, 1).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restoredFire, 1),

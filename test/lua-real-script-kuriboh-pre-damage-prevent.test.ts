@@ -51,6 +51,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ku
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.battleWindow?.kind).toBe("beforeDamageCalculation");
     expect(restored.session.state.effects.find((effect) => effect.sourceUid === kuriboh!.uid)).toMatchObject({
       event: "quick",

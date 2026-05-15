@@ -67,6 +67,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ha
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
+    expect(restoredActivation.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredActivation, 0);
     const hanewataActivation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === hanewata!.uid);
     expect(hanewataActivation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
@@ -77,6 +78,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ha
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredChain, 1);
     resolveRestoredChain(restoredChain);
 
@@ -91,6 +93,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ha
     const restoredEffects = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredEffects.restoreComplete, restoredEffects.incompleteReasons.join("; ")).toBe(true);
     expect(restoredEffects.missingRegistryKeys).toEqual([]);
+    expect(restoredEffects.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredEffects, 0);
     expect(restoredEffects.session.state.effects).toEqual(
       expect.arrayContaining([
@@ -108,6 +111,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ha
     const restoredFire = restoreDuelWithLuaScripts(serializeDuel(restoredEffects.session), source, reader);
     expect(restoredFire.restoreComplete, restoredFire.incompleteReasons.join("; ")).toBe(true);
     expect(restoredFire.missingRegistryKeys).toEqual([]);
+    expect(restoredFire.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredFire, 1);
     resolveRestoredChain(restoredFire);
     expect(restoredFire.session.state.players[0].lifePoints).toBe(8000);

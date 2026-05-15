@@ -57,6 +57,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
+    expect(restoredActivation.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredActivation, 0);
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     const trapActivation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === samsara!.uid);
@@ -66,6 +67,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     const restoredTrapChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredTrapChain.restoreComplete, restoredTrapChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredTrapChain.missingRegistryKeys).toEqual([]);
+    expect(restoredTrapChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredTrapChain, restoredTrapChain.session.state.waitingFor ?? restoredTrapChain.session.state.turnPlayer);
     resolveRestoredChain(restoredTrapChain);
     expect(restoredTrapChain.session.state.cards.find((card) => card.uid === samsara!.uid)).toMatchObject({ location: "spellTrapZone", faceUp: true });
@@ -73,6 +75,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     const restoredQuick = restoreDuelWithLuaScripts(serializeDuel(restoredTrapChain.session), source, reader);
     expect(restoredQuick.restoreComplete, restoredQuick.incompleteReasons.join("; ")).toBe(true);
     expect(restoredQuick.missingRegistryKeys).toEqual([]);
+    expect(restoredQuick.missingChainLimitRegistryKeys).toEqual([]);
     restoredQuick.session.state.waitingFor = 0;
     expectRestoredLegalActions(restoredQuick, 0);
     const damageLock = getLuaRestoreLegalActions(restoredQuick, 0).find((action) => action.type === "activateEffect" && action.uid === samsara!.uid);
@@ -83,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     const restoredDamageLockChain = restoreDuelWithLuaScripts(serializeDuel(restoredQuick.session), source, reader);
     expect(restoredDamageLockChain.restoreComplete, restoredDamageLockChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredDamageLockChain.missingRegistryKeys).toEqual([]);
+    expect(restoredDamageLockChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredDamageLockChain, restoredDamageLockChain.session.state.waitingFor ?? restoredDamageLockChain.session.state.turnPlayer);
     resolveRestoredChain(restoredDamageLockChain);
     expect(restoredDamageLockChain.session.state.effects).toEqual(
@@ -95,6 +99,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     const restoredEffects = restoreDuelWithLuaScripts(serializeDuel(restoredDamageLockChain.session), source, reader);
     expect(restoredEffects.restoreComplete, restoredEffects.incompleteReasons.join("; ")).toBe(true);
     expect(restoredEffects.missingRegistryKeys).toEqual([]);
+    expect(restoredEffects.missingChainLimitRegistryKeys).toEqual([]);
     restoredEffects.session.state.turnPlayer = 1;
     restoredEffects.session.state.phase = "main1";
     restoredEffects.session.state.waitingFor = 1;
@@ -106,6 +111,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     const restoredFire = restoreDuelWithLuaScripts(serializeDuel(restoredEffects.session), source, reader);
     expect(restoredFire.restoreComplete, restoredFire.incompleteReasons.join("; ")).toBe(true);
     expect(restoredFire.missingRegistryKeys).toEqual([]);
+    expect(restoredFire.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredFire, restoredFire.session.state.waitingFor ?? restoredFire.session.state.turnPlayer);
     resolveRestoredChain(restoredFire);
     expect(restoredFire.session.state.players[0].lifePoints).toBe(8000);

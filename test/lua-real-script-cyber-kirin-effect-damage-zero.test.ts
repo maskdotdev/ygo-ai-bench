@@ -54,6 +54,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cy
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredActivation, 0);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
+    expect(restoredActivation.missingChainLimitRegistryKeys).toEqual([]);
     const kirinActivation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === cyberKirin!.uid);
     expect(kirinActivation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredActivation, kirinActivation!);
@@ -63,6 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cy
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredChain, restoredChain.session.state.waitingFor ?? restoredChain.session.state.turnPlayer);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredChain);
 
     expect(restoredChain.session.state.effects).toEqual(
@@ -76,6 +78,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cy
     expect(restoredEffects.restoreComplete, restoredEffects.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredEffects, restoredEffects.session.state.waitingFor ?? restoredEffects.session.state.turnPlayer);
     expect(restoredEffects.missingRegistryKeys).toEqual([]);
+    expect(restoredEffects.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredEffects.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ sourceUid: cyberKirin!.uid, code: effectChangeDamage, luaValueDescriptor: "change-damage:effect-zero", targetRange: [1, 0] }),
@@ -93,6 +96,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cy
     expect(restoredFire.restoreComplete, restoredFire.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredFire, restoredFire.session.state.waitingFor ?? restoredFire.session.state.turnPlayer);
     expect(restoredFire.missingRegistryKeys).toEqual([]);
+    expect(restoredFire.missingChainLimitRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredFire);
     expect(restoredFire.session.state.players[0].lifePoints).toBe(8000);
     expect(restoredFire.session.state.players[1].lifePoints).toBe(7500);
