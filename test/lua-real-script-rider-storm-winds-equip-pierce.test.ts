@@ -108,12 +108,53 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ri
     expect(restoredEquipState.missingRegistryKeys).toEqual([]);
     expect(restoredEquipState.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredEquipState, 0);
-    expect(restoredEquipState.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: rider!.uid, event: "continuous", code: 76 }),
-        expect.objectContaining({ sourceUid: rider!.uid, event: "continuous", code: 203 }),
-      ]),
-    );
+    expect(restoredEquipState.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === rider!.uid && [76, 203].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 203,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-2-203",
+          "luaTypeFlags": 4,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:14235211:lua-2-203",
+          "sourceUid": "p0-deck-14235211-0",
+          "target": [Function],
+        },
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 76,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-5-76",
+          "lifePointValue": [Function],
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 1024,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:14235211:lua-5-76",
+          "reset": {
+            "flags": 33427456,
+          },
+          "sourceUid": "p0-deck-14235211-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
     expectLuaEquipProbe(restoredEquipState, riderCode, normalDragonCode, "rider equip probe true/14235");
     const battlePhase = getLuaRestoreLegalActions(restoredEquipState, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
     expect(battlePhase, JSON.stringify(getLuaRestoreLegalActions(restoredEquipState, 0), null, 2)).toBeDefined();
@@ -231,12 +272,55 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ri
     expect(restoredEquippedState.missingRegistryKeys).toEqual([]);
     expect(restoredEquippedState.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredEquippedState, 0);
-    expect(restoredEquippedState.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: rider!.uid, event: "continuous", code: 45 }),
-        expect.objectContaining({ sourceUid: rider!.uid, event: "continuous", code: 76 }),
-      ]),
-    );
+    expect(restoredEquippedState.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === rider!.uid && [45, 76].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 45,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-3-45",
+          "luaTypeFlags": 4,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 128,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:14235211:lua-3-45",
+          "sourceUid": "p0-deck-14235211-0",
+          "target": [Function],
+          "value": 1,
+        },
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 76,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-5-76",
+          "lifePointValue": [Function],
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 1024,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:14235211:lua-5-76",
+          "reset": {
+            "flags": 33427456,
+          },
+          "sourceUid": "p0-deck-14235211-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
     expectLuaEquipProbe(restoredEquippedState, riderCode, normalDragonCode, "rider equip probe true/14239");
 
     destroyDuelCard(restoredEquippedState.session.state, normalDragon!.uid, 0, duelReason.effect | duelReason.destroy, 1);

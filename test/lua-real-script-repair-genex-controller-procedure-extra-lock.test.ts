@@ -67,21 +67,62 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
       "repair-genex-controller-procedure-extra-lock.lua",
     );
     expect(script.ok, script.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "summonProcedure",
-          sourceUid: session.state.cards.find((card) => card.code === synchroCode)?.uid,
-          value: luaSummonTypeSynchro,
-        }),
-        expect.objectContaining({
-          code: 22,
-          luaTargetDescriptor: `target:extra-summon-type-not-or-no-procedure:${luaSummonTypeSynchro}`,
-          property: 0x4000800,
-          targetRange: [1, 0],
-        }),
-      ]),
-    );
+    expect(session.state.effects.filter((effect) => effect.sourceUid === session.state.cards.find((card) => card.code === synchroCode)?.uid || effect.luaTargetDescriptor === `target:extra-summon-type-not-or-no-procedure:${luaSummonTypeSynchro}`)).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 34,
+          "controller": 0,
+          "cost": [Function],
+          "event": "summonProcedure",
+          "id": "lua-4-34",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "extraDeck",
+          ],
+          "registryKey": "lua:900000280:lua-4-34",
+          "sourceUid": "p0-extraDeck-900000280-0",
+          "target": [Function],
+          "value": 1174405120,
+        },
+        {
+          "canActivate": [Function],
+          "code": 22,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-5-22",
+          "luaTargetDescriptor": "target:extra-summon-type-not-or-no-procedure:1174405120",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "promptOperation": [Function],
+          "property": 67110912,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:8173184:lua-5-22",
+          "sourceUid": "p0-deck-8173184-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "targetRange": [
+            1,
+            0,
+          ],
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

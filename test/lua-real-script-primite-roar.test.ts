@@ -62,34 +62,78 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
       position: "faceUpDefense",
     });
     expect(restoredActivation.session.state.cards.find((card) => card.uid === roar!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restoredActivation.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 42,
-          value: 1,
-          luaTargetDescriptor: "target:setcode-or-code-type:432:46986414:16",
-          targetRange: [4, 0],
-        }),
-      ]),
-    );
+    expect(restoredActivation.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 42 && effect.luaTargetDescriptor === "target:setcode-or-code-type:432:46986414:16")).toMatchInlineSnapshot(`
+      {
+        "code": 42,
+        "controller": 0,
+        "event": "continuous",
+        "id": "lua-3-42",
+        "luaTargetDescriptor": "target:setcode-or-code-type:432:46986414:16",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:92501449:lua-3-42",
+        "reset": {
+          "flags": 1610613248,
+        },
+        "sourceUid": "p0-deck-92501449-0",
+        "targetCardPredicate": [Function],
+        "targetRange": [
+          4,
+          0,
+        ],
+        "value": 1,
+      }
+    `);
 
     const restoredProtection = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), workspace, reader);
     expect(restoredProtection.restoreComplete, restoredProtection.incompleteReasons.join("; ")).toBe(true);
     expect(restoredProtection.missingRegistryKeys).toEqual([]);
     expect(restoredProtection.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredProtection, 0);
-    expect(restoredProtection.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 42,
-          value: 1,
-          luaTargetDescriptor: "target:setcode-or-code-type:432:46986414:16",
-          targetRange: [4, 0],
-        }),
-      ]),
-    );
+    expect(restoredProtection.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 42 && effect.luaTargetDescriptor === "target:setcode-or-code-type:432:46986414:16")).toMatchInlineSnapshot(`
+      {
+        "code": 42,
+        "controller": 0,
+        "event": "continuous",
+        "id": "lua-3-42",
+        "luaTargetDescriptor": "target:setcode-or-code-type:432:46986414:16",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:92501449:lua-3-42",
+        "reset": {
+          "flags": 1610613248,
+        },
+        "sourceUid": "p0-deck-92501449-0",
+        "targetCardPredicate": [Function],
+        "targetRange": [
+          4,
+          0,
+        ],
+        "value": 1,
+      }
+    `);
 
     restoredProtection.session.state.turnPlayer = 1;
     restoredProtection.session.state.phase = "main1";

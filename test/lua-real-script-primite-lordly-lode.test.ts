@@ -143,17 +143,49 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(getLuaRestoreLegalActions(restoredChain, 0).some((action) => action.type === "activateEffect" && action.uid === effectNormal!.uid)).toBe(true);
     restoredChain.session.state.cards.find((card) => card.uid === effectNormal!.uid)!.summonType = "special";
     expect(getLuaRestoreLegalActions(restoredChain, 0).some((action) => action.type === "activateEffect" && action.uid === effectNormal!.uid)).toBe(false);
-    expect(restoredChain.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 6,
-          sourceUid: lordlyLode!.uid,
-          luaValueDescriptor: "cannot-activate:special-summoned-monster-on-field",
-          targetRange: [1, 0],
-        }),
-      ]),
-    );
+    expect(restoredChain.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 6 && effect.sourceUid === lordlyLode!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 6,
+        "controller": 0,
+        "cost": [Function],
+        "description": 904107842,
+        "event": "continuous",
+        "id": "lua-6-6",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 2,
+        "luaValueDescriptor": "cannot-activate:special-summoned-monster-on-field",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 67110912,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:56506740:lua-6-6",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p0-deck-56506740-0",
+        "statValue": [Function],
+        "target": [Function],
+        "targetRange": [
+          1,
+          0,
+        ],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -164,17 +196,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     });
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getDuelLegalActionGroups(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 6,
-          sourceUid: lordlyLode!.uid,
-          luaValueDescriptor: "cannot-activate:special-summoned-monster-on-field",
-          targetRange: [1, 0],
-        }),
-      ]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 6 && effect.sourceUid === lordlyLode!.uid)).toMatchInlineSnapshot(`
+      {
+        "code": 6,
+        "controller": 0,
+        "description": 904107842,
+        "event": "continuous",
+        "id": "lua-6-6",
+        "luaValueDescriptor": "cannot-activate:special-summoned-monster-on-field",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "property": 67110912,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:56506740:lua-6-6",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p0-deck-56506740-0",
+        "targetRange": [
+          1,
+          0,
+        ],
+        "valuePredicate": [Function],
+      }
+    `);
     expect(getLuaRestoreLegalActions(restored, 0).some((action) => action.type === "activateEffect" && action.uid === effectNormal!.uid)).toBe(false);
   });
 });

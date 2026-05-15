@@ -34,12 +34,64 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sc
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(scrapWormCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", triggerEvent: "attackDeclared", sourceUid: scrapWorm!.uid }),
-        expect.objectContaining({ event: "trigger", triggerEvent: "phaseBattle", sourceUid: scrapWorm!.uid }),
-      ]),
-    );
+    expect(session.state.effects.filter((effect) => effect.sourceUid === scrapWorm!.uid && ["attackDeclared", "phaseBattle"].includes(effect.triggerEvent ?? ""))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 1130,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-1130",
+          "luaTypeFlags": 2049,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 1024,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:32761286:lua-1-1130",
+          "sourceUid": "p0-deck-32761286-0",
+          "target": [Function],
+          "triggerCode": 1130,
+          "triggerEvent": "attackDeclared",
+        },
+        {
+          "canActivate": [Function],
+          "category": 1,
+          "code": 4224,
+          "controller": 0,
+          "cost": [Function],
+          "countLimit": 1,
+          "description": 524180576,
+          "event": "trigger",
+          "id": "lua-2-4224",
+          "luaTypeFlags": 514,
+          "oncePerTurn": true,
+          "operation": [Function],
+          "optional": false,
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:32761286:lua-2-4224",
+          "sourceUid": "p0-deck-32761286-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "triggerCode": 4224,
+          "triggerEvent": "phaseBattle",
+          "triggerTiming": "when",
+        },
+      ]
+    `);
 
     const directAttack = getLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === scrapWorm!.uid && action.targetUid === undefined);
     expect(directAttack).toBeDefined();
