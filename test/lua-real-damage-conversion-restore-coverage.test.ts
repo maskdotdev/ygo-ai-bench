@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const damageConversionFixtureCount = 5;
 
 describe("Lua real damage conversion restore coverage", () => {
   it("requires effect damage conversion fixtures to assert clean Lua registry restore and final LP/event outcomes", () => {
-    const missing = damageConversionFixtureFiles()
+    const files = damageConversionFixtureFiles();
+    expect(files).toHaveLength(damageConversionFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
@@ -21,7 +25,10 @@ describe("Lua real damage conversion restore coverage", () => {
   });
 
   it("requires UI-facing legal-action parity where restored conversion chains expose actions", () => {
-    const missing = damageConversionFixtureFiles()
+    const files = damageConversionFixtureFiles();
+    expect(files).toHaveLength(damageConversionFixtureCount);
+
+    const missing = files
       .filter(({ file }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("getLuaRestoreLegalActionGroups")

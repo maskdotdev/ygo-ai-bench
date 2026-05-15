@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const damagePreventionFixtureCount = 10;
 
 describe("Lua real damage-prevention restore coverage", () => {
   it("requires representative real-script damage prevention fixtures to assert restore and response replay", () => {
-    const missing = realScriptDamagePreventionFixtureFiles()
+    const files = realScriptDamagePreventionFixtureFiles();
+    expect(files).toHaveLength(damagePreventionFixtureCount);
+
+    const missing = files
       .filter(({ file }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
@@ -23,7 +27,10 @@ describe("Lua real damage-prevention restore coverage", () => {
   });
 
   it("requires representative real-script damage prevention fixtures to prove protected and unprotected damage outcomes", () => {
-    const missing = realScriptDamagePreventionFixtureFiles()
+    const files = realScriptDamagePreventionFixtureFiles();
+    expect(files).toHaveLength(damagePreventionFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("lifePoints")
