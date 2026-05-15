@@ -153,6 +153,32 @@ ${IDS.theDarkMagicians}
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   });
 
+  it("copies post-action legal action payloads at the agent boundary", () => {
+    const agent = createPlaytestAgent({
+      deck: {
+        main: {
+          [IDS.magiciansRod]: 1,
+          [IDS.darkMagicalCircle]: 1,
+          [IDS.darkMagician]: 1,
+        },
+      },
+    });
+    const started = agent.start({ seed: 1, handSize: 2 });
+    const action = started.legalActions.find((candidate) => candidate.type !== "end");
+    const result = agent.action(action!, started.sessionId);
+    expect(result.ok).toBe(true);
+    const resultAction = result.legalActions[0];
+    const groupedResultAction = result.legalActionGroups.flatMap((group) => group.actions)[0];
+    expect(resultAction).toBeDefined();
+    expect(groupedResultAction).toBeDefined();
+
+    resultAction!.label = "Mutated post-action raw action";
+    groupedResultAction!.label = "Mutated post-action grouped action";
+
+    expect(agent.legalActions(started.sessionId)[0]?.label).not.toBe("Mutated post-action raw action");
+    expect(agent.state(started.sessionId).legalActionGroups.flatMap((group) => group.actions)[0]?.label).not.toBe("Mutated post-action grouped action");
+  });
+
   it("rejects malformed agent actions through the public action boundary", () => {
     const agent = createPlaytestAgent({
       deck: {
