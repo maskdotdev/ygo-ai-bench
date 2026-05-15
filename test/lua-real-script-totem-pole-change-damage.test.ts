@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -121,12 +122,28 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
 
     expect(fireRestored.session.state.players[0].lifePoints).toBe(7500);
     expect(fireRestored.session.state.players[1].lifePoints).toBe(6000);
-    expect(fireRestored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "damageDealt", eventCode: 1111, eventPlayer: 1, eventValue: 2000 }),
-        expect.objectContaining({ eventName: "damageDealt", eventCode: 1111, eventPlayer: 0, eventValue: 500 }),
-      ]),
-    );
+    expect(fireRestored.session.state.eventHistory.filter((event) => event.eventName === "damageDealt")).toEqual([
+      {
+        eventName: "damageDealt",
+        eventCode: 1111,
+        eventPlayer: 1,
+        eventValue: 2000,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: tremendousFire!.uid,
+        eventReasonEffectId: 7,
+      },
+      {
+        eventName: "damageDealt",
+        eventCode: 1111,
+        eventPlayer: 0,
+        eventValue: 500,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: tremendousFire!.uid,
+        eventReasonEffectId: 7,
+      },
+    ]);
     expect(fireRestored.session.state.cards.find((card) => card.uid === tremendousFire!.uid)).toMatchObject({ location: "graveyard" });
     expect(fireRestored.host.messages).not.toContain("totem pole responder resolved");
   });
