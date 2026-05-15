@@ -85,6 +85,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
     expect(restoredTrigger.missingRegistryKeys).toEqual([]);
+    expect(restoredTrigger.missingChainLimitRegistryKeys).toEqual([]);
     const triggerPlayer = restoredTrigger.session.state.waitingFor;
     expect(triggerPlayer).toBeDefined();
     expect(getLuaRestoreLegalActionGroups(restoredTrigger, triggerPlayer!)).toEqual(getGroupedDuelLegalActions(restoredTrigger.session, triggerPlayer!));
@@ -101,6 +102,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     const responsePlayer = restoredChain.session.state.waitingFor;
     expect(responsePlayer).toBeDefined();
     expect(getLuaRestoreLegalActionGroups(restoredChain, responsePlayer!)).toEqual(getGroupedDuelLegalActions(restoredChain.session, responsePlayer!));

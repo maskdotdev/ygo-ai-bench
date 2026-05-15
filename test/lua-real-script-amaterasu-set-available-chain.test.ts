@@ -83,6 +83,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     expect(restoredOpenChain.restoreComplete, restoredOpenChain.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredOpenChain, 0);
     expect(restoredOpenChain.missingRegistryKeys).toEqual([]);
+    expect(restoredOpenChain.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredOpenChain, 0)).toEqual(getGroupedDuelLegalActions(restoredOpenChain.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredOpenChain, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredOpenChain, 0));
     const amaterasuAction = getLuaRestoreLegalActions(restoredOpenChain, 0).find((action) => action.type === "activateEffect" && action.uid === amaterasu!.uid);
@@ -107,6 +108,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredPendingResolution, 1);
     expect(restoredPendingResolution.missingRegistryKeys).toEqual([]);
+    expect(restoredPendingResolution.missingChainLimitRegistryKeys).toEqual([]);
     passUntilResolved(restoredPendingResolution);
 
     expect(restoredPendingResolution.session.state.chain).toHaveLength(0);
