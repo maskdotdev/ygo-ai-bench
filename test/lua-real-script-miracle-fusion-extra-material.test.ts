@@ -122,11 +122,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
       reason: duelReason.effect | duelReason.material | duelReason.fusion,
     });
     expect(restored.session.state.cards.find((card) => card.uid === miracleFusion!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "specialSummoned", eventCardUid: fusion!.uid }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned")).toEqual([
+      {
+        eventName: "specialSummoned",
+        eventCode: 1102,
+        eventCardUid: fusion!.uid,
+        eventReason: duelReason.summon | duelReason.specialSummon | duelReason.fusion,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: miracleFusion!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "extraDeck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "banished")).toEqual([
       {
         eventName: "banished",

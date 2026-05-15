@@ -112,13 +112,124 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mu
       reason: duelReason.effect | duelReason.material | duelReason.fusion,
     });
     expect(restored.session.state.cards.find((card) => card.uid === mutiny!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "moved", eventCardUid: materialA!.uid }),
-        expect.objectContaining({ eventName: "moved", eventCardUid: materialB!.uid }),
-        expect.objectContaining({ eventName: "specialSummoned", eventCardUid: fusion!.uid }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "moved")).toEqual([
+      {
+        eventName: "moved",
+        eventCode: 1030,
+        eventCardUid: materialA!.uid,
+        eventReason: duelReason.effect | duelReason.material | duelReason.fusion,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: mutiny!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "moved",
+        eventCode: 1030,
+        eventCardUid: materialB!.uid,
+        eventReason: duelReason.effect | duelReason.material | duelReason.fusion,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: mutiny!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "deck",
+          position: "faceDown",
+          sequence: 1,
+        },
+      },
+      {
+        eventName: "moved",
+        eventCode: 1030,
+        eventCardUid: materialA!.uid,
+        eventReason: duelReason.effect | duelReason.material | duelReason.fusion,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: mutiny!.uid,
+        eventReasonEffectId: 1,
+        eventUids: [materialA!.uid, materialB!.uid],
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "moved",
+        eventCode: 1030,
+        eventCardUid: mutiny!.uid,
+        eventReason: duelReason.rule,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "spellTrapZone",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned")).toEqual([
+      {
+        eventName: "specialSummoned",
+        eventCode: 1102,
+        eventCardUid: fusion!.uid,
+        eventReason: duelReason.summon | duelReason.specialSummon | duelReason.fusion,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: mutiny!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "extraDeck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.host.messages).not.toContain("mutiny responder resolved");
   });
 });
