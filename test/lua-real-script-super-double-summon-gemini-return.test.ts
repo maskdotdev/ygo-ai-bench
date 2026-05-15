@@ -56,6 +56,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    assertRestoredLegalActions(restored, 0);
     const activate = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.uid === spell!.uid);
     expect(activate, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
     const activated = applyLuaRestoreResponse(restored, activate!);
@@ -83,7 +84,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
     const preEndRestored = restoreDuelWithLuaScripts(serializeDuel(chainRestored.session), source, reader);
     expect(preEndRestored.restoreComplete, preEndRestored.incompleteReasons.join("; ")).toBe(true);
     expect(preEndRestored.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActions(preEndRestored, 0)).toEqual(getDuelLegalActions(preEndRestored.session, 0));
+    assertRestoredLegalActions(preEndRestored, 0);
     assertGeminiStatus(preEndRestored, geminiCode, true);
 
     const endPhase = getLuaRestoreLegalActions(preEndRestored, 0).find((action) => action.type === "changePhase" && action.phase === "end");
@@ -102,6 +103,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
     const postEndRestored = restoreDuelWithLuaScripts(serializeDuel(preEndRestored.session), source, reader);
     expect(postEndRestored.restoreComplete, postEndRestored.incompleteReasons.join("; ")).toBe(true);
     expect(postEndRestored.missingRegistryKeys).toEqual([]);
+    assertRestoredLegalActions(postEndRestored, 1);
     expect(postEndRestored.session.state.cards.find((card) => card.uid === gemini!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(postEndRestored.host.messages).not.toContain("super double responder resolved");
   });
@@ -117,6 +119,12 @@ function assertGeminiStatus(restored: ReturnType<typeof restoreDuelWithLuaScript
   );
   expect(probe.ok, probe.error).toBe(true);
   expect(restored.host.messages).toContain(`super double gemini status ${expected ? "true" : "false"}`);
+}
+
+function assertRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function chainResponderScript(): string {
