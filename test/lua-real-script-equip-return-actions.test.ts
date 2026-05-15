@@ -652,11 +652,35 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(restoredDiscardChain.host.messages).not.toContain("equip responder resolved");
     expect(restoredDiscardChain.session.state.eventHistory).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ eventName: "leftField", eventCode: 1015, eventCardUid: smoke!.uid }),
         expect.objectContaining({ eventName: "confirmed", eventCode: 1211, eventPlayer: 0, eventUids: confirmedOpponentHandUids }),
         expect.objectContaining({ eventName: "discarded", eventCode: 1018, eventCardUid: discardedCards[0]!.uid }),
       ]),
     );
+    expect(restoredDiscardChain.session.state.eventHistory.filter((event) => event.eventName === "leftField" && event.eventCardUid === smoke!.uid)).toEqual([
+      {
+        eventName: "leftField",
+        eventCode: 1015,
+        eventCardUid: smoke!.uid,
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: smoke!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "spellTrapZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
   });
 
   it("restores Blast with Chain remain-field Trap equip and destroyed trigger", () => {

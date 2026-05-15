@@ -141,11 +141,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       previousLocation: "monsterZone",
       faceUp: true,
     });
-    expect(restoredBattle.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "leftField", eventCode: 1015, eventCardUid: bigBang!.uid }),
-      ]),
-    );
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "leftField" && event.eventCardUid === bigBang!.uid)).toEqual([
+      {
+        eventName: "leftField",
+        eventCode: 1015,
+        eventCardUid: bigBang!.uid,
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: bigBang!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "spellTrapZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "banished" && event.eventCardUid === target!.uid)).toEqual([
       {
         eventName: "banished",
