@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const statefulGateFixtureCount = 3;
 
 describe("Lua real stateful gate restore coverage", () => {
   it("requires stateful gate fixtures to assert clean restore and restored legal outcomes", () => {
-    const missing = statefulGateFixtureFiles()
+    const files = statefulGateFixtureFiles();
+    expect(files).toHaveLength(statefulGateFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
