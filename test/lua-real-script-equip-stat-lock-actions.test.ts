@@ -123,11 +123,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     passRestoredBattleResponsesUntilTrigger(restoredBattle);
     expect(restoredBattle.session.state.battleDamage[1]).toBe(1000);
     expect(restoredBattle.session.state.players[1].lifePoints).toBe(7000);
-    expect(restoredBattle.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 1000 }),
-      ]),
-    );
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: target!.uid,
+        eventPlayer: 1,
+        eventValue: 1000,
+        eventReason: duelReason.battle,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
 
     destroyDuelCard(restoredBattle.session.state, bigBang!.uid, 0, duelReason.effect | duelReason.destroy, 0);
     expect(restoredBattle.session.state.cards.find((card) => card.uid === bigBang!.uid)).toMatchObject({
