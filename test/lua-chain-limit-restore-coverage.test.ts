@@ -8,8 +8,8 @@ const testRoot = path.join(root, "test");
 const scannerPath = path.join(root, "tools/scan-lua-chain-limit-patterns.mjs");
 const upstreamOfficialScriptRoot = path.join(root, ".upstream/ignis/script/official");
 const noActiveRestoreWindowGroups = new Set(["SetChainLimit:aux.FALSE"]);
-const realScriptChainLimitFixtureCount = 16;
-const realScriptOwnedScannerGroupCount = 14;
+const realScriptChainLimitFixtureCount = 17;
+const realScriptOwnedScannerGroupCount = 15;
 
 const officialPatternRestoreCoverage: Record<string, string[]> = {
   "SetChainLimit:aux.FALSE": ["test/lua-real-script-anti-magic-arrows-chain-limit.test.ts"],
@@ -18,7 +18,7 @@ const officialPatternRestoreCoverage: Record<string, string[]> = {
   "SetChainLimit:inline:active-type": ["test/lua-real-script-forbidden-crown-chain-limit.test.ts"],
   "SetChainLimit:inline:handler-exclusion": ["test/lua-real-script-titanic-galaxy-chain-limit.test.ts"],
   "SetChainLimit:inline:response-chain-player": ["test/lua-real-script-borrelend-chain-limit.test.ts"],
-  "SetChainLimit:inline:target-card-handler-exclusion": ["test/lua-chain-limit-target-cards-restore.test.ts"],
+  "SetChainLimit:inline:target-card-handler-exclusion": ["test/lua-real-script-tyrant-ogre-chain-limit.test.ts"],
   "SetChainLimit:named:active-type": ["test/lua-real-script-giant-starfall-chain-limit.test.ts"],
   "SetChainLimit:named:effect-type": ["test/lua-real-script-galaxy-destroyer-chain-limit.test.ts"],
   "SetChainLimit:named:response-chain-player": ["test/lua-real-script-dark-magic-expanded-chain-limit.test.ts"],
