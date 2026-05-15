@@ -102,6 +102,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fo
 
     const restoredResolvedState = restoreDuelWithLuaScripts(serializeDuel(restoredResponseWindow.session), source, reader);
     expect(restoredResolvedState.restoreComplete, restoredResolvedState.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredResolvedState.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredResolvedState, 0);
     expectLuaTargetProbe(restoredResolvedState, targetCode, "droplet target probe 1000/true");
   });
 });
@@ -141,6 +143,12 @@ function expectRestoredChainLimit(restored: ReturnType<typeof restoreDuelWithLua
     expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
     expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
   }
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function hasEffect(actions: ReturnType<typeof getLegalActions>, uid: string): boolean {

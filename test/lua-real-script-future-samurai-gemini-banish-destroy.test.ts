@@ -67,7 +67,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
     const restoredInitial = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredInitial.restoreComplete, restoredInitial.incompleteReasons.join("; ")).toBe(true);
     expect(restoredInitial.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActions(restoredInitial, 0)).toEqual(getDuelLegalActions(restoredInitial.session, 0));
+    expectRestoredLegalActions(restoredInitial, 0);
     assertGeminiStatus(restoredInitial, samuraiCode, false);
     const geminiSummon = getLuaRestoreLegalActions(restoredInitial, 0).find((action) => action.type === "normalSummon" && action.uid === samurai!.uid);
     expect(geminiSummon, JSON.stringify(getLuaRestoreLegalActions(restoredInitial, 0), null, 2)).toBeDefined();
@@ -76,7 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
     const restoredIgnition = restoreDuelWithLuaScripts(serializeDuel(restoredInitial.session), source, reader);
     expect(restoredIgnition.restoreComplete, restoredIgnition.incompleteReasons.join("; ")).toBe(true);
     expect(restoredIgnition.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActions(restoredIgnition, 0)).toEqual(getDuelLegalActions(restoredIgnition.session, 0));
+    expectRestoredLegalActions(restoredIgnition, 0);
     assertGeminiStatus(restoredIgnition, samuraiCode, true);
     const ignition = getLuaRestoreLegalActions(restoredIgnition, 0).find((action) => action.type === "activateEffect" && action.uid === samurai!.uid);
     expect(ignition, JSON.stringify(getLuaRestoreLegalActions(restoredIgnition, 0), null, 2)).toBeDefined();
@@ -98,8 +98,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredIgnition.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
-    expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
+    expectRestoredLegalActions(restoredChain, 1);
     expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredChain);
     expect(restoredChain.host.messages).not.toContain("future samurai responder resolved");
@@ -116,6 +115,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
     const restoredAfterDestroy = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredAfterDestroy.restoreComplete, restoredAfterDestroy.incompleteReasons.join("; ")).toBe(true);
     expect(restoredAfterDestroy.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredAfterDestroy, 0);
     expect(restoredAfterDestroy.session.state.cards.find((card) => card.uid === cost!.uid)).toMatchObject({ location: "banished" });
     expect(restoredAfterDestroy.session.state.cards.find((card) => card.uid === destroyTarget!.uid)).toMatchObject({ location: "graveyard" });
   });
@@ -168,4 +168,10 @@ function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWit
     expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   }
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
