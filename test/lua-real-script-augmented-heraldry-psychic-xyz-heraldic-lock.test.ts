@@ -57,6 +57,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Au
     expect(resolve.ok, resolve.error).toBe(true);
     expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
       luaTargetDescriptor: "target:not-race-type-or-setcode:1048576:8388608:118",
+      property: 0x80800,
       targetRange: [1, 0],
     });
 
@@ -67,6 +68,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Au
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(restored.session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      property: 0x80800,
       targetRange: [1, 0],
     });
     const probe = restored.host.loadScript(

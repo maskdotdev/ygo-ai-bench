@@ -638,6 +638,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-ancient-gear-wyvern-facedown-summon-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "target:special-summon-position-facedown"',
+        "property: 0x800",
         "targetRange: [1, 0]",
         "wyvern facedown special 0",
         "wyvern faceup special 1",
@@ -730,6 +731,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-augmented-heraldry-psychic-xyz-heraldic-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "target:not-race-type-or-setcode:1048576:8388608:118"',
+        "property: 0x80800",
         "targetRange: [1, 0]",
         "augmented heraldry outsider special 0",
         "augmented heraldry psychic xyz special 1",

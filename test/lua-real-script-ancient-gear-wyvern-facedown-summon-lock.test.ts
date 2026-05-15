@@ -55,6 +55,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script An
     expect(resolve.ok, resolve.error).toBe(true);
     expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
       luaTargetDescriptor: "target:special-summon-position-facedown",
+      property: 0x800,
       targetRange: [1, 0],
     });
 
@@ -65,6 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script An
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(restored.session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      property: 0x800,
       targetRange: [1, 0],
     });
     const probe = restored.host.loadScript(
