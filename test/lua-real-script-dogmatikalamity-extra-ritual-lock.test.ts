@@ -116,14 +116,45 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Do
     expect(restored.session.state.cards.find((card) => card.uid === extraMaterial!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.effect | duelReason.material | duelReason.ritual });
     expect(restored.session.state.cards.find((card) => card.uid === pendulumExtra!.uid)).toMatchObject({ location: "extraDeck", faceUp: true });
     expect(restored.session.state.cards.find((card) => card.uid === dogmatikalamity!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
-    expect(restored.session.state.effects).toContainEqual(
-      expect.objectContaining({
-        code: 22,
-        event: "continuous",
-        luaTargetDescriptor: "special-summon-limit:extra",
-        reset: { flags: 0x40000200 },
-      }),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 22 && effect.luaTargetDescriptor === "special-summon-limit:extra")).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 22,
+        "controller": 0,
+        "cost": [Function],
+        "description": 496038432,
+        "event": "continuous",
+        "id": "lua-3-22",
+        "luaTargetDescriptor": "special-summon-limit:extra",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 67110912,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:31002402:lua-3-22",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p0-deck-31002402-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "targetRange": [
+          1,
+          0,
+        ],
+      }
+    `);
     expect(canSpecialSummonDuelCard(restored.session.state, pendulumExtra!.uid, 0)).toBe(false);
 
     applyAndAssert(restored.session, getLegalActions(restored.session, 0).find((action) => action.type === "endTurn")!);

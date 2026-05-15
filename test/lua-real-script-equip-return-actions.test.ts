@@ -1159,9 +1159,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
         ],
       }
     `);
-    expect(restoredActivation.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: blast!.uid, event: "continuous", code: 17, range: ["spellTrapZone"] })]),
-    );
+    expect(restoredActivation.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 17 && effect.sourceUid === blast!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 17,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-4-17",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 524288,
+        "range": [
+          "spellTrapZone",
+        ],
+        "registryKey": "lua:98239899:lua-4-17",
+        "reset": {
+          "flags": 2147483648,
+        },
+        "sourceUid": "p0-deck-98239899-0",
+        "target": [Function],
+      }
+    `);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expectCleanRestore(restoredChain);

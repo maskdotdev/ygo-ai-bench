@@ -55,16 +55,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Do
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(doggyCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 238,
-          sourceUid: doggy!.uid,
-          luaValueDescriptor: "cannot-material:target-not-race:1",
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 238 && effect.sourceUid === doggy!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 238,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-238",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 1,
+        "luaValueDescriptor": "cannot-material:target-not-race:1",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 263168,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:1003028:lua-2-238",
+        "sourceUid": "p0-deck-1003028-0",
+        "statValue": [Function],
+        "target": [Function],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -74,15 +91,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Do
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restored, 0),
     );
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 238,
-          sourceUid: doggy!.uid,
-          luaValueDescriptor: "cannot-material:target-not-race:1",
-        }),
-      ]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.code === 238 && effect.sourceUid === doggy!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 238,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-238",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 1,
+        "luaValueDescriptor": "cannot-material:target-not-race:1",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "property": 263168,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:1003028:lua-2-238",
+        "sourceUid": "p0-deck-1003028-0",
+        "statValue": [Function],
+        "target": [Function],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
     const legalActions = getLegalActions(restored.session, 0);
     expect(legalActions.some((action) => action.type === "xyzSummon" && action.uid === fiendXyz!.uid)).toBe(false);
     expect(() => xyzSummonDuelCard(restored.session.state, 0, fiendXyz!.uid, [doggy!.uid, level4!.uid])).toThrow("cannot be used as Xyz material");
