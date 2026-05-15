@@ -3,10 +3,15 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const releaseAndTributeFixtureCount = 7;
+const legalActionFixtureCount = 5;
 
 describe("Lua real release and tribute restore coverage", () => {
   it("requires release and tribute restriction fixtures to assert clean Lua registry restore", () => {
-    const missing = releaseAndTributeFixtureFiles()
+    const files = releaseAndTributeFixtureFiles();
+    expect(files).toHaveLength(releaseAndTributeFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
@@ -21,7 +26,10 @@ describe("Lua real release and tribute restore coverage", () => {
   });
 
   it("requires UI-facing legal-action parity where restored release and tribute locks expose actions", () => {
-    const missing = legalActionFixtureFiles()
+    const files = legalActionFixtureFiles();
+    expect(files).toHaveLength(legalActionFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("getLuaRestoreLegalActionGroups")
