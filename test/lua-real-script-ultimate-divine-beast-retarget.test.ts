@@ -64,15 +64,37 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ul
     expect(attack).toBeDefined();
     applyAndAssert(session, attack!);
     expect(session.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid, targetUid: originalTarget!.uid });
-    expect(session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        player: 1,
-        triggerBucket: "opponentOptional",
-        eventName: "attackDeclared",
-        sourceUid: ultimateDivineBeast!.uid,
-        eventCardUid: attacker!.uid,
-      }),
-    ]);
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-2-1130",
+          "eventCardUid": "p0-deck-3224-0",
+          "eventCode": 1130,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "attackDeclared",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-3-1",
+          "player": 1,
+          "sourceUid": "p1-deck-32247099-0",
+          "triggerBucket": "opponentOptional",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

@@ -51,30 +51,74 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
     expect(attack).toBeDefined();
     applyAndAssert(session, attack!);
     expect(session.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid, targetUid: target!.uid });
-    expect(session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        player: 1,
-        triggerBucket: "opponentOptional",
-        eventName: "attackDeclared",
-        eventCardUid: attacker!.uid,
-        sourceUid: totemPole!.uid,
-      }),
-    ]);
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-4-1130",
+          "eventCardUid": "p0-deck-4788-0",
+          "eventCode": 1130,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "attackDeclared",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-3-1",
+          "player": 1,
+          "sourceUid": "p1-deck-47873397-0",
+          "triggerBucket": "opponentOptional",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.pendingBattle).toMatchObject({ attackerUid: attacker!.uid, targetUid: target!.uid });
-    expect(restored.session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        player: 1,
-        triggerBucket: "opponentOptional",
-        eventName: "attackDeclared",
-        eventCardUid: attacker!.uid,
-        sourceUid: totemPole!.uid,
-      }),
-    ]);
+    expect(restored.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-4-1130",
+          "eventCardUid": "p0-deck-4788-0",
+          "eventCode": 1130,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "attackDeclared",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-3-1",
+          "player": 1,
+          "sourceUid": "p1-deck-47873397-0",
+          "triggerBucket": "opponentOptional",
+        },
+      ]
+    `);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
