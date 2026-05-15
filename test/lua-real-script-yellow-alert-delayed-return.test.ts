@@ -71,17 +71,84 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
 
     expect(session.state.cards.find((card) => card.uid === summonedTarget!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
     expect(session.state.cards.find((card) => card.uid === yellowAlert!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 0x1080,
-          sourceUid: yellowAlert!.uid,
-          label: delayedFieldId,
-        }),
-        expect.objectContaining({ event: "continuous", code: 332, sourceUid: summonedTarget!.uid, luaValueDescriptor: "value-card:not-handler" }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          (effect.event === "continuous" && effect.code === 0x1080 && effect.sourceUid === yellowAlert!.uid) ||
+          (effect.event === "continuous" && effect.code === 332 && effect.sourceUid === summonedTarget!.uid),
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 4224,
+          "controller": 1,
+          "cost": [Function],
+          "countLimit": 1,
+          "event": "continuous",
+          "id": "lua-2-4224",
+          "label": 1,
+          "luaTypeFlags": 2050,
+          "oncePerTurn": true,
+          "operation": [Function],
+          "ownerPlayer": 1,
+          "promptOperation": [Function],
+          "property": 128,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:59277750:lua-2-4224",
+          "reset": {
+            "count": 0,
+            "flags": 0,
+          },
+          "sourceUid": "p1-deck-59277750-0",
+          "target": [Function],
+          "triggerCode": 4224,
+          "triggerEvent": "phaseBattle",
+        },
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 332,
+          "controller": 1,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-3-332",
+          "lifePointValue": [Function],
+          "luaConditionDescriptor": "condition:source-controller",
+          "luaTypeFlags": 2,
+          "luaValueDescriptor": "value-card:not-handler",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 1152,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:300:lua-3-332",
+          "reset": {
+            "flags": 33427456,
+          },
+          "sourceUid": "p1-deck-300-2",
+          "statValue": [Function],
+          "target": [Function],
+          "targetRange": [
+            0,
+            4,
+          ],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
     expectAttackTarget(session, secondAttacker!.uid, summonedTarget!.uid, true);
     expectAttackTarget(session, secondAttacker!.uid, originalTarget!.uid, false);
 
@@ -91,16 +158,44 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 0x1080,
-          sourceUid: yellowAlert!.uid,
-          label: delayedFieldId,
-        }),
-      ]),
-    );
+    expect(
+      restored.session.state.effects.filter(
+        (effect) => effect.event === "continuous" && effect.code === 0x1080 && effect.sourceUid === yellowAlert!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "code": 4224,
+          "controller": 1,
+          "countLimit": 1,
+          "event": "continuous",
+          "id": "lua-2-4224",
+          "label": 1,
+          "oncePerTurn": true,
+          "operation": [Function],
+          "ownerPlayer": 1,
+          "property": 128,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:59277750:lua-2-4224",
+          "reset": {
+            "count": 0,
+            "flags": 0,
+          },
+          "sourceUid": "p1-deck-59277750-0",
+          "triggerCode": 4224,
+          "triggerEvent": "phaseBattle",
+        },
+      ]
+    `);
     expectAttackTarget(restored.session, secondAttacker!.uid, summonedTarget!.uid, true);
     expectAttackTarget(restored.session, secondAttacker!.uid, originalTarget!.uid, false);
 
@@ -109,9 +204,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
     const phaseChanged = applyLuaRestoreResponse(restored, main2!);
     expect(phaseChanged.ok, phaseChanged.error).toBe(true);
     expect(restored.session.state.cards.find((card) => card.uid === summonedTarget!.uid)).toMatchObject({ location: "hand", controller: 1 });
-    expect(restored.session.state.effects).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ event: "continuous", code: 332, sourceUid: summonedTarget!.uid })]),
-    );
+    expect(
+      restored.session.state.effects.find(
+        (effect) => effect.event === "continuous" && effect.code === 332 && effect.sourceUid === summonedTarget!.uid,
+      ),
+    ).toBeUndefined();
   });
 });
 

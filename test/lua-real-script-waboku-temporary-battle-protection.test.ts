@@ -107,25 +107,85 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wa
       location: "graveyard",
       previousLocation: "spellTrapZone",
     });
-    expect(restoredChain.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: waboku!.uid,
-          code: effectAvoidBattleDamage,
-          property: effectFlagPlayerTarget,
-          value: 1,
-          targetRange: [1, 0],
-          reset: { flags: resetPhaseEnd },
-        }),
-        expect.objectContaining({
-          sourceUid: waboku!.uid,
-          code: effectIndestructibleBattle,
-          value: 1,
-          targetRange: [4, 0],
-          reset: { flags: resetPhaseEnd },
-        }),
-      ]),
-    );
+    expect(
+      restoredChain.session.state.effects.filter(
+        (effect) =>
+          effect.sourceUid === waboku!.uid &&
+          (effect.code === effectAvoidBattleDamage || effect.code === effectIndestructibleBattle),
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 201,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-3-201",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "promptOperation": [Function],
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:12607053:lua-3-201",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-12607053-0",
+          "target": [Function],
+          "targetRange": [
+            1,
+            0,
+          ],
+          "value": 1,
+        },
+        {
+          "canActivate": [Function],
+          "code": 42,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-4-42",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "promptOperation": [Function],
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:12607053:lua-4-42",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-12607053-0",
+          "target": [Function],
+          "targetRange": [
+            4,
+            0,
+          ],
+          "value": 1,
+        },
+      ]
+    `);
     expect((restoredChain.session.state.effects.find((effect) => effect.sourceUid === waboku!.uid && effect.code === effectAvoidBattleDamage)?.property ?? 0) & effectFlagPlayerTarget).toBe(
       effectFlagPlayerTarget,
     );
@@ -135,18 +195,44 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wa
     expect(restoredProtection.restoreComplete, restoredProtection.incompleteReasons.join("; ")).toBe(true);
     expect(restoredProtection.missingRegistryKeys).toEqual([]);
     expect(restoredProtection.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restoredProtection.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: waboku!.uid,
-          code: effectAvoidBattleDamage,
-          property: effectFlagPlayerTarget,
-          value: 1,
-          targetRange: [1, 0],
-          reset: { flags: resetPhaseEnd },
-        }),
-      ]),
-    );
+    expect(
+      restoredProtection.session.state.effects.filter(
+        (effect) => effect.sourceUid === waboku!.uid && effect.code === effectAvoidBattleDamage,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "code": 201,
+          "controller": 0,
+          "event": "continuous",
+          "id": "lua-3-201",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:12607053:lua-3-201",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-12607053-0",
+          "targetRange": [
+            1,
+            0,
+          ],
+          "value": 1,
+        },
+      ]
+    `);
     restoredProtection.session.state.phase = "battle";
     restoredProtection.session.state.waitingFor = 1;
     expectRestoredLegalActions(restoredProtection, 1);
