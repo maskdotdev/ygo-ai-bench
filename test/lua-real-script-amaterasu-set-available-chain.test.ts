@@ -71,14 +71,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     expect(noblemanAction, JSON.stringify(getLegalActions(session, 1), null, 2)).toBeDefined();
     applyAndAssert(session, noblemanAction!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: nobleman!.uid,
-      targetUids: [amaterasu!.uid],
-      operationInfos: [
-        { category: 0x1, targetUids: [amaterasu!.uid], count: 1, player: 0, parameter: 0 },
-        { category: 0x4, targetUids: [amaterasu!.uid], count: 1, player: 0, parameter: 0 },
-      ],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-9-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 1,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-20073910-0",
+            ],
+          },
+          {
+            "category": 4,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-20073910-0",
+            ],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-71044499-0",
+        "targetUids": [
+          "p0-deck-20073910-0",
+        ],
+      }
+    `);
 
     const restoredOpenChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredOpenChain.restoreComplete, restoredOpenChain.incompleteReasons.join("; ")).toBe(true);
@@ -98,12 +124,28 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
       position: "faceUpDefense",
       faceUp: true,
     });
-    expect(restoredOpenChain.session.state.chain[1]).toMatchObject({
-      sourceUid: amaterasu!.uid,
-      targetPlayer: 0,
-      targetParam: 1,
-      operationInfos: [{ category: 0x10000, targetUids: [], count: 0, player: 0, parameter: 1 }],
-    });
+    expect(restoredOpenChain.session.state.chain[1]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 2,
+        "effectId": "lua-7-1027",
+        "id": "chain-4",
+        "operationInfos": [
+          {
+            "category": 65536,
+            "count": 0,
+            "parameter": 1,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-20073910-0",
+        "targetParam": 1,
+        "targetPlayer": 0,
+      }
+    `);
 
     const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredOpenChain.session), source, reader);
     expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
