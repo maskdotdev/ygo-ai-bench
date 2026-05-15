@@ -7,7 +7,7 @@ import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -69,17 +69,24 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ho
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
 
-    const trapAction = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.uid === trap.uid);
+    const trapAction = getLuaRestoreLegalActions(restored, 0).find(
+      (action): action is Extract<DuelAction, { type: "activateEffect" }> => action.type === "activateEffect" && action.uid === trap.uid,
+    );
     expect(trapAction, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
-    expect(trapAction).toMatchObject({
-      type: "activateEffect",
-      uid: trap.uid,
-      effectId: expect.stringContaining("-1101"),
-      windowKind: "chainResponse",
-    });
+    expect(trapAction?.type).toBe("activateEffect");
+    expect(trapAction?.uid).toBe(trap.uid);
+    expect(trapAction?.effectId).toContain("-1101");
+    expect(trapAction?.windowKind).toBe("chainResponse");
+    const activated = applyLuaRestoreResponse(restored, trapAction!);
+    expect(activated.ok, activated.error).toBe(true);
+
+    expect(restored.session.state.cards.find((card) => card.uid === flipTarget.uid)).toMatchObject({ location: "graveyard" });
+    expect(restored.session.state.cards.find((card) => card.uid === trap.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([
       expect.objectContaining({ eventName: "flipSummoned", eventCardUid: flipTarget.uid }),
+      expect.objectContaining({ eventName: "destroyed", eventCardUid: flipTarget.uid }),
     ]));
+    expect(restored.host.messages).toContain("house tape flip chain starter resolved");
   });
 });
 

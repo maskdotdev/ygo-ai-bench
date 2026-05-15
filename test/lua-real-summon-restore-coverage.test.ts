@@ -166,8 +166,8 @@ function realScriptFlipSummonSuccessTrapFixtureSnippets(): Array<{ file: string;
       file: "test/lua-real-script-house-adhesive-tape-flip-summon.test.ts",
       required: [
         'eventName: "flipSummoned"',
-        'effectId: expect.stringContaining("-1101")',
-        'windowKind: "chainResponse"',
+        'effectId).toContain("-1101"',
+        'windowKind).toBe("chainResponse")',
         'type === "activateEffect"',
       ],
     },
