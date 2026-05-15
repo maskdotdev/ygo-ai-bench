@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -20,24 +21,28 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script My
     const starterCode = "891";
     const responderCode = "892";
     const targetTrapCode = "893";
+    const drawnCode = "894";
     const cards: DuelCardData[] = [
       ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === mstCode),
       { code: starterCode, name: "MST Chain Starter", kind: "monster", typeFlags: 0x1, level: 4 },
       { code: responderCode, name: "MST Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
       { code: targetTrapCode, name: "MST Target Backrow", kind: "trap", typeFlags: 0x4 },
+      { code: drawnCode, name: "MST Drawn Card", kind: "monster", typeFlags: 0x1, level: 4 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 466, startingHandSize: 0, cardReader: reader });
-    loadDecks(session, { 0: { main: [starterCode, responderCode, targetTrapCode] }, 1: { main: [mstCode] } });
+    loadDecks(session, { 0: { main: [starterCode, responderCode, targetTrapCode, drawnCode] }, 1: { main: [mstCode] } });
     startDuel(session);
 
     const starter = session.state.cards.find((card) => card.code === starterCode);
     const responder = session.state.cards.find((card) => card.code === responderCode);
     const targetTrap = session.state.cards.find((card) => card.code === targetTrapCode);
+    const drawn = session.state.cards.find((card) => card.code === drawnCode);
     const mst = session.state.cards.find((card) => card.code === mstCode);
     expect(starter).toBeDefined();
     expect(responder).toBeDefined();
     expect(targetTrap).toBeDefined();
+    expect(drawn).toBeDefined();
     expect(mst).toBeDefined();
     moveDuelCard(session.state, starter!.uid, "hand", 0);
     moveDuelCard(session.state, responder!.uid, "hand", 0);
@@ -137,9 +142,62 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script My
     expect(resolved.ok, resolved.error).toBe(true);
 
     expect(restored.session.state.cards.find((card) => card.uid === targetTrap!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restored.session.state.cards.find((card) => card.uid === drawn!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restored.session.state.cards.find((card) => card.uid === mst!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.host.messages).toContain("mst chain starter resolved");
     expect(restored.host.messages).not.toContain("mst chain responder resolved");
+    expect(restored.session.state.eventHistory.filter((event) => ["destroyed", "cardsDrawn"].includes(event.eventName))).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: targetTrap!.uid,
+        eventPreviousState: {
+          location: "spellTrapZone",
+          controller: 0,
+          sequence: 0,
+          position: "faceDown",
+          faceUp: false,
+        },
+        eventCurrentState: {
+          location: "graveyard",
+          controller: 0,
+          sequence: 0,
+          position: "faceDown",
+          faceUp: true,
+        },
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: mst!.uid,
+        eventReasonEffectId: 3,
+      },
+      {
+        eventName: "cardsDrawn",
+        eventCode: 1110,
+        eventCardUid: drawn!.uid,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventPreviousState: {
+          location: "deck",
+          controller: 0,
+          sequence: 2,
+          position: "faceDown",
+          faceUp: false,
+        },
+        eventCurrentState: {
+          location: "hand",
+          controller: 0,
+          sequence: 2,
+          position: "faceDown",
+          faceUp: false,
+        },
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: starter!.uid,
+        eventReasonEffectId: 1,
+        eventUids: [drawn!.uid],
+      },
+    ]);
+    expect(restored.session.state.eventHistory.filter((event) => ["chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([]);
   });
 });
 
@@ -148,10 +206,18 @@ function chainStarterScript(): string {
     local s,id=GetID()
     function s.initial_effect(c)
       local e=Effect.CreateEffect(c)
+      e:SetCategory(CATEGORY_DRAW)
       e:SetType(EFFECT_TYPE_QUICK_O)
       e:SetCode(EVENT_FREE_CHAIN)
       e:SetRange(LOCATION_HAND)
-      e:SetOperation(function(e,tp) Debug.Message("mst chain starter resolved") end)
+      e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+        if chk==0 then return Duel.IsPlayerCanDraw(tp,1) end
+        Duel.SetOperationInfo(0,CATEGORY_DRAW,nil,0,tp,1)
+      end)
+      e:SetOperation(function(e,tp)
+        Duel.Draw(tp,1,REASON_EFFECT)
+        Debug.Message("mst chain starter resolved")
+      end)
       c:RegisterEffect(e)
     end
   `;
