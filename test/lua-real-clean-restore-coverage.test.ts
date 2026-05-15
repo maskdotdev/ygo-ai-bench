@@ -38,7 +38,8 @@ describe("Lua real-script clean restore coverage", () => {
       .filter((file) => {
         const text = readTestFile(file);
         return !text.includes("getLuaRestoreLegalActions")
-          || !text.includes("getLuaRestoreLegalActionGroups");
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions");
       });
 
     expect(missing).toEqual([]);

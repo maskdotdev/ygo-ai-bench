@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import {
   createDuel,
+  getGroupedDuelLegalActions,
   getLegalActions as getDuelLegalActions,
   loadDecks,
   serializeDuel,
@@ -434,5 +435,6 @@ function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithL
   const waitingFor = restored.session.state.waitingFor;
   if (waitingFor === undefined) return;
   expect(getLuaRestoreLegalActions(restored, waitingFor)).toEqual(getDuelLegalActions(restored.session, waitingFor));
+  expect(getLuaRestoreLegalActionGroups(restored, waitingFor)).toEqual(getGroupedDuelLegalActions(restored.session, waitingFor));
   expect(getLuaRestoreLegalActionGroups(restored, waitingFor).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
 }
