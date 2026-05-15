@@ -46,9 +46,15 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pa
   });
 
   it("does not expose Panther Warrior attacks without a releasable monster", () => {
-    const { session, panther } = setupPantherWarriorFixture(false);
+    const { session, reader, workspace, panther } = setupPantherWarriorFixture(false);
 
     expect(getLegalActions(session, 0).some((action) => action.type === "declareAttack" && action.attackerUid === panther.uid)).toBe(false);
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(getLuaRestoreLegalActions(restored, 0).some((action) => action.type === "declareAttack" && action.attackerUid === panther.uid)).toBe(false);
   });
 });
 
