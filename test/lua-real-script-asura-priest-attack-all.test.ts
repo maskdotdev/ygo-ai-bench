@@ -63,7 +63,26 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
     expectRestoredLegalActions(restoredSetup, 0);
     expect(restoredSetup.missingRegistryKeys).toEqual([]);
     expect(restoredSetup.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restoredSetup.session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ event: "continuous", code: 193, sourceUid: asura!.uid })]));
+    expect(restoredSetup.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 193 && effect.sourceUid === asura!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 193,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-7-193",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:2134346:lua-7-193",
+        "sourceUid": "p0-deck-2134346-0",
+        "target": [Function],
+        "value": 1,
+      }
+    `);
     const openingActions = getLuaRestoreLegalActions(restoredSetup, 0);
     expect(hasAttack(openingActions, asura!.uid, firstTarget!.uid)).toBe(true);
     expect(hasAttack(openingActions, asura!.uid, secondTarget!.uid)).toBe(true);

@@ -39,7 +39,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(giantOrcCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ event: "continuous", code: 0x1080, sourceUid: giantOrc!.uid })]));
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 0x1080 && effect.sourceUid === giantOrc!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 4224,
+        "controller": 0,
+        "cost": [Function],
+        "countLimit": 1,
+        "event": "continuous",
+        "id": "lua-1-4224",
+        "luaTypeFlags": 2050,
+        "oncePerTurn": true,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:73698349:lua-1-4224",
+        "sourceUid": "p0-deck-73698349-0",
+        "target": [Function],
+        "triggerCode": 4224,
+        "triggerEvent": "phaseBattle",
+      }
+    `);
 
     const attack = getLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === giantOrc!.uid && action.targetUid === target!.uid);
     expect(attack).toBeDefined();
@@ -61,7 +83,28 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
       getLuaRestoreLegalActions(restored, 0),
     );
     expect(restored.session.state.battlePairs).toEqual([{ attackerUid: giantOrc!.uid, targetUid: target!.uid }]);
-    expect(restored.session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ event: "continuous", code: 0x1080, sourceUid: giantOrc!.uid })]));
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 0x1080 && effect.sourceUid === giantOrc!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 4224,
+        "controller": 0,
+        "cost": [Function],
+        "countLimit": 1,
+        "event": "continuous",
+        "id": "lua-1-4224",
+        "luaTypeFlags": 2050,
+        "oncePerTurn": true,
+        "operation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:73698349:lua-1-4224",
+        "sourceUid": "p0-deck-73698349-0",
+        "target": [Function],
+        "triggerCode": 4224,
+        "triggerEvent": "phaseBattle",
+      }
+    `);
     expect(restored.host.messages).toEqual(host.messages);
     const restoredMain2 = getLegalActions(restored.session, 0).find((action) => action.type === "changePhase" && action.phase === "main2");
     expect(restoredMain2).toBeDefined();

@@ -39,7 +39,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D.
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(borderlineCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ code: 185, sourceUid: borderlineCard!.uid, targetRange: [1, 1] })]));
+    expect(session.state.effects.find((effect) => effect.code === 185 && effect.sourceUid === borderlineCard!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 185,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-185",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 2048,
+        "range": [
+          "spellTrapZone",
+        ],
+        "registryKey": "lua:60912752:lua-2-185",
+        "sourceUid": "p0-deck-60912752-0",
+        "target": [Function],
+        "targetRange": [
+          1,
+          1,
+        ],
+      }
+    `);
 
     expect(getLegalActions(session, 0)).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "changePhase", phase: "battle" })]));
     let restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
