@@ -3,10 +3,16 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const responseFixtureCount = 4;
+const chainedResponseFixtureCount = 3;
+const responseOperationInfoFixtureCount = 2;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
-    const missing = realScriptResponseFixtureFiles()
+    const files = realScriptResponseFixtureFiles();
+    expect(files).toHaveLength(responseFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("getLuaRestoreLegalActionGroups")
@@ -22,7 +28,10 @@ describe("Lua real response restore coverage", () => {
   });
 
   it("requires representative response fixtures to prove restored response outcomes", () => {
-    const missing = realScriptResponseFixtureFiles()
+    const files = realScriptResponseFixtureFiles();
+    expect(files).toHaveLength(responseFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("applyLuaRestoreResponse")
@@ -36,7 +45,10 @@ describe("Lua real response restore coverage", () => {
   });
 
   it("requires chained response fixtures to prove restored chain shape and response suppression", () => {
-    const missing = realScriptChainedResponseFixtureFiles()
+    const files = realScriptChainedResponseFixtureFiles();
+    expect(files).toHaveLength(chainedResponseFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !/state\.chain\)\.toHaveLength\((1|2)\)/.test(text)
@@ -48,7 +60,10 @@ describe("Lua real response restore coverage", () => {
   });
 
   it("requires operation-info assertions for chained response fixtures that announce categories", () => {
-    const missing = realScriptResponseOperationInfoFixtureFiles()
+    const files = realScriptResponseOperationInfoFixtureFiles();
+    expect(files).toHaveLength(responseOperationInfoFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("operationInfos")
