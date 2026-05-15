@@ -79,10 +79,27 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fo
     const registryKey = `lua-chain-limit:${dropletCode}:0:link:known:closure:original-type-mask-response-player:2`;
     const openedSnapshot = serializeDuel(session);
     expect(openedSnapshot.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
-    expect(openedSnapshot.state.chain[0]).toMatchObject({
-      sourceUid: droplet!.uid,
-      operationInfos: [{ category: 0x4000, targetUids: [], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(openedSnapshot.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "effectLabel": 1,
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 16384,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-24299458-0",
+      }
+    `);
     expect(session.state.cards.find((card) => card.uid === costSpell!.uid)).toMatchObject({ location: "graveyard", reason: 0x80 });
     expect(hasEffect(getLegalActions(session, 1), blockedSpell!.uid)).toBe(false);
     expect(hasEffect(getLegalActions(session, 1), allowedMonster!.uid)).toBe(true);

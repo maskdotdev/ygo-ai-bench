@@ -72,10 +72,51 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ev
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(triggerRestored, 0), null, 2)).toBeDefined();
     expect(applyLuaRestoreResponse(triggerRestored, trigger!).ok).toBe(true);
     expect(triggerRestored.session.state.chain).toHaveLength(1);
-    expect(triggerRestored.session.state.chain[0]).toMatchObject({
-      sourceUid: eveque!.uid,
-      operationInfos: [{ category: 0x200, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(triggerRestored.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-4-1100",
+        "eventCardUid": "p0-deck-16146511-0",
+        "eventCode": 1100,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "normalSummoned",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventReason": 0,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "if",
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 512,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-3918345-1",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-16146511-0",
+        "targetUids": [
+          "p0-deck-3918345-1",
+        ],
+      }
+    `);
 
     const chainRestored = restoreDuelWithLuaScripts(serializeDuel(triggerRestored.session), source, reader);
     expect(chainRestored.restoreComplete, chainRestored.incompleteReasons.join("; ")).toBe(true);
