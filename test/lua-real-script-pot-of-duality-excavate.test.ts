@@ -66,11 +66,27 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Po
     expect(potAction).toBeDefined();
     applyAndAssert(session, potAction!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: pot!.uid,
-      targetPlayer: 0,
-      operationInfos: [{ category: 0x8, targetUids: [], count: 1, player: 0, parameter: 0x1 }],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 8,
+            "count": 1,
+            "parameter": 1,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-98645731-0",
+        "targetPlayer": 0,
+      }
+    `);
     expect(session.state.effects.find((effect) => effect.sourceUid === pot!.uid && effect.code === 22)).toMatchObject({
       event: "continuous",
       targetRange: [1, 0],
