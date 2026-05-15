@@ -52,6 +52,7 @@ function parseArgs(argv) {
     else if (arg === "--limit") options.limit = Number(requireOptionValue(argv, ++index, arg));
     else if (arg === "--min-used-apis") options.minUsedApis = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
     else if (arg === "--min-implemented-apis") options.minImplementedApis = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
+    else if (arg.startsWith("--")) throw new Error(`Unknown argument: ${arg}`);
     else if (!options.scriptRoot) options.scriptRoot = arg;
     else throw new Error(`Unknown argument: ${arg}`);
   }

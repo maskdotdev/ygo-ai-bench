@@ -167,10 +167,22 @@ describe("Lua API usage scanner", () => {
   }, 15_000);
 
   it("rejects scanner options that are missing required values", () => {
-    const result = spawnSync(process.execPath, [scannerPath, "--scripts", "--limit", "5"], { encoding: "utf8" });
+    const cases = [
+      { args: ["--scripts", "--limit", "5"], error: "Missing value for --scripts" },
+      { args: ["--source"], error: "Missing value for --source" },
+      { args: ["--limit"], error: "Missing value for --limit" },
+      { args: ["--min-used-apis"], error: "Missing value for --min-used-apis" },
+      { args: ["--min-used-apis", "-1"], error: "--min-used-apis must be a non-negative integer" },
+      { args: ["--min-implemented-apis"], error: "Missing value for --min-implemented-apis" },
+      { args: ["--min-implemented-apis", "1.5"], error: "--min-implemented-apis must be a non-negative integer" },
+      { args: ["--unknown"], error: "Unknown argument: --unknown" },
+    ];
 
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain("Missing value for --scripts");
+    for (const { args, error } of cases) {
+      const result = spawnSync(process.execPath, [scannerPath, ...args], { encoding: "utf8" });
+      expect(result.status, args.join(" ")).toBe(1);
+      expect(result.stderr, args.join(" ")).toContain(error);
+    }
   });
 });
 
