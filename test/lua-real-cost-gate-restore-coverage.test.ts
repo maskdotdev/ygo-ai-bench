@@ -17,6 +17,9 @@ describe("Lua real cost gate restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
           || required.some((snippet) => !text.includes(snippet));
       })
       .map(({ file }) => file);
