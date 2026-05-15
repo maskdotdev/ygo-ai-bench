@@ -1,14 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import type { DuelAction, DuelSession } from "#duel/types.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const spiritCode = "910001";
 const doNotReturnCode = "910002";
 const mayNotReturnCode = "910003";
+
+function expectRestoredLegalActionGroups(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(restored.missingRegistryKeys).toEqual([]);
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
 
 describe("Lua Spirit procedure return modifiers", () => {
   it("requires a registered Spirit return event before the End Phase return trigger", () => {
@@ -28,6 +34,7 @@ describe("Lua Spirit procedure return modifiers", () => {
     expect(getLegalActions(setup.session, 0).some((action) => action.type === "activateTrigger" && action.uid === spirit!.uid)).toBe(false);
     const restored = restoreDuelWithLuaScripts(serializeDuel(setup.session), setup.source, setup.reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored, 0);
     expect(getLuaRestoreLegalActions(restored, 0).some((action) => action.type === "activateTrigger" && action.uid === spirit!.uid)).toBe(false);
   });
 
@@ -52,6 +59,7 @@ describe("Lua Spirit procedure return modifiers", () => {
     expect(setup.session.state.cards.find((card) => card.uid === spirit!.uid)).toMatchObject({ location: "monsterZone" });
     const restored = restoreDuelWithLuaScripts(serializeDuel(setup.session), setup.source, setup.reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restored, 0);
     expect(getLuaRestoreLegalActions(restored, 0).some((action) => action.type === "activateTrigger" && action.uid === spirit!.uid)).toBe(false);
     expect(restored.session.state.cards.find((card) => card.uid === spirit!.uid)).toMatchObject({ location: "monsterZone" });
   });
@@ -76,6 +84,7 @@ describe("Lua Spirit procedure return modifiers", () => {
     const snapshot = serializeDuel(setup.session);
     const restoredDecline = restoreDuelWithLuaScripts(snapshot, setup.source, setup.reader);
     expect(restoredDecline.restoreComplete, restoredDecline.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restoredDecline, 0);
     const decline = getLuaRestoreLegalActions(restoredDecline, 0).find((action) => action.type === "declineTrigger" && action.uid === spirit!.uid);
     expect(decline, JSON.stringify(getLuaRestoreLegalActions(restoredDecline, 0), null, 2)).toBeDefined();
     const declined = applyLuaRestoreResponse(restoredDecline, decline!);
@@ -84,6 +93,7 @@ describe("Lua Spirit procedure return modifiers", () => {
 
     const restoredActivate = restoreDuelWithLuaScripts(snapshot, setup.source, setup.reader);
     expect(restoredActivate.restoreComplete, restoredActivate.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActionGroups(restoredActivate, 0);
     const activate = getLuaRestoreLegalActions(restoredActivate, 0).find((action) => action.type === "activateTrigger" && action.uid === spirit!.uid);
     expect(activate, JSON.stringify(getLuaRestoreLegalActions(restoredActivate, 0), null, 2)).toBeDefined();
     const activated = applyLuaRestoreResponse(restoredActivate, activate!);
