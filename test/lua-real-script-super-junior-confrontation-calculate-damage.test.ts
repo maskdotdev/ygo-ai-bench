@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -108,9 +109,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
       expect.arrayContaining([
         expect.objectContaining({ eventName: "attackDeclared", eventCardUid: attacker!.uid }),
         expect.objectContaining({ eventName: "attackDisabled", eventCardUid: attacker!.uid }),
-        expect.objectContaining({ eventName: "destroyed", eventCardUid: defender!.uid }),
       ]),
     );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === defender!.uid)).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: defender!.uid,
+        eventPreviousState: {
+          location: "monsterZone",
+          controller: 0,
+          sequence: 0,
+          position: "faceUpDefense",
+          faceUp: true,
+        },
+        eventCurrentState: {
+          location: "graveyard",
+          controller: 0,
+          sequence: 0,
+          position: "faceUpDefense",
+          faceUp: true,
+        },
+        eventReason: duelReason.battle | duelReason.destroy,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: opponentAttack!.uid,
+      },
+    ]);
   });
 });
 
