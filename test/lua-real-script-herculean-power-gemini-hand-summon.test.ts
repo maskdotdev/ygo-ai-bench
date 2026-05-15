@@ -64,7 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script He
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
+    expectRestoredLegalActions(restoredActivation, 0);
     const activate = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === power!.uid);
     expect(activate, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredActivation, activate!);
@@ -76,7 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script He
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
+    expectRestoredLegalActions(restoredChain, 1);
     expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredChain);
     expect(restoredChain.host.messages).not.toContain("herculean power responder resolved");
@@ -92,6 +92,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script He
     const restoredAfterSummon = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredAfterSummon.restoreComplete, restoredAfterSummon.incompleteReasons.join("; ")).toBe(true);
     expect(restoredAfterSummon.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredAfterSummon, 0);
     expect(getLuaRestoreLegalActions(restoredAfterSummon, 0).some((action) => action.type === "activateEffect" && action.uid === power!.uid)).toBe(false);
   });
 });
@@ -131,4 +132,10 @@ function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWit
     expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   }
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
