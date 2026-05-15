@@ -45,10 +45,16 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
   });
 
   it("does not expose Dark Elf attacks when the LP attack cost cannot be paid", () => {
-    const { session, darkElf } = setupDarkElfFixture();
+    const { session, reader, workspace, darkElf } = setupDarkElfFixture();
     session.state.players[0].lifePoints = 1000;
 
     expect(getLegalActions(session, 0).some((action) => action.type === "declareAttack" && action.attackerUid === darkElf.uid)).toBe(false);
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(getLuaRestoreLegalActions(restored, 0).some((action) => action.type === "declareAttack" && action.attackerUid === darkElf.uid)).toBe(false);
   });
 });
 
