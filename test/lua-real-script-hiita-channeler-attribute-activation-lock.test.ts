@@ -7,7 +7,7 @@ import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -76,6 +76,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
     expect(restoredLock.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restoredLock, 0)).toEqual(getGroupedDuelLegalActions(restoredLock.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredLock, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredLock, 0));
     expect(getLuaRestoreLegalActions(restoredLock, 0).some((action) => action.type === "activateEffect" && action.uid === windResponder.uid)).toBe(false);
     expect(getLuaRestoreLegalActions(restoredLock, 0).some((action) => action.type === "activateEffect" && action.uid === fireResponder.uid)).toBe(true);
   });
