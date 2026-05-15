@@ -85,9 +85,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
       previousLocation: "monsterZone",
       reason: duelReason.release | duelReason.cost,
     });
-    expect(restoredIgnition.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "released", eventCode: 1017, eventCardUid: blazewing!.uid })]),
-    );
+    expect(restoredIgnition.session.state.eventHistory.filter((event) => event.eventName === "released" && event.eventCardUid === blazewing!.uid)).toEqual([
+      {
+        eventName: "released",
+        eventCode: 1017,
+        eventCardUid: blazewing!.uid,
+        eventReason: duelReason.release | duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: blazewing!.uid,
+        eventReasonEffectId: 4,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+    ]);
     expect(restoredIgnition.session.state.chain[0]).toMatchObject({
       sourceUid: blazewing!.uid,
       targetUids: [target!.uid],
