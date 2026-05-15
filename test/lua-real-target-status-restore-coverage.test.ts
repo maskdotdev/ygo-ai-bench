@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const targetStatusFixtureCount = 3;
 
 describe("Lua real target-status restore coverage", () => {
   it("requires target-status descriptor fixtures to assert clean Lua registry restore and restored predicate truth tables", () => {
-    const missing = targetStatusFixtureFiles()
+    const files = targetStatusFixtureFiles();
+    expect(files).toHaveLength(targetStatusFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
