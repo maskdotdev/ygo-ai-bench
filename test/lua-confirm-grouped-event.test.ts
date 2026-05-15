@@ -180,6 +180,7 @@ function assertGroupedConfirm(
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), restore.sourceScripts, createCardReader(restore.cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restored);
     expect(restored.session.state.pendingTriggers).toHaveLength(3);
     for (const trigger of restored.session.state.pendingTriggers) expect(trigger.eventUids).toEqual(expectedUids);
     expect(restored.session.state.pendingTriggers).toEqual(
@@ -213,6 +214,12 @@ function activateAllRestoredTriggers(restored: ReturnType<typeof restoreDuelWith
     if (!trigger) break;
     applyLuaRestoreAndAssert(restored, trigger);
   }
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function moveWatcherToHand(session: DuelSession): void {
