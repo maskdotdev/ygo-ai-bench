@@ -118,13 +118,83 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Iz
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === invalidMonster!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === cost!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === izanami!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
-    expect(restoredChainWindow.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "sentToHand", eventCode: 1012, eventCardUid: targetSpirit!.uid }),
-        expect.objectContaining({ eventName: "confirmed", eventCode: 1211, eventPlayer: 1, eventUids: [targetSpirit!.uid] }),
-        expect.objectContaining({ eventName: "sentToHandConfirmed", eventCode: 1212, eventPlayer: 1, eventUids: [targetSpirit!.uid] }),
-      ]),
-    );
+    expect(restoredChainWindow.session.state.eventHistory.filter((event) => ["sentToHand", "confirmed", "sentToHandConfirmed"].includes(event.eventName))).toEqual([
+      {
+        eventName: "sentToHand",
+        eventCode: 1012,
+        eventCardUid: targetSpirit!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: izanami!.uid,
+        eventReasonEffectId: 7,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "confirmed",
+        eventCode: 1211,
+        eventPlayer: 1,
+        eventCardUid: targetSpirit!.uid,
+        eventValue: 1,
+        eventUids: [targetSpirit!.uid],
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: izanami!.uid,
+        eventReasonEffectId: 7,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "sentToHandConfirmed",
+        eventCode: 1212,
+        eventPlayer: 1,
+        eventCardUid: targetSpirit!.uid,
+        eventValue: 1,
+        eventUids: [targetSpirit!.uid],
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: izanami!.uid,
+        eventReasonEffectId: 7,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredChainWindow.host.messages).toContain(`confirmed 1: ${targetSpiritCode}`);
     expect(restoredChainWindow.host.messages).not.toContain("izanami responder resolved");
   });
