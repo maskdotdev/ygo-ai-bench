@@ -650,11 +650,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(discardedCards).toHaveLength(1);
     expect(remainingCards).toHaveLength(1);
     expect(restoredDiscardChain.host.messages).not.toContain("equip responder resolved");
-    expect(restoredDiscardChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "confirmed", eventCode: 1211, eventPlayer: 0, eventUids: confirmedOpponentHandUids }),
-      ]),
-    );
+    expect(restoredDiscardChain.session.state.eventHistory.filter((event) => event.eventName === "confirmed" && event.eventPlayer === 0)).toEqual([
+      {
+        eventName: "confirmed",
+        eventCode: 1211,
+        eventPlayer: 0,
+        eventCardUid: confirmedOpponentHandUids[0]!,
+        eventValue: confirmedOpponentHandUids.length,
+        eventUids: confirmedOpponentHandUids,
+        eventReason: 0,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredDiscardChain.session.state.eventHistory.filter((event) => event.eventName === "discarded" && event.eventCardUid === discardedCards[0]!.uid)).toEqual([
       {
         eventName: "discarded",

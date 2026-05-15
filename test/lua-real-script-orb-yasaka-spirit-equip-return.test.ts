@@ -257,11 +257,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
     expectRestoredLegalActions(restoredOrbReturnChain, 1);
     resolveRestoredChain(restoredOrbReturnChain);
     expect(restoredOrbReturnChain.session.state.cards.find((card) => card.uid === orb!.uid)).toMatchObject({ location: "hand", controller: 0 });
-    expect(restoredOrbReturnChain.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "confirmed", eventCardUid: orb!.uid }),
-      ]),
-    );
+    expect(restoredOrbReturnChain.session.state.eventHistory.filter((event) => event.eventName === "confirmed" && event.eventCardUid === orb!.uid)).toEqual([
+      {
+        eventName: "confirmed",
+        eventCode: 1211,
+        eventPlayer: 1,
+        eventCardUid: orb!.uid,
+        eventValue: 1,
+        eventUids: [orb!.uid],
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: orb!.uid,
+        eventReasonEffectId: 4,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+    ]);
     expect(restoredOrbReturnChain.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard" && event.eventCardUid === orb!.uid)).toEqual([
       {
         eventName: "sentToGraveyard",
