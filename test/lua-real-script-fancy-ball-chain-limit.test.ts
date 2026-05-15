@@ -82,6 +82,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script W:
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expect(hasActivateEffect(getLuaRestoreLegalActions(restored, 0), allowedMonster!.uid)).toBe(true);
     expect(hasActivateEffect(getLuaRestoreLegalActions(restored, 0), blockedLink!.uid)).toBe(false);
     expect(hasActivateEffect(getLuaRestoreLegalActions(restored, 0), allowedSpell!.uid)).toBe(true);
