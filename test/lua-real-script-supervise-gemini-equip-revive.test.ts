@@ -120,11 +120,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
       previousEquippedToUid: gemini!.uid,
     });
     assertGeminiStatus(restoredEquipped, geminiCode, false);
-    expect(restoredEquipped.session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: supervise!.uid, eventName: "sentToGraveyard", eventCode: 1014, player: 0 }),
-      ]),
-    );
+    expect(restoredEquipped.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-4-1014",
+          "eventCardUid": "p0-deck-95750695-0",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 1,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 64,
+          "eventReasonCardUid": "p0-deck-95750695-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-6-1",
+          "player": 0,
+          "sourceUid": "p0-deck-95750695-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredEquipped.session), source, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);

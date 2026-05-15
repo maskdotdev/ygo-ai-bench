@@ -51,10 +51,72 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D.
     });
     expect(session.state.battleDamage).toEqual({ 0: 0, 1: 200 });
     expect(session.state.players[1].lifePoints).toBe(7800);
-    expect(session.state.pendingTriggers).toEqual([
-      expect.objectContaining({ player: 0, triggerBucket: "turnMandatory", eventName: "afterDamageCalculation", eventCode: 1138, sourceUid: warrior!.uid }),
-      expect.objectContaining({ player: 1, triggerBucket: "opponentMandatory", eventName: "afterDamageCalculation", eventCode: 1138, sourceUid: wall!.uid }),
-    ]);
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-1-1138",
+          "eventCardUid": "p0-deck-37043180-0",
+          "eventCode": 1138,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "afterDamageCalculation",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "eventUids": [
+            "p0-deck-37043180-0",
+            "p1-deck-13945283-0",
+          ],
+          "id": "trigger-5-1",
+          "player": 0,
+          "sourceUid": "p0-deck-37043180-0",
+          "triggerBucket": "turnMandatory",
+        },
+        {
+          "effectId": "lua-2-1138",
+          "eventCardUid": "p1-deck-13945283-0",
+          "eventCode": 1138,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "afterDamageCalculation",
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 0,
+          "eventReasonPlayer": 1,
+          "eventTriggerTiming": "when",
+          "eventUids": [
+            "p0-deck-37043180-0",
+            "p1-deck-13945283-0",
+          ],
+          "id": "trigger-5-2",
+          "player": 1,
+          "sourceUid": "p1-deck-13945283-0",
+          "triggerBucket": "opponentMandatory",
+        },
+      ]
+    `);
     expect(queryPublicState(session).pendingTriggerBuckets).toMatchObject([
       { player: 0, triggerBucket: "turnMandatory" },
       { player: 1, triggerBucket: "opponentMandatory" },

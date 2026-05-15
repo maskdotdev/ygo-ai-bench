@@ -143,11 +143,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
     expect(restoredBattleWindow.session.state.players[0].lifePoints).toBe(8000);
     expect(restoredBattleWindow.session.state.players[1].lifePoints).toBe(7250);
     expect(restoredBattleWindow.session.state.cards.find((card) => card.uid === defender!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
-    expect(restoredBattleWindow.session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: orb!.uid, eventName: "battleDestroyed", eventCode: 1140, player: 0 }),
-      ]),
-    );
+    expect(restoredBattleWindow.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-3-1139",
+          "effectLabelObjectUid": "p1-deck-74115235-0",
+          "eventCardUid": "p0-deck-40473581-1",
+          "eventCode": 1140,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "battleDestroyed",
+          "eventPlayer": 1,
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 33,
+          "eventReasonCardUid": "p0-deck-40473581-1",
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-12-1",
+          "player": 0,
+          "sourceUid": "p0-deck-74115234-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restoredRecoverTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredBattleWindow.session), source, reader);
     expect(restoredRecoverTrigger.restoreComplete, restoredRecoverTrigger.incompleteReasons.join("; ")).toBe(true);
@@ -220,11 +249,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
     expectRestoredLegalActions(restoredEndPhasePath, 0);
     changeRestoredPhase(restoredEndPhasePath, 0, "main2");
     changeRestoredPhase(restoredEndPhasePath, 0, "end");
-    expect(restoredEndPhasePath.session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: susa!.uid, eventName: "phaseEnd", eventCode: 0x1200, player: 0 }),
-      ]),
-    );
+    expect(restoredEndPhasePath.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-5-4608",
+          "eventCode": 4608,
+          "eventName": "phaseEnd",
+          "eventTriggerTiming": "when",
+          "id": "trigger-17-1",
+          "player": 0,
+          "sourceUid": "p0-deck-40473581-1",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restoredSpiritReturn = restoreDuelWithLuaScripts(serializeDuel(restoredEndPhasePath.session), source, reader);
     expect(restoredSpiritReturn.restoreComplete, restoredSpiritReturn.incompleteReasons.join("; ")).toBe(true);
@@ -251,11 +289,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
       previousEquippedToUid: susa!.uid,
       reason: duelReason.lostTarget,
     });
-    expect(restoredSpiritReturnChain.session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: orb!.uid, eventName: "sentToGraveyard", eventCode: 1014, player: 0 }),
-      ]),
-    );
+    expect(restoredSpiritReturnChain.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-4-1014",
+          "eventCardUid": "p0-deck-74115234-0",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 512,
+          "eventReasonCardUid": "p0-deck-74115234-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-19-1",
+          "player": 0,
+          "sourceUid": "p0-deck-74115234-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restoredOrbReturn = restoreDuelWithLuaScripts(serializeDuel(restoredSpiritReturnChain.session), source, reader);
     expect(restoredOrbReturn.restoreComplete, restoredOrbReturn.incompleteReasons.join("; ")).toBe(true);

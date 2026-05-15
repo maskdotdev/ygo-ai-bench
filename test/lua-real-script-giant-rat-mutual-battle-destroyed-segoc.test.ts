@@ -47,26 +47,74 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
 
     expect(session.state.cards.find((card) => card.uid === p0BattleRat.uid)).toMatchObject({ location: "graveyard", reasonCardUid: p1BattleRat.uid });
     expect(session.state.cards.find((card) => card.uid === p1BattleRat.uid)).toMatchObject({ location: "graveyard", reasonCardUid: p0BattleRat.uid });
-    expect(session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        player: 0,
-        triggerBucket: "turnOptional",
-        eventName: "battleDestroyed",
-        eventCode: 1140,
-        eventCardUid: p0BattleRat.uid,
-        sourceUid: p0BattleRat.uid,
-        eventUids: [p0BattleRat.uid, p1BattleRat.uid],
-      }),
-      expect.objectContaining({
-        player: 1,
-        triggerBucket: "opponentOptional",
-        eventName: "battleDestroyed",
-        eventCode: 1140,
-        eventCardUid: p1BattleRat.uid,
-        sourceUid: p1BattleRat.uid,
-        eventUids: [p0BattleRat.uid, p1BattleRat.uid],
-      }),
-    ]);
+    expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-1-1140",
+          "eventCardUid": "p0-deck-97017120-0",
+          "eventCode": 1140,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "battleDestroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 33,
+          "eventReasonCardUid": "p1-deck-97017120-0",
+          "eventReasonPlayer": 1,
+          "eventTriggerTiming": "when",
+          "eventUids": [
+            "p0-deck-97017120-0",
+            "p1-deck-97017120-0",
+          ],
+          "id": "trigger-5-1",
+          "player": 0,
+          "sourceUid": "p0-deck-97017120-0",
+          "triggerBucket": "turnOptional",
+        },
+        {
+          "effectId": "lua-3-1140",
+          "eventCardUid": "p1-deck-97017120-0",
+          "eventCode": 1140,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "battleDestroyed",
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 33,
+          "eventReasonCardUid": "p0-deck-97017120-0",
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "eventUids": [
+            "p0-deck-97017120-0",
+            "p1-deck-97017120-0",
+          ],
+          "id": "trigger-5-2",
+          "player": 1,
+          "sourceUid": "p1-deck-97017120-0",
+          "triggerBucket": "opponentOptional",
+        },
+      ]
+    `);
     expect(queryPublicState(session).pendingTriggerBuckets).toMatchObject([
       { player: 0, triggerBucket: "turnOptional" },
       { player: 1, triggerBucket: "opponentOptional" },

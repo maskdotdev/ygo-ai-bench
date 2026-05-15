@@ -98,13 +98,37 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pe
     expect(restoredTriggerWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredTriggerWindow, 0);
     assertLegalActions(restoredTriggerWindow);
-    expect(restoredTriggerWindow.session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
-        eventCode: 1102,
-        eventName: "specialSummoned",
-        eventCardUid: candidate!.uid,
-      }),
-    ]);
+    expect(restoredTriggerWindow.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-11-1102",
+          "eventCardUid": "p0-deck-64207696-2",
+          "eventCode": 1102,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "specialSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 2,
+          },
+          "eventReason": 2064,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-8-1",
+          "player": 0,
+          "sourceUid": "p0-deck-64207696-2",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
     const summonSuccessTrigger = getLuaRestoreLegalActions(restoredTriggerWindow, 0).find(
       (action): action is Extract<DuelAction, { type: "activateTrigger" }> => action.type === "activateTrigger" && action.uid === candidate!.uid,
     );

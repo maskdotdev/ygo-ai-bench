@@ -110,11 +110,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     changeRestoredPhase(restoredEndPhasePath, 0, "battle");
     changeRestoredPhase(restoredEndPhasePath, 0, "main2");
     changeRestoredPhase(restoredEndPhasePath, 0, "end");
-    expect(restoredEndPhasePath.session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: susa!.uid, eventName: "phaseEnd", eventCode: 0x1200, player: 0 }),
-      ]),
-    );
+    expect(restoredEndPhasePath.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-4-4608",
+          "eventCode": 4608,
+          "eventName": "phaseEnd",
+          "eventTriggerTiming": "when",
+          "id": "trigger-9-1",
+          "player": 0,
+          "sourceUid": "p0-deck-40473581-1",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restoredSpiritReturn = restoreDuelWithLuaScripts(serializeDuel(restoredEndPhasePath.session), source, reader);
     expectCleanRestore(restoredSpiritReturn);
@@ -132,17 +141,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     expectRestoredLegalActions(restoredSpiritReturnChain, 1);
     resolveRestoredChain(restoredSpiritReturnChain);
     expect(restoredSpiritReturnChain.session.state.cards.find((card) => card.uid === susa!.uid)).toMatchObject({ location: "hand", controller: 0 });
-    expect(restoredSpiritReturnChain.session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: invitation!.uid,
-          eventName: "sentToHand",
-          eventCode: 1012,
-          eventCardUid: susa!.uid,
-          player: 0,
-        }),
-      ]),
-    );
+    expect(restoredSpiritReturnChain.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-2-1012",
+          "eventCardUid": "p0-deck-40473581-1",
+          "eventCode": 1012,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "sentToHand",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 64,
+          "eventReasonCardUid": "p0-deck-40473581-1",
+          "eventReasonEffectId": 4,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-10-1",
+          "player": 0,
+          "sourceUid": "p0-deck-92394653-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restoredInvitationTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredSpiritReturnChain.session), source, reader);
     expectCleanRestore(restoredInvitationTrigger);

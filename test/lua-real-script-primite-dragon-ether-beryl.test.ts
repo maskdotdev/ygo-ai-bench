@@ -57,13 +57,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     const trigger = getLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.uid === etherBeryl!.uid);
     expect(trigger).toBeDefined();
     applyAndAssert(session, trigger!);
-    expect(session.state.chain).toEqual([
-      expect.objectContaining({
-        sourceUid: etherBeryl!.uid,
-        eventName: "normalSummoned",
-        eventCardUid: etherBeryl!.uid,
-      }),
-    ]);
+    expect(session.state.chain).toMatchInlineSnapshot(`
+      [
+        {
+          "activationLocation": "monsterZone",
+          "activationSequence": 0,
+          "chainIndex": 1,
+          "effectId": "lua-1-1100",
+          "eventCardUid": "p0-deck-63198739-0",
+          "eventCode": 1100,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "normalSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 16,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "if",
+          "id": "chain-3",
+          "player": 0,
+          "sourceUid": "p0-deck-63198739-0",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

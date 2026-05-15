@@ -82,13 +82,59 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     const trigger = getLegalActions(session, 0).find((action) => action.type === "activateTrigger" && action.uid === imperial!.uid);
     expect(trigger).toBeDefined();
     applyAndAssert(session, trigger!);
-    expect(session.state.chain).toEqual([
-      expect.objectContaining({
-        sourceUid: imperial!.uid,
-        eventName: "normalSummoned",
-        eventCardUid: imperial!.uid,
-      }),
-    ]);
+    expect(session.state.chain).toMatchInlineSnapshot(`
+      [
+        {
+          "activationLocation": "monsterZone",
+          "activationSequence": 1,
+          "chainIndex": 1,
+          "effectId": "lua-3-1100",
+          "eventCardUid": "p0-deck-81418467-0",
+          "eventCode": 1100,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 1,
+          },
+          "eventName": "normalSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 16,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "if",
+          "id": "chain-5",
+          "operationInfos": [
+            {
+              "category": 16384,
+              "count": 1,
+              "parameter": 0,
+              "player": 0,
+              "targetUids": [
+                "p1-deck-81490001-0",
+              ],
+            },
+            {
+              "category": 4,
+              "count": 1,
+              "parameter": 0,
+              "player": 0,
+              "targetUids": [
+                "p1-deck-81490001-0",
+              ],
+            },
+          ],
+          "player": 0,
+          "sourceUid": "p0-deck-81418467-0",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
