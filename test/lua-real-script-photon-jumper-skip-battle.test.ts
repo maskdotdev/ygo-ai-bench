@@ -2,12 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -55,6 +55,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
     const restoredWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredWindow.restoreComplete, restoredWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredWindow.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restoredWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredWindow.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredWindow, 0).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restoredWindow, 0),
+    );
     const activate = getLuaRestoreLegalActions(restoredWindow, 0).find((action) => action.type === "activateTrigger" && action.uid === jumper.uid);
     expect(activate, JSON.stringify(getLuaRestoreLegalActions(restoredWindow, 0), null, 2)).toBeDefined();
     const result = applyLuaRestoreResponse(restoredWindow, activate!);
@@ -67,6 +71,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredWindow.session), workspace, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
     expect(restoredLock.missingRegistryKeys).toEqual([]);
+    const restoredLockPlayer = restoredLock.session.state.waitingFor ?? restoredLock.session.state.turnPlayer;
+    expect(getLuaRestoreLegalActionGroups(restoredLock, restoredLockPlayer)).toEqual(getGroupedDuelLegalActions(restoredLock.session, restoredLockPlayer));
+    expect(getLuaRestoreLegalActionGroups(restoredLock, restoredLockPlayer).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restoredLock, restoredLockPlayer),
+    );
     // Photon also ends the current Battle Phase; isolate the lingering self-turn lock after that current-turn skip.
     delete restoredLock.session.state.pendingBattle;
     delete restoredLock.session.state.currentAttack;
