@@ -72,7 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoreActionParity(restored, 0);
+    expectRestoredLegalActions(restored, 0);
     const restoredAsmodeus = restored.session.state.cards.find((card) => card.code === asmodeusCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === asmodeus!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
@@ -127,7 +127,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoreActionParity(restored, 0);
+    expectRestoredLegalActions(restored, 0);
     const restoredAsmodeus = restored.session.state.cards.find((card) => card.code === asmodeusCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === asmodeus!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
@@ -174,7 +174,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoreActionParity(restored, 0);
+    expectRestoredLegalActions(restored, 0);
     const restoredAsmodeus = restored.session.state.cards.find((card) => card.code === asmodeusCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === asmodeus!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
@@ -237,7 +237,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoreActionParity(restored, 0);
+    expectRestoredLegalActions(restored, 0);
     const restoredAsmodeus = restored.session.state.cards.find((card) => card.code === asmodeusCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === asmodeus!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
@@ -289,7 +289,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoreActionParity(restored, 0);
+    expectRestoredLegalActions(restored, 0);
     const restoredAsmodeus = restored.session.state.cards.find((card) => card.code === asmodeusCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === asmodeus!.uid && candidate.luaConditionDescriptor === descriptor);
     expect(effect?.canActivate).toBeDefined();
@@ -303,7 +303,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
   });
 });
 
-function expectRestoreActionParity(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: PlayerId): void {
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: PlayerId): void {
   expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
   expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(
     getLuaRestoreLegalActions(restored, player),
