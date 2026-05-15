@@ -17,7 +17,10 @@ describe("Lua real special-summon lock restore coverage", () => {
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
-          || !text.includes("missingRegistryKeys).toEqual([])");
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions");
       })
       .map((fixture) => fixture.file);
 
@@ -49,6 +52,9 @@ describe("Lua real special-summon lock restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
           || !fixture.requiredSnippets.every((snippet) => text.includes(snippet));
       })
       .map((fixture) => fixture.file);
