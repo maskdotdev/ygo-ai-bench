@@ -58,6 +58,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
+          category: 0x80000,
           luaConditionDescriptor: `condition:source-battle-target-race-source-location:${racePyro}:${locationGraveyard}`,
           sourceUid: oxygeddon!.uid,
         }),
@@ -75,6 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const restoredOxygeddon = restored.session.state.cards.find((card) => card.code === oxygeddonCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === oxygeddon!.uid && candidate.luaConditionDescriptor === `condition:source-battle-target-race-source-location:${racePyro}:${locationGraveyard}`);
+    expect(effect).toMatchObject({ category: 0x80000 });
     expect(effect?.canActivate).toBeDefined();
     const ctx = targetContext(restored.session.state, restoredOxygeddon!);
     expect(effect!.canActivate!(ctx)).toBe(false);
@@ -129,6 +131,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     expect(session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
+          category: 0x80000,
           luaConditionDescriptor: `condition:source-battle-target-race-source-location:${racePyro}:${locationGraveyard}`,
           sourceUid: oxygeddon!.uid,
         }),
@@ -146,6 +149,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const restoredOxygeddon = restored.session.state.cards.find((card) => card.code === oxygeddonCode);
     const restoredTarget = restored.session.state.cards.find((card) => card.code === targetCode);
     const effect = restored.session.state.effects.find((candidate) => candidate.sourceUid === oxygeddon!.uid && candidate.luaConditionDescriptor === `condition:source-battle-target-race-source-location:${racePyro}:${locationGraveyard}`);
+    expect(effect).toMatchObject({ category: 0x80000 });
     expect(effect?.canActivate).toBeDefined();
     const ctx = targetContext(restored.session.state, restoredOxygeddon!);
     expect(effect!.canActivate!(ctx)).toBe(false);

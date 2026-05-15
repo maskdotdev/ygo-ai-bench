@@ -220,6 +220,7 @@ function realScriptSourceConditionFixtureFiles(): Array<{ file: string; required
     {
       file: "test/lua-real-script-source-location-battle-target-race-condition.test.ts",
       requiredSnippets: [
+        "category: 0x80000",
         "condition:source-battle-target-race-source-location:",
         "oxygeddon-official-local-location-battle-target-race-condition.lua",
         "restoredTarget!.data.race = raceDragon",
