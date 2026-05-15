@@ -129,8 +129,8 @@ function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; require
       required: [
         "expect(restoredFire.session.state.players[0].lifePoints).toBe(8000)",
         "expect(restoredFire.session.state.players[1].lifePoints).toBe(8000)",
-        'eventName: "damageDealt"',
-        'eventName: "battleDamageDealt", eventPlayer: 0',
+        'event.eventName === "damageDealt")).toEqual([])',
+        'event.eventName === "battleDamageDealt" && event.eventPlayer === 0)).toEqual([])',
         "expect(restoredFire.session.state.battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },

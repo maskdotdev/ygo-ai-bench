@@ -118,7 +118,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script On
     resolveRestoredChain(restoredFire);
     expect(restoredFire.session.state.players[0].lifePoints).toBe(8000);
     expect(restoredFire.session.state.players[1].lifePoints).toBe(8000);
-    expect(restoredFire.session.state.eventHistory).not.toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "damageDealt" })]));
+    expect(restoredFire.session.state.eventHistory.filter((event) => event.eventName === "damageDealt")).toEqual([]);
 
     restoredFire.session.state.phase = "battle";
     restoredFire.session.state.waitingFor = 1;
@@ -130,7 +130,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script On
     expect(restoredFire.session.state.players[0].lifePoints).toBe(8000);
     expect(restoredFire.session.state.players[1].lifePoints).toBe(8000);
     expect(restoredFire.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
-    expect(restoredFire.session.state.eventHistory).not.toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "battleDamageDealt", eventPlayer: 0 })]));
+    expect(restoredFire.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt" && event.eventPlayer === 0)).toEqual([]);
   });
 });
 
