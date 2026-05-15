@@ -3,7 +3,8 @@ import { createPortal } from "react-dom";
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
 import type { DuelAction, DuelLocation, DuelLogEntry, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
-import { duelActionAnchorUids, duelActionUiKey, orphanDuelActionGroups, partitionDuelActionsByAnchor } from "./duel-action-anchors.js";
+import { duelActionAnchorUids, duelActionUiKey } from "./duel-action-anchors.js";
+import { duelBattlefieldActionView } from "./duel-battlefield-actions.js";
 import { duelPromptView, splitPromptGroups } from "./duel-prompt-view.js";
 import type { CardImageInfo } from "./ui.js";
 
@@ -264,21 +265,8 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
 
   const { byUid: actionByUid, orphanGroups } = useMemo(() => {
     const legal = props.legalActions ?? [];
-    const raw = partitionDuelActionsByAnchor(legal);
-    const interact = new Set<string>();
-    for (const card of state.cards) {
-      const visibleHand =
-        (card.location === "hand" && card.controller === viewer) ||
-        (card.location === "hand" && card.controller === opponent && !hideOppHand);
-      const onField = card.location === "monsterZone" || card.location === "spellTrapZone";
-      if (visibleHand || onField) interact.add(card.uid);
-    }
-    const byUid = new Map<string, DuelAction[]>();
-    for (const [uid, list] of raw.byUid) {
-      if (interact.has(uid)) byUid.set(uid, list);
-    }
-    return { byUid, orphanGroups: orphanDuelActionGroups(legal, props.legalActionGroups, interact) };
-  }, [hideOppHand, opponent, props.legalActionGroups, props.legalActions, state.cards, viewer]);
+    return duelBattlefieldActionView(state, viewer, legal, props.legalActionGroups, hideOppHand);
+  }, [hideOppHand, props.legalActionGroups, props.legalActions, state, viewer]);
 
   const cardHasLegalActions = useCallback((uid: string) => (actionByUid.get(uid)?.length ?? 0) > 0, [actionByUid]);
 
