@@ -240,6 +240,9 @@ ${IDS.theDarkMagicians}
     expect(result.divergenceActions).toEqual(result.legalActions);
     expect(result.divergenceActions).toHaveLength(4);
     expect(result.divergenceActions).not.toBe(result.legalActions);
+    result.divergenceActions![0]!.label = "Mutated divergence action";
+    expect(result.legalActions[0]?.label).not.toBe("Mutated divergence action");
+    expect(agent.legalActions(started.sessionId)[0]?.label).not.toBe("Mutated divergence action");
     expect(result.sessionId).toBe(started.sessionId);
   });
 });
