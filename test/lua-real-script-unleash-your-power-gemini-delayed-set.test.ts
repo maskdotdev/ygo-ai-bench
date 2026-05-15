@@ -108,9 +108,44 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     expectGeminiStatus(restoredStatus, slimeCode, true);
     expectGeminiStatus(restoredStatus, soldierCode, true);
     expectGeminiStatus(restoredStatus, opponentGeminiCode, false, 1);
-    expect(restoredStatus.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: unleash!.uid, event: "continuous", code: 0x1200 })]),
-    );
+    expect(
+      restoredStatus.session.state.effects.filter(
+        (effect) => effect.sourceUid === unleash!.uid && effect.event === "continuous" && effect.code === 0x1200,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "code": 4608,
+          "controller": 0,
+          "countLimit": 1,
+          "event": "continuous",
+          "id": "lua-5-4608",
+          "label": 1,
+          "oncePerTurn": true,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "property": 128,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:73567374:lua-5-4608",
+          "reset": {
+            "count": 1,
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-73567374-0",
+          "triggerCode": 4608,
+          "triggerEvent": "phaseEnd",
+        },
+      ]
+    `);
 
     changeRestoredPhase(restoredStatus, 0, "battle");
     changeRestoredPhase(restoredStatus, 0, "main2");
@@ -131,7 +166,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
       faceUp: true,
       position: "faceUpAttack",
     });
-    expect(restoredStatus.session.state.effects).not.toEqual(expect.arrayContaining([expect.objectContaining({ sourceUid: unleash!.uid, event: "continuous", code: 0x1200 })]));
+    expect(
+      restoredStatus.session.state.effects.find(
+        (effect) => effect.sourceUid === unleash!.uid && effect.event === "continuous" && effect.code === 0x1200,
+      ),
+    ).toBeUndefined();
     expect(restoredStatus.session.state.eventHistory.filter((event) => event.eventName === "positionChanged")).toEqual([
       {
         eventName: "positionChanged",

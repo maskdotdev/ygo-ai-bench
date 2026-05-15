@@ -155,12 +155,61 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     expect(restoredPlatformStateWindow.missingRegistryKeys).toEqual([]);
     expect(restoredPlatformStateWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredPlatformStateWindow);
-    expect(restoredPlatformStateWindow.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: platform!.uid, code: 76 }),
-        expect.objectContaining({ sourceUid: platform!.uid, code: 347 }),
-      ]),
-    );
+    expect(
+      restoredPlatformStateWindow.session.state.effects.filter(
+        (effect) => effect.sourceUid === platform!.uid && (effect.code === 76 || effect.code === 347),
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 76,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-12-76",
+          "lifePointValue": [Function],
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 1024,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:23265594:lua-12-76",
+          "reset": {
+            "flags": 33427456,
+          },
+          "sourceUid": "p0-deck-23265594-2",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+        {
+          "canActivate": [Function],
+          "code": 347,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-13-347",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 1024,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:23265594:lua-13-347",
+          "reset": {
+            "flags": 33427456,
+          },
+          "sourceUid": "p0-deck-23265594-2",
+          "target": [Function],
+        },
+      ]
+    `);
     expect(restoredPlatformStateWindow.session.state.cards.find((card) => card.uid === platform!.uid)).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid });
   });
 
@@ -287,12 +336,61 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     expect(restoredDriverState.missingRegistryKeys).toEqual([]);
     expect(restoredDriverState.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredDriverState);
-    expect(restoredDriverState.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: unionDriver!.uid, code: 76 }),
-        expect.objectContaining({ sourceUid: unionDriver!.uid, code: 347 }),
-      ]),
-    );
+    expect(
+      restoredDriverState.session.state.effects.filter(
+        (effect) => effect.sourceUid === unionDriver!.uid && (effect.code === 76 || effect.code === 347),
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 76,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-12-76",
+          "lifePointValue": [Function],
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 1024,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:99249638:lua-12-76",
+          "reset": {
+            "flags": 33427456,
+          },
+          "sourceUid": "p0-deck-99249638-1",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+        {
+          "canActivate": [Function],
+          "code": 347,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-13-347",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 1024,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:99249638:lua-13-347",
+          "reset": {
+            "flags": 33427456,
+          },
+          "sourceUid": "p0-deck-99249638-1",
+          "target": [Function],
+        },
+      ]
+    `);
     expect(restoredChain.host.messages).not.toContain("union pilot responder resolved");
   });
 
@@ -353,12 +451,56 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     expect(restoredUnionState.missingRegistryKeys).toEqual([]);
     expect(restoredUnionState.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredUnionState);
-    expect(restoredUnionState.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: trigon!.uid, code: 347 }),
-        expect.objectContaining({ sourceUid: trigon!.uid, code: 348 }),
-      ]),
-    );
+    expect(
+      restoredUnionState.session.state.effects.filter(
+        (effect) => effect.sourceUid === trigon!.uid && (effect.code === 347 || effect.code === 348),
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 347,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-7-347",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 1024,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:48568432:lua-7-347",
+          "reset": {
+            "flags": 33427456,
+          },
+          "sourceUid": "p0-deck-48568432-0",
+          "target": [Function],
+        },
+        {
+          "canActivate": [Function],
+          "code": 348,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-8-348",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 1024,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:48568432:lua-8-348",
+          "reset": {
+            "flags": 33427456,
+          },
+          "sourceUid": "p0-deck-48568432-0",
+          "target": [Function],
+        },
+      ]
+    `);
 
     restoredUnionState.session.state.phase = "battle";
     restoredUnionState.session.state.waitingFor = 0;
