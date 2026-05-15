@@ -44,7 +44,42 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(nitroCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ event: "trigger", code: 1138, sourceUid: nitro!.uid })]));
+    expect(session.state.effects.find((effect) => effect.event === "trigger" && effect.code === 1138 && effect.sourceUid === nitro!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "category": 4096,
+        "code": 1138,
+        "controller": 0,
+        "cost": [Function],
+        "description": 288209440,
+        "event": "trigger",
+        "id": "lua-6-1138",
+        "luaTypeFlags": 129,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "optional": true,
+        "promptOperation": [Function],
+        "property": 16,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:18013090:lua-6-1138",
+        "sourceUid": "p0-extraDeck-18013090-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "triggerCode": 1138,
+        "triggerEvent": "afterDamageCalculation",
+        "triggerSourceOnly": true,
+        "triggerTiming": "when",
+      }
+    `);
 
     const attack = getLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === nitro!.uid && action.targetUid === firstTarget!.uid);
     expect(attack).toBeDefined();
