@@ -47,7 +47,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     applyAndAssert(session, activation!);
     expect(session.state.cards.find((card) => card.uid === releaseMaterial.uid)).toMatchObject({
       location: "graveyard",
-      reason: 0x82,
+      reason: duelReason.release | duelReason.cost,
     });
     expect(session.state.chain).toHaveLength(1);
     expect(session.state.chain[0]).toMatchObject({
@@ -78,7 +78,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     expect(resolved.ok, resolved.error).toBe(true);
 
     expect(restored.session.state.players[1].lifePoints).toBe(6300);
-    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "released", eventCardUid: releaseMaterial.uid })]));
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "released" && event.eventCardUid === releaseMaterial.uid)).toEqual([
+      {
+        eventName: "released",
+        eventCode: 1017,
+        eventCardUid: releaseMaterial.uid,
+        eventReason: duelReason.release | duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: castleGate.uid,
+        eventReasonEffectId: 2,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "damageDealt")).toEqual([
       {
         eventName: "damageDealt",
