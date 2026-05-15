@@ -76,7 +76,7 @@ function chainMatchObjectAssertions(text) {
   const matches = [];
   const lines = text.split("\n");
   lines.forEach((line, index) => {
-    if (/expect\([^)]*state\.chain(?:\[[0-9]+\])?[^)]*\)\.toMatchObject\(/.test(line)) matches.push({ line: index + 1 });
+    if (/expect\([^)]*state\.chain(?:\[[0-9]+\])?(?![A-Za-z0-9_$])[^)]*\)\.toMatchObject\(/.test(line)) matches.push({ line: index + 1 });
   });
   return matches;
 }
