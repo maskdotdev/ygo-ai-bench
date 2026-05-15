@@ -122,11 +122,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ki
     expect(restoredRelationWindow.host.messages).toContain("kinka leaves 1");
     expect(restoredRelationWindow.session.state.cards.find((card) => card.uid === kinka!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredRelationWindow.session.state.cards.find((card) => card.uid === revive!.uid)).toMatchObject({ location: "banished", faceUp: true });
-    expect(restoredRelationWindow.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventCardUid: revive!.uid }),
-      ]),
-    );
+    expect(restoredRelationWindow.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned")).toEqual([
+      {
+        eventName: "specialSummoned",
+        eventCode: 1102,
+        eventCardUid: revive!.uid,
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: kinka!.uid,
+        eventReasonEffectId: 7,
+        eventUids: [revive!.uid],
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+    ]);
     expect(restoredRelationWindow.session.state.eventHistory.filter((event) => event.eventName === "banished" && event.eventCardUid === revive!.uid)).toEqual([
       {
         eventName: "banished",
