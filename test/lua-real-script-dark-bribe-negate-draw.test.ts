@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -109,14 +110,55 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === drawn!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restoredPendingResolution.session.state.players[1].lifePoints).toBe(8000);
     expect(restoredPendingResolution.host.messages).not.toContain("dark bribe chain responder resolved");
-    expect(restoredPendingResolution.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: upstart!.uid }),
-        expect.objectContaining({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventUids: [drawn!.uid] }),
-        expect.objectContaining({ eventName: "chainNegated", eventCode: 1024, eventPlayer: 0 }),
-        expect.objectContaining({ eventName: "chainDisabled", eventCode: 1025, eventPlayer: 0 }),
-      ]),
-    );
+    expect(
+      restoredPendingResolution.session.state.eventHistory.filter((event) => ["destroyed", "cardsDrawn", "chainNegated", "chainDisabled"].includes(event.eventName)),
+    ).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: upstart!.uid,
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: darkBribe!.uid,
+        eventReasonEffectId: 3,
+        eventPreviousState: { controller: 0, location: "spellTrapZone", sequence: 0, position: "faceDown", faceUp: true },
+        eventCurrentState: { controller: 0, location: "graveyard", sequence: 0, position: "faceDown", faceUp: true },
+      },
+      {
+        eventName: "cardsDrawn",
+        eventCode: 1110,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventUids: [drawn!.uid],
+        eventCardUid: drawn!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: darkBribe!.uid,
+        eventReasonEffectId: 3,
+        eventPreviousState: { controller: 0, location: "deck", sequence: 2, position: "faceDown", faceUp: false },
+        eventCurrentState: { controller: 0, location: "hand", sequence: 1, position: "faceDown", faceUp: false },
+      },
+      {
+        eventName: "chainNegated",
+        eventCode: 1024,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReasonPlayer: 0,
+        eventChainDepth: 1,
+        eventChainLinkId: "chain-2",
+        relatedEffectId: 1,
+      },
+      {
+        eventName: "chainDisabled",
+        eventCode: 1025,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReasonPlayer: 0,
+        eventChainDepth: 1,
+        eventChainLinkId: "chain-2",
+        relatedEffectId: 1,
+      },
+    ]);
     expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ eventName: "recoveredLifePoints", eventCode: 1112, eventPlayer: 1, eventValue: 1000 })]),
     );
