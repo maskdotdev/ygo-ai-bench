@@ -1,4 +1,5 @@
 import { findCard } from "#duel/card-state.js";
+import { createEffectContext } from "#duel/effect-context.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
 import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
 import { luaSummonTypeTribute, summonProcedureTypeCodeFromValue } from "#duel/summon-type-codes.js";
@@ -16,10 +17,15 @@ export function normalSummonProcedureActions(state: DuelState, player: PlayerId,
   for (const effect of state.effects) {
     if (effect.controller !== player || !isLuaNormalSummonProcedure(effect.code)) continue;
     const source = findCard(state, effect.sourceUid);
-    if (!source || source.controller !== player || source.location !== "hand" || !effect.range.includes(source.location)) continue;
-    if (!hasNormalSummonCountAvailable(state, player, source) || !canUseEffectCount(state, effect)) continue;
-    if (!canNormalSummon(player, source) || !canChooseEffect(effect, source, player)) continue;
-    actions.push({ type: "tributeSummon", player, uid: source.uid, tributeUids: [], effectId: effect.id, label: `Tribute Summon ${source.name}` });
+    if (!source || !canUseEffectCount(state, effect)) continue;
+    const candidates = source.controller === player && source.location === "hand" && effect.range.includes(source.location) ? [source] : state.cards.filter((card) => card.controller === player && card.location === "hand" && ((effect.targetRange?.[0] ?? 0) & 0x02) !== 0);
+    for (const candidate of candidates) {
+      if (!hasNormalSummonCountAvailable(state, player, candidate) || !canNormalSummon(player, candidate)) continue;
+      const ctx = createEffectContext(state, candidate, player);
+      if (effect.targetCardPredicate && !effect.targetCardPredicate(ctx, candidate)) continue;
+      if (!canChooseEffect(effect, candidate, player)) continue;
+      actions.push({ type: "tributeSummon", player, uid: candidate.uid, tributeUids: [], effectId: effect.id, label: `Tribute Summon ${candidate.name}` });
+    }
   }
   return actions;
 }

@@ -554,8 +554,8 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     canActivate: (ctx) => {
       const result =
         (luaEffect.code !== 1027 || hostState.session.state.chain.length > 0) &&
-        callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.conditionRef, true, "condition", ctx) &&
-        (event !== "summonProcedure" || callLuaEffectBoolean(L, hostState, luaEffect, card, luaEffect.valueRef, true, "value", ctx));
+        callLuaEffectBoolean(L, hostState, luaEffect, event === "summonProcedure" && ctx?.source !== undefined ? ctx.source : card, luaEffect.conditionRef, true, "condition", ctx) &&
+        (event !== "summonProcedure" || callLuaEffectBoolean(L, hostState, luaEffect, ctx?.source ?? card, luaEffect.valueRef, true, "value", ctx));
       if (result) syncDuelEffectLabelObjectUid(duelEffect, luaEffect);
       else { delete duelEffect.labelObjectUid; delete duelEffect.labelObjectUids; }
       return result;

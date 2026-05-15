@@ -226,12 +226,13 @@ export function normalSummonDuelByProcedure(
   effectId: string,
   collectEvent: (eventName: DuelEventName, eventCard?: DuelCardInstance) => void,
 ): void {
-  const effect = state.effects.find((candidate) => candidate.id === effectId && candidate.sourceUid === uid && isNormalSummonProcedureCode(candidate.code));
+  const effect = state.effects.find((candidate) => candidate.id === effectId && isNormalSummonProcedureCode(candidate.code));
   if (!effect) throw new Error(`Normal Summon procedure ${effectId} is not registered`);
   const source = requireControlledCard(state, player, uid, "hand");
   if (!hasNormalSummonCountAvailable(state, player, source)) throw new Error("Normal Summon is not available");
-  if (!effect.range.includes(source.location)) throw new Error(`${source.name} summon procedure is not in range`);
+  if (!effect.range.includes(source.location) && (((effect.targetRange?.[0] ?? 0) & 0x02) === 0)) throw new Error(`${source.name} summon procedure is not in range`);
   const ctx = createEffectContext(state, source, player);
+  if (effect.targetCardPredicate && !effect.targetCardPredicate(ctx, source)) throw new Error(`${source.name} is not a legal summon procedure target`);
   if (effect.canActivate && !effect.canActivate(ctx)) throw new Error(`Condition for ${effectId} is not legal`);
   const rollback = captureDuelState(state);
   try {
