@@ -49,11 +49,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ap
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(skybaseCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 154, sourceUid: skybase!.uid, luaValueDescriptor: "cannot-material:target-not-setcode:170" }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 154 && effect.sourceUid === skybase!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 154,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-154",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 1,
+        "luaValueDescriptor": "cannot-material:target-not-setcode:170",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "hand",
+        ],
+        "registryKey": "lua:40061558:lua-2-154",
+        "sourceUid": "p0-deck-40061558-0",
+        "statValue": [Function],
+        "target": [Function],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
     expect(skybase!.data.normalTributes).toBe(3);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);

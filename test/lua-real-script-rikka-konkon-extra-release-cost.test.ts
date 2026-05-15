@@ -49,12 +49,60 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ri
     const registrations = host.registerInitialEffectsDetailed();
     expect(registrations.filter((result) => !result.skipped).every((result) => result.ok), JSON.stringify(registrations, null, 2)).toBe(true);
     expect(registrations.filter((result) => result.ok && !result.skipped).length).toBe(2);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 158, sourceUid: konkon!.uid }),
-        expect.objectContaining({ event: "continuous", code: Number(konkonCode), sourceUid: konkon!.uid }),
-      ]),
-    );
+    expect(session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === konkon!.uid && [158, Number(konkonCode)].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 76869711,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-3-76869711",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:76869711:lua-3-76869711",
+          "sourceUid": "p0-deck-76869711-0",
+          "target": [Function],
+          "targetRange": [
+            0,
+            4,
+          ],
+        },
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 158,
+          "controller": 0,
+          "cost": [Function],
+          "countLimit": 1,
+          "event": "continuous",
+          "id": "lua-4-158",
+          "lifePointValue": [Function],
+          "luaTypeFlags": 2,
+          "oncePerTurn": true,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:76869711:lua-4-158",
+          "sourceUid": "p0-deck-76869711-0",
+          "statValue": [Function],
+          "target": [Function],
+          "targetRange": [
+            0,
+            4,
+          ],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

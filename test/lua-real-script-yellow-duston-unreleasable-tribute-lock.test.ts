@@ -41,12 +41,50 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ye
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(dustonCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 43, sourceUid: duston!.uid, value: 1 }),
-        expect.objectContaining({ event: "continuous", code: 44, sourceUid: duston!.uid, value: 1 }),
-      ]),
-    );
+    expect(session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === duston!.uid && [43, 44].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 43,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-43",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:16366810:lua-1-43",
+          "sourceUid": "p0-deck-16366810-0",
+          "target": [Function],
+          "value": 1,
+        },
+        {
+          "canActivate": [Function],
+          "code": 44,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-2-44",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:16366810:lua-2-44",
+          "sourceUid": "p0-deck-16366810-0",
+          "target": [Function],
+          "value": 1,
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

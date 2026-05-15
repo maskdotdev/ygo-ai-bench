@@ -52,16 +52,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(wrathCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 46,
-          sourceUid: wrath!.uid,
-          luaTargetDescriptor: expect.stringMatching(/^target:not-setcode:/),
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 46 && effect.sourceUid === wrath!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 46,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-6-46",
+        "luaTargetDescriptor": "target:not-setcode:224",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 2048,
+        "range": [
+          "spellTrapZone",
+        ],
+        "registryKey": "lua:79794767:lua-6-46",
+        "sourceUid": "p0-deck-79794767-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "targetRange": [
+          1,
+          1,
+        ],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
