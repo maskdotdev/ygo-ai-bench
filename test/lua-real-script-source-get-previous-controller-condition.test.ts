@@ -66,17 +66,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     );
     expect(register.ok, register.error).toBe(true);
     const descriptor = "condition:source-previous-controller-reason-player:opponent";
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 71,
-          controller: 0,
-          luaConditionDescriptor: descriptor,
-          luaValueDescriptor: "cannot-be-effect-target:opponent",
-          range: ["monsterZone"],
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) => effect.code === 71 && effect.luaConditionDescriptor === descriptor,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 71,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-71",
+          "lifePointValue": [Function],
+          "luaConditionDescriptor": "condition:source-previous-controller-reason-player:opponent",
+          "luaTypeFlags": 1,
+          "luaValueDescriptor": "cannot-be-effect-target:opponent",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:46897277:lua-1-71",
+          "sourceUid": "p0-deck-46897277-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -136,17 +159,42 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
       "wattfox-official-get-previous-controller-condition.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 71,
-          controller: 0,
-          luaConditionDescriptor: "condition:source-previous-controller-reason-player:opponent",
-          luaValueDescriptor: "cannot-be-effect-target:opponent",
-          range: ["monsterZone"],
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.code === 71 &&
+          effect.luaConditionDescriptor === "condition:source-previous-controller-reason-player:opponent",
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 71,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-71",
+          "lifePointValue": [Function],
+          "luaConditionDescriptor": "condition:source-previous-controller-reason-player:opponent",
+          "luaTypeFlags": 1,
+          "luaValueDescriptor": "cannot-be-effect-target:opponent",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:46897277:lua-1-71",
+          "sourceUid": "p0-deck-46897277-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

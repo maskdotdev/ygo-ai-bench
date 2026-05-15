@@ -66,14 +66,36 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
       "memorygant-comma-local-battle-target-reason-condition.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: `condition:source-relate-battle-target-reason:${duelReason.battle}`,
-          sourceUid: memorygant!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.luaConditionDescriptor === `condition:source-relate-battle-target-reason:${duelReason.battle}` &&
+          effect.sourceUid === memorygant!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 100,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-100",
+          "luaConditionDescriptor": "condition:source-relate-battle-target-reason:32",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:23790299:lua-1-100",
+          "sourceUid": "p0-extraDeck-23790299-0",
+          "target": [Function],
+          "value": 300,
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -121,14 +143,44 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const register = host.loadCardScript(Number(memorygantCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: `condition:source-relate-battle-target-reason:${duelReason.battle}`,
-          sourceUid: memorygant!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.luaConditionDescriptor === `condition:source-relate-battle-target-reason:${duelReason.battle}` &&
+          effect.sourceUid === memorygant!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "category": 1,
+          "code": 1139,
+          "controller": 0,
+          "cost": [Function],
+          "countLimit": 1,
+          "countLimitCode": 97445064720,
+          "description": 380644785,
+          "event": "trigger",
+          "id": "lua-3-1139",
+          "luaConditionDescriptor": "condition:source-relate-battle-target-reason:32",
+          "luaTypeFlags": 129,
+          "oncePerTurn": true,
+          "operation": [Function],
+          "optional": true,
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:23790299:lua-3-1139",
+          "sourceUid": "p0-extraDeck-23790299-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "triggerCode": 1139,
+          "triggerEvent": "battleDestroyed",
+          "triggerTiming": "when",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -188,14 +240,36 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
       "memorygant-official-direct-battle-target-reason-condition.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: `condition:source-relate-battle-target-reason:${duelReason.battle}`,
-          sourceUid: memorygant!.uid,
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.luaConditionDescriptor === `condition:source-relate-battle-target-reason:${duelReason.battle}` &&
+          effect.sourceUid === memorygant!.uid,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 100,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-100",
+          "luaConditionDescriptor": "condition:source-relate-battle-target-reason:32",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:23790299:lua-1-100",
+          "sourceUid": "p0-extraDeck-23790299-0",
+          "target": [Function],
+          "value": 300,
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
