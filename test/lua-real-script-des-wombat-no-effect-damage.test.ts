@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -96,9 +97,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script De
 
     expect(restored.session.state.players[0].lifePoints).toBe(8000);
     expect(restored.session.state.players[1].lifePoints).toBe(7000);
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "damageDealt", eventCode: 1111, eventPlayer: 1, eventValue: 1000 })]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "damageDealt" && event.eventPlayer === 1)).toEqual([
+      {
+        eventName: "damageDealt",
+        eventCode: 1111,
+        eventPlayer: 1,
+        eventValue: 1000,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: tremendousFire!.uid,
+        eventReasonEffectId: 3,
+      },
+    ]);
     expect(restored.session.state.eventHistory).not.toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "damageDealt", eventPlayer: 0 })]));
     expect(restored.session.state.cards.find((card) => card.uid === desWombat!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(restored.session.state.cards.find((card) => card.uid === tremendousFire!.uid)).toMatchObject({ location: "graveyard" });
