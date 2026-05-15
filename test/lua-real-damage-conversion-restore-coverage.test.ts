@@ -74,7 +74,7 @@ function damageConversionFixtureFiles(): Array<{ file: string; required: string[
         "code: 335",
         "players[0].lifePoints).toBe(8000)",
         "players[1].lifePoints).toBe(7000)",
-        "not.toEqual(expect.arrayContaining([expect.objectContaining({ eventName: \"damageDealt\", eventPlayer: 0 })]))",
+        "event.eventName === \"damageDealt\" && event.eventPlayer === 0)).toEqual([])",
       ],
     },
     {
