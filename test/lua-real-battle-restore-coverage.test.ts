@@ -6,10 +6,10 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const battleKeywords = ["battle", "attack", "damage"];
-const realScriptBattleFixtureCount = 120;
+const realScriptBattleFixtureCount = 123;
 const battleLegalActionFixtureCount = 4;
 const attackDeclarationTrapFixtureCount = 6;
-const battleRoutingFixtureCount = 5;
+const battleRoutingFixtureCount = 6;
 const damageStepRestoreFixtureCount = 3;
 const battleDamageSemanticFixtureCount = 8;
 const battleTriggerSemanticFixtureCount = 7;
@@ -266,6 +266,14 @@ function realScriptBattleRoutingFixtureFiles(): Array<{ file: string; required: 
         "hasAttack(actions, ghostBird.uid, target.uid)).toBe(true)",
         "hasDirectAttack(actions, ghostBird.uid)).toBe(false)",
         "hasDirectAttack(noTargetActions, ghostBird.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "lua-real-script-grasschopper-gemini-attack-all.test.ts",
+      required: [
+        "hasAttack(firstActions, grasschopper.uid, firstTarget.uid)).toBe(true)",
+        "hasAttack(secondActions, grasschopper.uid, secondTarget.uid)).toBe(true)",
+        "hasDirectAttack(secondActions, grasschopper.uid)).toBe(false)",
       ],
     },
     {
