@@ -138,6 +138,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     const started = applyLuaRestoreResponse(restoredProtected, startChain!);
     expect(started.ok, started.error).toBe(true);
     expect(restoredProtected.session.state.chain).toHaveLength(1);
+    expect(restoredProtected.session.state.effects.find((effect) => effect.sourceUid === opponentTarget!.uid && effect.event === "quick")).toMatchObject({
+      code: 1002,
+      property: 0x10,
+      range: ["hand"],
+    });
     expect(getLuaRestoreLegalActions(restoredProtected, 1).find((action) => action.type === "activateEffect" && action.uid === opponentTarget!.uid)).toBeUndefined();
     expect(restoredProtected.host.messages).not.toContain("dark fusion target responder resolved");
   });

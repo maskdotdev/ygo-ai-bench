@@ -181,6 +181,8 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
         'summonType: "fusion"',
         "summonMaterialUids: [materialA!.uid, materialB!.uid]",
         'luaValueDescriptor: "cannot-be-effect-target:opponent"',
+        "property: 0x10",
+        'range: ["hand"]',
         "expect(getLuaRestoreLegalActions(restoredProtected, 1).find((action) => action.type === \"activateEffect\" && action.uid === opponentTarget!.uid)).toBeUndefined()",
         'expect(restoredProtected.host.messages).not.toContain("dark fusion target responder resolved")',
       ],
