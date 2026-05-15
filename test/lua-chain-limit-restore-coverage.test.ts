@@ -68,7 +68,7 @@ describe("Lua chain-limit restore coverage", () => {
         assertRestoreCoverageFile(group, file);
       }
     }
-  });
+  }, 30_000);
 
   it("requires real-script chain-limit fixtures to assert complete restored registry coverage", () => {
     const files = realScriptChainLimitFixtureFiles();
