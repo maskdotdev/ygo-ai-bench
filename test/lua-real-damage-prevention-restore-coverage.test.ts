@@ -75,7 +75,7 @@ function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; require
         "expect(restoredFire.session.state.players[1].lifePoints).toBe(8000)",
         'eventName: "damageDealt"',
         "eventPlayer: 0,\n        eventValue: 1000",
-        'eventName: "damageDealt", eventPlayer: 1',
+        'event.eventName === "damageDealt" && event.eventPlayer === 1)).toEqual([])',
       ],
     },
     {
