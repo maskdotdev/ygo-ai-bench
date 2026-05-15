@@ -6,7 +6,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const negationFixtureCount = 7;
 const chainResponseNegationFixtureCount = 6;
-const destroyOnlyResponseFixtureCount = 3;
+const destroyOnlyResponseFixtureCount = 4;
 
 describe("Lua real negation restore coverage", () => {
   it("requires representative real-script negation fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -111,6 +111,7 @@ function realScriptDestroyOnlyResponseFixtureFiles(): string[] {
     "lua-real-script-ghost-ogre-chain-destroy.test.ts",
     "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
     "lua-real-script-raigeki-break-discard-cost.test.ts",
+    "lua-real-script-twin-twisters-discard-cost.test.ts",
   ]
     .map((file) => path.join("test", file))
     .sort();

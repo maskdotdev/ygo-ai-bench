@@ -23,6 +23,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tw
     const discardCode = "903";
     const firstTargetCode = "904";
     const secondTargetCode = "905";
+    const drawnCode = "906";
     const cards: DuelCardData[] = [
       ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === twinTwistersCode),
       { code: starterCode, name: "Twin Twisters Chain Starter", kind: "monster", typeFlags: 0x1, level: 4 },
@@ -30,10 +31,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tw
       { code: discardCode, name: "Twin Twisters Discard Cost", kind: "monster", typeFlags: 0x1, level: 4 },
       { code: firstTargetCode, name: "Twin Twisters First Backrow", kind: "trap", typeFlags: 0x4 },
       { code: secondTargetCode, name: "Twin Twisters Second Backrow", kind: "trap", typeFlags: 0x4 },
+      { code: drawnCode, name: "Twin Twisters Drawn Card", kind: "monster", typeFlags: 0x1, level: 4 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 469, startingHandSize: 0, cardReader: reader });
-    loadDecks(session, { 0: { main: [starterCode, responderCode, firstTargetCode, secondTargetCode] }, 1: { main: [twinTwistersCode, discardCode] } });
+    loadDecks(session, { 0: { main: [starterCode, responderCode, firstTargetCode, secondTargetCode, drawnCode] }, 1: { main: [twinTwistersCode, discardCode] } });
     startDuel(session);
 
     const starter = session.state.cards.find((card) => card.code === starterCode);
@@ -41,12 +43,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tw
     const discard = session.state.cards.find((card) => card.code === discardCode);
     const firstTarget = session.state.cards.find((card) => card.code === firstTargetCode);
     const secondTarget = session.state.cards.find((card) => card.code === secondTargetCode);
+    const drawn = session.state.cards.find((card) => card.code === drawnCode);
     const twinTwisters = session.state.cards.find((card) => card.code === twinTwistersCode);
     expect(starter).toBeDefined();
     expect(responder).toBeDefined();
     expect(discard).toBeDefined();
     expect(firstTarget).toBeDefined();
     expect(secondTarget).toBeDefined();
+    expect(drawn).toBeDefined();
     expect(twinTwisters).toBeDefined();
     moveDuelCard(session.state, starter!.uid, "hand", 0);
     moveDuelCard(session.state, responder!.uid, "hand", 0);
@@ -170,9 +174,116 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tw
 
     expect(restored.session.state.cards.find((card) => card.uid === firstTarget!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.cards.find((card) => card.uid === secondTarget!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restored.session.state.cards.find((card) => card.uid === drawn!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restored.session.state.cards.find((card) => card.uid === twinTwisters!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.host.messages).toContain("twin twisters chain starter resolved");
     expect(restored.host.messages).not.toContain("twin twisters chain responder resolved");
+    expect(restored.session.state.eventHistory.filter((event) => ["destroyed", "cardsDrawn"].includes(event.eventName))).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-904-2",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "spellTrapZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p1-deck-43898403-0",
+          "eventReasonEffectId": 3,
+          "eventReasonPlayer": 1,
+        },
+        {
+          "eventCardUid": "p0-deck-905-3",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "spellTrapZone",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p1-deck-43898403-0",
+          "eventReasonEffectId": 3,
+          "eventReasonPlayer": 1,
+        },
+        {
+          "eventCardUid": "p0-deck-904-2",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "spellTrapZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p1-deck-43898403-0",
+          "eventReasonEffectId": 3,
+          "eventReasonPlayer": 1,
+          "eventUids": [
+            "p0-deck-904-2",
+            "p0-deck-905-3",
+          ],
+        },
+        {
+          "eventCardUid": "p0-deck-906-4",
+          "eventCode": 1110,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 2,
+          },
+          "eventName": "cardsDrawn",
+          "eventPlayer": 0,
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 64,
+          "eventReasonCardUid": "p0-deck-901-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+          "eventUids": [
+            "p0-deck-906-4",
+          ],
+          "eventValue": 1,
+        },
+      ]
+    `);
+    expect(restored.session.state.eventHistory.filter((event) => ["chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([]);
   });
 });
 
@@ -181,10 +292,18 @@ function chainStarterScript(): string {
     local s,id=GetID()
     function s.initial_effect(c)
       local e=Effect.CreateEffect(c)
+      e:SetCategory(CATEGORY_DRAW)
       e:SetType(EFFECT_TYPE_QUICK_O)
       e:SetCode(EVENT_FREE_CHAIN)
       e:SetRange(LOCATION_HAND)
-      e:SetOperation(function(e,tp) Debug.Message("twin twisters chain starter resolved") end)
+      e:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+        if chk==0 then return Duel.IsPlayerCanDraw(tp,1) end
+        Duel.SetOperationInfo(0,CATEGORY_DRAW,nil,0,tp,1)
+      end)
+      e:SetOperation(function(e,tp)
+        Duel.Draw(tp,1,REASON_EFFECT)
+        Debug.Message("twin twisters chain starter resolved")
+      end)
       c:RegisterEffect(e)
     end
   `;
