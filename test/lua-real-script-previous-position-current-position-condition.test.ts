@@ -213,7 +213,42 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-position-position:${positionFaceUpAttack}:${positionFaceUpDefense}`;
-    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: samurai!.uid })]));
+    expect(session.state.effects.find((effect) => effect.luaConditionDescriptor === descriptor && effect.sourceUid === samurai!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "category": 65537,
+        "code": 1016,
+        "controller": 0,
+        "cost": [Function],
+        "description": 1038816080,
+        "event": "trigger",
+        "id": "lua-1-1016",
+        "luaConditionDescriptor": "condition:source-previous-position-position:1:4",
+        "luaTypeFlags": 513,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "optional": false,
+        "promptOperation": [Function],
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:64926005:lua-1-1016",
+        "sourceUid": "p0-deck-64926005-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "triggerCode": 1016,
+        "triggerEvent": "positionChanged",
+        "triggerSourceOnly": true,
+        "triggerTiming": "when",
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

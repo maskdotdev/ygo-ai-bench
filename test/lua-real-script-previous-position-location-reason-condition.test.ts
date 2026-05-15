@@ -68,7 +68,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     );
     expect(register.ok, register.error).toBe(true);
     const descriptor = `condition:source-previous-position-location-reason:${positionFaceUpAttack}:${locationGraveyard}:${duelReason.battle}`;
-    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: wisp!.uid })]));
+    expect(session.state.effects.find((effect) => effect.luaConditionDescriptor === descriptor && effect.sourceUid === wisp!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 71,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-71",
+        "lifePointValue": [Function],
+        "luaConditionDescriptor": "condition:source-previous-position-location-reason:1:16:32",
+        "luaTypeFlags": 1,
+        "luaValueDescriptor": "cannot-be-effect-target:opponent",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 131072,
+        "range": [
+          "graveyard",
+        ],
+        "registryKey": "lua:70546737:lua-1-71",
+        "sourceUid": "p0-deck-70546737-0",
+        "statValue": [Function],
+        "target": [Function],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -107,14 +134,42 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     const register = host.loadCardScript(Number(wispCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: `condition:source-previous-position-location-reason:${positionFaceUpAttack}:${locationGraveyard}:${duelReason.battle}`,
-          sourceUid: wisp!.uid,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.luaConditionDescriptor === `condition:source-previous-position-location-reason:${positionFaceUpAttack}:${locationGraveyard}:${duelReason.battle}` && effect.sourceUid === wisp!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "category": 1,
+        "code": 1140,
+        "controller": 0,
+        "cost": [Function],
+        "description": 1128747793,
+        "event": "trigger",
+        "id": "lua-3-1140",
+        "luaConditionDescriptor": "condition:source-previous-position-location-reason:1:16:32",
+        "luaTypeFlags": 513,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "optional": false,
+        "promptOperation": [Function],
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:70546737:lua-3-1140",
+        "sourceUid": "p0-deck-70546737-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "triggerCode": 1140,
+        "triggerEvent": "battleDestroyed",
+        "triggerSourceOnly": true,
+        "triggerTiming": "when",
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
