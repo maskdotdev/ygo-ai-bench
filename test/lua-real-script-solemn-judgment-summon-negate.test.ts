@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -71,9 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     const chained = applyLuaRestoreResponse(restoredSummonWindow, solemnAction!);
     expect(chained.ok, chained.error).toBe(true);
     expect(restoredSummonWindow.session.state.players[1].lifePoints).toBe(4000);
-    expect(restoredSummonWindow.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 1, eventValue: 4000, eventReason: 0x80, eventReasonPlayer: 1 })]),
-    );
+    expectSolemnCost(restoredSummonWindow.session, solemn!.uid, 2);
     expect(restoredSummonWindow.session.state.chain).toHaveLength(1);
     expect(restoredSummonWindow.session.state.chain[0]).toMatchObject({
       sourceUid: solemn!.uid,
@@ -107,12 +106,54 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === solemn!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredPendingResolution.host.messages).not.toContain("solemn judgment chain responder resolved");
-    expect(restoredPendingResolution.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "normalSummonNegated", eventCode: 1114, eventCardUid: summoned!.uid }),
-        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: summoned!.uid }),
-      ]),
-    );
+    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => ["normalSummonNegated", "destroyed"].includes(event.eventName))).toEqual([
+      {
+        eventName: "normalSummonNegated",
+        eventCode: 1114,
+        eventCardUid: summoned!.uid,
+        eventReason: duelReason.disSummon,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: solemn!.uid,
+        eventReasonEffectId: 2,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: summoned!.uid,
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: solemn!.uid,
+        eventReasonEffectId: 2,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "normalSummoned", eventCardUid: summoned!.uid })]));
   });
 
@@ -174,9 +215,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     const chained = applyLuaRestoreResponse(restoredSummonWindow, solemnAction!);
     expect(chained.ok, chained.error).toBe(true);
     expect(restoredSummonWindow.session.state.players[1].lifePoints).toBe(4000);
-    expect(restoredSummonWindow.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 1, eventValue: 4000, eventReason: 0x80, eventReasonPlayer: 1 })]),
-    );
+    expectSolemnCost(restoredSummonWindow.session, solemn!.uid, 3);
     expect(restoredSummonWindow.session.state.chain).toHaveLength(1);
     expect(restoredSummonWindow.session.state.chain[0]).toMatchObject({
       sourceUid: solemn!.uid,
@@ -280,9 +319,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     const chained = applyLuaRestoreResponse(restoredSummonWindow, solemnAction!);
     expect(chained.ok, chained.error).toBe(true);
     expect(restoredSummonWindow.session.state.players[1].lifePoints).toBe(4000);
-    expect(restoredSummonWindow.session.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 1, eventValue: 4000, eventReason: 0x80, eventReasonPlayer: 1 })]),
-    );
+    expectSolemnCost(restoredSummonWindow.session, solemn!.uid, 4);
     expect(restoredSummonWindow.session.state.chain).toHaveLength(1);
     expect(restoredSummonWindow.session.state.chain[0]).toMatchObject({
       sourceUid: solemn!.uid,
@@ -618,4 +655,19 @@ function applyAndAssert(session: DuelSession, action: DuelAction) {
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
+}
+
+function expectSolemnCost(session: DuelSession, solemnUid: string, effectId: number) {
+  expect(session.state.eventHistory.filter((event) => event.eventName === "lifePointCostPaid")).toEqual([
+    {
+      eventName: "lifePointCostPaid",
+      eventCode: 1201,
+      eventPlayer: 1,
+      eventValue: 4000,
+      eventReason: duelReason.cost,
+      eventReasonPlayer: 1,
+      eventReasonCardUid: solemnUid,
+      eventReasonEffectId: effectId,
+    },
+  ]);
 }
