@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const activationLockFixtureCount = 4;
-const activationLockAllowListFixtureCount = 3;
+const activationLockFixtureCount = 5;
+const activationLockAllowListFixtureCount = 4;
 const activationLockVariantFixtureCount = 14;
 
 describe("Lua real activation-lock restore coverage", () => {
@@ -80,6 +80,7 @@ describe("Lua real activation-lock restore coverage", () => {
 function realScriptActivationLockFixtureFiles(): string[] {
   return [
     "lua-real-script-amano-iwato-activation-lock.test.ts",
+    "lua-real-script-ancient-gear-beast-card-activation-lock.test.ts",
     "lua-real-script-cold-wave-spelltrap-activation-lock.test.ts",
     "lua-real-script-sangan-same-code-activation-lock.test.ts",
     "lua-real-script-wattgiraffe-battle-activation-lock.test.ts",
