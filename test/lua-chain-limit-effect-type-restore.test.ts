@@ -77,6 +77,8 @@ describe("Lua effect-type chain-limit restore", () => {
     const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
 
     expect(restored.restoreComplete).toBe(true);
+    expectRestoredLegalActions(restored, 0);
+    expectRestoredLegalActions(restored, 1);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey: "lua-chain-limit:100:0:link:known:closure:not-effect-type:16", untilChainEnd: false });
@@ -138,6 +140,8 @@ describe("Lua effect-type chain-limit restore", () => {
 
     const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
+    expectRestoredLegalActions(restored, 1);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
@@ -193,6 +197,8 @@ describe("Lua effect-type chain-limit restore", () => {
 
     const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
+    expectRestoredLegalActions(restored, 1);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(hasGroupedLuaEffect(restored, 1, "lua-2")).toBe(true);
     expect(hasGroupedLuaEffect(restored, 1, "lua-3")).toBe(false);
@@ -292,6 +298,8 @@ describe("Lua effect-type chain-limit restore", () => {
 
     const restored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
     expect(restored.restoreComplete).toBe(true);
+    expectRestoredLegalActions(restored, 0);
+    expectRestoredLegalActions(restored, 1);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
@@ -405,6 +413,8 @@ describe("Lua effect-type chain-limit restore", () => {
 
     const opponentWindowRestored = restoreDuelWithLuaScripts(snapshot, source, createCardReader(cards));
     expect(opponentWindowRestored.restoreComplete, opponentWindowRestored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(opponentWindowRestored, 0);
+    expectRestoredLegalActions(opponentWindowRestored, 1);
     expect(opponentWindowRestored.missingRegistryKeys).toEqual([]);
     expect(opponentWindowRestored.missingChainLimitRegistryKeys).toEqual([]);
     expect(opponentWindowRestored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
@@ -420,6 +430,8 @@ describe("Lua effect-type chain-limit restore", () => {
 
     const handoffRestored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(handoffRestored.restoreComplete, handoffRestored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(handoffRestored, 0);
+    expectRestoredLegalActions(handoffRestored, 1);
     expect(handoffRestored.missingRegistryKeys).toEqual([]);
     expect(handoffRestored.missingChainLimitRegistryKeys).toEqual([]);
     expect(handoffRestored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
@@ -436,6 +448,12 @@ function hasGroupedLuaEffect(restored: ReturnType<typeof restoreDuelWithLuaScrip
 
 function hasLuaEffect(actions: ReturnType<typeof getLegalActions>, player: 0 | 1, effectId: string): boolean {
   return actions.some((action) => action.type === "activateEffect" && action.player === player && action.effectId === effectId);
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function quickScript(code: number, message: string, effectType: string): string {
