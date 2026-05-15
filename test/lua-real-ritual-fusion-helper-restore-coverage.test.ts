@@ -41,7 +41,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     {
       file: "test/lua-real-script-machine-angel-absolute-grave-ritual.test.ts",
       required: [
-        'operationInfos).toEqual(expect.arrayContaining([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }]))',
+        'operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }])',
         'summonType: "ritual"',
         "expect.arrayContaining([handMaterial!.uid, graveMaterial!.uid])",
         "reason: duelReason.release | duelReason.material | duelReason.ritual",
@@ -105,7 +105,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     {
       file: "test/lua-real-script-miracle-raven-self-ritual.test.ts",
       required: [
-        "operationInfos).toEqual(expect.arrayContaining([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x200 }]))",
+        "operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x200 }])",
         'summonType: "ritual"',
         "summonMaterialUids: [material!.uid]",
         "reason: duelReason.material | duelReason.ritual",
@@ -238,8 +238,8 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     {
       file: "test/lua-real-script-heavy-polymerization-partial-extraop.test.ts",
       required: [
-        "expect(chainLink.operationInfos).toEqual(expect.arrayContaining([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }]))",
-        "expect(chainLink.possibleOperationInfos).toEqual(expect.arrayContaining([{ category: 0x4, targetUids: [], count: 1, player: 0, parameter: 0x40 }]))",
+        "expect(chainLink.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }])",
+        "expect(chainLink.possibleOperationInfos).toEqual([{ category: 0x4, targetUids: [], count: 1, player: 0, parameter: 0x40 }])",
         'summonType: "fusion"',
         "summonMaterialUids: [handMaterialA!.uid, handMaterialB!.uid, extraMaterial!.uid]",
         "reason: duelReason.effect | duelReason.material | duelReason.fusion",
@@ -341,7 +341,8 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     {
       file: "test/lua-real-script-super-soldier-synthesis-specific-material.test.ts",
       required: [
-        'operationInfos).toEqual(expect.arrayContaining([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x12 }]))',
+        "{ category: 0x20, targetUids: [], count: 1, player: 0, parameter: 0x3 }",
+        "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x12 }",
         'summonType: "ritual"',
         "summonMaterialUids).toEqual([handLightMaterial!.uid, deckDarkMaterial!.uid])",
         "reason: duelReason.effect | duelReason.material | duelReason.ritual",
