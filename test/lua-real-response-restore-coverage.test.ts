@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const responseFixtureCount = 4;
 const chainedResponseFixtureCount = 3;
-const responseOperationInfoFixtureCount = 2;
+const responseOperationInfoFixtureCount = 3;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -108,6 +108,5 @@ function realScriptChainedResponseFixtureFiles(): string[] {
 }
 
 function realScriptResponseOperationInfoFixtureFiles(): string[] {
-  return realScriptChainedResponseFixtureFiles()
-    .filter((file) => !file.endsWith("lua-real-script-droll-lock-bird-draw-search-lock.test.ts"));
+  return realScriptChainedResponseFixtureFiles();
 }

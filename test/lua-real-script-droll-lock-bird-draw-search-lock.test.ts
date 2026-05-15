@@ -72,6 +72,15 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
     const searchAction = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === searcher!.uid);
     expect(searchAction).toBeDefined();
     applyAndAssert(session, searchAction!);
+    expect(session.state.effects.find((effect) => effect.id === searchAction!.effectId)).toMatchObject({
+      category: 0x8,
+      range: ["monsterZone"],
+    });
+    expect(session.state.chain).toEqual([
+      expect.objectContaining({
+        operationInfos: [{ category: 0x8, targetUids: [], count: 1, player: 0, parameter: 0x1 }],
+      }),
+    ]);
     resolveLiveChain(session);
     expect(session.state.cards.find((card) => card.uid === searched!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(host.messages).toContain("droll searcher resolved");
