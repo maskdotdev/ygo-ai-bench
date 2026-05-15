@@ -49,27 +49,83 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D/
     expect(reverseDamageTrigger).toBeDefined();
     applyAndAssert(session, reverseDamageTrigger!);
     passPendingChainIfAny(session);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 80,
-          controller: 0,
-          luaValueDescriptor: "value-predicate:effect-reason",
-          targetRange: [1, 1],
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.code === 80 && effect.sourceUid === leonidas!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 80,
+        "controller": 0,
+        "cost": [Function],
+        "description": 1480583490,
+        "event": "continuous",
+        "id": "lua-11-80",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 2,
+        "luaValueDescriptor": "value-predicate:effect-reason",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 67110912,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:92536468:lua-11-80",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p0-deck-92536468-0",
+        "statValue": [Function],
+        "target": [Function],
+        "targetRange": [
+          1,
+          1,
+        ],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
 
     const snapshot = serializeDuel(session);
-    expect(snapshot.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 80,
-          luaValueDescriptor: "value-predicate:effect-reason",
-          targetRange: [1, 1],
-        }),
-      ]),
-    );
+    expect(snapshot.state.effects.find((effect) => effect.code === 80 && effect.sourceUid === leonidas!.uid)).toMatchInlineSnapshot(`
+      {
+        "code": 80,
+        "controller": 0,
+        "description": 1480583490,
+        "event": "continuous",
+        "id": "lua-11-80",
+        "luaValueDescriptor": "value-predicate:effect-reason",
+        "oncePerTurn": false,
+        "ownerPlayer": 0,
+        "property": 67110912,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:92536468:lua-11-80",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p0-deck-92536468-0",
+        "targetRange": [
+          1,
+          1,
+        ],
+      }
+    `);
     const restored = restoreDuelWithLuaScripts(snapshot, workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);

@@ -56,17 +56,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ba
     expect(host.loadCardScript(Number(upstartCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(3);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 81,
-          sourceUid: badReaction!.uid,
-          targetRange: [0, 1],
-          value: 1,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 81 && effect.sourceUid === badReaction!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 81,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-81",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 2048,
+        "range": [
+          "spellTrapZone",
+        ],
+        "registryKey": "lua:40633297:lua-2-81",
+        "sourceUid": "p0-deck-40633297-0",
+        "target": [Function],
+        "targetRange": [
+          0,
+          1,
+        ],
+        "value": 1,
+      }
+    `);
 
     const upstartAction = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === upstart!.uid);
     expect(upstartAction).toBeDefined();
@@ -109,17 +124,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ba
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expect(restored.session.state.chain).toHaveLength(1);
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 81,
-          sourceUid: badReaction!.uid,
-          targetRange: [0, 1],
-          value: 1,
-        }),
-      ]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 81 && effect.sourceUid === badReaction!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 81,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-81",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "property": 2048,
+        "range": [
+          "spellTrapZone",
+        ],
+        "registryKey": "lua:40633297:lua-2-81",
+        "sourceUid": "p0-deck-40633297-0",
+        "target": [Function],
+        "targetRange": [
+          0,
+          1,
+        ],
+        "value": 1,
+      }
+    `);
 
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();

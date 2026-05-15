@@ -76,20 +76,79 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Na
     expect(reflectionPass).toBeDefined();
     expect(applyLuaRestoreResponse(reflectionRestored, reflectionPass!).ok).toBe(true);
     expect(reflectionRestored.host.messages).toContain("nature reflection starter resolved");
-    expect(reflectionRestored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 83,
-          controller: 1,
-          sourceUid: naturesReflection!.uid,
-          targetRange: [1, 0],
-        }),
-      ]),
-    );
-    expect(serializeDuel(reflectionRestored.session).state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ code: 83, luaValueDescriptor: "reflect-damage:opponent-non-continuous" })]),
-    );
+    expect(reflectionRestored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 83 && effect.sourceUid === naturesReflection!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 83,
+        "controller": 1,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-4-83",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 2,
+        "luaValueDescriptor": "reflect-damage:opponent-non-continuous",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 1,
+        "promptOperation": [Function],
+        "property": 2048,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:83467607:lua-4-83",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p1-deck-83467607-0",
+        "statValue": [Function],
+        "target": [Function],
+        "targetRange": [
+          1,
+          0,
+        ],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
+    expect(serializeDuel(reflectionRestored.session).state.effects.find((effect) => effect.code === 83 && effect.sourceUid === naturesReflection!.uid)).toMatchInlineSnapshot(`
+      {
+        "code": 83,
+        "controller": 1,
+        "event": "continuous",
+        "id": "lua-4-83",
+        "luaValueDescriptor": "reflect-damage:opponent-non-continuous",
+        "oncePerTurn": false,
+        "ownerPlayer": 1,
+        "property": 2048,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:83467607:lua-4-83",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p1-deck-83467607-0",
+        "targetRange": [
+          1,
+          0,
+        ],
+      }
+    `);
 
     const fireAction = getLegalActions(reflectionRestored.session, 0).find((action) => action.type === "activateEffect" && action.uid === tremendousFire!.uid);
     expect(fireAction).toBeDefined();
@@ -103,17 +162,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Na
     const fireResponsePlayer = fireRestored.session.state.waitingFor!;
     expect(getLuaRestoreLegalActionGroups(fireRestored, fireResponsePlayer)).toEqual(getGroupedDuelLegalActions(fireRestored.session, fireResponsePlayer));
     expect(getLuaRestoreLegalActionGroups(fireRestored, fireResponsePlayer).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(fireRestored, fireResponsePlayer));
-    expect(fireRestored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 83,
-          controller: 1,
-          sourceUid: naturesReflection!.uid,
-          targetRange: [1, 0],
-        }),
-      ]),
-    );
+    expect(fireRestored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 83 && effect.sourceUid === naturesReflection!.uid)).toMatchInlineSnapshot(`
+      {
+        "code": 83,
+        "controller": 1,
+        "event": "continuous",
+        "id": "lua-4-83",
+        "luaValueDescriptor": "reflect-damage:opponent-non-continuous",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 1,
+        "property": 2048,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:83467607:lua-4-83",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p1-deck-83467607-0",
+        "targetRange": [
+          1,
+          0,
+        ],
+        "valuePredicate": [Function],
+      }
+    `);
 
     const firePass = getLuaRestoreLegalActions(fireRestored, fireResponsePlayer).find((action) => action.type === "passChain");
     expect(firePass).toBeDefined();
