@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const delayedPositionFixtureCount = 1;
+const delayedPositionFixtureCount = 2;
 
 describe("Lua real delayed position restore coverage", () => {
   it("requires delayed position fixtures to assert clean restore and restored delayed outcomes", () => {
@@ -33,6 +33,26 @@ describe("Lua real delayed position restore coverage", () => {
 
 function delayedPositionFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-unleash-your-power-gemini-delayed-set.test.ts",
+      required: [
+        "restores group-wide Gemini status and delayed End Phase position change",
+        "restoredActivation.missingRegistryKeys).toEqual([])",
+        "restoredActivation.missingChainLimitRegistryKeys).toEqual([])",
+        "restoredChain.missingRegistryKeys).toEqual([])",
+        "restoredChain.missingChainLimitRegistryKeys).toEqual([])",
+        "restoredStatus.missingRegistryKeys).toEqual([])",
+        "restoredStatus.missingChainLimitRegistryKeys).toEqual([])",
+        "restoredAfterEnd.missingRegistryKeys).toEqual([])",
+        "restoredAfterEnd.missingChainLimitRegistryKeys).toEqual([])",
+        'action.type === "changePhase"',
+        "position: \"faceUpAttack\"",
+        "position: \"faceUpDefense\"",
+        "position: \"faceDownDefense\"",
+        'eventName: "positionChanged"',
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-book-eclipse-delayed-flip-draw.test.ts",
       required: [
