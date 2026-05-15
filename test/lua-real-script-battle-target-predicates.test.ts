@@ -38,11 +38,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ba
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(devourerCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ code: 102, luaTargetDescriptor: "target:source-battle-target-type:64", sourceUid: devourer!.uid }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.code === 102 && effect.sourceUid === devourer!.uid && effect.luaTargetDescriptor === "target:source-battle-target-type:64")).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 102,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-102",
+        "luaTargetDescriptor": "target:source-battle-target-type:64",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:98336111:lua-1-102",
+        "sourceUid": "p0-deck-98336111-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "targetRange": [
+          0,
+          4,
+        ],
+        "value": 0,
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -91,12 +113,60 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ba
     expect(host.loadCardScript(Number(reflectionCode), workspace).ok).toBe(true);
     expect(host.loadCardScript(Number(dragonecroCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ code: 42, luaTargetDescriptor: "target:source-or-battle-target", sourceUid: reflection!.uid }),
-        expect.objectContaining({ code: 42, luaTargetDescriptor: "target:source-battle-target", sourceUid: dragonecro!.uid }),
-      ]),
-    );
+    expect(session.state.effects.filter((effect) => effect.code === 42 && [reflection!.uid, dragonecro!.uid].includes(effect.sourceUid))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 42,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-42",
+          "luaTargetDescriptor": "target:source-or-battle-target",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:63947968:lua-1-42",
+          "sourceUid": "p0-deck-63947968-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "targetRange": [
+            4,
+            4,
+          ],
+          "value": 1,
+        },
+        {
+          "canActivate": [Function],
+          "code": 42,
+          "controller": 1,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-6-42",
+          "luaTargetDescriptor": "target:source-battle-target",
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:8198620:lua-6-42",
+          "sourceUid": "p0-extraDeck-8198620-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "targetRange": [
+            4,
+            4,
+          ],
+          "value": 1,
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

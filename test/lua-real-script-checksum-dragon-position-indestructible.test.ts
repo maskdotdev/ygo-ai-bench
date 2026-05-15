@@ -76,12 +76,62 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
       "checksum-dragon-official-comma-local-position-indestructible.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 71, luaConditionDescriptor: "condition:source-attack-position", property: 0x20000 }),
-        expect.objectContaining({ event: "continuous", code: 71, luaConditionDescriptor: "condition:source-defense-position", property: 0x20000 }),
-      ]),
-    );
+    expect(session.state.effects.filter((effect) => effect.event === "continuous" && effect.code === 71)).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 71,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-71",
+          "lifePointValue": [Function],
+          "luaConditionDescriptor": "condition:source-attack-position",
+          "luaTypeFlags": 1,
+          "luaValueDescriptor": "cannot-be-effect-target:opponent",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:94136469:lua-1-71",
+          "sourceUid": "p0-deck-94136469-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 71,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-2-71",
+          "lifePointValue": [Function],
+          "luaConditionDescriptor": "condition:source-defense-position",
+          "luaTypeFlags": 1,
+          "luaValueDescriptor": "cannot-be-effect-target:opponent",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:94136469:lua-2-71",
+          "sourceUid": "p0-deck-94136469-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -151,12 +201,62 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
       "checksum-dragon-official-local-position-indestructible.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 71, luaConditionDescriptor: "condition:source-attack-position", property: 0x20000 }),
-        expect.objectContaining({ event: "continuous", code: 71, luaConditionDescriptor: "condition:source-defense-position", property: 0x20000 }),
-      ]),
-    );
+    expect(session.state.effects.filter((effect) => effect.event === "continuous" && effect.code === 71)).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 71,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-71",
+          "lifePointValue": [Function],
+          "luaConditionDescriptor": "condition:source-attack-position",
+          "luaTypeFlags": 1,
+          "luaValueDescriptor": "cannot-be-effect-target:opponent",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:94136469:lua-1-71",
+          "sourceUid": "p0-deck-94136469-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 71,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-2-71",
+          "lifePointValue": [Function],
+          "luaConditionDescriptor": "condition:source-defense-position",
+          "luaTypeFlags": 1,
+          "luaValueDescriptor": "cannot-be-effect-target:opponent",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:94136469:lua-2-71",
+          "sourceUid": "p0-deck-94136469-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -199,19 +299,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(checksumDragonCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 42,
-          sourceUid: checksumDragon!.uid,
-          luaConditionDescriptor: "condition:source-attack-position",
-          property: 0x20000,
-          range: ["monsterZone"],
-          value: 1,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 42 && effect.sourceUid === checksumDragon!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 42,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-42",
+        "luaConditionDescriptor": "condition:source-attack-position",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 131072,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:94136469:lua-2-42",
+        "sourceUid": "p0-deck-94136469-0",
+        "target": [Function],
+        "value": 1,
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

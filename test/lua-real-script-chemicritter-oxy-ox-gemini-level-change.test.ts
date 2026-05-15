@@ -145,9 +145,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
     ]);
     expect(currentLevel(restoredChain.session.state.cards.find((card) => card.uid === oxyOx!.uid), restoredChain.session.state)).toBe(target!.data.level);
     expect(currentLevel(restoredChain.session.state.cards.find((card) => card.uid === target!.uid), restoredChain.session.state)).toBe(target!.data.level);
-    expect(restoredChain.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: oxyOx!.uid, code: 314, value: target!.data.level })]),
-    );
+    expect(restoredChain.session.state.effects.find((effect) => effect.sourceUid === oxyOx!.uid && effect.code === 314)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 314,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-6-314",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 1024,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:18993198:lua-6-314",
+        "reset": {
+          "flags": 1107169792,
+        },
+        "sourceUid": "p0-deck-18993198-0",
+        "target": [Function],
+        "value": 3,
+      }
+    `);
 
     const restoredAfterLevel = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredAfterLevel.restoreComplete, restoredAfterLevel.incompleteReasons.join("; ")).toBe(true);

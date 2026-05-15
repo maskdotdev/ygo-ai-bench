@@ -121,16 +121,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bo
     expect(restoredChain.session.state.cards.find((card) => card.uid === book!.uid)).toMatchObject({ location: "graveyard", previousLocation: "spellTrapZone" });
     expect(restoredChain.session.state.cards.find((card) => card.uid === ownMonster!.uid)).toMatchObject({ position: "faceDownDefense", faceUp: false });
     expect(restoredChain.session.state.cards.find((card) => card.uid === opponentMonster!.uid)).toMatchObject({ position: "faceDownDefense", faceUp: false });
-    expect(restoredChain.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: book!.uid,
-          code: phaseEndEventCode,
-          countLimit: 1,
-          reset: { flags: phaseEndReset },
-        }),
-      ]),
-    );
+    expect(restoredChain.session.state.effects.find((effect) => effect.sourceUid === book!.uid && effect.code === phaseEndEventCode)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 4608,
+        "controller": 0,
+        "cost": [Function],
+        "countLimit": 1,
+        "event": "continuous",
+        "id": "lua-3-4608",
+        "luaTypeFlags": 2050,
+        "oncePerTurn": true,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:35480699:lua-3-4608",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p0-deck-35480699-0",
+        "target": [Function],
+        "triggerCode": 4608,
+        "triggerEvent": "phaseEnd",
+      }
+    `);
     expect(restoredChain.host.messages).not.toContain("book of eclipse responder resolved");
 
     const restoredEnd = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);

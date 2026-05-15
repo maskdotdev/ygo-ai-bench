@@ -44,11 +44,43 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(chocolateCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "trigger", code: 1131, sourceUid: chocolate!.uid }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "trigger" && effect.code === 1131 && effect.sourceUid === chocolate!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "category": 2097664,
+        "code": 1131,
+        "controller": 1,
+        "cost": [Function],
+        "countLimit": 1,
+        "description": 115174385,
+        "event": "trigger",
+        "id": "lua-2-1131",
+        "luaTypeFlags": 129,
+        "oncePerTurn": true,
+        "operation": [Function],
+        "optional": true,
+        "promptOperation": [Function],
+        "property": 65552,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:7198399:lua-2-1131",
+        "sourceUid": "p1-deck-7198399-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "triggerCode": 1131,
+        "triggerEvent": "battleTargeted",
+        "triggerSourceOnly": true,
+        "triggerTiming": "if",
+      }
+    `);
 
     const attack = getLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && action.targetUid === chocolate!.uid);
     expect(attack).toBeDefined();
