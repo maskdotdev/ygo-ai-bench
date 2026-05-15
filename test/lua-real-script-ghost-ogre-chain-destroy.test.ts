@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -101,12 +102,59 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gh
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === drawn!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restoredPendingResolution.host.messages).toContain("ghost ogre target resolved");
     expect(restoredPendingResolution.host.messages).not.toContain("ghost ogre chain responder resolved");
-    expect(restoredPendingResolution.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: target!.uid }),
-        expect.objectContaining({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventUids: [drawn!.uid] }),
-      ]),
-    );
+    expect(
+      restoredPendingResolution.session.state.eventHistory.filter((event) => ["destroyed", "cardsDrawn"].includes(event.eventName)),
+    ).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: target!.uid,
+        eventPreviousState: {
+          location: "monsterZone",
+          controller: 0,
+          sequence: 0,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventCurrentState: {
+          location: "graveyard",
+          controller: 0,
+          sequence: 0,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: ghostOgre!.uid,
+        eventReasonEffectId: 3,
+      },
+      {
+        eventName: "cardsDrawn",
+        eventCode: 1110,
+        eventCardUid: drawn!.uid,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventPreviousState: {
+          location: "deck",
+          controller: 0,
+          sequence: 2,
+          position: "faceDown",
+          faceUp: false,
+        },
+        eventCurrentState: {
+          location: "hand",
+          controller: 0,
+          sequence: 1,
+          position: "faceDown",
+          faceUp: false,
+        },
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: target!.uid,
+        eventReasonEffectId: 1,
+        eventUids: [drawn!.uid],
+      },
+    ]);
     expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ eventName: "chainNegated" }),
