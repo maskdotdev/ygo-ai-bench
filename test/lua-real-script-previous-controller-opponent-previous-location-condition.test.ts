@@ -63,15 +63,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     );
     expect(register.ok, register.error).toBe(true);
     const descriptor = `condition:source-previous-controller-side-previous-location:${locationOnField}:opponent`;
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: descriptor,
-          luaValueDescriptor: "cannot-be-effect-target:opponent",
-          sourceUid: veidos!.uid,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.luaConditionDescriptor === descriptor && effect.sourceUid === veidos!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 71,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-71",
+        "lifePointValue": [Function],
+        "luaConditionDescriptor": "condition:source-previous-controller-side-previous-location:12:opponent",
+        "luaTypeFlags": 1,
+        "luaValueDescriptor": "cannot-be-effect-target:opponent",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "graveyard",
+        ],
+        "registryKey": "lua:78783557:lua-1-71",
+        "sourceUid": "p0-deck-78783557-0",
+        "statValue": [Function],
+        "target": [Function],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -112,14 +130,45 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-controller-side-previous-location:${locationOnField}:opponent`;
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: descriptor,
-          sourceUid: veidos!.uid,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.luaConditionDescriptor === descriptor && effect.sourceUid === veidos!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "category": 1,
+        "code": 1014,
+        "controller": 0,
+        "cost": [Function],
+        "countLimit": 1,
+        "countLimitCode": 322697449488,
+        "description": 1260536913,
+        "event": "trigger",
+        "id": "lua-2-1014",
+        "luaConditionDescriptor": "condition:source-previous-controller-side-previous-location:12:opponent",
+        "luaTypeFlags": 129,
+        "oncePerTurn": true,
+        "operation": [Function],
+        "optional": true,
+        "promptOperation": [Function],
+        "property": 65536,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:78783557:lua-2-1014",
+        "sourceUid": "p0-deck-78783557-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "triggerCode": 1014,
+        "triggerEvent": "sentToGraveyard",
+        "triggerSourceOnly": true,
+        "triggerTiming": "if",
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

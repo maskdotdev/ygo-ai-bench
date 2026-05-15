@@ -52,14 +52,45 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-controller-previous-location-reason:${locationOnField}:${duelReason.destroy}`;
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          luaConditionDescriptor: descriptor,
-          sourceUid: cupidVolley!.uid,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.luaConditionDescriptor === descriptor && effect.sourceUid === cupidVolley!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "category": 1048576,
+        "code": 1014,
+        "controller": 0,
+        "cost": [Function],
+        "countLimit": 1,
+        "countLimitCode": 48544346128,
+        "description": 189626353,
+        "event": "trigger",
+        "id": "lua-2-1014",
+        "luaConditionDescriptor": "condition:source-previous-controller-previous-location-reason:12:1",
+        "luaTypeFlags": 513,
+        "oncePerTurn": true,
+        "operation": [Function],
+        "optional": false,
+        "promptOperation": [Function],
+        "property": 2048,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:11851647:lua-2-1014",
+        "sourceUid": "p0-deck-11851647-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "triggerCode": 1014,
+        "triggerEvent": "sentToGraveyard",
+        "triggerSourceOnly": true,
+        "triggerTiming": "when",
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -100,7 +131,45 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script pr
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
     const descriptor = `condition:source-previous-controller-previous-location-reason:${locationDeck}:${duelReason.effect}`;
-    expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ luaConditionDescriptor: descriptor, sourceUid: zhugeKong!.uid })]));
+    expect(session.state.effects.find((effect) => effect.luaConditionDescriptor === descriptor && effect.sourceUid === zhugeKong!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "category": 512,
+        "code": 1012,
+        "controller": 0,
+        "cost": [Function],
+        "countLimit": 1,
+        "countLimitCode": 32422602,
+        "description": 518761632,
+        "event": "trigger",
+        "id": "lua-1-1012",
+        "luaConditionDescriptor": "condition:source-previous-controller-previous-location-reason:1:64",
+        "luaTypeFlags": 129,
+        "oncePerTurn": true,
+        "operation": [Function],
+        "optional": true,
+        "promptOperation": [Function],
+        "property": 65536,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:32422602:lua-1-1012",
+        "sourceUid": "p0-deck-32422602-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "triggerCode": 1012,
+        "triggerEvent": "sentToHand",
+        "triggerSourceOnly": true,
+        "triggerTiming": "if",
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
