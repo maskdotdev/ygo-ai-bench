@@ -16,6 +16,7 @@ import { isKnownPlayerDamageZeroEffect, isKnownTemporaryActivationLockEffect, is
 import { isKnownMulcharmyDrawWatcherEffect, isKnownMulcharmyEndPhaseShuffleEffect, mulcharmyDrawWatcherOperation, mulcharmyEndPhaseShuffleOperation } from "#lua/snapshot-mulcharmy.js";
 import { assaultZoneExtraDeckReleaseValueCallbacks, assaultZoneReleaseFlagConditionCallbacks, assaultZoneReleaseFlagOperation, isAssaultZoneExtraDeckReleaseRestoreEffect } from "#lua/snapshot-assault-zone.js";
 import { calledByTheGraveChainSolvingNegateOperation, isKnownCalledByTheGraveChainSolvingNegateEffect, isKnownRareMetalmorphChainSolvingNegateEffect, rareMetalmorphChainSolvingNegateOperation } from "#lua/snapshot-chain-solving-effects.js";
+import { luaChainLimitRegistryKeys, luaDenyChainLimitRegistry, restoreKnownLuaChainLimits } from "#lua/snapshot-chain-limits.js";
 import { isKnownSunlitSentinelDelayedStandbyEffect, sunlitSentinelDelayedStandbyOperation } from "#lua/snapshot-sunlit-sentinel.js";
 import { luaRegistryCardCodes } from "#lua/snapshot-registry-keys.js";
 import { restoredSpecialSummonConditionValueCallbacks } from "#lua/snapshot-special-summon-condition.js";
@@ -27,7 +28,7 @@ import { specialSummonTypeIsCostDescriptor, specialSummonTypeNotCostDescriptor }
 import { locationMatchesCardMask, positionMaskFromPosition } from "#lua/api-utils.js"; import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
 import { notSetcodeTargetDescriptor, restoredLuaTargetCallbacks, setcodeOrCodeTypeTargetDescriptor, typeTargetDescriptor } from "#lua/snapshot-target-callbacks.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
-import type { ApplyDuelResponseResult, ChainLimit, ChainLink, DuelAction, DuelCardInstance, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
+import type { ApplyDuelResponseResult, ChainLink, DuelAction, DuelCardInstance, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
 const luaEffectEquipLimit = 76;
 const luaEffectGeminiStatus = 75;
 const luaEffectAddType = 115;
@@ -1045,63 +1046,6 @@ function luaScriptRegistryKeys(registryKeys: Set<string>, snapshotEffects: Seria
 }
 
 function luaRegistryKeys(snapshot: SerializedDuel): Set<string> { return new Set(snapshot.state.effects.map((effect) => effect.registryKey).filter((key): key is string => Boolean(key?.startsWith("lua:")))); }
-function luaChainLimitRegistryKeys(snapshot: SerializedDuel): string[] { return snapshot.state.chainLimits.map((limit) => limit.registryKey).filter((key): key is string => Boolean(key?.startsWith("lua-chain-limit:"))); }
-function luaDenyChainLimitRegistry(keys: string[]): Record<string, (limit: ChainLimit) => ChainLimit> {
-  return Object.fromEntries(keys.map((key) => [key, knownLuaChainLimitRestoreFactory(key) ?? ((limit: ChainLimit): ChainLimit => {
-    const { registryKey: _registryKey, ...metadata } = limit;
-    return { ...metadata, allows: () => false };
-  })]));
-}
-function knownLuaChainLimitRestoreFactory(key: string): ((limit: ChainLimit) => ChainLimit) | undefined {
-  const parts = key.split(":");
-  const knownPredicate = parts[4] === "known" ? parts.slice(5).join(":") : undefined;
-  if (knownPredicate === "aux.FALSE") return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate === "aux.TRUE") return (limit) => ({ ...limit, allows: () => true });
-  if (knownPredicate?.startsWith("closure:card-handler:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:card-not-handler:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:card-not-handler-response-player:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:cards-not-handler-response-player:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:cards-not-handler:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:target-cards-not-handler-response-player:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:target-cards-not-handler:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:original-type-mask-response-player:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:type-mask-response-player:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:not-source-type-unless-chain-player:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:not-source-type-effect-type-setcode:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:not-source-type-effect-type:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:not-active-type-effect-type:") || knownPredicate?.startsWith("closure:counter-activate-or-handler-code:") || knownPredicate === "closure:not-opponent-controlled-trap") return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:handler-code:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:handler-codes:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:handler-code-response-player:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:handler-codes-response-player:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:not-effect-type:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:not-effect-type-response-player:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate === "closure:not-monster-without-level") return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate === "closure:not-active-monster-link") return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:not-active-type-response-player:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:active-type-response-player:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:source-type-non-activate-response-player:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate === "closure:spell-trap-non-activate-response-player") return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:not-active-type:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.match(/^closure:response-player:[01]$/)) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate === "closure:response-matches-chain-player") return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.match(/^closure:chain-player:[01]$/)) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.startsWith("closure:source:")) return (limit) => ({ ...limit, allows: () => false });
-  if (knownPredicate?.match(/^c\d+\.[A-Za-z_]\w*$/)) return (limit) => ({ ...limit, allows: () => false });
-  return undefined;
-}
-
-function restoreKnownLuaChainLimits(session: DuelSession, host: LuaScriptHost, keys: string[]): void {
-  if (keys.length === 0) return;
-  const keySet = new Set(keys);
-  session.state.chainLimits = session.state.chainLimits.map((limit) => {
-    if (!limit.registryKey || !keySet.has(limit.registryKey)) return limit;
-    const restored = host.restoreChainLimit(limit.registryKey, limit);
-    if (restored) return restored;
-    const { registryKey: _registryKey, ...metadata } = limit;
-    return { ...metadata, allows: () => false };
-  });
-}
 function luaRestoreIncompleteReasons(loadedScripts: LuaScriptLoadResult[], missingRegistryKeys: string[], missingChainLimitRegistryKeys: string[]): string[] {
   return [
     ...loadedScripts.filter((result) => !result.ok).map((result) => `script ${result.name}: ${result.error}`),
