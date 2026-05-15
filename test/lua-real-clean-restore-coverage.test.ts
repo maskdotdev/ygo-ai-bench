@@ -6,7 +6,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const scannerPath = path.join(root, "tools/scan-lua-clean-restore.mjs");
-const realScriptFixtureCount = 555;
+const realScriptFixtureCount = 556;
 
 describe("Lua real-script clean restore coverage", () => {
   it("requires every real-script fixture to assert no missing Lua registry keys after restore", () => {

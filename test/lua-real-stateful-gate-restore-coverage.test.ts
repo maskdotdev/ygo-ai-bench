@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statefulGateFixtureCount = 3;
+const statefulGateFixtureCount = 4;
 
 describe("Lua real stateful gate restore coverage", () => {
   it("requires stateful gate fixtures to assert clean restore and restored legal outcomes", () => {
@@ -33,6 +33,15 @@ describe("Lua real stateful gate restore coverage", () => {
 
 function statefulGateFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-berserk-gorilla-must-attack.test.ts",
+      required: [
+        "code === 191",
+        "hasAttack(actions, gorilla!.uid, target!.uid)).toBe(true)",
+        'action.type === "changePhase"',
+        'action.type === "endTurn"',
+      ],
+    },
     {
       file: "test/lua-real-script-earthshattering-event-deck-grave-lock.test.ts",
       required: [
