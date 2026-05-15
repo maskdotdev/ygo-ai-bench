@@ -15,7 +15,8 @@ describe("Lua real free-chain restore coverage", () => {
     const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
-        return !text.includes("getLuaRestoreLegalActionGroups")
+        return !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)")
           || !text.includes("restoreComplete")
