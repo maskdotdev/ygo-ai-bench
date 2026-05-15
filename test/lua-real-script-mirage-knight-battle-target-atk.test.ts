@@ -59,8 +59,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     expect(restoredDamageCalc.missingRegistryKeys).toEqual([]);
     expect(restoredDamageCalc.session.state.battleWindow?.kind).toBe("duringDamageCalculation");
     expect(currentAttack(restoredDamageCalc.session.state.cards.find((card) => card.uid === mirage!.uid)!, restoredDamageCalc.session.state)).toBe(4700);
-    expect(getLuaRestoreLegalActionGroups(restoredDamageCalc, 0)).toEqual(getGroupedDuelLegalActions(restoredDamageCalc.session, 0));
-    expect(getLuaRestoreLegalActionGroups(restoredDamageCalc, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredDamageCalc, 0));
+    expectRestoredLegalActions(restoredDamageCalc, 0);
 
     passRestoredBattleResponses(restoredDamageCalc);
     expect(restoredDamageCalc.session.state.pendingBattle).toBeUndefined();
@@ -73,6 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     const restoredEndPhase = restoreDuelWithLuaScripts(serializeDuel(restoredDamageCalc.session), workspace, reader);
     expect(restoredEndPhase.restoreComplete, restoredEndPhase.incompleteReasons.join("; ")).toBe(true);
     expect(restoredEndPhase.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredEndPhase, 0);
     expect(restoredEndPhase.session.state.phase).toBe("end");
     const trigger = getLuaRestoreLegalActions(restoredEndPhase, 0).find((action) => action.type === "activateTrigger" && action.uid === mirage!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredEndPhase, 0), null, 2)).toBeDefined();
@@ -144,4 +144,10 @@ function applyAndAssert(session: DuelSession, action: DuelAction) {
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }

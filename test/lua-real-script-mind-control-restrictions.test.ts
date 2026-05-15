@@ -66,8 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     const restoredResponseWindow = restoreDuelWithLuaScripts(openedSnapshot, source, reader);
     expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredResponseWindow.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 1));
-    expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredResponseWindow, 1));
+    expectRestoredLegalActions(restoredResponseWindow, 1);
     expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
 
     const pass = getLuaRestoreLegalActions(restoredResponseWindow, 1).find((action) => action.type === "passChain");
@@ -96,6 +95,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     const restoredRestrictionWindow = restoreDuelWithLuaScripts(serializeDuel(restoredResponseWindow.session), source, reader);
     expect(restoredRestrictionWindow.restoreComplete, restoredRestrictionWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredRestrictionWindow.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredRestrictionWindow, 0);
     expect(restoredRestrictionWindow.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ controller: 0, previousController: 1 });
     expect(restoredRestrictionWindow.session.state.effects.map((effect) => effect.registryKey)).toContain(`lua:${targetCode}:temporary-control-return:${target!.uid}`);
     expect(restrictionCodes(restoredRestrictionWindow.session, target!.uid)).toEqual([43, 44, 85]);
@@ -162,4 +162,10 @@ function applyAndAssert(session: DuelSession, action: DuelAction): void {
     expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, waitingFor));
     expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   }
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
