@@ -132,11 +132,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ri
 
     expect(restoredDamageWindow.session.state.battleDamage).toEqual({ 0: 0, 1: 800 });
     expect(restoredDamageWindow.session.state.players[1].lifePoints).toBe(7200);
-    expect(restoredDamageWindow.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 800 }),
-      ]),
-    );
+    expect(restoredDamageWindow.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: normalDragon!.uid,
+        eventPlayer: 1,
+        eventValue: 800,
+        eventReason: duelReason.battle,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 2,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredDamageWindow.session.state.cards.find((card) => card.uid === defender!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredDamageWindow.session.state.cards.find((card) => card.uid === rider!.uid)).toMatchObject({ location: "spellTrapZone", equippedToUid: normalDragon!.uid });
   });
