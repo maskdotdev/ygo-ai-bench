@@ -73,6 +73,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
     const restoredProcedureWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredProcedureWindow.restoreComplete, restoredProcedureWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredProcedureWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredProcedureWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredProcedureWindow, 0);
     const procedure = getLuaRestoreLegalActions(restoredProcedureWindow, 0).find((action) => action.type === "specialSummonProcedure" && action.uid === yamato!.uid);
     expect(procedure, JSON.stringify(getLuaRestoreLegalActions(restoredProcedureWindow, 0), null, 2)).toBeDefined();
@@ -88,6 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
     const restoredBattleWindow = restoreDuelWithLuaScripts(serializeDuel(restoredProcedureWindow.session), source, reader);
     expect(restoredBattleWindow.restoreComplete, restoredBattleWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredBattleWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredBattleWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredBattleWindow, 0);
     const attack = getLuaRestoreLegalActions(restoredBattleWindow, 0).find(
       (action) => action.type === "declareAttack" && action.attackerUid === yamato!.uid && action.targetUid === defender!.uid,
@@ -106,6 +108,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
     const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredBattleWindow.session), source, reader);
     expect(restoredTriggerWindow.restoreComplete, restoredTriggerWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredTriggerWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredTriggerWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredTriggerWindow, 0);
     const trigger = getLuaRestoreLegalActions(restoredTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.uid === yamato!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
@@ -123,6 +126,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
     const restoredChainWindow = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), source, reader);
     expect(restoredChainWindow.restoreComplete, restoredChainWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChainWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredChainWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredChainWindow, 1);
     const pass = getLuaRestoreLegalActions(restoredChainWindow, 1).find((action) => action.type === "passChain");
     expect(pass, JSON.stringify(getLuaRestoreLegalActions(restoredChainWindow, 1), null, 2)).toBeDefined();

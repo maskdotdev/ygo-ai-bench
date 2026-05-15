@@ -17,6 +17,7 @@ describe("Lua real search and set-lock restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -83,7 +84,9 @@ function searchSetLockFixtureFiles(): Array<{ file: string; required: string[] }
         'action.type === "setMonster"',
         'type: "normalSummon", uid: playerHandMonster!.uid',
         "restoredActivation.missingRegistryKeys).toEqual([])",
+        "restoredActivation.missingChainLimitRegistryKeys).toEqual([])",
         "restoredLock.missingRegistryKeys).toEqual([])",
+        "restoredLock.missingChainLimitRegistryKeys).toEqual([])",
       ],
     },
   ].sort((a, b) => a.file.localeCompare(b.file));
