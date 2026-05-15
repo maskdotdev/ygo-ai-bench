@@ -156,9 +156,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wi
         relatedEffectId: 1,
       },
     ]);
-    expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: starterTrap!.uid })]),
-    );
+    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === starterTrap!.uid)).toEqual([]);
     expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventUids: [drawn!.uid] })]),
     );
