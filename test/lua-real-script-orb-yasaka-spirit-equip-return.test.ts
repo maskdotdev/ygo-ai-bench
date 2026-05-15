@@ -248,12 +248,58 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
     expect(restoredOrbReturnChain.session.state.cards.find((card) => card.uid === orb!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restoredOrbReturnChain.session.state.eventHistory).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ eventName: "sentToHand", eventCode: 1012, eventCardUid: susa!.uid }),
         expect.objectContaining({ eventName: "sentToGraveyard", eventCode: 1014, eventCardUid: orb!.uid }),
-        expect.objectContaining({ eventName: "sentToHand", eventCode: 1012, eventCardUid: orb!.uid }),
         expect.objectContaining({ eventName: "confirmed", eventCardUid: orb!.uid }),
       ]),
     );
+    expect(restoredOrbReturnChain.session.state.eventHistory.filter((event) => event.eventName === "sentToHand")).toEqual([
+      {
+        eventName: "sentToHand",
+        eventCode: 1012,
+        eventCardUid: susa!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: susa!.uid,
+        eventReasonEffectId: 5,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "sentToHand",
+        eventCode: 1012,
+        eventCardUid: orb!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: orb!.uid,
+        eventReasonEffectId: 4,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+    ]);
     expect(restoredOrbReturnChain.host.messages).not.toContain("orb responder resolved");
   });
 });
