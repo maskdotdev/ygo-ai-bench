@@ -3,10 +3,13 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 1;
 
 describe("Lua real summon procedure restore coverage", () => {
   it("requires the broad summon procedure fixture to assert clean restore and restored legal actions", () => {
     const file = "test/lua-real-script-summon-procedure.test.ts";
+    expect([file]).toHaveLength(SUMMON_PROCEDURE_FIXTURE_COUNT);
+
     const text = fs.readFileSync(path.join(root, file), "utf8");
 
     expect(text.includes("restoreDuelWithLuaScripts")).toBe(true);

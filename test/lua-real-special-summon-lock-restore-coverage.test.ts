@@ -3,10 +3,15 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const SPECIAL_SUMMON_LOCK_FIXTURE_COUNT = 69;
+const SAME_CODE_EXTRA_DECK_ONCE_LOCK_FIXTURE_COUNT = 2;
 
 describe("Lua real special-summon lock restore coverage", () => {
   it("requires representative special-summon lock fixtures to assert clean Lua restore", () => {
-    const missing = representativeSpecialSummonLockFixtures()
+    const fixtures = representativeSpecialSummonLockFixtures();
+    expect(fixtures).toHaveLength(SPECIAL_SUMMON_LOCK_FIXTURE_COUNT);
+
+    const missing = fixtures
       .filter((fixture) => {
         const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
@@ -20,7 +25,10 @@ describe("Lua real special-summon lock restore coverage", () => {
   });
 
   it("requires representative special-summon lock fixtures to prove blocked and allowed restored summon operations", () => {
-    const weak = representativeSpecialSummonLockFixtures()
+    const fixtures = representativeSpecialSummonLockFixtures();
+    expect(fixtures).toHaveLength(SPECIAL_SUMMON_LOCK_FIXTURE_COUNT);
+
+    const weak = fixtures
       .filter((fixture) => {
         const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
         return !fixture.requiredSnippets.every((snippet) => text.includes(snippet));
@@ -31,7 +39,10 @@ describe("Lua real special-summon lock restore coverage", () => {
   });
 
   it("requires same-code Extra Deck once-lock fixtures to assert clean Lua restore and allowed alternatives", () => {
-    const missing = representativeSameCodeExtraDeckOnceLockFixtures()
+    const fixtures = representativeSameCodeExtraDeckOnceLockFixtures();
+    expect(fixtures).toHaveLength(SAME_CODE_EXTRA_DECK_ONCE_LOCK_FIXTURE_COUNT);
+
+    const missing = fixtures
       .filter((fixture) => {
         const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")

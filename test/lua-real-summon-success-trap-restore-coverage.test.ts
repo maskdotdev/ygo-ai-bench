@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const SUMMON_SUCCESS_TRAP_FIXTURE_COUNT = 3;
 
 describe("Lua real summon-success trap restore coverage", () => {
   it("requires summon-success trap fixtures to assert clean Lua registry restore and restored chain outcomes", () => {
-    const missing = summonSuccessTrapFixtureFiles()
+    const files = summonSuccessTrapFixtureFiles();
+    expect(files).toHaveLength(SUMMON_SUCCESS_TRAP_FIXTURE_COUNT);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
