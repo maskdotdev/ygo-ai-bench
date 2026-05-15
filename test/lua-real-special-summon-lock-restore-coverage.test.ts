@@ -479,6 +479,8 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     {
       file: "test/lua-real-script-link-turret-extra-dark-link-lock.test.ts",
       requiredSnippets: [
+        "special-summon-limit:not-type-attribute-extra:67108864:32",
+        "targetRange: [1, 0]",
         "link turret light link special 0",
         "link turret dark synchro special 0",
         "link turret dark link special 1",
@@ -563,6 +565,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-orcust-cymbal-dark-summon-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "target:not-attribute:32"',
+        "targetRange: [1, 0]",
         "orcust dark special 1",
         "orcust light special 0",
       ],
