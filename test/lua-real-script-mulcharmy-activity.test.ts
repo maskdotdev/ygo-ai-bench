@@ -2,13 +2,26 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import {
+  applyResponse,
+  createDuel,
+  getGroupedDuelLegalActions,
+  getLegalActions as getDuelLegalActions,
+  loadDecks,
+  serializeDuel,
+  startDuel,
+} from "#duel/core.js";
 import { duelActivity } from "#duel/activity.js";
 import type { DuelCardData, DuelResponse } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import {
+  applyLuaRestoreResponse,
+  getLuaRestoreLegalActionGroups,
+  getLuaRestoreLegalActions,
+  restoreDuelWithLuaScripts,
+} from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -51,6 +64,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mu
 
     const restoredAfterFuwalos = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredAfterFuwalos.restoreComplete, restoredAfterFuwalos.incompleteReasons.join("; ")).toBe(true);
+    expect(getLuaRestoreLegalActionGroups(restoredAfterFuwalos, 0)).toEqual(getGroupedDuelLegalActions(restoredAfterFuwalos.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredAfterFuwalos, 0).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restoredAfterFuwalos, 0),
+    );
     expect(restoredAfterFuwalos.session.state.activityHistory.filter((record) => record.activity === duelActivity.chain && record.player === 0)).toHaveLength(1);
 
     const purulia = restoredAfterFuwalos.session.state.cards.find((candidate) => candidate.code === puruliaCode);
@@ -69,6 +86,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mu
     const restoredAfterPurulia = restoreDuelWithLuaScripts(serializeDuel(restoredAfterFuwalos.session), workspace, reader);
     expect(restoredAfterPurulia.restoreComplete, restoredAfterPurulia.incompleteReasons.join("; ")).toBe(true);
     expect(restoredAfterPurulia.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restoredAfterPurulia, 0)).toEqual(getGroupedDuelLegalActions(restoredAfterPurulia.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredAfterPurulia, 0).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restoredAfterPurulia, 0),
+    );
     expect(restoredAfterPurulia.session.state.effects.some((effect) => effect.registryKey?.startsWith(`lua:${puruliaCode}:`) && effect.code === 1100)).toBe(true);
     expect(restoredAfterPurulia.session.state.effects.some((effect) => effect.registryKey?.startsWith(`lua:${puruliaCode}:`) && effect.code === 1102)).toBe(true);
     expect(restoredAfterPurulia.session.state.effects.some((effect) => effect.registryKey?.startsWith(`lua:${fuwalosCode}:`) && effect.code === 1102)).toBe(true);
@@ -121,12 +142,21 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mu
     expect(applyResponse(session, fuwalosAction!).ok).toBe(true);
     const restoredFuwalos = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredFuwalos.restoreComplete, restoredFuwalos.incompleteReasons.join("; ")).toBe(true);
+    const fuwalosPlayer = restoredFuwalos.session.state.waitingFor ?? restoredFuwalos.session.state.turnPlayer;
+    expect(getLuaRestoreLegalActionGroups(restoredFuwalos, fuwalosPlayer)).toEqual(getGroupedDuelLegalActions(restoredFuwalos.session, fuwalosPlayer));
+    expect(getLuaRestoreLegalActionGroups(restoredFuwalos, fuwalosPlayer).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restoredFuwalos, fuwalosPlayer),
+    );
     passRestoredChain(restoredFuwalos);
 
     const restoredSummoner = restoreDuelWithLuaScripts(serializeDuel(restoredFuwalos.session), source, reader);
     expect(restoredSummoner.restoreComplete, restoredSummoner.incompleteReasons.join("; ")).toBe(true);
     restoredSummoner.session.state.turnPlayer = 1;
     restoredSummoner.session.state.waitingFor = 1;
+    expect(getLuaRestoreLegalActionGroups(restoredSummoner, 1)).toEqual(getGroupedDuelLegalActions(restoredSummoner.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restoredSummoner, 1).flatMap((group) => group.actions)).toEqual(
+      getLuaRestoreLegalActions(restoredSummoner, 1),
+    );
     const summonAction = getLuaRestoreLegalActions(restoredSummoner, 1).find((action) => action.type === "activateEffect" && action.uid === summoner!.uid);
     expect(summonAction, JSON.stringify(getLuaRestoreLegalActions(restoredSummoner, 1), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredSummoner, summonAction!);
