@@ -76,6 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     const restoredReturnLock = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredReturnLock.restoreComplete, restoredReturnLock.incompleteReasons.join("; ")).toBe(true);
     expect(restoredReturnLock.missingRegistryKeys).toEqual([]);
+    expect(restoredReturnLock.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredReturnLock, 0)).toEqual(getDuelLegalActions(restoredReturnLock.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredReturnLock, 0)).toEqual(getGroupedDuelLegalActions(restoredReturnLock.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredReturnLock, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredReturnLock, 0));

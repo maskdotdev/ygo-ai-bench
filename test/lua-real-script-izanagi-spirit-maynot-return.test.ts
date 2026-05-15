@@ -63,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Iz
     const restoredProcedureWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredProcedureWindow.restoreComplete, restoredProcedureWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredProcedureWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredProcedureWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredProcedureWindow, 0)).toEqual(
       getGroupedDuelLegalActions(restoredProcedureWindow.session, 0),
     );
@@ -93,6 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Iz
     const restoredDecline = restoreDuelWithLuaScripts(returnSnapshot, workspace, reader);
     expect(restoredDecline.restoreComplete, restoredDecline.incompleteReasons.join("; ")).toBe(true);
     expect(restoredDecline.missingRegistryKeys).toEqual([]);
+    expect(restoredDecline.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredDecline, 0)).toEqual(getGroupedDuelLegalActions(restoredDecline.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredDecline, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restoredDecline, 0),
@@ -106,6 +108,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Iz
     const restoredActivate = restoreDuelWithLuaScripts(returnSnapshot, workspace, reader);
     expect(restoredActivate.restoreComplete, restoredActivate.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivate.missingRegistryKeys).toEqual([]);
+    expect(restoredActivate.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredActivate, 0)).toEqual(getGroupedDuelLegalActions(restoredActivate.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredActivate, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restoredActivate, 0),

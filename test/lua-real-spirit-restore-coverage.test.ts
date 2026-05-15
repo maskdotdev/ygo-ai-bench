@@ -18,6 +18,7 @@ describe("Lua real Spirit restore coverage", () => {
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getDuelLegalActions")
           || !text.includes("applyLuaRestoreResponse")
@@ -35,10 +36,15 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
       file: "lua-real-script-sakitama-spirit-effect-summon.test.ts",
       required: [
         "restoredOpenWindow.missingRegistryKeys).toEqual([])",
+        "restoredOpenWindow.missingChainLimitRegistryKeys).toEqual([])",
         "restoredChainWindow.missingRegistryKeys).toEqual([])",
+        "restoredChainWindow.missingChainLimitRegistryKeys).toEqual([])",
         "restoredReleaseChain.missingRegistryKeys).toEqual([])",
+        "restoredReleaseChain.missingChainLimitRegistryKeys).toEqual([])",
         "restoredTriggerWindow.missingRegistryKeys).toEqual([])",
+        "restoredTriggerWindow.missingChainLimitRegistryKeys).toEqual([])",
         "restoredTriggerChain.missingRegistryKeys).toEqual([])",
+        "restoredTriggerChain.missingChainLimitRegistryKeys).toEqual([])",
         'summonType: "normal"',
         'eventName: "released"',
         'location: "hand", controller: 0',
