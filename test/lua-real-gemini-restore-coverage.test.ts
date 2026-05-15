@@ -32,9 +32,12 @@ describe("Lua real Gemini restore coverage", () => {
     const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
-        return !text.includes("getLuaRestoreLegalActionGroups")
+        return !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("flatMap((group) => group.actions)")
-          || !/getDuelLegalActions|getGroupedDuelLegalActions/.test(text);
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("getDuelLegalActions")
+          || !text.includes("applyLuaRestoreResponse");
       });
 
     expect(missing).toEqual([]);
