@@ -88,7 +88,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Qu
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoreActionParity(restored, 0);
+    expectRestoredLegalActions(restored, 0);
     const probe = restored.host.loadScript(
       `
       local link1=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${link1Code}),0,LOCATION_EXTRA,0,nil)
@@ -161,7 +161,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Qu
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoreActionParity(restored, 0);
+    expectRestoredLegalActions(restored, 0);
     const effect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
     const source = restored.session.state.cards.find((card) => card.code === quadborrelCode);
     const link1 = restored.session.state.cards.find((card) => card.code === link1Code);
@@ -182,7 +182,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Qu
   });
 });
 
-function expectRestoreActionParity(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: PlayerId): void {
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: PlayerId): void {
   expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
   expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(
     getLuaRestoreLegalActions(restored, player),
