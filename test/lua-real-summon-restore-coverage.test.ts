@@ -5,13 +5,14 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-const realScriptSummonFixtureCount = 144;
+const realScriptSummonFixtureCount = 145;
 const summonProcedureFixtureCount = 20;
 const typedSummonProcedureFixtureCount = 6;
 const pendulumGrantFixtureCount = 3;
 const pendulumHelperFixtureCount = 10;
 const unionProcedureFixtureCount = 1;
 const materialLockFixtureCount = 4;
+const flipSummonSuccessTrapFixtureCount = 1;
 
 describe("Lua real summon restore coverage", () => {
   it("requires real-script summon and procedure fixtures to assert Lua-aware complete restore with diagnostics", () => {
@@ -128,6 +129,27 @@ describe("Lua real summon restore coverage", () => {
 
     expect(weak).toEqual([]);
   });
+
+  it("requires representative Flip Summon success trap fixtures to pin restored chain-response activations", () => {
+    const files = realScriptFlipSummonSuccessTrapFixtureSnippets();
+    expect(files).toHaveLength(flipSummonSuccessTrapFixtureCount);
+
+    const weak = files
+      .filter(({ file, required }) => {
+        const text = fs.readFileSync(path.join(root, file), "utf8");
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
+          || required.some((snippet) => !text.includes(snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(weak).toEqual([]);
+  });
 });
 
 function realScriptSummonFixtureFiles(): string[] {
@@ -136,6 +158,20 @@ function realScriptSummonFixtureFiles(): string[] {
     .filter((file) => summonKeywords.some((keyword) => file.includes(keyword)))
     .map((file) => path.join("test", file))
     .sort();
+}
+
+function realScriptFlipSummonSuccessTrapFixtureSnippets(): Array<{ file: string; required: string[] }> {
+  return [
+    {
+      file: "test/lua-real-script-house-adhesive-tape-flip-summon.test.ts",
+      required: [
+        'eventName: "flipSummoned"',
+        'effectId: expect.stringContaining("-1101")',
+        'windowKind: "chainResponse"',
+        'type === "activateEffect"',
+      ],
+    },
+  ];
 }
 
 function realScriptSummonProcedureFixtureFiles(): string[] {
