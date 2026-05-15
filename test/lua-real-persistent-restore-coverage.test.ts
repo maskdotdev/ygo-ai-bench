@@ -6,7 +6,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const PERSISTENT_FIXTURE_COUNT = 17;
 const TARGETED_PERSISTENT_FIXTURE_COUNT = 13;
-const REVIVE_DESTROY_PERSISTENT_FIXTURE_COUNT = 1;
+const REVIVE_DESTROY_PERSISTENT_FIXTURE_COUNT = 2;
 const SPIRITS_INVITATION_PERSISTENT_FIXTURE_COUNT = 1;
 const ATTACK_LOCK_PERSISTENT_FIXTURE_COUNT = 9;
 
@@ -160,6 +160,17 @@ function realScriptReviveDestroyPersistentFixtureFiles(): Array<{ file: string; 
         "destroyDuelCard(restoredRevive.session.state, call!.uid, 0, duelReason.effect | duelReason.destroy, 0)",
         "destroyDuelCard(restoredTargetDestroy.session.state, target!.uid, 0, duelReason.effect | duelReason.destroy, 0)",
         "expect(restoredChain.host.messages).not.toContain(\"call responder resolved\")",
+      ],
+    },
+    {
+      file: "test/lua-real-script-premature-burial-revive-destroy.test.ts",
+      required: [
+        "cardTargetUids: [target!.uid]",
+        "expectLuaPrematureProbe(restoredEquipped, targetCode, prematureCode, \"premature probe 0/612601/612601/1\")",
+        "destroyDuelCard(restoredEquipped.session.state, premature!.uid, 0, duelReason.effect | duelReason.destroy, 0)",
+        "previousEquippedToUid: target!.uid",
+        "previousLocation: \"monsterZone\"",
+        "expect(restoredChain.host.messages).not.toContain(\"premature responder resolved\")",
       ],
     },
   ];
