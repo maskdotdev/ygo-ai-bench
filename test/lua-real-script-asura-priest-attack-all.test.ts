@@ -14,6 +14,12 @@ const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 const typeMonster = 0x1;
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Asura Priest attack all", () => {
   it("restores its Spirit attack-all effect and lets it attack each monster with battle damage", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
@@ -54,6 +60,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
 
     const restoredSetup = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredSetup.restoreComplete, restoredSetup.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredSetup, 0);
     expect(restoredSetup.missingRegistryKeys).toEqual([]);
     expect(restoredSetup.session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ event: "continuous", code: 193, sourceUid: asura!.uid })]));
     const openingActions = getLuaRestoreLegalActions(restoredSetup, 0);
@@ -71,9 +78,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
 
     const restoredSecondAttack = restoreDuelWithLuaScripts(serializeDuel(restoredSetup.session), workspace, reader);
     expect(restoredSecondAttack.restoreComplete, restoredSecondAttack.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredSecondAttack, 0);
     expect(restoredSecondAttack.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restoredSecondAttack, 0)).toEqual(getGroupedDuelLegalActions(restoredSecondAttack.session, 0));
-    expect(getLuaRestoreLegalActions(restoredSecondAttack, 0)).toEqual(getDuelLegalActions(restoredSecondAttack.session, 0));
     const secondActions = getLuaRestoreLegalActions(restoredSecondAttack, 0);
     expect(hasAttack(secondActions, asura!.uid, firstTarget!.uid)).toBe(false);
     expect(hasAttack(secondActions, asura!.uid, secondTarget!.uid)).toBe(true);
