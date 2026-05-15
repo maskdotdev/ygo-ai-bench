@@ -62,16 +62,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
       "shore-knight-official-previous-position-condition.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 71,
-          luaConditionDescriptor: "condition:source-previous-position:5",
-          luaValueDescriptor: "cannot-be-effect-target:opponent",
-          range: ["monsterZone"],
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) => effect.code === 71 && effect.luaConditionDescriptor === "condition:source-previous-position:5",
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 71,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-71",
+          "lifePointValue": [Function],
+          "luaConditionDescriptor": "condition:source-previous-position:5",
+          "luaTypeFlags": 1,
+          "luaValueDescriptor": "cannot-be-effect-target:opponent",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:14771222:lua-1-71",
+          "sourceUid": "p0-deck-14771222-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -136,16 +160,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
       "ranvier-official-local-previous-position-condition.lua",
     );
     expect(register.ok, register.error).toBe(true);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 71,
-          luaConditionDescriptor: "condition:source-previous-position:5",
-          luaValueDescriptor: "cannot-be-effect-target:opponent",
-          range: ["monsterZone"],
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) => effect.code === 71 && effect.luaConditionDescriptor === "condition:source-previous-position:5",
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 71,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-71",
+          "lifePointValue": [Function],
+          "luaConditionDescriptor": "condition:source-previous-position:5",
+          "luaTypeFlags": 1,
+          "luaValueDescriptor": "cannot-be-effect-target:opponent",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:10698416:lua-1-71",
+          "sourceUid": "p0-deck-10698416-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
