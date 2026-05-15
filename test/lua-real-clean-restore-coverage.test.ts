@@ -75,6 +75,23 @@ describe("Lua real-script clean restore coverage", () => {
     expect(result.stdout).toContain("Lua real-script clean restore coverage: 1/1 (100.0%), 0 coverage files");
     expect(result.stderr).toContain("Restore coverage files 0 is below required 1");
   });
+
+  it("rejects malformed scanner options", () => {
+    const cases = [
+      { args: ["--test-root"], error: "Missing value for --test-root" },
+      { args: ["--min-percent", "101"], error: "Invalid --min-percent value: 101" },
+      { args: ["--min-fixtures", "-1"], error: "--min-fixtures must be a non-negative integer" },
+      { args: ["--min-coverage-files", "1.5"], error: "--min-coverage-files must be a non-negative integer" },
+      { args: ["--unknown"], error: "Unknown argument: --unknown" },
+    ];
+
+    for (const { args, error } of cases) {
+      const result = spawnSync(process.execPath, [scannerPath, ...args], { encoding: "utf8" });
+
+      expect(result.status, args.join(" ")).toBe(1);
+      expect(result.stderr).toContain(error);
+    }
+  });
 });
 
 function realScriptFixtureFiles(): string[] {
