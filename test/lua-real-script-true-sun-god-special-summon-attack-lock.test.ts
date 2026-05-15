@@ -17,21 +17,24 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
   it("restores its Special-Summoned-this-turn attack lock while leaving ordinary attackers legal", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const sunGodCode = "11587414";
+    const raCode = "10000010";
     const specialAttackerCode = "11587415";
     const normalAttackerCode = "11587416";
     const targetCode = "11587417";
     const cards: DuelCardData[] = [
       ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === sunGodCode),
+      { code: raCode, name: "The Winged Dragon of Ra", kind: "monster", typeFlags: 0x1, level: 10, attack: -2, defense: -2 },
       { code: specialAttackerCode, name: "True Sun God Special Attacker", kind: "monster", typeFlags: 0x1, level: 4, attack: 1800, defense: 1000 },
       { code: normalAttackerCode, name: "True Sun God Normal Attacker", kind: "monster", typeFlags: 0x1, level: 4, attack: 1700, defense: 1000 },
       { code: targetCode, name: "True Sun God Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 1158, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
-    loadDecks(session, { 0: { main: [sunGodCode, specialAttackerCode, normalAttackerCode] }, 1: { main: [targetCode] } });
+    loadDecks(session, { 0: { main: [sunGodCode, specialAttackerCode, normalAttackerCode] }, 1: { main: [targetCode, raCode] } });
     startDuel(session);
 
     const sunGod = requireCard(session, sunGodCode);
+    const ra = requireCard(session, raCode);
     const specialAttacker = requireCard(session, specialAttackerCode);
     const normalAttacker = requireCard(session, normalAttackerCode);
     const target = requireCard(session, targetCode);
@@ -45,6 +48,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
     moveDuelCard(session.state, target.uid, "monsterZone", 1);
     target.faceUp = true;
     target.position = "faceUpAttack";
+    specialSummonDuelCard(session.state, ra.uid, 1);
     session.state.phase = "battle";
     session.state.waitingFor = 0;
 
@@ -59,7 +63,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 85 && effect.sourceUid === sunGod.uid)).toMatchInlineSnapshot(`
+    const effect = restored.session.state.effects.find((candidate) => candidate.event === "continuous" && candidate.code === 85 && candidate.sourceUid === sunGod.uid);
+    expect(effect).toMatchInlineSnapshot(`
       {
         "canActivate": [Function],
         "code": 85,
@@ -84,11 +89,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
         ],
       }
     `);
+    const restoredSpecialAttacker = requireCard(restored.session, specialAttackerCode);
+    const restoredNormalAttacker = requireCard(restored.session, normalAttackerCode);
+    const restoredRa = requireCard(restored.session, raCode);
+    expect(effect?.targetCardPredicate).toBeDefined();
+    expect(effect!.targetCardPredicate!({ duel: restored.session.state } as never, restoredSpecialAttacker)).toBe(true);
+    expect(effect!.targetCardPredicate!({ duel: restored.session.state } as never, restoredNormalAttacker)).toBe(false);
+    expect(effect!.targetCardPredicate!({ duel: restored.session.state } as never, restoredRa)).toBe(false);
     const actions = getLuaRestoreLegalActions(restored, 0);
     expect(hasAttack(actions, specialAttacker.uid, target.uid)).toBe(false);
     expect(hasAttack(actions, normalAttacker.uid, target.uid)).toBe(true);
     expect(restored.host.loadScript(canAttackProbe(specialAttackerCode, normalAttackerCode), "true-sun-god-can-attack-probe.lua").ok).toBe(true);
     expect(restored.host.messages).toContain("true sun god can attack false/true");
+    restoredNormalAttacker.customStatusMask = 0x40000000;
+    expect(effect!.targetCardPredicate!({ duel: restored.session.state } as never, restoredNormalAttacker)).toBe(true);
   });
 });
 

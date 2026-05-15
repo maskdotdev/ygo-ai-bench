@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const targetStatusFixtureCount = 3;
+const targetStatusFixtureCount = 4;
 
 describe("Lua real target-status restore coverage", () => {
   it("requires target-status descriptor fixtures to assert clean Lua registry restore and restored predicate truth tables", () => {
@@ -58,6 +58,14 @@ function targetStatusFixtureFiles(): Array<{ file: string; required: string[] }>
         "target:status:",
         "summonType = \"link\"",
         "customStatusMask = 0x20000000",
+      ],
+    },
+    {
+      file: "test/lua-real-script-true-sun-god-special-summon-attack-lock.test.ts",
+      required: [
+        "target:not-code-status:10000010:1073741824",
+        "hasAttack(actions, specialAttacker.uid, target.uid)).toBe(false)",
+        "customStatusMask = 0x40000000",
       ],
     },
   ].sort((a, b) => a.file.localeCompare(b.file));
