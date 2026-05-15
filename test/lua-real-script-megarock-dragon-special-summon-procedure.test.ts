@@ -11,6 +11,7 @@ import {
   serializeDuel,
   startDuel,
 } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -77,10 +78,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Me
     });
     expect(restored.session.state.eventHistory).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ eventName: "banished", eventCode: 1011, eventCardUid: rock!.uid, eventReason: 0x80 }),
         expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventCardUid: megarock!.uid }),
       ]),
     );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "banished" && event.eventCardUid === rock!.uid)).toEqual([
+      {
+        eventName: "banished",
+        eventCode: 1011,
+        eventCardUid: rock!.uid,
+        eventReason: duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: megarock!.uid,
+        eventReasonEffectId: 3,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "banished",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ sourceUid: megarock!.uid, event: "continuous", code: 103, value: 700 }),
