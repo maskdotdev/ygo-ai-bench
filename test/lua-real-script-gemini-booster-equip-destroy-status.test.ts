@@ -117,9 +117,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
       reason: duelReason.effect | duelReason.destroy,
     });
     expect(currentAttack(restoredEquipped.session.state.cards.find((card) => card.uid === slime!.uid), restoredEquipped.session.state)).toBe(slime!.data.attack ?? 0);
-    expect(restoredEquipped.session.state.pendingTriggers).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: booster!.uid, eventName: "leftField", eventCode: 1015, player: 0 })]),
-    );
+    expect(restoredEquipped.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-2-1015",
+          "eventCardUid": "p0-deck-18096222-0",
+          "eventCode": 1015,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "leftField",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p0-deck-18096222-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-6-1",
+          "player": 0,
+          "sourceUid": "p0-deck-18096222-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredEquipped.session), source, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);

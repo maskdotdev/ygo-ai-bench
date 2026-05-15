@@ -106,9 +106,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       previousLocation: "spellTrapZone",
       previousEquippedToUid: target!.uid,
     });
-    expect(restoredEquipState.session.state.pendingTriggers).toEqual([
-      expect.objectContaining({ sourceUid: nuzzler!.uid, eventName: "sentToGraveyard", eventCardUid: nuzzler!.uid, player: 0 }),
-    ]);
+    expect(restoredEquipState.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-4-1014",
+          "eventCardUid": "p0-deck-99597615-0",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p0-deck-99597615-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-6-1",
+          "player": 0,
+          "sourceUid": "p0-deck-99597615-0",
+          "triggerBucket": "turnOptional",
+        },
+      ]
+    `);
 
     const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredEquipState.session), source, reader);
     expectCleanRestore(restoredTriggerWindow);
@@ -272,9 +302,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       previousLocation: "spellTrapZone",
       previousEquippedToUid: target!.uid,
     });
-    expect(restoredEquipState.session.state.pendingTriggers).toEqual([
-      expect.objectContaining({ sourceUid: dagger!.uid, eventName: "leftField", eventCardUid: dagger!.uid, player: 0 }),
-    ]);
+    expect(restoredEquipState.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-4-1015",
+          "eventCardUid": "p0-deck-69243953-0",
+          "eventCode": 1015,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "leftField",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p0-deck-69243953-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-6-1",
+          "player": 0,
+          "sourceUid": "p0-deck-69243953-0",
+          "triggerBucket": "turnOptional",
+        },
+      ]
+    `);
 
     const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredEquipState.session), source, reader);
     expectCleanRestore(restoredTriggerWindow);
@@ -452,9 +512,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       previousLocation: "spellTrapZone",
       previousEquippedToUid: target!.uid,
     });
-    expect(restoredEquipState.session.state.pendingTriggers).toEqual([
-      expect.objectContaining({ sourceUid: horn!.uid, eventName: "sentToGraveyard", eventCardUid: horn!.uid, player: 0 }),
-    ]);
+    expect(restoredEquipState.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-5-1014",
+          "eventCardUid": "p0-deck-64047146-0",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p0-deck-64047146-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-6-1",
+          "player": 0,
+          "sourceUid": "p0-deck-64047146-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredEquipState.session), source, reader);
     expectCleanRestore(restoredTriggerWindow);
@@ -618,9 +708,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       previousLocation: "spellTrapZone",
       previousEquippedToUid: target!.uid,
     });
-    expect(restoredEquipState.session.state.pendingTriggers).toEqual([
-      expect.objectContaining({ sourceUid: smoke!.uid, eventName: "leftField", eventCardUid: smoke!.uid, player: 0 }),
-    ]);
+    expect(restoredEquipState.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-3-1015",
+          "eventCardUid": "p0-deck-63789924-0",
+          "eventCode": 1015,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "leftField",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p0-deck-63789924-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-6-1",
+          "player": 0,
+          "sourceUid": "p0-deck-63789924-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredEquipState.session), source, reader);
     expectCleanRestore(restoredTriggerWindow);
@@ -809,9 +929,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       reason: duelReason.effect | duelReason.destroy,
     });
     expect(currentAttack(restoredEquipped.session.state.cards.find((card) => card.uid === target!.uid), restoredEquipped.session.state)).toBe(1000);
-    expect(restoredEquipped.session.state.pendingTriggers).toEqual([
-      expect.objectContaining({ sourceUid: blast!.uid, eventName: "leftField", eventCardUid: blast!.uid, player: 0 }),
-    ]);
+    expect(restoredEquipped.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-2-1015",
+          "eventCardUid": "p0-deck-98239899-0",
+          "eventCode": 1015,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "leftField",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p0-deck-98239899-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-6-1",
+          "player": 0,
+          "sourceUid": "p0-deck-98239899-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredEquipped.session), source, reader);
     expectCleanRestore(restoredTrigger);
