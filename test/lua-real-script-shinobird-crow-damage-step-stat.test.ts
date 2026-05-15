@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { currentAttack, currentDefense } from "#duel/card-stats.js";
 import { createDuel, getGroupedDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -106,9 +107,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     expect(restoredDamageStep.session.state.eventHistory).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ eventName: "discarded", eventCode: 1018, eventCardUid: costSpirit!.uid }),
-        expect.objectContaining({ eventName: "sentToGraveyard", eventCardUid: costSpirit!.uid }),
       ]),
     );
+    expect(restoredDamageStep.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard" && event.eventCardUid === costSpirit!.uid)).toEqual([
+      {
+        eventName: "sentToGraveyard",
+        eventCode: 1014,
+        eventCardUid: costSpirit!.uid,
+        eventReason: duelReason.cost | duelReason.discard,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: crow!.uid,
+        eventReasonEffectId: 7,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredDamageStep.session.state.chain).toHaveLength(1);
     expect(restoredDamageStep.session.state.chain[0]).toMatchObject({
       sourceUid: crow!.uid,
