@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -12,6 +13,7 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const effectDestroyReason = duelReason.effect | duelReason.destroy;
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Newdoria battle destroyed target", () => {
   it("restores Newdoria's battle-destroyed trigger and destroys its selected monster target", () => {
@@ -74,7 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ne
     expect(restored.session.state.cards.find((card) => card.uid === newdoria!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({
       location: "graveyard",
-      reason: expect.any(Number),
+      reason: effectDestroyReason,
     });
     expect(restored.session.state.eventHistory).toEqual(
       expect.arrayContaining([

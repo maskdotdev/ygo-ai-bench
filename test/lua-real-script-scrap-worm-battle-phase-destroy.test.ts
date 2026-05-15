@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -12,6 +13,7 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const effectDestroyReason = duelReason.effect | duelReason.destroy;
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Scrap Worm Battle Phase destroy", () => {
   it("restores its attack flag and mandatory Battle Phase trigger destruction", () => {
@@ -83,7 +85,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sc
     expect(restoredTrigger.session.state.cards.find((card) => card.uid === scrapWorm!.uid)).toMatchObject({
       location: "graveyard",
       controller: 0,
-      reason: expect.any(Number),
+      reason: effectDestroyReason,
     });
     expect(restoredTrigger.session.state.eventHistory).toEqual(
       expect.arrayContaining([
