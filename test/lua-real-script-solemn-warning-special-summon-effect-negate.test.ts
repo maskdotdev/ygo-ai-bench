@@ -540,13 +540,51 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === warning!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredPendingResolution.host.messages).not.toContain("solemn warning special summon spell resolved");
     expect(restoredPendingResolution.host.messages).not.toContain("solemn warning chain responder resolved");
-    expect(restoredPendingResolution.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: starter!.uid }),
-        expect.objectContaining({ eventName: "chainNegated", eventCode: 1024, eventPlayer: 0 }),
-        expect.objectContaining({ eventName: "chainDisabled", eventCode: 1025, eventPlayer: 0 }),
-      ]),
-    );
+    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => ["destroyed", "chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: starter!.uid,
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: warning!.uid,
+        eventReasonEffectId: 6,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "spellTrapZone",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "chainNegated",
+        eventCode: 1024,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReasonPlayer: 0,
+        eventChainDepth: 1,
+        eventChainLinkId: "chain-2",
+        relatedEffectId: 1,
+      },
+      {
+        eventName: "chainDisabled",
+        eventCode: 1025,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReasonPlayer: 0,
+        eventChainDepth: 1,
+        eventChainLinkId: "chain-2",
+        relatedEffectId: 1,
+      },
+    ]);
   });
 
   it("restores Solemn Warning's chain response to a monster effect that includes a Special Summon", () => {
@@ -645,13 +683,51 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === warning!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredPendingResolution.host.messages).not.toContain("solemn warning special summon monster effect resolved");
     expect(restoredPendingResolution.host.messages).not.toContain("solemn warning chain responder resolved");
-    expect(restoredPendingResolution.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: starter!.uid }),
-        expect.objectContaining({ eventName: "chainNegated", eventCode: 1024, eventPlayer: 0 }),
-        expect.objectContaining({ eventName: "chainDisabled", eventCode: 1025, eventPlayer: 0 }),
-      ]),
-    );
+    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => ["destroyed", "chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: starter!.uid,
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: warning!.uid,
+        eventReasonEffectId: 6,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "chainNegated",
+        eventCode: 1024,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReasonPlayer: 0,
+        eventChainDepth: 1,
+        eventChainLinkId: "chain-2",
+        relatedEffectId: 1,
+      },
+      {
+        eventName: "chainDisabled",
+        eventCode: 1025,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReasonPlayer: 0,
+        eventChainDepth: 1,
+        eventChainLinkId: "chain-2",
+        relatedEffectId: 1,
+      },
+    ]);
   });
 });
 
