@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const summonActivityFixtureCount = 4;
 
 describe("Lua real summon activity restore coverage", () => {
   it("requires summon activity fixtures to assert clean restore and restored legal actions", () => {
-    const missing = summonActivityFixtureFiles()
+    const files = summonActivityFixtureFiles();
+    expect(files).toHaveLength(summonActivityFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
