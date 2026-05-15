@@ -84,6 +84,7 @@ function battledRemovalFixtureFiles(): Array<{ file: string; required: string[] 
         'type === "activateTrigger"',
         'eventName: "destroyed"',
         "operationInfos: [{ category: 0x1",
+        "property: 0xc000",
         'location: "graveyard", controller: 1',
         "specialSummonProcedure",
       ],

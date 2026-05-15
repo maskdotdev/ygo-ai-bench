@@ -128,6 +128,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
     expect(restoredChainWindow.missingRegistryKeys).toEqual([]);
     expect(restoredChainWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredChainWindow, 1);
+    expect(restoredChainWindow.session.state.effects.find((effect) => effect.sourceUid === responder!.uid && effect.event === "quick")).toMatchObject({
+      property: 0xc000,
+      range: ["hand"],
+    });
     const pass = getLuaRestoreLegalActions(restoredChainWindow, 1).find((action) => action.type === "passChain");
     expect(pass, JSON.stringify(getLuaRestoreLegalActions(restoredChainWindow, 1), null, 2)).toBeDefined();
     const resolved = applyLuaRestoreResponse(restoredChainWindow, pass!);
