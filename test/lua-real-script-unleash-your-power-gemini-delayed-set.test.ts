@@ -74,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredActivation, 0);
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     expectGeminiStatus(restoredActivation, slimeCode, false);
     expectGeminiStatus(restoredActivation, soldierCode, false);
@@ -100,6 +101,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     const restoredStatus = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredStatus.restoreComplete, restoredStatus.incompleteReasons.join("; ")).toBe(true);
     expect(restoredStatus.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredStatus, 0);
     expectGeminiStatus(restoredStatus, slimeCode, true);
     expectGeminiStatus(restoredStatus, soldierCode, true);
     expectGeminiStatus(restoredStatus, opponentGeminiCode, false, 1);
@@ -137,6 +139,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     const restoredAfterEnd = restoreDuelWithLuaScripts(serializeDuel(restoredStatus.session), source, reader);
     expect(restoredAfterEnd.restoreComplete, restoredAfterEnd.incompleteReasons.join("; ")).toBe(true);
     expect(restoredAfterEnd.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredAfterEnd, 1);
     expectGeminiStatus(restoredAfterEnd, slimeCode, false);
     expectGeminiStatus(restoredAfterEnd, soldierCode, false);
   });
@@ -167,6 +170,11 @@ function expectGeminiStatus(restored: ReturnType<typeof restoreDuelWithLuaScript
   );
   expect(probe.ok, probe.error).toBe(true);
   expect(restored.host.messages).toContain(`unleash gemini status ${code} ${expected ? "true" : "false"}`);
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function changeRestoredPhase(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1, phase: "battle" | "main2" | "end"): void {

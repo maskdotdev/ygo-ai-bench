@@ -384,7 +384,7 @@ function findEffectActionByCategory(session: DuelSession, actions: DuelAction[],
 function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: DuelAction) {
   const response = applyLuaRestoreResponse(restored, action);
   expect(response.ok, response.error).toBe(true);
-  assertLegalActions(restored);
+  expectRestoredLegalActions(restored);
   return response;
 }
 
@@ -417,7 +417,7 @@ function passRestoredBattleResponsesUntilTrigger(restored: ReturnType<typeof res
   }
 }
 
-function assertLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
   const waitingFor = restored.session.state.waitingFor;
   if (waitingFor === undefined) return;
   expect(getLuaRestoreLegalActions(restored, waitingFor)).toEqual(getDuelLegalActions(restored.session, waitingFor));
