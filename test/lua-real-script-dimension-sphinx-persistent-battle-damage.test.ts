@@ -13,6 +13,12 @@ const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dimension Sphinx persistent battle damage", () => {
   it("restores official persistent target into Battle Step damage activation", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
@@ -65,6 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expectCleanRestore(restoredActivation);
+    expectRestoredLegalActions(restoredActivation, 0);
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === dimensionSphinx!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
@@ -77,8 +84,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
 
     const restoredPersistentChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expectCleanRestore(restoredPersistentChain);
-    expect(getLuaRestoreLegalActionGroups(restoredPersistentChain, 1)).toEqual(getGroupedDuelLegalActions(restoredPersistentChain.session, 1));
-    expect(getLuaRestoreLegalActionGroups(restoredPersistentChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredPersistentChain, 1));
+    expectRestoredLegalActions(restoredPersistentChain, 1);
     resolveRestoredChain(restoredPersistentChain);
 
     expect(restoredPersistentChain.session.state.cards.find((card) => card.uid === dimensionSphinx!.uid)).toMatchObject({
@@ -91,6 +97,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     const persistentSnapshot = serializeDuel(restoredPersistentChain.session);
     const restoredPersistent = restoreDuelWithLuaScripts(persistentSnapshot, source, reader);
     expectCleanRestore(restoredPersistent);
+    expectRestoredLegalActions(restoredPersistent, restoredPersistent.session.state.waitingFor ?? restoredPersistent.session.state.turnPlayer);
     expectDimensionSphinxProbe(restoredPersistent, dimensionSphinxCode, targetCode, "dimension sphinx persistent true/true/1/0");
 
     restoredPersistent.session.state.turnPlayer = 1;
@@ -109,8 +116,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
 
     const restoredBattleWindow = restoreDuelWithLuaScripts(serializeDuel(restoredPersistent.session), source, reader);
     expectCleanRestore(restoredBattleWindow);
-    expect(getLuaRestoreLegalActionGroups(restoredBattleWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredBattleWindow.session, 0));
-    expect(getLuaRestoreLegalActionGroups(restoredBattleWindow, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredBattleWindow, 0));
+    expectRestoredLegalActions(restoredBattleWindow, 0);
     const sphinxDamage = getLuaRestoreLegalActions(restoredBattleWindow, 0).find((action) => action.type === "activateEffect" && action.uid === dimensionSphinx!.uid);
     expect(sphinxDamage, JSON.stringify(getLuaRestoreLegalActions(restoredBattleWindow, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredBattleWindow, sphinxDamage!);
@@ -125,6 +131,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
 
     const restoredDamageChain = restoreDuelWithLuaScripts(serializeDuel(restoredBattleWindow.session), source, reader);
     expectCleanRestore(restoredDamageChain);
+    expectRestoredLegalActions(restoredDamageChain, restoredDamageChain.session.state.waitingFor ?? restoredDamageChain.session.state.turnPlayer);
     resolveRestoredChain(restoredDamageChain);
     expect(restoredDamageChain.session.state.players[1].lifePoints).toBe(7200);
     expect(restoredDamageChain.host.messages).not.toContain("dimension sphinx responder resolved");

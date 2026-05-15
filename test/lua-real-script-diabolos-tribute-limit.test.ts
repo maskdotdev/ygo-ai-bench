@@ -13,6 +13,12 @@ const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Diabolos tribute limit", () => {
   it("restores official EFFECT_TRIBUTE_LIMIT target attribute checks", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
@@ -52,9 +58,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const actions = getLegalActions(restored.session, 0);
     expect(actions.some((action) => action.type === "tributeSummon" && action.uid === lightTarget!.uid)).toBe(false);
     expect(actions.some((action) => action.type === "tributeSummon" && action.uid === darkTarget!.uid)).toBe(true);
@@ -64,6 +69,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
 
     const allowed = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(allowed.restoreComplete, allowed.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(allowed, 0);
     expect(allowed.missingRegistryKeys).toEqual([]);
     tributeSummonDuelCard(allowed.session.state, 0, darkTarget!.uid, [diabolos!.uid]);
     expect(allowed.session.state.cards.find((card) => card.uid === darkTarget!.uid)).toMatchObject({ location: "monsterZone", summonType: "tribute" });
