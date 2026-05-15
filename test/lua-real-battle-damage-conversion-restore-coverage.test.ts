@@ -17,6 +17,9 @@ describe("Lua real battle damage conversion restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("eventHistory")
+          || !text.includes("lifePoints")
+          || !text.includes("battleDamage")
           || required.some((snippet) => !text.includes(snippet));
       })
       .map(({ file }) => file);

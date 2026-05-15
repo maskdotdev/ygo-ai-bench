@@ -17,6 +17,8 @@ describe("Lua real damage conversion restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("eventHistory")
+          || !text.includes("lifePoints")
           || required.some((snippet) => !text.includes(snippet));
       })
       .map(({ file }) => file);
