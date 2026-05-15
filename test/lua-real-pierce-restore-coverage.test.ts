@@ -20,6 +20,8 @@ describe("Lua real piercing damage restore coverage", () => {
           || !text.includes("battleDamage")
           || !text.includes("lifePoints")
           || !text.includes('eventName: "battleDamageDealt"')
+          || !text.includes("eventHistory")
+          || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)")
