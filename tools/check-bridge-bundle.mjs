@@ -1,6 +1,6 @@
 import fs from "node:fs";
 
-const bridgePath = "dist/playtest-engine.js";
+const bridgePath = bridgePathArg() ?? "dist/playtest-engine.js";
 const maxBytes = 128 * 1024;
 const forbiddenSnippets = ["child_process", "readline-sync", "node_modules/fengari", "Module \"fs\"", "from \"fs\"", "require(\"fs\")"];
 const requiredSnippets = ["window.duelDeckPlaytest", "legalActions", "legalActionGroups", "runScripted"];
@@ -23,3 +23,9 @@ if (size > maxBytes || forbidden.length > 0 || missing.length > 0) {
 }
 
 console.log(`Bridge bundle check passed. ${bridgePath} is ${size} bytes.`);
+
+function bridgePathArg() {
+  const index = process.argv.indexOf("--bridge");
+  if (index === -1) return undefined;
+  return process.argv[index + 1];
+}
