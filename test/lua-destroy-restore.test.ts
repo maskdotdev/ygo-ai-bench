@@ -6,6 +6,12 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe("Lua destroy restore helpers", () => {
   it("applies restored Lua destroying triggers through restore responses", () => {
     const cards: DuelCardData[] = [
@@ -78,6 +84,7 @@ describe("Lua destroy restore helpers", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toContain("destroying");
     expect(restored.session.state.pendingTriggers).toContainEqual(
       expect.objectContaining({ eventCode: 1010, eventCardUid: destroyed!.uid, eventReason: 0x41, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 }),
@@ -186,6 +193,7 @@ describe("Lua destroy restore helpers", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toContain("destroyed");
     expect(restored.session.state.pendingTriggers).toContainEqual(
       expect.objectContaining({ eventCode: 1029, eventCardUid: destroyed!.uid, eventReason: 0x41, eventReasonPlayer: 0, eventReasonCardUid: starter!.uid, eventReasonEffectId: 1 }),
@@ -363,6 +371,7 @@ describe("Lua destroy restore helpers", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     const restoredPendingEffectIds = restored.session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(restoredPendingEffectIds).not.toContain("lua-2-1029");
     expect(restoredPendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1029", "lua-4-1111"]));
@@ -521,6 +530,7 @@ describe("Lua destroy restore helpers", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     const restoredPendingEffectIds = restored.session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(restoredPendingEffectIds).not.toContain("lua-2-1010");
     expect(restoredPendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1010", "lua-4-1111"]));

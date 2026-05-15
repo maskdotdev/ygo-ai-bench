@@ -6,6 +6,12 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import type { DuelAction, DuelCardData } from "#duel/types.js";
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe("Lua open fast priority restore", () => {
   it("alternates live and restored fast-effect response priority after open quick effects", () => {
     const cards: DuelCardData[] = [
@@ -103,6 +109,7 @@ describe("Lua open fast priority restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -213,6 +220,7 @@ describe("Lua open fast priority restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     const chainPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(chainPass).toBeDefined();
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
@@ -464,6 +472,7 @@ describe("Lua open fast priority restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     const trigger = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateTrigger");
     expect(trigger).toMatchObject({ player: 0, windowKind: "triggerBucket", triggerBucket: "turnMandatory" });
     const staleBeforeTrigger = applyLuaRestoreResponse(restored, { ...trigger!, windowId: trigger!.windowId! - 1 });
@@ -539,6 +548,7 @@ describe("Lua open fast priority restore", () => {
     ]);
     const restoredOpponentResponse = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, createCardReader(cards));
     expect(restoredOpponentResponse.restoreComplete, restoredOpponentResponse.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredOpponentResponse, 1);
     expect(queryPublicState(restoredOpponentResponse.session)).toMatchObject({ waitingFor: 1, windowKind: "chainResponse" });
     expect(restoredOpponentResponse.session.state.chain.map((link) => link.sourceUid)).toEqual([
       expect.stringContaining("19200"),

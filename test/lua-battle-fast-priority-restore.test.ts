@@ -16,6 +16,12 @@ import {
   setupRestoredBattleQuick,
 } from "./lua-battle-fast-priority-helpers.js";
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe("Lua battle fast priority restore", () => {
   it("restores live damage-step fast chains back to the battle response player", () => {
     const fixture = setupRestoredBattleQuick("EFFECT_FLAG_DAMAGE_STEP");
@@ -31,6 +37,7 @@ describe("Lua battle fast priority restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
@@ -157,6 +164,7 @@ describe("Lua battle fast priority restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "chainResponse", uid: expect.stringContaining("400") })]));
@@ -200,6 +208,7 @@ describe("Lua battle fast priority restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expect(getLuaRestoreLegalActions(restored, 1)).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", player: 1, windowKind: "chainResponse", uid: expect.stringContaining("400") })]));
@@ -240,6 +249,7 @@ describe("Lua battle fast priority restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     expect(restored.session.state).toMatchObject({ waitingFor: 0, damagePasses: [1], battleWindow: { kind: "startDamageStep", responsePlayer: 0 } });
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -313,6 +323,7 @@ describe("Lua battle fast priority restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     expect(restored.session.state).toMatchObject({ waitingFor: 0, damagePasses: [1], battleStep: "damageCalculation", battleWindow: { kind: "duringDamageCalculation", responsePlayer: 0 } });
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -384,6 +395,7 @@ describe("Lua battle fast priority restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     expect(restored.session.state).toMatchObject({ waitingFor: 0, damagePasses: [1], battleWindow: { kind: "afterDamageCalculation", responsePlayer: 0 } });
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -456,6 +468,7 @@ describe("Lua battle fast priority restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     expect(restored.session.state).toMatchObject({ waitingFor: 0, damagePasses: [1], battleWindow: { kind: "endDamageStep", responsePlayer: 0 } });
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -527,6 +540,7 @@ describe("Lua battle fast priority restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(fixture.session), fixture.source, createCardReader(fixture.cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     expect(restored.session.state).toMatchObject({ waitingFor: 0, damagePasses: [1], battleWindow: { kind: "endDamageStep", responsePlayer: 0 } });
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
@@ -619,6 +633,7 @@ describe("Lua battle fast priority restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     const pass = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "passDamage");
     expect(pass).toMatchObject({ player: 0, windowKind: "battle" });
     const staleBeforePass = applyLuaRestoreResponse(restored, { ...pass!, windowId: pass!.windowId! - 1 });
@@ -734,6 +749,7 @@ describe("Lua battle fast priority restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     const pass = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "passDamage");
     expect(pass).toMatchObject({ player: 0, windowKind: "battle" });
     const staleBeforePass = applyLuaRestoreResponse(restored, { ...pass!, windowId: pass!.windowId! - 1 });
@@ -855,6 +871,7 @@ describe("Lua battle fast priority restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     const pass = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "passDamage");
     expect(pass).toMatchObject({ player: 0, windowKind: "battle" });
     const staleBeforePass = applyLuaRestoreResponse(restored, { ...pass!, windowId: pass!.windowId! - 1 });
