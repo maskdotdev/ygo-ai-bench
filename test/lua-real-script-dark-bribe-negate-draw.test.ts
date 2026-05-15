@@ -80,14 +80,44 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     const chained = applyLuaRestoreResponse(restoredOpenChain, darkBribeAction!);
     expect(chained.ok, chained.error).toBe(true);
     expect(restoredOpenChain.session.state.chain).toHaveLength(2);
-    expect(restoredOpenChain.session.state.chain[1]).toMatchObject({
-      sourceUid: darkBribe!.uid,
-      operationInfos: [
-        { category: 0x10000000, targetUids: [upstart!.uid], count: 1, player: 0, parameter: 0 },
-        { category: 0x1, targetUids: [upstart!.uid], count: 1, player: 0, parameter: 0 },
-        { category: 0x10000, targetUids: [], count: 0, player: 0, parameter: 1 },
-      ],
-    });
+    expect(restoredOpenChain.session.state.chain[1]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 2,
+        "effectId": "lua-3-1027",
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 268435456,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-70368879-0",
+            ],
+          },
+          {
+            "category": 1,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-70368879-0",
+            ],
+          },
+          {
+            "category": 65536,
+            "count": 0,
+            "parameter": 1,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-77538567-0",
+      }
+    `);
 
     const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredOpenChain.session), source, reader);
     expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);

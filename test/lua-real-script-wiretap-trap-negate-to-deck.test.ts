@@ -67,10 +67,26 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wi
     expect(starterAction).toBeDefined();
     applyAndAssert(session, starterAction!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: starterTrap!.uid,
-      operationInfos: [{ category: 0x10000, targetUids: [], count: 0, player: 0, parameter: 1 }],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 65536,
+            "count": 0,
+            "parameter": 1,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-974-0",
+      }
+    `);
 
     const restoredOpenChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredOpenChain.restoreComplete, restoredOpenChain.incompleteReasons.join("; ")).toBe(true);
@@ -82,13 +98,37 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wi
     const chained = applyLuaRestoreResponse(restoredOpenChain, wiretapAction!);
     expect(chained.ok, chained.error).toBe(true);
     expect(restoredOpenChain.session.state.chain).toHaveLength(2);
-    expect(restoredOpenChain.session.state.chain[1]).toMatchObject({
-      sourceUid: wiretap!.uid,
-      operationInfos: [
-        { category: 0x10000000, targetUids: [starterTrap!.uid], count: 1, player: 0, parameter: 0 },
-        { category: 0x10, targetUids: [starterTrap!.uid], count: 1, player: 0, parameter: 0 },
-      ],
-    });
+    expect(restoredOpenChain.session.state.chain[1]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 2,
+        "effectId": "lua-3-1027",
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 268435456,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-974-0",
+            ],
+          },
+          {
+            "category": 16,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-974-0",
+            ],
+          },
+        ],
+        "player": 1,
+        "sourceUid": "p1-deck-34507039-0",
+      }
+    `);
 
     const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredOpenChain.session), source, reader);
     expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
