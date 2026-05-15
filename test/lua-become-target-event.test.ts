@@ -145,6 +145,7 @@ describe("Lua become-target events", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["becameTarget"]);
     expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1028, eventCardUid: target!.uid, eventReason: 0x400, eventReasonPlayer: 0 });
     expect(restored.session.state.pendingTriggers[0]).not.toHaveProperty("eventReasonCardUid");
@@ -270,6 +271,7 @@ describe("Lua become-target events", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     const restoredPendingEffectIds = restored.session.state.pendingTriggers.map((trigger) => trigger.effectId);
     expect(restoredPendingEffectIds).not.toContain("lua-2-1028");
     expect(restoredPendingEffectIds).toEqual(expect.arrayContaining(["lua-3-1028", "lua-4-1111"]));
@@ -298,6 +300,12 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function assertPublicRestoreMetadata(restored: ReturnType<typeof restoreDuelWithLuaScripts>, response: ReturnType<typeof applyLuaRestoreResponse>): void {
