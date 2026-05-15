@@ -54,6 +54,7 @@ const luaMaharaghiCode = "40695128";
 const luaHinoKaguTsuchiCode = "75745607";
 const luaGreatLongNoseCode = "2356994";
 const luaDarkMagicExpandedCode = "111280";
+const luaTimeTearingMorganiteCode = "19403423";
 const luaMegalithUnformedCode = "69003792";
 const luaSetMegalith = 0x138;
 const luaCategorySpecialSummon = 0x200;
@@ -542,6 +543,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownMulcharmyDrawWatcherEffect(effect) ||
         isKnownMulcharmyEndPhaseShuffleEffect(effect) ||
         isKnownDarkMagicExpandedChainingLimitEffect(effect) ||
+        isKnownTimeTearingMorganiteSummonLimitEffect(effect) ||
         isKnownRemainFieldEffect(effect) ||
         isKnownCannotActivateSpecialSummonedMonsterEffect(effect) ||
         isKnownCannotActivateNonSpiritMonsterEffect(effect) ||
@@ -730,6 +732,28 @@ function darkMagicExpandedChainingLimitOperation(effect: SerializedDuelEffect): 
   };
 }
 
+function isKnownTimeTearingMorganiteSummonLimitEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaTimeTearingMorganiteCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === 1100 &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
+function timeTearingMorganiteSummonLimitOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    if (ctx.eventCard?.summonPlayer !== effect.controller) return;
+    addDuelChainLimit(ctx.duel, {
+      registryKey: `lua-chain-limit:${luaTimeTearingMorganiteCode}:${effect.controller}:chain:known:closure:not-active-type-response-player:1`,
+      untilChainEnd: true,
+      allows: (candidate, player, chainPlayer) => player === chainPlayer || (cardTypeFlags(ctx.duel.cards.find((card) => card.uid === candidate.sourceUid), ctx.duel) & 0x1) === 0,
+    });
+  };
+}
+
 function isKnownGreatLongNoseSkipBattlePhaseEffect(effect: SerializedDuelEffect): boolean {
   return (
     Boolean(effect.registryKey?.startsWith(`lua:${luaGreatLongNoseCode}:`)) &&
@@ -845,6 +869,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownMulcharmyDrawWatcherEffect(effect)) return mulcharmyDrawWatcherOperation(effect);
   if (isKnownMulcharmyEndPhaseShuffleEffect(effect)) return mulcharmyEndPhaseShuffleOperation(effect);
   if (isKnownDarkMagicExpandedChainingLimitEffect(effect)) return darkMagicExpandedChainingLimitOperation(effect);
+  if (isKnownTimeTearingMorganiteSummonLimitEffect(effect)) return timeTearingMorganiteSummonLimitOperation(effect);
   if (effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor) {
     const returnPlayer = effect.value === 0 || effect.value === 1 ? effect.value : undefined;
     return luaTemporaryControlReturnOperation(returnPlayer);
