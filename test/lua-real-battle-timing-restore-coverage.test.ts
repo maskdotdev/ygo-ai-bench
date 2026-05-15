@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const battleTimingFixtureCount = 9;
 
 describe("Lua real battle timing restore coverage", () => {
   it("requires battle timing fixtures to assert clean Lua restore and restored trigger outcomes", () => {
-    const missing = battleTimingFixtureFiles()
+    const files = battleTimingFixtureFiles();
+    expect(files).toHaveLength(battleTimingFixtureCount);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
