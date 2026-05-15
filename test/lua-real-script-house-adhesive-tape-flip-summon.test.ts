@@ -56,7 +56,35 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ho
     const flip = getLegalActions(session, 1).find((action) => action.type === "flipSummon" && action.uid === flipTarget.uid);
     expect(flip, JSON.stringify(getLegalActions(session, 1), null, 2)).toBeDefined();
     applyAndAssert(session, flip!);
-    expect(session.state.pendingTriggers).toEqual([expect.objectContaining({ eventName: "flipSummoned", eventCardUid: flipTarget.uid })]);
+    expect(session.state.pendingTriggers).toEqual([
+      {
+        player: 1,
+        id: "trigger-3-1",
+        effectId: "lua-3-1101",
+        sourceUid: starter.uid,
+        triggerBucket: "turnOptional",
+        eventName: "flipSummoned",
+        eventCode: 1101,
+        eventCardUid: flipTarget.uid,
+        eventReason: 0,
+        eventReasonPlayer: 1,
+        eventTriggerTiming: "when",
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
 
     const starterAction = getLegalActions(session, 1).find((action) => action.type === "activateTrigger" && action.uid === starter.uid);
     expect(starterAction).toBeDefined();
