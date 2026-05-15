@@ -15,6 +15,12 @@ const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.
 const typeMonster = 0x1;
 const setChrysalis = 0x1e;
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cocoon Veil damage prevention", () => {
   it("restores its release-cost damage lock and selected Special Summon", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
@@ -59,10 +65,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredActivation, 0);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restoredActivation, 0)).toEqual(getGroupedDuelLegalActions(restoredActivation.session, 0));
-    expect(getLuaRestoreLegalActionGroups(restoredActivation, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredActivation, 0));
-    expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === cocoonVeil!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredActivation, activation!);
@@ -70,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredChain, restoredChain.session.state.waitingFor ?? restoredChain.session.state.turnPlayer);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredChain);
     expect(restoredChain.session.state.cards.find((card) => card.uid === summon!.uid)).toMatchObject({ location: "monsterZone", controller: 0, summonType: "special" });
@@ -82,18 +87,19 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
 
     const restoredEffects = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredEffects.restoreComplete, restoredEffects.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredEffects, restoredEffects.session.state.waitingFor ?? restoredEffects.session.state.turnPlayer);
     expect(restoredEffects.missingRegistryKeys).toEqual([]);
     restoredEffects.session.state.turnPlayer = 1;
     restoredEffects.session.state.phase = "main1";
     restoredEffects.session.state.waitingFor = 1;
-    expect(getLuaRestoreLegalActionGroups(restoredEffects, 1)).toEqual(getGroupedDuelLegalActions(restoredEffects.session, 1));
-    expect(getLuaRestoreLegalActionGroups(restoredEffects, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredEffects, 1));
+    expectRestoredLegalActions(restoredEffects, 1);
     const fireActivation = getLuaRestoreLegalActions(restoredEffects, 1).find((action) => action.type === "activateEffect" && action.uid === fire!.uid);
     expect(fireActivation, JSON.stringify(getLuaRestoreLegalActions(restoredEffects, 1), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredEffects, fireActivation!);
 
     const restoredFire = restoreDuelWithLuaScripts(serializeDuel(restoredEffects.session), source, reader);
     expect(restoredFire.restoreComplete, restoredFire.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredFire, restoredFire.session.state.waitingFor ?? restoredFire.session.state.turnPlayer);
     expect(restoredFire.missingRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredFire);
     expect(restoredFire.session.state.players[0].lifePoints).toBe(8000);

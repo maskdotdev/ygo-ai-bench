@@ -13,6 +13,12 @@ const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Creature Swap control lock", () => {
   it("restores Creature Swap's non-targeting control exchange and position locks", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
@@ -70,9 +76,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cr
 
     const restoredResponseWindow = restoreDuelWithLuaScripts(openedSnapshot, source, reader);
     expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredResponseWindow, 1);
     expect(restoredResponseWindow.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredResponseWindow.session, 1));
-    expect(getLuaRestoreLegalActionGroups(restoredResponseWindow, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredResponseWindow, 1));
     expect(getLuaRestoreLegalActions(restoredResponseWindow, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
 
     const pass = getLuaRestoreLegalActions(restoredResponseWindow, 1).find((action) => action.type === "passChain");
@@ -96,6 +101,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cr
 
     const restoredLockWindow = restoreDuelWithLuaScripts(serializeDuel(restoredResponseWindow.session), source, reader);
     expect(restoredLockWindow.restoreComplete, restoredLockWindow.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredLockWindow, 0);
     expect(restoredLockWindow.missingRegistryKeys).toEqual([]);
     expect(restoredLockWindow.session.state.cards.find((card) => card.uid === ownMonster!.uid)).toMatchObject({ controller: 1, previousController: 0 });
     expect(restoredLockWindow.session.state.cards.find((card) => card.uid === opponentMonster!.uid)).toMatchObject({ controller: 0, previousController: 1 });

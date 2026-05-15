@@ -13,6 +13,12 @@ const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cold Wave Spell/Trap activation lock", () => {
   it("restores its predicate-valued lock that blocks Spell/Trap effects", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
@@ -57,8 +63,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(restored.host.messages).not.toContain("cold wave responder resolved");
     expect(restored.session.state.effects.find((effect) => effect.sourceUid === coldWave.uid && effect.code === 6)).toMatchObject({
       event: "continuous",
@@ -68,10 +74,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredLock, restoredLock.session.state.waitingFor ?? restoredLock.session.state.turnPlayer);
     expect(restoredLock.missingRegistryKeys).toEqual([]);
     restoredLock.session.state.turnPlayer = 1;
     restoredLock.session.state.waitingFor = 1;
     restoredLock.session.state.phase = "main1";
+    expectRestoredLegalActions(restoredLock, 1);
     expect(getLuaRestoreLegalActions(restoredLock, 1).some((action) => action.type === "activateEffect" && action.uid === opponentSpell.uid)).toBe(false);
     expect(getLuaRestoreLegalActions(restoredLock, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
   });
