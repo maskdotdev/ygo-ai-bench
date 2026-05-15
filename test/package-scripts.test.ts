@@ -49,5 +49,7 @@ describe("package scripts", () => {
       "bun run build",
       "bun run check:bridge-bundle",
     ]);
+    expect(pkg.scripts?.check).not.toMatch(/\bnpm\b|\bnpx\b|\byarn\b|\bpnpm\b/);
+    expect(pkg.scripts?.check?.split(" && ").filter((command) => command.includes("test"))).toEqual(["bun run test"]);
   });
 });
