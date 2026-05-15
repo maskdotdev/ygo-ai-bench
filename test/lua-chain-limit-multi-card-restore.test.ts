@@ -179,6 +179,8 @@ describe("Lua multi-card chain-limit restore", () => {
 
     const handoffRestored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(handoffRestored.restoreComplete, handoffRestored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(handoffRestored, 0);
+    expectRestoredLegalActions(handoffRestored, 1);
     expect(handoffRestored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(hasGroupedLuaEffect(handoffRestored, 0, "lua-2")).toBe(true);
   });
@@ -206,4 +208,10 @@ function hasGroupedLuaEffect(restored: ReturnType<typeof restoreDuelWithLuaScrip
   return getLuaRestoreLegalActionGroups(restored, player).some((group) =>
     group.actions.some((action) => action.type === "activateEffect" && action.player === player && action.effectId === effectId),
   );
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }

@@ -19,6 +19,8 @@ describe("Lua response-matches-chain-player chain-limit restore", () => {
     const restored = restoreDuelWithLuaScripts(snapshot, { readScript: () => undefined }, reader);
 
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 0);
+    expectRestoredLegalActions(restored, 1);
     expect(restored.loadedScripts).toEqual([]);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
