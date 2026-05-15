@@ -57,12 +57,80 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     expect(session.state.chain).toHaveLength(0);
     expect(session.state.cards.find((card) => card.uid === graveyardMonster!.uid)).toMatchObject({ location: "banished" });
     expect(session.state.cards.find((card) => card.uid === calledByCard!.uid)).toMatchObject({ location: "graveyard" });
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ code: 2, sourceUid: calledByCard!.uid }),
-        expect.objectContaining({ code: 1020, sourceUid: calledByCard!.uid }),
-      ]),
-    );
+    expect(session.state.effects.filter((effect) => effect.sourceUid === calledByCard!.uid && [2, 1020].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 2,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-4-2",
+          "label": 10000020,
+          "luaTypeFlags": 2,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "promptOperation": [Function],
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:24224830:lua-4-2",
+          "reset": {
+            "count": 2,
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-24224830-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "targetRange": [
+            4,
+            4,
+          ],
+        },
+        {
+          "canActivate": [Function],
+          "code": 1020,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-5-1020",
+          "label": 10000020,
+          "luaConditionDescriptor": "condition:chain-solving-monster-effect-handler-original-code-label",
+          "luaTypeFlags": 2050,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "promptOperation": [Function],
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:24224830:lua-5-1020",
+          "reset": {
+            "count": 2,
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-24224830-0",
+          "target": [Function],
+          "triggerCode": 1020,
+          "triggerEvent": "chainSolving",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -74,12 +142,70 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     expect(restored.session.state.effects.find((effect) => effect.sourceUid === activeMonster!.uid)).toMatchObject({
       description: Number(sameCodeMonster),
     });
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ code: 2, sourceUid: calledByCard!.uid }),
-        expect.objectContaining({ code: 1020, sourceUid: calledByCard!.uid }),
-      ]),
-    );
+    expect(restored.session.state.effects.filter((effect) => effect.sourceUid === calledByCard!.uid && [2, 1020].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "code": 2,
+          "controller": 0,
+          "event": "continuous",
+          "id": "lua-4-2",
+          "label": 10000020,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:24224830:lua-4-2",
+          "reset": {
+            "count": 2,
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-24224830-0",
+          "targetRange": [
+            4,
+            4,
+          ],
+        },
+        {
+          "canActivate": [Function],
+          "code": 1020,
+          "controller": 0,
+          "event": "continuous",
+          "id": "lua-5-1020",
+          "label": 10000020,
+          "luaConditionDescriptor": "condition:chain-solving-monster-effect-handler-original-code-label",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:24224830:lua-5-1020",
+          "reset": {
+            "count": 2,
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-24224830-0",
+          "triggerCode": 1020,
+          "triggerEvent": "chainSolving",
+        },
+      ]
+    `);
     const restoredSameCodeAction = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.uid === activeMonster!.uid);
     expect(restoredSameCodeAction).toBeDefined();
     const restoredSameCodeResolved = applyLuaRestoreResponse(restored, restoredSameCodeAction!);

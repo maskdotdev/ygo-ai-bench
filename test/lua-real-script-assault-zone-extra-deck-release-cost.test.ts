@@ -75,22 +75,113 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
     applyRestoredActionAndAssert(restoredZone, zoneAction!);
 
     expect(restoredZone.session.state.players[0].lifePoints).toBe(6000);
-    expect(restoredZone.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ code: effectExtraReleaseNonsum, sourceUid: assaultZone!.uid, targetRange: [locationExtra, 0] }),
-      ]),
-    );
+    expect(restoredZone.session.state.effects.find((effect) => effect.code === effectExtraReleaseNonsum && effect.sourceUid === assaultZone!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 158,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-15-158",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 384,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:91002901:lua-15-158",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p0-deck-91002901-0",
+        "statValue": [Function],
+        "target": [Function],
+        "targetRange": [
+          64,
+          0,
+        ],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(restoredZone.session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
     expect(restoredActivation.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restoredActivation.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ code: effectExtraReleaseNonsum, sourceUid: assaultZone!.uid, targetRange: [locationExtra, 0] }),
-        expect.objectContaining({ code: 1017, sourceUid: assaultZone!.uid }),
-      ]),
-    );
+    expect(restoredActivation.session.state.effects.filter((effect) => effect.sourceUid === assaultZone!.uid && [effectExtraReleaseNonsum, 1017].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "code": 158,
+          "controller": 0,
+          "event": "continuous",
+          "id": "lua-15-158",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "property": 384,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:91002901:lua-15-158",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-91002901-0",
+          "targetRange": [
+            64,
+            0,
+          ],
+          "valuePredicate": [Function],
+        },
+        {
+          "canActivate": [Function],
+          "code": 1017,
+          "controller": 0,
+          "event": "continuous",
+          "id": "lua-16-1017",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:91002901:lua-16-1017",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-91002901-0",
+          "triggerCode": 1017,
+          "triggerEvent": "released",
+        },
+      ]
+    `);
     const assaultAction = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === assaultMode!.uid);
     expect(getLuaRestoreLegalActionGroups(restoredActivation, 0)).toEqual(getGroupedDuelLegalActions(restoredActivation.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredActivation, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredActivation, 0));
