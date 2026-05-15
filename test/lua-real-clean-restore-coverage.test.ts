@@ -29,6 +29,17 @@ describe("Lua real-script clean restore coverage", () => {
     expect(unreferenced).toEqual([]);
   });
 
+  it("requires every Lua-restored real-script fixture to assert grouped legal-action restore evidence", () => {
+    const files = realScriptFixtureFiles();
+    expect(files).toHaveLength(realScriptFixtureCount);
+
+    const missing = files
+      .filter((file) => readTestFile(file).includes("restoreDuelWithLuaScripts"))
+      .filter((file) => !readTestFile(file).includes("getLuaRestoreLegalActionGroups"));
+
+    expect(missing).toEqual([]);
+  });
+
   it("fails the scanner when the real-script fixture corpus is below the required floor", () => {
     const testRoot = fs.mkdtempSync(path.join(fs.realpathSync("/tmp"), "lua-clean-restore-cli-"));
     fs.writeFileSync(path.join(testRoot, "lua-real-script-small.test.ts"), "expect(missingRegistryKeys).toEqual([]);");
