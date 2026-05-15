@@ -3,10 +3,18 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const equipFixtureCount = 1;
+const equipRelationFixtureCount = 8;
+const equipProbeFixtureCount = 8;
+const equipOperationInfoFixtureCount = 6;
+const equipCleanupFixtureCount = 6;
 
 describe("Lua real equip restore coverage", () => {
   it("requires representative equip fixtures to assert grouped legal actions and clean Lua registry restore", () => {
-    const missing = realScriptEquipFixtureFiles()
+    const files = realScriptEquipFixtureFiles();
+    expect(files).toHaveLength(equipFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("getLuaRestoreLegalActionGroups")
@@ -22,7 +30,10 @@ describe("Lua real equip restore coverage", () => {
   });
 
   it("requires representative equip fixtures to prove restored equip relation and response suppression", () => {
-    const missing = realScriptEquipRelationFixtureFiles()
+    const files = realScriptEquipRelationFixtureFiles();
+    expect(files).toHaveLength(equipRelationFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !/location:\s*["']spellTrapZone["']/.test(text)
@@ -36,7 +47,10 @@ describe("Lua real equip restore coverage", () => {
   });
 
   it("requires representative equip activation fixtures to pin operation info metadata", () => {
-    const missing = realScriptEquipOperationInfoFixtureFiles()
+    const files = realScriptEquipOperationInfoFixtureFiles();
+    expect(files).toHaveLength(equipOperationInfoFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("operationInfos")
@@ -47,7 +61,10 @@ describe("Lua real equip restore coverage", () => {
   });
 
   it("requires equip probe fixtures to prove restored Lua equip APIs and stat/control effects", () => {
-    const missing = realScriptEquipProbeFixtureFiles()
+    const files = realScriptEquipProbeFixtureFiles();
+    expect(files).toHaveLength(equipProbeFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !/host\.messages\)\.toContain/.test(text)
@@ -61,7 +78,10 @@ describe("Lua real equip restore coverage", () => {
   });
 
   it("requires equip cleanup fixtures to prove leave-field cleanup and triggered follow-up state", () => {
-    const missing = realScriptEquipCleanupFixtureFiles()
+    const files = realScriptEquipCleanupFixtureFiles();
+    expect(files).toHaveLength(equipCleanupFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !/previousEquippedToUid/.test(text)
