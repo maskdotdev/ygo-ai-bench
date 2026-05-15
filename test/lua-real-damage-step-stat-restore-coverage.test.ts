@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const damageStepStatFixtureCount = 1;
+const damageStepStatFixtureCount = 2;
 
 describe("Lua real damage-step stat restore coverage", () => {
   it("requires damage-step stat fixtures to assert clean restore and restored battle outcome", () => {
@@ -35,6 +35,18 @@ describe("Lua real damage-step stat restore coverage", () => {
 
 function damageStepStatFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
+      required: [
+        "expectCleanRestore(restoredSetup)",
+        "expectCleanRestore(restoredDamageStep)",
+        "expectCleanRestore(restoredChain)",
+        "expectCleanRestore(restoredBattle)",
+        "currentAttack(boostedAshenveil",
+        "battleDamage[1]).toBe",
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-shinobird-crow-damage-step-stat.test.ts",
       required: [
