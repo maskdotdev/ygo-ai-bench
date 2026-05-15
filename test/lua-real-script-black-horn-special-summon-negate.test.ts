@@ -57,13 +57,62 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
 
     specialSummonDuelCard(session.state, summoned!.uid, 0);
     expect(session.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, position: "faceUpAttack" });
-    expect(session.state.pendingTriggers).toEqual([expect.objectContaining({ eventName: "specialSummoning", eventCode: 1105, eventCardUid: summoned!.uid, eventReasonPlayer: 0 })]);
-    expect(session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "specialSummoning", eventCode: 1105, eventCardUid: summoned!.uid, eventReasonPlayer: 0 }),
-        expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventCardUid: summoned!.uid, eventReasonPlayer: 0 }),
-      ]),
-    );
+    const specialSummoningEvent = {
+      eventName: "specialSummoning",
+      eventCode: 1105,
+      eventCardUid: summoned!.uid,
+      eventReason: 0,
+      eventReasonPlayer: 0,
+      eventPreviousState: {
+        controller: 0,
+        faceUp: false,
+        location: "deck",
+        position: "faceDown",
+        sequence: 1,
+      },
+      eventCurrentState: {
+        controller: 0,
+        faceUp: false,
+        location: "hand",
+        position: "faceDown",
+        sequence: 0,
+      },
+    };
+    expect(session.state.pendingTriggers).toEqual([
+      {
+        player: 1,
+        id: "trigger-2-1",
+        effectId: "lua-2-1105",
+        sourceUid: horn!.uid,
+        triggerBucket: "opponentOptional",
+        eventTriggerTiming: "when",
+        ...specialSummoningEvent,
+      },
+    ]);
+    expect(session.state.eventHistory.filter((event) => event.eventName === "specialSummoning")).toEqual([specialSummoningEvent]);
+    expect(session.state.eventHistory.filter((event) => event.eventName === "specialSummoned")).toEqual([
+      {
+        eventName: "specialSummoned",
+        eventCode: 1102,
+        eventCardUid: summoned!.uid,
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
 
     const restoredSummonWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredSummonWindow.restoreComplete, restoredSummonWindow.incompleteReasons.join("; ")).toBe(true);
@@ -157,7 +206,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
         },
       },
     ]);
-    expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "specialSummoned", eventCardUid: summoned!.uid })]));
+    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === summoned!.uid)).toEqual([]);
   });
 });
 
