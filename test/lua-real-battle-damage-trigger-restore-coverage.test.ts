@@ -55,6 +55,7 @@ function battleDamageTriggerFixtureFiles(): Array<{ file: string; required: stri
         "targetPlayer: 0",
         "targetParam: 700",
         "category: 0x100000",
+        "property: 0xc000",
         "eventName: \"recoveredLifePoints\"",
         "players[0].lifePoints).toBe(8700)",
       ],

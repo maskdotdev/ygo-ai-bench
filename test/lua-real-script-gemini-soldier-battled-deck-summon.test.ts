@@ -60,11 +60,19 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     expect(host.loadCardScript(Number(soldierCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
+    expect(session.state.effects.find((effect) => effect.sourceUid === responder!.uid)).toMatchObject({
+      property: 0x4000,
+      range: ["hand"],
+    });
 
     const restoredInitial = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredInitial.restoreComplete, restoredInitial.incompleteReasons.join("; ")).toBe(true);
     expect(restoredInitial.missingRegistryKeys).toEqual([]);
     expect(restoredInitial.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restoredInitial.session.state.effects.find((effect) => effect.sourceUid === responder!.uid)).toMatchObject({
+      property: 0x4000,
+      range: ["hand"],
+    });
     expectRestoredLegalActions(restoredInitial, 0);
     assertGeminiStatus(restoredInitial, soldierCode, false);
     const geminiSummon = getLuaRestoreLegalActions(restoredInitial, 0).find((action) => action.type === "normalSummon" && action.uid === soldier!.uid);

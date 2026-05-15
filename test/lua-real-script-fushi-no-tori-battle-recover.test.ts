@@ -56,11 +56,19 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
     expect(host.loadCardScript(Number(fushiCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
+    expect(session.state.effects.find((effect) => effect.sourceUid === responder!.uid)).toMatchObject({
+      property: 0xc000,
+      range: ["hand"],
+    });
 
     const restoredSetup = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredSetup.restoreComplete, restoredSetup.incompleteReasons.join("; ")).toBe(true);
     expect(restoredSetup.missingRegistryKeys).toEqual([]);
     expect(restoredSetup.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restoredSetup.session.state.effects.find((effect) => effect.sourceUid === responder!.uid)).toMatchObject({
+      property: 0xc000,
+      range: ["hand"],
+    });
     expectRestoredLegalActions(restoredSetup, 0);
     const attack = getLuaRestoreLegalActions(restoredSetup, 0).find(
       (action) => action.type === "declareAttack" && action.attackerUid === fushi!.uid && action.targetUid === defender!.uid,
