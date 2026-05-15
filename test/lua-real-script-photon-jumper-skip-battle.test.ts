@@ -55,6 +55,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
     const restoredWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredWindow.restoreComplete, restoredWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredWindow.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredWindow, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restoredWindow, 0),
@@ -71,6 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredWindow.session), workspace, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
     expect(restoredLock.missingRegistryKeys).toEqual([]);
+    expect(restoredLock.missingChainLimitRegistryKeys).toEqual([]);
     const restoredLockPlayer = restoredLock.session.state.waitingFor ?? restoredLock.session.state.turnPlayer;
     expect(getLuaRestoreLegalActionGroups(restoredLock, restoredLockPlayer)).toEqual(getGroupedDuelLegalActions(restoredLock.session, restoredLockPlayer));
     expect(getLuaRestoreLegalActionGroups(restoredLock, restoredLockPlayer).flatMap((group) => group.actions)).toEqual(

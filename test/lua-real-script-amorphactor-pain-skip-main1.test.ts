@@ -76,12 +76,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     expect(restoredEffect.restoreComplete, restoredEffect.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredEffect, 0);
     expect(restoredEffect.missingRegistryKeys).toEqual([]);
+    expect(restoredEffect.missingChainLimitRegistryKeys).toEqual([]);
     applyActionAndAssert(restoredEffect.session, getLuaRestoreLegalActions(restoredEffect, 0).find((action) => action.type === "endTurn"));
 
     const restoredOpponentMain = restoreDuelWithLuaScripts(serializeDuel(restoredEffect.session), workspace, reader);
     expect(restoredOpponentMain.restoreComplete, restoredOpponentMain.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredOpponentMain, 1);
     expect(restoredOpponentMain.missingRegistryKeys).toEqual([]);
+    expect(restoredOpponentMain.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredOpponentMain.session.state).toMatchObject({ turnPlayer: 1, phase: "main1", waitingFor: 1 });
     expect(getLuaRestoreLegalActionGroups(restoredOpponentMain, 1)).toEqual(getGroupedDuelLegalActions(restoredOpponentMain.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredOpponentMain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredOpponentMain, 1));

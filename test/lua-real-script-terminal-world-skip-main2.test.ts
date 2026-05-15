@@ -47,6 +47,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Te
     const restoredMain1 = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredMain1.restoreComplete, restoredMain1.incompleteReasons.join("; ")).toBe(true);
     expect(restoredMain1.missingRegistryKeys).toEqual([]);
+    expect(restoredMain1.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredMain1, 0)).toEqual(getGroupedDuelLegalActions(restoredMain1.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredMain1, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredMain1, 0));
     expect(getLuaRestoreLegalActions(restoredMain1, 0)).toEqual(getDuelLegalActions(restoredMain1.session, 0));
@@ -55,6 +56,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Te
     const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredMain1.session), workspace, reader);
     expect(restoredBattle.restoreComplete, restoredBattle.incompleteReasons.join("; ")).toBe(true);
     expect(restoredBattle.missingRegistryKeys).toEqual([]);
+    expect(restoredBattle.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredBattle.session.state).toMatchObject({ phase: "battle", waitingFor: 0 });
     expect(getLuaRestoreLegalActionGroups(restoredBattle, 0)).toEqual(getGroupedDuelLegalActions(restoredBattle.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredBattle, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredBattle, 0));

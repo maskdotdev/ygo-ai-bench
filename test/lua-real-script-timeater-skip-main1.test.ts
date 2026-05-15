@@ -54,6 +54,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ti
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
     expect(restoredTrigger.missingRegistryKeys).toEqual([]);
+    expect(restoredTrigger.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredTrigger, 0)).toEqual(getGroupedDuelLegalActions(restoredTrigger.session, 0));
     expect(getLuaRestoreLegalActions(restoredTrigger, 0)).toEqual(getDuelLegalActions(restoredTrigger.session, 0));
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === timeater.uid);
@@ -67,6 +68,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ti
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), workspace, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
     expect(restoredLock.missingRegistryKeys).toEqual([]);
+    expect(restoredLock.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredLock, 0);
     passBattleUntilOpen(restoredLock.session);
     moveToMain2AndEndTurn(restoredLock.session, 0);
@@ -74,6 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ti
     const restoredOpponentTurn = restoreDuelWithLuaScripts(serializeDuel(restoredLock.session), workspace, reader);
     expect(restoredOpponentTurn.restoreComplete, restoredOpponentTurn.incompleteReasons.join("; ")).toBe(true);
     expect(restoredOpponentTurn.missingRegistryKeys).toEqual([]);
+    expect(restoredOpponentTurn.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredOpponentTurn, 1)).toEqual(getGroupedDuelLegalActions(restoredOpponentTurn.session, 1));
     expect(getLuaRestoreLegalActions(restoredOpponentTurn, 1)).toEqual(getDuelLegalActions(restoredOpponentTurn.session, 1));
     const opponentActions = getLuaRestoreLegalActions(restoredOpponentTurn, 1);

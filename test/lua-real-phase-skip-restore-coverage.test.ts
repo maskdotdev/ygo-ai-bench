@@ -16,7 +16,8 @@ describe("Lua real phase-skip restore coverage", () => {
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
-          || !text.includes("missingRegistryKeys).toEqual([])");
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])");
       })
       .map((fixture) => fixture.file);
 

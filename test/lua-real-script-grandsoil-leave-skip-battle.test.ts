@@ -72,6 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     const restoredSameTurn = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredSameTurn.restoreComplete, restoredSameTurn.incompleteReasons.join("; ")).toBe(true);
     expect(restoredSameTurn.missingRegistryKeys).toEqual([]);
+    expect(restoredSameTurn.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredSameTurn, 0)).toEqual(getGroupedDuelLegalActions(restoredSameTurn.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredSameTurn, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restoredSameTurn, 0),
@@ -83,6 +84,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     const restoredNextSelfTurn = restoreDuelWithLuaScripts(serializeDuel(restoredSameTurn.session), workspace, reader);
     expect(restoredNextSelfTurn.restoreComplete, restoredNextSelfTurn.incompleteReasons.join("; ")).toBe(true);
     expect(restoredNextSelfTurn.missingRegistryKeys).toEqual([]);
+    expect(restoredNextSelfTurn.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredNextSelfTurn, 1)).toEqual(
       getGroupedDuelLegalActions(restoredNextSelfTurn.session, 1),
     );
@@ -95,6 +97,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     const restoredSkippedSelfTurn = restoreDuelWithLuaScripts(serializeDuel(restoredNextSelfTurn.session), workspace, reader);
     expect(restoredSkippedSelfTurn.restoreComplete, restoredSkippedSelfTurn.incompleteReasons.join("; ")).toBe(true);
     expect(restoredSkippedSelfTurn.missingRegistryKeys).toEqual([]);
+    expect(restoredSkippedSelfTurn.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredSkippedSelfTurn, 0)).toEqual(
       getGroupedDuelLegalActions(restoredSkippedSelfTurn.session, 0),
     );
