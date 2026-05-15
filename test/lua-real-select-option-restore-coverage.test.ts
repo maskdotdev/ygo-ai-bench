@@ -35,6 +35,26 @@ describe("Lua real SelectOption restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("requires representative restore fixtures for table-unpacked SelectOption scripts", () => {
+    const missing = tableUnpackedSelectOptionFixtures()
+      .filter(({ file, required }) => {
+        const text = fs.readFileSync(path.join(root, file), "utf8");
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
+          || required.some((snippet) => !text.includes(snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(missing).toEqual([]);
+  });
 });
 
 function officialScriptsWithLeadingBooleanSelectOption(): string[] {
@@ -73,4 +93,20 @@ function leadingBooleanSelectOptionFixtures(): Array<{ file: string; required: s
       ],
     },
   ].sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function tableUnpackedSelectOptionFixtures(): Array<{ file: string; required: string[] }> {
+  return [
+    {
+      file: "test/lua-real-script-pyro-clock-select-option-table-unpack.test.ts",
+      required: [
+        "restores table-unpacked SelectOption into the selected turn-count effect operation",
+        'api: "SelectOption"',
+        "options: [0, 1]",
+        "descriptions: [801, 802]",
+        "returned: 0",
+        'expect(restored.host.messages).toContain("pyro clock selected first turn effect")',
+      ],
+    },
+  ];
 }
