@@ -57,6 +57,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script An
     expect(restoredBattleStart.missingChainLimitRegistryKeys).toEqual([]);
     expect(queryPublicState(restoredBattleStart.session)).toMatchObject({ phase: "battle", waitingFor: 0, windowKind: "open" });
     expect(getLuaRestoreLegalActionGroups(restoredBattleStart, 0)).toEqual(getGroupedDuelLegalActions(restoredBattleStart.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredBattleStart, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredBattleStart, 0));
     const arrowsAction = getLuaRestoreLegalActions(restoredBattleStart, 0).find((action) => action.type === "activateEffect" && action.uid === arrows!.uid);
     expect(arrowsAction, JSON.stringify(getLuaRestoreLegalActions(restoredBattleStart, 0), null, 2)).toBeDefined();
     const activated = applyResponse(restoredBattleStart.session, arrowsAction!);

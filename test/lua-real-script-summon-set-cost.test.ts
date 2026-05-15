@@ -66,6 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
     expect(restoredBlocked.restoreComplete, restoredBlocked.incompleteReasons.join("; ")).toBe(true);
     expect(restoredBlocked.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredBlocked, 0)).toEqual(getGroupedDuelLegalActions(restoredBlocked.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredBlocked, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredBlocked, 0));
     expect(getLuaRestoreLegalActions(restoredBlocked, 0)).toEqual(getLegalActions(restoredBlocked.session, 0));
     expect(getLuaRestoreLegalActions(restoredBlocked, 0)).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", uid: spellTarget!.uid })]));
     expect(getLuaRestoreLegalActions(restoredBlocked, 0)).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "normalSummon", uid: summonTarget!.uid })]));
@@ -93,6 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
     expect(restoredOpen.restoreComplete, restoredOpen.incompleteReasons.join("; ")).toBe(true);
     expect(restoredOpen.missingRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredOpen, 0)).toEqual(getGroupedDuelLegalActions(restoredOpen.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredOpen, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredOpen, 0));
     expect(getLuaRestoreLegalActions(restoredOpen, 0)).toEqual(getLegalActions(restoredOpen.session, 0));
     const restoredActions = getLuaRestoreLegalActions(restoredOpen, 0);
     expect(restoredActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "activateEffect", uid: spellTarget!.uid })]));
