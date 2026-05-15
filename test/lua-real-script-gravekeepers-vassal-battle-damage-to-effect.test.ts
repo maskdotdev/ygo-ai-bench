@@ -33,11 +33,26 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(vassalCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 205, sourceUid: vassal!.uid }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 205 && effect.sourceUid === vassal!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 205,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-205",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:99690140:lua-1-205",
+        "sourceUid": "p0-deck-99690140-0",
+        "target": [Function],
+      }
+    `);
 
     const attack = getLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === vassal!.uid && action.targetUid === undefined);
     expect(attack).toBeDefined();

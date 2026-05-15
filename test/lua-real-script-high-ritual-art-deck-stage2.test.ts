@@ -111,7 +111,41 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
     expect(restored.session.state.cards.find((card) => card.uid === effectDecoy!.uid)).toMatchObject({ location: "hand" });
     expect(restored.session.state.cards.find((card) => card.uid === highRitualArt!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(restored.session.state.flagEffects).toContainEqual(expect.objectContaining({ ownerType: "card", ownerId: ritualTarget!.uid, code: Number(highRitualArtCode) }));
-    expect(restored.session.state.effects).toContainEqual(expect.objectContaining({ code: 0x1200, event: "continuous", reset: { flags: 0x60000200 } }));
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 0x1200)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 4608,
+        "controller": 0,
+        "cost": [Function],
+        "countLimit": 1,
+        "event": "continuous",
+        "id": "lua-3-4608",
+        "luaTypeFlags": 2050,
+        "oncePerTurn": true,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 128,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:36350300:lua-3-4608",
+        "reset": {
+          "flags": 1610613248,
+        },
+        "sourceUid": "p0-deck-36350300-0",
+        "target": [Function],
+        "triggerCode": 4608,
+        "triggerEvent": "phaseEnd",
+      }
+    `);
 
     applyAndAssert(restored.session, getLegalActions(restored.session, 0).find((action) => action.type === "endTurn")!);
     expect(restored.session.state.turnPlayer).toBe(1);

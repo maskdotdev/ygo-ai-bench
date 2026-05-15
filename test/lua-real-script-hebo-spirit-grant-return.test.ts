@@ -132,12 +132,49 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script He
     expect(restoredGrantedState.missingRegistryKeys).toEqual([]);
     expect(restoredGrantedState.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredGrantedState, 0);
-    expect(restoredGrantedState.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: target!.uid, event: "continuous", code: effectAddType, value: typeSpirit }),
-        expect.objectContaining({ sourceUid: target!.uid, event: "continuous", code: phaseEndEvent, countLimit: 1 }),
-      ]),
-    );
+    expect(restoredGrantedState.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === target!.uid && [effectAddType, phaseEndEvent].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "code": 115,
+          "controller": 0,
+          "description": 1445847712,
+          "event": "continuous",
+          "id": "lua-10-115",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 67109888,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:90365483:lua-10-115",
+          "reset": {
+            "flags": 33427456,
+          },
+          "sourceUid": "p0-deck-90365483-1",
+          "value": 512,
+        },
+        {
+          "code": 4608,
+          "controller": 0,
+          "countLimit": 1,
+          "event": "continuous",
+          "id": "lua-11-4608",
+          "oncePerTurn": true,
+          "operation": [Function],
+          "property": 128,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:90365483:lua-11-4608",
+          "reset": {
+            "flags": 33427456,
+          },
+          "sourceUid": "p0-deck-90365483-1",
+          "triggerCode": 4608,
+          "triggerEvent": "phaseEnd",
+        },
+      ]
+    `);
     expect(cardTypeFlags(restoredGrantedState.session.state.cards.find((card) => card.uid === target!.uid), restoredGrantedState.session.state) & typeSpirit).toBe(typeSpirit);
 
     for (const phase of ["battle", "main2", "end"] as const) {

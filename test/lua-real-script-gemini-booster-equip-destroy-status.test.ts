@@ -98,9 +98,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
         ],
       }
     `);
-    expect(restoredActivation.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: booster!.uid, event: "continuous", code: 17, range: ["spellTrapZone"] })]),
-    );
+    expect(restoredActivation.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 17 && effect.sourceUid === booster!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 17,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-4-17",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 524288,
+        "range": [
+          "spellTrapZone",
+        ],
+        "registryKey": "lua:18096222:lua-4-17",
+        "reset": {
+          "flags": 2147483648,
+        },
+        "sourceUid": "p0-deck-18096222-0",
+        "target": [Function],
+      }
+    `);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
@@ -122,12 +143,53 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     expect(restoredEquipped.missingRegistryKeys).toEqual([]);
     expect(restoredEquipped.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredEquipped, 0);
-    expect(restoredEquipped.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: booster!.uid, event: "continuous", code: 100, value: 700 }),
-        expect.objectContaining({ sourceUid: booster!.uid, event: "continuous", code: 76 }),
-      ]),
-    );
+    expect(restoredEquipped.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === booster!.uid && [76, 100].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 76,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-4-76",
+          "lifePointValue": [Function],
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 1024,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:18096222:lua-4-76",
+          "reset": {
+            "flags": 33427456,
+          },
+          "sourceUid": "p0-deck-18096222-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+        {
+          "code": 100,
+          "controller": 0,
+          "event": "continuous",
+          "id": "lua-5-100",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:18096222:lua-5-100",
+          "reset": {
+            "flags": 33427456,
+          },
+          "sourceUid": "p0-deck-18096222-0",
+          "value": 700,
+        },
+      ]
+    `);
 
     destroyDuelCard(restoredEquipped.session.state, booster!.uid, 0, duelReason.effect | duelReason.destroy, 0);
     expect(restoredEquipped.session.state.cards.find((card) => card.uid === booster!.uid)).toMatchObject({

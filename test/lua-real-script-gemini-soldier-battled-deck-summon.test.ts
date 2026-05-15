@@ -86,16 +86,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     expect(restoredBattleEntry.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredBattleEntry, 0);
     assertGeminiStatus(restoredBattleEntry, soldierCode, true);
-    expect(restoredBattleEntry.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 47,
-          sourceUid: soldier!.uid,
-          luaValueDescriptor: "value-predicate:reason-mask:32",
-        }),
-      ]),
-    );
+    expect(restoredBattleEntry.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 47 && effect.sourceUid === soldier!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 47,
+        "controller": 0,
+        "cost": [Function],
+        "countLimit": 1,
+        "event": "continuous",
+        "id": "lua-4-47",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 1,
+        "luaValueDescriptor": "value-predicate:reason-mask:32",
+        "oncePerTurn": true,
+        "operation": [Function],
+        "property": 131072,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:68366996:lua-4-47",
+        "sourceUid": "p0-deck-68366996-0",
+        "statValue": [Function],
+        "target": [Function],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
     const battlePhase = getLuaRestoreLegalActions(restoredBattleEntry, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
     expect(battlePhase, JSON.stringify(getLuaRestoreLegalActions(restoredBattleEntry, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredBattleEntry, battlePhase!);
@@ -253,16 +270,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     expect(restoredChain.session.state.cards.find((card) => card.uid === soldier!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(restoredChain.session.state.cards.find((card) => card.uid === opponent!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
     expect(restoredChain.session.state.players[0].lifePoints).toBe(7500);
-    expect(restoredChain.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 47,
-          sourceUid: soldier!.uid,
-          value: 0,
-        }),
-      ]),
-    );
+    expect(restoredChain.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 47 && effect.sourceUid === soldier!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 47,
+        "controller": 0,
+        "cost": [Function],
+        "countLimit": 1,
+        "event": "continuous",
+        "id": "lua-4-47",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 1,
+        "luaValueDescriptor": "value-predicate:reason-mask:32",
+        "oncePerTurn": true,
+        "operation": [Function],
+        "property": 131072,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:68366996:lua-4-47",
+        "sourceUid": "p0-deck-68366996-0",
+        "statValue": [Function],
+        "target": [Function],
+        "value": 0,
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
     expect(restoredChain.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
       {
         eventName: "battleDamageDealt",

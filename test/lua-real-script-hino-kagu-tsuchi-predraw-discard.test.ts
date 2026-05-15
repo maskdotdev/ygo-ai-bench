@@ -121,9 +121,34 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
     expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredChain, restoredChain.session.state.waitingFor ?? restoredChain.session.state.turnPlayer);
     drainRestoredChain(restoredChain);
-    expect(restoredChain.session.state.effects).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceUid: hino!.uid, event: "continuous", code: 1113, controller: 0 })]),
-    );
+    expect(restoredChain.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 1113 && effect.sourceUid === hino!.uid)).toMatchInlineSnapshot(`
+      {
+        "code": 1113,
+        "controller": 0,
+        "event": "continuous",
+        "id": "lua-8-1113",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:75745607:lua-8-1113",
+        "reset": {
+          "flags": 1073741825,
+        },
+        "sourceUid": "p0-deck-75745607-0",
+        "triggerCode": 1113,
+        "triggerEvent": "preDraw",
+      }
+    `);
     expect(restoredChain.session.state.cards.find((card) => card.uid === discardA!.uid)).toMatchObject({ location: "hand", controller: 1 });
     expect(restoredChain.session.state.cards.find((card) => card.uid === discardB!.uid)).toMatchObject({ location: "hand", controller: 1 });
 
