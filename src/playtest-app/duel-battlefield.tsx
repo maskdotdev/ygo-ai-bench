@@ -6,6 +6,7 @@ import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import { duelActionAnchorUids, duelActionUiKey } from "./duel-action-anchors.js";
 import { duelBattlefieldActionView } from "./duel-battlefield-actions.js";
 import { duelPromptView, splitPromptGroups } from "./duel-prompt-view.js";
+import { duelTriggerOrderView } from "./duel-trigger-order-view.js";
 import type { CardImageInfo } from "./ui.js";
 
 function opposite(player: PlayerId): PlayerId {
@@ -315,6 +316,7 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
   const splitOrphanGroups = splitPromptGroups(state.prompt, orphanGroups);
   const promptView = duelPromptView(state.prompt, splitOrphanGroups.promptGroups);
   const globalOrphanGroups = splitOrphanGroups.globalGroups;
+  const triggerOrderView = duelTriggerOrderView(state.triggerOrderPrompt, props.legalActionGroups);
 
   const oppMz = cardsInZone(state, opponent, "monsterZone");
   const oppSt = cardsInZone(state, opponent, "spellTrapZone");
@@ -453,6 +455,28 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
           {triggerOrderLabel ? (
             <div className="max-w-[min(96vw,760px)] rounded-lg border border-fuchsia-400/30 bg-fuchsia-950/45 px-3 py-1.5 text-center text-[10px] font-semibold text-fuchsia-50 shadow-lg shadow-fuchsia-950/30">
               {triggerOrderLabel}
+            </div>
+          ) : null}
+          {triggerOrderView && props.onPlayAction ? (
+            <div className="flex max-w-[min(96vw,820px)] justify-center px-1">
+              <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-fuchsia-400/35 bg-fuchsia-950/55 px-2.5 py-1.5 shadow-lg shadow-fuchsia-950/30 [scrollbar-width:thin]">
+                <div className="min-w-[150px] shrink-0 self-center pr-1">
+                  <p className="truncate text-[9px] font-bold uppercase tracking-[0.12em] text-fuchsia-100">{triggerOrderView.label}</p>
+                  <p className="truncate text-[10px] font-semibold text-fuchsia-50/65">{triggerOrderView.detail}</p>
+                </div>
+                {triggerOrderView.groups.flatMap((group) =>
+                  group.actions.map((action) => (
+                    <button
+                      key={`trigger-order-${group.key}-${duelActionUiKey(action)}`}
+                      type="button"
+                      className="shrink-0 rounded-md border border-fuchsia-300/35 bg-fuchsia-800/65 px-2.5 py-1 text-left text-[10px] font-bold leading-tight text-fuchsia-50 hover:border-fuchsia-200/70 hover:bg-fuchsia-700/75"
+                      onClick={() => props.onPlayAction?.(action)}
+                    >
+                      <span className="line-clamp-2 max-w-[220px]">{action.label}</span>
+                    </button>
+                  )),
+                )}
+              </div>
             </div>
           ) : null}
           {promptView && props.onPlayAction ? (
