@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -73,7 +74,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     expect(resolved.ok, resolved.error).toBe(true);
 
     expect(restored.session.state.lastDiceResults).toHaveLength(1);
-    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "diceTossed", eventCode: 1150 })]));
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "diceTossed")).toEqual([
+      {
+        eventName: "diceTossed",
+        eventCode: 1150,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: dicelops.uid,
+        eventReasonEffectId: 1,
+      },
+    ]);
     expect(restored.session.state.cards.find((card) => card.uid === ownDiscard.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.cards.find((card) => card.uid === opponentDiscard.uid)).toMatchObject({ location: "hand" });
     expect(host.messages).not.toContain("dicelops responder resolved");
