@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -69,9 +70,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Br
 
     const openedSnapshot = serializeDuel(session);
     expect(openedSnapshot.state.players[0].lifePoints).toBe(7200);
-    expect(openedSnapshot.state.eventHistory).toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "lifePointCostPaid", eventCode: 1201, eventPlayer: 0, eventValue: 800, eventReason: 0x80, eventReasonPlayer: 0 })]),
-    );
+    expect(openedSnapshot.state.eventHistory.filter((event) => event.eventName === "lifePointCostPaid")).toEqual([
+      {
+        eventName: "lifePointCostPaid",
+        eventCode: 1201,
+        eventPlayer: 0,
+        eventValue: 800,
+        eventReason: duelReason.cost,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: brainControl!.uid,
+        eventReasonEffectId: 1,
+      },
+    ]);
     expect(openedSnapshot.state.chain[0]).toMatchObject({
       sourceUid: brainControl!.uid,
       targetUids: [target!.uid],
