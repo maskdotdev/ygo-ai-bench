@@ -64,6 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     if (!sourceAction || sourceAction.type !== "activateEffect") throw new Error("Expected Tyrant Ogre source activation action");
     expect(session.state.effects.find((effect) => effect.id === sourceAction.effectId)).toMatchObject({
       label: 1,
+      property: 0x10,
     });
     const activated = applyResponse(session, sourceAction);
     expect(activated.ok, activated.error).toBe(true);
@@ -81,6 +82,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.effects.find((effect) => effect.id === sourceAction.effectId)).toMatchObject({
       label: 1,
+      property: 0x10,
     });
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
