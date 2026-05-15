@@ -86,7 +86,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     expect(restoredSameCodeResolved.ok, restoredSameCodeResolved.error).toBe(true);
     expect(restored.session.state.chain).toHaveLength(0);
     expect(restored.host.messages).not.toContain("same-code monster resolved");
-    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "chainDisabled" })]));
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "chainDisabled")).toEqual([
+      {
+        eventName: "chainDisabled",
+        eventCode: 1025,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReasonPlayer: 0,
+        eventChainDepth: 1,
+        eventChainLinkId: "chain-6",
+        relatedEffectId: 2,
+      },
+    ]);
 
     const sameCodeAction = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === activeMonster!.uid);
     expect(sameCodeAction).toBeDefined();
@@ -94,7 +105,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     expect(sameCodeResolved.ok, sameCodeResolved.error).toBe(true);
     expect(session.state.chain).toHaveLength(0);
     expect(host.messages).not.toContain("same-code monster resolved");
-    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "chainDisabled" })]));
+    expect(session.state.eventHistory.filter((event) => event.eventName === "chainDisabled")).toEqual([
+      {
+        eventName: "chainDisabled",
+        eventCode: 1025,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventReasonPlayer: 0,
+        eventChainDepth: 1,
+        eventChainLinkId: "chain-6",
+        relatedEffectId: 2,
+      },
+    ]);
   });
 });
 
