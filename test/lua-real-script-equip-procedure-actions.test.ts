@@ -514,11 +514,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
 
-    expect(restoredEquipWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: magePower!.uid,
-      targetUids: [target!.uid],
-      operationInfos: [{ category: 0x40000, targetUids: [magePower!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restoredEquipWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 262144,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-83746708-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-83746708-0",
+        "targetUids": [
+          "p0-deck-601026-1",
+        ],
+      }
+    `);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
     expectCleanRestore(restoredChain);
@@ -603,17 +623,37 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
 
-    expect(restoredEquipWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: shield!.uid,
-      targetUids: [gladiator!.uid],
-      operationInfos: [{ category: 0x40000, targetUids: [shield!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restoredEquipWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 262144,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-8730435-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-8730435-0",
+        "targetUids": [
+          "p0-deck-601009-1",
+        ],
+      }
+    `);
     expect(restoredEquipWindow.session.state.chain[0]?.targetUids).not.toContain(offSet!.uid);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
     expectCleanRestore(restoredChain);
     expectRestoredLegalActions(restoredChain, restoredChain.session.state.waitingFor ?? restoredChain.session.state.turnPlayer);
-    expect(restoredChain.session.state.chain[0]).toMatchObject(restoredEquipWindow.session.state.chain[0]!);
+    expect(restoredChain.session.state.chain[0]).toEqual(restoredEquipWindow.session.state.chain[0]!);
     expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredChain);
 
@@ -686,16 +726,36 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
 
-    expect(restoredEquipWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: base!.uid,
-      targetUids: [opponentTarget!.uid],
-      operationInfos: [{ category: 0x40000, targetUids: [base!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restoredEquipWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 262144,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-97616504-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-97616504-0",
+        "targetUids": [
+          "p1-deck-601013-0",
+        ],
+      }
+    `);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
     expectCleanRestore(restoredChain);
     expectRestoredLegalActions(restoredChain, restoredChain.session.state.waitingFor ?? restoredChain.session.state.turnPlayer);
-    expect(restoredChain.session.state.chain[0]).toMatchObject(restoredEquipWindow.session.state.chain[0]!);
+    expect(restoredChain.session.state.chain[0]).toEqual(restoredEquipWindow.session.state.chain[0]!);
     expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredChain);
 
@@ -967,11 +1027,51 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(triggerAction, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredTriggerWindow, triggerAction!);
 
-    expect(restoredTriggerWindow.session.state.chain[0]).toMatchObject({
-      sourceUid: base!.uid,
-      targetUids: [skyStriker!.uid],
-      operationInfos: [{ category: 0x10, targetUids: [skyStriker!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restoredTriggerWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "graveyard",
+        "activationSequence": 2,
+        "chainIndex": 1,
+        "effectId": "lua-6-1014",
+        "eventCardUid": "p0-deck-97616504-0",
+        "eventCode": 1014,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "graveyard",
+          "position": "faceDown",
+          "sequence": 2,
+        },
+        "eventName": "sentToGraveyard",
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "spellTrapZone",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReason": 65,
+        "eventReasonPlayer": 0,
+        "eventTriggerTiming": "if",
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 16,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-601015-1",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-97616504-0",
+        "targetUids": [
+          "p0-deck-601015-1",
+        ],
+      }
+    `);
     expect(restoredTriggerWindow.session.state.chain[0]?.targetUids).not.toContain(offSet!.uid);
 
     expect(getLuaRestoreLegalActions(restoredTriggerWindow, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
@@ -979,7 +1079,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), source, reader);
     expectCleanRestore(restoredChain);
     expectRestoredLegalActions(restoredChain, restoredChain.session.state.waitingFor ?? restoredChain.session.state.turnPlayer);
-    expect(restoredChain.session.state.chain[0]).toMatchObject(restoredTriggerWindow.session.state.chain[0]!);
+    expect(restoredChain.session.state.chain[0]).toEqual(restoredTriggerWindow.session.state.chain[0]!);
     resolveRestoredChain(restoredChain);
 
     expect(restoredChain.session.state.cards.find((card) => card.uid === skyStriker!.uid)).toMatchObject({ location: "deck", controller: 0 });
