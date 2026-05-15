@@ -155,12 +155,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gh
         eventUids: [drawn!.uid],
       },
     ]);
-    expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "chainNegated" }),
-        expect.objectContaining({ eventName: "chainDisabled" }),
-      ]),
-    );
+    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => ["chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([]);
   });
 });
 

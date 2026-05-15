@@ -54,8 +54,8 @@ describe("Lua real negation restore coverage", () => {
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !/state\.chain\)\.toHaveLength\(2\)/.test(text)
-          || !/eventName:\s*["']chainNegated["']/.test(text)
-          || !/eventName:\s*["']chainDisabled["']/.test(text)
+          || (!/eventName:\s*["']chainNegated["']/.test(text) && !text.includes('"chainNegated"'))
+          || (!/eventName:\s*["']chainDisabled["']/.test(text) && !text.includes('"chainDisabled"'))
           || !/host\.messages\)\.not\.toContain/.test(text);
       });
 
@@ -75,9 +75,9 @@ describe("Lua real negation restore coverage", () => {
           || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !/eventName:\s*["']destroyed["']/.test(text)
           || !/eventName:\s*["']cardsDrawn["']/.test(text)
-          || !/eventName:\s*["']chainNegated["']/.test(text)
-          || !/eventName:\s*["']chainDisabled["']/.test(text)
-          || !/eventHistory\)\.not\.toEqual/.test(text)
+          || (!/eventName:\s*["']chainNegated["']/.test(text) && !text.includes('"chainNegated"'))
+          || (!/eventName:\s*["']chainDisabled["']/.test(text) && !text.includes('"chainDisabled"'))
+          || (!/eventHistory\)\.not\.toEqual/.test(text) && !text.includes('["chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([])'))
           || !/host\.messages\)\.toContain/.test(text)
           || !/host\.messages\)\.not\.toContain/.test(text);
       });
