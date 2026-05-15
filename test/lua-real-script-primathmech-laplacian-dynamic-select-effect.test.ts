@@ -72,6 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     const preSummonRestore = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(preSummonRestore.restoreComplete, preSummonRestore.incompleteReasons.join("; ")).toBe(true);
     expect(preSummonRestore.missingRegistryKeys).toEqual([]);
+    expect(preSummonRestore.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(preSummonRestore, 0)).toEqual(getGroupedDuelLegalActions(preSummonRestore.session, 0));
     expect(getLuaRestoreLegalActionGroups(preSummonRestore, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(preSummonRestore, 0));
 
@@ -86,6 +87,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     const triggerRestore = restoreDuelWithLuaScripts(serializeDuel(preSummonRestore.session), workspace, reader);
     expect(triggerRestore.restoreComplete, triggerRestore.incompleteReasons.join("; ")).toBe(true);
     expect(triggerRestore.missingRegistryKeys).toEqual([]);
+    expect(triggerRestore.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(triggerRestore, 0)).toEqual(getGroupedDuelLegalActions(triggerRestore.session, 0));
     expect(getLuaRestoreLegalActionGroups(triggerRestore, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(triggerRestore, 0));
 

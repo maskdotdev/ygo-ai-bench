@@ -69,6 +69,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ve
     let restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     const noSpecialSummon = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "selectYesNo" && !action.yes);
     if (noSpecialSummon) {
       expectRestoredLegalActions(restored, 0);
@@ -77,6 +78,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ve
       restored = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
       expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
       expect(restored.missingRegistryKeys).toEqual([]);
+      expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     }
     expect(["graveyard", "monsterZone"]).toContain(restored.session.state.cards.find((card) => card.uid === hills.uid)?.location);
     expect(restored.session.state.cards.find((card) => card.uid === discard.uid)).toMatchObject({ location: "graveyard" });
@@ -90,6 +92,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ve
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
     expect(restoredLock.missingRegistryKeys).toEqual([]);
+    expect(restoredLock.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredLock, 0);
     expect(getLuaRestoreLegalActions(restoredLock, 0).some((action) => action.type === "activateEffect" && action.uid === fireResponder.uid)).toBe(false);
     expect(getLuaRestoreLegalActions(restoredLock, 0).some((action) => action.type === "activateEffect" && action.uid === earthResponder.uid)).toBe(true);
