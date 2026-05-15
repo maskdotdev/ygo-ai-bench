@@ -82,7 +82,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(summoned.ok, summoned.error).toBe(true);
     const restoredLaplacian = preSummonRestore.session.state.cards.find((card) => card.uid === laplacian!.uid);
     expect(restoredLaplacian).toMatchObject({ location: "monsterZone", summonType: "xyz" });
-    expect(restoredLaplacian?.overlayUids).toEqual(expect.arrayContaining(materialCodes.map((code) => expect.stringContaining(code))));
+    expect(restoredLaplacian?.overlayUids).toEqual(materialCodes.map((code) => expect.stringContaining(code)));
 
     const triggerRestore = restoreDuelWithLuaScripts(serializeDuel(preSummonRestore.session), workspace, reader);
     expect(triggerRestore.restoreComplete, triggerRestore.incompleteReasons.join("; ")).toBe(true);

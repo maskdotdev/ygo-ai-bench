@@ -107,7 +107,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script su
     expect(restored.session.state.cards.find((card) => card.uid === triEdge!.uid)).toMatchObject({
       location: "monsterZone",
       summonType: "xyz",
-      overlayUids: expect.arrayContaining(action.materialUids),
+      overlayUids: action.materialUids,
     });
   });
 
