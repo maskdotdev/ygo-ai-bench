@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -92,7 +93,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     const chained = applyLuaRestoreResponse(restoredOpenChain, divineWrathAction!);
     expect(chained.ok, chained.error).toBe(true);
     expect(restoredOpenChain.session.state.cards.find((card) => card.uid === discard!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restoredOpenChain.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "discarded", eventCode: 1018, eventCardUid: discard!.uid })]));
+    expect(restoredOpenChain.session.state.eventHistory.filter((event) => event.eventName === "discarded")).toEqual([{
+      eventName: "discarded",
+      eventCode: 1018,
+      eventCardUid: discard!.uid,
+      eventReason: duelReason.cost | duelReason.discard,
+      eventReasonPlayer: 1,
+      eventReasonCardUid: divineWrath!.uid,
+      eventReasonEffectId: 3,
+      eventPreviousState: { controller: 1, location: "hand", sequence: 0, position: "faceDown", faceUp: false },
+      eventCurrentState: { controller: 1, location: "graveyard", sequence: 0, position: "faceDown", faceUp: true },
+    }]);
     expect(restoredOpenChain.session.state.chain).toHaveLength(2);
     expect(restoredOpenChain.session.state.chain[1]).toMatchObject({
       sourceUid: divineWrath!.uid,
