@@ -232,10 +232,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     expect(restoredEquippedState.session.state.chain[0]).toMatchObject({
       sourceUid: unionPilot!.uid,
     });
-    expect(restoredEquippedState.session.state.chain[0]?.operationInfos).toEqual(expect.arrayContaining([
+    expect(restoredEquippedState.session.state.chain[0]?.operationInfos).toEqual([
       { category: 0x40000, targetUids: [], count: 1, player: 0, parameter: 0x20 },
       { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 },
-    ]));
+    ]);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquippedState.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
