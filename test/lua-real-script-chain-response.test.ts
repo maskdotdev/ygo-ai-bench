@@ -2,11 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -46,6 +46,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ch
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     const ghostBelleAction = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.uid === ghostBelle!.uid);
     expect(ghostBelleAction).toBeDefined();
     const chained = applyLuaRestoreResponse(restored, ghostBelleAction!);
@@ -54,6 +56,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ch
     for (let index = 0; index < 4 && restored.session.state.chain.length > 0; index += 1) {
       const passPlayer = restored.session.state.waitingFor;
       expect(passPlayer).toBeDefined();
+      expect(getLuaRestoreLegalActionGroups(restored, passPlayer!)).toEqual(getGroupedDuelLegalActions(restored.session, passPlayer!));
+      expect(getLuaRestoreLegalActionGroups(restored, passPlayer!).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, passPlayer!));
       const pass = getLuaRestoreLegalActions(restored, passPlayer!).find((action) => action.type === "passChain");
       expect(pass).toBeDefined();
       const resolved = applyLuaRestoreResponse(restored, pass!);
