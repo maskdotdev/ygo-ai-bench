@@ -62,16 +62,28 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script My
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(mysterionCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 235,
-          sourceUid: mysterion!.uid,
-          value: 1,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 235 && effect.sourceUid === mysterion!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 235,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-235",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 263168,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:13735899:lua-2-235",
+        "sourceUid": "p0-extraDeck-13735899-0",
+        "target": [Function],
+        "value": 1,
+      }
+    `);
     expect(getLegalActions(session, 0).some((action) => action.type === "fusionSummon" && action.uid === targetFusion!.uid)).toBe(false);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
@@ -82,16 +94,27 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script My
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restored, 0),
     );
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 235,
-          sourceUid: mysterion!.uid,
-          value: 1,
-        }),
-      ]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 235 && effect.sourceUid === mysterion!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 235,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-235",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "property": 263168,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:13735899:lua-2-235",
+        "sourceUid": "p0-extraDeck-13735899-0",
+        "target": [Function],
+        "value": 1,
+      }
+    `);
     expect(getLegalActions(restored.session, 0).some((action) => action.type === "fusionSummon" && action.uid === targetFusion!.uid)).toBe(false);
     expect(() => fusionSummonDuelCard(restored.session.state, 0, targetFusion!.uid, [mysterion!.uid, freeMaterial!.uid])).toThrow("cannot be used as fusion material");
     expect(restored.session.state.cards.find((card) => card.uid === targetFusion!.uid)).toMatchObject({ location: "extraDeck" });

@@ -54,17 +54,42 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     expect(activate, JSON.stringify(getDuelLegalActions(session, 0), null, 2)).toBeDefined();
     applyActionAndAssert(session, activate!);
     passChainUntilOpen(session);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: mischief.uid,
-          code: 187,
-          controller: 0,
-          targetRange: [1, 0],
-          reset: { flags: 0x50000004 },
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.sourceUid === mischief.uid && effect.code === 187)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 187,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-4-187",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 2048,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:92182447:lua-4-187",
+        "reset": {
+          "flags": 1342177284,
+        },
+        "sourceUid": "p0-deck-92182447-0",
+        "target": [Function],
+        "targetRange": [
+          1,
+          0,
+        ],
+      }
+    `);
     session.state.effects = session.state.effects.filter((effect) => effect.sourceUid === mischief.uid && effect.code === 187);
     session.state.phase = "main2";
     session.state.waitingFor = 0;
@@ -126,7 +151,38 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restored, 1),
     );
-    expect(restored.session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ sourceUid: mischief.uid, code: 6, value: 1, reset: { flags: 0x40000280 } })]));
+    expect(restored.session.state.effects.find((effect) => effect.sourceUid === mischief.uid && effect.code === 6 && effect.value === 1)).toMatchInlineSnapshot(`
+      {
+        "code": 6,
+        "controller": 0,
+        "event": "continuous",
+        "id": "lua-2-6",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "property": 2048,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:92182447:lua-2-6",
+        "reset": {
+          "flags": 1073742464,
+        },
+        "sourceUid": "p0-deck-92182447-0",
+        "targetRange": [
+          0,
+          1,
+        ],
+        "value": 1,
+      }
+    `);
   });
 
   it("restores its official same-code activation oath", () => {

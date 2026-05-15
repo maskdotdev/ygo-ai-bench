@@ -101,16 +101,27 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
       location: "monsterZone",
     });
     expect(restoredResponseWindow.session.state.cards.find((card) => card.uid === mindControl!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restoredResponseWindow.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: target!.uid,
-          registryKey: `lua:${targetCode}:temporary-control-return:${target!.uid}`,
-          luaValueDescriptor: "temporary-control-return",
-          value: 1,
-        }),
-      ]),
-    );
+    expect(restoredResponseWindow.session.state.effects.find((effect) => effect.registryKey === `lua:${targetCode}:temporary-control-return:${target!.uid}`)).toMatchInlineSnapshot(`
+      {
+        "code": 4608,
+        "controller": 1,
+        "event": "continuous",
+        "id": "lua-temp-control-return-p1-deck-612101-0",
+        "luaValueDescriptor": "temporary-control-return",
+        "operation": [Function],
+        "ownerPlayer": 1,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:612101:temporary-control-return:p1-deck-612101-0",
+        "reset": {
+          "count": 1,
+          "flags": 1082135040,
+        },
+        "sourceUid": "p1-deck-612101-0",
+        "value": 1,
+      }
+    `);
     expect(restrictionCodes(restoredResponseWindow.session, target!.uid)).toEqual([43, 44, 85]);
 
     const restoredRestrictionWindow = restoreDuelWithLuaScripts(serializeDuel(restoredResponseWindow.session), source, reader);

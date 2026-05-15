@@ -124,12 +124,56 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Me
         },
       },
     ]);
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: megarock!.uid, event: "continuous", code: 103, value: 700 }),
-        expect.objectContaining({ sourceUid: megarock!.uid, event: "continuous", code: 107, value: 700 }),
-      ]),
-    );
+    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === megarock!.uid && [103, 107].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 103,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-4-103",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:71544954:lua-4-103",
+          "reset": {
+            "flags": 16715776,
+          },
+          "sourceUid": "p0-deck-71544954-0",
+          "target": [Function],
+          "value": 700,
+        },
+        {
+          "canActivate": [Function],
+          "code": 107,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-5-107",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:71544954:lua-5-107",
+          "reset": {
+            "flags": 16715776,
+          },
+          "sourceUid": "p0-deck-71544954-0",
+          "target": [Function],
+          "value": 700,
+        },
+      ]
+    `);
   });
 });
 

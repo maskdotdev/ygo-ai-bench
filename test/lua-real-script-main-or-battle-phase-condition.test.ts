@@ -47,11 +47,36 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ma
     const register = host.loadCardScript(Number(carnovorusCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ luaConditionDescriptor: "condition:main-or-battle-phase", sourceUid: carnovorus!.uid }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.luaConditionDescriptor === "condition:main-or-battle-phase" && effect.sourceUid === carnovorus!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "category": 512,
+        "code": 1002,
+        "controller": 0,
+        "cost": [Function],
+        "countLimit": 1,
+        "countLimitCode": 34149150,
+        "description": 546386400,
+        "event": "quick",
+        "hintTiming": [
+          0,
+          476,
+        ],
+        "id": "lua-2-1002",
+        "luaConditionDescriptor": "condition:main-or-battle-phase",
+        "luaTypeFlags": 256,
+        "oncePerTurn": true,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:34149150:lua-2-1002",
+        "sourceUid": "p0-extraDeck-34149150-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
