@@ -13,6 +13,12 @@ const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Divine Wrath monster negation", () => {
   it("restores a Counter Trap response that discards, negates a monster effect, destroys its source, and suppresses its operation", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
@@ -78,6 +84,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
 
     const restoredOpenChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredOpenChain.restoreComplete, restoredOpenChain.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredOpenChain, 1);
     expect(restoredOpenChain.missingRegistryKeys).toEqual([]);
     const divineWrathAction = getLuaRestoreLegalActions(restoredOpenChain, 1).find((action) => action.type === "activateEffect" && action.uid === divineWrath!.uid);
     expect(divineWrathAction).toBeDefined();
@@ -96,9 +103,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
 
     const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredOpenChain.session), source, reader);
     expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restoredPendingResolution, 0);
     expect(restoredPendingResolution.missingRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restoredPendingResolution, 0)).toEqual(getGroupedDuelLegalActions(restoredPendingResolution.session, 0));
-    expect(getLuaRestoreLegalActionGroups(restoredPendingResolution, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredPendingResolution, 0));
 
     for (let index = 0; index < 4 && restoredPendingResolution.session.state.chain.length > 0; index += 1) {
       const passPlayer = restoredPendingResolution.session.state.waitingFor;

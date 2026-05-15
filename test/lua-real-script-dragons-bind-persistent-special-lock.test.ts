@@ -14,6 +14,12 @@ const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dragon's Bind persistent Special Summon lock", () => {
   it("restores official persistent target into both-player Special Summon restrictions", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
@@ -82,6 +88,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expectCleanRestore(restoredActivation);
+    expectRestoredLegalActions(restoredActivation, 0);
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === bind!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
@@ -96,8 +103,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expectCleanRestore(restoredChain);
-    expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
-    expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
+    expectRestoredLegalActions(restoredChain, 1);
     resolveRestoredChain(restoredChain);
 
     expect(restoredChain.session.state.cards.find((card) => card.uid === bind!.uid)).toMatchObject({
@@ -110,6 +116,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
     const persistentSnapshot = serializeDuel(restoredChain.session);
     const restoredPersistent = restoreDuelWithLuaScripts(persistentSnapshot, source, reader);
     expectCleanRestore(restoredPersistent);
+    expectRestoredLegalActions(restoredPersistent, restoredPersistent.session.state.waitingFor ?? restoredPersistent.session.state.turnPlayer);
     const persistentProbe = restoredPersistent.host.loadScript(
       persistentSpecialLockProbeScript(bindCode, targetCode, lowPlayerCode, highPlayerCode, lowOpponentCode, highOpponentCode),
       "dragons-bind-persistent-special-lock-probe.lua",
@@ -119,6 +126,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
 
     const restoredTargetDestroyed = restoreDuelWithLuaScripts(persistentSnapshot, source, reader);
     expectCleanRestore(restoredTargetDestroyed);
+    expectRestoredLegalActions(restoredTargetDestroyed, restoredTargetDestroyed.session.state.waitingFor ?? restoredTargetDestroyed.session.state.turnPlayer);
     destroyDuelCard(restoredTargetDestroyed.session.state, target!.uid, 0, duelReason.effect | duelReason.destroy, 0);
     expect(restoredTargetDestroyed.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredTargetDestroyed.session.state.cards.find((card) => card.uid === bind!.uid)).toMatchObject({
