@@ -17,6 +17,7 @@ describe("Lua real cost gate restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -44,7 +45,9 @@ function costGateFixtureFiles(): Array<{ file: string; required: string[] }> {
       file: "test/lua-real-script-summon-set-cost.test.ts",
       required: [
         "restoredBlocked.missingRegistryKeys).toEqual([])",
+        "restoredBlocked.missingChainLimitRegistryKeys).toEqual([])",
         "restoredOpen.missingRegistryKeys).toEqual([])",
+        "restoredOpen.missingChainLimitRegistryKeys).toEqual([])",
         'type: "normalSummon"',
         'type: "setMonster"',
         'type: "setSpellTrap"',

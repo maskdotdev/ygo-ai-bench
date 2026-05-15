@@ -64,6 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     const restoredSummonWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredSummonWindow.restoreComplete, restoredSummonWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredSummonWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredSummonWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredSummonWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredSummonWindow.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredSummonWindow, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restoredSummonWindow, 0),
@@ -76,6 +77,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredSummonWindow.session), workspace, reader);
     expect(restoredTriggerWindow.restoreComplete, restoredTriggerWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredTriggerWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredTriggerWindow.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredTriggerWindow, 0)).toEqual(getGroupedDuelLegalActions(restoredTriggerWindow.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredTriggerWindow, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restoredTriggerWindow, 0),
@@ -88,6 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     const restoredRegistrationChain = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), workspace, reader);
     expect(restoredRegistrationChain.restoreComplete, restoredRegistrationChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredRegistrationChain.missingRegistryKeys).toEqual([]);
+    expect(restoredRegistrationChain.missingChainLimitRegistryKeys).toEqual([]);
     const registrationPlayer = restoredRegistrationChain.session.state.waitingFor ?? restoredRegistrationChain.session.state.turnPlayer;
     expect(getLuaRestoreLegalActionGroups(restoredRegistrationChain, registrationPlayer)).toEqual(
       getGroupedDuelLegalActions(restoredRegistrationChain.session, registrationPlayer),

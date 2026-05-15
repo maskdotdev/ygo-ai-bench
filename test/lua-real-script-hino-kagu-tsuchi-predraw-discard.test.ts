@@ -63,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
     const restoredSetup = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredSetup.restoreComplete, restoredSetup.incompleteReasons.join("; ")).toBe(true);
     expect(restoredSetup.missingRegistryKeys).toEqual([]);
+    expect(restoredSetup.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredSetup, 0);
     const attack = getLuaRestoreLegalActions(restoredSetup, 0).find(
       (action) => action.type === "declareAttack" && action.attackerUid === hino!.uid && action.targetUid === defender!.uid,
@@ -85,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredSetup.session), workspace, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
     expect(restoredTrigger.missingRegistryKeys).toEqual([]);
+    expect(restoredTrigger.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredTrigger, 0);
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === hino!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
@@ -93,6 +95,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), workspace, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredChain, restoredChain.session.state.waitingFor ?? restoredChain.session.state.turnPlayer);
     drainRestoredChain(restoredChain);
     expect(restoredChain.session.state.effects).toEqual(
@@ -104,6 +107,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
     const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), workspace, reader);
     expect(restoredBattle.restoreComplete, restoredBattle.incompleteReasons.join("; ")).toBe(true);
     expect(restoredBattle.missingRegistryKeys).toEqual([]);
+    expect(restoredBattle.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredBattle, restoredBattle.session.state.waitingFor ?? restoredBattle.session.state.turnPlayer);
     passBattleResponses(restoredBattle);
     moveToMain2AndEndTurn(restoredBattle.session, 0);
