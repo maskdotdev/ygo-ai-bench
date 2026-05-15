@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const delayedPositionFixtureCount = 3;
+const delayedPositionFixtureCount = 4;
 
 describe("Lua real delayed position restore coverage", () => {
   it("requires delayed position fixtures to assert clean restore and restored delayed outcomes", () => {
@@ -33,6 +33,16 @@ describe("Lua real delayed position restore coverage", () => {
 
 function delayedPositionFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-big-shield-gardna-damage-step-position.test.ts",
+      required: [
+        'battleWindow?.kind).toBe("endDamageStep")',
+        'eventName: "damageStepEnded"',
+        'eventName: "positionChanged"',
+        "position: \"faceUpDefense\"",
+        "position: \"faceUpAttack\"",
+      ],
+    },
     {
       file: "test/lua-real-script-unleash-your-power-gemini-delayed-set.test.ts",
       required: [
