@@ -664,7 +664,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(restoredTriggerWindow.session.state.chain).toEqual([]);
     expect(restoredTriggerWindow.session.state.pendingTriggers).toEqual([]);
     expect(restoredTriggerWindow.session.state.cards.find((card) => card.uid === drawCard!.uid)).toMatchObject({ location: "hand", controller: 0 });
-    expect(restoredTriggerWindow.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "battleDestroyed", eventCode: 1140, eventCardUid: battleTarget!.uid })]));
+    expect(restoredTriggerWindow.session.state.eventHistory.filter((event) => event.eventName === "battleDestroyed")).toEqual([
+      {
+        eventName: "battleDestroyed",
+        eventCode: 1140,
+        eventCardUid: battleTarget!.uid,
+        eventReason: duelReason.battle | duelReason.destroy,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: equippedAttacker!.uid,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 3,
+        },
+      },
+    ]);
     expect(restoredTriggerWindow.session.state.eventHistory.filter((event) => event.eventName === "cardsDrawn")).toEqual([
       {
         eventName: "cardsDrawn",

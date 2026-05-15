@@ -185,9 +185,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D.
     expect(restored.session.state.pendingBattle).toBeUndefined();
     expect(restored.session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "banished", controller: 0 });
     expect(restored.session.state.cards.find((card) => card.uid === assailant!.uid)).toMatchObject({ location: "banished", controller: 1 });
-    expect(restored.session.state.eventHistory).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ eventName: "battleDestroyed", eventCardUid: assailant!.uid })]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDestroyed" && event.eventCardUid === assailant!.uid)).toEqual([]);
   });
 });
 

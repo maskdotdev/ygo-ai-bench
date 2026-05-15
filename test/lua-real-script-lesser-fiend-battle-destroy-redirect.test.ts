@@ -136,11 +136,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Le
       reason: duelReason.destroy | duelReason.battle | duelReason.redirect,
       reasonCardUid: p0Fiend!.uid,
     });
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleDestroyed", eventCode: 1140, eventUids: [p0Fiend!.uid, p1Fiend!.uid] }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDestroyed")).toEqual([
+      {
+        eventName: "battleDestroyed",
+        eventCode: 1140,
+        eventCardUid: p0Fiend!.uid,
+        eventUids: [p0Fiend!.uid, p1Fiend!.uid],
+        eventReason: duelReason.battle | duelReason.destroy | duelReason.redirect,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: p1Fiend!.uid,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "banished",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "banished")).toEqual([
       {
         eventName: "banished",

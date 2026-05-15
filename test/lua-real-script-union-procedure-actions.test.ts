@@ -10,6 +10,7 @@ import {
   serializeDuel,
   startDuel,
 } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -369,12 +370,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
       controller: 0,
       position: "faceUpAttack",
     });
-    expect(restoredTriggerWindow.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleDestroyed", eventCode: 1140, eventCardUid: battleTarget!.uid }),
-        expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventCardUid: graveMachine!.uid }),
-      ]),
-    );
+    expect(restoredTriggerWindow.session.state.eventHistory.filter((event) => event.eventName === "battleDestroyed")).toEqual([
+      {
+        eventName: "battleDestroyed",
+        eventCode: 1140,
+        eventCardUid: battleTarget!.uid,
+        eventReason: duelReason.battle | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: target!.uid,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
+    expect(restoredTriggerWindow.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "specialSummoned", eventCode: 1102, eventCardUid: graveMachine!.uid })]));
   });
 });
 
