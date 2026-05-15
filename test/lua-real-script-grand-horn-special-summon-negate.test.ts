@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, loadDecks, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -108,13 +109,82 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === horn!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === drawn!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restoredPendingResolution.host.messages).not.toContain("grand horn chain responder resolved");
-    expect(restoredPendingResolution.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "specialSummonNegated", eventCode: 1116, eventCardUid: summoned!.uid, eventReasonPlayer: 0 }),
-        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: summoned!.uid }),
-        expect.objectContaining({ eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventUids: [drawn!.uid] }),
-      ]),
-    );
+    expect(
+      restoredPendingResolution.session.state.eventHistory.filter((event) => ["specialSummonNegated", "destroyed", "cardsDrawn"].includes(event.eventName)),
+    ).toEqual([
+      {
+        eventName: "specialSummonNegated",
+        eventCode: 1116,
+        eventCardUid: summoned!.uid,
+        eventReason: duelReason.disSummon,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: horn!.uid,
+        eventReasonEffectId: 2,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: summoned!.uid,
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: horn!.uid,
+        eventReasonEffectId: 2,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "cardsDrawn",
+        eventCode: 1110,
+        eventCardUid: drawn!.uid,
+        eventPlayer: 0,
+        eventValue: 1,
+        eventPreviousState: {
+          location: "deck",
+          controller: 0,
+          sequence: 2,
+          position: "faceDown",
+          faceUp: false,
+        },
+        eventCurrentState: {
+          location: "hand",
+          controller: 0,
+          sequence: 1,
+          position: "faceDown",
+          faceUp: false,
+        },
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: horn!.uid,
+        eventReasonEffectId: 2,
+        eventUids: [drawn!.uid],
+      },
+    ]);
     expect(restoredPendingResolution.session.state.eventHistory).not.toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "specialSummoned", eventCardUid: summoned!.uid })]));
     const postResolutionActions = getLuaRestoreLegalActions(restoredPendingResolution, 0);
     expect(postResolutionActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "changePhase", phase: "battle" })]));
