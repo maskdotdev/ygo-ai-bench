@@ -64,15 +64,40 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     );
     expect(register.ok, register.error).toBe(true);
     const descriptor = `condition:source-turn-current-reason-not:${duelReason.return}`;
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 71,
-          luaConditionDescriptor: descriptor,
-          range: ["graveyard"],
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) => effect.code === 71 && effect.luaConditionDescriptor === descriptor,
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 71,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-1-71",
+          "lifePointValue": [Function],
+          "luaConditionDescriptor": "condition:source-turn-current-reason-not:131072",
+          "luaTypeFlags": 1,
+          "luaValueDescriptor": "cannot-be-effect-target:opponent",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 131072,
+          "range": [
+            "graveyard",
+          ],
+          "registryKey": "lua:41373230:lua-1-71",
+          "sourceUid": "p0-extraDeck-41373230-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -111,16 +136,45 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
     const register = host.loadCardScript(Number(titanikladCode), workspace);
     expect(register.ok, register.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "trigger",
-          luaConditionDescriptor: `condition:source-turn-current-reason-not:${duelReason.return}`,
-          range: ["graveyard"],
-          triggerEvent: "phaseEnd",
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.event === "trigger" &&
+          effect.luaConditionDescriptor === `condition:source-turn-current-reason-not:${duelReason.return}` &&
+          effect.triggerEvent === "phaseEnd",
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "category": 131592,
+          "code": 4608,
+          "controller": 0,
+          "cost": [Function],
+          "countLimit": 1,
+          "countLimitCode": 41373230,
+          "description": 661971680,
+          "event": "trigger",
+          "id": "lua-4-4608",
+          "luaConditionDescriptor": "condition:source-turn-current-reason-not:131072",
+          "luaTypeFlags": 130,
+          "oncePerTurn": true,
+          "operation": [Function],
+          "optional": true,
+          "promptOperation": [Function],
+          "range": [
+            "graveyard",
+          ],
+          "registryKey": "lua:41373230:lua-4-4608",
+          "sourceUid": "p0-extraDeck-41373230-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "triggerCode": 4608,
+          "triggerEvent": "phaseEnd",
+          "triggerTiming": "when",
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
