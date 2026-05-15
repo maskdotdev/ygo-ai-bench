@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const phaseSkipFixtureCount = 12;
 
 describe("Lua real phase-skip restore coverage", () => {
   it("requires representative phase-skip fixtures to assert clean Lua restore", () => {
-    const missing = realScriptPhaseSkipFixtures()
+    const fixtures = realScriptPhaseSkipFixtures();
+    expect(fixtures).toHaveLength(phaseSkipFixtureCount);
+
+    const missing = fixtures
       .filter((fixture) => {
         const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
@@ -20,7 +24,10 @@ describe("Lua real phase-skip restore coverage", () => {
   });
 
   it("requires representative phase-skip fixtures to prove restored skipped phase legal-action effects", () => {
-    const weak = realScriptPhaseSkipFixtures()
+    const fixtures = realScriptPhaseSkipFixtures();
+    expect(fixtures).toHaveLength(phaseSkipFixtureCount);
+
+    const weak = fixtures
       .filter((fixture) => {
         const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
         return !fixture.requiredSnippets.every((snippet) => text.includes(snippet));
