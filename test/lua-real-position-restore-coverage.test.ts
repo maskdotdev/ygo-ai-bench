@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const POSITION_FIXTURE_COUNT = 4;
 
 describe("Lua real position restore coverage", () => {
   it("requires position-changing summon triggers to assert clean Lua registry restore and restored outcomes", () => {
-    const missing = positionFixtureFiles()
+    const files = positionFixtureFiles();
+    expect(files).toHaveLength(POSITION_FIXTURE_COUNT);
+
+    const missing = files
       .filter(({ file, required }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
