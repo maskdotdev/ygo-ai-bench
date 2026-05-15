@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { createDuel, getGroupedDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import type { DuelCardData, DuelCardInstance, DuelEffectContext } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -28,11 +28,10 @@ function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance
   };
 }
 
-function expectRestoredPlayerActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
   expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-  expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(
-    getLuaRestoreLegalActions(restored, 0),
-  );
+  expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
 }
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script original trait Lizard locks", () => {
@@ -72,7 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoredPlayerActions(restored);
+    expectRestoredLegalActions(restored);
     const mutate = restored.host.loadScript(
       `
       local dragon=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${dragonCode}),0,LOCATION_EXTRA,0,nil)
@@ -140,7 +139,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoredPlayerActions(restored);
+    expectRestoredLegalActions(restored);
     const mutate = restored.host.loadScript(
       `
       local fire=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${fireCode}),0,LOCATION_EXTRA,0,nil)
@@ -210,7 +209,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoredPlayerActions(restored);
+    expectRestoredLegalActions(restored);
     const effect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
     const source = restored.session.state.cards.find((card) => card.code === gaiaCode);
     const darkSynchro = restored.session.state.cards.find((card) => card.code === darkSynchroCode);
@@ -265,7 +264,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoredPlayerActions(restored);
+    expectRestoredLegalActions(restored);
     const effect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
     const source = restored.session.state.cards.find((card) => card.code === ashenedCode);
     const machineXyz = restored.session.state.cards.find((card) => card.code === machineXyzCode);
@@ -320,7 +319,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoredPlayerActions(restored);
+    expectRestoredLegalActions(restored);
     const mutate = restored.host.loadScript(
       `
       local rank4=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${rank4XyzCode}),0,LOCATION_EXTRA,0,nil)
@@ -391,7 +390,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoredPlayerActions(restored);
+    expectRestoredLegalActions(restored);
     const mutate = restored.host.loadScript(
       `
       local hero=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${heroCode}),0,LOCATION_EXTRA,0,nil)
@@ -461,7 +460,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoredPlayerActions(restored);
+    expectRestoredLegalActions(restored);
     const effect = restored.session.state.effects.find((candidate) => candidate.code === 51476410);
     const source = restored.session.state.cards.find((card) => card.code === windCode);
     const majespecter = restored.session.state.cards.find((card) => card.code === majespecterCode);
@@ -514,7 +513,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoredPlayerActions(restored);
+    expectRestoredLegalActions(restored);
     const mutate = restored.host.loadScript(
       `
       local dark=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${darkCode}),0,LOCATION_EXTRA,0,nil)
@@ -652,7 +651,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoredPlayerActions(restored);
+    expectRestoredLegalActions(restored);
     const mutate = restored.host.loadScript(
       `
       local light_synchro=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${lightSynchroCode}),0,LOCATION_EXTRA,0,nil)
@@ -725,7 +724,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoredPlayerActions(restored);
+    expectRestoredLegalActions(restored);
     const mutate = restored.host.loadScript(
       `
       local level8_synchro=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${level8SynchroCode}),0,LOCATION_EXTRA,0,nil)
@@ -790,7 +789,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoredPlayerActions(restored);
+    expectRestoredLegalActions(restored);
     const mutate = restored.host.loadScript(
       `
       local xyz=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${xyzCode}),0,LOCATION_EXTRA,0,nil)
@@ -860,7 +859,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoredPlayerActions(restored);
+    expectRestoredLegalActions(restored);
     const mutate = restored.host.loadScript(
       `
       local level5_wind=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${level5WindCode}),0,LOCATION_EXTRA,0,nil)
@@ -939,7 +938,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script or
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
-    expectRestoredPlayerActions(restored);
+    expectRestoredLegalActions(restored);
     const mutate = restored.host.loadScript(
       `
       local dark_dragon=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${darkDragonSynchroCode}),0,LOCATION_EXTRA,0,nil)
