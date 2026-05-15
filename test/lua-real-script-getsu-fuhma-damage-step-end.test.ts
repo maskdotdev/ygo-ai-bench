@@ -89,12 +89,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
       controller: 1,
       reason: effectDestroyReason,
     });
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "damageStepEnded", eventCode: 1141, eventCardUid: getsu!.uid }),
-        expect.objectContaining({ eventName: "destroyed", eventCode: 1029, eventCardUid: fiend!.uid }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "damageStepEnded", eventCode: 1141, eventCardUid: getsu!.uid })]));
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === fiend!.uid)).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: fiend!.uid,
+        eventPreviousState: {
+          location: "monsterZone",
+          controller: 1,
+          sequence: 0,
+          position: "faceUpDefense",
+          faceUp: true,
+        },
+        eventCurrentState: {
+          location: "graveyard",
+          controller: 1,
+          sequence: 0,
+          position: "faceUpDefense",
+          faceUp: true,
+        },
+        eventReason: effectDestroyReason,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: getsu!.uid,
+        eventReasonEffectId: 1,
+      },
+    ]);
   });
 });
 
