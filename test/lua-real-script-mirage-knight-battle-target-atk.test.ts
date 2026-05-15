@@ -83,11 +83,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     expect(activated.ok, activated.error).toBe(true);
     resolveRestoredChain(restoredEndPhase);
     expect(restoredEndPhase.session.state.cards.find((card) => card.uid === mirage!.uid)).toMatchObject({ location: "banished", controller: 0 });
-    expect(restoredEndPhase.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "battleDamageDealt", eventPlayer: 1, eventValue: 2800 }),
-      ]),
-    );
+    expect(restoredEndPhase.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: mirage!.uid,
+        eventPlayer: 1,
+        eventValue: 2800,
+        eventReason: duelReason.battle,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredEndPhase.session.state.eventHistory.filter((event) => event.eventName === "banished" && event.eventCardUid === mirage!.uid)).toEqual([
       {
         eventName: "banished",
