@@ -11,6 +11,10 @@ describe("Lua real SelectOption restore coverage", () => {
 
     expect(files).toHaveLength(2);
     expect(files).toEqual(["c51510279.lua", "c62767644.lua"]);
+    expect(officialLeadingBooleanSelectOptionShapes()).toEqual([
+      { file: "c51510279.lua", shape: "table-unpack" },
+      { file: "c62767644.lua", shape: "literal-options" },
+    ]);
   });
 
   it("requires representative restore fixtures for leading-boolean SelectOption scripts", () => {
@@ -34,6 +38,14 @@ function officialScriptsWithLeadingBooleanSelectOption(): string[] {
     .filter((file) => file.endsWith(".lua"))
     .filter((file) => fs.readFileSync(path.join(upstreamOfficialRoot, file), "utf8").includes("SelectOption(tp,false"))
     .sort((a, b) => a.localeCompare(b));
+}
+
+function officialLeadingBooleanSelectOptionShapes(): Array<{ file: string; shape: "literal-options" | "table-unpack" }> {
+  return officialScriptsWithLeadingBooleanSelectOption().map((file) => {
+    const text = fs.readFileSync(path.join(upstreamOfficialRoot, file), "utf8");
+    const shape = /SelectOption\(tp,false,table\.unpack\(/.test(text) ? "table-unpack" : "literal-options";
+    return { file, shape };
+  });
 }
 
 function leadingBooleanSelectOptionFixtures(): Array<{ file: string; required: string[] }> {
