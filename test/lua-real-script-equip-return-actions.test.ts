@@ -653,9 +653,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(restoredDiscardChain.session.state.eventHistory).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ eventName: "confirmed", eventCode: 1211, eventPlayer: 0, eventUids: confirmedOpponentHandUids }),
-        expect.objectContaining({ eventName: "discarded", eventCode: 1018, eventCardUid: discardedCards[0]!.uid }),
       ]),
     );
+    expect(restoredDiscardChain.session.state.eventHistory.filter((event) => event.eventName === "discarded" && event.eventCardUid === discardedCards[0]!.uid)).toEqual([
+      {
+        eventName: "discarded",
+        eventCode: 1018,
+        eventCardUid: discardedCards[0]!.uid,
+        eventReason: duelReason.effect | duelReason.discard,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: smoke!.uid,
+        eventReasonEffectId: 3,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: discardedCards[0]!.uid === discardA!.uid ? 0 : 1,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredDiscardChain.session.state.eventHistory.filter((event) => event.eventName === "leftField" && event.eventCardUid === smoke!.uid)).toEqual([
       {
         eventName: "leftField",
