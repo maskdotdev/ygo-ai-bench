@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { createDuel, destroyDuelCard, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { createDuel, destroyDuelCard, getGroupedDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua indestructible value restore", () => {
   it("restores aux.indsval as own-player destruction protection", () => {
@@ -54,6 +54,9 @@ describe("Lua indestructible value restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: () => undefined }, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(restored.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -114,6 +117,9 @@ describe("Lua indestructible value restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: () => undefined }, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(restored.session.state.effects).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -180,6 +186,9 @@ describe("Lua indestructible value restore", () => {
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), { readScript: () => undefined }, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const battleDestroy = destroyDuelCard(restored.session.state, battleTarget!.uid, 0, duelReason.battle | duelReason.destroy, 1);
     expect(battleDestroy).toMatchObject({ uid: battleTarget!.uid, location: "monsterZone" });
     const effectDestroy = destroyDuelCard(restored.session.state, effectTarget!.uid, 0, duelReason.effect | duelReason.destroy, 1);
