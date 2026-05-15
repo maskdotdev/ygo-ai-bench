@@ -113,7 +113,26 @@ function setupPantherWarriorFixture(withRelease: boolean) {
   const host = createLuaScriptHost(session, workspace);
   expect(host.loadCardScript(Number(pantherCode), workspace).ok).toBe(true);
   expect(host.registerInitialEffects()).toBe(1);
-  expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ event: "continuous", code: 96, sourceUid: panther!.uid })]));
+  expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 96 && effect.sourceUid === panther!.uid)).toMatchInlineSnapshot(`
+    {
+      "canActivate": [Function],
+      "code": 96,
+      "controller": 0,
+      "cost": [Function],
+      "event": "continuous",
+      "id": "lua-1-96",
+      "luaTypeFlags": 1,
+      "oncePerTurn": false,
+      "operation": [Function],
+      "promptOperation": [Function],
+      "range": [
+        "monsterZone",
+      ],
+      "registryKey": "lua:42035044:lua-1-96",
+      "sourceUid": "p0-deck-42035044-0",
+      "target": [Function],
+    }
+  `);
 
   return { session, reader, workspace, panther: panther!, release: release!, target: target! };
 }

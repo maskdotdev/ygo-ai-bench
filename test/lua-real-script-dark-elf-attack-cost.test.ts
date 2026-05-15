@@ -93,7 +93,26 @@ function setupDarkElfFixture() {
   const host = createLuaScriptHost(session, workspace);
   expect(host.loadCardScript(Number(darkElfCode), workspace).ok).toBe(true);
   expect(host.registerInitialEffects()).toBe(1);
-  expect(session.state.effects).toEqual(expect.arrayContaining([expect.objectContaining({ event: "continuous", code: 96, sourceUid: darkElf!.uid })]));
+  expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 96 && effect.sourceUid === darkElf!.uid)).toMatchInlineSnapshot(`
+    {
+      "canActivate": [Function],
+      "code": 96,
+      "controller": 0,
+      "cost": [Function],
+      "event": "continuous",
+      "id": "lua-1-96",
+      "luaTypeFlags": 1,
+      "oncePerTurn": false,
+      "operation": [Function],
+      "promptOperation": [Function],
+      "range": [
+        "monsterZone",
+      ],
+      "registryKey": "lua:21417692:lua-1-96",
+      "sourceUid": "p0-deck-21417692-0",
+      "target": [Function],
+    }
+  `);
 
   return { session, reader, workspace, darkElf: darkElf!, target: target! };
 }

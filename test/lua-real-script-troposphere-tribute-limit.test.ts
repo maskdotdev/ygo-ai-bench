@@ -44,11 +44,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tr
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(troposphereCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 154, sourceUid: troposphere!.uid, luaValueDescriptor: "cannot-material:target-not-race:512" }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 154 && effect.sourceUid === troposphere!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 154,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-154",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 1,
+        "luaValueDescriptor": "cannot-material:target-not-race:512",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "hand",
+        ],
+        "registryKey": "lua:72144675:lua-1-154",
+        "sourceUid": "p0-deck-72144675-0",
+        "statValue": [Function],
+        "target": [Function],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
