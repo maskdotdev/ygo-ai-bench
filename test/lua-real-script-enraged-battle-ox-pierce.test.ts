@@ -58,11 +58,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script En
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(oxCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 203, sourceUid: ox!.uid, targetRange: [4, 0] }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 203 && effect.sourceUid === ox!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 203,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-203",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:76909279:lua-1-203",
+        "sourceUid": "p0-deck-76909279-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "targetRange": [
+          4,
+          0,
+        ],
+      }
+    `);
 
     const beastAttack = getLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === beast!.uid && action.targetUid === beastTarget!.uid);
     expect(beastAttack).toBeDefined();
@@ -72,11 +92,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script En
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 203, sourceUid: ox!.uid, targetRange: [4, 0] }),
-      ]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 203 && effect.sourceUid === ox!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 203,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-203",
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:76909279:lua-1-203",
+        "sourceUid": "p0-deck-76909279-0",
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "targetRange": [
+          4,
+          0,
+        ],
+      }
+    `);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 

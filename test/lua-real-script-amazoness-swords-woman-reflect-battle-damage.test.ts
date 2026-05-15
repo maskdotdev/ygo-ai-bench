@@ -40,16 +40,27 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(swordsWomanCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 202,
-          sourceUid: swordsWoman!.uid,
-          value: 1,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 202 && effect.sourceUid === swordsWoman!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 202,
+        "controller": 1,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-202",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:94004268:lua-1-202",
+        "sourceUid": "p1-deck-94004268-0",
+        "target": [Function],
+        "value": 1,
+      }
+    `);
 
     const attack = getLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && action.targetUid === swordsWoman!.uid);
     expect(attack).toBeDefined();
@@ -62,16 +73,26 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 202,
-          sourceUid: swordsWoman!.uid,
-          value: 1,
-        }),
-      ]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 202 && effect.sourceUid === swordsWoman!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 202,
+        "controller": 1,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-202",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:94004268:lua-1-202",
+        "sourceUid": "p1-deck-94004268-0",
+        "target": [Function],
+        "value": 1,
+      }
+    `);
 
     passBattleResponses(restored.session);
     expect(restored.session.state.battleDamage).toEqual({ 0: 500, 1: 0 });

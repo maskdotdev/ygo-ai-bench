@@ -40,11 +40,26 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script An
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(golemCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 203, sourceUid: golem!.uid }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 203 && effect.sourceUid === golem!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 203,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-203",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:83104731:lua-2-203",
+        "sourceUid": "p0-deck-83104731-0",
+        "target": [Function],
+      }
+    `);
 
     const attack = getLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === golem!.uid && action.targetUid === target!.uid);
     expect(attack).toBeDefined();
@@ -57,11 +72,25 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script An
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 203, sourceUid: golem!.uid }),
-      ]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 203 && effect.sourceUid === golem!.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 203,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-2-203",
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:83104731:lua-2-203",
+        "sourceUid": "p0-deck-83104731-0",
+        "target": [Function],
+      }
+    `);
 
     passBattleResponses(restored.session);
     expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 1500 });
