@@ -71,21 +71,61 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     expect(activate).toBeDefined();
     applyAndAssert(session, activate!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: magikeyDuo!.uid,
-      targetUids: [graveTarget!.uid],
-      operationInfos: [{ category: 0x8, targetUids: [graveTarget!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 8,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-51510271-2",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-51510279-0",
+        "targetUids": [
+          "p0-deck-51510271-2",
+        ],
+      }
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restored.session.state.chain[0]).toMatchObject({
-      sourceUid: magikeyDuo!.uid,
-      targetUids: [graveTarget!.uid],
-      operationInfos: [{ category: 0x8, targetUids: [graveTarget!.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "spellTrapZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 8,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-51510271-2",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-51510279-0",
+        "targetUids": [
+          "p0-deck-51510271-2",
+        ],
+      }
+    `);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 

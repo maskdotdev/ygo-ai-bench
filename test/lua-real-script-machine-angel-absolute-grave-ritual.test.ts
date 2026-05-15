@@ -80,9 +80,35 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     expect(activate).toBeDefined();
     applyAndAssert(session, activate!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchObject({
-      sourceUid: machineAngel!.uid,
-    });
+    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-2",
+        "operationInfos": [
+          {
+            "category": 512,
+            "count": 1,
+            "parameter": 2,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "player": 0,
+        "possibleOperationInfos": [
+          {
+            "category": 16,
+            "count": 1,
+            "parameter": 16,
+            "player": 0,
+            "targetUids": [],
+          },
+        ],
+        "sourceUid": "p0-deck-11398951-0",
+      }
+    `);
     expect(session.state.chain[0]?.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
