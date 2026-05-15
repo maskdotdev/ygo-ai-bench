@@ -33,6 +33,13 @@ describe("bridge bundle checker", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("Bridge bundle check passed.");
   });
+
+  it("rejects a missing --bridge option value", () => {
+    const result = spawnSync(process.execPath, [checkerPath, "--bridge"], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("Missing value for --bridge");
+  });
 });
 
 function makeTempRoot(): string {

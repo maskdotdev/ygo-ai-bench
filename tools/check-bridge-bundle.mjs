@@ -27,5 +27,10 @@ console.log(`Bridge bundle check passed. ${bridgePath} is ${size} bytes.`);
 function bridgePathArg() {
   const index = process.argv.indexOf("--bridge");
   if (index === -1) return undefined;
-  return process.argv[index + 1];
+  const value = process.argv[index + 1];
+  if (!value || value.startsWith("--")) {
+    console.error("Missing value for --bridge");
+    process.exit(1);
+  }
+  return value;
 }
