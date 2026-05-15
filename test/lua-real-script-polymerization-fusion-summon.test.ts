@@ -192,6 +192,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Po
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 1);
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
     const resolved = applyLuaRestoreResponse(restored, pass!);
@@ -296,6 +297,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Po
     applyAndAssert(session, activate!);
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expectRestoredLegalActions(restored, 1);
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
     const resolved = applyLuaRestoreResponse(restored, pass!);
@@ -365,6 +367,11 @@ function chainResponderScript(): string {
       c:RegisterEffect(e)
     end
   `;
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function targetSpecificSubstituteScript(): string {

@@ -116,6 +116,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     const postResolutionRestored = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(postResolutionRestored.restoreComplete, postResolutionRestored.incompleteReasons.join("; ")).toBe(true);
     expect(postResolutionRestored.missingRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(postResolutionRestored, 0);
 
     expect(postResolutionRestored.session.state.cards.find((card) => card.uid === fusion!.uid)).toMatchObject({
       location: "monsterZone",
@@ -168,6 +169,11 @@ function chainResponderScript(): string {
       c:RegisterEffect(e)
     end
   `;
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
 function specialSummonProcedureScript(code: string): string {
