@@ -17,6 +17,7 @@ describe("Lua real continuous operation restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -55,8 +56,11 @@ function continuousOperationFixtureFiles(): Array<{ file: string; required: stri
       file: "test/lua-real-script-fenghuang-set-backrow-destroy.test.ts",
       required: [
         "restoredSummonWindow.missingRegistryKeys).toEqual([])",
+        "restoredSummonWindow.missingChainLimitRegistryKeys).toEqual([])",
         "restoredTriggerWindow.missingRegistryKeys).toEqual([])",
+        "restoredTriggerWindow.missingChainLimitRegistryKeys).toEqual([])",
         "restoredChain.missingRegistryKeys).toEqual([])",
+        "restoredChain.missingChainLimitRegistryKeys).toEqual([])",
         "operationInfos: [{ category: 0x1",
         'eventName: "destroyed"',
         "host.messages).not.toContain",
