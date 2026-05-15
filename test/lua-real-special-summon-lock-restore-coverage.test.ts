@@ -573,6 +573,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-fiendish-portrait-deck-extra-summon-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "special-summon-limit:deck-or-extra"',
+        "property: 0x4000800",
         "reset: { flags: 0x40000200 }",
         "targetRange: [1, 0]",
         "Duel.SpecialSummon(deck,0,0,0,false,false,POS_FACEUP_ATTACK)",
@@ -587,6 +588,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-edea-extra-deck-summon-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "special-summon-limit:extra"',
+        "property: 0x4000800",
         "targetRange: [1, 0]",
         "edea extra special 0",
         "edea hand special 1",
@@ -626,6 +628,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-crimson-blader-level5-summon-lock.test.ts",
       requiredSnippets: [
         'luaTargetDescriptor: "target:level-above:5"',
+        "property: 0x800",
         "targetRange: [1, 0]",
         "crimson blader level5 special 0",
         "crimson blader level4 special 1",

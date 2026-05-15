@@ -63,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cr
     expect(resolve.ok, resolve.error).toBe(true);
     expect(session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
       luaTargetDescriptor: "target:level-above:5",
+      property: 0x800,
       targetRange: [1, 0],
     });
 
@@ -74,6 +75,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cr
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restored, 0),
     );
+    expect(restored.session.state.effects.find((effect) => effect.code === 22)).toMatchObject({
+      property: 0x800,
+      targetRange: [1, 0],
+    });
     const probe = restored.host.loadScript(
       `
       local level5=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${level5Code}),0,LOCATION_HAND,0,nil)
