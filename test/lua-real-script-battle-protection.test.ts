@@ -40,11 +40,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ba
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(pilgrimCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 42, sourceUid: pilgrim!.uid }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 42 && effect.sourceUid === pilgrim!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 42,
+        "controller": 1,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-42",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:20700531:lua-1-42",
+        "sourceUid": "p1-deck-20700531-0",
+        "statValue": [Function],
+        "target": [Function],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
 
     const attack = getLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid && action.targetUid === pilgrim!.uid);
     expect(attack).toBeDefined();
@@ -57,11 +77,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ba
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 42, sourceUid: pilgrim!.uid }),
-      ]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 42 && effect.sourceUid === pilgrim!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 42,
+        "controller": 1,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-42",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:20700531:lua-1-42",
+        "sourceUid": "p1-deck-20700531-0",
+        "statValue": [Function],
+        "target": [Function],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
 
     passBattleResponses(restored.session);
     expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 500 });
@@ -125,11 +164,36 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ba
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(sniperCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 70, sourceUid: sniper!.uid }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 70 && effect.sourceUid === sniper!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 70,
+        "controller": 1,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-70",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:23782705:lua-1-70",
+        "sourceUid": "p1-deck-23782705-0",
+        "statValue": [Function],
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "targetRange": [
+          4,
+          4,
+        ],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
     expect(getLegalActions(session, 0)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ type: "declareAttack", attackerUid: attacker!.uid, targetUid: sniper!.uid }),
@@ -147,11 +211,35 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ba
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 70, sourceUid: sniper!.uid }),
-      ]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 70 && effect.sourceUid === sniper!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 70,
+        "controller": 1,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-70",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:23782705:lua-1-70",
+        "sourceUid": "p1-deck-23782705-0",
+        "statValue": [Function],
+        "target": [Function],
+        "targetCardPredicate": [Function],
+        "targetRange": [
+          4,
+          4,
+        ],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ type: "declareAttack", attackerUid: attacker!.uid, targetUid: sniper!.uid }),
@@ -194,11 +282,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ba
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(boneTowerCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 70, sourceUid: boneTower!.uid }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 70 && effect.sourceUid === boneTower!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 70,
+        "controller": 1,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-70",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 131072,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:63012333:lua-1-70",
+        "sourceUid": "p1-deck-63012333-0",
+        "statValue": [Function],
+        "target": [Function],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
     expectAttackTarget(session, attacker!.uid, boneTower!.uid, false);
     expectAttackTarget(session, attacker!.uid, zombie!.uid, true);
 
@@ -206,11 +315,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ba
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 70, sourceUid: boneTower!.uid }),
-      ]),
-    );
+    expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 70 && effect.sourceUid === boneTower!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 70,
+        "controller": 1,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-1-70",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "property": 131072,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:63012333:lua-1-70",
+        "sourceUid": "p1-deck-63012333-0",
+        "statValue": [Function],
+        "target": [Function],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
     expectAttackTarget(restored.session, attacker!.uid, boneTower!.uid, false);
     expectAttackTarget(restored.session, attacker!.uid, zombie!.uid, true);
   });

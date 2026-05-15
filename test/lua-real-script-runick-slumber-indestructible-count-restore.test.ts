@@ -46,16 +46,37 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ru
     const action = getLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === slumber!.uid);
     expect(action, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
     applyAndAssert(session, action!);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 47,
-          sourceUid: target!.uid,
-          luaValueDescriptor: "value-predicate:reason-mask:96",
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 47 && effect.sourceUid === target!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 47,
+        "controller": 0,
+        "cost": [Function],
+        "countLimit": 1,
+        "event": "continuous",
+        "id": "lua-3-47",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 1,
+        "luaValueDescriptor": "value-predicate:reason-mask:96",
+        "oncePerTurn": true,
+        "operation": [Function],
+        "promptOperation": [Function],
+        "property": 1024,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:67835548:lua-3-47",
+        "reset": {
+          "flags": 1107169792,
+        },
+        "sourceUid": "p0-deck-67835548-1",
+        "statValue": [Function],
+        "target": [Function],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
 
     const restoredProtection = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredProtection.restoreComplete, restoredProtection.incompleteReasons.join("; ")).toBe(true);

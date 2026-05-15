@@ -74,33 +74,86 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
     expect(session.state.cards.find((card) => card.uid === redGardna!.uid)).toMatchObject({ location: "graveyard" });
     passChainResponses(session);
     expect(host.messages).toContain("red gardna starter resolved");
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 41,
-          controller: 0,
-          sourceUid: redGardna!.uid,
-          luaValueDescriptor: "indestructible:opponent",
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 41 && effect.sourceUid === redGardna!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 41,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-4-41",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 2,
+        "luaValueDescriptor": "indestructible:opponent",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 256,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:72318602:lua-4-41",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p0-deck-72318602-0",
+        "statValue": [Function],
+        "target": [Function],
+        "targetRange": [
+          4,
+          0,
+        ],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
 
     const restoredProtected = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredProtected.restoreComplete, restoredProtected.incompleteReasons.join("; ")).toBe(true);
     expect(restoredProtected.missingRegistryKeys).toEqual([]);
     expect(restoredProtected.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restoredProtected.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          event: "continuous",
-          code: 41,
-          controller: 0,
-          sourceUid: redGardna!.uid,
-          luaValueDescriptor: "indestructible:opponent",
-        }),
-      ]),
-    );
+    expect(restoredProtected.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 41 && effect.sourceUid === redGardna!.uid)).toMatchInlineSnapshot(`
+      {
+        "code": 41,
+        "controller": 0,
+        "event": "continuous",
+        "id": "lua-4-41",
+        "luaValueDescriptor": "indestructible:opponent",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "property": 256,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:72318602:lua-4-41",
+        "reset": {
+          "flags": 1073742336,
+        },
+        "sourceUid": "p0-deck-72318602-0",
+        "targetRange": [
+          4,
+          0,
+        ],
+        "valuePredicate": [Function],
+      }
+    `);
 
     expect(getLuaRestoreLegalActionGroups(restoredProtected, 1)).toEqual(getGroupedDuelLegalActions(restoredProtected.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredProtected, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredProtected, 1));
