@@ -321,6 +321,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
         "garden rose flora xyz special 0",
         "garden rose flora synchro special 1",
         "garden rose flora deck special 1",
+        "property: 0x4000800",
         "targetRange: [1, 0]",
       ],
     },
@@ -469,6 +470,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-nebula-dragon-light-dark-dragon-lock.test.ts",
       requiredSnippets: [
         "target:not-race-attribute:8192:48",
+        "property: 0x800",
         "targetRange: [1, 0]",
         "nebula fire dragon special 0",
         "nebula light warrior special 0",
@@ -507,6 +509,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
       file: "test/lua-real-script-link-turret-extra-dark-link-lock.test.ts",
       requiredSnippets: [
         "special-summon-limit:not-type-attribute-extra:67108864:32",
+        "property: 0x800",
         "targetRange: [1, 0]",
         "link turret light link special 0",
         "link turret dark synchro special 0",
