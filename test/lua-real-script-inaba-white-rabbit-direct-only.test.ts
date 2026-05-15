@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -70,13 +71,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
     expect(restored.session.state.players[0].lifePoints).toBe(8000);
     expect(restored.session.state.players[1].lifePoints).toBe(7300);
     expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 700 });
-    expect(restored.session.state.eventHistory).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ eventName: "attackDeclared", eventCode: 1130, eventCardUid: inaba!.uid }),
-        expect.objectContaining({ eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 700, eventCardUid: inaba!.uid }),
-        expect.objectContaining({ eventName: "damageStepEnded", eventCode: 1141, eventCardUid: inaba!.uid }),
-      ]),
-    );
+    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "attackDeclared", eventCode: 1130, eventCardUid: inaba!.uid })]));
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: inaba!.uid,
+        eventPlayer: 1,
+        eventValue: 700,
+        eventReason: duelReason.battle,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
+    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "damageStepEnded", eventCode: 1141, eventCardUid: inaba!.uid })]));
   });
 });
 
