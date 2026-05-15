@@ -45,15 +45,35 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(susaCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: susa!.uid,
-          code: 208,
-          range: ["monsterZone"],
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter((effect) => effect.sourceUid === susa!.uid && effect.code === 208),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 208,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-7-208",
+          "lifePointValue": [Function],
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:40473581:lua-7-208",
+          "sourceUid": "p0-deck-40473581-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

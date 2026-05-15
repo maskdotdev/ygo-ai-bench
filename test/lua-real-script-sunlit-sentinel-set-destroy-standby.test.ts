@@ -49,32 +49,89 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
       previousLocation: "spellTrapZone",
       previousPosition: "faceDown",
     });
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: sentinel!.uid,
-          range: ["graveyard"],
-          triggerEvent: "phaseStandby",
-          luaConditionDescriptor: "condition:source-turn-next",
-        }),
-      ]),
-    );
+    expect(
+      session.state.effects.filter(
+        (effect) =>
+          effect.sourceUid === sentinel!.uid &&
+          effect.triggerEvent === "phaseStandby" &&
+          effect.luaConditionDescriptor === "condition:source-turn-next",
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "category": 513,
+          "code": 4098,
+          "controller": 0,
+          "cost": [Function],
+          "countLimit": 1,
+          "description": 1253775232,
+          "event": "trigger",
+          "id": "lua-3-4098",
+          "luaConditionDescriptor": "condition:source-turn-next",
+          "luaTypeFlags": 130,
+          "oncePerTurn": true,
+          "operation": [Function],
+          "optional": true,
+          "promptOperation": [Function],
+          "range": [
+            "graveyard",
+          ],
+          "registryKey": "lua:78360952:lua-3-4098",
+          "reset": {
+            "flags": 33427456,
+          },
+          "sourceUid": "p0-deck-78360952-0",
+          "target": [Function],
+          "targetCardPredicate": [Function],
+          "triggerCode": 4098,
+          "triggerEvent": "phaseStandby",
+          "triggerTiming": "when",
+        },
+      ]
+    `);
 
     const restoredDelayed = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredDelayed.restoreComplete, restoredDelayed.incompleteReasons.join("; ")).toBe(true);
     expect(restoredDelayed.missingRegistryKeys).toEqual([]);
     expect(restoredDelayed.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredDelayed, 0);
-    expect(restoredDelayed.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: sentinel!.uid,
-          range: ["graveyard"],
-          triggerEvent: "phaseStandby",
-          luaConditionDescriptor: "condition:source-turn-next",
-        }),
-      ]),
-    );
+    expect(
+      restoredDelayed.session.state.effects.filter(
+        (effect) =>
+          effect.sourceUid === sentinel!.uid &&
+          effect.triggerEvent === "phaseStandby" &&
+          effect.luaConditionDescriptor === "condition:source-turn-next",
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "category": 513,
+          "code": 4098,
+          "controller": 0,
+          "countLimit": 1,
+          "description": 1253775232,
+          "event": "trigger",
+          "id": "lua-3-4098",
+          "luaConditionDescriptor": "condition:source-turn-next",
+          "oncePerTurn": true,
+          "operation": [Function],
+          "optional": true,
+          "range": [
+            "graveyard",
+          ],
+          "registryKey": "lua:78360952:lua-3-4098",
+          "reset": {
+            "flags": 33427456,
+          },
+          "sourceUid": "p0-deck-78360952-0",
+          "triggerCode": 4098,
+          "triggerEvent": "phaseStandby",
+          "triggerTiming": "when",
+        },
+      ]
+    `);
 
     restoredDelayed.session.state.turn = session.state.cards.find((card) => card.uid === sentinel!.uid)!.turnId! + 1;
     restoredDelayed.session.state.phase = "draw";

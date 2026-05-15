@@ -117,12 +117,80 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
     expect(restoredEquipped.missingRegistryKeys).toEqual([]);
     expect(restoredEquipped.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredEquipped, 0);
-    expect(restoredEquipped.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: supervise!.uid, event: "continuous", code: 75 }),
-        expect.objectContaining({ sourceUid: supervise!.uid, event: "continuous", code: 76 }),
-      ]),
-    );
+    expect(
+      restoredEquipped.session.state.effects.filter(
+        (effect) => effect.sourceUid === supervise!.uid && effect.event === "continuous" && (effect.code === 75 || effect.code === 76),
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 76,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-2-76",
+          "lifePointValue": [Function],
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 1024,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:95750695:lua-2-76",
+          "sourceUid": "p0-deck-95750695-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+        {
+          "canActivate": [Function],
+          "code": 75,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-3-75",
+          "luaTypeFlags": 4,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:95750695:lua-3-75",
+          "sourceUid": "p0-deck-95750695-0",
+          "target": [Function],
+        },
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 76,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-6-76",
+          "lifePointValue": [Function],
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "property": 1024,
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:95750695:lua-6-76",
+          "reset": {
+            "flags": 33427456,
+          },
+          "sourceUid": "p0-deck-95750695-0",
+          "statValue": [Function],
+          "target": [Function],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
     assertGeminiStatus(restoredEquipped, geminiCode, true);
 
     const sent = restoredEquipped.host.loadScript(
