@@ -71,6 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
     expect(restoredInitial.restoreComplete, restoredInitial.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredInitial, 0);
     expect(restoredInitial.missingRegistryKeys).toEqual([]);
+    expect(restoredInitial.missingChainLimitRegistryKeys).toEqual([]);
     const geminiSummon = getLuaRestoreLegalActions(restoredInitial, 0).find((action) => action.type === "normalSummon" && action.uid === hydronHawk!.uid);
     expect(geminiSummon, JSON.stringify(getLuaRestoreLegalActions(restoredInitial, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredInitial, geminiSummon!);
@@ -79,6 +80,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
     expect(restoredIgnition.restoreComplete, restoredIgnition.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredIgnition, 0);
     expect(restoredIgnition.missingRegistryKeys).toEqual([]);
+    expect(restoredIgnition.missingChainLimitRegistryKeys).toEqual([]);
     assertGeminiStatus(restoredIgnition, hydronHawkCode, true);
     const ignition = getLuaRestoreLegalActions(restoredIgnition, 0).find((action) => action.type === "activateEffect" && action.uid === hydronHawk!.uid);
     expect(ignition, JSON.stringify(getLuaRestoreLegalActions(restoredIgnition, 0), null, 2)).toBeDefined();
@@ -101,6 +103,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredChain, 1);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredChain);
     expect(restoredChain.host.messages).not.toContain("hydron hawk responder resolved");
@@ -118,6 +121,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
     expect(restoredAfterSummon.restoreComplete, restoredAfterSummon.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredAfterSummon, 0);
     expect(restoredAfterSummon.missingRegistryKeys).toEqual([]);
+    expect(restoredAfterSummon.missingChainLimitRegistryKeys).toEqual([]);
     expect(restoredAfterSummon.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ position: "faceUpDefense" });
     expect(restoredAfterSummon.host.messages).not.toContain("hydron hawk responder resolved");
   });

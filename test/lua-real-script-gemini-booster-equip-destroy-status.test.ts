@@ -67,6 +67,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
+    expect(restoredActivation.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredActivation, 0);
     assertGeminiStatus(restoredActivation, slimeCode, false);
     const activate = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === booster!.uid);
@@ -84,6 +85,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredChain, 1);
     expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredChain);
@@ -98,6 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const restoredEquipped = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredEquipped.restoreComplete, restoredEquipped.incompleteReasons.join("; ")).toBe(true);
     expect(restoredEquipped.missingRegistryKeys).toEqual([]);
+    expect(restoredEquipped.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredEquipped, 0);
     expect(restoredEquipped.session.state.effects).toEqual(
       expect.arrayContaining([
@@ -121,6 +124,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredEquipped.session), source, reader);
     expect(restoredTrigger.restoreComplete, restoredTrigger.incompleteReasons.join("; ")).toBe(true);
     expect(restoredTrigger.missingRegistryKeys).toEqual([]);
+    expect(restoredTrigger.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredTrigger, 0);
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === booster!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
@@ -135,6 +139,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const restoredStatusChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);
     expect(restoredStatusChain.restoreComplete, restoredStatusChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredStatusChain.missingRegistryKeys).toEqual([]);
+    expect(restoredStatusChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredStatusChain, 1);
     resolveRestoredChain(restoredStatusChain);
     assertGeminiStatus(restoredStatusChain, slimeCode, true);
@@ -145,6 +150,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const restoredAfterStatus = restoreDuelWithLuaScripts(serializeDuel(restoredStatusChain.session), source, reader);
     expect(restoredAfterStatus.restoreComplete, restoredAfterStatus.incompleteReasons.join("; ")).toBe(true);
     expect(restoredAfterStatus.missingRegistryKeys).toEqual([]);
+    expect(restoredAfterStatus.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredAfterStatus, 0);
     assertGeminiStatus(restoredAfterStatus, slimeCode, true);
     expect(restoredAfterStatus.host.messages).not.toContain("gemini booster responder resolved");

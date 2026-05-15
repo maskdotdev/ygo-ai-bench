@@ -74,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredActivation.restoreComplete, restoredActivation.incompleteReasons.join("; ")).toBe(true);
     expect(restoredActivation.missingRegistryKeys).toEqual([]);
+    expect(restoredActivation.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredActivation, 0);
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     expectGeminiStatus(restoredActivation, slimeCode, false);
@@ -90,6 +91,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
     expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredChain);
@@ -101,6 +103,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     const restoredStatus = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredStatus.restoreComplete, restoredStatus.incompleteReasons.join("; ")).toBe(true);
     expect(restoredStatus.missingRegistryKeys).toEqual([]);
+    expect(restoredStatus.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredStatus, 0);
     expectGeminiStatus(restoredStatus, slimeCode, true);
     expectGeminiStatus(restoredStatus, soldierCode, true);
@@ -139,6 +142,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     const restoredAfterEnd = restoreDuelWithLuaScripts(serializeDuel(restoredStatus.session), source, reader);
     expect(restoredAfterEnd.restoreComplete, restoredAfterEnd.incompleteReasons.join("; ")).toBe(true);
     expect(restoredAfterEnd.missingRegistryKeys).toEqual([]);
+    expect(restoredAfterEnd.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredAfterEnd, 1);
     expectGeminiStatus(restoredAfterEnd, slimeCode, false);
     expectGeminiStatus(restoredAfterEnd, soldierCode, false);

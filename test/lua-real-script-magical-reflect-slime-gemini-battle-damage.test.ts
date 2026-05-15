@@ -57,6 +57,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     const restoredSummonWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredSummonWindow.restoreComplete, restoredSummonWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredSummonWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredSummonWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredSummonWindow, 0);
     assertGeminiStatus(restoredSummonWindow, slimeCode, false);
     const geminiSummon = getLuaRestoreLegalActions(restoredSummonWindow, 0).find((action) => action.type === "normalSummon" && action.uid === slime!.uid);
@@ -67,6 +68,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     const restoredBattleEntry = restoreDuelWithLuaScripts(serializeDuel(restoredSummonWindow.session), workspace, reader);
     expect(restoredBattleEntry.restoreComplete, restoredBattleEntry.incompleteReasons.join("; ")).toBe(true);
     expect(restoredBattleEntry.missingRegistryKeys).toEqual([]);
+    expect(restoredBattleEntry.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredBattleEntry, 0);
     assertGeminiStatus(restoredBattleEntry, slimeCode, true);
     expect(restoredBattleEntry.session.state.effects).toEqual(
@@ -87,6 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     const restoredAttackWindow = restoreDuelWithLuaScripts(serializeDuel(restoredBattleEntry.session), workspace, reader);
     expect(restoredAttackWindow.restoreComplete, restoredAttackWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredAttackWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredAttackWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredAttackWindow, 0);
     assertGeminiStatus(restoredAttackWindow, slimeCode, true);
     const attack = getLuaRestoreLegalActions(restoredAttackWindow, 0).find(
@@ -100,6 +103,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     const restoredDamageWindow = restoreDuelWithLuaScripts(serializeDuel(restoredAttackWindow.session), workspace, reader);
     expect(restoredDamageWindow.restoreComplete, restoredDamageWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredDamageWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredDamageWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredDamageWindow, 1);
     passBattleResponses(restoredDamageWindow.session);
 

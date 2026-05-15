@@ -67,6 +67,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const activate = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.uid === spark!.uid);
     expect(activate, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
@@ -85,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const chainRestored = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(chainRestored.restoreComplete, chainRestored.incompleteReasons.join("; ")).toBe(true);
     expect(chainRestored.missingRegistryKeys).toEqual([]);
+    expect(chainRestored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(chainRestored, 1);
     expect(getLuaRestoreLegalActions(chainRestored, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     const pass = getLuaRestoreLegalActions(chainRestored, 1).find((action) => action.type === "passChain");

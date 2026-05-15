@@ -64,6 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const restoredInitial = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredInitial.restoreComplete, restoredInitial.incompleteReasons.join("; ")).toBe(true);
     expect(restoredInitial.missingRegistryKeys).toEqual([]);
+    expect(restoredInitial.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredInitial, 0);
     assertGeminiStatus(restoredInitial, soldierCode, false);
     const geminiSummon = getLuaRestoreLegalActions(restoredInitial, 0).find((action) => action.type === "normalSummon" && action.uid === soldier!.uid);
@@ -73,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const restoredBattleEntry = restoreDuelWithLuaScripts(serializeDuel(restoredInitial.session), source, reader);
     expect(restoredBattleEntry.restoreComplete, restoredBattleEntry.incompleteReasons.join("; ")).toBe(true);
     expect(restoredBattleEntry.missingRegistryKeys).toEqual([]);
+    expect(restoredBattleEntry.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredBattleEntry, 0);
     assertGeminiStatus(restoredBattleEntry, soldierCode, true);
     expect(restoredBattleEntry.session.state.effects).toEqual(
@@ -92,6 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const restoredAttackWindow = restoreDuelWithLuaScripts(serializeDuel(restoredBattleEntry.session), source, reader);
     expect(restoredAttackWindow.restoreComplete, restoredAttackWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredAttackWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredAttackWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredAttackWindow, 0);
     const attack = getLuaRestoreLegalActions(restoredAttackWindow, 0).find(
       (action) => action.type === "declareAttack" && action.attackerUid === soldier!.uid && action.targetUid === opponent!.uid,
@@ -102,6 +105,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const restoredBattleTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredAttackWindow.session), source, reader);
     expect(restoredBattleTrigger.restoreComplete, restoredBattleTrigger.incompleteReasons.join("; ")).toBe(true);
     expect(restoredBattleTrigger.missingRegistryKeys).toEqual([]);
+    expect(restoredBattleTrigger.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredBattleTrigger, 1);
     passBattleResponsesUntilTrigger(restoredBattleTrigger.session);
     expect(restoredBattleTrigger.session.state.cards.find((card) => card.uid === soldier!.uid)).toMatchObject({ location: "monsterZone" });
@@ -117,6 +121,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const restoredPendingTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredBattleTrigger.session), source, reader);
     expect(restoredPendingTrigger.restoreComplete, restoredPendingTrigger.incompleteReasons.join("; ")).toBe(true);
     expect(restoredPendingTrigger.missingRegistryKeys).toEqual([]);
+    expect(restoredPendingTrigger.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredPendingTrigger, 0);
     const trigger = getLuaRestoreLegalActions(restoredPendingTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === soldier!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredPendingTrigger, 0), null, 2)).toBeDefined();
@@ -130,6 +135,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredPendingTrigger.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredChain, 1);
     expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredChain);
@@ -167,6 +173,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const restoredAfterBattle = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredAfterBattle.restoreComplete, restoredAfterBattle.incompleteReasons.join("; ")).toBe(true);
     expect(restoredAfterBattle.missingRegistryKeys).toEqual([]);
+    expect(restoredAfterBattle.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredAfterBattle, 0);
     expect(restoredAfterBattle.session.state.cards.find((card) => card.uid === soldier!.uid)).toMatchObject({ location: "monsterZone" });
     expect(restoredAfterBattle.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone" });

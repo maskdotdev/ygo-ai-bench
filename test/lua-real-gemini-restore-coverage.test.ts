@@ -19,7 +19,8 @@ describe("Lua real Gemini restore coverage", () => {
         return !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys")
-          || !text.includes("missingRegistryKeys).toEqual([])");
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])");
       });
 
     expect(missing).toEqual([]);

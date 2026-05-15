@@ -56,6 +56,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ev
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 0);
     const geminiSummon = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "normalSummon" && action.uid === eveque!.uid);
     expect(geminiSummon, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
@@ -64,6 +65,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ev
     const triggerRestored = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
     expect(triggerRestored.restoreComplete, triggerRestored.incompleteReasons.join("; ")).toBe(true);
     expect(triggerRestored.missingRegistryKeys).toEqual([]);
+    expect(triggerRestored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(triggerRestored, 0);
     const trigger = getLuaRestoreLegalActions(triggerRestored, 0).find((action) => action.type === "activateTrigger" && action.uid === eveque!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(triggerRestored, 0), null, 2)).toBeDefined();
@@ -77,6 +79,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ev
     const chainRestored = restoreDuelWithLuaScripts(serializeDuel(triggerRestored.session), source, reader);
     expect(chainRestored.restoreComplete, chainRestored.incompleteReasons.join("; ")).toBe(true);
     expect(chainRestored.missingRegistryKeys).toEqual([]);
+    expect(chainRestored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(chainRestored, 1);
     expect(getLuaRestoreLegalActions(chainRestored, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     const pass = getLuaRestoreLegalActions(chainRestored, 1).find((action) => action.type === "passChain");

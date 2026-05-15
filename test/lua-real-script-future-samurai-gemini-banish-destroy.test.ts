@@ -67,6 +67,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
     const restoredInitial = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredInitial.restoreComplete, restoredInitial.incompleteReasons.join("; ")).toBe(true);
     expect(restoredInitial.missingRegistryKeys).toEqual([]);
+    expect(restoredInitial.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredInitial, 0);
     assertGeminiStatus(restoredInitial, samuraiCode, false);
     const geminiSummon = getLuaRestoreLegalActions(restoredInitial, 0).find((action) => action.type === "normalSummon" && action.uid === samurai!.uid);
@@ -76,6 +77,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
     const restoredIgnition = restoreDuelWithLuaScripts(serializeDuel(restoredInitial.session), source, reader);
     expect(restoredIgnition.restoreComplete, restoredIgnition.incompleteReasons.join("; ")).toBe(true);
     expect(restoredIgnition.missingRegistryKeys).toEqual([]);
+    expect(restoredIgnition.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredIgnition, 0);
     assertGeminiStatus(restoredIgnition, samuraiCode, true);
     const ignition = getLuaRestoreLegalActions(restoredIgnition, 0).find((action) => action.type === "activateEffect" && action.uid === samurai!.uid);
@@ -98,6 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredIgnition.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredChain, 1);
     expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredChain);
@@ -115,6 +118,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
     const restoredAfterDestroy = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredAfterDestroy.restoreComplete, restoredAfterDestroy.incompleteReasons.join("; ")).toBe(true);
     expect(restoredAfterDestroy.missingRegistryKeys).toEqual([]);
+    expect(restoredAfterDestroy.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredAfterDestroy, 0);
     expect(restoredAfterDestroy.session.state.cards.find((card) => card.uid === cost!.uid)).toMatchObject({ location: "banished" });
     expect(restoredAfterDestroy.session.state.cards.find((card) => card.uid === destroyTarget!.uid)).toMatchObject({ location: "graveyard" });

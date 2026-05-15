@@ -66,6 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
     expect(restoredInitial.restoreComplete, restoredInitial.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredInitial, 0);
     expect(restoredInitial.missingRegistryKeys).toEqual([]);
+    expect(restoredInitial.missingChainLimitRegistryKeys).toEqual([]);
     const geminiSummon = getLuaRestoreLegalActions(restoredInitial, 0).find((action) => action.type === "normalSummon" && action.uid === blazewing!.uid);
     expect(geminiSummon, JSON.stringify(getLuaRestoreLegalActions(restoredInitial, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredInitial, geminiSummon!);
@@ -74,6 +75,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
     expect(restoredIgnition.restoreComplete, restoredIgnition.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredIgnition, 0);
     expect(restoredIgnition.missingRegistryKeys).toEqual([]);
+    expect(restoredIgnition.missingChainLimitRegistryKeys).toEqual([]);
     assertGeminiStatus(restoredIgnition, blazewingCode, true);
     const ignition = getLuaRestoreLegalActions(restoredIgnition, 0).find((action) => action.type === "activateEffect" && action.uid === blazewing!.uid);
     expect(ignition, JSON.stringify(getLuaRestoreLegalActions(restoredIgnition, 0), null, 2)).toBeDefined();
@@ -96,6 +98,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredChain, 1);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
+    expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
     resolveRestoredChain(restoredChain);
     expect(restoredChain.host.messages).not.toContain("blazewing butterfly responder resolved");
@@ -116,6 +119,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
     expect(restoredAfterStatus.restoreComplete, restoredAfterStatus.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredAfterStatus, 0);
     expect(restoredAfterStatus.missingRegistryKeys).toEqual([]);
+    expect(restoredAfterStatus.missingChainLimitRegistryKeys).toEqual([]);
     assertGeminiStatus(restoredAfterStatus, geminiTargetCode, true);
     expect(restoredAfterStatus.host.messages).not.toContain("blazewing butterfly responder resolved");
   });
