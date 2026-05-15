@@ -137,12 +137,52 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Al
     expect(triggered.ok, triggered.error).toBe(true);
 
     expect(restored.session.state.pendingTriggers).toEqual([]);
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 2, sourceUid: lightTarget!.uid }),
-        expect.objectContaining({ event: "continuous", code: 8, sourceUid: lightTarget!.uid }),
-      ]),
-    );
+    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === lightTarget!.uid && [2, 8].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 2,
+          "controller": 1,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-2-2",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:7665:lua-2-2",
+          "reset": {
+            "flags": 91885568,
+          },
+          "sourceUid": "p1-deck-7665-0",
+          "target": [Function],
+        },
+        {
+          "canActivate": [Function],
+          "code": 8,
+          "controller": 1,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-3-8",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:7665:lua-3-8",
+          "reset": {
+            "flags": 91885568,
+          },
+          "sourceUid": "p1-deck-7665-0",
+          "target": [Function],
+        },
+      ]
+    `);
     expect(restored.session.state.cards.find((card) => card.uid === lightTarget!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
     const probe = restored.host.loadScript(
       `

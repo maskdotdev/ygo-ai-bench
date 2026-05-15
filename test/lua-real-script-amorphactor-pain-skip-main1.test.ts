@@ -60,36 +60,84 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     );
     expect(summonSuccess.ok, summonSuccess.error).toBe(true);
     expect(host.messages).toContain("amorphactor ritual success raised");
-    expect(session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: amorphactor.uid,
-          code: 182,
-          controller: 0,
-          targetRange: [0, 1],
-          reset: { flags: 0x60000200, count: 1 },
-          label: skipLabel,
-        }),
-      ]),
-    );
+    expect(session.state.effects.find((effect) => effect.code === 182 && effect.sourceUid === amorphactor.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 182,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-5-182",
+        "label": 1,
+        "luaTypeFlags": 2,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "promptOperation": [Function],
+        "property": 2048,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:98287529:lua-5-182",
+        "reset": {
+          "count": 1,
+          "flags": 1610613248,
+        },
+        "sourceUid": "p0-deck-98287529-0",
+        "target": [Function],
+        "targetRange": [
+          0,
+          1,
+        ],
+      }
+    `);
 
     const restoredEffect = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restoredEffect.restoreComplete, restoredEffect.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredEffect, 0);
     expect(restoredEffect.missingRegistryKeys).toEqual([]);
     expect(restoredEffect.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restoredEffect.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: amorphactor.uid,
-          code: 182,
-          controller: 0,
-          targetRange: [0, 1],
-          reset: { flags: 0x60000200, count: 1 },
-          label: skipLabel,
-        }),
-      ]),
-    );
+    expect(restoredEffect.session.state.effects.find((effect) => effect.code === 182 && effect.sourceUid === amorphactor.uid)).toMatchInlineSnapshot(`
+      {
+        "canActivate": [Function],
+        "code": 182,
+        "controller": 0,
+        "event": "continuous",
+        "id": "lua-5-182",
+        "label": 1,
+        "oncePerTurn": false,
+        "operation": [Function],
+        "ownerPlayer": 0,
+        "property": 2048,
+        "range": [
+          "deck",
+          "hand",
+          "monsterZone",
+          "spellTrapZone",
+          "graveyard",
+          "banished",
+          "extraDeck",
+          "overlay",
+        ],
+        "registryKey": "lua:98287529:lua-5-182",
+        "reset": {
+          "count": 1,
+          "flags": 1610613248,
+        },
+        "sourceUid": "p0-deck-98287529-0",
+        "targetRange": [
+          0,
+          1,
+        ],
+      }
+    `);
     applyActionAndAssert(restoredEffect.session, getLuaRestoreLegalActions(restoredEffect, 0).find((action) => action.type === "endTurn"));
 
     const restoredOpponentMain = restoreDuelWithLuaScripts(serializeDuel(restoredEffect.session), workspace, reader);

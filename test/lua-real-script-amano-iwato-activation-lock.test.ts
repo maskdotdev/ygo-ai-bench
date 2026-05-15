@@ -86,16 +86,36 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     expectRestoredLegalActions(restoredOpenWindow, 0);
     expect(restoredOpenWindow.missingRegistryKeys).toEqual([]);
     expect(restoredOpenWindow.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restoredOpenWindow.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sourceUid: amano!.uid,
-          event: "continuous",
-          code: 6,
-          luaValueDescriptor: "cannot-activate:non-spirit-monster-effect",
-        }),
-      ]),
-    );
+    expect(restoredOpenWindow.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 6 && effect.sourceUid === amano!.uid)).toMatchInlineSnapshot(`
+      {
+        "battleDamageValue": [Function],
+        "canActivate": [Function],
+        "code": 6,
+        "controller": 0,
+        "cost": [Function],
+        "event": "continuous",
+        "id": "lua-7-6",
+        "lifePointValue": [Function],
+        "luaTypeFlags": 2,
+        "luaValueDescriptor": "cannot-activate:non-spirit-monster-effect",
+        "oncePerTurn": false,
+        "operation": [Function],
+        "property": 2048,
+        "range": [
+          "monsterZone",
+        ],
+        "registryKey": "lua:32181268:lua-7-6",
+        "sourceUid": "p0-deck-32181268-0",
+        "statValue": [Function],
+        "target": [Function],
+        "targetRange": [
+          1,
+          1,
+        ],
+        "valueCardPredicate": [Function],
+        "valuePredicate": [Function],
+      }
+    `);
     expect(getLuaRestoreLegalActions(restoredOpenWindow, 0)).toEqual(getDuelLegalActions(restoredOpenWindow.session, 0));
     const starter = getLuaRestoreLegalActions(restoredOpenWindow, 0).find((action) => action.type === "activateEffect" && action.uid === starterSpell!.uid);
     expect(starter, JSON.stringify(getLuaRestoreLegalActions(restoredOpenWindow, 0), null, 2)).toBeDefined();

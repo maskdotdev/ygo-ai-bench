@@ -104,12 +104,58 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Me
     expect(restored.session.state.cards.find((card) => card.uid === angineer!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpDefense", overlayUids: [] });
     expect(restored.session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "graveyard", controller: 0, reason: duelReason.cost });
     expect(restored.session.state.positionsChanged).toEqual([target!.uid]);
-    expect(restored.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ event: "continuous", code: 42, sourceUid: target!.uid, reset: { flags: 0x41fe1200 } }),
-        expect.objectContaining({ event: "continuous", code: 41, sourceUid: target!.uid, reset: { flags: 0x41fe1200 } }),
-      ]),
-    );
+    expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === target!.uid && [41, 42].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 42,
+          "controller": 0,
+          "cost": [Function],
+          "description": 3008,
+          "event": "continuous",
+          "id": "lua-4-42",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 67109888,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:1592:lua-4-42",
+          "reset": {
+            "flags": 1107169792,
+          },
+          "sourceUid": "p0-deck-1592-1",
+          "target": [Function],
+          "value": 1,
+        },
+        {
+          "canActivate": [Function],
+          "code": 41,
+          "controller": 0,
+          "cost": [Function],
+          "description": 3008,
+          "event": "continuous",
+          "id": "lua-5-41",
+          "luaTypeFlags": 1,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "promptOperation": [Function],
+          "property": 67109888,
+          "range": [
+            "monsterZone",
+          ],
+          "registryKey": "lua:1592:lua-5-41",
+          "reset": {
+            "flags": 1107169792,
+          },
+          "sourceUid": "p0-deck-1592-1",
+          "target": [Function],
+          "value": 1,
+        },
+      ]
+    `);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "positionChanged" && event.eventCardUid === target!.uid)).toEqual([
       {
         eventName: "positionChanged",
