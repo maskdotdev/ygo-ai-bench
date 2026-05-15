@@ -14,12 +14,16 @@ describe("Lua real summon-negation restore coverage", () => {
       .filter((fixture) => {
         const text = fs.readFileSync(path.join(root, fixture.file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("applyLuaRestoreResponse")
+          || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
-          || !text.includes("missingRegistryKeys).toEqual([])");
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("eventHistory")
+          || !text.includes("operationInfos");
       })
       .map((fixture) => fixture.file);
 
