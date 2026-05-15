@@ -81,12 +81,74 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
     expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredChain);
     expect(restoredChain.session.state.cards.find((card) => card.uid === summon!.uid)).toMatchObject({ location: "monsterZone", controller: 0, summonType: "special" });
-    expect(restoredChain.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: cocoonVeil!.uid, code: 82, targetRange: [1, 0] }),
-        expect.objectContaining({ sourceUid: cocoonVeil!.uid, code: 335, targetRange: [1, 0] }),
-      ]),
-    );
+    expect(restoredChain.session.state.effects.filter((effect) => effect.sourceUid === cocoonVeil!.uid && [82, 335].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "code": 82,
+          "controller": 0,
+          "event": "continuous",
+          "id": "lua-3-82",
+          "lifePointValue": [Function],
+          "luaValueDescriptor": "change-damage:effect-zero",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:56641453:lua-3-82",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-56641453-0",
+          "targetRange": [
+            1,
+            0,
+          ],
+        },
+        {
+          "battleDamageValue": [Function],
+          "code": 335,
+          "controller": 0,
+          "event": "continuous",
+          "id": "lua-4-335",
+          "lifePointValue": [Function],
+          "luaValueDescriptor": "change-damage:effect-zero",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:56641453:lua-4-335",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-56641453-0",
+          "targetRange": [
+            1,
+            0,
+          ],
+        },
+      ]
+    `);
 
     const restoredEffects = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredEffects.restoreComplete, restoredEffects.incompleteReasons.join("; ")).toBe(true);

@@ -68,24 +68,148 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cy
     expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
     resolveRestoredChain(restoredChain);
 
-    expect(restoredChain.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: cyberKirin!.uid, code: effectChangeDamage, targetRange: [1, 0], reset: { flags: resetPhaseEnd } }),
-        expect.objectContaining({ sourceUid: cyberKirin!.uid, code: effectNoEffectDamage, targetRange: [1, 0], reset: { flags: resetPhaseEnd } }),
-      ]),
-    );
+    expect(restoredChain.session.state.effects.filter((effect) => effect.sourceUid === cyberKirin!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "code": 82,
+          "controller": 0,
+          "event": "continuous",
+          "id": "lua-3-82",
+          "lifePointValue": [Function],
+          "luaValueDescriptor": "change-damage:effect-zero",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:76986005:lua-3-82",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-76986005-0",
+          "targetRange": [
+            1,
+            0,
+          ],
+        },
+        {
+          "battleDamageValue": [Function],
+          "code": 335,
+          "controller": 0,
+          "event": "continuous",
+          "id": "lua-4-335",
+          "lifePointValue": [Function],
+          "luaValueDescriptor": "change-damage:effect-zero",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:76986005:lua-4-335",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-76986005-0",
+          "targetRange": [
+            1,
+            0,
+          ],
+        },
+      ]
+    `);
 
     const restoredEffects = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expect(restoredEffects.restoreComplete, restoredEffects.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredEffects, restoredEffects.session.state.waitingFor ?? restoredEffects.session.state.turnPlayer);
     expect(restoredEffects.missingRegistryKeys).toEqual([]);
     expect(restoredEffects.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restoredEffects.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: cyberKirin!.uid, code: effectChangeDamage, luaValueDescriptor: "change-damage:effect-zero", targetRange: [1, 0] }),
-        expect.objectContaining({ sourceUid: cyberKirin!.uid, code: effectNoEffectDamage, targetRange: [1, 0] }),
-      ]),
-    );
+    expect(restoredEffects.session.state.effects.filter((effect) => effect.sourceUid === cyberKirin!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "code": 82,
+          "controller": 0,
+          "event": "continuous",
+          "id": "lua-3-82",
+          "lifePointValue": [Function],
+          "luaValueDescriptor": "change-damage:effect-zero",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:76986005:lua-3-82",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-76986005-0",
+          "targetRange": [
+            1,
+            0,
+          ],
+        },
+        {
+          "battleDamageValue": [Function],
+          "code": 335,
+          "controller": 0,
+          "event": "continuous",
+          "id": "lua-4-335",
+          "lifePointValue": [Function],
+          "luaValueDescriptor": "change-damage:effect-zero",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:76986005:lua-4-335",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-76986005-0",
+          "targetRange": [
+            1,
+            0,
+          ],
+        },
+      ]
+    `);
     restoredEffects.session.state.turnPlayer = 1;
     restoredEffects.session.state.phase = "main1";
     restoredEffects.session.state.waitingFor = 1;

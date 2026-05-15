@@ -83,12 +83,90 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ha
     expectRestoredLegalActions(restoredChain, 1);
     resolveRestoredChain(restoredChain);
 
-    expect(restoredChain.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: hanewata!.uid, code: effectChangeDamage, targetRange: [1, 0], reset: { flags: resetPhaseEnd } }),
-        expect.objectContaining({ sourceUid: hanewata!.uid, code: effectNoEffectDamage, targetRange: [1, 0], reset: { flags: resetPhaseEnd } }),
-      ]),
-    );
+    expect(restoredChain.session.state.effects.filter((effect) => effect.sourceUid === hanewata!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 82,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-4-82",
+          "lifePointValue": [Function],
+          "luaTypeFlags": 2,
+          "luaValueDescriptor": "change-damage:effect-zero",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "promptOperation": [Function],
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:20450925:lua-4-82",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-20450925-0",
+          "statValue": [Function],
+          "target": [Function],
+          "targetRange": [
+            1,
+            0,
+          ],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+        {
+          "battleDamageValue": [Function],
+          "canActivate": [Function],
+          "code": 335,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-5-335",
+          "lifePointValue": [Function],
+          "luaTypeFlags": 2,
+          "luaValueDescriptor": "change-damage:effect-zero",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "promptOperation": [Function],
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:20450925:lua-5-335",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-20450925-0",
+          "statValue": [Function],
+          "target": [Function],
+          "targetRange": [
+            1,
+            0,
+          ],
+          "valueCardPredicate": [Function],
+          "valuePredicate": [Function],
+        },
+      ]
+    `);
     expect(restoredChain.host.messages).not.toContain("hanewata responder resolved");
 
     const restoredEffects = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
@@ -96,12 +174,74 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ha
     expect(restoredEffects.missingRegistryKeys).toEqual([]);
     expect(restoredEffects.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredEffects, 0);
-    expect(restoredEffects.session.state.effects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sourceUid: hanewata!.uid, code: effectChangeDamage, targetRange: [1, 0], luaValueDescriptor: "change-damage:effect-zero", reset: { flags: resetPhaseEnd } }),
-        expect.objectContaining({ sourceUid: hanewata!.uid, code: effectNoEffectDamage, targetRange: [1, 0], luaValueDescriptor: "change-damage:effect-zero", reset: { flags: resetPhaseEnd } }),
-      ]),
-    );
+    expect(restoredEffects.session.state.effects.filter((effect) => effect.sourceUid === hanewata!.uid && [effectChangeDamage, effectNoEffectDamage].includes(effect.code))).toMatchInlineSnapshot(`
+      [
+        {
+          "battleDamageValue": [Function],
+          "code": 82,
+          "controller": 0,
+          "event": "continuous",
+          "id": "lua-4-82",
+          "lifePointValue": [Function],
+          "luaValueDescriptor": "change-damage:effect-zero",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:20450925:lua-4-82",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-20450925-0",
+          "targetRange": [
+            1,
+            0,
+          ],
+        },
+        {
+          "battleDamageValue": [Function],
+          "code": 335,
+          "controller": 0,
+          "event": "continuous",
+          "id": "lua-5-335",
+          "lifePointValue": [Function],
+          "luaValueDescriptor": "change-damage:effect-zero",
+          "oncePerTurn": false,
+          "operation": [Function],
+          "ownerPlayer": 0,
+          "property": 2048,
+          "range": [
+            "deck",
+            "hand",
+            "monsterZone",
+            "spellTrapZone",
+            "graveyard",
+            "banished",
+            "extraDeck",
+            "overlay",
+          ],
+          "registryKey": "lua:20450925:lua-5-335",
+          "reset": {
+            "flags": 1073742336,
+          },
+          "sourceUid": "p0-deck-20450925-0",
+          "targetRange": [
+            1,
+            0,
+          ],
+        },
+      ]
+    `);
     restoredEffects.session.state.turnPlayer = 1;
     restoredEffects.session.state.phase = "main1";
     restoredEffects.session.state.waitingFor = 1;
