@@ -17,6 +17,7 @@ describe("Lua real resource gate restore coverage", () => {
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
           || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
@@ -35,6 +36,7 @@ function resourceGateFixtureFiles(): Array<{ file: string; required: string[] }>
       file: "test/lua-real-script-diabolos-effect-release-lock.test.ts",
       required: [
         "costRestored.missingRegistryKeys).toEqual([])",
+        "costRestored.missingChainLimitRegistryKeys).toEqual([])",
         "diabolos release predicates true/false/true",
         "diabolos effect release 1",
         "diabolos cost release 1",
