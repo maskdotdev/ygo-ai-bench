@@ -89,7 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ja
       "jam-breeding-machine-slime-token-lock-probe.lua",
     );
     expect(probe.ok, probe.error).toBe(true);
-    expect(restored.host.messages).toEqual(expect.arrayContaining(["jam slime token special 1", "jam hand special 0"]));
+    expect(restored.host.messages.slice(-2)).toEqual(["jam slime token special 1", "jam hand special 0"]);
 
     const endTurn = getLegalActions(restored.session, 0).find((action) => action.type === "endTurn");
     expect(endTurn).toBeDefined();

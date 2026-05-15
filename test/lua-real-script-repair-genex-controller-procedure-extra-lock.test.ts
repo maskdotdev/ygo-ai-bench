@@ -112,6 +112,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
       "repair-genex-controller-raw-extra-lock-probe.lua",
     );
     expect(rawProbe.ok, rawProbe.error).toBe(true);
-    expect(restored.host.messages).toEqual(expect.arrayContaining(["repair genex raw synchro special 0", "repair genex fusion special 0"]));
+    expect(restored.host.messages.slice(-2)).toEqual(["repair genex raw synchro special 0", "repair genex fusion special 0"]);
   });
 });

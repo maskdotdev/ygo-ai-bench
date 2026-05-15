@@ -73,7 +73,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Va
       "vata-extra-dark-lock-probe.lua",
     );
     expect(probe.ok, probe.error).toBe(true);
-    expect(restored.host.messages).toEqual(expect.arrayContaining(["vata extra light special 0", "vata hand light special 1", "vata extra dark special 1"]));
+    expect(restored.host.messages.slice(-3)).toEqual(["vata extra light special 0", "vata hand light special 1", "vata extra dark special 1"]);
 
     const endTurn = getLegalActions(restored.session, 0).find((action) => action.type === "endTurn");
     expect(endTurn).toBeDefined();

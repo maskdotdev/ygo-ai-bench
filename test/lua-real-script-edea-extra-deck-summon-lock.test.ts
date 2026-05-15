@@ -89,7 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ed
       "edea-extra-deck-lock-probe.lua",
     );
     expect(probe.ok, probe.error).toBe(true);
-    expect(restored.host.messages).toEqual(expect.arrayContaining(["edea extra special 0", "edea hand special 1"]));
+    expect(restored.host.messages.slice(-2)).toEqual(["edea extra special 0", "edea hand special 1"]);
 
     const endTurn = getLegalActions(restored.session, 0).find((action) => action.type === "endTurn");
     expect(endTurn).toBeDefined();

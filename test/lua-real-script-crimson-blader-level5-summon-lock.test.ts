@@ -89,7 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cr
       "crimson-blader-level5-lock-probe.lua",
     );
     expect(probe.ok, probe.error).toBe(true);
-    expect(restored.host.messages).toEqual(expect.arrayContaining(["crimson blader level5 special 0", "crimson blader level4 special 1"]));
+    expect(restored.host.messages.slice(-2)).toEqual(["crimson blader level5 special 0", "crimson blader level4 special 1"]);
 
     const endTurn = getLegalActions(restored.session, 0).find((action) => action.type === "endTurn");
     expect(endTurn).toBeDefined();

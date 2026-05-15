@@ -89,7 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
       "orcust-cymbal-dark-lock-probe.lua",
     );
     expect(probe.ok, probe.error).toBe(true);
-    expect(restored.host.messages).toEqual(expect.arrayContaining(["orcust dark special 1", "orcust light special 0"]));
+    expect(restored.host.messages.slice(-2)).toEqual(["orcust dark special 1", "orcust light special 0"]);
 
     const endTurn = getLegalActions(restored.session, 0).find((action) => action.type === "endTurn");
     expect(endTurn).toBeDefined();

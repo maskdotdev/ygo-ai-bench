@@ -80,7 +80,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
       "token-collector-token-lock-probe.lua",
     );
     expect(probe.ok, probe.error).toBe(true);
-    expect(restored.host.messages).toEqual(expect.arrayContaining(["token collector token special 0", "token collector hand special 1"]));
+    expect(restored.host.messages.slice(-2)).toEqual(["token collector token special 0", "token collector hand special 1"]);
 
     const endTurn = getLegalActions(restored.session, 0).find((action) => action.type === "endTurn");
     expect(endTurn).toBeDefined();
