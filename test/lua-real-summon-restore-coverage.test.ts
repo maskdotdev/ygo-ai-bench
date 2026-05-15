@@ -9,7 +9,7 @@ const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", 
 const realScriptSummonFixtureCount = 149;
 const summonProcedureFixtureCount = 20;
 const typedSummonProcedureFixtureCount = 6;
-const pendulumGrantFixtureCount = 3;
+const pendulumGrantFixtureCount = 4;
 const pendulumHelperFixtureCount = 13;
 const unionProcedureFixtureCount = 4;
 const materialLockFixtureCount = 4;
@@ -256,6 +256,7 @@ function realScriptTypedSummonProcedureFixtureFiles(): string[] {
 
 function realScriptPendulumGrantFixtureFiles(): string[] {
   return [
+    "lua-real-script-extra-pendulum-location-grant.test.ts",
     "lua-real-script-extra-pendulum-opponent-scale-grant.test.ts",
     "lua-real-script-harmonic-oscillation-pendulum-grant.test.ts",
     "lua-real-script-soul-pendulum-extra-summon.test.ts",
