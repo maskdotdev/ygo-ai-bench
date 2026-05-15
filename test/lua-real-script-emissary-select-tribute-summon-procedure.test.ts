@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { currentAttack, currentDefense, currentLevel } from "#duel/card-stats.js";
 import { createDuel, getGroupedDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -69,10 +70,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Em
     expect(currentLevel(restoredEmissary, restored.session.state)).toBe(5);
     expect(currentAttack(restoredEmissary, restored.session.state)).toBe(1300);
     expect(currentDefense(restoredEmissary, restored.session.state)).toBe(900);
-    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([
-      expect.objectContaining({ eventName: "released", eventCardUid: tribute.uid }),
-      expect.objectContaining({ eventName: "normalSummoned", eventCardUid: emissary.uid }),
-    ]));
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "released" && event.eventCardUid === tribute.uid)).toEqual([
+      {
+        eventName: "released",
+        eventCode: 1017,
+        eventCardUid: tribute.uid,
+        eventReason: duelReason.release | duelReason.material | duelReason.summon,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: emissary.uid,
+        eventReasonEffectId: 2,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
+    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "normalSummoned", eventCardUid: emissary.uid })]));
   });
 });
 
