@@ -16,12 +16,13 @@ function main(argv) {
   const minPercent = options.minPercent ?? 75;
   const realScriptFiles = realScriptFixtureFiles(testRoot);
   const cleanRestored = realScriptFiles.filter((file) => readTestFile(file).includes("missingRegistryKeys).toEqual([])"));
+  const chainLimitCleanRestored = realScriptFiles.filter((file) => readTestFile(file).includes("missingChainLimitRegistryKeys).toEqual([])"));
   const coverageFiles = restoreCoverageFiles(testRoot);
   const referenced = restoreCoverageReferences(testRoot, realScriptFiles, coverageFiles);
   const unreferenced = cleanRestored.filter((file) => !referenced.has(toRepoPath(file)));
   const percent = realScriptFiles.length === 0 ? 100 : (cleanRestored.length / realScriptFiles.length) * 100;
 
-  console.log(`Lua real-script clean restore coverage: ${cleanRestored.length}/${realScriptFiles.length} (${percent.toFixed(1)}%), ${coverageFiles.length} coverage files`);
+  console.log(`Lua real-script clean restore coverage: ${cleanRestored.length}/${realScriptFiles.length} (${percent.toFixed(1)}%), chain-limit ${chainLimitCleanRestored.length}/${realScriptFiles.length}, ${coverageFiles.length} coverage files`);
 
   const failures = [];
   if (options.minFixtures !== undefined && realScriptFiles.length < options.minFixtures) failures.push(`Real-script fixtures ${realScriptFiles.length} is below required ${options.minFixtures}`);
@@ -30,6 +31,10 @@ function main(argv) {
   if (options.failOnMissing && cleanRestored.length !== realScriptFiles.length) {
     const missing = realScriptFiles.filter((file) => !cleanRestored.includes(file)).map(toRepoPath);
     failures.push(`Fixtures missing clean restore assertions:\n${formatList(missing)}`);
+  }
+  if (options.failOnMissing && chainLimitCleanRestored.length !== realScriptFiles.length) {
+    const missing = realScriptFiles.filter((file) => !chainLimitCleanRestored.includes(file)).map(toRepoPath);
+    failures.push(`Fixtures missing chain-limit clean restore assertions:\n${formatList(missing)}`);
   }
   if (options.failOnUnreferenced && unreferenced.length > 0) {
     failures.push(`Clean-restored fixtures missing restore coverage ownership:\n${formatList(unreferenced.map(toRepoPath))}`);
