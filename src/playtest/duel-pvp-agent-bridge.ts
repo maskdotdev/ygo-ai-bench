@@ -21,10 +21,32 @@ export interface DuelPvpAgentStartOptions {
   handSize?: number;
 }
 
+export interface DuelPvpVisibleAutoRunOptions {
+  sessionId?: string;
+  player?: PlayerId;
+  maxActions?: number;
+}
+
 export interface DuelPvpVisibleView {
   player: PlayerId;
   actions: DuelAction[];
   groups: DuelActionUiGroup[];
+}
+
+export interface DuelPvpVisibleAutoRunStep {
+  index: number;
+  player: PlayerId;
+  action: DuelAction;
+}
+
+export interface DuelPvpVisibleAutoRunResult {
+  ok: boolean;
+  reason: "maxActions" | "noVisibleActions" | "rejected" | "finished";
+  state: ReturnType<typeof queryPublicState>;
+  steps: DuelPvpVisibleAutoRunStep[];
+  failure?: string;
+  visibleActions: DuelAction[];
+  visibleGroups: DuelActionUiGroup[];
 }
 
 export interface DuelPvpAgent {
@@ -34,6 +56,7 @@ export interface DuelPvpAgent {
   legalActions(player?: PlayerId, sessionId?: string): DuelAction[];
   visibleBattlefield(player?: PlayerId, sessionId?: string): DuelPvpVisibleView;
   action(action: unknown, sessionId?: string): ReturnType<typeof applyResponse>;
+  autoRunVisible(options?: DuelPvpVisibleAutoRunOptions): DuelPvpVisibleAutoRunResult;
   runVisibleScript(steps: DuelBattlefieldActionSelector[], sessionId?: string): ReturnType<typeof runDuelBattlefieldScript>;
   clear(sessionId?: string): { ok: boolean; sessions: number; activeSessionId: string | null };
 }
@@ -75,6 +98,9 @@ export function createDuelPvpAgent(): DuelPvpAgent {
     },
     action(action, sessionId) {
       return applyResponse(getSession(sessionId), action);
+    },
+    autoRunVisible(options = {}) {
+      return autoRunVisibleBattlefield(getSession(options.sessionId), options);
     },
     runVisibleScript(steps, sessionId) {
       return runDuelBattlefieldScript(getSession(sessionId), steps);
@@ -134,6 +160,46 @@ function visibleBattlefieldView(session: DuelSession, player: PlayerId): DuelPvp
     player,
     actions: visibleDuelBattlefieldActions(view).map(copyDuelAction),
     groups: view.orphanGroups.map(copyUiGroup),
+  };
+}
+
+function autoRunVisibleBattlefield(
+  session: DuelSession,
+  options: DuelPvpVisibleAutoRunOptions,
+): DuelPvpVisibleAutoRunResult {
+  const maxActions = Math.max(0, Math.floor(options.maxActions ?? 20));
+  const steps: DuelPvpVisibleAutoRunStep[] = [];
+  for (let index = 0; index < maxActions; index += 1) {
+    const state = queryPublicState(session);
+    if (state.status !== "awaiting") return visibleAutoRunResult(session, options.player ?? state.waitingFor ?? 0, steps, "finished");
+    const player = options.player ?? state.waitingFor ?? 0;
+    const view = visibleBattlefieldView(session, player);
+    const action = view.actions[0];
+    if (!action) return visibleAutoRunResult(session, player, steps, "noVisibleActions");
+    const result = applyResponse(session, action);
+    steps.push({ index, player, action: copyDuelAction(action) });
+    if (!result.ok) return visibleAutoRunResult(session, player, steps, "rejected", result.error);
+  }
+  const state = queryPublicState(session);
+  return visibleAutoRunResult(session, options.player ?? state.waitingFor ?? 0, steps, "maxActions");
+}
+
+function visibleAutoRunResult(
+  session: DuelSession,
+  player: PlayerId,
+  steps: DuelPvpVisibleAutoRunStep[],
+  reason: DuelPvpVisibleAutoRunResult["reason"],
+  failure?: string,
+): DuelPvpVisibleAutoRunResult {
+  const view = visibleBattlefieldView(session, player);
+  return {
+    ok: reason !== "rejected",
+    reason,
+    state: queryPublicState(session),
+    steps: steps.map((step) => ({ ...step, action: copyDuelAction(step.action) })),
+    ...(failure === undefined ? {} : { failure }),
+    visibleActions: view.actions,
+    visibleGroups: view.groups,
   };
 }
 

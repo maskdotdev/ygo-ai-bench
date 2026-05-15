@@ -49,4 +49,33 @@ describe("duel pvp agent bridge", () => {
       result.visibleActions.some((visible) => JSON.stringify(visible) === JSON.stringify(action))
     ))).toBe(true);
   });
+
+  it("auto-runs bounded visible battlefield actions without inventing hidden actions", () => {
+    const agent = createDuelPvpAgent();
+    const started = agent.start({ player0Ydk: starterYdk, player1Ydk: starterYdk, seed: "pvp-agent-auto", handSize: 2 });
+    const firstVisibleKeys = new Set(started.visibleBattlefield.actions.map((action) => JSON.stringify(action)));
+
+    const result = agent.autoRunVisible({ sessionId: started.sessionId, maxActions: 2 });
+
+    expect(result.ok).toBe(true);
+    expect(result.reason).toBe("maxActions");
+    expect(result.steps).toHaveLength(2);
+    expect(firstVisibleKeys.has(JSON.stringify(result.steps[0]?.action))).toBe(true);
+    expect(result.state.id).toBe(started.sessionId);
+    expect(result.visibleGroups.flatMap((group) => group.actions).every((action) => (
+      result.visibleActions.some((visible) => JSON.stringify(visible) === JSON.stringify(action))
+    ))).toBe(true);
+  });
+
+  it("reports zero-action visible autoplay as a bounded stop", () => {
+    const agent = createDuelPvpAgent();
+    const started = agent.start({ player0Ydk: starterYdk, player1Ydk: starterYdk, seed: "pvp-agent-auto-zero", handSize: 2 });
+
+    const result = agent.autoRunVisible({ sessionId: started.sessionId, maxActions: 0 });
+
+    expect(result.ok).toBe(true);
+    expect(result.reason).toBe("maxActions");
+    expect(result.steps).toEqual([]);
+    expect(result.state.id).toBe(started.sessionId);
+  });
 });
