@@ -3,10 +3,15 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const conditionFixtureCount = 7;
+const sourceConditionFixtureCount = 60;
 
 describe("Lua real condition restore coverage", () => {
   it("requires representative phase and turn-player condition fixtures to assert clean Lua registry restore", () => {
-    const missing = realScriptConditionFixtureFiles()
+    const files = realScriptConditionFixtureFiles();
+    expect(files).toHaveLength(conditionFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreComplete")
@@ -19,7 +24,10 @@ describe("Lua real condition restore coverage", () => {
   });
 
   it("requires restored condition fixtures to prove descriptor-backed truth tables", () => {
-    const missing = realScriptConditionFixtureFiles()
+    const files = realScriptConditionFixtureFiles();
+    expect(files).toHaveLength(conditionFixtureCount);
+
+    const missing = files
       .filter((file) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("luaConditionDescriptor")
@@ -35,7 +43,10 @@ describe("Lua real condition restore coverage", () => {
   });
 
   it("requires representative source condition fixtures to prove restored source-state truth tables", () => {
-    const missing = realScriptSourceConditionFixtureFiles()
+    const files = realScriptSourceConditionFixtureFiles();
+    expect(files).toHaveLength(sourceConditionFixtureCount);
+
+    const missing = files
       .filter(({ file, requiredSnippets }) => {
         const text = fs.readFileSync(path.join(root, file), "utf8");
         return !text.includes("restoreDuelWithLuaScripts")
