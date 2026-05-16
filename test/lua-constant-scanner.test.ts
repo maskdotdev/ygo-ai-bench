@@ -6,6 +6,75 @@ import { describe, expect, it } from "vitest";
 
 const scannerPath = path.resolve("tools/scan-lua-constants.mjs");
 const parityScannerPath = path.resolve("tools/scan-lua-parity.mjs");
+const expectedLocalFallbackConstants = [
+  "CATEGORY_DRAW",
+  "CATEGORY_HANDES",
+  "CATEGORY_REMOVE",
+  "CATEGORY_SEARCH",
+  "CATEGORY_SPECIAL_SUMMON",
+  "CATEGORY_TODECK",
+  "CATEGORY_TOGRAVE",
+  "CATEGORY_TOHAND",
+  "EFFECT_AVOID_BATTLE_DAMAGE",
+  "EFFECT_COUNT_CODE_OATH",
+  "EFFECT_EXTRA_ATTACK",
+  "EFFECT_FLAG_CARD_TARGET",
+  "EFFECT_FLAG_DAMAGE_CAL",
+  "EFFECT_FLAG_DAMAGE_STEP",
+  "EFFECT_FLAG_DELAY",
+  "EFFECT_FLAG_UNCOPYABLE",
+  "EFFECT_INDESTRUCTABLE_BATTLE",
+  "EFFECT_RITUAL_LEVEL",
+  "EFFECT_SPSUMMON_PROC",
+  "EFFECT_TYPE_ACTIVATE",
+  "EFFECT_TYPE_FIELD",
+  "EFFECT_TYPE_IGNITION",
+  "EFFECT_TYPE_QUICK_O",
+  "EFFECT_TYPE_SINGLE",
+  "EFFECT_TYPE_TRIGGER_O",
+  "EVENT_BATTLE_DESTROYING",
+  "EVENT_CHAINING",
+  "EVENT_FREE_CHAIN",
+  "EVENT_LEAVE_FIELD",
+  "EVENT_SPSUMMON_SUCCESS",
+  "EVENT_SUMMON_SUCCESS",
+  "EVENT_TO_GRAVE",
+  "HINTMSG_ATOHAND",
+  "HINTMSG_POSCHANGE",
+  "HINTMSG_RELEASE",
+  "HINTMSG_RTOHAND",
+  "HINTMSG_SET",
+  "HINTMSG_SPSUMMON",
+  "HINTMSG_TODECK",
+  "HINTMSG_TOFIELD",
+  "HINTMSG_TOGRAVE",
+  "HINT_SELECTMSG",
+  "LOCATION_DECK",
+  "LOCATION_GRAVE",
+  "LOCATION_HAND",
+  "LOCATION_MZONE",
+  "LOCATION_ONFIELD",
+  "LOCATION_REMOVED",
+  "LOCATION_SZONE",
+  "PHASE_DAMAGE",
+  "PHASE_END",
+  "PLAYER_ALL",
+  "POS_FACEDOWN_DEFENSE",
+  "POS_FACEUP",
+  "POS_FACEUP_ATTACK",
+  "RACE_SPELLCASTER",
+  "RACE_WARRIOR",
+  "REASON_COST",
+  "REASON_DISCARD",
+  "REASON_EFFECT",
+  "RESET_PHASE",
+  "SEQ_DECKBOTTOM",
+  "SEQ_DECKSHUFFLE",
+  "SUMMON_TYPE_RITUAL",
+  "TYPE_RITUAL",
+  "TYPE_SPELL",
+  "TYPE_TRAP",
+];
 
 describe("Lua constant scanner", () => {
   it("reports missing upstream constants against local constant data files", () => {
@@ -86,6 +155,15 @@ describe("Lua constant scanner", () => {
     const output = execFileSync(process.execPath, [scannerPath, "--fail-on-missing"], { encoding: "utf8" });
 
     expect(output).toContain("No missing constants found.");
+  });
+
+  it("keeps local fallback script constants aligned with local Lua constants", () => {
+    const usedConstants = localFallbackLuaConstants();
+    const localConstants = localLuaConstants();
+    const missing = usedConstants.filter((name) => !localConstants.includes(name));
+
+    expect(usedConstants).toEqual(expectedLocalFallbackConstants);
+    expect(missing).toEqual([]);
   });
 
   it("runs combined Lua parity scans while keeping API-only limits off the constant scanner", () => {
@@ -277,3 +355,44 @@ describe("Lua constant scanner", () => {
     }
   });
 });
+
+function localFallbackLuaConstants(): string[] {
+  const constants = new Set<string>();
+  for (const file of listFiles("local-card-scripts", ".lua")) {
+    const source = stripLuaCommentsAndStrings(fs.readFileSync(file, "utf8"));
+    for (const match of source.matchAll(/\b[A-Z][A-Z0-9_]+\b/g)) {
+      if (match[0]) constants.add(match[0]);
+    }
+  }
+  return [...constants].sort();
+}
+
+function localLuaConstants(): string[] {
+  const constants = new Set<string>();
+  for (const file of listFiles("src/engine/lua", ".ts")) {
+    if (!/\/basic-[a-z0-9-]*constant-data\.ts$/.test(file.split(path.sep).join("/"))) continue;
+    const source = fs.readFileSync(file, "utf8");
+    for (const match of source.matchAll(/\b([A-Z][A-Z0-9_]+)\s*:/g)) {
+      if (match[1]) constants.add(match[1]);
+    }
+  }
+  return [...constants].sort();
+}
+
+function listFiles(root: string, extension: string): string[] {
+  const files: string[] = [];
+  const entries = fs.readdirSync(root, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
+  for (const entry of entries) {
+    const fullPath = path.join(root, entry.name);
+    if (entry.isDirectory()) files.push(...listFiles(fullPath, extension));
+    else if (entry.isFile() && entry.name.endsWith(extension)) files.push(fullPath);
+  }
+  return files;
+}
+
+function stripLuaCommentsAndStrings(text: string): string {
+  return text
+    .replace(/--\[\[[\s\S]*?\]\]/g, "")
+    .replace(/--[^\n\r]*/g, "")
+    .replace(/(["'])(?:\\.|(?!\1)[\s\S])*\1/g, "");
+}
