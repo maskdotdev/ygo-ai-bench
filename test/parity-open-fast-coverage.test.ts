@@ -105,7 +105,7 @@ const chainEndedOpenFastFiles = [
 
 describe("EDOPro open fast-effect fixture coverage", () => {
   it("keeps the open-fast parity fixture inventory ratcheted", () => {
-    expect(allRequiredParityOpenFastFiles()).toHaveLength(240);
+    expect(allRequiredParityOpenFastFiles()).toHaveLength(268);
   });
 
   it("keeps the open-fast lower-level restore test inventory ratcheted", () => {
@@ -253,10 +253,12 @@ function requiredFiles(base: string, post: string, restore: string): string[] {
 function requiredPostHandoffFiles(post: string): string[] {
   return [
     `test/parity-post-${post}-open-fast-pass-handoff-pass-resolution-fixture.test.ts`,
+    `test/parity-post-${post}-open-fast-pass-handoff-turn-response-fixture.test.ts`,
     `test/parity-post-${post}-open-fast-pass-handoff-turn-response-chain-limit-fixture.test.ts`,
     `test/parity-post-${post}-open-fast-pass-handoff-turn-response-until-chain-end-limit-fixture.test.ts`,
     `test/parity-post-${post}-open-fast-pass-handoff-opponent-response-chain-limit-fixture.test.ts`,
     `test/parity-post-${post}-open-fast-pass-handoff-opponent-response-until-chain-end-limit-fixture.test.ts`,
+    `test/parity-post-${post}-open-fast-pass-handoff-opponent-response-turn-response-chain-fixture.test.ts`,
     `test/parity-post-${post}-open-fast-pass-handoff-opponent-response-turn-response-resolution-fixture.test.ts`,
     `test/parity-post-${post}-open-fast-pass-handoff-opponent-response-turn-response-chain-resolution-fixture.test.ts`,
     `test/parity-post-${post}-open-fast-pass-handoff-opponent-response-turn-response-chain-pass-resolution-fixture.test.ts`,
