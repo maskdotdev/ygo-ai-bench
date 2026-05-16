@@ -93,6 +93,7 @@ describe("EDOPro parity chaining missed timing decline fixture", () => {
                 eventReasonPlayer: 0,
                 eventChainDepth: 1,
                 eventChainLinkId: "fixture-chain-1",
+                eventTriggerTiming: "if",
               },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
