@@ -64,13 +64,17 @@ function hasDeclineOpenFastRestoreProof(file: string): boolean {
     /source:\s*["']edopro["']/.test(text) &&
     /snapshotRestore:\s*["']both["']/.test(text) &&
     /makeResponseSelector\(\s*["']declineTrigger["']/.test(text) &&
+    /triggerTiming:\s*["']when["']/.test(text) &&
+    /triggerTiming:\s*["']if["']/.test(text) &&
+    /eventTriggerTiming:\s*["']if["']/.test(text) &&
     /after:\s*\{[\s\S]*?windowKind:\s*["']open["']/.test(text) &&
     /pendingTriggers:\s*\[\]/.test(text) &&
     /pendingTriggerBuckets:\s*\[\]/.test(text) &&
     /legalActions:\s*\[/.test(text) &&
     /legalActionGroups:\s*\[/.test(text) &&
     /absentLegalActions:\s*\[/.test(text) &&
-    /absentLegalActionGroups:\s*\[/.test(text)
+    /absentLegalActionGroups:\s*\[/.test(text) &&
+    /optional-when/.test(text)
   );
 }
 
@@ -80,13 +84,17 @@ function hasActivationRestoreProof(file: string): boolean {
     /source:\s*["']edopro["']/.test(text) &&
     /snapshotRestore:\s*["']both["']/.test(text) &&
     /makeResponseSelector\(\s*["']activateTrigger["']/.test(text) &&
+    /triggerTiming:\s*["']when["']/.test(text) &&
+    /triggerTiming:\s*["']if["']/.test(text) &&
+    /eventTriggerTiming:\s*["']if["']/.test(text) &&
     /after:\s*\{[\s\S]*?windowKind:\s*["']open["']/.test(text) &&
     /pendingTriggers:\s*\[\]/.test(text) &&
     /pendingTriggerBuckets:\s*\[\]/.test(text) &&
     /legalActions:\s*\[/.test(text) &&
     /legalActionGroups:\s*\[/.test(text) &&
     /absentLegalActions:\s*\[/.test(text) &&
-    /absentLegalActionGroups:\s*\[/.test(text)
+    /absentLegalActionGroups:\s*\[/.test(text) &&
+    /optional-when/.test(text)
   );
 }
 
