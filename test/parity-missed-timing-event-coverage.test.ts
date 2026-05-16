@@ -173,6 +173,16 @@ describe("EDOPro parity missed-timing event coverage", () => {
     expect(phaseEndBoundaryFiles).toHaveLength(missedTimingPhaseEndBoundaryCauseFixtureCount);
     expect(phaseEndCauseFiles).toEqual(phaseEndBoundaryFiles);
   });
+
+  it("accounts for every missed-timing source-effect cause exception with a dedicated metadata guard", () => {
+    const guardedExceptionFiles = fs.readdirSync(testRoot)
+      .filter((file) =>
+        /^parity-missed-timing-(?:(?:before-)?battle-damage|chain-(?:activating|disabled|ended|negated|solved|solving)|chaining|phase-(?:draw|standby|main1|battle|main2)|phase-start-(?:draw|standby|main1|battle|main2)|startup)(?:-decline)?-fixture\.test\.ts$/.test(file)
+      )
+      .sort();
+
+    expect(guardedExceptionFiles).toEqual([...missedTimingSourceEffectCauseExceptions].sort());
+  });
 });
 
 function camelToKebab(value: string): string {
