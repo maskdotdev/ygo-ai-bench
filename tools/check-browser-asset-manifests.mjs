@@ -51,9 +51,13 @@ function checkCardDataManifest(dir) {
   if (manifest.selectedCodes.length) {
     const selected = normalizedUniqueStrings(manifest.selectedCodes);
     if (selected.length !== manifest.selectedCodes.length) fail("CDB rows manifest selectedCodes contains duplicate passcodes");
-    const rowCodes = normalizedUniqueStrings([...payload.datas, ...payload.texts].map((row) => row?.id).filter((id) => id !== undefined).map(String));
-    if (!sameStrings(selected, rowCodes)) {
-      fail(`CDB rows manifest selectedCodes ${selected.join(",")} does not match payload row ids ${rowCodes.join(",")}`);
+    const dataCodes = rowIds(payload.datas, "datas");
+    const textCodes = rowIds(payload.texts, "texts");
+    if (!sameStrings(selected, dataCodes)) {
+      fail(`CDB rows manifest selectedCodes ${selected.join(",")} does not match payload datas ids ${dataCodes.join(",")}`);
+    }
+    if (!sameStrings(selected, textCodes)) {
+      fail(`CDB rows manifest selectedCodes ${selected.join(",")} does not match payload texts ids ${textCodes.join(",")}`);
     }
   }
 }
@@ -116,6 +120,14 @@ function normalizedUniqueStrings(values) {
 
 function sameStrings(left, right) {
   return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function rowIds(rows, label) {
+  const ids = rows.map((row) => row?.id);
+  if (ids.some((id) => id === undefined)) fail(`CDB rows payload ${label} rows must include ids`);
+  const normalized = normalizedUniqueStrings(ids.map(String));
+  if (normalized.length !== rows.length) fail(`CDB rows payload ${label} rows contain duplicate ids`);
+  return normalized;
 }
 
 function parseArgs(argv) {
