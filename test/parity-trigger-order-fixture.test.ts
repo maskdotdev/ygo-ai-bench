@@ -130,8 +130,8 @@ describe("EDOPro parity trigger ordering fixtures", () => {
               },
             ],
             absentLegalActions: [
-              { type: "declineTrigger", player: 0, effectId: "fixture-first-mandatory" },
-              { type: "declineTrigger", player: 0, effectId: "fixture-second-mandatory" },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-first-mandatory" },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-second-mandatory" },
             ],
             absentLegalActionGroups: [
               {
@@ -196,7 +196,7 @@ describe("EDOPro parity trigger ordering fixtures", () => {
                 actions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-first-mandatory", count: 1 }],
               },
             ],
-            absentLegalActions: [{ type: "declineTrigger", player: 0, effectId: "fixture-first-mandatory" }],
+            absentLegalActions: [{ type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-first-mandatory" }],
             absentLegalActionGroups: [
               {
                 player: 0,

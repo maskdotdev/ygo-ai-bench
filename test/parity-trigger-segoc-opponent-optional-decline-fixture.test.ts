@@ -140,8 +140,8 @@ describe("EDOPro parity SEGOC opponent optional decline fixture", () => {
               triggerDeclineGroup(0, "fixture-segoc-turn-optional-decline", "turnOptional", 1, 1),
             ],
             absentLegalActions: [
-              { type: "activateTrigger", player: 1, effectId: "fixture-segoc-opponent-optional-decline", triggerBucket: "opponentOptional" },
-              { type: "activateEffect", player: 0, effectId: "fixture-segoc-open-fast-after-opponent-decline" },
+              { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-segoc-opponent-optional-decline", triggerBucket: "opponentOptional" },
+              { type: "activateEffect", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-segoc-open-fast-after-opponent-decline" },
             ],
             absentLegalActionGroups: [
               absentTriggerActivationGroup(1, "fixture-segoc-opponent-optional-decline", "opponentOptional", 1, "triggerBucket"),

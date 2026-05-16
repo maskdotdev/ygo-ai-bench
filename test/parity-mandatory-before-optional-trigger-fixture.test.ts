@@ -102,9 +102,9 @@ describe("EDOPro parity mandatory before optional trigger fixtures", () => {
               },
             ],
             absentLegalActions: [
-              { type: "declineTrigger", player: 0, effectId: "fixture-mandatory-first" },
-              { type: "activateTrigger", player: 0, effectId: "fixture-optional-second" },
-              { type: "declineTrigger", player: 0, effectId: "fixture-optional-second" },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-mandatory-first" },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-optional-second" },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-optional-second" },
             ],
             absentLegalActionGroups: [
               {
@@ -141,9 +141,9 @@ describe("EDOPro parity mandatory before optional trigger fixtures", () => {
             legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-mandatory-first", count: 1 }],
             legalActionGroups: [triggerActivationGroup(0, "fixture-mandatory-first", "turnMandatory", 1, 1)],
             absentLegalActions: [
-              { type: "declineTrigger", player: 0, effectId: "fixture-mandatory-first" },
-              { type: "activateTrigger", player: 0, effectId: "fixture-optional-second" },
-              { type: "declineTrigger", player: 0, effectId: "fixture-optional-second" },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-mandatory-first" },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-optional-second" },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-optional-second" },
             ],
 
             absentLegalActionGroups: [

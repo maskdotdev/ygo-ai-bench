@@ -118,8 +118,8 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
               },
             ],
             absentLegalActions: [
-              { type: "activateTrigger", player: 1, effectId: "fixture-opponent-mandatory" },
-              { type: "declineTrigger", player: 0, effectId: "fixture-turn-mandatory" },
+              { type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-opponent-mandatory" },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-turn-mandatory" },
             ],
             absentLegalActionGroups: [
               {
@@ -206,7 +206,7 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
                 actions: [{ type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-opponent-mandatory", triggerBucket: "opponentMandatory", count: 1 }],
               },
             ],
-            absentLegalActions: [{ type: "declineTrigger", player: 1, effectId: "fixture-opponent-mandatory" }],
+            absentLegalActions: [{ type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-opponent-mandatory" }],
             absentLegalActionGroups: [
               {
                 player: 1,
@@ -295,7 +295,7 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
                 actions: [{ type: "declineTrigger", player: 0, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-turn-optional", triggerBucket: "turnOptional", count: 1 }],
               },
             ],
-            absentLegalActions: [{ type: "activateTrigger", player: 1, effectId: "fixture-opponent-optional" }],
+            absentLegalActions: [{ type: "activateTrigger", player: 1, windowId: 3, windowKind: "triggerBucket", effectId: "fixture-opponent-optional" }],
             absentLegalActionGroups: [
               {
                 player: 1,
@@ -376,7 +376,7 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
                 actions: [{ type: "declineTrigger", player: 1, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-opponent-optional", triggerBucket: "opponentOptional", count: 1 }],
               },
             ],
-            absentLegalActions: [{ type: "activateTrigger", player: 0, effectId: "fixture-turn-optional" }],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 4, windowKind: "triggerBucket", effectId: "fixture-turn-optional" }],
             absentLegalActionGroups: [
               {
                 player: 0,

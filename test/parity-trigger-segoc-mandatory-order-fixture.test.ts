@@ -122,7 +122,7 @@ describe("EDOPro parity SEGOC mandatory order fixture", () => {
                 actions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-turn-mandatory", triggerBucket: "turnMandatory", count: 1 }],
               },
             ],
-            absentLegalActions: [{ type: "activateTrigger", player: 1, effectId: "fixture-opponent-mandatory", triggerBucket: "opponentMandatory" }],
+            absentLegalActions: [{ type: "activateTrigger", player: 1, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-opponent-mandatory", triggerBucket: "opponentMandatory" }],
             absentLegalActionGroups: [
               {
                 player: 1,
@@ -183,7 +183,7 @@ describe("EDOPro parity SEGOC mandatory order fixture", () => {
                 actions: [{ type: "activateTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-opponent-mandatory", triggerBucket: "opponentMandatory", count: 1 }],
               },
             ],
-            absentLegalActions: [{ type: "declineTrigger", player: 1, effectId: "fixture-opponent-mandatory" }],
+            absentLegalActions: [{ type: "declineTrigger", player: 1, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-opponent-mandatory" }],
             absentLegalActionGroups: [
               {
                 player: 1,

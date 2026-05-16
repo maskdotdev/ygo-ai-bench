@@ -258,7 +258,7 @@ describe("EDOPro parity battle until-chain-end limit fixtures", () => {
                 actions: [{ type: "passAttack", player: 1, windowId: 5, windowKind: "battle", count: 1 }],
               },
             ],
-            absentLegalActions: [{ type: "activateEffect", player: 0, effectId: "fixture-blocked-turn-quick" }],
+            absentLegalActions: [{ type: "activateEffect", player: 0, windowId: 5, windowKind: "battle", effectId: "fixture-blocked-turn-quick" }],
             absentLegalActionGroups: [
               {
                 player: 0,

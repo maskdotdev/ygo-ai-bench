@@ -163,7 +163,7 @@ describe("EDOPro parity fixture event codes", () => {
                 actions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-matching-custom-trigger", count: 1 }],
               },
             ],
-            absentLegalActions: [{ type: "activateTrigger", player: 0, effectId: "fixture-wrong-custom-trigger" }],
+            absentLegalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-wrong-custom-trigger" }],
             absentLegalActionGroups: [
               {
                 player: 0,
