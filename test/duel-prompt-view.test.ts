@@ -122,11 +122,16 @@ describe("duel prompt view", () => {
     view.prompt.descriptionLists?.[0]?.push(1002);
     choice.descriptionList?.push(1003);
     choice.action.option = 9;
+    view.groups[0]!.label = "Mutated Prompt Group";
+    view.groups[0]!.actions[0]!.label = "Mutated Choice";
 
     expect(prompt.options).toEqual([1, 2]);
     expect(prompt.descriptions).toEqual([101, 202]);
     expect(prompt.descriptionLists).toEqual([[1001], [2002, 2003]]);
-    expect(promptGroup.actions[0]).toMatchObject({ type: "selectOption", option: 1 });
+    expect(promptGroup).toMatchObject({
+      label: "Option Prompt",
+      actions: [{ type: "selectOption", option: 1, label: "Choose 1" }],
+    });
   });
 
   it("surfaces yes/no prompt choices with shared description metadata", () => {

@@ -1,6 +1,6 @@
 import { copyDuelAction } from "#duel/action-copy.js";
 import type { DuelAction, DuelPromptState } from "#duel/types.js";
-import type { DuelActionUiGroup } from "./duel-action-anchors.js";
+import { copyDuelActionUiGroup, type DuelActionUiGroup } from "./duel-action-anchors.js";
 
 export type DuelPromptChoice =
   | {
@@ -93,7 +93,7 @@ export function duelPromptView(prompt: DuelPromptState | undefined, groups: read
     detail: promptViewDetail(prompt),
     prompt: copyPrompt(prompt),
     choices: promptChoices(prompt, promptGroups),
-    groups: promptGroups,
+    groups: promptGroups.map(copyDuelActionUiGroup),
   };
 }
 

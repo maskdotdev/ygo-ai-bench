@@ -29,6 +29,15 @@ export function copyDuelLegalActionGroup(group: DuelLegalActionGroup): DuelLegal
   };
 }
 
+export function copyDuelActionUiGroup(group: DuelActionUiGroup): DuelActionUiGroup {
+  return {
+    ...group,
+    ...(group.triggerBucket === undefined ? {} : { triggerBucket: { ...group.triggerBucket, triggerIds: [...group.triggerBucket.triggerIds] } }),
+    ...(group.triggerOrderPrompt === undefined ? {} : { triggerOrderPrompt: { ...group.triggerOrderPrompt, triggerIds: [...group.triggerOrderPrompt.triggerIds] } }),
+    actions: group.actions.map(copyDuelAction),
+  };
+}
+
 /**
  * UIDs whose on-field / in-hand representation should surface this legal action.
  * Actions with no anchors (phase, pass, prompts) are "orphans" for a global strip.
