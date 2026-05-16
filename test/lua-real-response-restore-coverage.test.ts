@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 62;
-const chainedResponseFixtureCount = 61;
-const responseOperationInfoFixtureCount = 57;
+const responseFixtureCount = 74;
+const chainedResponseFixtureCount = 73;
+const responseOperationInfoFixtureCount = 69;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -102,20 +102,26 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-bad-reaction-reverse-recover.test.ts",
     "lua-real-script-black-horn-special-summon-negate.test.ts",
     "lua-real-script-book-of-moon-free-chain.test.ts",
+    "lua-real-script-bottomless-trap-hole-summon-success.test.ts",
     "lua-real-script-called-by-the-grave.test.ts",
+    "lua-real-script-castle-gate-release-cost-damage.test.ts",
     "lua-real-script-compulsory-evacuation-device-free-chain.test.ts",
     "lua-real-script-cosmic-cyclone-free-chain.test.ts",
     "lua-real-script-contract-dark-master-ritual-spell.test.ts",
     "lua-real-script-dark-bribe-negate-draw.test.ts",
     "lua-real-script-dark-dust-spirit-destroy.test.ts",
+    "lua-real-script-des-wombat-no-effect-damage.test.ts",
     "lua-real-script-dimensional-prison-battle-window.test.ts",
     "lua-real-script-divine-wrath-monster-negate.test.ts",
     "lua-real-script-draining-shield-battle-window.test.ts",
     "lua-real-script-droll-lock-bird-draw-search-lock.test.ts",
     "lua-real-script-earth-chant-ritual-equal.test.ts",
+    "lua-real-script-evocator-eveque-gemini-trigger.test.ts",
     "lua-real-script-fenghuang-set-backrow-destroy.test.ts",
     "lua-real-script-foolish-burial-deck-to-grave.test.ts",
     "lua-real-script-fushi-no-tori-battle-recover.test.ts",
+    "lua-real-script-gagaga-escape-position-lockout.test.ts",
+    "lua-real-script-gemini-spark-release-destroy-draw.test.ts",
     "lua-real-script-ghost-ogre-chain-destroy.test.ts",
     "lua-real-script-harpies-feather-duster-group-destroy.test.ts",
     "lua-real-script-grand-horn-special-summon-negate.test.ts",
@@ -125,17 +131,22 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-lightning-storm-select-effect.test.ts",
     "lua-real-script-magic-jammer-chain-negate.test.ts",
     "lua-real-script-magic-cylinder-battle-window.test.ts",
+    "lua-real-script-megalith-bethor-ritual-procedure.test.ts",
     "lua-real-script-miracle-fusion-extra-material.test.ts",
     "lua-real-script-mirror-force-battle-window.test.ts",
     "lua-real-script-monster-reborn-free-chain.test.ts",
+    "lua-real-script-mutiny-sky-shuffle-fusion-material.test.ts",
     "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
+    "lua-real-script-naturia-ragweed-event-draw-trigger.test.ts",
     "lua-real-script-negate-attack-battle-window.test.ts",
+    "lua-real-script-otohime-position-overload.test.ts",
     "lua-real-script-phoenix-wing-wind-blast-discard-cost.test.ts",
     "lua-real-script-pot-of-desires-deck-cost.test.ts",
     "lua-real-script-pot-of-duality-excavate.test.ts",
     "lua-real-script-pot-of-extravagance-extra-cost.test.ts",
     "lua-real-script-pot-of-prosperity-excavate.test.ts",
     "lua-real-script-polymerization-fusion-summon.test.ts",
+    "lua-real-script-prime-material-dragon-reverse-damage.test.ts",
     "lua-real-script-raigeki-group-destroy.test.ts",
     "lua-real-script-raigeki-break-discard-cost.test.ts",
     "lua-real-script-rasetsu-spirit-cost-return.test.ts",
@@ -151,6 +162,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
     "lua-real-script-solemn-warning-special-summon-effect-negate.test.ts",
     "lua-real-script-threatening-roar-temporary-attack-lock.test.ts",
+    "lua-real-script-totem-pole-change-damage.test.ts",
     "lua-real-script-tsukuyomi-position-trigger.test.ts",
     "lua-real-script-twin-twisters-discard-cost.test.ts",
     "lua-real-script-upstart-goblin-draw-recover.test.ts",
