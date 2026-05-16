@@ -67,8 +67,10 @@ function summonNegationFixtures(): Array<{
 function hasSharedSummonNegationWindowProof(text: string): boolean {
   return (
     /source:\s*["']edopro["']/.test(text) &&
+    /note:\s*["'][^"']*EDOPro/.test(text) &&
     /snapshotRestore:\s*["']both["']/.test(text) &&
     /windowKind:\s*["']triggerBucket["']/.test(text) &&
+    /waitingFor:\s*[01]/.test(text) &&
     /pendingTriggers:\s*\[/.test(text) &&
     /pendingTriggerBuckets:\s*\[\{ player:\s*0,\s*triggerBucket:\s*["']turnOptional["'] \}\]/.test(text) &&
     /triggerOrderPrompt:\s*\{ type:\s*["']orderTriggers["']/.test(text) &&
