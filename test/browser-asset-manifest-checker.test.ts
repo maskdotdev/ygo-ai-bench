@@ -56,6 +56,26 @@ describe("browser asset manifest checker", () => {
     expect(result.stderr).toContain("Lua script c100.lua byte count");
   });
 
+  it("fails when copied Lua scripts are missing exact file metadata", () => {
+    const root = makeTempRoot();
+    const cardScriptsDir = path.join(root, "card-scripts");
+    writeScriptExport(cardScriptsDir, {
+      "c100.lua": "c100={}\n",
+      "c200.lua": "c200={}\n",
+    });
+    const manifestPath = path.join(cardScriptsDir, "manifest.json");
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as {
+      files: Array<{ name: string; bytes: number; sha256: string }>;
+    };
+    manifest.files = [manifest.files[0]!, manifest.files[0]!];
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+
+    const result = spawnSync(process.execPath, [checkerPath, "--card-scripts", cardScriptsDir], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("Lua script manifest files list contains duplicate names");
+  });
+
   it("rejects missing asset directory arguments", () => {
     const result = spawnSync(process.execPath, [checkerPath], { encoding: "utf8" });
 

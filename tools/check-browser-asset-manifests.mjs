@@ -73,6 +73,8 @@ function checkCardScriptsManifest(dir) {
   if (manifest.copiedCount !== manifest.copied.length) fail(`Lua script manifest copiedCount ${manifest.copiedCount} does not match copied ${manifest.copied.length}`);
   if (manifest.missingCount !== manifest.missing.length) fail(`Lua script manifest missingCount ${manifest.missingCount} does not match missing ${manifest.missing.length}`);
   if (manifest.files.length !== manifest.copied.length) fail(`Lua script manifest files ${manifest.files.length} does not match copied ${manifest.copied.length}`);
+  if (new Set(manifest.copied).size !== manifest.copied.length) fail("Lua script manifest copied list contains duplicate names");
+  if (new Set(manifest.files.map((file) => file.name)).size !== manifest.files.length) fail("Lua script manifest files list contains duplicate names");
 
   const copied = new Set(manifest.copied);
   for (const file of manifest.files) {
@@ -82,6 +84,9 @@ function checkCardScriptsManifest(dir) {
     const bytes = Buffer.byteLength(text);
     if (bytes !== file.bytes) fail(`Lua script ${file.name} byte count ${bytes} does not match manifest ${file.bytes}`);
     if (sha256(text) !== file.sha256) fail(`Lua script ${file.name} hash does not match manifest`);
+  }
+  for (const name of copied) {
+    if (!manifest.files.some((file) => file.name === name)) fail(`Lua script manifest copied script ${name} is missing file metadata`);
   }
 }
 
