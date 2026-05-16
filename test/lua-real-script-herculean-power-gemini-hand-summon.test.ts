@@ -70,6 +70,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script He
     const activate = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === power!.uid);
     expect(activate, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredActivation, activate!);
+    expect(restoredActivation.session.state.chain).toHaveLength(1);
     expect(restoredActivation.session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "spellTrapZone",

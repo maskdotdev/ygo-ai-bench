@@ -64,6 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
     applyAndAssert(session, activation!);
     const milledCard = session.state.cards.find((card) => card.location === "graveyard" && card.reason === duelReason.cost && card.reasonPlayer === 0);
     expect(milledCard).toBeDefined();
+    expect(session.state.chain).toHaveLength(1);
     expect(session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "hand",

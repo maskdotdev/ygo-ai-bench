@@ -67,6 +67,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
       location: "graveyard",
       reason: duelReason.cost | duelReason.discard,
     });
+    expect(session.state.chain).toHaveLength(1);
     expect(session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "graveyard",

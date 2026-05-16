@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 101;
-const chainedResponseFixtureCount = 100;
-const responseOperationInfoFixtureCount = 92;
+const responseFixtureCount = 105;
+const chainedResponseFixtureCount = 104;
+const responseOperationInfoFixtureCount = 96;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -105,6 +105,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-book-of-moon-free-chain.test.ts",
     "lua-real-script-bottomless-trap-hole-summon-success.test.ts",
     "lua-real-script-branded-fusion-deck-material.test.ts",
+    "lua-real-script-chemicritter-hydron-hawk-discard-revive.test.ts",
     "lua-real-script-called-by-the-grave.test.ts",
     "lua-real-script-castle-gate-release-cost-damage.test.ts",
     "lua-real-script-compulsory-evacuation-device-free-chain.test.ts",
@@ -136,6 +137,8 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-grand-horn-special-summon-negate.test.ts",
     "lua-real-script-horn-of-heaven-release-cost-negate.test.ts",
     "lua-real-script-high-ritual-art-deck-stage2.test.ts",
+    "lua-real-script-hidden-armory-summon-set-lock.test.ts",
+    "lua-real-script-herculean-power-gemini-hand-summon.test.ts",
     "lua-real-script-infinite-impermanence-target-param.test.ts",
     "lua-real-script-izanami-spirit-grave-return.test.ts",
     "lua-real-script-kinka-byo-relation-banish.test.ts",
@@ -186,6 +189,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
     "lua-real-script-solemn-warning-special-summon-effect-negate.test.ts",
     "lua-real-script-super-soldier-synthesis-specific-material.test.ts",
+    "lua-real-script-thunder-sea-horse-special-lock.test.ts",
     "lua-real-script-threatening-roar-temporary-attack-lock.test.ts",
     "lua-real-script-totem-pole-change-damage.test.ts",
     "lua-real-script-torrential-tribute-summon-success.test.ts",
