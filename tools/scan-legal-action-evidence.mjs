@@ -24,6 +24,7 @@ function main(argv) {
   let actionEvidenceBlocks = 0;
   let groupEvidenceBlocks = 0;
   let windowEvidenceBlocks = 0;
+  let topLevelWindowEvidenceBlocks = 0;
   let absentActionEvidenceBlocks = 0;
   let absentGroupEvidenceBlocks = 0;
   let pairedAbsentEvidenceBlocks = 0;
@@ -39,6 +40,7 @@ function main(argv) {
       if (block.text.includes("legalActionGroups:")) groupEvidenceBlocks += 1;
       if (hasWindowEvidence(block.text)) windowEvidenceBlocks += 1;
       else missingWindowEvidence.push(`${file}:${block.line}`);
+      if (hasTopLevelWindowEvidence(block.text)) topLevelWindowEvidenceBlocks += 1;
       if (hasAbsentActions) absentActionEvidenceBlocks += 1;
       if (hasAbsentGroups) absentGroupEvidenceBlocks += 1;
       if (hasAbsentActions && hasAbsentGroups) pairedAbsentEvidenceBlocks += 1;
@@ -50,7 +52,7 @@ function main(argv) {
     }
   }
 
-  console.log(`EDOPro legal-action evidence: ${fixtureFiles.length} parity files, ${edoproBlocks} EDOPro expectation blocks, ${actionEvidenceBlocks} action evidence blocks, ${groupEvidenceBlocks} group evidence blocks, ${windowEvidenceBlocks} window evidence blocks, ${absentActionEvidenceBlocks} absent action evidence blocks, ${absentGroupEvidenceBlocks} absent group evidence blocks, ${pairedAbsentEvidenceBlocks} paired absent evidence blocks`);
+  console.log(`EDOPro legal-action evidence: ${fixtureFiles.length} parity files, ${edoproBlocks} EDOPro expectation blocks, ${actionEvidenceBlocks} action evidence blocks, ${groupEvidenceBlocks} group evidence blocks, ${windowEvidenceBlocks} window evidence blocks, ${topLevelWindowEvidenceBlocks} top-level window evidence blocks, ${absentActionEvidenceBlocks} absent action evidence blocks, ${absentGroupEvidenceBlocks} absent group evidence blocks, ${pairedAbsentEvidenceBlocks} paired absent evidence blocks`);
 
   const failures = [];
   if (options.minFiles !== undefined && fixtureFiles.length < options.minFiles) failures.push(`Parity fixture files ${fixtureFiles.length} is below required ${options.minFiles}`);
@@ -58,6 +60,7 @@ function main(argv) {
   if (options.minActionEvidenceBlocks !== undefined && actionEvidenceBlocks < options.minActionEvidenceBlocks) failures.push(`Action evidence blocks ${actionEvidenceBlocks} is below required ${options.minActionEvidenceBlocks}`);
   if (options.minGroupEvidenceBlocks !== undefined && groupEvidenceBlocks < options.minGroupEvidenceBlocks) failures.push(`Group evidence blocks ${groupEvidenceBlocks} is below required ${options.minGroupEvidenceBlocks}`);
   if (options.minWindowEvidenceBlocks !== undefined && windowEvidenceBlocks < options.minWindowEvidenceBlocks) failures.push(`Window evidence blocks ${windowEvidenceBlocks} is below required ${options.minWindowEvidenceBlocks}`);
+  if (options.minTopLevelWindowEvidenceBlocks !== undefined && topLevelWindowEvidenceBlocks < options.minTopLevelWindowEvidenceBlocks) failures.push(`Top-level window evidence blocks ${topLevelWindowEvidenceBlocks} is below required ${options.minTopLevelWindowEvidenceBlocks}`);
   if (options.minAbsentActionEvidenceBlocks !== undefined && absentActionEvidenceBlocks < options.minAbsentActionEvidenceBlocks) failures.push(`Absent action evidence blocks ${absentActionEvidenceBlocks} is below required ${options.minAbsentActionEvidenceBlocks}`);
   if (options.minAbsentGroupEvidenceBlocks !== undefined && absentGroupEvidenceBlocks < options.minAbsentGroupEvidenceBlocks) failures.push(`Absent group evidence blocks ${absentGroupEvidenceBlocks} is below required ${options.minAbsentGroupEvidenceBlocks}`);
   if (options.minPairedAbsentEvidenceBlocks !== undefined && pairedAbsentEvidenceBlocks < options.minPairedAbsentEvidenceBlocks) failures.push(`Paired absent evidence blocks ${pairedAbsentEvidenceBlocks} is below required ${options.minPairedAbsentEvidenceBlocks}`);
@@ -100,6 +103,7 @@ function parseArgs(argv) {
     else if (arg === "--min-action-evidence-blocks") options.minActionEvidenceBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-group-evidence-blocks") options.minGroupEvidenceBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-window-evidence-blocks") options.minWindowEvidenceBlocks = readMinimum(argv, ++index, arg);
+    else if (arg === "--min-top-level-window-evidence-blocks") options.minTopLevelWindowEvidenceBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-absent-action-evidence-blocks") options.minAbsentActionEvidenceBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-absent-group-evidence-blocks") options.minAbsentGroupEvidenceBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-paired-absent-evidence-blocks") options.minPairedAbsentEvidenceBlocks = readMinimum(argv, ++index, arg);
@@ -199,6 +203,10 @@ function hasWindowEvidence(block) {
   return /\bwindowId:\s*/.test(block) && /\bwindowKind:\s*/.test(block);
 }
 
+function hasTopLevelWindowEvidence(block) {
+  return /^\s*windowId:\s*/m.test(block) && /^\s*windowKind:\s*/m.test(block);
+}
+
 function aggregateCountTotal(block, key) {
   const counts = block.match(new RegExp(`${key}:\\s*\\{([^}]*)\\}`))?.[1];
   return counts === undefined ? 0 : [...counts.matchAll(/:\s*(\d+)/g)].reduce((total, match) => total + Number(match[1]), 0);
@@ -244,6 +252,8 @@ Options:
                               Fail unless at least this many group evidence blocks are scanned
   --min-window-evidence-blocks <count>
                               Fail unless at least this many EDOPro blocks carry window evidence
+  --min-top-level-window-evidence-blocks <count>
+                              Fail unless at least this many EDOPro blocks carry top-level window evidence
   --min-absent-action-evidence-blocks <count>
                               Fail unless at least this many absent-action evidence blocks are scanned
   --min-absent-group-evidence-blocks <count>
