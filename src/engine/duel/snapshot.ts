@@ -218,8 +218,8 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   if (state.pendingTriggerBuckets !== undefined) assertSnapshotPendingTriggerBuckets(state.pendingTriggerBuckets, state.pendingTriggers);
   assertSnapshotEventHistory(state.eventHistory, cardUids);
   assertSnapshotBattlePairs(state.battlePairs, cardUids);
-  assertSnapshotChain(state.chain, cardUids);
-  assertSnapshotEffects(state.effects, cardUids);
+  const effectEvents = assertSnapshotEffects(state.effects, cardUids);
+  assertSnapshotChain(state.chain, cardUids, effectEvents);
   if (!isDuelStatus(state.status)) throw new Error("Malformed duel snapshot: state.status must be a duel status");
   if (!isDuelPhase(state.phase)) throw new Error("Malformed duel snapshot: state.phase must be a duel phase");
   if (state.winner !== undefined && state.winner !== "draw") assertSnapshotPlayerId(state.winner, "state.winner");
@@ -402,7 +402,7 @@ function assertSnapshotEventCardState(value: unknown, path: string): void {
   if (typeof value.faceUp !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.faceUp must be a boolean`);
 }
 
-function assertSnapshotChain(chain: unknown, cardUids: ReadonlySet<string>): void {
+function assertSnapshotChain(chain: unknown, cardUids: ReadonlySet<string>, effectEvents: ReadonlyMap<string, unknown> = new Map()): void {
   if (!Array.isArray(chain)) throw new Error("Malformed duel snapshot: state.chain must be an array");
   const seenIds = new Set<string>();
   for (const [index, link] of chain.entries()) {
@@ -431,6 +431,10 @@ function assertSnapshotChain(chain: unknown, cardUids: ReadonlySet<string>): voi
     if (link.targetPlayer !== undefined) assertSnapshotPlayerId(link.targetPlayer, `${path}.targetPlayer`);
     if (link.disablePlayer !== undefined) assertSnapshotPlayerId(link.disablePlayer, `${path}.disablePlayer`);
     if (link.negated !== undefined && typeof link.negated !== "boolean") throw new Error(`Malformed duel snapshot: ${path}.negated must be a boolean`);
+    const linkEffectEvent = effectEvents.get(`${link.sourceUid}:${link.effectId}`);
+    if (linkEffectEvent === "trigger" && link.eventName !== undefined && link.eventTriggerTiming === undefined) {
+      throw new Error(`Malformed duel snapshot: ${path}.eventTriggerTiming is required for trigger chain links`);
+    }
     assertSnapshotEventPayload(link, path, cardUids);
   }
 }
@@ -575,8 +579,9 @@ function assertSnapshotCardReferences(card: Record<string, unknown>, path: strin
     }
   }
 }
-function assertSnapshotEffects(effects: unknown, cardUids: ReadonlySet<string>): void {
+function assertSnapshotEffects(effects: unknown, cardUids: ReadonlySet<string>): Map<string, unknown> {
   if (!Array.isArray(effects)) throw new Error("Malformed duel snapshot: state.effects must be an array");
+  const effectEvents = new Map<string, unknown>();
   for (const [index, effect] of effects.entries()) {
     const path = `state.effects.${index}`;
     if (!isRecord(effect)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
@@ -589,6 +594,7 @@ function assertSnapshotEffects(effects: unknown, cardUids: ReadonlySet<string>):
     if (effect.ownerPlayer !== undefined) assertSnapshotPlayerId(effect.ownerPlayer, `${path}.ownerPlayer`);
     if (effect.registryKey !== undefined && typeof effect.registryKey !== "string") throw new Error(`Malformed duel snapshot: ${path}.registryKey must be a string`);
     if (!isDuelEffectEvent(effect.event)) throw new Error(`Malformed duel snapshot: ${path}.event must be an effect event`);
+    effectEvents.set(`${effect.sourceUid}:${effect.id}`, effect.event);
     if (!Array.isArray(effect.range)) throw new Error(`Malformed duel snapshot: ${path}.range must be an array`);
     for (const [rangeIndex, location] of effect.range.entries()) {
       if (!isDuelLocation(location)) throw new Error(`Malformed duel snapshot: ${path}.range.${rangeIndex} must be a card location`);
@@ -609,6 +615,7 @@ function assertSnapshotEffects(effects: unknown, cardUids: ReadonlySet<string>):
     if (effect.targetRange !== undefined) assertSnapshotNumberTuple(effect.targetRange, `${path}.targetRange`);
     if (effect.hintTiming !== undefined) assertSnapshotNumberTuple(effect.hintTiming, `${path}.hintTiming`);
   }
+  return effectEvents;
 }
 
 function assertSnapshotEffectReset(reset: unknown, path: string): void {
