@@ -11,11 +11,13 @@ import {
   startDuel,
 } from "#duel/core.js";
 import { moveDuelCard } from "#duel/card-state.js";
+import { groupDuelLegalActions } from "#duel/legal-action-groups.js";
+import { getPromptResponseActions, stampDuelActions } from "#duel/prompt-response.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "../src/playtest-app/duel-battlefield-actions.js";
-import { runDuelBattlefieldScript } from "../src/playtest-app/duel-battlefield-script.js";
+import { runDuelBattlefieldScript, type DuelBattlefieldScriptRuntime } from "../src/playtest-app/duel-battlefield-script.js";
 import { cards } from "./full-duel-engine-fixtures.js";
-import type { DuelAction, DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelAction, DuelSession, PlayerId, PublicChainLink } from "#duel/types.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 
 describe("duel battlefield action view", () => {
@@ -133,6 +135,43 @@ describe("duel battlefield action view", () => {
     expect(result.state.prompt).toBeUndefined();
     expect(result.state.waitingFor).toBe(0);
     expect(result.state.log).toContainEqual(expect.objectContaining({ action: "selectOption", detail: "Selected option 2" }));
+  });
+
+  it("matches Lua option prompt responses by ordered resume values", () => {
+    const session = directBattleSession();
+    session.state.prompt = {
+      id: "battlefield-return-values-prompt",
+      type: "selectOption",
+      player: 1,
+      options: [1, 2, 3],
+      descriptions: [700, 800, 900],
+      descriptionLists: [[700, 800], [800, 900], [700, 900]],
+      returnTo: 0,
+      origin: "luaOperation",
+    };
+    session.state.luaOperationPrompt = {
+      chainLink: testLuaPromptChainLink(),
+      prompt: {
+        id: "battlefield-return-values-prompt",
+        api: "SelectCardsFromCodes",
+        player: 1,
+        options: [1, 2, 3],
+        descriptions: [700, 800, 900],
+        descriptionLists: [[700, 800], [800, 900], [700, 900]],
+        returned: 1,
+        returnValues: [[700, 800], [800, 900], [700, 900]],
+      },
+    };
+    session.state.waitingFor = 1;
+
+    const result = runDuelBattlefieldScript(session, [
+      { player: 1, type: "selectOption", luaPromptApi: "SelectCardsFromCodes", promptReturnValues: [800, 900], windowKind: "prompt" },
+    ], luaPromptSelectorRuntime());
+
+    expect(result.ok).toBe(true);
+    expect(result.state.prompt).toBeUndefined();
+    expect(result.state.luaOperationPrompt).toBeUndefined();
+    expect(result.state.waitingFor).toBe(0);
   });
 
   it("reports trigger-order prompts when visible scripts diverge", () => {
@@ -467,6 +506,48 @@ function directBattleSession(): DuelSession {
   expect(attacker).toBeDefined();
   specialSummonDuelCard(session.state, attacker!.uid, 0);
   return session;
+}
+
+function testLuaPromptChainLink(): PublicChainLink {
+  return {
+    id: "battlefield-lua-prompt-chain",
+    player: 1,
+    sourceUid: "battlefield-lua-prompt-source",
+    effectId: "battlefield-lua-prompt-effect",
+  };
+}
+
+function luaPromptSelectorRuntime(): DuelBattlefieldScriptRuntime {
+  return {
+    getLegalActions(session, player) {
+      const prompt = session.state.prompt;
+      if (!prompt) return [];
+      return stampDuelActions(getPromptResponseActions(prompt, player), session.state.actionWindowId, "prompt", session.state.actionWindowToken);
+    },
+    getGroupedLegalActions(session, player) {
+      return groupDuelLegalActions(this.getLegalActions(session, player));
+    },
+    applyResponse(session, action) {
+      if (action.type !== "selectOption" || action.option !== 2) {
+        return {
+          ok: false,
+          error: "Unexpected Lua prompt selector test action",
+          state: queryPublicState(session),
+          legalActions: this.getLegalActions(session, action.player),
+          legalActionGroups: this.getGroupedLegalActions(session, action.player),
+        };
+      }
+      delete session.state.prompt;
+      delete session.state.luaOperationPrompt;
+      session.state.waitingFor = 0;
+      return {
+        ok: true,
+        state: queryPublicState(session),
+        legalActions: this.getLegalActions(session, action.player),
+        legalActionGroups: this.getGroupedLegalActions(session, action.player),
+      };
+    },
+  };
 }
 
 function visibleView(session: DuelSession, player: PlayerId) {

@@ -21,6 +21,7 @@ const luaBridgeCards: DuelCardData[] = [
   { code: "200", name: "Lua Bridge First Trigger", kind: "monster", level: 4 },
   { code: "300", name: "Lua Bridge Second Trigger", kind: "monster", level: 4 },
   { code: "729", name: "Lua Bridge Prompt Source", kind: "monster", level: 4 },
+  { code: "730", name: "Lua Bridge Multi Code Prompt Source", kind: "monster", level: 4 },
 ];
 
 const luaBridgeYdk = `#created by test
@@ -37,6 +38,7 @@ const luaBridgeScripts: LuaScriptSource = {
       "c200.lua": luaMandatoryTriggerScript("200"),
       "c300.lua": luaMandatoryTriggerScript("300"),
       "c729.lua": luaOptionPromptScript(),
+      "c730.lua": luaMultiCodePromptScript(),
     }[name];
   },
 };
@@ -347,6 +349,35 @@ describe("duel pvp agent bridge", () => {
     expect(result.state.luaOperationPrompt).toBeUndefined();
   });
 
+  it("runs visible scripts against ordered Lua prompt resume values", () => {
+    const agent = createDuelPvpAgent({
+      cardReader: createCardReader(luaBridgeCards),
+      luaScriptSource: luaBridgeScripts,
+      luaRuntime: luaBridgeRuntime,
+    });
+    const started = agent.start({ player0Ydk: "#main\n730\n#extra\n!side", player1Ydk: "#main\n100\n#extra\n!side", seed: "pvp-agent-lua-return-values-script", handSize: 1 });
+    const activation = started.visibleBattlefield.actions.find((action) => action.type === "activateEffect");
+    expect(activation).toBeDefined();
+    expect(agent.action(activation, started.sessionId).ok).toBe(true);
+
+    const visible = agent.visibleBattlefield(0, started.sessionId);
+    expect(visible.prompt?.luaPrompt).toMatchObject({ api: "SelectCardsFromCodes" });
+    expect(visible.prompt?.choices).toContainEqual(expect.objectContaining({
+      type: "selectOption",
+      descriptionList: [800, 900],
+      luaReturnValues: [800, 900],
+    }));
+
+    const result = agent.runVisibleScript([
+      { player: 0, type: "selectOption", luaPromptApi: "SelectCardsFromCodes", promptReturnValues: [800, 900] },
+    ], started.sessionId);
+
+    expect(result.ok).toBe(true);
+    expect(result.failedStep).toBeUndefined();
+    expect(result.state.prompt).toBeUndefined();
+    expect(result.state.luaOperationPrompt).toBeUndefined();
+  });
+
   it("reports Lua prompt selector metadata on visible script divergence", () => {
     const agent = createDuelPvpAgent({
       cardReader: createCardReader(luaBridgeCards),
@@ -559,6 +590,22 @@ function luaOptionPromptScript(): string {
     e:SetOperation(function(e,tp)
       local selected = Duel.SelectOption(tp, 700, 800)
       Debug.Message("lua bridge code prompt " .. selected)
+    end)
+    c:RegisterEffect(e)
+  end
+  `;
+}
+
+function luaMultiCodePromptScript(): string {
+  return `
+  c730={}
+  function c730.initial_effect(c)
+    local e=Effect.CreateEffect(c)
+    e:SetType(EFFECT_TYPE_IGNITION)
+    e:SetRange(LOCATION_HAND)
+    e:SetOperation(function(e,tp)
+      local first, second = Duel.SelectCardsFromCodes(tp, 1, 2, false, false, 700, 800, 900)
+      Debug.Message("lua bridge multi code prompt " .. first .. "/" .. second)
     end)
     c:RegisterEffect(e)
   end

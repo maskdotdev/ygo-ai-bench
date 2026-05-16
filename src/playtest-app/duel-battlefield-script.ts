@@ -6,7 +6,7 @@ import {
 } from "#duel/core.js";
 import { copyDuelAction } from "#duel/action-copy.js";
 import type { ApplyDuelResponseResult, DuelAction, DuelActionWindowKind, DuelPhase, DuelSession, PlayerId, PublicDuelState, TriggerBucket } from "#duel/types.js";
-import type { LuaPromptDecision } from "#lua/host-types.js";
+import type { LuaPromptDecision, LuaPromptResumeValue } from "#lua/host-types.js";
 import { duelActionAnchorUids, duelActionUiGroupLabel, duelActionUiGroupSelectionKind, type DuelActionUiGroup, type DuelActionUiSelectionKind } from "./duel-action-anchors.js";
 import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "./duel-battlefield-actions.js";
 import { duelPromptView, type DuelPromptView } from "./duel-prompt-view.js";
@@ -30,6 +30,7 @@ export interface DuelBattlefieldActionSelector {
   luaPromptApi?: LuaPromptDecision["api"];
   promptDescription?: number;
   promptDescriptionList?: readonly number[];
+  promptReturnValues?: readonly LuaPromptResumeValue[];
   option?: number;
   yes?: boolean;
   effectId?: string;
@@ -233,6 +234,7 @@ function selectVisibleBattlefieldAction(
     if (selector.luaPromptApi !== undefined && !actionMatchesLuaPromptApi(action, prompt, selector.luaPromptApi)) return false;
     if (selector.promptDescription !== undefined && !actionMatchesPromptDescription(action, prompt, selector.promptDescription)) return false;
     if (selector.promptDescriptionList !== undefined && !actionMatchesPromptDescriptionList(action, prompt, selector.promptDescriptionList)) return false;
+    if (selector.promptReturnValues !== undefined && !actionMatchesPromptReturnValues(action, prompt, selector.promptReturnValues)) return false;
     if (selector.option !== undefined && (action.type !== "selectOption" || action.option !== selector.option)) return false;
     if (selector.yes !== undefined && (action.type !== "selectYesNo" || action.yes !== selector.yes)) return false;
     if (selector.effectId !== undefined && (!("effectId" in action) || action.effectId !== selector.effectId)) return false;
@@ -267,6 +269,7 @@ function describeBattlefieldSelector(selector: DuelBattlefieldActionSelector): s
     selector.luaPromptApi !== undefined ? `luaPromptApi=${selector.luaPromptApi}` : undefined,
     selector.promptDescription !== undefined ? `promptDescription=${selector.promptDescription}` : undefined,
     selector.promptDescriptionList !== undefined ? `promptDescriptionList=${selector.promptDescriptionList.join(",")}` : undefined,
+    selector.promptReturnValues !== undefined ? `promptReturnValues=${selector.promptReturnValues.map(formatPromptReturnValue).join(",")}` : undefined,
     selector.option !== undefined ? `option=${selector.option}` : undefined,
     selector.yes !== undefined ? `yes=${selector.yes}` : undefined,
     selector.effectId !== undefined ? `effectId=${selector.effectId}` : undefined,
@@ -300,6 +303,11 @@ function actionMatchesPromptDescription(action: DuelAction, prompt: DuelPromptVi
 function actionMatchesPromptDescriptionList(action: DuelAction, prompt: DuelPromptView | undefined, descriptionList: readonly number[]): boolean {
   const choice = promptChoiceForAction(action, prompt);
   return choice !== undefined && "descriptionList" in choice && sameNumberMembers(choice.descriptionList ?? [], descriptionList);
+}
+
+function actionMatchesPromptReturnValues(action: DuelAction, prompt: DuelPromptView | undefined, returnValues: readonly LuaPromptResumeValue[]): boolean {
+  const choice = promptChoiceForAction(action, prompt);
+  return choice !== undefined && "luaReturnValues" in choice && sameLuaPromptReturnValues(choice.luaReturnValues ?? [], returnValues);
 }
 
 function promptChoiceForAction(action: DuelAction, prompt: DuelPromptView | undefined): DuelPromptView["choices"][number] | undefined {
@@ -342,6 +350,21 @@ function sameNumberMembers(a: readonly number[], b: readonly number[]): boolean 
     else remaining.set(value, count - 1);
   }
   return remaining.size === 0;
+}
+
+function sameLuaPromptReturnValues(a: readonly LuaPromptResumeValue[], b: readonly LuaPromptResumeValue[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((value, index) => sameLuaPromptReturnValue(value, b[index]));
+}
+
+function sameLuaPromptReturnValue(a: LuaPromptResumeValue, b: LuaPromptResumeValue | undefined): boolean {
+  if (typeof a !== "object" || a === null) return a === b;
+  return typeof b === "object" && b !== null && a.code === b.code && a.index === b.index;
+}
+
+function formatPromptReturnValue(value: LuaPromptResumeValue): string {
+  if (typeof value !== "object" || value === null) return String(value);
+  return `${value.code}#${value.index}`;
 }
 
 function isPendulumSummonSelection(candidates: readonly string[], selected: readonly string[], maxSummons: number): boolean {

@@ -10,6 +10,7 @@ export type DuelPromptChoice =
     action: Extract<DuelAction, { type: "selectOption" }>;
     description?: number;
     descriptionList?: number[];
+    luaReturnValues?: LuaPromptResumeValue[];
   }
   | {
     type: "selectYesNo";
@@ -117,7 +118,7 @@ export function duelPromptView(
     detail: promptViewDetail(prompt, luaPrompt),
     prompt: copyPrompt(prompt),
     ...(luaPrompt === undefined ? {} : { luaPrompt: copyLuaPrompt(luaPrompt) }),
-    choices: promptChoices(prompt, promptGroups),
+    choices: promptChoices(prompt, promptGroups, luaPrompt),
     groups: promptGroups.map(copyDuelActionUiGroup),
   };
 }
@@ -128,7 +129,7 @@ function matchingLuaPrompt(prompt: DuelPromptState, luaOperationPrompt: LuaOpera
   return luaOperationPrompt.prompt;
 }
 
-function promptChoices(prompt: DuelPromptState, groups: readonly DuelActionUiGroup[]): DuelPromptChoice[] {
+function promptChoices(prompt: DuelPromptState, groups: readonly DuelActionUiGroup[], luaPrompt?: LuaOperationPromptState["prompt"]): DuelPromptChoice[] {
   const actions = groups.flatMap((group) => group.actions);
   if (prompt.type === "selectOption") {
     return prompt.options.flatMap((option, index) => {
@@ -145,6 +146,7 @@ function promptChoices(prompt: DuelPromptState, groups: readonly DuelActionUiGro
         action: copySelectOptionAction(action),
         ...(prompt.descriptions?.[index] === undefined ? {} : { description: prompt.descriptions[index] }),
         ...(prompt.descriptionLists?.[index] === undefined ? {} : { descriptionList: [...prompt.descriptionLists[index]!] }),
+        ...luaReturnValuesForChoice(luaPrompt, index),
       }];
     });
   }
@@ -164,6 +166,17 @@ function promptChoices(prompt: DuelPromptState, groups: readonly DuelActionUiGro
       ...(prompt.description === undefined ? {} : { description: prompt.description }),
     }];
   });
+}
+
+function luaReturnValuesForChoice(luaPrompt: LuaOperationPromptState["prompt"] | undefined, index: number): { luaReturnValues?: LuaPromptResumeValue[] } {
+  if (luaPrompt === undefined || !isLuaOptionPromptDecision(luaPrompt)) return {};
+  const values = luaPrompt.returnValues?.[index];
+  if (values !== undefined) return { luaReturnValues: values.map(copyLuaPromptReturnValue) };
+  if (luaPrompt.returnKind !== "codeIndexTable") return {};
+  const option = luaPrompt.options[index];
+  const code = luaPrompt.descriptions[index];
+  if (option === undefined || code === undefined) return {};
+  return { luaReturnValues: [{ code, index: option }] };
 }
 
 function copySelectOptionAction(action: SelectOptionAction): SelectOptionAction {
