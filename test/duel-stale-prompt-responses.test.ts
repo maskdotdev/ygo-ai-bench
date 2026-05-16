@@ -77,6 +77,14 @@ describe("duel stale prompt responses", () => {
     expect(restoredOption).toBeDefined();
     expect(restoredOption).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "prompt" });
     expect(restoredOption!.windowToken).toBeDefined();
+    expect(getGroupedDuelLegalActions(restored, 1)).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        windowId: queryPublicState(restored).actionWindowId,
+        windowKind: "prompt",
+        promptId: "restore-stale-option-prompt",
+        promptType: "selectOption",
+      }),
+    ]));
     const staleBeforeSelection = applyResponse(restored, { ...restoredOption!, windowId: restoredOption!.windowId! - 1 });
     expect(staleBeforeSelection.ok).toBe(false);
     expect(staleBeforeSelection.error).toContain("Response is not currently legal");
@@ -142,6 +150,14 @@ describe("duel stale prompt responses", () => {
     expect(restoredYes).toBeDefined();
     expect(restoredYes).toMatchObject({ windowId: queryPublicState(restored).actionWindowId, windowKind: "prompt" });
     expect(restoredYes!.windowToken).toBeDefined();
+    expect(getGroupedDuelLegalActions(restored, 0)).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        windowId: queryPublicState(restored).actionWindowId,
+        windowKind: "prompt",
+        promptId: "restore-stale-yes-no-prompt",
+        promptType: "selectYesNo",
+      }),
+    ]));
     const staleBeforeSelection = applyResponse(restored, { ...restoredYes!, windowId: restoredYes!.windowId! - 1 });
     expect(staleBeforeSelection.ok).toBe(false);
     expect(staleBeforeSelection.error).toContain("Response is not currently legal");
