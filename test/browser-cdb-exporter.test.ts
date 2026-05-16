@@ -6,6 +6,7 @@ import { execFileSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 
 const exporterPath = path.resolve("tools/export-browser-cdb-rows.mjs");
+const checkerPath = path.resolve("tools/check-browser-asset-manifests.mjs");
 const tempRoots: string[] = [];
 
 afterEach(() => {
@@ -30,6 +31,7 @@ describe("browser CDB row exporter", () => {
     ].join("")]);
 
     execFileSync("node", [exporterPath, "--database", databasePath, "--out", outPath, "--codes", "300,100"]);
+    const checked = execFileSync("node", [checkerPath, "--card-data", path.dirname(outPath)], { encoding: "utf8" });
 
     const payload = fs.readFileSync(outPath, "utf8");
     expect(JSON.parse(payload)).toEqual({
@@ -51,5 +53,6 @@ describe("browser CDB row exporter", () => {
       textsRows: 2,
       sha256: crypto.createHash("sha256").update(payload).digest("hex"),
     });
+    expect(checked).toContain("Browser asset manifest check passed");
   });
 });

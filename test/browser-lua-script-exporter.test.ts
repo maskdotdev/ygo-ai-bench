@@ -6,6 +6,7 @@ import { execFileSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 
 const exporterPath = path.resolve("tools/export-browser-lua-scripts.mjs");
+const checkerPath = path.resolve("tools/check-browser-asset-manifests.mjs");
 const tempRoots: string[] = [];
 
 afterEach(() => {
@@ -42,6 +43,7 @@ describe("browser Lua script exporter", () => {
     expect(fs.readFileSync(path.join(outDir, "c100.lua"), "utf8")).toBe("official 100");
     expect(fs.readFileSync(path.join(outDir, "c300.lua"), "utf8")).toBe("pre 300");
     expect(fs.existsSync(path.join(outDir, "c200.lua"))).toBe(false);
+    expect(execFileSync("node", [checkerPath, "--card-scripts", outDir], { encoding: "utf8" })).toContain("Browser asset manifest check passed");
     expect(JSON.parse(fs.readFileSync(path.join(outDir, "manifest.json"), "utf8"))).toEqual({
       schemaVersion: 1,
       kind: "browser-lua-scripts",
@@ -74,6 +76,7 @@ describe("browser Lua script exporter", () => {
       missing: [],
     });
     expect(fs.readdirSync(outDir).sort()).toEqual(["c100.lua", "c200.lua", "manifest.json"]);
+    expect(execFileSync("node", [checkerPath, "--card-scripts", outDir], { encoding: "utf8" })).toContain("Browser asset manifest check passed");
   });
 
   it("prefers local overrides and falls back to local fallback scripts", () => {
