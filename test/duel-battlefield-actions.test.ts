@@ -105,9 +105,12 @@ describe("duel battlefield action view", () => {
     session.state.waitingFor = 1;
     const option = getDuelLegalActions(session, 1).find((action) => action.type === "selectOption" && action.promptId === "battlefield-option-prompt" && action.option === 4);
     expect(option).toBeDefined();
+    const windowId = option!.windowId;
+    const windowToken = option!.windowToken;
+    if (windowId === undefined || windowToken === undefined) throw new Error("Expected prompt option to be stamped with a window");
 
     const result = runDuelBattlefieldScript(session, [
-      { player: 1, type: "selectOption", promptId: "battlefield-option-prompt", option: 4, windowId: option!.windowId, windowKind: "prompt", windowToken: option!.windowToken },
+      { player: 1, type: "selectOption", promptId: "battlefield-option-prompt", option: 4, windowId, windowKind: "prompt", windowToken },
     ]);
 
     expect(result.ok).toBe(true);
