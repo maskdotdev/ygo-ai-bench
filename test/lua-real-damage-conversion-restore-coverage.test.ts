@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const damageConversionFixtureCount = 5;
+const damageConversionFixtureCount = 6;
 
 describe("Lua real damage conversion restore coverage", () => {
   it("requires effect damage conversion fixtures to assert clean Lua registry restore and final LP/event outcomes", () => {
@@ -76,6 +76,17 @@ function damageConversionFixtureFiles(): Array<{ file: string; required: string[
         "players[0].lifePoints).toBe(8000)",
         "players[1].lifePoints).toBe(7000)",
         "event.eventName === \"damageDealt\" && event.eventPlayer === 0)).toEqual([])",
+      ],
+    },
+    {
+      file: "lua-real-script-natures-reflection-reflect-damage.test.ts",
+      required: [
+        "Nature's Reflection reflect damage",
+        "code: 83",
+        "reflect-damage:opponent-non-continuous",
+        "players[0].lifePoints).toBe(6500)",
+        "players[1].lifePoints).toBe(8000)",
+        "eventValue: 500",
       ],
     },
     {
