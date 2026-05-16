@@ -4,10 +4,18 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
+const representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = {
+  fusion: 15,
+  ritual: 16,
+};
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
     expect(representativeRitualFusionHelperFixtures()).toHaveLength(31);
+  });
+
+  it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
+    expect(countFixtureFamilies(representativeRitualFusionHelperFixtures())).toEqual(representativeRitualFusionHelperFamilyCounts);
   });
 
   it("requires representative Ritual/Fusion helper fixtures to assert clean Lua restore", () => {
@@ -37,10 +45,22 @@ describe("Lua real Ritual and Fusion helper restore coverage", () => {
   });
 });
 
-function representativeRitualFusionHelperFixtures(): Array<{ file: string; required: string[] }> {
-  return [
+type RitualFusionHelperFamily = "fusion" | "ritual";
+
+function countFixtureFamilies(fixtures: Array<{ families: RitualFusionHelperFamily[] }>): Record<RitualFusionHelperFamily, number> {
+  return fixtures
+    .flatMap(({ families }) => families)
+    .reduce<Record<RitualFusionHelperFamily, number>>(
+      (counts, family) => ({ ...counts, [family]: counts[family] + 1 }),
+      { fusion: 0, ritual: 0 },
+    );
+}
+
+function representativeRitualFusionHelperFixtures(): Array<{ file: string; families: RitualFusionHelperFamily[]; required: string[] }> {
+  return ([
     {
       file: "test/lua-real-script-machine-angel-absolute-grave-ritual.test.ts",
+      families: ["ritual"],
       required: [
         'operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }])',
         'summonType: "ritual"',
@@ -52,6 +72,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-chaos-form-grave-ritual.test.ts",
+      families: ["ritual"],
       required: [
         "restores a Ritual procedure that banishes a Graveyard Blue-Eyes material",
         "operationInfos).toEqual([",
@@ -64,6 +85,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-nekroz-divinemirror-extra-deck-ritual.test.ts",
+      families: ["ritual"],
       required: [
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x22 }]',
         'summonType: "ritual"',
@@ -75,6 +97,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-contract-dark-master-ritual-spell.test.ts",
+      families: ["ritual"],
       required: [
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }]',
         'summonType: "ritual"',
@@ -85,6 +108,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-branded-fusion-deck-material.test.ts",
+      families: ["fusion"],
       required: [
         "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }",
         "{ category: 0x20, targetUids: [], count: 0, player: 0, parameter: 0x7 }",
@@ -96,6 +120,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-dyna-base-forced-handler-fusion.test.ts",
+      families: ["fusion"],
       required: [
         'summonType: "fusion"',
         "summonMaterialUids: [dynaBase!.uid, material!.uid]",
@@ -105,6 +130,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-earth-chant-ritual-equal.test.ts",
+      families: ["ritual"],
       required: [
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }]',
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x12 }]',
@@ -117,6 +143,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-miracle-raven-self-ritual.test.ts",
+      families: ["ritual"],
       required: [
         "operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x200 }])",
         'summonType: "ritual"',
@@ -126,6 +153,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-mutiny-sky-shuffle-fusion-material.test.ts",
+      families: ["fusion"],
       required: [
         "restoredChainLink.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }])",
         'summonType: "fusion"',
@@ -137,6 +165,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-magikey-duo-defense-ritual.test.ts",
+      families: ["ritual"],
       required: [
         'operationInfos: [{ category: 0x8, targetUids: [graveTarget!.uid], count: 1, player: 0, parameter: 0 }]',
         'position: "faceUpDefense"',
@@ -148,6 +177,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-magikey-maftea-deck-ritual.test.ts",
+      families: ["ritual"],
       required: [
         'summonType: "ritual"',
         "summonMaterialUids).toEqual([handMaterial!.uid, faceupNormal!.uid, deckNormalMaterial!.uid])",
@@ -159,6 +189,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-megalith-unformed-deck-ritual.test.ts",
+      families: ["ritual"],
       required: [
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x1 }]',
         'position: "faceUpDefense"',
@@ -170,6 +201,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-advanced-ritual-art-extra-material.test.ts",
+      families: ["ritual"],
       required: [
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }]',
         'summonType: "ritual"',
@@ -180,6 +212,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-arcana-force-chaos-ruler-contact-fusion.test.ts",
+      families: ["fusion"],
       required: [
         'summonType: "fusion"',
         "summonMaterialUids: [ownMaterialA!.uid, ownMaterialB!.uid, opponentMaterial!.uid]",
@@ -189,6 +222,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-dark-fusion-stage2-protection.test.ts",
+      families: ["fusion"],
       required: [
         'summonType: "fusion"',
         "summonMaterialUids: [materialA!.uid, materialB!.uid]",
@@ -201,6 +235,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-forbidden-arts-gishki-opponent-ritual.test.ts",
+      families: ["ritual"],
       required: [
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }]',
         'summonType: "ritual"',
@@ -211,6 +246,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-gladiator-beast-andabata-contact-fusion.test.ts",
+      families: ["fusion"],
       required: [
         'summonType: "special"',
         "summonTypeCode: luaSummonTypeSpecial + 1",
@@ -220,6 +256,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-high-ritual-art-deck-stage2.test.ts",
+      families: ["ritual"],
       required: [
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x1 }]',
         'summonType: "ritual"',
@@ -231,6 +268,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-ladys-dragonmaid-contact-fusion.test.ts",
+      families: ["fusion"],
       required: [
         'summonType: "fusion"',
         "summonMaterialUids: [fieldMaterial!.uid, graveMaterial!.uid]",
@@ -240,6 +278,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-vendread-reunion-custom-ritual.test.ts",
+      families: ["ritual"],
       required: [
         'summonType: "ritual"',
         "expect(summonedRitual!.summonMaterialUids).toEqual([materialA!.uid, materialB!.uid])",
@@ -249,6 +288,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-heavy-polymerization-partial-extraop.test.ts",
+      families: ["fusion"],
       required: [
         "expect(chainLink.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }])",
         "expect(chainLink.possibleOperationInfos).toEqual([{ category: 0x4, targetUids: [], count: 1, player: 0, parameter: 0x40 }])",
@@ -260,6 +300,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-fallen-of-albaz-opponent-fusion.test.ts",
+      families: ["fusion"],
       required: [
         "reason: duelReason.cost | duelReason.discard",
         'summonType: "fusion"',
@@ -270,6 +311,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-miracle-fusion-extra-material.test.ts",
+      families: ["fusion"],
       required: [
         "expect(restoredChainLink.operationInfos).toEqual(",
         'summonType: "fusion"',
@@ -280,6 +322,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-necroquip-princess-contact-fusion.test.ts",
+      families: ["fusion"],
       required: [
         'summonType: "fusion"',
         "summonMaterialUids: [equippedMaterial!.uid, fiendMaterial!.uid]",
@@ -289,6 +332,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-polymerization-fusion-summon.test.ts",
+      families: ["fusion"],
       required: [
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }]',
         'summonType: "fusion"',
@@ -300,6 +344,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-prank-kids-pandemonium-stage2-oath.test.ts",
+      families: ["fusion"],
       required: [
         'summonType: "fusion"',
         "summonMaterialUids: [materialA!.uid, materialB!.uid]",
@@ -310,6 +355,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-prayers-ritual-matfilter.test.ts",
+      families: ["ritual"],
       required: [
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }]',
         'summonType: "ritual"',
@@ -321,6 +367,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-primite-fusion-extra-check.test.ts",
+      families: ["fusion"],
       required: [
         "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }",
         "{ category: 0x10, targetUids: [], count: 1, player: 0, parameter: 0x3c }",
@@ -332,6 +379,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-rebirth-nephthys-stage2.test.ts",
+      families: ["ritual"],
       required: [
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }]',
         'summonType: "ritual"',
@@ -342,6 +390,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-secrets-dark-magic-fusion-matcheck.test.ts",
+      families: ["fusion"],
       required: [
         "expect(session.state.chain[0]!.operationInfos).toEqual(",
         'summonType: "fusion"',
@@ -352,6 +401,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
     },
     {
       file: "test/lua-real-script-super-soldier-synthesis-specific-material.test.ts",
+      families: ["ritual"],
       required: [
         "{ category: 0x20, targetUids: [], count: 1, player: 0, parameter: 0x3 }",
         "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x12 }",
@@ -361,5 +411,5 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
         'expect(restored.host.messages).not.toContain("super soldier synthesis responder resolved")',
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{ file: string; families: RitualFusionHelperFamily[]; required: string[] }>).sort((a, b) => a.file.localeCompare(b.file));
 }
