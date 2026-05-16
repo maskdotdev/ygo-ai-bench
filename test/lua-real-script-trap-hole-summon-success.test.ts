@@ -212,6 +212,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tr
 
     expect(restored.session.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.cards.find((card) => card.uid === trapHole!.uid)).toMatchObject({ location: "graveyard" });
+    const destroyedEvents = restored.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === summoned!.uid);
+    expect(destroyedEvents).toHaveLength(1);
+    expect(destroyedEvents[0]).toMatchObject({
+      eventName: "destroyed",
+      eventCardUid: summoned!.uid,
+      eventReasonCardUid: trapHole!.uid,
+      eventCurrentState: { location: "graveyard" },
+    });
     expect(restored.host.messages).toContain("trap hole chain starter resolved");
     expect(restored.host.messages).not.toContain("trap hole responder resolved");
   });

@@ -237,6 +237,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
       expect(restored.session.state.cards.find((card) => card.uid === uid)).toMatchObject({ location: "graveyard" });
     }
     expect(restored.session.state.cards.find((card) => card.uid === torrential!.uid)).toMatchObject({ location: "graveyard" });
+    const destroyedEvents = restored.session.state.eventHistory.filter(
+      (event) => event.eventName === "destroyed" && event.eventCardUid !== undefined && destroyedUids.includes(event.eventCardUid),
+    );
+    expect([...new Set(destroyedEvents.map((event) => event.eventCardUid))].sort()).toEqual([...destroyedUids].sort());
+    for (const event of destroyedEvents) {
+      expect(event).toMatchObject({
+        eventName: "destroyed",
+        eventReasonCardUid: torrential!.uid,
+        eventCurrentState: { location: "graveyard" },
+      });
+    }
     expect(restored.host.messages).toContain("torrential chain starter resolved");
     expect(restored.host.messages).not.toContain("torrential chain responder resolved");
   });
