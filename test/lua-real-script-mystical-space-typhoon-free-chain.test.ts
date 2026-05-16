@@ -144,6 +144,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script My
 
     const pass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
+    expect(pass?.windowKind).toBe("chainResponse");
     const resolved = applyLuaRestoreResponse(restored, pass!);
     expect(resolved.ok, resolved.error).toBe(true);
 

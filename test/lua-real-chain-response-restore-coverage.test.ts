@@ -92,6 +92,7 @@ function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }
       required: [
         'action.type === "activateEffect" && action.uid === raigekiBreak!.uid',
         'action.type === "passChain"',
+        'pass?.windowKind).toBe("chainResponse")',
         "restored.session.state.chain).toHaveLength(2)",
         'eventName: "destroyed"',
         'eventName: "cardsDrawn"',
@@ -104,6 +105,7 @@ function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }
       required: [
         'action.type === "activateEffect" && action.uid === mst!.uid',
         'action.type === "passChain"',
+        'pass?.windowKind).toBe("chainResponse")',
         "restored.session.state.chain).toHaveLength(2)",
         'eventName: "destroyed"',
         'eventName: "cardsDrawn"',
