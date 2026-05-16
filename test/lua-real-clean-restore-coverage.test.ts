@@ -9,6 +9,19 @@ const scannerPath = path.join(root, "tools/scan-lua-clean-restore.mjs");
 const realScriptFixtureCount = 587;
 
 describe("Lua real-script clean restore coverage", () => {
+  it("requires every real-script fixture to assert complete Lua restore diagnostics", () => {
+    const files = realScriptFixtureFiles();
+    expect(files).toHaveLength(realScriptFixtureCount);
+
+    const missing = files.filter((file) => {
+      const text = readTestFile(file);
+      return !text.includes("restoreComplete")
+        || !text.includes('incompleteReasons.join("; ")');
+    });
+
+    expect(missing).toEqual([]);
+  });
+
   it("requires every real-script fixture to assert no missing Lua registry keys after restore", () => {
     const files = realScriptFixtureFiles();
     expect(files).toHaveLength(realScriptFixtureCount);
