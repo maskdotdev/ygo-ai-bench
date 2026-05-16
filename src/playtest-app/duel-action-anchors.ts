@@ -1,3 +1,4 @@
+import { copyDuelAction } from "#duel/action-copy.js";
 import type { DuelAction } from "#duel/types.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 
@@ -15,6 +16,15 @@ export interface DuelActionUiGroup {
 /** Stable key for de-duplicating action references in UI maps. */
 export function duelActionUiKey(action: DuelAction): string {
   return JSON.stringify(action);
+}
+
+export function copyDuelLegalActionGroup(group: DuelLegalActionGroup): DuelLegalActionGroup {
+  return {
+    ...group,
+    ...(group.triggerBucket === undefined ? {} : { triggerBucket: { ...group.triggerBucket, triggerIds: [...group.triggerBucket.triggerIds] } }),
+    ...(group.triggerOrderPrompt === undefined ? {} : { triggerOrderPrompt: { ...group.triggerOrderPrompt, triggerIds: [...group.triggerOrderPrompt.triggerIds] } }),
+    actions: group.actions.map(copyDuelAction),
+  };
 }
 
 /**

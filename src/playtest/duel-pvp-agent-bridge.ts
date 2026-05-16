@@ -10,14 +10,14 @@ import {
   startDuel,
 } from "#duel/core.js";
 import { copyDuelAction } from "#duel/action-copy.js";
-import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import type { ApplyDuelResponseResult, DuelAction, DuelSession, PlayerId, SerializedDuel } from "#duel/types.js";
 import { parseYdk } from "#playtest/ydk.js";
 import { getBrowserDuelCardReader } from "../playtest-app/duel-pvp-card-reader.js";
 import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "../playtest-app/duel-battlefield-actions.js";
-import { duelActionUiGroupLabel, type DuelActionUiGroup } from "../playtest-app/duel-action-anchors.js";
+import { copyDuelLegalActionGroup, duelActionUiGroupLabel, type DuelActionUiGroup } from "../playtest-app/duel-action-anchors.js";
 import { runDuelBattlefieldScript, type DuelBattlefieldActionSelector } from "../playtest-app/duel-battlefield-script.js";
 import { duelPromptView, type DuelPromptView } from "../playtest-app/duel-prompt-view.js";
+import { copyDuelTriggerOrderView, duelTriggerOrderView, type DuelTriggerOrderView } from "../playtest-app/duel-trigger-order-view.js";
 
 export interface DuelPvpAgentStartOptions {
   player0Ydk: string;
@@ -37,6 +37,7 @@ export interface DuelPvpVisibleView {
   actions: DuelAction[];
   groups: DuelActionUiGroup[];
   prompt?: DuelPromptView;
+  triggerOrder?: DuelTriggerOrderView;
 }
 
 export interface DuelPvpVisibleAutoRunStep {
@@ -54,6 +55,7 @@ export interface DuelPvpVisibleAutoRunResult {
   visibleActions: DuelAction[];
   visibleGroups: DuelActionUiGroup[];
   prompt?: DuelPromptView;
+  triggerOrder?: DuelTriggerOrderView;
 }
 
 export interface DuelPvpAgent {
@@ -166,19 +168,23 @@ function duelSnapshot(session: DuelSession) {
 
 function visibleBattlefieldView(session: DuelSession, player: PlayerId): DuelPvpVisibleView {
   const state = queryPublicState(session);
+  const legalActions = getLegalActions(session, player);
+  const legalGroups = getGroupedDuelLegalActions(session, player);
   const view = duelBattlefieldActionView(
     state,
     player,
-    getLegalActions(session, player),
-    getGroupedDuelLegalActions(session, player),
+    legalActions,
+    legalGroups,
   );
   const groups = view.orphanGroups.map(copyUiGroup);
   const prompt = duelPromptView(state.prompt, groups);
+  const triggerOrder = duelTriggerOrderView(state.triggerOrderPrompt, legalGroups);
   return {
     player,
     actions: visibleDuelBattlefieldActions(view).map(copyDuelAction),
     groups,
     ...(prompt === undefined ? {} : { prompt: copyPromptView(prompt) }),
+    ...(triggerOrder === undefined ? {} : { triggerOrder: copyDuelTriggerOrderView(triggerOrder) }),
   };
 }
 
@@ -220,6 +226,7 @@ function visibleAutoRunResult(
     visibleActions: view.actions,
     visibleGroups: view.groups,
     ...(view.prompt === undefined ? {} : { prompt: copyPromptView(view.prompt) }),
+    ...(view.triggerOrder === undefined ? {} : { triggerOrder: copyDuelTriggerOrderView(view.triggerOrder) }),
   };
 }
 
@@ -227,16 +234,7 @@ function copyApplyResponseResult(result: ApplyDuelResponseResult): ApplyDuelResp
   return {
     ...result,
     legalActions: result.legalActions.map(copyDuelAction),
-    legalActionGroups: result.legalActionGroups.map(copyLegalActionGroup),
-  };
-}
-
-function copyLegalActionGroup(group: DuelLegalActionGroup): DuelLegalActionGroup {
-  return {
-    ...group,
-    ...(group.triggerBucket === undefined ? {} : { triggerBucket: { ...group.triggerBucket, triggerIds: [...group.triggerBucket.triggerIds] } }),
-    ...(group.triggerOrderPrompt === undefined ? {} : { triggerOrderPrompt: { ...group.triggerOrderPrompt, triggerIds: [...group.triggerOrderPrompt.triggerIds] } }),
-    actions: group.actions.map(copyDuelAction),
+    legalActionGroups: result.legalActionGroups.map(copyDuelLegalActionGroup),
   };
 }
 

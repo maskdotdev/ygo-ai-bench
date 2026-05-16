@@ -9,6 +9,7 @@ import type { DuelAction, DuelActionWindowKind, DuelPhase, DuelSession, PlayerId
 import { duelActionAnchorUids, duelActionUiGroupLabel, type DuelActionUiGroup } from "./duel-action-anchors.js";
 import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "./duel-battlefield-actions.js";
 import { duelPromptView, type DuelPromptView } from "./duel-prompt-view.js";
+import { copyDuelTriggerOrderView, duelTriggerOrderView, type DuelTriggerOrderView } from "./duel-trigger-order-view.js";
 
 export interface DuelBattlefieldActionSelector {
   player: PlayerId;
@@ -43,6 +44,7 @@ export interface DuelBattlefieldScriptResult {
   visibleActions: DuelAction[];
   visibleGroups: DuelActionUiGroup[];
   prompt?: DuelPromptView;
+  triggerOrder?: DuelTriggerOrderView;
 }
 
 export interface DuelBattlefieldScriptStepResult extends DuelBattlefieldScriptResult {
@@ -131,9 +133,10 @@ function battlefieldScriptResult(
   const visibleGroups = view.visibleGroups.map((group) => ({
     ...group,
     label: duelActionUiGroupLabel(group),
-    actions: group.actions.map((action) => ({ ...action })),
+    actions: group.actions.map(copyDuelAction),
   }));
   const prompt = duelPromptView(state.prompt, visibleGroups);
+  const triggerOrder = duelTriggerOrderView(state.triggerOrderPrompt, view.legalGroups);
   return {
     ok: failedStep === undefined,
     state,
@@ -142,20 +145,23 @@ function battlefieldScriptResult(
     visibleActions: view.visibleActions.map(copyDuelAction),
     visibleGroups,
     ...(prompt === undefined ? {} : { prompt }),
+    ...(triggerOrder === undefined ? {} : { triggerOrder: copyDuelTriggerOrderView(triggerOrder) }),
   };
 }
 
-function battlefieldScriptView(session: DuelSession, player: PlayerId): { visibleActions: DuelAction[]; visibleGroups: DuelActionUiGroup[] } {
+function battlefieldScriptView(session: DuelSession, player: PlayerId): { visibleActions: DuelAction[]; visibleGroups: DuelActionUiGroup[]; legalGroups: ReturnType<typeof getGroupedDuelLegalActions> } {
   const state = queryPublicState(session);
+  const legalGroups = getGroupedDuelLegalActions(session, player);
   const view = duelBattlefieldActionView(
     state,
     player,
     getDuelLegalActions(session, player),
-    getGroupedDuelLegalActions(session, player),
+    legalGroups,
   );
   return {
     visibleActions: visibleDuelBattlefieldActions(view),
     visibleGroups: view.orphanGroups,
+    legalGroups,
   };
 }
 

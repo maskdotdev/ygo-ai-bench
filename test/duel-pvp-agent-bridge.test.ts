@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDuel, loadDecks, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getLegalActions, loadDecks, queryPublicState, registerEffect, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createDuelPvpAgent } from "#playtest/duel-pvp-agent-bridge.js";
 import { starterYdk } from "../src/playtest-app/ui.js";
@@ -114,6 +114,63 @@ describe("duel pvp agent bridge", () => {
     expect(freshFusion.materialUids).toEqual(expect.arrayContaining([first!.uid, second!.uid]));
     expect(freshGroupedFusion.materialUids).toHaveLength(2);
     expect(freshGroupedFusion.materialUids).toEqual(expect.arrayContaining([first!.uid, second!.uid]));
+  });
+
+  it("exposes trigger-order prompts through visible bridge payloads", () => {
+    const session = createDuel({ seed: 483, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "400"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+    const summoned = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const first = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const second = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "400");
+    expect(summoned).toBeDefined();
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    registerEffect(session, {
+      id: "agent-first-mandatory",
+      sourceUid: first!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      optional: false,
+      range: ["hand"],
+      operation() {},
+    });
+    registerEffect(session, {
+      id: "agent-second-mandatory",
+      sourceUid: second!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      optional: false,
+      range: ["hand"],
+      operation() {},
+    });
+    const normalSummon = getLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === summoned!.uid);
+    expect(normalSummon).toBeDefined();
+    expect(applyResponse(session, normalSummon).ok).toBe(true);
+    expect(queryPublicState(session).triggerOrderPrompt).toMatchObject({ player: 0, triggerBucket: "turnMandatory" });
+
+    const snapshot = serializeDuel(session);
+    // The bridge has no fixture effect registry, so use static restored metadata to keep pending triggers visible.
+    snapshot.state.effects = [
+      { id: "agent-first-mandatory", sourceUid: first!.uid, controller: 0, event: "continuous", optional: false, range: ["hand"] },
+      { id: "agent-second-mandatory", sourceUid: second!.uid, controller: 0, event: "continuous", optional: false, range: ["hand"] },
+    ];
+    const agent = createDuelPvpAgent();
+    const restored = agent.restore(snapshot);
+    const visible = agent.visibleBattlefield(0, restored.sessionId);
+
+    expect(visible.triggerOrder).toMatchObject({
+      label: "Trigger Order",
+      detail: "P1 · turnMandatory · 2 triggers",
+    });
+    expect(visible.triggerOrder?.groups.flatMap((group) => group.actions).map((action) => (
+      action.type === "activateTrigger" ? action.effectId : action.type
+    ))).toEqual(["agent-first-mandatory", "agent-second-mandatory"]);
   });
 
   it("restores serialized sessions with the same visible action surface", () => {

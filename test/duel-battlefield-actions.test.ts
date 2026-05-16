@@ -6,6 +6,7 @@ import {
   getLegalActions as getDuelLegalActions,
   loadDecks,
   queryPublicState,
+  registerEffect,
   specialSummonDuelCard,
   startDuel,
 } from "#duel/core.js";
@@ -108,6 +109,55 @@ describe("duel battlefield action view", () => {
     expect(result.state.prompt).toBeUndefined();
     expect(result.state.waitingFor).toBe(0);
     expect(result.state.log).toContainEqual(expect.objectContaining({ action: "selectOption", detail: "Selected option 4" }));
+  });
+
+  it("reports trigger-order prompts when visible scripts diverge", () => {
+    const session = createDuel({ seed: 997, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "400"] },
+      1: { main: ["100"] },
+    });
+    startDuel(session);
+    const summoned = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const first = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const second = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "400");
+    expect(summoned).toBeDefined();
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    registerEffect(session, {
+      id: "battlefield-first-mandatory",
+      sourceUid: first!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      optional: false,
+      range: ["hand"],
+      operation() {},
+    });
+    registerEffect(session, {
+      id: "battlefield-second-mandatory",
+      sourceUid: second!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      optional: false,
+      range: ["hand"],
+      operation() {},
+    });
+    applyVisible(session, visibleAction(session, 0, (action) => action.type === "normalSummon" && action.uid === summoned!.uid));
+
+    const result = runDuelBattlefieldScript(session, [
+      { player: 0, type: "endTurn" },
+    ]);
+
+    expect(result.ok).toBe(false);
+    expect(result.triggerOrder).toMatchObject({
+      label: "Trigger Order",
+      detail: "P1 · turnMandatory · 2 triggers",
+    });
+    expect(result.triggerOrder?.groups.flatMap((group) => group.actions).map((action) => (
+      action.type === "activateTrigger" ? action.effectId : action.type
+    ))).toEqual(["battlefield-first-mandatory", "battlefield-second-mandatory"]);
   });
 
   it("matches visible summon scripts by exact material selection", () => {

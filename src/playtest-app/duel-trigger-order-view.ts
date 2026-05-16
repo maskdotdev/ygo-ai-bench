@@ -1,5 +1,6 @@
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import type { TriggerOrderPromptState } from "#duel/types.js";
+import { copyDuelLegalActionGroup } from "./duel-action-anchors.js";
 
 export interface DuelTriggerOrderView {
   label: string;
@@ -18,6 +19,13 @@ export function duelTriggerOrderView(
     label: "Trigger Order",
     detail: `P${prompt.player + 1} · ${prompt.triggerBucket} · ${prompt.triggerIds.length} triggers`,
     groups: promptGroups,
+  };
+}
+
+export function copyDuelTriggerOrderView(view: DuelTriggerOrderView): DuelTriggerOrderView {
+  return {
+    ...view,
+    groups: view.groups.map(copyDuelLegalActionGroup),
   };
 }
 
