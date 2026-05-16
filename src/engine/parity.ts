@@ -132,6 +132,10 @@ export function runScriptedDuelFixture(fixture: ScriptedDuelFixture, options: Pa
   }
 
   assertWindow(session, fixture.expected, fixture.name, "final expected", failures);
+  if (failures.length === 0) {
+    const restored = assertSnapshotRestore(session, fixture.name, "final expected", failures, options.cardReader, effectRegistry, chainLimitRegistry);
+    if (restored) session = restored;
+  }
 
   return { ok: failures.length === 0, failures };
 }
