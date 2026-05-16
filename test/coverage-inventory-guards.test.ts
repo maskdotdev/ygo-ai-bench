@@ -215,6 +215,21 @@ describe("coverage inventory guards", () => {
     expect(weak).toEqual([]);
   });
 
+  it("requires stale response helpers to preserve returned legal-action proof", () => {
+    const helpers = staleResponseHelpers();
+    const weak = helpers
+      .filter((helper) => !hasStrongStaleResponseHelper(helper))
+      .map((helper) => `${helper.file}:${helper.line}:${helper.name}`);
+    const helperReferences = fs.readdirSync(testRoot)
+      .filter((file) => file.endsWith(".test.ts"))
+      .filter((file) => file !== "coverage-inventory-guards.test.ts")
+      .reduce((count, file) => count + (readTestFile(file).match(/\b(?:assert|expect)Stale\w*\(/g)?.length ?? 0), 0);
+
+    expect(helpers).toHaveLength(11);
+    expect(helperReferences).toBe(75);
+    expect(weak).toEqual([]);
+  });
+
   it("requires test proof floors to be exact", () => {
     const greaterThanAllowlist = new Set([
       "lua-field-query-helpers.test.ts:59",
@@ -332,7 +347,7 @@ function localLegalWindowHelpers(): LocalLegalWindowHelper[] {
 }
 
 function functionBodyEnd(text: string, start: number): number {
-  const open = text.indexOf("{", start);
+  const open = functionBodyOpen(text, start);
   let depth = 0;
   for (let index = open; index < text.length; index++) {
     if (text[index] === "{") depth++;
@@ -342,6 +357,23 @@ function functionBodyEnd(text: string, start: number): number {
     }
   }
   throw new Error(`Unclosed function body after ${start}`);
+}
+
+function functionBodyOpen(text: string, start: number): number {
+  const paramsOpen = text.indexOf("(", start);
+  let depth = 0;
+  for (let index = paramsOpen; index < text.length; index++) {
+    if (text[index] === "(") depth++;
+    else if (text[index] === ")") {
+      depth--;
+      if (depth === 0) {
+        const open = text.indexOf("{", index);
+        if (open >= 0) return open;
+        break;
+      }
+    }
+  }
+  throw new Error(`Missing function body after ${start}`);
 }
 
 function hasStrongLuaRestoreResponseHelper(
@@ -417,6 +449,47 @@ function hasReturnedLegalActionSurfaceProof(text: string, responseVariable: stri
   return text.includes(`${responseVariable}.legalActions`)
     && text.includes(`${responseVariable}.legalActionGroups`)
     && text.includes(`${responseVariable}.legalActionGroups.flatMap((group) => group.actions)).toEqual(${responseVariable}.legalActions`);
+}
+
+type StaleResponseHelper = { file: string; line: number; name: string; text: string };
+
+function staleResponseHelpers(): StaleResponseHelper[] {
+  return fs.readdirSync(testRoot)
+    .filter((file) => file.endsWith(".test.ts"))
+    .filter((file) => file !== "coverage-inventory-guards.test.ts")
+    .flatMap((file) => {
+      const text = readTestFile(file);
+      return [...text.matchAll(/function ((?:assert|expect)Stale\w*)\b/g)]
+        .map((match) => {
+          const start = match.index ?? 0;
+          return {
+            file,
+            line: lineNumber(text, start),
+            name: match[1]!,
+            text: text.slice(start, functionBodyEnd(text, start)),
+          };
+        });
+    });
+}
+
+function hasStrongStaleResponseHelper(helper: StaleResponseHelper): boolean {
+  const fileText = readTestFile(helper.file);
+  if (hasReturnedRawLegalActionProof(helper.text)
+    && hasReturnedGroupedLegalActionProof(helper.text)
+    && (hasReturnedLegalActionFlattenProof(helper.text) || hasStrongResultActionsMatchStateProof(helper.text, fileText))) {
+    return true;
+  }
+  return /\b(?:assertRestoreLegalWindow|assertLegalWindow|assertLegalWindowMetadata|assertLuaRestoreLegalWindow)\(/.test(helper.text);
+}
+
+function hasStrongResultActionsMatchStateProof(text: string, fileText: string): boolean {
+  if (!text.includes("expectResultActionsMatchResultState(")) return false;
+  const helperStart = fileText.indexOf("function expectResultActionsMatchResultState");
+  if (helperStart < 0) return false;
+  const helperText = fileText.slice(helperStart, functionBodyEnd(fileText, helperStart));
+  return helperText.includes("result.legalActionGroups.flatMap((group) => group.actions)")
+    && helperText.includes("groupedActions).toHaveLength(result.legalActions.length)")
+    && helperText.includes("groupedActions).toEqual(expect.arrayContaining(result.legalActions))");
 }
 
 function hasNearbyRestoredActionEvidence(text: string, variable: string, fileText: string): boolean {
