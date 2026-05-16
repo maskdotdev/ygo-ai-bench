@@ -121,6 +121,88 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fo
     expect(restored.session.state.cards.find((card) => card.uid === opponentFieldMaterial!.uid)).toMatchObject({ location: "graveyard", controller: 1, reason: duelReason.release | duelReason.material | duelReason.ritual });
     expect(restored.session.state.cards.find((card) => card.uid === handDecoy!.uid)).toMatchObject({ location: "hand" });
     expect(restored.session.state.cards.find((card) => card.uid === forbiddenArts!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === ritualTarget!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-28421-1",
+          "eventCode": 1102,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "specialSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 1050640,
+          "eventReasonCardUid": "p0-deck-28429121-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
+    expect(
+      restored.session.state.eventHistory.filter((event) =>
+        event.eventName === "sentToGraveyard"
+        && (event.eventCardUid === ownFieldMaterial!.uid || event.eventCardUid === opponentFieldMaterial!.uid)
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-28422-2",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 1048586,
+          "eventReasonCardUid": "p0-deck-28429121-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p1-deck-28423-0",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 1048586,
+          "eventReasonCardUid": "p0-deck-28429121-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 101 && effect.sourceUid === ritualTarget!.uid)).toMatchInlineSnapshot(`
       {
         "canActivate": [Function],

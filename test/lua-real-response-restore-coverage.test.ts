@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 85;
-const chainedResponseFixtureCount = 84;
-const responseOperationInfoFixtureCount = 76;
+const responseFixtureCount = 88;
+const chainedResponseFixtureCount = 87;
+const responseOperationInfoFixtureCount = 79;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -122,6 +122,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
     "lua-real-script-fenghuang-set-backrow-destroy.test.ts",
     "lua-real-script-foolish-burial-deck-to-grave.test.ts",
+    "lua-real-script-forbidden-arts-gishki-opponent-ritual.test.ts",
     "lua-real-script-fushi-no-tori-battle-recover.test.ts",
     "lua-real-script-gagaga-escape-position-lockout.test.ts",
     "lua-real-script-gemini-spark-release-destroy-draw.test.ts",
@@ -139,6 +140,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-magic-cylinder-battle-window.test.ts",
     "lua-real-script-magikey-duo-defense-ritual.test.ts",
     "lua-real-script-megalith-bethor-ritual-procedure.test.ts",
+    "lua-real-script-megalith-unformed-deck-ritual.test.ts",
     "lua-real-script-miracle-fusion-extra-material.test.ts",
     "lua-real-script-mirror-force-battle-window.test.ts",
     "lua-real-script-mitsurugi-mirror-grave-ritual.test.ts",
@@ -146,6 +148,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-mutiny-sky-shuffle-fusion-material.test.ts",
     "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
     "lua-real-script-naturia-ragweed-event-draw-trigger.test.ts",
+    "lua-real-script-nekroz-divinemirror-extra-deck-ritual.test.ts",
     "lua-real-script-negate-attack-battle-window.test.ts",
     "lua-real-script-otohime-position-overload.test.ts",
     "lua-real-script-phoenix-wing-wind-blast-discard-cost.test.ts",
