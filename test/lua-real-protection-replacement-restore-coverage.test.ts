@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const protectionReplacementFixtureCount = 12;
+const protectionReplacementFixtureCount = 14;
 
 describe("Lua real protection and replacement restore coverage", () => {
   it("requires representative protection/replacement fixtures to assert Lua-aware restore", () => {
@@ -97,6 +97,18 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
       ],
     },
     {
+      file: "lua-real-script-dark-fusion-stage2-protection.test.ts",
+      required: [
+        "restores opponent targeting protection granted to the summoned Fusion monster",
+        'summonType: "fusion"',
+        'luaValueDescriptor: "cannot-be-effect-target:opponent"',
+        "property: 0x10",
+        'range: ["hand"]',
+        "expect(getLuaRestoreLegalActions(restoredProtected, 1).find((action) => action.type === \"activateEffect\" && action.uid === opponentTarget!.uid)).toBeUndefined()",
+        'expect(restoredProtected.host.messages).not.toContain("dark fusion target responder resolved")',
+      ],
+    },
+    {
       file: "lua-real-script-d-force-target-protection.test.ts",
       required: [
         'luaValueDescriptor: "cannot-be-effect-target:opponent"',
@@ -111,6 +123,17 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
         "const battleDestroy = destroyDuelCard(restoredProtection.session.state, target!.uid, 0, duelReason.battle | duelReason.destroy, 1)",
         "expect(battleDestroy).toMatchObject({ uid: target!.uid, location: \"monsterZone\" })",
         "expect(effectDestroy).toMatchObject({ uid: target!.uid, location: \"graveyard\" })",
+      ],
+    },
+    {
+      file: "lua-real-script-gemini-soldier-battled-deck-summon.test.ts",
+      required: [
+        "restores battled trigger, Deck Special Summon, and battle indestructible count",
+        '"luaValueDescriptor": "value-predicate:reason-mask:32"',
+        "expect(restoredBattleTrigger.session.state.cards.find((card) => card.uid === soldier!.uid)).toMatchObject({ location: \"monsterZone\" })",
+        "expect(restoredChain.session.state.cards.find((card) => card.uid === soldier!.uid)).toMatchObject({ location: \"monsterZone\", controller: 0 })",
+        "expect(restoredChain.session.state.players[0].lifePoints).toBe(7500)",
+        'eventName: "battleDamageDealt"',
       ],
     },
     {
