@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const chainResponseFixtureCount = 4;
+const chainResponseFixtureCount = 5;
 
 describe("Lua real chain response restore coverage", () => {
   it("requires chain response fixtures to assert clean restore and restored response outcomes", () => {
@@ -75,6 +75,17 @@ function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }
         'eventName: "destroyed"',
         'eventName: "cardsDrawn"',
         '["chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([])',
+        'location: "graveyard"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
+      required: [
+        'action.type === "activateEffect" && action.uid === warning!.uid',
+        'action.type === "passChain"',
+        "restoredPendingResolution.session.state.chain).toHaveLength(0)",
+        'eventName: "chainNegated"',
+        'eventName: "chainDisabled"',
         'location: "graveyard"',
       ],
     },
