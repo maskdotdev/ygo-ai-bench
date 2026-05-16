@@ -17,6 +17,8 @@ const missedTimingFullSourceEffectCauseFixtureCount = 126;
 const missedTimingChainEventFixtureCount = 14;
 const missedTimingChainActivatingStateFixtureCount = 2;
 const missedTimingChainLifecycleOriginFixtureCount = 12;
+const missedTimingBattleDamageCauseFixtureCount = 4;
+const missedTimingPhaseBoundaryFixtureCount = 22;
 const missedTimingSourceEffectCauseExceptions = [
   "parity-missed-timing-battle-damage-decline-fixture.test.ts",
   "parity-missed-timing-battle-damage-fixture.test.ts",
@@ -127,6 +129,26 @@ describe("EDOPro parity missed-timing event coverage", () => {
     expect(chainLifecycleOriginFiles).toHaveLength(missedTimingChainLifecycleOriginFixtureCount);
     expect([...chainActivatingStateFiles, ...chainLifecycleOriginFiles].sort()).toEqual(chainFiles);
   });
+
+  it("pins missed-timing battle damage cause metadata coverage", () => {
+    const battleDamageFiles = fs.readdirSync(testRoot)
+      .filter((file) => /^parity-missed-timing-(?:before-battle-damage|battle-damage)(?:-decline)?-fixture\.test\.ts$/.test(file))
+      .sort();
+    const battleDamageCauseFiles = battleDamageFiles.filter((file) => hasBattleDamageCauseMetadata(file));
+
+    expect(battleDamageFiles).toHaveLength(missedTimingBattleDamageCauseFixtureCount);
+    expect(battleDamageCauseFiles).toEqual(battleDamageFiles);
+  });
+
+  it("pins missed-timing phase and startup boundary metadata coverage", () => {
+    const phaseBoundaryFiles = fs.readdirSync(testRoot)
+      .filter((file) => /^parity-missed-timing-(?:phase-(?:draw|standby|main1|battle|main2)|phase-start-(?:draw|standby|main1|battle|main2)|startup)(?:-decline)?-fixture\.test\.ts$/.test(file))
+      .sort();
+    const phaseBoundaryMetadataFiles = phaseBoundaryFiles.filter((file) => hasPhaseBoundaryMetadata(file));
+
+    expect(phaseBoundaryFiles).toHaveLength(missedTimingPhaseBoundaryFixtureCount);
+    expect(phaseBoundaryMetadataFiles).toEqual(phaseBoundaryFiles);
+  });
 });
 
 function camelToKebab(value: string): string {
@@ -206,6 +228,32 @@ function hasChainLifecycleOriginMetadata(file: string): boolean {
     /eventChainDepth:\s*1/.test(text) &&
     /eventChainLinkId:\s*["']fixture-chain-1["']/.test(text) &&
     /eventTriggerTiming:\s*["']if["']/.test(text)
+  );
+}
+
+function hasBattleDamageCauseMetadata(file: string): boolean {
+  const text = readTestFile(file);
+  return (
+    /eventName:\s*["'](?:beforeBattleDamage|battleDamageDealt)["']/.test(text) &&
+    /eventCode:\s*(?:1136|1143)/.test(text) &&
+    /eventPlayer:\s*1/.test(text) &&
+    /eventValue:\s*1800/.test(text) &&
+    /eventReason:\s*0x20/.test(text) &&
+    /eventReasonPlayer:\s*0/.test(text) &&
+    /eventReasonCardUid:\s*["']p0-deck-700-4["']/.test(text) &&
+    /eventTriggerTiming:\s*["']if["']/.test(text) &&
+    !/eventReasonEffectId/.test(text)
+  );
+}
+
+function hasPhaseBoundaryMetadata(file: string): boolean {
+  const text = readTestFile(file);
+  return (
+    /collectEvents:\s*\[\{ collectEvent:\s*["'](?:phaseDraw|phaseStandby|phaseMain1|phaseBattle|phaseMain2|phaseStartDraw|phaseStartStandby|phaseStartMain1|phaseStartBattle|phaseStartMain2|startup)["']/.test(text) &&
+    /eventCode:\s*(?:1000|0x1001|0x1002|0x1004|0x1008|0x1100|0x2001|0x2002|0x2004|0x2008|0x2100)/.test(text) &&
+    /eventName:\s*["'](?:phaseDraw|phaseStandby|phaseMain1|phaseBattle|phaseMain2|phaseStartDraw|phaseStartStandby|phaseStartMain1|phaseStartBattle|phaseStartMain2|startup)["']/.test(text) &&
+    /eventTriggerTiming:\s*["']if["']/.test(text) &&
+    !/eventReasonEffectId/.test(text)
   );
 }
 
