@@ -16,6 +16,19 @@ export interface BrowserCdbCardRows {
 
 export type BrowserCdbCardRowsLoader = (codes: readonly string[]) => Promise<BrowserCdbCardRows>;
 
+export interface BrowserCdbJsonResponse {
+  ok: boolean;
+  status: number;
+  json(): Promise<unknown>;
+}
+
+export type BrowserCdbJsonFetch = (url: string) => Promise<BrowserCdbJsonResponse>;
+
+export interface BrowserCdbJsonRowsLoaderOptions {
+  endpoint: string;
+  fetchJson?: BrowserCdbJsonFetch;
+}
+
 export interface BrowserDuelCardDataPreloadResult {
   loaded: string[];
   missing: string[];
@@ -92,6 +105,36 @@ export function createBrowserCdbCardDataLoader(loadRows: BrowserCdbCardRowsLoade
       rows.texts.filter((row) => requested.has(String(row.id))),
     );
   };
+}
+
+export function createBrowserCdbJsonRowsLoader(options: BrowserCdbJsonRowsLoaderOptions): BrowserCdbCardRowsLoader {
+  const fetchJson = options.fetchJson ?? ((url) => fetch(url));
+  return async (codes) => {
+    const requested = normalizedCodes(codes);
+    if (!requested.length) return { datas: [], texts: [] };
+    const response = await fetchJson(cdbRowsUrl(options.endpoint, requested));
+    if (!response.ok) throw new Error(`CDB rows fetch failed with HTTP ${response.status}`);
+    return parseBrowserCdbCardRows(await response.json());
+  };
+}
+
+function cdbRowsUrl(endpoint: string, codes: readonly string[]): string {
+  const separator = endpoint.includes("?") ? "&" : "?";
+  return `${endpoint}${separator}codes=${codes.map(encodeURIComponent).join(",")}`;
+}
+
+function parseBrowserCdbCardRows(value: unknown): BrowserCdbCardRows {
+  if (!isRecord(value) || !Array.isArray(value.datas) || !Array.isArray(value.texts)) {
+    throw new Error("CDB rows payload must contain datas and texts arrays");
+  }
+  return {
+    datas: value.datas as RawCdbDataRow[],
+    texts: value.texts as RawCdbTextRow[],
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 /** Maps bundled card definitions + fallback for unknown passcodes (minimal stub). */

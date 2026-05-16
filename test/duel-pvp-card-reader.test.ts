@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createBrowserCdbCardDataLoader, createBrowserDuelCardDataCache } from "../src/playtest-app/duel-pvp-card-reader.js";
+import { createBrowserCdbCardDataLoader, createBrowserCdbJsonRowsLoader, createBrowserDuelCardDataCache } from "../src/playtest-app/duel-pvp-card-reader.js";
 import type { DuelCardData } from "#duel/types.js";
 
 describe("browser PvP card data cache", () => {
@@ -60,5 +60,47 @@ describe("browser PvP card data cache", () => {
       attribute: 16,
     });
     expect(cache.missingCodes(["90000005"])).toEqual(["90000005"]);
+  });
+
+  it("fetches JSON-safe CDB rows from a browser endpoint", async () => {
+    const requestedUrls: string[] = [];
+    const loadRows = createBrowserCdbJsonRowsLoader({
+      endpoint: "/card-data/cdb-rows.json?format=browser",
+      fetchJson: async (url) => {
+        requestedUrls.push(url);
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              datas: [{ id: 90000006, type: 2 }],
+              texts: [{ id: 90000006, name: "Fetched Spell" }],
+            };
+          },
+        };
+      },
+    });
+    const cache = createBrowserDuelCardDataCache(createBrowserCdbCardDataLoader(loadRows));
+
+    const preload = await cache.preload(["90000006", "90000007", "90000006"]);
+
+    expect(requestedUrls).toEqual(["/card-data/cdb-rows.json?format=browser&codes=90000006,90000007"]);
+    expect(preload).toEqual({ loaded: ["90000006"], missing: ["90000007"] });
+    expect(cache.reader("90000006")).toMatchObject({ code: "90000006", name: "Fetched Spell", kind: "spell" });
+  });
+
+  it("reports invalid CDB row endpoint responses", async () => {
+    const loadRows = createBrowserCdbJsonRowsLoader({
+      endpoint: "/card-data/cdb-rows.json",
+      fetchJson: async () => ({
+        ok: true,
+        status: 200,
+        async json() {
+          return { datas: [] };
+        },
+      }),
+    });
+
+    await expect(loadRows(["90000008"])).rejects.toThrow("CDB rows payload must contain datas and texts arrays");
   });
 });
