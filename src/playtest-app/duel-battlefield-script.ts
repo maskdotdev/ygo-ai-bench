@@ -41,6 +41,12 @@ export interface DuelBattlefieldScriptResult {
   prompt?: DuelPromptView;
 }
 
+export interface DuelBattlefieldScriptStepResult extends DuelBattlefieldScriptResult {
+  nextStep: number;
+  done: boolean;
+  appliedAction?: DuelAction;
+}
+
 export function runDuelBattlefieldScript(
   session: DuelSession,
   steps: readonly DuelBattlefieldActionSelector[],
@@ -59,6 +65,55 @@ export function runDuelBattlefieldScript(
   }
   const lastPlayer = steps[steps.length - 1]?.player ?? 0;
   return battlefieldScriptResult(session, lastPlayer);
+}
+
+export function runDuelBattlefieldScriptStep(
+  session: DuelSession,
+  steps: readonly DuelBattlefieldActionSelector[],
+  step: number,
+): DuelBattlefieldScriptStepResult {
+  if (!Number.isInteger(step) || step < 0) {
+    return {
+      ...battlefieldScriptResult(session, 0, 0, `Invalid script step ${step}`),
+      nextStep: 0,
+      done: true,
+    };
+  }
+  if (step >= steps.length) {
+    const lastPlayer = steps[steps.length - 1]?.player ?? 0;
+    return {
+      ...battlefieldScriptResult(session, lastPlayer),
+      nextStep: steps.length,
+      done: true,
+    };
+  }
+
+  const selector = steps[step]!;
+  const view = battlefieldScriptView(session, selector.player);
+  const action = selectVisibleBattlefieldAction(selector, view.visibleActions, view.visibleGroups);
+  if (!action) {
+    return {
+      ...battlefieldScriptResult(session, selector.player, step, `No visible battlefield action matched ${describeBattlefieldSelector(selector)}`),
+      nextStep: step,
+      done: true,
+    };
+  }
+  const result = applyResponse(session, action);
+  if (!result.ok) {
+    return {
+      ...battlefieldScriptResult(session, selector.player, step, result.error ?? `Rejected ${describeBattlefieldSelector(selector)}`),
+      nextStep: step,
+      done: true,
+    };
+  }
+
+  const nextStep = step + 1;
+  return {
+    ...battlefieldScriptResult(session, selector.player),
+    nextStep,
+    done: nextStep >= steps.length,
+    appliedAction: { ...action },
+  };
 }
 
 function battlefieldScriptResult(

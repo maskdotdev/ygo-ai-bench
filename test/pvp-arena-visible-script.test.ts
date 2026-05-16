@@ -8,6 +8,7 @@ import {
   pvpVisibleBattleFixtureScript,
   pvpVisibleBattleFixtureYdk,
   runPvpArenaVisibleScript,
+  runPvpArenaVisibleScriptStep,
 } from "../src/playtest-app/pvp-arena.js";
 import { createBrowserDuelCardDataCache } from "../src/playtest-app/duel-pvp-card-reader.js";
 import { createBrowserLuaScriptCache } from "../src/playtest-app/duel-pvp-script-cache.js";
@@ -28,6 +29,26 @@ describe("PvP arena visible scripts", () => {
     expect(result.failedStep).toBeUndefined();
     expect(result.state.attacksDeclared).toHaveLength(1);
     expect(result.state.log).toContainEqual(expect.objectContaining({ action: "attack", card: "Magician's Rod", detail: "Direct attack" }));
+  });
+
+  it("autoplays the browser arena fixture one visible action at a time", () => {
+    const session = bootstrapPvpDuel(pvpVisibleBattleFixtureYdk, pvpVisibleBattleFixtureYdk, "pvp-arena-visible-script-autoplay", 1);
+    let step = 0;
+
+    for (const expected of pvpVisibleBattleFixtureScript) {
+      const result = runPvpArenaVisibleScriptStep(session, pvpVisibleBattleFixtureScript, step);
+      expect(result.ok).toBe(true);
+      expect(result.failedStep).toBeUndefined();
+      expect(result.appliedAction).toEqual(expect.objectContaining({ type: expected.type }));
+      step = result.nextStep;
+    }
+
+    const done = runPvpArenaVisibleScriptStep(session, pvpVisibleBattleFixtureScript, step);
+    expect(done.ok).toBe(true);
+    expect(done.done).toBe(true);
+    expect(done.nextStep).toBe(pvpVisibleBattleFixtureScript.length);
+    expect(done.state.attacksDeclared).toHaveLength(1);
+    expect(done.state.log).toContainEqual(expect.objectContaining({ action: "attack", card: "Magician's Rod", detail: "Direct attack" }));
   });
 
   it("can bootstrap from preloaded browser card data", async () => {

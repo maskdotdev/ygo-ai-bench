@@ -414,7 +414,7 @@ Current status:
 
 - The PvP battlefield action view can drive a direct battle fixture from visible legal actions, including phase change, attack declaration, attack-response passes, and damage-step passes.
 - The agent bridge can run bounded visible autoplay and fixture-style visible scripts, including a bridge-level visible-script battle fixture. Visible script divergence now reports exact selector fields for action/window mismatches, including `windowId`, `windowKind`, `windowToken`, `phase`, prompt id/option/yes-no choices, effect id, trigger id, trigger bucket, group label, and occurrence. Visible script failures and autoplay stop payloads also include prompt views when a pending prompt owns the current visible actions.
-- The PvP arena now exposes a deterministic visible-script battle fixture through a browser UI control and an exported helper, so the app path can run a Normal Summon, Battle Phase entry, direct attack, and battle-window passes without hidden rule decisions.
+- The PvP arena now exposes a deterministic visible-script battle fixture through a browser UI control and exported helpers, so the app path can run or timed-autoplay a Normal Summon, Battle Phase entry, direct attack, and battle-window passes one visible legal action at a time without hidden rule decisions.
 - Browser prompt views now expose serialized option description lists alongside option ids and text ids, and mark suspended Lua operation prompts in the visible detail, so richer Lua option prompts have visible metadata instead of losing list context.
 - Browser card data now has a deterministic preload/cache seam that requests only missing passcodes, keeps bundled definitions available without fetching, can fetch and normalize JSON-safe CDB `datas`/`texts` payloads into `DuelCardData`, can export upstream `.cdb` rows into that browser JSON payload shape, preserves the synchronous `cardReader` contract after preload, and can preload both PvP arena decks before bootstrap so loaded card names/stats reach the duel instead of fallback stubs.
 - Browser Lua script text now has a deterministic preload/cache seam that requests only missing card script filenames by passcode, can fetch script text from browser script URLs while treating 404s as missing scripts, can export upstream plus local override/fallback script candidates into browser-fetchable `c*.lua` files, exposes a synchronous `LuaScriptSource` for `createLuaScriptHost` after preload, and has PvP bootstrap helpers that preload deck scripts and card data before registering initial Lua effects. PvP restart now attempts those exported browser asset endpoints first and falls back to bundled card data when the assets are unavailable.
@@ -423,7 +423,7 @@ Current status:
 Deliverables:
 
 - Display legal actions grouped by current window: phase action, chain response, trigger order, attack response, damage-step response, replay choice, target/material selection.
-- Add scripted autoplay that can execute fixture-style sequences through the browser playtest surface.
+- Keep scripted autoplay executable through the browser playtest surface as fixture-style sequences expand beyond the current visible battle fixture.
 - Add UI for pending prompts:
   - yes/no
   - option selection

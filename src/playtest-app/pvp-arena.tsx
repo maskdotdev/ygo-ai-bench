@@ -8,7 +8,7 @@ import type { BrowserDuelCardDataCache, BrowserDuelCardDataPreloadResult } from 
 import { createBrowserLuaScriptCache, createBrowserLuaScriptFetchLoader } from "./duel-pvp-script-cache.js";
 import type { BrowserLuaScriptCache, BrowserLuaScriptPreloadResult } from "./duel-pvp-script-cache.js";
 import { DuelBattlefield, DuelLogList } from "./duel-battlefield.js";
-import { runDuelBattlefieldScript, type DuelBattlefieldActionSelector, type DuelBattlefieldScriptResult } from "./duel-battlefield-script.js";
+import { runDuelBattlefieldScript, runDuelBattlefieldScriptStep, type DuelBattlefieldActionSelector, type DuelBattlefieldScriptResult, type DuelBattlefieldScriptStepResult } from "./duel-battlefield-script.js";
 import { CardZoom, ToastStack, readBuilderDeck, starterYdk } from "./ui.js";
 import type { CardImageInfo, ToastMessage } from "./ui.js";
 
@@ -184,6 +184,14 @@ export function runPvpArenaVisibleScript(
   return runDuelBattlefieldScript(session, steps);
 }
 
+export function runPvpArenaVisibleScriptStep(
+  session: DuelSession,
+  steps: readonly DuelBattlefieldActionSelector[],
+  step: number,
+): DuelBattlefieldScriptStepResult {
+  return runDuelBattlefieldScriptStep(session, steps, step);
+}
+
 export function PvpArena() {
   const [session] = useState<DuelSession>(() => bootstrapPvpDuel(starterYdk, starterYdk, Date.now(), 5));
   const [revision, setRevision] = useState(0);
@@ -200,8 +208,10 @@ export function PvpArena() {
   const [pileModal, setPileModal] = useState<{ title: string; icon: string; cards: PublicDuelCard[] } | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [imageRevision, setImageRevision] = useState(0);
+  const [visibleFixtureRun, setVisibleFixtureRun] = useState<{ nextStep: number; running: boolean } | null>(null);
   const cardImages = useRef(new Map<string, CardImageInfo>());
   const browserAssetCaches = useRef<BrowserPvpAssetCaches | undefined>(undefined);
+  const visibleFixtureTimer = useRef<number | undefined>(undefined);
 
   const notify = useCallback((title: string, message: string, tone: ToastMessage["tone"] = "default") => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -256,6 +266,33 @@ export function PvpArena() {
     return () => window.removeEventListener("keydown", onKey);
   }, [zoomCard, pileModal, menuOpen]);
 
+  useEffect(() => {
+    return () => {
+      if (visibleFixtureTimer.current !== undefined) window.clearTimeout(visibleFixtureTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!visibleFixtureRun?.running) return;
+    if (visibleFixtureTimer.current !== undefined) return;
+    visibleFixtureTimer.current = window.setTimeout(() => {
+      visibleFixtureTimer.current = undefined;
+      const result = runDuelBattlefieldScriptStep(session, pvpVisibleBattleFixtureScript, visibleFixtureRun.nextStep);
+      setRevision((current) => current + 1);
+      if (!result.ok) {
+        setVisibleFixtureRun(null);
+        notify("Fixture diverged", result.failure ?? `Step ${result.failedStep ?? "?"}`, "error");
+        return;
+      }
+      if (result.done) {
+        setVisibleFixtureRun(null);
+        notify("Fixture complete", "Visible battle script resolved.", "success");
+        return;
+      }
+      setVisibleFixtureRun({ nextStep: result.nextStep, running: true });
+    }, 220);
+  }, [notify, session, visibleFixtureRun]);
+
   const restartDuel = useCallback(async () => {
     try {
       const seed = seedDraft.trim().toLowerCase() === "random" || !seedDraft.trim() ? Date.now() : seedDraft;
@@ -285,18 +322,19 @@ export function PvpArena() {
 
   const runVisibleFixture = useCallback(() => {
     try {
+      if (visibleFixtureTimer.current !== undefined) {
+        window.clearTimeout(visibleFixtureTimer.current);
+        visibleFixtureTimer.current = undefined;
+      }
       const next = bootstrapPvpDuel(pvpVisibleBattleFixtureYdk, pvpVisibleBattleFixtureYdk, "pvp-visible-fixture", 1);
       session.state = next.state;
       session.cardReader = next.cardReader;
-      const result = runPvpArenaVisibleScript(session, pvpVisibleBattleFixtureScript);
       setViewer(0);
       setRevision((current) => current + 1);
-      if (!result.ok) {
-        notify("Fixture diverged", result.failure ?? `Step ${result.failedStep ?? "?"}`, "error");
-        return;
-      }
-      notify("Fixture complete", "Visible battle script resolved.", "success");
+      setVisibleFixtureRun({ nextStep: 0, running: true });
+      notify("Fixture started", `${pvpVisibleBattleFixtureScript.length} visible actions queued.`, "success");
     } catch (error) {
+      setVisibleFixtureRun(null);
       notify("Fixture failed", error instanceof Error ? error.message : "Visible script failed.", "error");
     }
   }, [notify, session]);
