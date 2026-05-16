@@ -104,14 +104,25 @@ describe("duel trigger order view", () => {
       label: "Trigger Activations",
       windowId: 11,
       windowKind: "triggerBucket",
+      windowToken: "trigger-window-11",
       triggerBucket: { player: 0, triggerBucket: "turnOptional", triggerIds: ["first", "second"] },
       triggerOrderPrompt: prompt,
       actions: [
-        { type: "activateTrigger", player: 0, triggerId: "first", triggerBucket: "turnOptional", uid: "a", effectId: "first-effect", label: "First" },
+        { type: "activateTrigger", player: 0, triggerId: "first", triggerBucket: "turnOptional", uid: "a", effectId: "first-effect", label: "First", windowId: 11, windowKind: "triggerBucket", windowToken: "trigger-window-11" },
       ],
     };
     const view = duelTriggerOrderView(prompt, [group]);
     expect(view?.prompt).toEqual(prompt);
+    expect(view?.groups).toEqual([
+      expect.objectContaining({
+        windowId: 11,
+        windowKind: "triggerBucket",
+        windowToken: "trigger-window-11",
+        actions: [
+          expect.objectContaining({ triggerId: "first", windowId: 11, windowKind: "triggerBucket", windowToken: "trigger-window-11" }),
+        ],
+      }),
+    ]);
 
     view?.prompt.triggerIds.push("mutated");
     view?.groups[0]?.triggerBucket?.triggerIds.push("mutated-bucket");
