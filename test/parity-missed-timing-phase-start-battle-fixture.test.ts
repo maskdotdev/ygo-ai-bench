@@ -56,7 +56,7 @@ describe("EDOPro parity phase-start-battle missed timing fixture", () => {
             windowId: 0,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "phase-start-battle-optional-if", eventName: "phaseStartBattle", eventCode: 0x2008 }],
+            pendingTriggers: [{ player: 0, effectId: "phase-start-battle-optional-if", eventName: "phaseStartBattle", eventCode: 0x2008, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "phase-start-battle-optional-if", triggerBucket: "turnOptional", count: 1 },

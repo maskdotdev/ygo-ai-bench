@@ -67,7 +67,7 @@ describe("EDOPro parity phase-battle missed timing decline fixture", () => {
             windowId: 0,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "phase-battle-decline-optional-if", eventName: "phaseBattle", eventCode: 0x1008 }],
+            pendingTriggers: [{ player: 0, effectId: "phase-battle-decline-optional-if", eventName: "phaseBattle", eventCode: 0x1008, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "phase-battle-decline-optional-if", triggerBucket: "turnOptional", count: 1 },

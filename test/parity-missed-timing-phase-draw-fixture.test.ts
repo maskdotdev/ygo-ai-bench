@@ -56,7 +56,7 @@ describe("EDOPro parity phase-draw missed timing fixture", () => {
             windowId: 0,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "phase-draw-optional-if", eventName: "phaseDraw", eventCode: 0x1001 }],
+            pendingTriggers: [{ player: 0, effectId: "phase-draw-optional-if", eventName: "phaseDraw", eventCode: 0x1001, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "phase-draw-optional-if", triggerBucket: "turnOptional", count: 1 },

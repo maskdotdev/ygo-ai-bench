@@ -56,7 +56,7 @@ describe("EDOPro parity startup missed timing fixture", () => {
             windowId: 0,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "startup-optional-if", eventName: "startup", eventCode: 1000 }],
+            pendingTriggers: [{ player: 0, effectId: "startup-optional-if", eventName: "startup", eventCode: 1000, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "startup-optional-if", triggerBucket: "turnOptional", count: 1 },

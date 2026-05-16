@@ -67,7 +67,7 @@ describe("EDOPro parity phase-start-draw missed timing decline fixture", () => {
             windowId: 0,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "phase-start-draw-decline-optional-if", eventName: "phaseStartDraw", eventCode: 0x2001 }],
+            pendingTriggers: [{ player: 0, effectId: "phase-start-draw-decline-optional-if", eventName: "phaseStartDraw", eventCode: 0x2001, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "phase-start-draw-decline-optional-if", triggerBucket: "turnOptional", count: 1 },

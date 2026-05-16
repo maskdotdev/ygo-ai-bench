@@ -56,7 +56,7 @@ describe("EDOPro parity phase-main2 missed timing fixture", () => {
             windowId: 0,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "phase-main2-optional-if", eventName: "phaseMain2", eventCode: 0x1100 }],
+            pendingTriggers: [{ player: 0, effectId: "phase-main2-optional-if", eventName: "phaseMain2", eventCode: 0x1100, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "phase-main2-optional-if", triggerBucket: "turnOptional", count: 1 },
