@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { summonGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentTriggerActivationGroup, summonGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity special summon negation fixtures", () => {
   it("removes special-summon-success triggers when an inherent Special Summon is negated", () => {
@@ -167,9 +167,15 @@ describe("EDOPro parity special summon negation fixtures", () => {
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-special-negated-watcher", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-special-negated-watcher", triggerBucket: "turnOptional", count: 1 },
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-special-success-watcher", triggerBucket: "turnOptional" },
+            ],
             legalActionGroups: [
               triggerActivationGroup(0, "fixture-special-negated-watcher", "turnOptional", 1, 2),
               triggerDeclineGroup(0, "fixture-special-negated-watcher", "turnOptional", 1, 2),
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-special-success-watcher", "turnOptional", 2, "triggerBucket"),
             ],
             logIncludes: ["Fixture special summon negator resolved"],
           },

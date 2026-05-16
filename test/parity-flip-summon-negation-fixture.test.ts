@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCardReader } from "#engine/data-loaders.js";
 import { makeResponseSelector, makeScriptedStep, runScriptedDuelFixture } from "#engine/parity.js";
 import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
-import { summonGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
+import { absentTriggerActivationGroup, summonGroup, triggerActivationGroup, triggerDeclineGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity flip summon negation fixtures", () => {
   it("removes flip-summon-success triggers when a Flip Summon is negated", () => {
@@ -149,9 +149,15 @@ describe("EDOPro parity flip summon negation fixtures", () => {
               { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-flip-negated-watcher", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-flip-negated-watcher", triggerBucket: "turnOptional", count: 1 },
             ],
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-flip-success-watcher", triggerBucket: "turnOptional" },
+            ],
             legalActionGroups: [
               triggerActivationGroup(0, "fixture-flip-negated-watcher", "turnOptional", 1, 2),
               triggerDeclineGroup(0, "fixture-flip-negated-watcher", "turnOptional", 1, 2),
+            ],
+            absentLegalActionGroups: [
+              absentTriggerActivationGroup(0, "fixture-flip-success-watcher", "turnOptional", 2, "triggerBucket"),
             ],
             logIncludes: ["Fixture flip summon negator resolved"],
           },

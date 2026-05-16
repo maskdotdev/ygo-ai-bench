@@ -19,6 +19,7 @@ describe("EDOPro parity summon-negation coverage", () => {
           || !text.includes(fixture.negatedEvent)
           || !text.includes(fixture.negatorEffectId)
           || !text.includes(fixture.negatedWatcherEffectId)
+          || !hasRemovedSuccessWatcherProof(text, fixture.removedSuccessWatcherEffectId)
           || !/removes? (?:the )?.*success trigger/.test(text)
           || !/without resolving removed .*success triggers/.test(text);
       })
@@ -35,6 +36,7 @@ function summonNegationFixtures(): Array<{
   negatedEvent: string;
   negatorEffectId: string;
   negatedWatcherEffectId: string;
+  removedSuccessWatcherEffectId: string;
 }> {
   return [
     {
@@ -44,6 +46,7 @@ function summonNegationFixtures(): Array<{
       negatedEvent: 'eventName: "normalSummonNegated"',
       negatorEffectId: "fixture-summon-negator",
       negatedWatcherEffectId: "fixture-negated-summon-watcher",
+      removedSuccessWatcherEffectId: "fixture-success-watcher",
     },
     {
       file: "parity-flip-summon-negation-fixture.test.ts",
@@ -52,6 +55,7 @@ function summonNegationFixtures(): Array<{
       negatedEvent: 'eventName: "flipSummonNegated"',
       negatorEffectId: "fixture-flip-summon-negator",
       negatedWatcherEffectId: "fixture-flip-negated-watcher",
+      removedSuccessWatcherEffectId: "fixture-flip-success-watcher",
     },
     {
       file: "parity-special-summon-negation-fixture.test.ts",
@@ -60,8 +64,19 @@ function summonNegationFixtures(): Array<{
       negatedEvent: 'eventName: "specialSummonNegated"',
       negatorEffectId: "fixture-special-summon-negator",
       negatedWatcherEffectId: "fixture-special-negated-watcher",
+      removedSuccessWatcherEffectId: "fixture-special-success-watcher",
     },
   ].sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function hasRemovedSuccessWatcherProof(text: string, effectId: string): boolean {
+  const absentActionBlock = /absentLegalActions:\s*\[[\s\S]*?\]/.exec(text)?.[0] ?? "";
+  return (
+    absentActionBlock.includes(`effectId: "${effectId}"`) &&
+    /windowId:\s*2/.test(absentActionBlock) &&
+    /windowKind:\s*["']triggerBucket["']/.test(absentActionBlock) &&
+    text.includes(`absentTriggerActivationGroup(0, "${effectId}", "turnOptional", 2, "triggerBucket")`)
+  );
 }
 
 function hasSharedSummonNegationWindowProof(text: string): boolean {
