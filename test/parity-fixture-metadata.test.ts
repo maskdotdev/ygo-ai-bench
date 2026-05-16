@@ -119,6 +119,10 @@ describe("parity fixture metadata", () => {
     expect(missingPendingTriggerEventTimings()).toEqual([]);
   });
 
+  it("requires chain event expectations to pin trigger timing", () => {
+    expect(missingChainEventTimings()).toEqual([]);
+  });
+
   it("requires trigger legal-action groups to pin trigger bucket summaries", () => {
     expect(missingTriggerGroupBucketCoverage()).toEqual([]);
   });
@@ -388,6 +392,21 @@ describe("parity fixture metadata", () => {
       "  pendingTriggers: [],",
       "},",
     ].join("\n"))).toEqual([]);
+    expect(missingChainEventTimingsInText("fixture.ts", [
+      "after: {",
+      "  chain: [{ player: 0, effectId: 'trigger', eventName: 'normalSummoned' }],",
+      "},",
+    ].join("\n"))).toEqual(["fixture.ts:2"]);
+    expect(missingChainEventTimingsInText("fixture.ts", [
+      "after: {",
+      "  chain: [{ player: 0, effectId: 'trigger', eventName: 'normalSummoned', eventTriggerTiming: 'if' }],",
+      "},",
+    ].join("\n"))).toEqual([]);
+    expect(missingChainEventTimingsInText("fixture.ts", [
+      "after: {",
+      "  eventHistory: [{ eventName: 'normalSummoned' }],",
+      "},",
+    ].join("\n"))).toEqual([]);
     expect(
       missingTriggerGroupBucketCoverageInLines("fixture.ts", [
         ...lines.slice(0, 4),
@@ -604,6 +623,10 @@ function missingPendingTriggerBucketCoverage(): string[] {
 
 function missingPendingTriggerEventTimings(): string[] {
   return scriptedFixtureFiles().flatMap((file) => missingPendingTriggerEventTimingsInText(file, readFixtureText(file)));
+}
+
+function missingChainEventTimings(): string[] {
+  return scriptedFixtureFiles().flatMap((file) => missingChainEventTimingsInText(file, readFixtureText(file)));
 }
 
 function missingTriggerGroupBucketCoverage(): string[] {
@@ -841,13 +864,21 @@ function missingPendingTriggerBucketCoverageInLines(file: string, lines: string[
 }
 
 function missingPendingTriggerEventTimingsInText(file: string, text: string): string[] {
+  return missingArrayEventTimingsInText(file, text, "pendingTriggers:");
+}
+
+function missingChainEventTimingsInText(file: string, text: string): string[] {
+  return missingArrayEventTimingsInText(file, text, "chain:");
+}
+
+function missingArrayEventTimingsInText(file: string, text: string, arrayName: string): string[] {
   const missingTimings: string[] = [];
   let index = 0;
-  while ((index = text.indexOf("pendingTriggers:", index)) !== -1) {
+  while ((index = text.indexOf(arrayName, index)) !== -1) {
     const arrayStart = text.indexOf("[", index);
     const arrayEnd = arrayStart < 0 ? -1 : findArrayEnd(text, arrayStart);
     if (arrayEnd < 0) {
-      index += "pendingTriggers:".length;
+      index += arrayName.length;
       continue;
     }
     let eventIndex = arrayStart;
