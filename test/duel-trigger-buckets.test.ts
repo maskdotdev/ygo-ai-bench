@@ -17,8 +17,8 @@ describe("duel trigger buckets", () => {
     startDuel(session);
     const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
     session.state.pendingTriggers = [
-      { id: "optional-first", player: 0, sourceUid, effectId: "optional", eventName: "customEvent", triggerBucket: "turnOptional" },
-      { id: "mandatory-second", player: 1, sourceUid, effectId: "mandatory", eventName: "customEvent", triggerBucket: "opponentMandatory" },
+      { id: "optional-first", player: 0, sourceUid, effectId: "optional", eventName: "customEvent", eventTriggerTiming: "if", triggerBucket: "turnOptional" },
+      { id: "mandatory-second", player: 1, sourceUid, effectId: "mandatory", eventName: "customEvent", eventTriggerTiming: "if", triggerBucket: "opponentMandatory" },
     ];
 
     setWaitingForPendingTriggerBucket(session.state);
@@ -39,7 +39,7 @@ describe("duel trigger buckets", () => {
     startDuel(session);
     const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
     session.state.pendingTriggers = [
-      { id: "bad-opponent", player: 1, sourceUid, effectId: "bad", eventName: "customEvent", triggerBucket: "turnOptional" },
+      { id: "bad-opponent", player: 1, sourceUid, effectId: "bad", eventName: "customEvent", eventTriggerTiming: "if", triggerBucket: "turnOptional" },
     ];
     session.state.waitingFor = 1;
 
@@ -220,6 +220,7 @@ describe("duel trigger buckets", () => {
         sourceUid,
         effectId: "second-payload-trigger",
         eventName: "customEvent",
+        eventTriggerTiming: "if",
         triggerBucket: "turnOptional",
         eventCode: 0x10000005,
         eventPlayer: 0,
@@ -295,6 +296,7 @@ describe("duel trigger buckets", () => {
         sourceUid: triggerSourceUid,
         effectId: "restored-later-payload-trigger",
         eventName: "customEvent",
+        eventTriggerTiming: "if",
         triggerBucket: "turnOptional",
         eventCode: 0x10000005,
         eventPlayer: 0,

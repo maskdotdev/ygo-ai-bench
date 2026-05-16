@@ -99,7 +99,7 @@ export function expectMissedTimingDeclineFixture({ eventName, kebabName, titleNa
           windowId: 1,
           windowKind: "triggerBucket",
           waitingFor: 0,
-          pendingTriggers: [{ player: 0, effectId: `${kebabName}-decline-optional-if`, eventName }],
+          pendingTriggers: [{ player: 0, effectId: `${kebabName}-decline-optional-if`, eventName, eventTriggerTiming: "if" }],
           pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
           legalActions: [
             { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: `${kebabName}-decline-optional-if`, triggerBucket: "turnOptional", count: 1 },
@@ -130,7 +130,7 @@ export function expectMissedTimingDeclineFixture({ eventName, kebabName, titleNa
           windowId: 1,
           windowKind: "triggerBucket",
           waitingFor: 0,
-          pendingTriggers: [{ player: 0, effectId: `${kebabName}-decline-optional-if`, eventName }],
+          pendingTriggers: [{ player: 0, effectId: `${kebabName}-decline-optional-if`, eventName, eventTriggerTiming: "if" }],
           pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
           legalActionGroups: [
             triggerActivationGroup(0, `${kebabName}-decline-optional-if`, "turnOptional", 1, 1),
