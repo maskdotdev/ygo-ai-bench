@@ -93,6 +93,8 @@ describe("Lua known-global chain-limit restore", () => {
     expect(restored.session.state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: false });
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expect(hasGroupedLuaEffect(restored, 1, "lua-4")).toBe(true);
 
     const opponentResponse = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-4");

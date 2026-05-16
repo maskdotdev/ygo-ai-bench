@@ -62,7 +62,7 @@ describe("coverage inventory guards", () => {
     expect(exactCount).toBe(1311);
   });
 
-  it("requires non-coverage Lua restore tests to prove grouped restored actions", () => {
+  it("requires non-coverage Lua restore tests to prove raw, grouped, and flattened restored actions", () => {
     const restoreFiles = fs.readdirSync(testRoot)
       .filter((file) => /^lua-.*\.test\.ts$/.test(file))
       .filter((file) => !/coverage\.test\.ts$/.test(file))
@@ -70,14 +70,16 @@ describe("coverage inventory guards", () => {
         const text = fs.readFileSync(path.join(testRoot, file), "utf8");
         return text.includes("restoreDuelWithLuaScripts");
       });
-    const missingGroupedRestoreEvidence = restoreFiles
+    const missingRestoreEvidence = restoreFiles
       .filter((file) => {
         const text = fs.readFileSync(path.join(testRoot, file), "utf8");
-        return !text.includes("getLuaRestoreLegalActionGroups");
+        return !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !hasFlattenedGroupedRestoreEvidence(text);
       });
 
     expect(restoreFiles).toHaveLength(737);
-    expect(missingGroupedRestoreEvidence).toEqual([]);
+    expect(missingRestoreEvidence).toEqual([]);
   });
 
   it("requires source-only event restore branches to prove grouped restored actions before consumption", () => {
@@ -173,6 +175,10 @@ function restoreBranchesIn(file: string, window = 650): Array<{ file: string; li
 function hasNearbyGroupedRestoreEvidence(text: string, variable: string): boolean {
   return new RegExp(`expectRestoredLegal(?:Action|Actions|ActionGroups)\\(${variable}(?:\\)|,)`).test(text)
     || text.includes(`getLuaRestoreLegalActionGroups(${variable},`);
+}
+
+function hasFlattenedGroupedRestoreEvidence(text: string): boolean {
+  return /flatMap\(\(group\) => group\.actions\)\)\.toEqual\([\s\S]*?(?:getLuaRestoreLegalActions|\b(?:actions|response|result|changed|summoned)\.legalActions|\bactions\b)[\s\S]*?\);/.test(text);
 }
 
 function hasInventoryGuard(text: string): boolean {

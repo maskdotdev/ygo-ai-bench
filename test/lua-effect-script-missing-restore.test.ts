@@ -32,6 +32,7 @@ describe("Lua effect script missing restore", () => {
     expect(restored.incompleteReasons).toEqual(["script c100.lua: Script c100.lua was not found", "missing Lua effect registry keys: lua:100:lua-1"]);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(applyLuaRestoreResponse(restored, { ...action!, windowToken: restored.session.state.actionWindowToken })).toMatchObject({
       ok: false,
       error: "Lua snapshot restore is incomplete: script c100.lua: Script c100.lua was not found; missing Lua effect registry keys: lua:100:lua-1",
@@ -72,6 +73,7 @@ describe("Lua effect script missing restore", () => {
     expect(restored.incompleteReasons[1]).toBe("missing Lua effect registry keys: lua:100:lua-1");
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual([]);
+    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     const response = applyLuaRestoreResponse(restored, { ...action!, windowToken: restored.session.state.actionWindowToken });
     expect(response).toMatchObject({ ok: false, legalActions: [], legalActionGroups: [] });
     expect(response.error).toContain("Lua snapshot restore is incomplete: script c100.lua:");
