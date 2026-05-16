@@ -1,4 +1,4 @@
-import { isLuaOptionPromptDecision } from "#lua/host-types.js";
+import { copyLuaPromptResumeValues, isLuaOptionPromptDecision } from "#lua/host-types.js";
 import type { DuelCardData, DuelCardInstance, DuelPromptState, DuelState, PublicChainLink } from "#duel/types.js";
 
 export function copyChainLink(link: DuelState["chain"][number]): DuelState["chain"][number] {
@@ -21,7 +21,7 @@ export function copyPublicChainLink(link: DuelState["chain"][number]): PublicCha
 }
 
 export function copyLuaOperationPromptDecision(prompt: NonNullable<DuelState["luaOperationPrompt"]>["prompt"]): NonNullable<DuelState["luaOperationPrompt"]>["prompt"] {
-  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map((values) => values.map((value) => typeof value === "object" ? { ...value } : value)) }) };
+  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map(copyLuaPromptResumeValues) }) };
   return { ...prompt };
 }
 

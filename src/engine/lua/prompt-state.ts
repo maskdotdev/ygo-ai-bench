@@ -1,6 +1,6 @@
 import type { DuelPromptState, DuelResponse, DuelState, PlayerId } from "#duel/types.js";
 import { resolveDuelPrompt } from "#duel/prompt-response.js";
-import { isLuaOptionPromptDecision, isLuaYesNoPromptDecision, type LuaPromptCoroutineResult, type LuaPromptDecision, type LuaPromptResumePayload, type LuaPromptResumeValue } from "#lua/host-types.js";
+import { copyLuaPromptResumeValues, isLuaOptionPromptDecision, isLuaYesNoPromptDecision, type LuaPromptCoroutineResult, type LuaPromptDecision, type LuaPromptResumePayload } from "#lua/host-types.js";
 
 export function isYieldedLuaPromptCoroutineResult(result: LuaPromptCoroutineResult): result is Extract<LuaPromptCoroutineResult, { status: "yielded" }> {
   return result.status === "yielded";
@@ -53,7 +53,7 @@ function duelPromptResponseToLuaResumeValue(
     const optionIndex = luaPrompt.options.indexOf(value);
     const returnValues = luaPrompt.returnValues[optionIndex];
     if (returnValues === undefined) throw new Error(`${luaPrompt.api} prompt response is missing return values`);
-    return returnValues.map(copyLuaPromptResumeValue);
+    return copyLuaPromptResumeValues(returnValues);
   }
   if (luaPrompt.api !== "SelectCardsFromCodes" || luaPrompt.returnKind !== "codeIndexTable") return value;
   if (typeof value !== "number") throw new Error("SelectCardsFromCodes index prompt must resume with a numeric option");
@@ -61,10 +61,6 @@ function duelPromptResponseToLuaResumeValue(
   const code = luaPrompt.descriptions[optionIndex];
   if (code === undefined) throw new Error("SelectCardsFromCodes index prompt response is missing its code");
   return { code, index: value };
-}
-
-function copyLuaPromptResumeValue(value: LuaPromptResumeValue): LuaPromptResumeValue {
-  return typeof value === "object" ? { ...value } : value;
 }
 
 export function yieldedLuaPromptToDuelPrompt(

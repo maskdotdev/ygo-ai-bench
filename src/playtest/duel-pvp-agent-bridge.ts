@@ -11,7 +11,7 @@ import {
 } from "#duel/core.js";
 import { copyDuelAction } from "#duel/action-copy.js";
 import type { LuaScriptHost, LuaScriptSource } from "#lua/host.js";
-import type { LuaPromptResumeValue } from "#lua/host-types.js";
+import { copyLuaPromptResumeValues } from "#lua/host-types.js";
 import type { LuaSnapshotRestoreResult } from "#lua/snapshot.js";
 import type { ApplyDuelResponseResult, DuelAction, DuelCardReader, DuelPromptState, DuelResponse, DuelSession, PlayerId, SerializedDuel } from "#duel/types.js";
 import { parseYdk } from "#playtest/ydk.js";
@@ -348,7 +348,7 @@ function copyPromptChoice(choice: DuelPromptView["choices"][number]): DuelPrompt
       ...choice,
       action: copyDuelAction(choice.action) as typeof choice.action,
       ...(choice.descriptionList === undefined ? {} : { descriptionList: [...choice.descriptionList] }),
-      ...(choice.luaReturnValues === undefined ? {} : { luaReturnValues: choice.luaReturnValues.map(copyLuaPromptResumeValue) }),
+      ...(choice.luaReturnValues === undefined ? {} : { luaReturnValues: copyLuaPromptResumeValues(choice.luaReturnValues) }),
     };
   }
   return { ...choice, action: copyDuelAction(choice.action) as typeof choice.action };
@@ -373,12 +373,8 @@ function copyLuaPrompt(prompt: NonNullable<DuelPromptView["luaPrompt"]>): NonNul
       options: [...prompt.options],
       descriptions: [...prompt.descriptions],
       ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }),
-      ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map((values) => values.map(copyLuaPromptResumeValue)) }),
+      ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map(copyLuaPromptResumeValues) }),
     };
   }
   return { ...prompt };
-}
-
-function copyLuaPromptResumeValue(value: LuaPromptResumeValue): LuaPromptResumeValue {
-  return typeof value === "object" ? { ...value } : value;
 }

@@ -1,6 +1,6 @@
 import { copyDuelAction } from "#duel/action-copy.js";
 import type { DuelAction, DuelPromptState, LuaOperationPromptState } from "#duel/types.js";
-import { isLuaOptionPromptDecision, type LuaPromptResumeValue } from "#lua/host-types.js";
+import { copyLuaPromptResumeValue, copyLuaPromptResumeValues, isLuaOptionPromptDecision, type LuaPromptResumeValue } from "#lua/host-types.js";
 import { copyDuelActionUiGroup, type DuelActionUiGroup } from "./duel-action-anchors.js";
 
 export type DuelPromptChoice =
@@ -171,7 +171,7 @@ function promptChoices(prompt: DuelPromptState, groups: readonly DuelActionUiGro
 function luaReturnValuesForChoice(luaPrompt: LuaOperationPromptState["prompt"] | undefined, index: number): { luaReturnValues?: LuaPromptResumeValue[] } {
   if (luaPrompt === undefined || !isLuaOptionPromptDecision(luaPrompt)) return {};
   const values = luaPrompt.returnValues?.[index];
-  if (values !== undefined) return { luaReturnValues: values.map(copyLuaPromptReturnValue) };
+  if (values !== undefined) return { luaReturnValues: copyLuaPromptResumeValues(values) };
   if (luaPrompt.returnKind !== "codeIndexTable") return {};
   const option = luaPrompt.options[index];
   const code = luaPrompt.descriptions[index];
@@ -206,13 +206,12 @@ function copyLuaPrompt(prompt: LuaOperationPromptState["prompt"]): LuaOperationP
       options: [...prompt.options],
       descriptions: [...prompt.descriptions],
       ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }),
-      ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map((values) => values.map(copyLuaPromptReturnValue)) }),
+      ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map(copyLuaPromptResumeValues) }),
     };
   }
   return { ...prompt };
 }
 
 function copyLuaPromptReturnValue(value: LuaPromptResumeValue): LuaPromptResumeValue {
-  if (typeof value === "object" && value !== null) return { ...value };
-  return value;
+  return copyLuaPromptResumeValue(value);
 }

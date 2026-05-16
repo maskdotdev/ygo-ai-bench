@@ -457,6 +457,57 @@ describe("duel snapshot persistence", () => {
     }
   });
 
+  it("copies Lua operation prompt return values out of public and serialized state", () => {
+    const session = createDuel({ seed: 191, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
+    session.state.status = "awaiting";
+    session.state.waitingFor = 0;
+    session.state.prompt = {
+      id: "lua-prompt-copy-return-values",
+      type: "selectOption",
+      player: 0,
+      options: [1, 2],
+      descriptions: [700, 700],
+      descriptionLists: [[700, 800], [700, 900]],
+      returnTo: 0,
+      origin: "luaOperation",
+    };
+    session.state.luaOperationPrompt = {
+      chainLink: { id: "chain-copy-return-values", player: 0, sourceUid, effectId: "effect-a" },
+      prompt: {
+        id: "lua-prompt-copy-return-values",
+        api: "SelectCardsFromCodes",
+        player: 0,
+        options: [1, 2],
+        descriptions: [700, 700],
+        descriptionLists: [[700, 800], [700, 900]],
+        returned: 1,
+        returnValues: [[{ code: 700, index: 1 }, { code: 800, index: 2 }], [{ code: 700, index: 1 }, { code: 900, index: 3 }]],
+      },
+    };
+
+    const publicState = queryPublicState(session);
+    const serialized = serializeDuel(session);
+    const publicPrompt = publicState.luaOperationPrompt?.prompt;
+    const serializedPrompt = serialized.state.luaOperationPrompt?.prompt;
+    if (!publicPrompt || !("returnValues" in publicPrompt) || publicPrompt.returnValues === undefined) throw new Error("Expected public Lua prompt return values");
+    if (!serializedPrompt || !("returnValues" in serializedPrompt) || serializedPrompt.returnValues === undefined) throw new Error("Expected serialized Lua prompt return values");
+
+    publicPrompt.returnValues[0]![0] = { code: 999, index: 9 };
+    serializedPrompt.returnValues[0]![0] = { code: 998, index: 8 };
+    publicPrompt.returnValues[1]!.push({ code: 997, index: 7 });
+    serializedPrompt.returnValues[1]!.push({ code: 996, index: 6 });
+
+    expect(session.state.luaOperationPrompt.prompt).toMatchObject({
+      returnValues: [[{ code: 700, index: 1 }, { code: 800, index: 2 }], [{ code: 700, index: 1 }, { code: 900, index: 3 }]],
+    });
+  });
+
   it("rejects malformed Lua operation prompt payload fields", () => {
     const session = createDuel({ seed: 165, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

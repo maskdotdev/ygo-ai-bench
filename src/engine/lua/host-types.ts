@@ -15,6 +15,15 @@ export type LuaPromptCoroutineResult =
 export type LuaPromptResumeValue = number | boolean | { code: number; index: number };
 export type LuaPromptResumePayload = LuaPromptResumeValue | LuaPromptResumeValue[];
 
+export function copyLuaPromptResumeValue(value: LuaPromptResumeValue): LuaPromptResumeValue {
+  if (typeof value === "object" && value !== null) return { ...value };
+  return value;
+}
+
+export function copyLuaPromptResumeValues(values: readonly LuaPromptResumeValue[]): LuaPromptResumeValue[] {
+  return values.map(copyLuaPromptResumeValue);
+}
+
 export interface LuaScriptHost {
   readonly messages: string[];
   readonly promptDecisions: LuaPromptDecision[];

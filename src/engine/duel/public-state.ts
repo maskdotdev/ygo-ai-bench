@@ -3,7 +3,7 @@ import { copyBattleWindowState } from "#duel/battle-window-state.js";
 import { shouldContinueTriggerSelection } from "#duel/effect-activation.js";
 import { pendingTriggerBucketsForState } from "#duel/trigger-buckets.js";
 import type { DuelCardInstance, DuelPromptState, DuelState, PublicChainLink, PublicDuelCard, PublicDuelState, TriggerOrderPromptState } from "#duel/types.js";
-import { isLuaOptionPromptDecision } from "#lua/host-types.js";
+import { copyLuaPromptResumeValues, isLuaOptionPromptDecision } from "#lua/host-types.js";
 
 export function queryPublicState({ state }: { state: DuelState }): PublicDuelState {
   const windowKind = currentPublicWindowKind(state);
@@ -110,7 +110,7 @@ function copyPrompt(prompt: DuelPromptState): DuelPromptState {
 }
 
 function copyLuaOperationPromptDecision(prompt: NonNullable<DuelState["luaOperationPrompt"]>["prompt"]): NonNullable<DuelState["luaOperationPrompt"]>["prompt"] {
-  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map((values) => values.map((value) => typeof value === "object" ? { ...value } : value)) }) };
+  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map(copyLuaPromptResumeValues) }) };
   return { ...prompt };
 }
 

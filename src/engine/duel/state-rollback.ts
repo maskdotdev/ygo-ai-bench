@@ -1,6 +1,6 @@
 import { copyBattleWindowState } from "#duel/battle-window-state.js";
 import type { ChainLimit, ChainLink, DuelBattlePair, DuelCardData, DuelCardInstance, DuelEffectDefinition, DuelEventRecord, DuelFlagEffect, DuelLogEntry, DuelPlayerState, DuelPromptState, DuelState, PendingTrigger, PlayerId, SkippedDuelPhase } from "#duel/types.js";
-import { isLuaOptionPromptDecision } from "#lua/host-types.js";
+import { copyLuaPromptResumeValues, isLuaOptionPromptDecision } from "#lua/host-types.js";
 
 export interface DuelStateRollback {
   status: DuelState["status"];
@@ -166,7 +166,7 @@ function copyPrompt(prompt: DuelPromptState): DuelPromptState {
 }
 
 function copyLuaOperationPromptDecision(prompt: NonNullable<DuelState["luaOperationPrompt"]>["prompt"]): NonNullable<DuelState["luaOperationPrompt"]>["prompt"] {
-  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map((values) => values.map((value) => typeof value === "object" ? { ...value } : value)) }) };
+  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map(copyLuaPromptResumeValues) }) };
   return { ...prompt };
 }
 

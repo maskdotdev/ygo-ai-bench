@@ -154,7 +154,7 @@ import { hasLuaLimitNormalSummonProcedure, luaLimitNormalSummonProcedureValue, n
 import { applySummonOrSetCosts } from "#duel/summon-set-cost.js";
 import { duelSummonTypeFromCode, isFaceDownExtraDeckSummonTypeCode, luaSummonTypeFusion, luaSummonTypeLink, luaSummonTypePendulum, luaSummonTypeRitual, luaSummonTypeSynchro, luaSummonTypeXyz } from "#duel/summon-type-codes.js";
 import { changeDuelPhase, drawDuelCardsFromDeck, endDuelTurn, isDuelPhaseSkipped, nextAvailableDuelPhase } from "#duel/turn-flow.js";
-import { isLuaOptionPromptDecision, type LuaPromptCoroutineResult } from "#lua/host-types.js";
+import { copyLuaPromptResumeValues, isLuaOptionPromptDecision, type LuaPromptCoroutineResult } from "#lua/host-types.js";
 export { createDuel, loadDecks, startDuel, type CreateDuelOptions } from "#duel/setup.js";
 import type {
   ApplyDuelResponseResult,
@@ -1034,7 +1034,7 @@ function copyLuaOperationPromptChainLink(link: ChainLink): ChainLink {
 }
 
 function copyLuaOperationPromptDecision(prompt: Extract<LuaPromptCoroutineResult, { status: "yielded" }>["prompt"]): Extract<LuaPromptCoroutineResult, { status: "yielded" }>["prompt"] {
-  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map((values) => values.map((value) => typeof value === "object" ? { ...value } : value)) }) };
+  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map(copyLuaPromptResumeValues) }) };
   return { ...prompt };
 }
 
