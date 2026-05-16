@@ -145,6 +145,7 @@ import { applyYieldedLuaPromptToDuelState, isYieldedLuaPromptCoroutineResult } f
 import { hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } from "#duel/quick-effect-actions.js";
 import { applyDuelResponse, type DuelResponseHandlers } from "#duel/response-dispatch.js";
 import { runScriptedDuelResponses as runScriptedDuelResponsesWithHandlers } from "#duel/scripted-runner.js";
+import { applyContinuousSelfDestroyEffects } from "#duel/self-destroy-effects.js";
 import { setSpellTrap } from "#duel/spell-trap.js";
 import { canActivateSpellTrapCardEffect, shouldSendActivatedSpellTrapToGraveyard } from "#duel/spell-trap-activation.js";
 import { applySpecialSummonCosts } from "#duel/special-summon-cost.js";
@@ -689,7 +690,7 @@ export function changeDuelCardPosition(state: DuelState, player: PlayerId, uid: 
 }
 
 function createContinuousEffectContext(state: DuelState): ContinuousEffectContextFactory {
-  return (effect, source, card, options) => Object.assign(createEffectContext(state, source, effect.controller, undefined, card, [], options?.checkOnly ?? true), options?.eventReason === undefined ? {} : { eventReason: options.eventReason }, options?.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: options.eventReasonPlayer }, options?.eventDestination === undefined ? {} : { eventDestination: options.eventDestination }, options?.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: options.eventReasonCardUid }, options?.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: options.eventReasonEffectId });
+  return (effect, source, card, options) => Object.assign(createEffectContext(state, source, effect.controller, undefined, card, [], options?.checkOnly ?? true), options?.eventReason === undefined ? {} : { eventReason: options.eventReason }, options?.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: options.eventReasonPlayer }, options?.eventDestination === undefined ? {} : { eventDestination: options.eventDestination }, options?.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: options.eventReasonCardUid }, options?.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: options.eventReasonEffectId }, options?.relatedEffectId === undefined ? {} : { relatedEffectId: options.relatedEffectId });
 }
 
 function paySummonOrSetCosts(state: DuelState, player: PlayerId, card: DuelCardInstance, codes: readonly number[]): void { applySummonOrSetCosts(state, player, createContinuousEffectContext(state), card, codes); }
@@ -1000,6 +1001,7 @@ function resolveChain(state: DuelState): void {
   if (suspended) return;
   pruneResetEffectsAfterChain(state);
   pruneDuelFlagEffectsAfterChain(state);
+  applyContinuousSelfDestroyEffects(state, destroyDuelCard);
   const resolvedStatus = (state as { status: DuelStatus }).status;
   if (resolvedStatus === "ended") return;
   state.chainPasses = [];

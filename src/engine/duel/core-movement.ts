@@ -79,7 +79,7 @@ export function destroyCoreDuelCard(
   payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {},
 ): DuelCardInstance {
   const replacementHandlers = handlers.createReplacementHandlers(state);
-  const indestructible = applyDestroyPrevention(state, uid, controller, reason, reasonPlayer, replacementHandlers);
+  const indestructible = applyDestroyPrevention(state, uid, controller, reason, reasonPlayer, replacementHandlers, payload);
   if (indestructible) return indestructible;
   const substituteMatches = findApplicableDestroySubstitutes(state, uid, reason, reasonPlayer, replacementHandlers, payload);
   if (substituteMatches.length > 0) return applyDestroySubstitutes(state, uid, controller, substituteMatches, handlers);

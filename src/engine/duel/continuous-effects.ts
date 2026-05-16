@@ -19,6 +19,7 @@ export type ContinuousEffectContextFactory = (
     eventReasonPlayer?: PlayerId;
     eventDestination?: DuelLocation;
     eventReasonCardUid?: string; eventReasonEffectId?: number;
+    relatedEffectId?: number;
   },
 ) => DuelEffectContext;
 
@@ -819,7 +820,7 @@ function firstOrderedRedirect(state: DuelState, candidates: RedirectCandidate[])
   return candidates.find((candidate) => candidate.match === first)?.redirect;
 }
 
-export function findIndestructibleEffect(state: DuelState, uid: string, reason: number, createContext: ContinuousEffectContextFactory, reasonPlayer?: PlayerId): ContinuousEffectMatch | undefined {
+export function findIndestructibleEffect(state: DuelState, uid: string, reason: number, createContext: ContinuousEffectContextFactory, reasonPlayer?: PlayerId, payload: { eventReasonCardUid?: string; eventReasonEffectId?: number } = {}): ContinuousEffectMatch | undefined {
   const card = findCard(state, uid);
   if (!card) return undefined;
   for (const effect of state.effects) {
@@ -827,7 +828,12 @@ export function findIndestructibleEffect(state: DuelState, uid: string, reason: 
     if (effect.code === 47 && (effect.value ?? 1) <= 0) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    const ctx = createContext(effect, source, card, { eventReason: reason, ...(reasonPlayer === undefined ? {} : { eventReasonPlayer: reasonPlayer }) });
+    const ctx = createContext(effect, source, card, {
+      eventReason: reason,
+      ...(reasonPlayer === undefined ? {} : { eventReasonPlayer: reasonPlayer }),
+      ...(payload.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: payload.eventReasonCardUid }),
+      ...(payload.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: payload.eventReasonEffectId, relatedEffectId: payload.eventReasonEffectId }),
+    });
     if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
     if (effect.valuePredicate && !effect.valuePredicate(ctx, reasonPlayer)) continue;

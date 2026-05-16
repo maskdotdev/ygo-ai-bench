@@ -36,7 +36,7 @@ export function applyDestroyPrevention(
   handlers: ReplacementEffectHandlers,
   payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {},
 ): DuelCardInstance | undefined {
-  const match = findIndestructibleEffect(state, uid, reason, handlers.createContinuousContext, reasonPlayer);
+  const match = findIndestructibleEffect(state, uid, reason, handlers.createContinuousContext, reasonPlayer, payload);
   if (!match) return undefined;
   consumeIndestructibleCount(match.effect);
   handlers.log("destroyPrevented", controller ?? match.card.controller, match.card.name, "Destruction prevented");
