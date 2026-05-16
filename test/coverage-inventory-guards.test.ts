@@ -121,6 +121,17 @@ describe("coverage inventory guards", () => {
     expect(weak).toEqual([]);
   });
 
+  it("requires Lua restore response helpers to prove flattened returned legal-action groups", () => {
+    const helpers = luaRestoreResponseHelpers();
+    const helpersByKey = new Map(helpers.map((helper) => [helperKey(helper), helper]));
+    const weak = helpers
+      .filter((helper) => !hasStrongLuaRestoreResponseHelper(helper, helpersByKey))
+      .map((helper) => `${helper.file}:${helper.line}:${helper.name}`);
+
+    expect(helpers).toHaveLength(204);
+    expect(weak).toEqual([]);
+  });
+
   it("requires chain-limit restore helpers to prove raw, grouped, and flattened restored actions", () => {
     const chainLimitRestoreFiles = fs.readdirSync(testRoot)
       .filter((file) => /^lua-chain-limit-.*restore\.test\.ts$/.test(file));
@@ -195,6 +206,63 @@ function restoredLegalActionHelpers(): Array<{ file: string; line: number; name:
       return [...text.matchAll(/function (expectRestoredLegal(?:Action|Actions|ActionGroups))\b/g)]
         .map((match) => ({ file, line: lineNumber(text, match.index ?? 0), name: match[1]! }));
     });
+}
+
+type LuaRestoreResponseHelper = { file: string; line: number; name: string; text: string };
+
+function luaRestoreResponseHelpers(): LuaRestoreResponseHelper[] {
+  return fs.readdirSync(testRoot)
+    .filter((file) => file.endsWith(".ts"))
+    .flatMap((file) => {
+      const text = readTestFile(file);
+      return [...text.matchAll(/(?:export\s+)?function (applyLuaRestoreAndAssert|expectLuaRestoreStalePreapply|assertLuaRestoreLegalWindow)\b/g)]
+        .map((match) => {
+          const start = match.index ?? 0;
+          return {
+            file,
+            line: lineNumber(text, start),
+            name: match[1]!,
+            text: text.slice(start, functionBodyEnd(text, start)),
+          };
+        });
+    });
+}
+
+function helperKey(helper: Pick<LuaRestoreResponseHelper, "file" | "name">): string {
+  return `${helper.file}:${helper.name}`;
+}
+
+function functionBodyEnd(text: string, start: number): number {
+  const open = text.indexOf("{", start);
+  let depth = 0;
+  for (let index = open; index < text.length; index++) {
+    if (text[index] === "{") depth++;
+    else if (text[index] === "}") {
+      depth--;
+      if (depth === 0) return index + 1;
+    }
+  }
+  throw new Error(`Unclosed function body after ${start}`);
+}
+
+function hasStrongLuaRestoreResponseHelper(
+  helper: LuaRestoreResponseHelper,
+  helpersByKey: Map<string, LuaRestoreResponseHelper>,
+  seen = new Set<string>(),
+): boolean {
+  const key = helperKey(helper);
+  if (seen.has(key)) return false;
+  seen.add(key);
+  if (hasReturnedLegalActionFlattenProof(helper.text)) return true;
+  return [...helper.text.matchAll(/\b(assertLuaRestoreLegalWindow)\(/g)]
+    .some((match) => {
+      const callee = helpersByKey.get(`${helper.file}:${match[1]!}`);
+      return callee !== undefined && hasStrongLuaRestoreResponseHelper(callee, helpersByKey, seen);
+    });
+}
+
+function hasReturnedLegalActionFlattenProof(text: string): boolean {
+  return /\b(\w+)\.legalActionGroups\.flatMap\(\(group\) => group\.actions\)\)\.toEqual\(\s*\1\.legalActions\s*\);/.test(text);
 }
 
 function hasNearbyRestoredActionEvidence(text: string, variable: string, fileText: string): boolean {

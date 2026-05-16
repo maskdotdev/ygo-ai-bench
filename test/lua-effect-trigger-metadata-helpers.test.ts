@@ -450,6 +450,7 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expectGroupedActionsToContainLegalActions(response);
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
 }
 
@@ -465,4 +466,5 @@ function expectLuaRestoreStalePreapply(restored: ReturnType<typeof restoreDuelWi
   expect(response.legalActions).toEqual(getDuelLegalActions(restored.session, player));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, player));
   expectGroupedActionsToContainLegalActions(response);
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
 }

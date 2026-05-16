@@ -167,6 +167,7 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   const response = applyLuaRestoreResponse(restored, action);
   expect(response.ok, response.error).toBe(true);
   assertLegalActions(restored);
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
 }
 

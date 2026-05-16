@@ -195,6 +195,7 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
     expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
     expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
   }
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
 }
 
 function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {

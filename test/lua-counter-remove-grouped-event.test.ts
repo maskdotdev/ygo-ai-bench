@@ -168,5 +168,6 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
   expect(response.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, response.state.waitingFor!));
   expect(queryPublicState(restored.session)).toEqual(response.state);
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
 }
