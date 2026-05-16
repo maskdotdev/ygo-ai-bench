@@ -472,18 +472,32 @@ export function battleDestroyRedirectLocation(state: DuelState, uid: string, cre
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 204) continue;
     const source = findCard(state, effect.sourceUid);
-    if (!source || !effect.range.includes(source.location)) continue;
+    if (!source) continue;
     const redirect = redirectDestinationFromValue(effect.value);
     if (!redirect) continue;
+    const sourceInRange = effect.range.includes(source.location);
+    const sourceDestroyedThisCard = destroyer ? sourceWasBattleDestroyedBy(source, card, effect, destroyer.uid) : false;
+    if (!sourceInRange && !sourceDestroyedThisCard) continue;
     const ctx = createContext(effect, source, card);
     const destroyerCtx = destroyer ? createContext(effect, source, destroyer) : undefined;
-    const sourceDestroyedOpponent = destroyer && source.uid === destroyer.uid && continuousEffectAppliesToCard(effect, source, destroyer, destroyerCtx!);
-    const fieldEffectTargetsDestroyer = destroyer && source.uid !== destroyer.uid && continuousEffectAppliesToCard(effect, source, destroyer, destroyerCtx!);
-    if (!sourceDestroyedOpponent && !fieldEffectTargetsDestroyer && !continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
+    const sourceDestroyedOpponent = destroyer && source.uid === destroyer.uid && (sourceInRange || sourceDestroyedThisCard) && continuousEffectAppliesToCard(effect, source, destroyer, destroyerCtx!);
+    const fieldEffectTargetsDestroyer = destroyer && sourceInRange && source.uid !== destroyer.uid && continuousEffectAppliesToCard(effect, source, destroyer, destroyerCtx!);
+    const effectTargetsDestroyedCard = sourceInRange && source.uid !== card.uid && continuousEffectAppliesToCard(effect, source, card, ctx);
+    if (!sourceDestroyedOpponent && !fieldEffectTargetsDestroyer && !effectTargetsDestroyedCard) continue;
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
     candidates.push({ match: { effect, source, card }, redirect });
   }
   return firstOrderedRedirect(state, candidates);
+}
+
+function sourceWasBattleDestroyedBy(source: DuelCardInstance, card: DuelCardInstance, effect: DuelEffectDefinition, destroyerUid: string): boolean {
+  const reason = source.reason ?? 0;
+  return source.uid === destroyerUid
+    && source.reasonCardUid === card.uid
+    && source.previousLocation !== undefined
+    && effect.range.includes(source.previousLocation)
+    && (reason & duelReason.battle) !== 0
+    && (reason & duelReason.destroy) !== 0;
 }
 
 export function isAttackPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
