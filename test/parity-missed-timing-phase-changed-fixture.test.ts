@@ -29,7 +29,16 @@ describe("EDOPro parity phase-changed missed timing fixture", () => {
             location: "hand",
             event: "ignition",
             range: ["hand"],
-            collectEventsOnResolve: [{ collectEvent: "phaseChanged", eventIsLast: false }],
+            collectEventsOnResolve: [
+              {
+                collectEvent: "phaseChanged",
+                eventIsLast: false,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 21501,
+              },
+            ],
             moveCardsOnResolve: [{ player: 0, code: "700", from: "monsterZone", to: "graveyard" }],
             logMessage: "Phase-changed multi step resolved",
           },
@@ -79,7 +88,17 @@ describe("EDOPro parity phase-changed missed timing fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "phase-changed-optional-if", eventName: "phaseChanged" }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "phase-changed-optional-if",
+                eventName: "phaseChanged",
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 21501,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "phase-changed-optional-if", triggerBucket: "turnOptional", count: 1 },
@@ -104,7 +123,17 @@ describe("EDOPro parity phase-changed missed timing fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "phase-changed-optional-if", eventName: "phaseChanged" }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "phase-changed-optional-if",
+                eventName: "phaseChanged",
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 21501,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "phase-changed-optional-if", triggerBucket: "turnOptional", count: 1 },

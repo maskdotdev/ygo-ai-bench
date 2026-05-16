@@ -29,7 +29,16 @@ describe("EDOPro parity turn-started missed timing fixture", () => {
             location: "hand",
             event: "ignition",
             range: ["hand"],
-            collectEventsOnResolve: [{ collectEvent: "turnStarted", eventIsLast: false }],
+            collectEventsOnResolve: [
+              {
+                collectEvent: "turnStarted",
+                eventIsLast: false,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 21401,
+              },
+            ],
             moveCardsOnResolve: [{ player: 0, code: "700", from: "monsterZone", to: "graveyard" }],
             logMessage: "Turn-started multi step resolved",
           },
@@ -79,7 +88,17 @@ describe("EDOPro parity turn-started missed timing fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "turn-started-optional-if", eventName: "turnStarted" }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "turn-started-optional-if",
+                eventName: "turnStarted",
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 21401,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "turn-started-optional-if", triggerBucket: "turnOptional", count: 1 },
@@ -104,7 +123,17 @@ describe("EDOPro parity turn-started missed timing fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "turn-started-optional-if", eventName: "turnStarted" }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "turn-started-optional-if",
+                eventName: "turnStarted",
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 21401,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "turn-started-optional-if", triggerBucket: "turnOptional", count: 1 },
