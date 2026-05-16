@@ -105,7 +105,7 @@ const chainEndedOpenFastFiles = [
 
 describe("EDOPro open fast-effect fixture coverage", () => {
   it("keeps the open-fast parity fixture inventory ratcheted", () => {
-    expect(allRequiredParityOpenFastFiles()).toHaveLength(268);
+    expect(allRequiredParityOpenFastFiles()).toHaveLength(279);
   });
 
   it("keeps the open-fast lower-level restore test inventory ratcheted", () => {
@@ -157,6 +157,20 @@ describe("EDOPro open fast-effect fixture coverage", () => {
     );
 
     expect(missing).toEqual([]);
+  });
+
+  it("keeps every battle sub-window quick-effect fixture in its explicit family inventory", () => {
+    const mismatched = battleQuickEffectFamilies.flatMap(({ base, kind }) => {
+      const scannedFiles = fs.readdirSync(path.join(root, "test"))
+        .filter((file) => file.startsWith(`parity-${base}`) && file.endsWith(".test.ts") && !file.endsWith("-coverage.test.ts"))
+        .map((file) => `test/${file}`)
+        .sort();
+      const expectedFiles = requiredBattleQuickFiles(base, kind).sort();
+
+      return JSON.stringify(scannedFiles) === JSON.stringify(expectedFiles) ? [] : [base];
+    });
+
+    expect(mismatched).toEqual([]);
   });
 
   it("keeps phase-transition open fast-effect families pinned to chain, handoff, and limit fixtures", () => {
@@ -289,7 +303,7 @@ function requiredBattleQuickFiles(base: string, kind: (typeof battleQuickEffectF
       ? [`test/parity-${base}-pass-handoff-turn-response-resolution-fixture.test.ts`]
       : [
           `test/parity-${base}-pass-handoff-response-resolution-fixture.test.ts`,
-          ...(kind === "timing-opponent" ? [`test/parity-${base}-pass-handoff-response-turn-response-chain-pass-resolution-fixture.test.ts`] : []),
+          ...(kind === "opponent" || kind === "timing-opponent" ? [`test/parity-${base}-pass-handoff-response-turn-response-chain-pass-resolution-fixture.test.ts`] : []),
           `test/parity-${base}-pass-handoff-response-turn-response-chain-resolution-fixture.test.ts`,
         ];
   const limits =
@@ -307,9 +321,23 @@ function requiredBattleQuickFiles(base: string, kind: (typeof battleQuickEffectF
 
   return [
     ...baseAndChain,
+    ...existingBattleQuickFiles(base, [
+      ...(kind === "turn" || kind === "opponent" ? [`test/parity-${base}-chained-return-fixture.test.ts`] : []),
+      ...(kind === "turn" || kind === "timing-turn"
+        ? [
+            `test/parity-${base}-pass-handoff-turn-response-fixture.test.ts`,
+            `test/parity-${base}-pass-handoff-turn-response-chain-limit-fixture.test.ts`,
+            `test/parity-${base}-pass-handoff-turn-response-until-chain-end-limit-fixture.test.ts`,
+          ]
+        : []),
+    ]),
     ...handoff,
     ...limits,
   ];
+}
+
+function existingBattleQuickFiles(base: string, files: string[]): string[] {
+  return files.filter((file) => path.basename(file).startsWith(`parity-${base}`) && fs.existsSync(path.join(root, file)));
 }
 
 function requiredPhaseOpenFastFiles(base: string, restore: string): string[] {
