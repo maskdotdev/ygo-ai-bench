@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   bootstrapPvpDuel,
+  bootstrapPvpDuelWithBrowserAssets,
   bootstrapPvpDuelWithBrowserData,
   bootstrapPvpDuelWithCardData,
   bootstrapPvpDuelWithLuaScripts,
@@ -160,7 +161,7 @@ describe("PvP arena visible scripts", () => {
     expect(result.luaHost.messages).toContain("browser bootstrap 2300");
   });
 
-  it("creates browser asset caches against exported endpoint paths", async () => {
+  it("bootstraps browser assets against exported endpoint paths with manifests", async () => {
     const originalFetch = globalThis.fetch;
     const requestedUrls: string[] = [];
     globalThis.fetch = (async (input: string | URL | Request) => {
@@ -239,11 +240,7 @@ describe("PvP arena visible scripts", () => {
         scriptBaseUrl: "/card-scripts",
       });
 
-      const [cardManifest, scriptManifest] = await Promise.all([
-        caches.loadCardDataManifest(),
-        caches.loadLuaScriptManifest(),
-      ]);
-      const result = await bootstrapPvpDuelWithBrowserData(lazyLoadedYdk, pvpVisibleBattleFixtureYdk, "pvp-exported-endpoints", 1, caches);
+      const result = await bootstrapPvpDuelWithBrowserAssets(lazyLoadedYdk, pvpVisibleBattleFixtureYdk, "pvp-exported-endpoints", 1, caches);
 
       expect(requestedUrls).toEqual([
         "/card-data/manifest.json",
@@ -252,11 +249,58 @@ describe("PvP arena visible scripts", () => {
         "/card-scripts/c7084129.lua",
         "/card-scripts/c90000003.lua",
       ]);
-      expect(cardManifest).toMatchObject({ kind: "browser-cdb-rows", datasRows: 1, textsRows: 1, sha256: cardManifestHash });
-      expect(scriptManifest).toMatchObject({ kind: "browser-lua-scripts", copiedCount: 1, files: [{ name: "c90000003.lua", bytes: 91, sha256: scriptManifestHash }] });
+      expect(result.cardDataManifest).toMatchObject({ kind: "browser-cdb-rows", datasRows: 1, textsRows: 1, sha256: cardManifestHash });
+      expect(result.luaScriptManifest).toMatchObject({ kind: "browser-lua-scripts", copiedCount: 1, files: [{ name: "c90000003.lua", bytes: 91, sha256: scriptManifestHash }] });
       expect(result.cardPreload).toEqual({ loaded: ["7084129", "90000003"], missing: [] });
       expect(result.scriptPreload).toEqual({ loaded: ["c90000003.lua"], missing: ["c7084129.lua"] });
       expect(result.luaHost.messages).toContain("endpoint script 2400");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("rejects browser asset bootstrap before payload fetches when manifests are unavailable", async () => {
+    const originalFetch = globalThis.fetch;
+    const requestedUrls: string[] = [];
+    globalThis.fetch = (async (input: string | URL | Request) => {
+      const url = String(input);
+      requestedUrls.push(url);
+      if (url === "/card-data/manifest.json") {
+        return { ok: false, status: 503, async json() { return {}; }, async text() { return ""; } } as Response;
+      }
+      if (url === "/card-scripts/manifest.json") {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              schemaVersion: 1,
+              kind: "browser-lua-scripts",
+              selectedCodes: [],
+              copiedCount: 0,
+              missingCount: 0,
+              copied: [],
+              missing: [],
+              files: [],
+            };
+          },
+          async text() { return ""; },
+        } as Response;
+      }
+      return { ok: true, status: 200, async text() { return ""; }, async json() { return { datas: [], texts: [] }; } } as Response;
+    }) as typeof fetch;
+    try {
+      const caches = createBrowserPvpAssetCaches({
+        cardRowsEndpoint: "/card-data/cdb-rows.json",
+        scriptBaseUrl: "/card-scripts",
+      });
+
+      await expect(bootstrapPvpDuelWithBrowserAssets(lazyLoadedYdk, pvpVisibleBattleFixtureYdk, "pvp-missing-manifest", 1, caches))
+        .rejects.toThrow("CDB rows manifest fetch failed with HTTP 503");
+      expect(requestedUrls).toEqual([
+        "/card-data/manifest.json",
+        "/card-scripts/manifest.json",
+      ]);
     } finally {
       globalThis.fetch = originalFetch;
     }

@@ -74,6 +74,11 @@ export interface BootstrapPvpDuelWithBrowserDataResult extends BootstrapPvpDuelW
   cardPreload: BrowserDuelCardDataPreloadResult;
 }
 
+export interface BootstrapPvpDuelWithBrowserAssetsResult extends BootstrapPvpDuelWithBrowserDataResult {
+  cardDataManifest: BrowserCdbRowsManifest;
+  luaScriptManifest: BrowserLuaScriptManifest;
+}
+
 export interface BrowserPvpAssetCacheOptions {
   cardRowsEndpoint?: string;
   cardRowsManifestEndpoint?: string;
@@ -183,6 +188,21 @@ export async function bootstrapPvpDuelWithBrowserData(
   const scriptRegistrations = luaHost.registerInitialEffectsDetailed();
   const startupEffectCount = luaHost.runStartupEffects();
   return { session, luaHost, cardPreload, scriptPreload, scriptLoads, scriptRegistrations, startupEffectCount };
+}
+
+export async function bootstrapPvpDuelWithBrowserAssets(
+  p0Text: string,
+  p1Text: string,
+  seed: string | number,
+  handSize: number,
+  options: BrowserPvpAssetCaches,
+): Promise<BootstrapPvpDuelWithBrowserAssetsResult> {
+  const [cardDataManifest, luaScriptManifest] = await Promise.all([
+    options.loadCardDataManifest(),
+    options.loadLuaScriptManifest(),
+  ]);
+  const boot = await bootstrapPvpDuelWithBrowserData(p0Text, p1Text, seed, handSize, options);
+  return { ...boot, cardDataManifest, luaScriptManifest };
 }
 
 function pvpDeckCodes(p0Text: string, p1Text: string): string[] {
@@ -314,11 +334,11 @@ export function PvpArena() {
       let detail = "Two-player duel (DuelSession).";
       try {
         browserAssetCaches.current ??= createBrowserPvpAssetCaches();
-        const boot = await bootstrapPvpDuelWithBrowserData(deckP0, deckP1, seed, handSizeDraft, browserAssetCaches.current);
+        const boot = await bootstrapPvpDuelWithBrowserAssets(deckP0, deckP1, seed, handSizeDraft, browserAssetCaches.current);
         next = boot.session;
         const missingCards = boot.cardPreload.missing.length;
         const missingScripts = boot.scriptPreload.missing.length;
-        detail = `Browser data loaded (${boot.cardPreload.loaded.length} cards, ${boot.scriptPreload.loaded.length} scripts; missing ${missingCards}/${missingScripts}).`;
+        detail = `Browser data loaded (${boot.cardPreload.loaded.length} cards, ${boot.scriptPreload.loaded.length} scripts; missing ${missingCards}/${missingScripts}; manifests ${boot.cardDataManifest.datasRows}/${boot.luaScriptManifest.copiedCount}).`;
       } catch (error) {
         console.warn("Browser PvP data unavailable", error);
         next = bootstrapPvpDuel(deckP0, deckP1, seed, handSizeDraft);
