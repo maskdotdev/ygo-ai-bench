@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 18;
-const chainedResponseFixtureCount = 17;
+const responseFixtureCount = 19;
+const chainedResponseFixtureCount = 18;
 const responseOperationInfoFixtureCount = 17;
 
 describe("Lua real response restore coverage", () => {
@@ -41,7 +41,7 @@ describe("Lua real response restore coverage", () => {
           || !text.includes("eventHistory")
           || !text.includes("host.messages).not.toContain")
           || !/location:\s*["'](graveyard|hand|banished|monsterZone)["']/.test(text)
-          || !/eventName:\s*["'](chainDisabled|positionChanged|cardsDrawn|destroyed|sentToDeck|sentToHand|banished|specialSummoned|damageDealt|recoveredLifePoints|customEvent)["']/.test(text);
+          || !/eventName:\s*["'](chainDisabled|positionChanged|cardsDrawn|destroyed|sentToDeck|sentToHand|banished|specialSummoned|damageDealt|recoveredLifePoints|attackDisabled|customEvent)["']/.test(text);
       });
 
     expect(missing).toEqual([]);
@@ -109,6 +109,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-mirror-force-battle-window.test.ts",
     "lua-real-script-monster-reborn-free-chain.test.ts",
     "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
+    "lua-real-script-negate-attack-battle-window.test.ts",
     "lua-real-script-phoenix-wing-wind-blast-discard-cost.test.ts",
     "lua-real-script-raigeki-break-discard-cost.test.ts",
     "lua-real-script-sakuretsu-armor-battle-window.test.ts",
@@ -124,5 +125,6 @@ function realScriptChainedResponseFixtureFiles(): string[] {
 }
 
 function realScriptResponseOperationInfoFixtureFiles(): string[] {
-  return realScriptChainedResponseFixtureFiles();
+  return realScriptChainedResponseFixtureFiles()
+    .filter((file) => !file.endsWith("lua-real-script-negate-attack-battle-window.test.ts"));
 }
