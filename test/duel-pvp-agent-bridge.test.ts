@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { createDuelPvpAgent } from "#playtest/duel-pvp-agent-bridge.js";
 import { starterYdk } from "../src/playtest-app/ui.js";
 
+const rodOnlyYdk = `#created by test
+#main
+7084129
+#extra
+!side`;
+
 describe("duel pvp agent bridge", () => {
   it("starts a two-player DuelSession and exposes visible battlefield actions", () => {
     const agent = createDuelPvpAgent();
@@ -79,6 +85,34 @@ describe("duel pvp agent bridge", () => {
     expect(result.visibleGroups.flatMap((group) => group.actions).every((action) => (
       result.visibleActions.some((visible) => JSON.stringify(visible) === JSON.stringify(action))
     ))).toBe(true);
+  });
+
+  it("runs a battle fixture through bridge-level visible scripts", () => {
+    const agent = createDuelPvpAgent();
+    const started = agent.start({ player0Ydk: rodOnlyYdk, player1Ydk: rodOnlyYdk, seed: "pvp-agent-visible-battle", handSize: 1 });
+
+    const result = agent.runVisibleScript([
+      { player: 0, type: "normalSummon", labelIncludes: "Magician's Rod" },
+      { player: 0, type: "changePhase", phase: "battle", windowKind: "open" },
+      { player: 0, type: "declareAttack", labelIncludes: "Direct attack", directAttack: true },
+      { player: 1, type: "passAttack", groupLabel: "Attack Response" },
+      { player: 0, type: "passAttack", groupLabel: "Attack Response" },
+      { player: 1, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 0, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 1, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 0, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 1, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 0, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 1, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 0, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 1, type: "passDamage", groupLabel: "Damage Step Response" },
+      { player: 0, type: "passDamage", groupLabel: "Damage Step Response" },
+    ], started.sessionId);
+
+    expect(result.ok).toBe(true);
+    expect(result.failedStep).toBeUndefined();
+    expect(result.state.attacksDeclared).toHaveLength(1);
+    expect(result.state.log).toContainEqual(expect.objectContaining({ action: "attack", card: "Magician's Rod", detail: "Direct attack" }));
   });
 
   it("auto-runs bounded visible battlefield actions without inventing hidden actions", () => {
