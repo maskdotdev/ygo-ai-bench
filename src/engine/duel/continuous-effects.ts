@@ -482,7 +482,7 @@ export function battleDestroyRedirectLocation(state: DuelState, uid: string, cre
     const destroyerCtx = destroyer ? createContext(effect, source, destroyer) : undefined;
     const sourceDestroyedOpponent = destroyer && source.uid === destroyer.uid && (sourceInRange || sourceDestroyedThisCard) && continuousEffectAppliesToCard(effect, source, destroyer, destroyerCtx!);
     const fieldEffectTargetsDestroyer = destroyer && sourceInRange && source.uid !== destroyer.uid && continuousEffectAppliesToCard(effect, source, destroyer, destroyerCtx!);
-    const effectTargetsDestroyedCard = sourceInRange && source.uid !== card.uid && continuousEffectAppliesToCard(effect, source, card, ctx);
+    const effectTargetsDestroyedCard = sourceInRange && !selfRedirectsMutualBattleDestruction(state, source, card) && continuousEffectAppliesToCard(effect, source, card, ctx);
     if (!sourceDestroyedOpponent && !fieldEffectTargetsDestroyer && !effectTargetsDestroyedCard) continue;
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
     candidates.push({ match: { effect, source, card }, redirect });
@@ -498,6 +498,12 @@ function sourceWasBattleDestroyedBy(source: DuelCardInstance, card: DuelCardInst
     && effect.range.includes(source.previousLocation)
     && (reason & duelReason.battle) !== 0
     && (reason & duelReason.destroy) !== 0;
+}
+
+function selfRedirectsMutualBattleDestruction(state: DuelState, source: DuelCardInstance, card: DuelCardInstance): boolean {
+  if (source.uid !== card.uid) return false;
+  const deferred = state.pendingBattle?.deferredBattleDestroyed ?? [];
+  return deferred.length > 1 && deferred.some((destruction) => destruction.uid === card.uid);
 }
 
 export function isAttackPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
