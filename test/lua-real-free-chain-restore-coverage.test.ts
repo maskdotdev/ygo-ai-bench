@@ -7,8 +7,14 @@ const root = process.cwd();
 const FREE_CHAIN_FIXTURE_COUNT = 11;
 const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 10;
 const CHAINED_FREE_CHAIN_FIXTURE_COUNT = 6;
+const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 11;
 
 describe("Lua real free-chain restore coverage", () => {
+  it("keeps the combined free-chain restore fixture inventory explicit", () => {
+    expect(combinedFreeChainFixtureFiles()).toHaveLength(FREE_CHAIN_INVENTORY_FIXTURE_COUNT);
+    expect(combinedFreeChainFixtureFiles()).toEqual(realScriptFreeChainInventoryFiles());
+  });
+
   it("requires representative free-chain fixtures to assert grouped actions and clean Lua registry restore", () => {
     const files = realScriptFreeChainFixtureFiles();
     expect(files).toHaveLength(FREE_CHAIN_FIXTURE_COUNT);
@@ -80,6 +86,32 @@ describe("Lua real free-chain restore coverage", () => {
     expect(missing).toEqual([]);
   });
 });
+
+function combinedFreeChainFixtureFiles(): string[] {
+  return [
+    ...realScriptFreeChainFixtureFiles(),
+    ...realScriptFreeChainOperationInfoFixtureFiles(),
+    ...realScriptChainedFreeChainFixtureFiles(),
+  ].filter((file, index, files) => files.indexOf(file) === index).sort();
+}
+
+function realScriptFreeChainInventoryFiles(): string[] {
+  return [
+    "lua-real-script-armor-blast-multi-target-free-chain.test.ts",
+    "lua-real-script-book-of-moon-free-chain.test.ts",
+    "lua-real-script-compulsory-evacuation-device-free-chain.test.ts",
+    "lua-real-script-cosmic-cyclone-free-chain.test.ts",
+    "lua-real-script-infinite-impermanence-target-param.test.ts",
+    "lua-real-script-monster-reborn-free-chain.test.ts",
+    "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
+    "lua-real-script-omega-judgment-select-unselect-targets.test.ts",
+    "lua-real-script-phoenix-wing-wind-blast-discard-cost.test.ts",
+    "lua-real-script-raigeki-break-discard-cost.test.ts",
+    "lua-real-script-twin-twisters-discard-cost.test.ts",
+  ]
+    .map((file) => path.join("test", file))
+    .sort();
+}
 
 function realScriptFreeChainFixtureFiles(): string[] {
   return [
