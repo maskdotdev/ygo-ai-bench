@@ -278,6 +278,7 @@ describe("EDOPro parity battle target-count replay fixtures", () => {
             pendingBattle: false,
             currentAttack: false,
             windowId: 29,
+            windowKind: "open",
             battleWindow: null,
             lifePoints: { 1: 7200 },
             battleDamage: { 1: 800 },
@@ -307,6 +308,7 @@ describe("EDOPro parity battle target-count replay fixtures", () => {
         pendingBattle: false,
         currentAttack: false,
         windowId: 29,
+        windowKind: "open",
         battleWindow: null,
         attackedTargetUids: ["p1-deck-200-1", "p1-deck-200-2"],
         battlePairs: [
