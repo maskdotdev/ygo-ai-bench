@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 9;
+const spiritFixtureCount = 10;
 
 describe("Lua real Spirit restore coverage", () => {
   it("requires representative Spirit fixtures to prove clean Lua restore and replayed legal actions", () => {
@@ -127,6 +127,21 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
         'eventName: "specialSummoned"',
         'location: "hand", controller: 0',
         'summonType: "pendulum"',
+      ],
+    },
+    {
+      file: "lua-real-script-han-shi-kyudo-spirit-column-return.test.ts",
+      required: [
+        'action.type === "tributeSummon"',
+        'action.type === "activateTrigger"',
+        'action.type === "passChain"',
+        'eventName: "normalSummoned"',
+        'eventName: "sentToHand"',
+        "category: 8",
+        "possibleOperationInfos",
+        "eventUids: [hanShi!.uid, lowScale!.uid, highScale!.uid]",
+        'location: "hand", controller: 0',
+        'host.messages).not.toContain("han-shi responder resolved")',
       ],
     },
     {
