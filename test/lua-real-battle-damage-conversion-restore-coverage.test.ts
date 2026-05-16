@@ -5,8 +5,19 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const battleDamageConversionFixtureCount = 5;
+const battleDamageConversionKindCounts: Record<BattleDamageConversionKind, number> = {
+  alsoBattleDamage: 1,
+  battleDamageToEffect: 1,
+  bothBattleDamage: 1,
+  changeBattleDamage: 1,
+  reflectBattleDamage: 1,
+};
 
 describe("Lua real battle damage conversion restore coverage", () => {
+  it("keeps battle damage conversion fixture kinds explicit", () => {
+    expect(countBattleDamageConversionKinds(battleDamageConversionFixtureFiles())).toEqual(battleDamageConversionKindCounts);
+  });
+
   it("requires battle damage conversion fixtures to assert clean Lua registry restore and final battle outcomes", () => {
     const files = battleDamageConversionFixtureFiles();
     expect(files).toHaveLength(battleDamageConversionFixtureCount);
@@ -47,10 +58,20 @@ describe("Lua real battle damage conversion restore coverage", () => {
   });
 });
 
-function battleDamageConversionFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+type BattleDamageConversionKind = "alsoBattleDamage" | "battleDamageToEffect" | "bothBattleDamage" | "changeBattleDamage" | "reflectBattleDamage";
+
+function countBattleDamageConversionKinds(fixtures: Array<{ kind: BattleDamageConversionKind }>): Record<BattleDamageConversionKind, number> {
+  return fixtures.reduce<Record<BattleDamageConversionKind, number>>(
+    (counts, { kind }) => ({ ...counts, [kind]: counts[kind] + 1 }),
+    { alsoBattleDamage: 0, battleDamageToEffect: 0, bothBattleDamage: 0, changeBattleDamage: 0, reflectBattleDamage: 0 },
+  );
+}
+
+function battleDamageConversionFixtureFiles(): Array<{ file: string; kind: BattleDamageConversionKind; required: string[] }> {
+  return ([
     {
       file: "lua-real-script-amazoness-swords-woman-reflect-battle-damage.test.ts",
+      kind: "reflectBattleDamage",
       required: [
         "Amazoness Swords Woman reflect battle damage",
         "code: 202",
@@ -64,6 +85,7 @@ function battleDamageConversionFixtureFiles(): Array<{ file: string; required: s
     },
     {
       file: "lua-real-script-gravekeepers-vassal-battle-damage-to-effect.test.ts",
+      kind: "battleDamageToEffect",
       required: [
         "Gravekeeper's Vassal battle damage to effect",
         "code: 205",
@@ -78,6 +100,7 @@ function battleDamageConversionFixtureFiles(): Array<{ file: string; required: s
     },
     {
       file: "lua-real-script-number-c96-also-battle-damage.test.ts",
+      kind: "alsoBattleDamage",
       required: [
         "Number C96 also battle damage",
         "code: 207",
@@ -92,6 +115,7 @@ function battleDamageConversionFixtureFiles(): Array<{ file: string; required: s
     },
     {
       file: "lua-real-script-speedroid-hexasaucer-both-battle-damage.test.ts",
+      kind: "bothBattleDamage",
       required: [
         "Speedroid Hexasaucer both battle damage",
         "code: 206",
@@ -108,6 +132,7 @@ function battleDamageConversionFixtureFiles(): Array<{ file: string; required: s
     },
     {
       file: "lua-real-script-susa-soldier-half-damage.test.ts",
+      kind: "changeBattleDamage",
       required: [
         "Susa Soldier half battle damage",
         "code: 208",
@@ -118,7 +143,7 @@ function battleDamageConversionFixtureFiles(): Array<{ file: string; required: s
         "eventValue: 500",
       ],
     },
-  ]
-    .map(({ file, required }) => ({ file: path.join("test", file), required }))
+  ] satisfies Array<{ file: string; kind: BattleDamageConversionKind; required: string[] }>)
+    .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }))
     .sort((a, b) => a.file.localeCompare(b.file));
 }
