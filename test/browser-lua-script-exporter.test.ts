@@ -61,4 +61,37 @@ describe("browser Lua script exporter", () => {
     });
     expect(fs.readdirSync(outDir).sort()).toEqual(["c100.lua", "c200.lua"]);
   });
+
+  it("prefers local overrides and falls back to local fallback scripts", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "browser-lua-export-"));
+    tempRoots.push(root);
+    const scriptRoot = path.join(root, "script");
+    const localScriptRoot = path.join(root, "local-card-scripts");
+    const outDir = path.join(root, "public", "card-scripts");
+    fs.mkdirSync(path.join(scriptRoot, "official"), { recursive: true });
+    fs.mkdirSync(path.join(localScriptRoot, "overrides", "official"), { recursive: true });
+    fs.mkdirSync(path.join(localScriptRoot, "fallbacks", "official"), { recursive: true });
+    fs.writeFileSync(path.join(scriptRoot, "official", "c100.lua"), "official 100", "utf8");
+    fs.writeFileSync(path.join(localScriptRoot, "overrides", "official", "c100.lua"), "override 100", "utf8");
+    fs.writeFileSync(path.join(localScriptRoot, "fallbacks", "official", "c400.lua"), "fallback 400", "utf8");
+
+    const summary = execFileSync("node", [
+      exporterPath,
+      "--scripts",
+      scriptRoot,
+      "--local-scripts",
+      localScriptRoot,
+      "--out",
+      outDir,
+      "--codes",
+      "100,400",
+    ], { encoding: "utf8" });
+
+    expect(JSON.parse(summary)).toEqual({
+      copied: ["c100.lua", "c400.lua"],
+      missing: [],
+    });
+    expect(fs.readFileSync(path.join(outDir, "c100.lua"), "utf8")).toBe("override 100");
+    expect(fs.readFileSync(path.join(outDir, "c400.lua"), "utf8")).toBe("fallback 400");
+  });
 });

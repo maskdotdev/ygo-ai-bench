@@ -30,11 +30,12 @@ process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
 if (missing.length && !options.allowMissing) process.exit(1);
 
 function parseArgs(argv) {
-  const parsed = { scripts: undefined, out: undefined, codes: [], allowMissing: false, help: false };
+  const parsed = { scripts: undefined, localScripts: undefined, out: undefined, codes: [], allowMissing: false, help: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--help" || arg === "-h") parsed.help = true;
     else if (arg === "--scripts") parsed.scripts = requireValue(argv, ++index, arg);
+    else if (arg === "--local-scripts") parsed.localScripts = requireValue(argv, ++index, arg);
     else if (arg === "--out") parsed.out = requireValue(argv, ++index, arg);
     else if (arg === "--codes") parsed.codes.push(...parseCodes(requireValue(argv, ++index, arg)));
     else if (arg === "--code") parsed.codes.push(...parseCodes(requireValue(argv, ++index, arg)));
@@ -61,7 +62,7 @@ function requireValue(argv, index, flag) {
 
 function discoverScriptNames(scriptRoot) {
   const names = new Set();
-  for (const dir of [path.join(scriptRoot, "official"), scriptRoot, path.join(scriptRoot, "pre-release")]) {
+  for (const dir of scriptSearchDirs(scriptRoot, options.localScripts)) {
     if (!fs.existsSync(dir)) continue;
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       if (entry.isFile() && /^c\d+\.lua$/.test(entry.name)) names.add(entry.name);
@@ -71,10 +72,16 @@ function discoverScriptNames(scriptRoot) {
 }
 
 function scriptCandidates(scriptRoot, name) {
+  return scriptSearchDirs(scriptRoot, options.localScripts).map((dir) => path.join(dir, name));
+}
+
+function scriptSearchDirs(scriptRoot, localScriptRoot) {
   return [
-    path.join(scriptRoot, "official", name),
-    path.join(scriptRoot, name),
-    path.join(scriptRoot, "pre-release", name),
+    ...(localScriptRoot ? [path.join(localScriptRoot, "overrides", "official"), path.join(localScriptRoot, "overrides")] : []),
+    path.join(scriptRoot, "official"),
+    scriptRoot,
+    path.join(scriptRoot, "pre-release"),
+    ...(localScriptRoot ? [path.join(localScriptRoot, "fallbacks", "official"), path.join(localScriptRoot, "fallbacks")] : []),
   ];
 }
 
@@ -90,6 +97,8 @@ function printUsage() {
 Options:
   --codes <list>      Comma-separated passcodes to export. Defaults to all c*.lua scripts.
   --code <passcode>   Add one passcode to export. Can be repeated.
+  --local-scripts <dir>
+                      Include local overrides/fallbacks using runtime candidate order.
   --allow-missing     Exit successfully even when selected scripts are missing.
   --help              Show this help.
 `);
