@@ -48,6 +48,14 @@ function checkCardDataManifest(dir) {
   }
   if (payload.datas.length !== manifest.datasRows) fail(`CDB rows manifest datasRows ${manifest.datasRows} does not match payload ${payload.datas.length}`);
   if (payload.texts.length !== manifest.textsRows) fail(`CDB rows manifest textsRows ${manifest.textsRows} does not match payload ${payload.texts.length}`);
+  if (manifest.selectedCodes.length) {
+    const selected = normalizedUniqueStrings(manifest.selectedCodes);
+    if (selected.length !== manifest.selectedCodes.length) fail("CDB rows manifest selectedCodes contains duplicate passcodes");
+    const rowCodes = normalizedUniqueStrings([...payload.datas, ...payload.texts].map((row) => row?.id).filter((id) => id !== undefined).map(String));
+    if (!sameStrings(selected, rowCodes)) {
+      fail(`CDB rows manifest selectedCodes ${selected.join(",")} does not match payload row ids ${rowCodes.join(",")}`);
+    }
+  }
 }
 
 function checkCardScriptsManifest(dir) {
@@ -73,6 +81,12 @@ function checkCardScriptsManifest(dir) {
   if (manifest.copiedCount !== manifest.copied.length) fail(`Lua script manifest copiedCount ${manifest.copiedCount} does not match copied ${manifest.copied.length}`);
   if (manifest.missingCount !== manifest.missing.length) fail(`Lua script manifest missingCount ${manifest.missingCount} does not match missing ${manifest.missing.length}`);
   if (manifest.files.length !== manifest.copied.length) fail(`Lua script manifest files ${manifest.files.length} does not match copied ${manifest.copied.length}`);
+  if (manifest.selectedCodes.length) {
+    const selected = normalizedUniqueStrings(manifest.selectedCodes);
+    if (selected.length !== manifest.selectedCodes.length) fail("Lua script manifest selectedCodes contains duplicate passcodes");
+    const listedCodes = normalizedUniqueStrings([...manifest.copied, ...manifest.missing].map(scriptCodeFromName));
+    if (!sameStrings(selected, listedCodes)) fail(`Lua script manifest selectedCodes ${selected.join(",")} does not match copied/missing script codes ${listedCodes.join(",")}`);
+  }
   if (new Set(manifest.copied).size !== manifest.copied.length) fail("Lua script manifest copied list contains duplicate names");
   if (new Set(manifest.files.map((file) => file.name)).size !== manifest.files.length) fail("Lua script manifest files list contains duplicate names");
 
@@ -88,6 +102,20 @@ function checkCardScriptsManifest(dir) {
   for (const name of copied) {
     if (!manifest.files.some((file) => file.name === name)) fail(`Lua script manifest copied script ${name} is missing file metadata`);
   }
+}
+
+function scriptCodeFromName(name) {
+  const match = /^c(\d+)\.lua$/u.exec(name);
+  if (!match) fail(`Lua script manifest contains invalid script filename ${name}`);
+  return match[1];
+}
+
+function normalizedUniqueStrings(values) {
+  return [...new Set(values.map(String))].sort((left, right) => Number(left) - Number(right) || left.localeCompare(right));
+}
+
+function sameStrings(left, right) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
 function parseArgs(argv) {

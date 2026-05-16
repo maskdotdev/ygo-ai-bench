@@ -44,6 +44,21 @@ describe("browser asset manifest checker", () => {
     expect(result.stderr).toContain("CDB rows payload hash mismatch");
   });
 
+  it("fails when selected CDB passcodes do not match payload row ids", () => {
+    const root = makeTempRoot();
+    const cardDataDir = path.join(root, "card-data");
+    writeCardDataExport(cardDataDir, { datas: [{ id: 100, type: 1 }], texts: [{ id: 100, name: "Manifest Monster" }] });
+    const manifestPath = path.join(cardDataDir, "manifest.json");
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as { selectedCodes: string[] };
+    manifest.selectedCodes = ["100", "200"];
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+
+    const result = spawnSync(process.execPath, [checkerPath, "--card-data", cardDataDir], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("CDB rows manifest selectedCodes 100,200 does not match payload row ids 100");
+  });
+
   it("fails when an exported Lua script hash differs from its manifest", () => {
     const root = makeTempRoot();
     const cardScriptsDir = path.join(root, "card-scripts");
@@ -54,6 +69,21 @@ describe("browser asset manifest checker", () => {
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("Lua script c100.lua byte count");
+  });
+
+  it("fails when selected script passcodes do not match copied and missing script lists", () => {
+    const root = makeTempRoot();
+    const cardScriptsDir = path.join(root, "card-scripts");
+    writeScriptExport(cardScriptsDir, { "c100.lua": "c100={}\n" });
+    const manifestPath = path.join(cardScriptsDir, "manifest.json");
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as { selectedCodes: string[] };
+    manifest.selectedCodes = ["100", "200"];
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+
+    const result = spawnSync(process.execPath, [checkerPath, "--card-scripts", cardScriptsDir], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("Lua script manifest selectedCodes 100,200 does not match copied/missing script codes 100");
   });
 
   it("fails when copied Lua scripts are missing exact file metadata", () => {
