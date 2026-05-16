@@ -105,7 +105,7 @@ const chainEndedOpenFastFiles = [
 
 describe("EDOPro open fast-effect fixture coverage", () => {
   it("keeps the open-fast parity fixture inventory ratcheted", () => {
-    expect(allRequiredParityOpenFastFiles()).toHaveLength(279);
+    expect(allRequiredParityOpenFastFiles()).toHaveLength(333);
   });
 
   it("keeps the open-fast lower-level restore test inventory ratcheted", () => {
@@ -179,6 +179,19 @@ describe("EDOPro open fast-effect fixture coverage", () => {
     );
 
     expect(missing).toEqual([]);
+  });
+
+  it("keeps every phase-transition open fast-effect fixture in its explicit family inventory", () => {
+    const mismatched = phaseOpenFastFamilies.flatMap(({ base, restore }) => {
+      const scannedFiles = phaseTransitionOpenFastFiles(base);
+      const expectedFiles = requiredPhaseOpenFastFiles(base, restore)
+        .filter((file) => path.basename(file).startsWith("parity-"))
+        .sort();
+
+      return JSON.stringify(scannedFiles) === JSON.stringify(expectedFiles) ? [] : [base];
+    });
+
+    expect(mismatched).toEqual([]);
   });
 
   it("requires battle quick-effect fixtures to pin restorable EDOPro battle windows", () => {
@@ -342,14 +355,16 @@ function existingBattleQuickFiles(base: string, files: string[]): string[] {
 
 function requiredPhaseOpenFastFiles(base: string, restore: string): string[] {
   return [
-    `test/parity-${base}-pass-handoff-fixture.test.ts`,
-    `test/parity-${base}-pass-handoff-chain-limit-fixture.test.ts`,
-    `test/parity-${base}-pass-handoff-until-chain-end-limit-fixture.test.ts`,
-    `test/parity-${base}-chain-response-pass-handoff-fixture.test.ts`,
-    `test/parity-${base}-chain-response-pass-handoff-chain-limit-fixture.test.ts`,
-    `test/parity-${base}-chain-response-pass-handoff-until-chain-end-limit-fixture.test.ts`,
+    ...phaseTransitionOpenFastFiles(base),
     `test/duel-${restore}-open-fast-pass-handoff-restore.test.ts`,
   ];
+}
+
+function phaseTransitionOpenFastFiles(base: string): string[] {
+  return fs.readdirSync(path.join(root, "test"))
+    .filter((file) => file.startsWith(`parity-${base}`) && file.endsWith(".test.ts") && !file.endsWith("-coverage.test.ts"))
+    .map((file) => `test/${file}`)
+    .sort();
 }
 
 function hasRestorableBattleWindowProof(file: string): boolean {
