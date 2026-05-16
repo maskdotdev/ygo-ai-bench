@@ -20,7 +20,7 @@ export function duelTriggerOrderView(
     label: "Trigger Order",
     detail: `P${prompt.player + 1} · ${prompt.triggerBucket} · ${prompt.triggerIds.length} triggers`,
     prompt: copyTriggerOrderPrompt(prompt),
-    groups: promptGroups,
+    groups: promptGroups.map(copyDuelLegalActionGroup),
   };
 }
 

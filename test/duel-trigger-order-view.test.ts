@@ -99,20 +99,28 @@ describe("duel trigger order view", () => {
       triggerBucket: "turnOptional",
       triggerIds: ["first", "second"],
     };
-    const view = duelTriggerOrderView(prompt, [{
+    const group: DuelLegalActionGroup = {
       key: "11:triggerBucket:trigger-activate:turnOptional:0",
       label: "Trigger Activations",
       windowId: 11,
       windowKind: "triggerBucket",
       triggerBucket: { player: 0, triggerBucket: "turnOptional", triggerIds: ["first", "second"] },
+      triggerOrderPrompt: prompt,
       actions: [
         { type: "activateTrigger", player: 0, triggerId: "first", triggerBucket: "turnOptional", uid: "a", effectId: "first-effect", label: "First" },
       ],
-    }]);
+    };
+    const view = duelTriggerOrderView(prompt, [group]);
     expect(view?.prompt).toEqual(prompt);
 
     view?.prompt.triggerIds.push("mutated");
+    view?.groups[0]?.triggerBucket?.triggerIds.push("mutated-bucket");
+    view?.groups[0]?.triggerOrderPrompt?.triggerIds.push("mutated-prompt");
+    if (view?.groups[0]?.actions[0]) view.groups[0].actions[0].label = "Mutated";
 
     expect(prompt.triggerIds).toEqual(["first", "second"]);
+    expect(group.triggerBucket?.triggerIds).toEqual(["first", "second"]);
+    expect(group.triggerOrderPrompt?.triggerIds).toEqual(["first", "second"]);
+    expect(group.actions[0]?.label).toBe("First");
   });
 });
