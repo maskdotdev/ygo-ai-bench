@@ -334,6 +334,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bo
     const activated = applyLuaRestoreResponse(restored, bottomlessAction!);
     expect(activated.ok, activated.error).toBe(true);
 
+    expect(restored.session.state.chain).toHaveLength(0);
     expect(restored.session.state.cards.find((card) => card.uid === flipTarget!.uid)).toMatchObject({ location: "banished" });
     expect(restored.session.state.cards.find((card) => card.uid === bottomless!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "flipSummoned")).toMatchInlineSnapshot(`

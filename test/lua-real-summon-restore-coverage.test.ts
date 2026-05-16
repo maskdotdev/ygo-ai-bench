@@ -167,6 +167,9 @@ describe("Lua real summon restore coverage", () => {
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)")
+          || !text.includes("eventPreviousState")
+          || !text.includes("eventCurrentState")
+          || !text.includes("restored.session.state.chain).toHaveLength(0)")
           || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
@@ -194,6 +197,7 @@ function realScriptFlipSummonSuccessTrapFixtureSnippets(): Array<{ file: string;
         'type === "activateEffect"',
         'location: "banished"',
         "category: 0x4",
+        "bottomless flip chain starter resolved",
       ],
     },
     {
@@ -203,6 +207,7 @@ function realScriptFlipSummonSuccessTrapFixtureSnippets(): Array<{ file: string;
         'effectId).toContain("-1101"',
         'windowKind).toBe("chainResponse")',
         'type === "activateEffect"',
+        "house tape flip chain starter resolved",
       ],
     },
     {
@@ -214,6 +219,7 @@ function realScriptFlipSummonSuccessTrapFixtureSnippets(): Array<{ file: string;
         'type === "activateEffect"',
         "code === 103",
         "value: 500",
+        "adhesion flip chain starter resolved",
       ],
     },
     {
@@ -224,6 +230,7 @@ function realScriptFlipSummonSuccessTrapFixtureSnippets(): Array<{ file: string;
         'windowKind).toBe("chainResponse")',
         'type === "activateEffect"',
         "duelReason.effect | duelReason.destroy",
+        "trap hole flip chain starter resolved",
       ],
     },
   ];
