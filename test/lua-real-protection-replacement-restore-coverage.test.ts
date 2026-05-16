@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const protectionReplacementFixtureCount = 11;
+const protectionReplacementFixtureCount = 12;
 
 describe("Lua real protection and replacement restore coverage", () => {
   it("requires representative protection/replacement fixtures to assert Lua-aware restore", () => {
@@ -71,6 +71,18 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
         "sendDuelCardToGraveyard(restoredTargetLeaves.session.state, target!.uid, 0, duelReason.effect, 0)",
         "destroyDuelCard(restoredHandlerLeaves.session.state, safeZone!.uid, 0, duelReason.effect | duelReason.destroy, 1)",
         "expectCleanRestore(restoredDestroyed)",
+      ],
+    },
+    {
+      file: "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
+      required: [
+        "restores battle indestructible equip protection and self-destroys when the equipped monster reaches 1300 ATK",
+        "expect(battleIndestructible?.event).toBe(\"continuous\")",
+        "expect(battleIndestructible?.range).toEqual([\"spellTrapZone\"])",
+        "expect(battleIndestructible?.value).toBe(1)",
+        "expect(restoredBattle.session.state.players[0].lifePoints).toBe(7400)",
+        "expect(restoredBattle.session.state.cards.find((card) => card.uid === low.target.uid)).toMatchObject({ location: \"monsterZone\", controller: 0 })",
+        "eventReason: duelReason.effect | duelReason.destroy",
       ],
     },
     {
