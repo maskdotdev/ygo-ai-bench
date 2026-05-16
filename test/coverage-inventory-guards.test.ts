@@ -276,9 +276,6 @@ describe("coverage inventory guards", () => {
   });
 
   it("requires test proof floors to be exact", () => {
-    const greaterThanAllowlist = new Set([
-      "lua-field-query-helpers.test.ts:59",
-    ]);
     const loose = fs.readdirSync(testRoot)
       .filter((file) => file.endsWith(".test.ts"))
       .filter((file) => file !== "coverage-inventory-guards.test.ts")
@@ -288,8 +285,7 @@ describe("coverage inventory guards", () => {
           ...text.matchAll(/toBeGreaterThan\(/g),
           ...text.matchAll(/toBeGreaterThanOrEqual\(/g),
         ]
-          .map((match) => `${file}:${lineNumber(text, match.index ?? 0)}`)
-          .filter((location) => !greaterThanAllowlist.has(location));
+          .map((match) => `${file}:${lineNumber(text, match.index ?? 0)}`);
       });
 
     expect(loose).toEqual([]);

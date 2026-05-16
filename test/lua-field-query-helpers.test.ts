@@ -56,7 +56,7 @@ describe("Lua field and query helpers", () => {
 
     const card = session.state.cards.find((candidate) => candidate.code === "100")!;
     const oldFieldId = cardFieldId(card);
-    expect(oldFieldId).toBeGreaterThan(0);
+    expect(oldFieldId).toBe(2);
     moveDuelCard(session.state, card.uid, "monsterZone", 0);
     const fieldIdOnField = cardFieldId(card);
     expect(fieldIdOnField).not.toBe(oldFieldId);
