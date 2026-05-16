@@ -202,6 +202,7 @@ describe("EDOPro parity unflagged damage-step quick-effect fixtures", () => {
         pendingBattle: false,
         currentAttack: false,
         windowId: 14,
+        windowKind: "open",
         battleWindow: null,
         lifePoints: { 1: 6200 },
         battleDamage: { 1: 1800 },
