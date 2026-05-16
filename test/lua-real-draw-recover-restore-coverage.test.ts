@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 5;
+const DRAW_RECOVER_FIXTURE_COUNT = 6;
 
 describe("Lua real draw and recover restore coverage", () => {
   it("requires draw/recover fixtures to assert clean Lua registry restore and restored event outcomes", () => {
@@ -66,6 +66,19 @@ function drawRecoverFixtureFiles(): Array<{ file: string; required: string[] }> 
         "targetPlayer: 0",
         "targetParam: 2",
         "category: 65536",
+        'location: "banished"',
+        'location: "hand", controller: 0',
+        'location: "graveyard"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-pot-of-extravagance-extra-cost.test.ts",
+      required: [
+        'eventName: "cardsDrawn"',
+        "targetPlayer: 0",
+        "targetParam: 1",
+        "category: 65536",
+        "randomCounter).toBe(1)",
         'location: "banished"',
         'location: "hand", controller: 0',
         'location: "graveyard"',
