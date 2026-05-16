@@ -83,10 +83,23 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
-    expect(restored.session.state.chain[0]).toMatchObject({
-      effectLabel: raceWarrior,
-      effectLabels: [raceWarrior, attributeEarth],
-    });
+    expect(restored.session.state.chain).toHaveLength(1);
+    expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-2",
+        "effectLabel": 1,
+        "effectLabels": [
+          1,
+          1,
+        ],
+        "id": "chain-2",
+        "player": 0,
+        "sourceUid": "p0-deck-30334522-0",
+      }
+    `);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 
