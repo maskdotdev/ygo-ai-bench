@@ -36,7 +36,7 @@ describe("EDOPro parity battle negation fixtures", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro keeps Battle Phase open priority restorable before an attack-negation response window opens",
@@ -85,7 +85,7 @@ describe("EDOPro parity battle negation fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("passAttack", 1), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro passes attack-response priority to the turn player, who may activate attack-negating fast effects",

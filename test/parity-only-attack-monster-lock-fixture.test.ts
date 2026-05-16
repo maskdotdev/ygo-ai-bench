@@ -32,7 +32,7 @@ describe("EDOPro parity only-attack-monster lock fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro keeps the Main Phase transition to Battle Phase restorable before evaluating ONLY_ATTACK_MONSTER attack legality",

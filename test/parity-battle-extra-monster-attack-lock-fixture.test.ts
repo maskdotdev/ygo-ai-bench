@@ -54,7 +54,7 @@ describe("EDOPro parity battle extra monster attack lock fixtures", () => {
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" })),
         ...resolveBattleStepsBeforeFinalPass,
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro keeps the final opposing monster on field before the final end-damage-step pass recalculates monster-only extra attacks",

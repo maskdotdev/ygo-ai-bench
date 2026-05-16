@@ -30,7 +30,7 @@ describe("EDOPro parity End Phase lock fixtures", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "main2" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro keeps the Battle Phase transition to Main Phase 2 restorable before applying CANNOT_EP legal-action filtering",

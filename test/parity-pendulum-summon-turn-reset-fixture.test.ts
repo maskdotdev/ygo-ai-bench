@@ -109,7 +109,7 @@ describe("EDOPro parity Pendulum Summon turn reset fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("endTurn", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro keeps Pendulum Summon consumed and unavailable before ending the summoning player's turn",
@@ -193,7 +193,7 @@ describe("EDOPro parity Pendulum Summon turn reset fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("endTurn", 1), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro keeps the original player's Pendulum Summon unavailable through the opponent's open turn window",

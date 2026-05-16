@@ -38,7 +38,7 @@ describe("EDOPro parity battle protected-target replay fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro keeps Main Phase open priority restorable before protected-target battle choices are exposed",
@@ -81,7 +81,7 @@ describe("EDOPro parity battle protected-target replay fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-300-1" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro keeps the unprotected target attack choice restorable while protected raw targets stay absent",

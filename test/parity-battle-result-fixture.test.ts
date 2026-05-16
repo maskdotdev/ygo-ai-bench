@@ -25,7 +25,7 @@ describe("EDOPro parity battle result fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro offers targeted attacks against opponent attack-position monsters during Battle Phase",
@@ -42,7 +42,7 @@ describe("EDOPro parity battle result fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro keeps the targeted attack declaration window restorable before battle starts",

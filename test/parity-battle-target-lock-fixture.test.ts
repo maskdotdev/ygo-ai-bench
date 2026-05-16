@@ -38,7 +38,7 @@ describe("EDOPro parity battle target lock fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro keeps the Main Phase open window restorable before applying CANNOT_BE_BATTLE_TARGET locks",

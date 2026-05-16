@@ -38,7 +38,7 @@ describe("EDOPro parity battle must-attack lock fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro keeps the Main Phase open window restorable before applying MUST_ATTACK battle action locks",

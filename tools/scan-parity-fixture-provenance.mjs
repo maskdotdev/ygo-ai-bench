@@ -20,6 +20,7 @@ function main(argv) {
   const missingNote = [];
   const weakNote = [];
   const missingRestore = [];
+  const unrestoredBeforeBlocks = [];
   const unrestoredAfterBlocks = [];
   let blocks = 0;
   let edoproBlocks = 0;
@@ -49,6 +50,9 @@ function main(argv) {
       if (source === "parity-backlog") backlogBlocks += 1;
       if (source === "edopro" && block.kind === "before" && (block.snapshotRestore === "before" || block.snapshotRestore === "both")) restoredBeforeBlocks += 1;
       if (source === "edopro" && block.kind === "after" && (block.snapshotRestore === "after" || block.snapshotRestore === "both")) restoredAfterBlocks += 1;
+      if (source === "edopro" && block.kind === "before" && block.snapshotRestore !== "before" && block.snapshotRestore !== "both") {
+        unrestoredBeforeBlocks.push({ location: `${file}:${block.line}`, note });
+      }
       if (source === "edopro" && block.kind === "after" && block.snapshotRestore !== "after" && block.snapshotRestore !== "both") {
         unrestoredAfterBlocks.push({ location: `${file}:${block.line}`, note });
       }
@@ -68,6 +72,9 @@ function main(argv) {
   if (options.minRestoredBeforeBlocks !== undefined && restoredBeforeBlocks < options.minRestoredBeforeBlocks) failures.push(`Restored before blocks ${restoredBeforeBlocks} is below required ${options.minRestoredBeforeBlocks}`);
   if (options.minRestoredAfterBlocks !== undefined && restoredAfterBlocks < options.minRestoredAfterBlocks) failures.push(`Restored after blocks ${restoredAfterBlocks} is below required ${options.minRestoredAfterBlocks}`);
   if (options.minRestoredWindowBlocks !== undefined && restoredWindowBlocks < options.minRestoredWindowBlocks) failures.push(`Restored window blocks ${restoredWindowBlocks} is below required ${options.minRestoredWindowBlocks}`);
+  if (options.maxUnrestoredBeforeBlocks !== undefined && unrestoredBeforeBlocks.length > options.maxUnrestoredBeforeBlocks) {
+    failures.push(`Unrestored EDOPro before blocks ${unrestoredBeforeBlocks.length} exceeds allowed ${options.maxUnrestoredBeforeBlocks}:\n${formatList(unrestoredBeforeBlocks.map(({ location }) => location))}`);
+  }
   if (options.maxUnrestoredAfterBlocks !== undefined && unrestoredAfterBlocks.length > options.maxUnrestoredAfterBlocks) {
     failures.push(`Unrestored EDOPro after blocks ${unrestoredAfterBlocks.length} exceeds allowed ${options.maxUnrestoredAfterBlocks}:\n${formatList(unrestoredAfterBlocks.map(({ location }) => location))}`);
   }
@@ -118,6 +125,7 @@ function parseArgs(argv) {
     else if (arg === "--min-restored-before-blocks") options.minRestoredBeforeBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-restored-after-blocks") options.minRestoredAfterBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-restored-window-blocks") options.minRestoredWindowBlocks = readMinimum(argv, ++index, arg);
+    else if (arg === "--max-unrestored-before-blocks") options.maxUnrestoredBeforeBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--max-unrestored-after-blocks") options.maxUnrestoredAfterBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--require-unrestored-after-note") options.requireUnrestoredAfterNote = requireOptionValue(argv, ++index, arg);
     else throw new Error(`Unknown argument: ${arg}`);
@@ -233,6 +241,8 @@ Options:
                                Fail unless at least this many EDOPro after blocks restore snapshots
   --min-restored-window-blocks <count>
                                Fail unless at least this many EDOPro before/after blocks restore snapshots
+  --max-unrestored-before-blocks <count>
+                               Fail when more than this many EDOPro before blocks lack before/both restore
   --max-unrestored-after-blocks <count>
                                Fail when more than this many EDOPro after blocks lack after/both restore
   --require-unrestored-after-note <text>

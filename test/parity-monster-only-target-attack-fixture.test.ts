@@ -36,7 +36,7 @@ describe("EDOPro parity monster-only target attack fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro keeps the Main Phase transition to Battle Phase restorable before exposing monster-only attack targets",
