@@ -303,7 +303,7 @@ describe("EDOPro parity missed timing fixtures", () => {
             waitingFor: 1,
             chain: [
               { player: 0, effectId: "fixture-mandatory-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "when" },
-              { player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301 },
+              { player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "if" },
             ],
             pendingTriggers: [{ player: 1, effectId: "fixture-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
@@ -333,7 +333,7 @@ describe("EDOPro parity missed timing fixtures", () => {
             waitingFor: 1,
             chain: [
               { player: 0, effectId: "fixture-mandatory-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "when" },
-              { player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301 },
+              { player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "if" },
             ],
             pendingTriggers: [{ player: 1, effectId: "fixture-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],

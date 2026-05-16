@@ -140,9 +140,9 @@ describe("EDOPro parity chain-resolution opponent same-bucket mandatory pass-han
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-opponent-mandatory-turn-opponent-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-opponent-mandatory-turn-opponent-resolution-second-opponent", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-opponent-mandatory-turn-opponent-resolution-first-opponent", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 0, effectId: "fixture-opponent-mandatory-turn-opponent-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-opponent-mandatory-turn-opponent-resolution-second-opponent", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-opponent-mandatory-turn-opponent-resolution-first-opponent", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
               { player: 1, effectId: "fixture-opponent-mandatory-turn-opponent-resolution-first-opponent-quick", sourceUid: "p1-deck-900-2" },
               { player: 0, effectId: "fixture-opponent-mandatory-turn-opponent-resolution-turn-quick", sourceUid: "p0-deck-200-1" },
             ],

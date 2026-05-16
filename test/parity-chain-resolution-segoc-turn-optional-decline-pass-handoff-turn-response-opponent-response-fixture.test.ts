@@ -142,8 +142,8 @@ describe("EDOPro parity chain-resolution SEGOC turn optional decline pass handof
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-double-optional-handoff-pingpong-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 1, effectId: "fixture-double-optional-handoff-pingpong-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-double-optional-handoff-pingpong-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-double-optional-handoff-pingpong-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
             ],
             chainPasses: [0],
             legalActionCounts: { 0: 0, 1: 3 },
@@ -190,8 +190,8 @@ describe("EDOPro parity chain-resolution SEGOC turn optional decline pass handof
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-double-optional-handoff-pingpong-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 1, effectId: "fixture-double-optional-handoff-pingpong-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-double-optional-handoff-pingpong-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-double-optional-handoff-pingpong-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
               { player: 1, effectId: "fixture-double-optional-handoff-pingpong-first-opponent-quick", sourceUid: "p1-deck-900-2" },
             ],
             chainPasses: [],
@@ -229,8 +229,8 @@ describe("EDOPro parity chain-resolution SEGOC turn optional decline pass handof
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-double-optional-handoff-pingpong-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 1, effectId: "fixture-double-optional-handoff-pingpong-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-double-optional-handoff-pingpong-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-double-optional-handoff-pingpong-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
               { player: 1, effectId: "fixture-double-optional-handoff-pingpong-first-opponent-quick", sourceUid: "p1-deck-900-2" },
             ],
             chainPasses: [],
@@ -268,8 +268,8 @@ describe("EDOPro parity chain-resolution SEGOC turn optional decline pass handof
         pendingTriggers: [],
         pendingTriggerBuckets: [],
         chain: [
-          { player: 0, effectId: "fixture-double-optional-handoff-pingpong-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-          { player: 1, effectId: "fixture-double-optional-handoff-pingpong-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+          { player: 0, effectId: "fixture-double-optional-handoff-pingpong-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+          { player: 1, effectId: "fixture-double-optional-handoff-pingpong-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
           { player: 1, effectId: "fixture-double-optional-handoff-pingpong-first-opponent-quick", sourceUid: "p1-deck-900-2" },
           { player: 0, effectId: "fixture-double-optional-handoff-pingpong-turn-quick", sourceUid: "p0-deck-200-1" },
         ],

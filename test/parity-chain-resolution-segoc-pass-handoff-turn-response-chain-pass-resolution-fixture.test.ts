@@ -138,8 +138,8 @@ describe("EDOPro parity chain-resolution SEGOC pass-handoff turn-response chain-
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 0, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
               { player: 0, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-first-turn-quick", sourceUid: "p0-deck-200-1" },
               { player: 1, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-first-opponent-quick", sourceUid: "p1-deck-400-0" },
             ],
@@ -179,8 +179,8 @@ describe("EDOPro parity chain-resolution SEGOC pass-handoff turn-response chain-
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 0, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
               { player: 0, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-first-turn-quick", sourceUid: "p0-deck-200-1" },
               { player: 1, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-first-opponent-quick", sourceUid: "p1-deck-400-0" },
               { player: 0, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-second-turn-quick", sourceUid: "p0-deck-900-5" },
@@ -223,8 +223,8 @@ describe("EDOPro parity chain-resolution SEGOC pass-handoff turn-response chain-
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 0, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
               { player: 0, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-first-turn-quick", sourceUid: "p0-deck-200-1" },
               { player: 1, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-first-opponent-quick", sourceUid: "p1-deck-400-0" },
               { player: 0, effectId: "fixture-chain-handoff-turn-chain-pass-resolution-second-turn-quick", sourceUid: "p0-deck-900-5" },

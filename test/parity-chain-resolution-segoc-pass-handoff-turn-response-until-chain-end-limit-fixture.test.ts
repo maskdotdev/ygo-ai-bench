@@ -115,8 +115,8 @@ describe("EDOPro parity chain-resolution SEGOC pass-handoff turn-response until-
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-chain-resolution-segoc-until-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 0, effectId: "fixture-chain-resolution-segoc-until-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-resolution-segoc-until-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-chain-resolution-segoc-until-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
             ],
             chainPasses: [1],
             chainLimits: [],
@@ -155,8 +155,8 @@ describe("EDOPro parity chain-resolution SEGOC pass-handoff turn-response until-
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-chain-resolution-segoc-until-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 0, effectId: "fixture-chain-resolution-segoc-until-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-resolution-segoc-until-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-chain-resolution-segoc-until-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
               { player: 0, effectId: "fixture-chain-resolution-segoc-until-turn-chain-limiter", sourceUid: "p0-deck-200-1" },
             ],
             chainPasses: [],
@@ -194,8 +194,8 @@ describe("EDOPro parity chain-resolution SEGOC pass-handoff turn-response until-
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-chain-resolution-segoc-until-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 0, effectId: "fixture-chain-resolution-segoc-until-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-resolution-segoc-until-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-chain-resolution-segoc-until-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
               { player: 0, effectId: "fixture-chain-resolution-segoc-until-turn-chain-limiter", sourceUid: "p0-deck-200-1" },
             ],
             chainPasses: [],

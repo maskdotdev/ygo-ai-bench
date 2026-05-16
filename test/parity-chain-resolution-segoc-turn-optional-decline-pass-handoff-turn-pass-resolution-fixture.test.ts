@@ -138,8 +138,8 @@ describe("EDOPro parity chain-resolution SEGOC turn optional decline pass handof
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-double-optional-handoff-pass-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 1, effectId: "fixture-double-optional-handoff-pass-resolution-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-double-optional-handoff-pass-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-double-optional-handoff-pass-resolution-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
             ],
             chainPasses: [0],
             legalActionCounts: { 0: 0, 1: 2 },
@@ -172,8 +172,8 @@ describe("EDOPro parity chain-resolution SEGOC turn optional decline pass handof
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-double-optional-handoff-pass-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 1, effectId: "fixture-double-optional-handoff-pass-resolution-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-double-optional-handoff-pass-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-double-optional-handoff-pass-resolution-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
               { player: 1, effectId: "fixture-double-optional-handoff-pass-resolution-opponent-quick", sourceUid: "p1-deck-900-2" },
             ],
             chainPasses: [],
@@ -209,8 +209,8 @@ describe("EDOPro parity chain-resolution SEGOC turn optional decline pass handof
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-double-optional-handoff-pass-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 1, effectId: "fixture-double-optional-handoff-pass-resolution-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-double-optional-handoff-pass-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-double-optional-handoff-pass-resolution-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
               { player: 1, effectId: "fixture-double-optional-handoff-pass-resolution-opponent-quick", sourceUid: "p1-deck-900-2" },
             ],
             chainPasses: [],

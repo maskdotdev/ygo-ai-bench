@@ -236,8 +236,8 @@ describe("EDOPro parity chain-resolution SEGOC turn optional decline fixture", (
             windowKind: "triggerBucket",
             waitingFor: 0,
             chain: [
-              { player: 0, effectId: "fixture-cross-optional-decline-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 1, effectId: "fixture-cross-optional-decline-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-optional-decline-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-cross-optional-decline-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
             ],
             pendingTriggers: [
               { player: 0, effectId: "fixture-cross-optional-decline-turn-optional", triggerBucket: "turnOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
@@ -276,8 +276,8 @@ describe("EDOPro parity chain-resolution SEGOC turn optional decline fixture", (
             windowKind: "triggerBucket",
             waitingFor: 1,
             chain: [
-              { player: 0, effectId: "fixture-cross-optional-decline-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 1, effectId: "fixture-cross-optional-decline-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-optional-decline-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-cross-optional-decline-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
             ],
             pendingTriggers: [{ player: 1, effectId: "fixture-cross-optional-decline-opponent-optional", triggerBucket: "opponentOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
@@ -313,8 +313,8 @@ describe("EDOPro parity chain-resolution SEGOC turn optional decline fixture", (
         windowKind: "triggerBucket",
         waitingFor: 1,
         chain: [
-          { player: 0, effectId: "fixture-cross-optional-decline-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-          { player: 1, effectId: "fixture-cross-optional-decline-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+          { player: 0, effectId: "fixture-cross-optional-decline-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+          { player: 1, effectId: "fixture-cross-optional-decline-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
         ],
         pendingTriggers: [{ player: 1, effectId: "fixture-cross-optional-decline-opponent-optional", triggerBucket: "opponentOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" }],
         pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],

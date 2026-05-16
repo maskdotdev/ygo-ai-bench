@@ -111,8 +111,8 @@ describe("EDOPro parity chain-resolution SEGOC pass handoff opponent response fi
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-chain-handoff-opponent-response-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 0, effectId: "fixture-chain-handoff-opponent-response-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-handoff-opponent-response-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-chain-handoff-opponent-response-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
             ],
             chainPasses: [1],
             legalActionCounts: { 0: 2, 1: 0 },
@@ -142,8 +142,8 @@ describe("EDOPro parity chain-resolution SEGOC pass handoff opponent response fi
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-chain-handoff-opponent-response-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 0, effectId: "fixture-chain-handoff-opponent-response-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-handoff-opponent-response-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-chain-handoff-opponent-response-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
               { player: 0, effectId: "fixture-chain-handoff-opponent-response-turn-quick", sourceUid: "p0-deck-200-1" },
             ],
             chainPasses: [],
@@ -170,8 +170,8 @@ describe("EDOPro parity chain-resolution SEGOC pass handoff opponent response fi
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-chain-handoff-opponent-response-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 0, effectId: "fixture-chain-handoff-opponent-response-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-handoff-opponent-response-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-chain-handoff-opponent-response-optional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
               { player: 0, effectId: "fixture-chain-handoff-opponent-response-turn-quick", sourceUid: "p0-deck-200-1" },
             ],
             chainPasses: [],

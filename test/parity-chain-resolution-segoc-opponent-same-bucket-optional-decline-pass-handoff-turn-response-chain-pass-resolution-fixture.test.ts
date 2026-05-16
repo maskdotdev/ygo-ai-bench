@@ -137,7 +137,7 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional decline p
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 1, effectId: "fixture-opponent-optional-decline-turn-pass-resolution-first-opponent", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-opponent-optional-decline-turn-pass-resolution-first-opponent", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
               { player: 1, effectId: "fixture-opponent-optional-decline-turn-pass-resolution-first-opponent-quick", sourceUid: "p1-deck-900-2" },
               { player: 0, effectId: "fixture-opponent-optional-decline-turn-pass-resolution-turn-quick", sourceUid: "p0-deck-200-1" },
             ],

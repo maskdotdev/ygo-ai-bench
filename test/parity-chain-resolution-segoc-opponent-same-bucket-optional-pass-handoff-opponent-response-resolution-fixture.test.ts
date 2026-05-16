@@ -193,7 +193,7 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional pass-hand
             waitingFor: 1,
             pendingTriggers: [],
             pendingTriggerBuckets: [],
-            chain: [{ player: 1, effectId: "fixture-opponent-optional-opponent-response-resolution-second-opponent", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" }],
+            chain: [{ player: 1, effectId: "fixture-opponent-optional-opponent-response-resolution-second-opponent", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" }],
             chainPasses: [0],
             legalActionCounts: { 0: 0, 1: 2 },
             legalActionGroupCounts: { 0: 0, 1: 2 },
@@ -226,7 +226,7 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional pass-hand
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 1, effectId: "fixture-opponent-optional-opponent-response-resolution-second-opponent", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-opponent-optional-opponent-response-resolution-second-opponent", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
               { player: 1, effectId: "fixture-opponent-optional-opponent-response-resolution-opponent-quick", sourceUid: "p1-deck-900-2" },
             ],
             chainPasses: [],
@@ -263,7 +263,7 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional pass-hand
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 1, effectId: "fixture-opponent-optional-opponent-response-resolution-second-opponent", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-opponent-optional-opponent-response-resolution-second-opponent", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
               { player: 1, effectId: "fixture-opponent-optional-opponent-response-resolution-opponent-quick", sourceUid: "p1-deck-900-2" },
             ],
             chainPasses: [],
