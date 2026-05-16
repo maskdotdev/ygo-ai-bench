@@ -88,7 +88,7 @@ describe("EDOPro parity optional when chain response fixture", () => {
             waitingFor: 1,
             pendingTriggers: [],
             pendingTriggerBuckets: [],
-            chain: [{ player: 0, effectId: "fixture-optional-when-chain", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-2" }],
+            chain: [{ player: 0, effectId: "fixture-optional-when-chain", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-2", eventTriggerTiming: "when" }],
             legalActionCounts: { 0: 0, 1: 2 },
             legalActionGroupCounts: { 0: 0, 1: 2 },
             legalActions: [
@@ -108,7 +108,7 @@ describe("EDOPro parity optional when chain response fixture", () => {
             waitingFor: 1,
             pendingTriggers: [],
             pendingTriggerBuckets: [],
-            chain: [{ player: 0, effectId: "fixture-optional-when-chain", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-2" }],
+            chain: [{ player: 0, effectId: "fixture-optional-when-chain", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-2", eventTriggerTiming: "when" }],
             legalActionCounts: { 0: 0, 1: 2 },
             legalActionGroupCounts: { 0: 0, 1: 2 },
             legalActions: [
