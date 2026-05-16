@@ -30,7 +30,17 @@ describe("EDOPro parity phase-start-end missed timing fixture", () => {
             location: "hand",
             event: "ignition",
             range: ["hand"],
-            collectEventsOnResolve: [{ collectEvent: "phaseStartEnd", eventCode: 0x2200, eventIsLast: false }],
+            collectEventsOnResolve: [
+              {
+                collectEvent: "phaseStartEnd",
+                eventCode: 0x2200,
+                eventIsLast: false,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 32001,
+              },
+            ],
             moveCardsOnResolve: [{ player: 0, code: "700", from: "monsterZone", to: "graveyard" }],
             logMessage: "Phase-start-end activation multi step resolved",
           },
@@ -95,7 +105,18 @@ describe("EDOPro parity phase-start-end missed timing fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "phase-start-end-activation-optional-if", eventName: "phaseStartEnd", eventCode: 0x2200 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "phase-start-end-activation-optional-if",
+                eventName: "phaseStartEnd",
+                eventCode: 0x2200,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 32001,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "phase-start-end-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
@@ -126,7 +147,18 @@ describe("EDOPro parity phase-start-end missed timing fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "phase-start-end-activation-optional-if", eventName: "phaseStartEnd", eventCode: 0x2200 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "phase-start-end-activation-optional-if",
+                eventName: "phaseStartEnd",
+                eventCode: 0x2200,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 32001,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "phase-start-end-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
