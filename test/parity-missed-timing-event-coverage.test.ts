@@ -82,6 +82,7 @@ function hasActivationRestoreProof(file: string): boolean {
     /makeResponseSelector\(\s*["']activateTrigger["']/.test(text) &&
     /after:\s*\{[\s\S]*?windowKind:\s*["']open["']/.test(text) &&
     /pendingTriggers:\s*\[\]/.test(text) &&
+    /pendingTriggerBuckets:\s*\[\]/.test(text) &&
     /legalActions:\s*\[/.test(text) &&
     /legalActionGroups:\s*\[/.test(text) &&
     /absentLegalActions:\s*\[/.test(text) &&
