@@ -37,6 +37,18 @@ const expectedProvisionalFallbackScripts = [
   "c97462632.lua",
   "c98684220.lua",
 ];
+const expectedProvisionalFallbackCoverage: Record<string, string[]> = {
+  "c2372506.lua": ["lua-card-script-movement-helpers.test.ts"],
+  "c24088928.lua": ["lua-card-script-movement-helpers.test.ts"],
+  "c24461358.lua": ["lua-card-script-movement-helpers.test.ts"],
+  "c24749710.lua": ["lua-card-script-movement-helpers.test.ts"],
+  "c33599853.lua": ["lua-summon-release-helpers.test.ts"],
+  "c44001993.lua": ["lua-card-script-movement-helpers.test.ts"],
+  "c50073633.lua": ["lua-card-script-movement-helpers.test.ts"],
+  "c70405001.lua": ["lua-battle-helpers.test.ts", "lua-card-script-movement-helpers.test.ts"],
+  "c97462632.lua": ["lua-card-script-movement-helpers.test.ts"],
+  "c98684220.lua": ["lua-special-summon-procedure.test.ts"],
+};
 
 describe("Lua API usage scanner", () => {
   it("keeps the local fallback inventory explicit", () => {
@@ -96,15 +108,23 @@ describe("Lua API usage scanner", () => {
   });
 
   it("requires provisional fallback scripts to have direct test coverage", () => {
-    const uncovered = provisionalFallbackScripts().filter((file) => {
-      const code = path.basename(file, ".lua").replace(/^c/, "");
-      return !testFiles().some((testFile) => {
-        const source = fs.readFileSync(testFile, "utf8");
-        return source.includes(`c${code}.lua`) || source.includes(code);
-      });
-    });
+    const coverage = Object.fromEntries(
+      provisionalFallbackScripts()
+        .map((file) => {
+          const name = path.basename(file);
+          const testNames = testFiles()
+            .filter((testFile) => {
+              const source = fs.readFileSync(testFile, "utf8");
+              return source.includes(`local-card-scripts/fallbacks/official/${name}`);
+            })
+            .map((testFile) => path.basename(testFile))
+            .sort();
+          return [name, testNames] as const;
+        })
+        .sort(([a], [b]) => a.localeCompare(b)),
+    );
 
-    expect(uncovered).toEqual([]);
+    expect(coverage).toEqual(expectedProvisionalFallbackCoverage);
   });
 
   it("keeps local provisional fallback scripts on Group:GetCount checks", () => {
