@@ -39,6 +39,7 @@ describe("EDOPro parity damage-step-only quick-effect timing fixtures", () => {
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("passAttack", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro exposes damage-step fast effects before damage calculation",
@@ -97,6 +98,7 @@ describe("EDOPro parity damage-step-only quick-effect timing fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro exposes damage-step fast effects again after damage calculation",

@@ -38,6 +38,7 @@ describe("EDOPro parity unflagged damage-step quick-effect fixtures", () => {
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("passAttack", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro does not expose ordinary unflagged quick effects once the Damage Step starts",
@@ -55,6 +56,7 @@ describe("EDOPro parity unflagged damage-step quick-effect fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro keeps unflagged quick effects unavailable before damage calculation",
@@ -110,6 +112,7 @@ describe("EDOPro parity unflagged damage-step quick-effect fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro keeps unflagged quick effects unavailable after damage calculation",
@@ -127,6 +130,7 @@ describe("EDOPro parity unflagged damage-step quick-effect fixtures", () => {
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro keeps unflagged quick effects unavailable at end damage step",
