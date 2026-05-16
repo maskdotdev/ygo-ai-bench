@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 13;
+const spiritFixtureCount = 14;
 
 describe("Lua real Spirit restore coverage", () => {
   it("requires representative Spirit fixtures to prove clean Lua restore and replayed legal actions", () => {
@@ -119,6 +119,25 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
         "category: 8",
         "category: 512",
         'host.messages).not.toContain("shinobaroness responder resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-shinobaron-shade-peacock-tribute-search-self-summon.test.ts",
+      required: [
+        'ritualSummonDuelCard(session.state, 0, shade!.uid',
+        'action.type === "activateEffect"',
+        'action.type === "passChain"',
+        'summonType: "ritual"',
+        'eventName: "released"',
+        'eventName: "sentToHand"',
+        'eventName: "sentToHandConfirmed"',
+        'eventName: "phaseStandby"',
+        'triggerBucket": "turnMandatory"',
+        'location: "banished"',
+        'summonType: "special"',
+        "category: 8",
+        "category: 512",
+        'host.messages).not.toContain("shinobaron responder resolved")',
       ],
     },
     {
