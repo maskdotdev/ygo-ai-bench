@@ -9,8 +9,14 @@ const equipRelationFixtureCount = 12;
 const equipProbeFixtureCount = 8;
 const equipOperationInfoFixtureCount = 9;
 const equipCleanupFixtureCount = 7;
+const equipInventoryFixtureCount = 15;
 
 describe("Lua real equip restore coverage", () => {
+  it("keeps the combined equip restore fixture inventory explicit", () => {
+    expect(combinedRealScriptEquipFixtureFiles()).toHaveLength(equipInventoryFixtureCount);
+    expect(combinedRealScriptEquipFixtureFiles()).toEqual(realScriptEquipInventoryFiles());
+  });
+
   it("requires representative equip fixtures to assert grouped legal actions and clean Lua registry restore", () => {
     const files = realScriptEquipFixtureFiles();
     expect(files).toHaveLength(equipFixtureCount);
@@ -121,6 +127,39 @@ describe("Lua real equip restore coverage", () => {
     expect(missing).toEqual([]);
   });
 });
+
+function combinedRealScriptEquipFixtureFiles(): string[] {
+  return [
+    ...realScriptEquipFixtureFiles(),
+    ...realScriptEquipRelationFixtureFiles(),
+    ...realScriptEquipProbeFixtureFiles(),
+    ...realScriptEquipOperationInfoFixtureFiles(),
+    ...realScriptEquipCleanupFixtureFiles(),
+    ...realScriptEquipContinuationFixtureFiles(),
+  ].filter((file, index, files) => files.indexOf(file) === index).sort();
+}
+
+function realScriptEquipInventoryFiles(): string[] {
+  return [
+    "lua-real-script-equip-procedure-actions-part2.test.ts",
+    "lua-real-script-equip-procedure-actions.test.ts",
+    "lua-real-script-equip-return-actions-part2.test.ts",
+    "lua-real-script-equip-return-actions.test.ts",
+    "lua-real-script-equip-stat-lock-actions.test.ts",
+    "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
+    "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
+    "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
+    "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
+    "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
+    "lua-real-script-premature-burial-revive-destroy.test.ts",
+    "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
+    "lua-real-script-snatch-steal-equip-control.test.ts",
+    "lua-real-script-supervise-gemini-equip-revive.test.ts",
+    "lua-real-script-train-connection-equip-cost.test.ts",
+  ]
+    .map((file) => path.join("test", file))
+    .sort();
+}
 
 function realScriptEquipFixtureFiles(): string[] {
   return [
