@@ -154,6 +154,33 @@ describe("duel pvp agent bridge", () => {
     expect(freshGroupedFusion.materialUids).toEqual(expect.arrayContaining([first!.uid, second!.uid]));
   });
 
+  it("runs visible scripts by structured selection kind at the bridge boundary", () => {
+    const session = createDuel({ seed: 484, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const first = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const second = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const fusion = session.state.cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    expect(fusion).toBeDefined();
+    specialSummonDuelCard(session.state, first!.uid, 0);
+    specialSummonDuelCard(session.state, second!.uid, 0);
+    const agent = createDuelPvpAgent();
+    const restored = agent.restore(serializeDuel(session));
+
+    const result = agent.runVisibleScript([
+      { player: 0, type: "fusionSummon", uid: fusion!.uid, materialUids: [first!.uid, second!.uid], groupSelectionKind: "material" },
+    ], restored.sessionId);
+
+    expect(result.ok).toBe(true);
+    expect(result.failedStep).toBeUndefined();
+    expect(result.state.cards.find((card) => card.uid === fusion!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
+  });
+
   it("exposes trigger-order prompts through visible bridge payloads", () => {
     const session = createDuel({ seed: 483, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
