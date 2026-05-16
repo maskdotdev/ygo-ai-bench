@@ -281,6 +281,37 @@ describe("parity scanner CLIs", () => {
     expect(result.stderr).toContain("Zero-count legal-action evidence must move to absent expectations");
   });
 
+  it("fails when absent raw and grouped legal-action evidence is unpaired", () => {
+    const testRoot = makeTestRoot({
+      "parity-unpaired-absent-evidence.test.ts": `
+        runScriptedDuelFixture({
+          before: {
+            source: "edopro",
+            note: "EDOPro observed raw absent evidence without grouped evidence.",
+            absentLegalActions: [{ type: "activateEffect", player: 0 }],
+          },
+          after: {
+            source: "edopro",
+            note: "EDOPro observed grouped absent evidence without raw evidence.",
+            absentLegalActionGroups: [{ player: 0, label: "Effects", actions: [] }],
+          },
+        });
+      `,
+    });
+
+    const result = spawnSync(process.execPath, [
+      legalActionScannerPath,
+      "--test-root",
+      testRoot,
+      "--fail-on-unpaired-absent",
+    ], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("Absent legal-action evidence must include both raw and grouped assertions");
+    expect(result.stderr).toContain("parity-unpaired-absent-evidence.test.ts:3");
+    expect(result.stderr).toContain("parity-unpaired-absent-evidence.test.ts:8");
+  });
+
   it("rejects malformed provenance and legal-action scanner options", () => {
     const missingProvenanceRoot = spawnSync(process.execPath, [provenanceScannerPath, "--test-root"], { encoding: "utf8" });
     const missingProvenanceValue = spawnSync(process.execPath, [provenanceScannerPath, "--min-files"], { encoding: "utf8" });

@@ -52,7 +52,7 @@ describe("package scripts", () => {
       "bun run scan:lua-chain-assertions -- --min-fixtures 587 --max-partial-chain-match-objects 0 --max-broad-chain-object-containing 0",
       "bun run scan:lua-effect-assertions -- --min-fixtures 587 --max-broad-effect-collection-assertions 0",
       "bun run scan:parity-fixture-provenance -- --min-files 943 --min-expectation-blocks 4825 --min-edopro-blocks 4825 --min-restored-fixtures 938 --fail-on-missing-source --fail-on-invalid-source --fail-on-missing-note --fail-on-weak-note --fail-on-backlog --fail-on-missing-restore",
-      "bun run scan:legal-action-evidence -- --min-files 943 --min-edopro-blocks 4825 --min-action-evidence-blocks 4825 --min-group-evidence-blocks 4825 --min-absent-action-evidence-blocks 4058 --min-absent-group-evidence-blocks 4058 --min-paired-absent-evidence-blocks 4058 --min-action-evidence-percent 100 --min-group-evidence-percent 100 --fail-on-missing --fail-on-empty --fail-on-zero-only --fail-on-zero-evidence",
+      "bun run scan:legal-action-evidence -- --min-files 943 --min-edopro-blocks 4825 --min-action-evidence-blocks 4825 --min-group-evidence-blocks 4825 --min-absent-action-evidence-blocks 4058 --min-absent-group-evidence-blocks 4058 --min-paired-absent-evidence-blocks 4058 --min-action-evidence-percent 100 --min-group-evidence-percent 100 --fail-on-missing --fail-on-empty --fail-on-zero-only --fail-on-zero-evidence --fail-on-unpaired-absent",
       "bun run probe:top-tier-deck",
       "bun run probe:competitive-decks",
       "bun run probe:fallback-decks",

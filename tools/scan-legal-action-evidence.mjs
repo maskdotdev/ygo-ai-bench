@@ -18,6 +18,7 @@ function main(argv) {
   const empty = [];
   const zeroOnly = [];
   const zeroEvidence = [];
+  const unpairedAbsent = [];
   let edoproBlocks = 0;
   let actionEvidenceBlocks = 0;
   let groupEvidenceBlocks = 0;
@@ -30,11 +31,14 @@ function main(argv) {
     for (const block of expectationBlocks(lines)) {
       if (!/source:\s*["']edopro["']/.test(block.text)) continue;
       edoproBlocks += 1;
+      const hasAbsentActions = block.text.includes("absentLegalActions:");
+      const hasAbsentGroups = block.text.includes("absentLegalActionGroups:");
       if (block.text.includes("legalActions:")) actionEvidenceBlocks += 1;
       if (block.text.includes("legalActionGroups:")) groupEvidenceBlocks += 1;
-      if (block.text.includes("absentLegalActions:")) absentActionEvidenceBlocks += 1;
-      if (block.text.includes("absentLegalActionGroups:")) absentGroupEvidenceBlocks += 1;
-      if (block.text.includes("absentLegalActions:") && block.text.includes("absentLegalActionGroups:")) pairedAbsentEvidenceBlocks += 1;
+      if (hasAbsentActions) absentActionEvidenceBlocks += 1;
+      if (hasAbsentGroups) absentGroupEvidenceBlocks += 1;
+      if (hasAbsentActions && hasAbsentGroups) pairedAbsentEvidenceBlocks += 1;
+      if (hasAbsentActions !== hasAbsentGroups) unpairedAbsent.push(`${file}:${block.line}`);
       missing.push(...missingAggregateEvidence(file, block));
       empty.push(...emptyAggregateEvidence(file, block));
       zeroOnly.push(...zeroOnlyAggregateEvidence(file, block));
@@ -60,6 +64,7 @@ function main(argv) {
   if (options.failOnEmpty && empty.length > 0) failures.push(`Positive aggregate counts with empty legal-action evidence:\n${formatList(empty)}`);
   if (options.failOnZeroOnly && zeroOnly.length > 0) failures.push(`Positive aggregate counts with only zero-count legal-action evidence:\n${formatList(zeroOnly)}`);
   if (options.failOnZeroEvidence && zeroEvidence.length > 0) failures.push(`Zero-count legal-action evidence must move to absent expectations:\n${formatList(zeroEvidence)}`);
+  if (options.failOnUnpairedAbsent && unpairedAbsent.length > 0) failures.push(`Absent legal-action evidence must include both raw and grouped assertions:\n${formatList(unpairedAbsent)}`);
 
   if (failures.length === 0) return 0;
   console.error(failures.join("\n\n"));
@@ -82,6 +87,7 @@ function parseArgs(argv) {
     else if (arg === "--fail-on-empty") options.failOnEmpty = true;
     else if (arg === "--fail-on-zero-only") options.failOnZeroOnly = true;
     else if (arg === "--fail-on-zero-evidence") options.failOnZeroEvidence = true;
+    else if (arg === "--fail-on-unpaired-absent") options.failOnUnpairedAbsent = true;
     else if (arg === "--min-files") options.minFiles = readMinimum(argv, ++index, arg);
     else if (arg === "--min-edopro-blocks") options.minEdoproBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-action-evidence-blocks") options.minActionEvidenceBlocks = readMinimum(argv, ++index, arg);
@@ -215,6 +221,7 @@ Options:
   --fail-on-empty             Fail when positive aggregate counts have empty evidence arrays
   --fail-on-zero-only         Fail when positive aggregate counts only have zero-count evidence
   --fail-on-zero-evidence     Fail when legal-action evidence uses count: 0 instead of absent expectations
+  --fail-on-unpaired-absent   Fail when absent raw/grouped legal-action evidence is not paired
   --min-files <count>         Fail unless at least this many parity fixture files are scanned
   --min-edopro-blocks <count> Fail unless at least this many EDOPro blocks are scanned
   --min-action-evidence-blocks <count>
