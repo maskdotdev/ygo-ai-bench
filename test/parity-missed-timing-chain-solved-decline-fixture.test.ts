@@ -127,6 +127,10 @@ describe("EDOPro parity chain-solved missed timing decline fixture", () => {
             legalActionGroups: [openEffectGroup(0, "chain-solved-decline-open-fast", 1, 1)],
             legalActionCounts: { 0: 13, 1: 0 },
             legalActionGroupCounts: { 0: 3, 1: 0 },
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "open", effectId: "chain-solved-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "open", effectId: "chain-solved-decline-optional-if" },
+            ],
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "chain-solved-decline-optional-when", "turnOptional", 1, "open"),
               absentTriggerActivationGroup(0, "chain-solved-decline-optional-if", "turnOptional", 1, "open"),
@@ -148,6 +152,10 @@ describe("EDOPro parity chain-solved missed timing decline fixture", () => {
         legalActionGroups: [openEffectGroup(0, "chain-solved-decline-open-fast", 1, 1)],
         legalActionCounts: { 0: 13, 1: 0 },
         legalActionGroupCounts: { 0: 3, 1: 0 },
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 1, windowKind: "open", effectId: "chain-solved-decline-optional-when" },
+          { type: "activateTrigger", player: 0, windowId: 1, windowKind: "open", effectId: "chain-solved-decline-optional-if" },
+        ],
         absentLegalActionGroups: [
           absentTriggerActivationGroup(0, "chain-solved-decline-optional-when", "turnOptional", 1, "open"),
           absentTriggerActivationGroup(0, "chain-solved-decline-optional-if", "turnOptional", 1, "open"),

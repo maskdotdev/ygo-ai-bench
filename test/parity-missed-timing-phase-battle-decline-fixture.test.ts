@@ -99,6 +99,10 @@ describe("EDOPro parity phase-battle missed timing decline fixture", () => {
             legalActionGroups: [openEffectGroup(0, "phase-battle-decline-open-fast", 1, 1)],
             legalActionCounts: { 0: 11, 1: 0 },
             legalActionGroupCounts: { 0: 3, 1: 0 },
+            absentLegalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "open", effectId: "phase-battle-decline-optional-when" },
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "open", effectId: "phase-battle-decline-optional-if" },
+            ],
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "phase-battle-decline-optional-when", "turnOptional", 1, "open"),
               absentTriggerActivationGroup(0, "phase-battle-decline-optional-if", "turnOptional", 1, "open"),
@@ -120,6 +124,10 @@ describe("EDOPro parity phase-battle missed timing decline fixture", () => {
         legalActionGroups: [openEffectGroup(0, "phase-battle-decline-open-fast", 1, 1)],
         legalActionCounts: { 0: 11, 1: 0 },
         legalActionGroupCounts: { 0: 3, 1: 0 },
+        absentLegalActions: [
+          { type: "activateTrigger", player: 0, windowId: 1, windowKind: "open", effectId: "phase-battle-decline-optional-when" },
+          { type: "activateTrigger", player: 0, windowId: 1, windowKind: "open", effectId: "phase-battle-decline-optional-if" },
+        ],
         absentLegalActionGroups: [
           absentTriggerActivationGroup(0, "phase-battle-decline-optional-when", "turnOptional", 1, "open"),
           absentTriggerActivationGroup(0, "phase-battle-decline-optional-if", "turnOptional", 1, "open"),
