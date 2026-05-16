@@ -121,6 +121,87 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
       controller: 0,
       reason: duelReason.effect | duelReason.material | duelReason.fusion,
     });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === fusion!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-extraDeck-9918-0",
+          "eventCode": 1102,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "specialSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "extraDeck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 264208,
+          "eventReasonCardUid": "p0-deck-99161253-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToDeck" && event.eventCardUid === normalMaterial!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-9916-1",
+          "eventCode": 1013,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToDeck",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 262216,
+          "eventReasonCardUid": "p0-deck-99161253-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-9916-1",
+          "eventCode": 1013,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToDeck",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 262216,
+          "eventReasonCardUid": "p0-deck-99161253-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+          "eventUids": [
+            "p0-deck-9916-1",
+            "p0-deck-9917-2",
+          ],
+        },
+      ]
+    `);
     expect(restored.host.messages).not.toContain("primite responder resolved");
   });
 

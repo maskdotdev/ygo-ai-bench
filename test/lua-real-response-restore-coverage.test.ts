@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 94;
-const chainedResponseFixtureCount = 93;
-const responseOperationInfoFixtureCount = 85;
+const responseFixtureCount = 97;
+const chainedResponseFixtureCount = 96;
+const responseOperationInfoFixtureCount = 88;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -163,7 +163,9 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-pot-of-extravagance-extra-cost.test.ts",
     "lua-real-script-pot-of-prosperity-excavate.test.ts",
     "lua-real-script-polymerization-fusion-summon.test.ts",
+    "lua-real-script-prayers-ritual-matfilter.test.ts",
     "lua-real-script-prime-material-dragon-reverse-damage.test.ts",
+    "lua-real-script-primite-fusion-extra-check.test.ts",
     "lua-real-script-raigeki-group-destroy.test.ts",
     "lua-real-script-raigeki-break-discard-cost.test.ts",
     "lua-real-script-rasetsu-spirit-cost-return.test.ts",
@@ -179,6 +181,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-solemn-strike-special-summon-negate.test.ts",
     "lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
     "lua-real-script-solemn-warning-special-summon-effect-negate.test.ts",
+    "lua-real-script-super-soldier-synthesis-specific-material.test.ts",
     "lua-real-script-threatening-roar-temporary-attack-lock.test.ts",
     "lua-real-script-totem-pole-change-damage.test.ts",
     "lua-real-script-torrential-tribute-summon-success.test.ts",
