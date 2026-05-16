@@ -186,6 +186,25 @@ describe("Lua API usage scanner", () => {
     expect(output).toContain("No missing API usages found.");
   }, 15_000);
 
+  it("keeps local card-script fallback API names aligned with local Lua bindings", () => {
+    const output = execFileSync(process.execPath, [
+      scannerPath,
+      "--scripts",
+      "local-card-scripts",
+      "--fail-on-missing",
+      "--min-used-apis",
+      "37",
+      "--min-implemented-apis",
+      "1214",
+    ], { encoding: "utf8" });
+
+    expect(output).toContain("scripts: ");
+    expect(output).toContain("local-card-scripts");
+    expect(output).toContain("used APIs: 37");
+    expect(output).toContain("implemented APIs found: 1214");
+    expect(output).toContain("No missing API usages found.");
+  });
+
   it("rejects scanner options that are missing required values", () => {
     const cases = [
       { args: ["--scripts", "--limit", "5"], error: "Missing value for --scripts" },
