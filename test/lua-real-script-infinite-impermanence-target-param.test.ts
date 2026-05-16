@@ -130,6 +130,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
     expect(resolved.ok, resolved.error).toBe(true);
 
     expect(restored.session.state.cards.find((card) => card.uid === imperm!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard" && event.eventCardUid === imperm!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p1-deck-10045474-0",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 1024,
+          "eventReasonPlayer": 1,
+        },
+      ]
+    `);
     expect(restored.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone" });
     expect(restored.host.messages).not.toContain("impermanence chain responder resolved");
 

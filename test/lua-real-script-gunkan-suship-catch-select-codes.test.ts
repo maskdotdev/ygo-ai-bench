@@ -138,6 +138,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gu
       }),
     ]));
     expect(restored.session.state.cards.find((card) => card.uid === ikura.uid)).toMatchObject({ location: "hand", controller: 0 });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToHand" && event.eventCardUid === ikura.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-61027400-2",
+          "eventCode": 1012,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "sentToHand",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 64,
+          "eventReasonCardUid": "p0-deck-83008724-0",
+          "eventReasonEffectId": 3,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     expect(restored.session.state.cards.find((card) => card.uid === catchCard.uid)).toMatchObject({ location: "spellTrapZone", faceUp: true });
     expect(restored.session.state.cards.find((card) => card.uid === catchCard.uid)?.counters?.[0x20d]).toBe(1);
     expect(restored.host.messages).not.toContain("gunkan suship responder resolved");
