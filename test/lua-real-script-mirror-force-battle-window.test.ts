@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -126,6 +127,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    expect(restored.session.state.chain).toHaveLength(1);
+    expect(restored.session.state.chain[0]?.operationInfos).toEqual([
+      { category: 0x1, targetUids: [attacker!.uid, secondAttacker!.uid], count: 2, player: 0, parameter: 0 },
+    ]);
 
     const pass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
@@ -140,6 +145,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     expect(restored.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone" });
     expect(restored.session.state.players[1].lifePoints).toBe(8000);
     expect(restored.session.state.cards.find((card) => card.uid === mirrorForce!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === secondAttacker!.uid)).toEqual([
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: secondAttacker!.uid,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: mirrorForce!.uid,
+        eventReasonEffectId: 2,
+      },
+    ]);
     expect(restored.host.messages).not.toContain("mirror force responder resolved");
   });
 });
