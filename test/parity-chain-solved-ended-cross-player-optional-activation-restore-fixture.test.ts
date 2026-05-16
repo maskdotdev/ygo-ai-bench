@@ -117,7 +117,7 @@ describe("EDOPro parity cross-player optional chain lifecycle activation restore
             windowId: 2,
             windowKind: "triggerBucket",
             waitingFor: 1,
-            chain: [{ player: 0, effectId: "fixture-cross-chain-solved-turn-optional-activation", eventName: "chainSolved" }],
+            chain: [{ player: 0, effectId: "fixture-cross-chain-solved-turn-optional-activation", eventName: "chainSolved", eventTriggerTiming: "if" }],
             pendingTriggers: [{ player: 1, effectId: "fixture-cross-chain-solved-opponent-optional-activation", eventName: "chainSolved", triggerBucket: "opponentOptional", eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
             legalActionCounts: { 0: 0, 1: 2 },
