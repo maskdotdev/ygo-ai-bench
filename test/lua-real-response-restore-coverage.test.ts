@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 21;
-const chainedResponseFixtureCount = 20;
+const responseFixtureCount = 22;
+const chainedResponseFixtureCount = 21;
 const responseOperationInfoFixtureCount = 17;
 
 describe("Lua real response restore coverage", () => {
@@ -114,6 +114,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-raigeki-break-discard-cost.test.ts",
     "lua-real-script-sakuretsu-armor-battle-window.test.ts",
     "lua-real-script-scrap-iron-scarecrow-battle-window.test.ts",
+    "lua-real-script-threatening-roar-temporary-attack-lock.test.ts",
     "lua-real-script-twin-twisters-discard-cost.test.ts",
     "lua-real-script-waboku-temporary-battle-protection.test.ts",
   ]
@@ -131,6 +132,7 @@ function realScriptResponseOperationInfoFixtureFiles(): string[] {
     .filter((file) =>
       !file.endsWith("lua-real-script-negate-attack-battle-window.test.ts")
       && !file.endsWith("lua-real-script-scrap-iron-scarecrow-battle-window.test.ts")
+      && !file.endsWith("lua-real-script-threatening-roar-temporary-attack-lock.test.ts")
       && !file.endsWith("lua-real-script-waboku-temporary-battle-protection.test.ts")
     );
 }
