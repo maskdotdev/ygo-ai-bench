@@ -14,6 +14,9 @@ const missedTimingActivationFixtureCount = 86;
 const missedTimingDeclineFixtureCount = 85;
 const missedTimingMultiStepFixtureCount = 166;
 const missedTimingFullSourceEffectCauseFixtureCount = 126;
+const missedTimingChainEventFixtureCount = 14;
+const missedTimingChainActivatingStateFixtureCount = 2;
+const missedTimingChainLifecycleOriginFixtureCount = 12;
 const missedTimingSourceEffectCauseExceptions = [
   "parity-missed-timing-battle-damage-decline-fixture.test.ts",
   "parity-missed-timing-battle-damage-fixture.test.ts",
@@ -111,6 +114,19 @@ describe("EDOPro parity missed-timing event coverage", () => {
     expect(fullSourceEffectCauseFiles).toHaveLength(missedTimingFullSourceEffectCauseFixtureCount);
     expect(exceptions).toEqual([...missedTimingSourceEffectCauseExceptions].sort());
   });
+
+  it("pins missed-timing chain event origin metadata coverage", () => {
+    const chainFiles = fs.readdirSync(testRoot)
+      .filter((file) => /^parity-missed-timing-(?:chain-activating|chaining|chain-solving|chain-solved|chain-negated|chain-disabled|chain-ended)(?:-decline)?-fixture\.test\.ts$/.test(file))
+      .sort();
+    const chainActivatingStateFiles = chainFiles.filter((file) => hasChainActivatingStateMetadata(file));
+    const chainLifecycleOriginFiles = chainFiles.filter((file) => hasChainLifecycleOriginMetadata(file));
+
+    expect(chainFiles).toHaveLength(missedTimingChainEventFixtureCount);
+    expect(chainActivatingStateFiles).toHaveLength(missedTimingChainActivatingStateFixtureCount);
+    expect(chainLifecycleOriginFiles).toHaveLength(missedTimingChainLifecycleOriginFixtureCount);
+    expect([...chainActivatingStateFiles, ...chainLifecycleOriginFiles].sort()).toEqual(chainFiles);
+  });
 });
 
 function camelToKebab(value: string): string {
@@ -165,6 +181,30 @@ function hasSourceEffectCauseMetadata(file: string): boolean {
     /eventReasonPlayer:\s*0/.test(text) &&
     /eventReasonCardUid:\s*["']p0-deck-100-0["']/.test(text) &&
     /eventReasonEffectId:\s*\d+/.test(text) &&
+    /eventTriggerTiming:\s*["']if["']/.test(text)
+  );
+}
+
+function hasChainActivatingStateMetadata(file: string): boolean {
+  const text = readTestFile(file);
+  return (
+    /eventName:\s*["']chainActivating["']/.test(text) &&
+    /eventReason:\s*1024/.test(text) &&
+    /eventReasonPlayer:\s*0/.test(text) &&
+    /eventPreviousState:\s*\{/.test(text) &&
+    /eventCurrentState:\s*\{/.test(text) &&
+    /eventTriggerTiming:\s*["']if["']/.test(text)
+  );
+}
+
+function hasChainLifecycleOriginMetadata(file: string): boolean {
+  const text = readTestFile(file);
+  return (
+    !/eventName:\s*["']chainActivating["']/.test(text) &&
+    /eventValue:\s*1/.test(text) &&
+    /eventReasonPlayer:\s*0/.test(text) &&
+    /eventChainDepth:\s*1/.test(text) &&
+    /eventChainLinkId:\s*["']fixture-chain-1["']/.test(text) &&
     /eventTriggerTiming:\s*["']if["']/.test(text)
   );
 }
