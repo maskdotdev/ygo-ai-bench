@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 8;
-const chainResponseNegationFixtureCount = 7;
+const negationFixtureCount = 9;
+const chainResponseNegationFixtureCount = 8;
 const destroyOnlyResponseFixtureCount = 4;
 
 describe("Lua real negation restore coverage", () => {
@@ -95,6 +95,7 @@ function realScriptNegationFixtureFiles(): string[] {
     "lua-real-script-effect-veiler-chain-disable.test.ts",
     "lua-real-script-magic-jammer-chain-negate.test.ts",
     "lua-real-script-seven-tools-trap-negate.test.ts",
+    "lua-real-script-solemn-judgment-summon-negate-part2.test.ts",
     "lua-real-script-solemn-strike-special-summon-negate.test.ts",
     "lua-real-script-wiretap-trap-negate-to-deck.test.ts",
   ]
