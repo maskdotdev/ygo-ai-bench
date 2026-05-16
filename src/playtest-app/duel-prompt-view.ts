@@ -25,6 +25,7 @@ export function promptViewLabel(prompt: DuelPromptState): string {
 
 export function promptViewDetail(prompt: DuelPromptState): string {
   const parts = [`P${prompt.player + 1}`, `Prompt ${prompt.id}`];
+  if (prompt.origin === "luaOperation") parts.push("Lua operation");
   if (prompt.returnTo !== undefined) parts.push(`returns P${prompt.returnTo + 1}`);
 
   switch (prompt.type) {

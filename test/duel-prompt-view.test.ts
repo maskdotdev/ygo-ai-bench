@@ -43,6 +43,19 @@ describe("duel prompt view", () => {
     expect(promptViewDetail(prompt)).toBe("P2 · Prompt prompt-b · text 42");
   });
 
+  it("marks Lua operation prompts in the visible detail", () => {
+    const prompt: DuelPromptState = {
+      id: "lua-prompt",
+      type: "selectYesNo",
+      player: 0,
+      description: 77,
+      returnTo: 1,
+      origin: "luaOperation",
+    };
+
+    expect(promptViewDetail(prompt)).toBe("P1 · Prompt lua-prompt · Lua operation · returns P2 · text 77");
+  });
+
   it("splits the active prompt controls from other global groups", () => {
     const prompt: DuelPromptState = {
       id: "prompt-a",
