@@ -64,4 +64,11 @@ describe("package scripts", () => {
     expect(pkg.scripts?.check).not.toMatch(/\bnpm\b|\bnpx\b|\byarn\b|\bpnpm\b/);
     expect(pkg.scripts?.check?.split(" && ").filter((command) => command.includes("test"))).toEqual(["bun run test"]);
   });
+
+  it("keeps generated browser asset exports out of source control", () => {
+    const ignore = fs.readFileSync(".gitignore", "utf8").split(/\r?\n/);
+
+    expect(ignore).toContain("public/card-data/");
+    expect(ignore).toContain("public/card-scripts/");
+  });
 });

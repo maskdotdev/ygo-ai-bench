@@ -5,3 +5,5 @@ coverage/
 .tmp/
 .DS_Store
 .upstream/
+public/card-data/
+public/card-scripts/
