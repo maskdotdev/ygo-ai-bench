@@ -92,6 +92,14 @@ export function expectMissedTimingDeclineFixture({ eventName, kebabName, titleNa
           legalActionGroups: [openEffectGroup(0, `${kebabName}-decline-open-fast`, 1, 0)],
           legalActionCounts: { 0: 13, 1: 0 },
           legalActionGroupCounts: { 0: 4, 1: 0 },
+          absentLegalActions: [
+            { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: `${kebabName}-decline-optional-when` },
+            { type: "activateTrigger", player: 0, windowId: 0, windowKind: "open", effectId: `${kebabName}-decline-optional-if` },
+          ],
+          absentLegalActionGroups: [
+            absentTriggerActivationGroup(0, `${kebabName}-decline-optional-when`, "turnOptional", 0, "open"),
+            absentTriggerActivationGroup(0, `${kebabName}-decline-optional-if`, "turnOptional", 0, "open"),
+          ],
         },
         after: {
           source: "edopro",
@@ -132,6 +140,10 @@ export function expectMissedTimingDeclineFixture({ eventName, kebabName, titleNa
           waitingFor: 0,
           pendingTriggers: [{ player: 0, effectId: `${kebabName}-decline-optional-if`, eventName, eventTriggerTiming: "if" }],
           pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+          legalActions: [
+            { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: `${kebabName}-decline-optional-if`, triggerBucket: "turnOptional", count: 1 },
+            { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: `${kebabName}-decline-optional-if`, triggerBucket: "turnOptional", count: 1 },
+          ],
           legalActionGroups: [
             triggerActivationGroup(0, `${kebabName}-decline-optional-if`, "turnOptional", 1, 1),
             triggerDeclineGroup(0, `${kebabName}-decline-optional-if`, "turnOptional", 1, 1),
@@ -144,6 +156,7 @@ export function expectMissedTimingDeclineFixture({ eventName, kebabName, titleNa
             absentTriggerActivationGroup(0, `${kebabName}-decline-optional-when`, "turnOptional", 1, "triggerBucket"),
             absentWindowEffectGroup(0, `${kebabName}-decline-open-fast`, 1, "triggerBucket"),
           ],
+          legalActionCounts: { 0: 2, 1: 0 },
           legalActionGroupCounts: { 0: 2, 1: 0 },
         },
         after: {
