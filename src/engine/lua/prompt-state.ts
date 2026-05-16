@@ -1,6 +1,6 @@
 import type { DuelPromptState, DuelResponse, DuelState, PlayerId } from "#duel/types.js";
 import { resolveDuelPrompt } from "#duel/prompt-response.js";
-import { isLuaOptionPromptDecision, isLuaYesNoPromptDecision, type LuaPromptCoroutineResult, type LuaPromptDecision } from "#lua/host-types.js";
+import { isLuaOptionPromptDecision, isLuaYesNoPromptDecision, type LuaPromptCoroutineResult, type LuaPromptDecision, type LuaPromptResumeValue } from "#lua/host-types.js";
 
 export function isYieldedLuaPromptCoroutineResult(result: LuaPromptCoroutineResult): result is Extract<LuaPromptCoroutineResult, { status: "yielded" }> {
   return result.status === "yielded";
@@ -41,6 +41,20 @@ export function duelPromptResponseToLuaValue(
   return response.yes;
 }
 
+function duelPromptResponseToLuaResumeValue(
+  luaPrompt: LuaPromptDecision,
+  prompt: DuelPromptState,
+  response: Extract<DuelResponse, { type: "selectOption" | "selectYesNo" }>,
+): LuaPromptResumeValue {
+  const value = duelPromptResponseToLuaValue(prompt, response);
+  if (luaPrompt.api !== "SelectCardsFromCodes" || luaPrompt.returnKind !== "codeIndexTable") return value;
+  if (typeof value !== "number") throw new Error("SelectCardsFromCodes index prompt must resume with a numeric option");
+  const optionIndex = luaPrompt.options.indexOf(value);
+  const code = luaPrompt.descriptions[optionIndex];
+  if (code === undefined) throw new Error("SelectCardsFromCodes index prompt response is missing its code");
+  return { code, index: value };
+}
+
 export function yieldedLuaPromptToDuelPrompt(
   yielded: Extract<LuaPromptCoroutineResult, { status: "yielded" }>,
   returnTo?: PlayerId,
@@ -68,7 +82,7 @@ export function resumeLuaPromptCoroutineWithDuelResponse(
 ): LuaPromptCoroutineResult {
   const prompt = yieldedLuaPromptToDuelPrompt(yielded, returnTo);
   if (!prompt) throw new Error("Cannot resume Lua prompt coroutine without a prompt player");
-  return yielded.resume(duelPromptResponseToLuaValue(prompt, response));
+  return yielded.resume(duelPromptResponseToLuaResumeValue(yielded.prompt, prompt, response));
 }
 
 export function resolveDuelPromptAndResumeLuaCoroutine(
@@ -81,7 +95,7 @@ export function resolveDuelPromptAndResumeLuaCoroutine(
   if (!prompt) throw new Error("Cannot resume Lua prompt coroutine without a pending duel prompt");
   const expectedPrompt = yieldedLuaPromptToDuelPrompt(yielded, prompt.returnTo);
   if (!expectedPrompt || !sameDuelPrompt(prompt, expectedPrompt)) throw new Error("Pending duel prompt does not match the yielded Lua prompt");
-  const value = duelPromptResponseToLuaValue(prompt, response);
+  const value = duelPromptResponseToLuaResumeValue(yielded.prompt, prompt, response);
   if (prompt.origin === "luaOperation") state.prompt = promptWithoutOrigin(prompt);
   resolveDuelPrompt(state, response);
   const result = yielded.resume(value);

@@ -3,7 +3,7 @@ import { applyLuaExtraDeckProcedureMetadata } from "#lua/extra-deck-procedure-me
 import { applyLuaNormalTributeMetadata } from "#lua/tribute-metadata-api.js";
 import { pushCardTable } from "#lua/card-api.js";
 import type { DuelSession } from "#duel/types.js";
-import type { LuaHostState, LuaInitialEffectRegistrationResult, LuaPromptCoroutineResult, LuaScriptLoadResult } from "#lua/host-types.js";
+import type { LuaHostState, LuaInitialEffectRegistrationResult, LuaPromptCoroutineResult, LuaPromptResumeValue, LuaScriptLoadResult } from "#lua/host-types.js";
 
 const { lua, lauxlib, to_luastring } = fengari;
 
@@ -152,9 +152,18 @@ function resumeLuaPromptCoroutine(L: unknown, thread: unknown, hostState: LuaHos
   }
 }
 
-function pushLuaResumeValue(L: unknown, value: number | boolean): void {
+function pushLuaResumeValue(L: unknown, value: LuaPromptResumeValue): void {
   if (typeof value === "boolean") lua.lua_pushboolean(L, value);
-  else lua.lua_pushinteger(L, value);
+  else if (typeof value === "number") lua.lua_pushinteger(L, value);
+  else pushCodeIndexTable(L, value.code, value.index);
+}
+
+function pushCodeIndexTable(L: unknown, code: number, index: number): void {
+  lua.lua_newtable(L);
+  lua.lua_pushinteger(L, code);
+  lua.lua_rawseti(L, -2, 1);
+  lua.lua_pushinteger(L, index);
+  lua.lua_rawseti(L, -2, 2);
 }
 
 function readLuaStackValues(L: unknown): unknown[] {

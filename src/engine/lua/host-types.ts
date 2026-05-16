@@ -9,8 +9,10 @@ export interface LuaScriptLoadResult {
 
 export type LuaPromptCoroutineResult =
   | { status: "completed"; values: unknown[] }
-  | { status: "yielded"; prompt: LuaPromptDecision; resume: (value: number | boolean) => LuaPromptCoroutineResult }
+  | { status: "yielded"; prompt: LuaPromptDecision; resume: (value: LuaPromptResumeValue) => LuaPromptCoroutineResult }
   | { status: "error"; error: string };
+
+export type LuaPromptResumeValue = number | boolean | { code: number; index: number };
 
 export interface LuaScriptHost {
   readonly messages: string[];
@@ -29,7 +31,7 @@ export interface LuaScriptHost {
 }
 
 export type LuaPromptDecision =
-  | { id: string; api: "SelectOption" | "SelectEffect" | "AnnounceNumber" | "AnnounceNumberRange" | "AnnounceCard" | "AnnounceType" | "AnnounceLevel" | "AnnounceRace" | "AnnounceAttribute" | "SelectCardsFromCodes" | "SelectDisableField" | "SelectField" | "SelectFieldZone"; player?: PlayerId; options: number[]; descriptions: number[]; returned: number }
+  | { id: string; api: "SelectOption" | "SelectEffect" | "AnnounceNumber" | "AnnounceNumberRange" | "AnnounceCard" | "AnnounceType" | "AnnounceLevel" | "AnnounceRace" | "AnnounceAttribute" | "SelectCardsFromCodes" | "SelectDisableField" | "SelectField" | "SelectFieldZone"; player?: PlayerId; options: number[]; descriptions: number[]; returned: number; returnKind?: "codeIndexTable" }
   | { id: string; api: "SelectYesNo" | "SelectEffectYesNo"; player?: PlayerId; description?: number; returned: boolean };
 
 export const luaOptionPromptApis: ReadonlyArray<Extract<LuaPromptDecision, { options: number[] }>["api"]> = [

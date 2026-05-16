@@ -584,6 +584,34 @@ describe("Lua prompt shim telemetry", () => {
     expect(resumeLuaPromptCoroutineWithDuelResponse(first, selected!)).toEqual({ status: "completed", values: [800] });
   });
 
+  it("can suspend and resume single index-table SelectCardsFromCodes prompt calls through a coroutine", () => {
+    const session = createDuel({ seed: 742, startingHandSize: 0, cardReader: createCardReader([]) });
+    loadDecks(session, { 0: { main: [] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const first = host.runPromptCoroutine(
+      `
+      local selected = Duel.SelectCardsFromCodes(1, 1, 1, false, true, 700, 800)
+      return selected[1], selected[2]
+      `,
+      "select-cards-from-codes-index-table-single-coroutine.lua",
+    );
+
+    expect(isYieldedLuaPromptCoroutineResult(first)).toBe(true);
+    if (!isYieldedLuaPromptCoroutineResult(first)) throw new Error("Expected SelectCardsFromCodes index-table prompt yield");
+    expect(first.prompt).toEqual({ id: "lua-prompt-1", api: "SelectCardsFromCodes", player: 1, options: [1, 2], descriptions: [700, 800], returned: 1, returnKind: "codeIndexTable" });
+    const prompt = yieldedLuaPromptToDuelPrompt(first);
+    const actions = getPromptResponseActions(prompt!, 1);
+    expect(actions).toEqual([
+      { type: "selectOption", player: 1, promptId: "lua-prompt-1", option: 1, label: "Select option 1 (700)" },
+      { type: "selectOption", player: 1, promptId: "lua-prompt-1", option: 2, label: "Select option 2 (800)" },
+    ]);
+    const selected = actions.find((action): action is Extract<PromptResponse, { type: "selectOption" }> => action.type === "selectOption" && action.option === 2);
+    expect(selected).toBeTruthy();
+    expect(resumeLuaPromptCoroutineWithDuelResponse(first, selected!)).toEqual({ status: "completed", values: [800, 2] });
+  });
+
   it("keeps multi-return SelectCardsFromCodes deterministic until multi-select browser prompts exist", () => {
     const session = createDuel({ seed: 746, startingHandSize: 0, cardReader: createCardReader([]) });
     loadDecks(session, { 0: { main: [] }, 1: { main: [] } });
@@ -603,7 +631,7 @@ describe("Lua prompt shim telemetry", () => {
     expect(session.state.prompt).toBeUndefined();
   });
 
-  it("keeps index-table SelectCardsFromCodes deterministic until table-valued browser prompts exist", () => {
+  it("keeps multi-return index-table SelectCardsFromCodes deterministic until multi-select browser prompts exist", () => {
     const session = createDuel({ seed: 747, startingHandSize: 0, cardReader: createCardReader([]) });
     loadDecks(session, { 0: { main: [] }, 1: { main: [] } });
     startDuel(session);

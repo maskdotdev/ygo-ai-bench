@@ -375,6 +375,7 @@ describe("duel snapshot persistence", () => {
         descriptions: [index + 1, index + 101],
         returned: index + 1,
       })),
+      { id: "lua-prompt-select-codes-index-table", api: "SelectCardsFromCodes", player: 0, options: [1, 2], descriptions: [700, 800], returned: 1, returnKind: "codeIndexTable" },
       ...luaYesNoPromptApis.map((api, index): LuaPromptDecision => ({
         id: `lua-prompt-yes-no-${index + 1}`,
         api,
@@ -433,6 +434,20 @@ describe("duel snapshot persistence", () => {
     };
     malformedState.luaOperationPrompt = yesNoPromptWithOptions;
     expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.luaOperationPrompt.prompt.options is only valid for option-like prompt APIs");
+
+    const optionPromptWithWrongReturnKind: unknown = {
+      chainLink: { id: "chain-1", player: 0, sourceUid, effectId: "effect-a" },
+      prompt: { id: "lua-prompt-1", api: "SelectOption", player: 0, options: [0], descriptions: [101], returned: 0, returnKind: "codeIndexTable" },
+    };
+    malformedState.luaOperationPrompt = optionPromptWithWrongReturnKind;
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.luaOperationPrompt.prompt.returnKind must match the Lua prompt api");
+
+    const yesNoPromptWithReturnKind: unknown = {
+      chainLink: { id: "chain-1", player: 0, sourceUid, effectId: "effect-a" },
+      prompt: { id: "lua-prompt-1", api: "SelectEffectYesNo", player: 0, returned: true, returnKind: "codeIndexTable" },
+    };
+    malformedState.luaOperationPrompt = yesNoPromptWithReturnKind;
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.luaOperationPrompt.prompt.returnKind is only valid for SelectCardsFromCodes");
   });
 
   it("copies battle response collections out of public and serialized state", () => {

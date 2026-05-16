@@ -212,10 +212,19 @@ function pushSelectCardsFromCodes(L: unknown, hostState: LuaDuelPromptApiHostSta
   const choices = readCodeChoices(L, 6);
   const requestedCount = max === 0 ? choices.length : Math.max(min, max);
   const count = Math.min(requestedCount, choices.length);
-  if (!includeIndexes && count === 1 && choices.length > 0) {
-    const options = choices.map((choice) => choice.code);
+  if (count === 1 && choices.length > 0) {
+    const options = includeIndexes ? choices.map((choice) => choice.index) : choices.map((choice) => choice.code);
+    const descriptions = choices.map((choice) => choice.code);
     const returned = options[0] ?? 0;
-    const decision: LuaPromptDecision = { id: nextLuaPromptId(hostState), api: "SelectCardsFromCodes", ...(player === undefined ? {} : { player }), options, descriptions: [...options], returned };
+    const decision: LuaPromptDecision = {
+      id: nextLuaPromptId(hostState),
+      api: "SelectCardsFromCodes",
+      ...(player === undefined ? {} : { player }),
+      options,
+      descriptions,
+      returned,
+      ...(includeIndexes ? { returnKind: "codeIndexTable" } : {}),
+    };
     hostState.promptDecisions?.push(decision);
     if (hostState.promptBehavior === "yield") return lua.lua_yield(L, 0);
   }
