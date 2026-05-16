@@ -43,9 +43,9 @@ const scriptResults = deckCodes.map((code) => {
   const name = `c${code}.lua`;
   const card = cards.find((candidate) => candidate.code === code);
   const found = findScript(upstream, name, card);
-  const expectedMissing = !found && isScriptlessNormalMonster(card);
+  const scriptlessNormal = !found && isScriptlessNormalMonster(card);
   const load = found ? host.loadCardScript(code, upstream) : { ok: true };
-  return { code, name, foundAt: found?.path, source: found?.source, isStub: found?.isStub ?? false, expectedMissing, load };
+  return { code, name, foundAt: found?.path, source: found?.source, isStub: found?.isStub ?? false, scriptlessNormal, load };
 });
 
 const initialEffectResults = host.registerInitialEffectsDetailed();
@@ -218,7 +218,7 @@ function printReport(report: {
   ydkPath: string;
   upstreamRoot: string;
   metadataSource: string;
-  scriptResults: Array<{ code: string; name: string; foundAt: string | undefined; source: string | undefined; isStub: boolean; expectedMissing: boolean; load: { ok: boolean; error?: string } }>;
+  scriptResults: Array<{ code: string; name: string; foundAt: string | undefined; source: string | undefined; isStub: boolean; scriptlessNormal: boolean; load: { ok: boolean; error?: string } }>;
   initialEffectResults: LuaInitialEffectRegistrationResult[];
   startupResult: { count: number; error?: string };
   registeredEffectCount: number;
@@ -240,8 +240,8 @@ function printReport(report: {
   const localOverrides = found.filter((result) => result.source === "local-override");
   const localFallbacks = found.filter((result) => result.source === "local-fallback");
   const localFallbackStubs = localFallbacks.filter((result) => result.isStub);
-  const expectedMissing = report.scriptResults.filter((result) => !result.foundAt && result.expectedMissing);
-  const missing = report.scriptResults.filter((result) => !result.foundAt && !result.expectedMissing);
+  const scriptlessNormals = report.scriptResults.filter((result) => !result.foundAt && result.scriptlessNormal);
+  const missing = report.scriptResults.filter((result) => !result.foundAt && !result.scriptlessNormal);
   const loadErrors = report.scriptResults.filter((result) => !result.load.ok);
   const initialFailures = report.initialEffectResults.filter((result) => !result.ok);
   const startupErrors = report.startupResult.error ? [report.startupResult.error] : [];
@@ -256,10 +256,10 @@ function printReport(report: {
     ? [...expectedLocalFallbackCodes].filter((code) => !localFallbacks.some((result) => result.code === code))
     : [];
   const unexpectedExpectedMissing = expectedMissingCodes.size
-    ? expectedMissing.filter((result) => !expectedMissingCodes.has(result.code))
+    ? missing.filter((result) => !expectedMissingCodes.has(result.code))
     : [];
   const absentExpectedMissingCodes = expectedMissingCodes.size
-    ? [...expectedMissingCodes].filter((code) => !expectedMissing.some((result) => result.code === code))
+    ? [...expectedMissingCodes].filter((code) => !missing.some((result) => result.code === code))
     : [];
 
   console.log(`Lua deck probe: ${path.basename(report.ydkPath)}`);
@@ -280,9 +280,9 @@ function printReport(report: {
   console.log(`Local fallback stubs: ${localFallbackStubs.length}`);
   console.log(`Scripts missing: ${missing.length}`);
   for (const result of missing) console.log(`  MISSING ${result.name}`);
-  console.log(`Scripts not expected: ${expectedMissing.length}`);
-  for (const result of expectedMissing) console.log(`  NO SCRIPT ${result.name}`);
-  if (expectedMissingCodes.size) console.log(`Expected no-script codes: ${[...expectedMissingCodes].sort().join(", ")}`);
+  console.log(`Scriptless Normal Monsters: ${scriptlessNormals.length}`);
+  for (const result of scriptlessNormals) console.log(`  NORMAL ${result.name}`);
+  if (expectedMissingCodes.size) console.log(`Expected missing script codes: ${[...expectedMissingCodes].sort().join(", ")}`);
   console.log("");
   console.log(`Script load errors: ${loadErrors.length}`);
   for (const result of loadErrors) console.log(`  ERROR ${result.name}: ${result.load.error ?? "unknown error"}`);
@@ -334,11 +334,11 @@ function printReport(report: {
   if (absentExpectedLocalFallbackCodes.length) {
     failures.push(`Expected local fallback script codes were not used: ${absentExpectedLocalFallbackCodes.map((code) => `c${code}.lua`).join(", ")}`);
   }
-  if (report.maxExpectedMissingScripts !== undefined && expectedMissing.length > report.maxExpectedMissingScripts) {
-    failures.push(`Expected missing script count ${expectedMissing.length} is above allowed ${report.maxExpectedMissingScripts}`);
+  if (report.maxExpectedMissingScripts !== undefined && missing.length > report.maxExpectedMissingScripts) {
+    failures.push(`Missing script count ${missing.length} is above allowed ${report.maxExpectedMissingScripts}`);
   }
   if (unexpectedExpectedMissing.length) {
-    failures.push(`Unexpected expected-missing scripts: ${unexpectedExpectedMissing.map((result) => result.name).join(", ")}`);
+    failures.push(`Unexpected missing scripts: ${unexpectedExpectedMissing.map((result) => result.name).join(", ")}`);
   }
   if (absentExpectedMissingCodes.length) {
     failures.push(`Expected missing script codes were not missing: ${absentExpectedMissingCodes.map((code) => `c${code}.lua`).join(", ")}`);

@@ -66,7 +66,7 @@ describe.skipIf(!hasUpstreamScripts)("Dark Magical Blast Lua deck probe", () => 
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast Lua deck probe with CDB metadata", () => {
-  it("classifies missing vanilla normal monster scripts as expected", () => {
+  it("classifies vanilla normal monsters as scriptless instead of missing", () => {
     const output = execFileSync(
       "node",
       [
@@ -81,9 +81,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
 
     expect(output).toContain("Metadata source: cards.cdb");
     expect(output).toContain("Scripts missing: 0");
-    expect(output).toContain("Scripts not expected: 2");
-    expect(output).toContain("NO SCRIPT c46986414.lua");
-    expect(output).toContain("NO SCRIPT c74677422.lua");
+    expect(output).toContain("Scriptless Normal Monsters: 2");
+    expect(output).toContain("NORMAL c46986414.lua");
+    expect(output).toContain("NORMAL c74677422.lua");
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("First failing API/helper: none detected");
   }, deckProbeTimeoutMs);
@@ -184,8 +184,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
     expect(result.stderr).toContain("is below required 999");
   }, deckProbeTimeoutMs);
 
-  it("fails strict probes when expected missing script count grows above the allowed maximum", () => {
-    const result = spawnSync(
+  it("keeps scriptless Normal Monsters out of the strict missing-script budget", () => {
+    const output = execFileSync(
       "node",
       [
         "--experimental-transform-types",
@@ -195,18 +195,16 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
         ".upstream/ignis",
         "--fail-on-errors",
         "--max-expected-missing-scripts",
-        "1",
+        "0",
       ],
       { encoding: "utf8" },
     );
 
-    expect(result.status).toBe(1);
-    expect(result.stdout).toContain("Scripts not expected: 2");
-    expect(result.stderr).toContain("Lua deck probe failed:");
-    expect(result.stderr).toContain("Expected missing script count 2 is above allowed 1");
+    expect(output).toContain("Scripts missing: 0");
+    expect(output).toContain("Scriptless Normal Monsters: 2");
   }, deckProbeTimeoutMs);
 
-  it("fails strict probes when expected missing script identities change", () => {
+  it("fails strict probes when expected missing script identities are stale", () => {
     const result = spawnSync(
       "node",
       [
@@ -217,9 +215,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
         ".upstream/ignis",
         "--fail-on-errors",
         "--max-expected-missing-scripts",
-        "2",
-        "--expected-missing-script-code",
-        "46986414",
+        "0",
         "--expected-missing-script-code",
         "12345678",
       ],
@@ -227,10 +223,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
     );
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("Scripts not expected: 2");
-    expect(result.stdout).toContain("Expected no-script codes: 12345678, 46986414");
+    expect(result.stdout).toContain("Scripts missing: 0");
+    expect(result.stdout).toContain("Expected missing script codes: 12345678");
     expect(result.stderr).toContain("Lua deck probe failed:");
-    expect(result.stderr).toContain("Unexpected expected-missing scripts: c74677422.lua");
     expect(result.stderr).toContain("Expected missing script codes were not missing: c12345678.lua");
   }, deckProbeTimeoutMs);
 
@@ -307,11 +302,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
         "--max-local-fallbacks",
         "0",
         "--max-expected-missing-scripts",
-        "2",
-        "--expected-missing-script-code",
-        "46986414",
-        "--expected-missing-script-code",
-        "74677422",
+        "0",
       ],
       { encoding: "utf8" },
     );
@@ -340,9 +331,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
     expect(output).toContain("Metadata source: cards.cdb");
     expect(output).toContain("Local fallback scripts: 0");
     expect(output).toContain("Scripts missing: 0");
-    expect(output).toContain("Scripts not expected: 2");
-    expect(output).toContain("NO SCRIPT c46986414.lua");
-    expect(output).toContain("NO SCRIPT c74677422.lua");
+    expect(output).toContain("Scriptless Normal Monsters: 2");
+    expect(output).toContain("NORMAL c46986414.lua");
+    expect(output).toContain("NORMAL c74677422.lua");
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
@@ -399,7 +390,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Magician Pendulum 
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Ritual of Light and Darkness Lua deck probe", () => {
-  it("keeps missing new-card scripts separate from helper compatibility failures", () => {
+  it("keeps scriptless normals separate from helper compatibility failures", () => {
     const output = execFileSync(
       "node",
       [
@@ -416,8 +407,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Ritual of Light an
     expect(output).toContain("Local fallback scripts: 10");
     expect(output).toContain("Local fallback stubs: 0");
     expect(output).toContain("Scripts missing: 0");
-    expect(output).toContain("Scripts not expected: 1");
-    expect(output).toContain("NO SCRIPT c46986414.lua");
+    expect(output).toContain("Scriptless Normal Monsters: 1");
+    expect(output).toContain("NORMAL c46986414.lua");
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
@@ -512,8 +503,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("HERO Competitive L
     expect(output).toContain("Metadata source: cards.cdb");
     expect(output).toContain("Local fallback scripts: 0");
     expect(output).toContain("Scripts missing: 0");
-    expect(output).toContain("Scripts not expected: 1");
-    expect(output).toContain("NO SCRIPT c89943723.lua");
+    expect(output).toContain("Scriptless Normal Monsters: 1");
+    expect(output).toContain("NORMAL c89943723.lua");
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");
@@ -694,7 +685,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Mikanko Lua deck p
 });
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Rikka Sunavalon Lua deck probe", () => {
-  it("loads plant resource scripts while preserving expected vanilla no-script cards", () => {
+  it("loads plant resource scripts while reporting vanilla no-script cards separately", () => {
     const output = execFileSync(
       "node",
       ["--experimental-transform-types", "tools/probe-lua-deck.ts", "rikka-sunavalon-2026.ydk", "--upstream", ".upstream/ignis"],
@@ -704,8 +695,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Rikka Sunavalon Lu
     expect(output).toContain("Metadata source: cards.cdb");
     expect(output).toContain("Local fallback scripts: 0");
     expect(output).toContain("Scripts missing: 0");
-    expect(output).toContain("Scripts not expected: 1");
-    expect(output).toContain("NO SCRIPT c27520594.lua");
+    expect(output).toContain("Scriptless Normal Monsters: 1");
+    expect(output).toContain("NORMAL c27520594.lua");
     expect(output).toContain("Script load errors: 0");
     expect(output).toContain("Initial effect failures: 0");
     expect(output).toContain("First failing API/helper: none detected");

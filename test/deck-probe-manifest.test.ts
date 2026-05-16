@@ -161,14 +161,7 @@ describe("Lua deck probe manifest", () => {
       "top_tier_dark_magician_primite_azamina.ydk": 0,
       "voiceless-voice-2026.ydk": 0,
     });
-    expect(expectedMissingScriptCodesByDeck).toEqual({
-      "dark-magical-blast-master-duel-day1.ydk": ["46986414", "74677422"],
-      "dark-magical-blast-tcg-branded-dm.ydk": ["46986414", "74677422"],
-      "hero-competitive-may-2026.ydk": ["89943723"],
-      "rikka-sunavalon-2026.ydk": ["27520594"],
-      "ritual-of-light-and-darkness-apr-2026.ydk": ["46986414"],
-      "top_tier_dark_magician_primite_azamina.ydk": ["46986414", "89631139"],
-    });
+    expect(expectedMissingScriptCodesByDeck).toEqual({});
     expect(expectedLocalFallbackScriptCodesByDeck).toEqual({
       "magician-pendulum-mar-2026.ydk": ["100452013"],
       "phantom-knights-mar-2026-v4.ydk": ["100452015"],
@@ -181,7 +174,7 @@ describe("Lua deck probe manifest", () => {
 });
 
 describe.skipIf(!hasUpstreamDatabase)("Lua deck expected-missing script manifest", () => {
-  it("only budgets scriptless normal monsters as expected missing scripts", () => {
+  it("keeps scriptless normal monsters out of expected-missing script budgets", () => {
     const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")) as { scripts?: Record<string, string> };
     const packageProbeCommands = [
       ...(pkg.scripts?.["probe:top-tier-deck"] ?? "").split(" && "),
@@ -191,8 +184,8 @@ describe.skipIf(!hasUpstreamDatabase)("Lua deck expected-missing script manifest
     const expectedMissingCodes = [...new Set(packageProbeCommands.flatMap((command) => [...command.matchAll(/--expected-missing-script-code (\d+)/g)].flatMap((match) => match[1] ? [match[1]] : [])))].sort();
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const cardsByCode = new Map(workspace.readDatabaseCards("cards.cdb").map((card) => [card.code, card]));
-    const expectedMissingCards = Object.fromEntries(
-      expectedMissingCodes.map((code) => {
+    const scriptlessNormalCards = Object.fromEntries(
+      ["27520594", "46986414", "74677422", "89631139", "89943723"].map((code) => {
         const card = cardsByCode.get(code);
         return [
           code,
@@ -205,7 +198,8 @@ describe.skipIf(!hasUpstreamDatabase)("Lua deck expected-missing script manifest
       }),
     );
 
-    expect(expectedMissingCards).toEqual({
+    expect(expectedMissingCodes).toEqual([]);
+    expect(scriptlessNormalCards).toEqual({
       "27520594": { name: "Sunseed Genius Loci", typeFlags: 17, scriptlessNormal: true },
       "46986414": { name: "Dark Magician", typeFlags: 17, scriptlessNormal: true },
       "74677422": { name: "Red-Eyes Black Dragon", typeFlags: 17, scriptlessNormal: true },
