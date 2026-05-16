@@ -245,6 +245,36 @@ describe("coverage inventory guards", () => {
     expect(weak).toEqual([]);
   });
 
+  it("requires current-window metadata helpers to prove action and group window stamps", () => {
+    const helpers = currentWindowMetadataHelpers();
+    const weak = helpers
+      .filter((helper) => !hasStrongCurrentWindowMetadataHelper(helper.text))
+      .map((helper) => `${helper.file}:${helper.line}`);
+    const helperReferences = fs.readdirSync(testRoot)
+      .filter((file) => file.endsWith(".ts"))
+      .filter((file) => file !== "coverage-inventory-guards.test.ts")
+      .reduce((count, file) => count + (readTestFile(file).match(/\bexpectCurrentWindowMetadata\(/g)?.length ?? 0), 0);
+
+    expect(helpers).toHaveLength(3);
+    expect(helperReferences).toBe(11);
+    expect(weak).toEqual([]);
+  });
+
+  it("requires failed restore surface helpers to preserve returned legal windows", () => {
+    const helpers = failedRestoreSurfaceHelpers();
+    const weak = helpers
+      .filter((helper) => !hasStrongFailedRestoreSurfaceHelper(helper.text))
+      .map((helper) => `${helper.file}:${helper.line}`);
+    const helperReferences = fs.readdirSync(testRoot)
+      .filter((file) => file.endsWith(".ts"))
+      .filter((file) => file !== "coverage-inventory-guards.test.ts")
+      .reduce((count, file) => count + (readTestFile(file).match(/\bassertFailedRestoreSurface\(/g)?.length ?? 0), 0);
+
+    expect(helpers).toHaveLength(1);
+    expect(helperReferences).toBe(10);
+    expect(weak).toEqual([]);
+  });
+
   it("requires test proof floors to be exact", () => {
     const greaterThanAllowlist = new Set([
       "lua-field-query-helpers.test.ts:59",
@@ -535,6 +565,65 @@ function hasStrongPublicRestoreMetadataHelper(text: string): boolean {
     && text.includes(".state.triggerOrderPrompt")
     && text.includes("publicState.triggerOrderPrompt")
     && text.includes(".state).not.toHaveProperty(\"triggerOrderPrompt\")");
+}
+
+type CurrentWindowMetadataHelper = { file: string; line: number; text: string };
+
+function currentWindowMetadataHelpers(): CurrentWindowMetadataHelper[] {
+  return fs.readdirSync(testRoot)
+    .filter((file) => file.endsWith(".ts"))
+    .filter((file) => file !== "coverage-inventory-guards.test.ts")
+    .flatMap((file) => {
+      const text = readTestFile(file);
+      return [...text.matchAll(/function expectCurrentWindowMetadata\b/g)]
+        .map((match) => {
+          const start = match.index ?? 0;
+          return {
+            file,
+            line: lineNumber(text, start),
+            text: text.slice(start, functionBodyEnd(text, start)),
+          };
+        });
+    });
+}
+
+function hasStrongCurrentWindowMetadataHelper(text: string): boolean {
+  return text.includes("for (const action of response.legalActions)")
+    && text.includes("for (const group of response.legalActionGroups)")
+    && text.includes("windowId: session.state.actionWindowId")
+    && text.includes("windowKind: response.state.windowKind");
+}
+
+type FailedRestoreSurfaceHelper = { file: string; line: number; text: string };
+
+function failedRestoreSurfaceHelpers(): FailedRestoreSurfaceHelper[] {
+  return fs.readdirSync(testRoot)
+    .filter((file) => file.endsWith(".ts"))
+    .filter((file) => file !== "coverage-inventory-guards.test.ts")
+    .flatMap((file) => {
+      const text = readTestFile(file);
+      return [...text.matchAll(/function assertFailedRestoreSurface\b/g)]
+        .map((match) => {
+          const start = match.index ?? 0;
+          return {
+            file,
+            line: lineNumber(text, start),
+            text: text.slice(start, functionBodyEnd(text, start)),
+          };
+        });
+    });
+}
+
+function hasStrongFailedRestoreSurfaceHelper(text: string): boolean {
+  return text.includes("const windowId = restored.session.state.actionWindowId")
+    && text.includes("response.state.actionWindowId).toBe(windowId)")
+    && text.includes("response.state.windowKind).toBe(\"open\")")
+    && hasReturnedRawLegalActionProof(text)
+    && hasReturnedGroupedLegalActionProof(text)
+    && hasReturnedLegalActionFlattenProof(text)
+    && text.includes("for (const action of response.legalActions)")
+    && text.includes("for (const group of response.legalActionGroups)")
+    && text.includes("windowKind: \"open\"");
 }
 
 function hasNearbyRestoredActionEvidence(text: string, variable: string, fileText: string): boolean {
