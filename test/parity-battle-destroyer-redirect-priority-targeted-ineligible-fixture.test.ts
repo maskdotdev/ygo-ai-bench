@@ -54,6 +54,7 @@ describe("EDOPro parity battle destroyer redirect priority targeted ineligible f
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro opens the attack-response window before targeted field redirect range eligibility and destroyer-carried redirects are tested",
