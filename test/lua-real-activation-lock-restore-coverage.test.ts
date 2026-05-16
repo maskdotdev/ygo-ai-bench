@@ -7,8 +7,14 @@ const root = process.cwd();
 const activationLockFixtureCount = 6;
 const activationLockAllowListFixtureCount = 5;
 const activationLockVariantFixtureCount = 14;
+const activationLockInventoryFixtureCount = 17;
 
 describe("Lua real activation-lock restore coverage", () => {
+  it("keeps the combined activation-lock restore fixture inventory explicit", () => {
+    expect(combinedActivationLockFixtureFiles()).toHaveLength(activationLockInventoryFixtureCount);
+    expect(combinedActivationLockFixtureFiles()).toEqual(realScriptActivationLockInventoryFiles());
+  });
+
   it("requires representative activation-lock fixtures to assert clean Lua registry restore", () => {
     const files = realScriptActivationLockFixtureFiles();
     expect(files).toHaveLength(activationLockFixtureCount);
@@ -76,6 +82,38 @@ describe("Lua real activation-lock restore coverage", () => {
     expect(missing).toEqual([]);
   });
 });
+
+function combinedActivationLockFixtureFiles(): string[] {
+  return [
+    ...realScriptActivationLockFixtureFiles(),
+    ...realScriptActivationLockAllowListFixtureFiles(),
+    ...realScriptActivationLockVariantFixtures().map(({ file }) => file),
+  ].filter((file, index, files) => files.indexOf(file) === index).sort();
+}
+
+function realScriptActivationLockInventoryFiles(): string[] {
+  return [
+    "lua-real-script-amano-iwato-activation-lock.test.ts",
+    "lua-real-script-ancient-gear-beast-card-activation-lock.test.ts",
+    "lua-real-script-aussa-channeler-attribute-activation-lock.test.ts",
+    "lua-real-script-cold-wave-spelltrap-activation-lock.test.ts",
+    "lua-real-script-eria-channeler-attribute-activation-lock.test.ts",
+    "lua-real-script-hiita-channeler-attribute-activation-lock.test.ts",
+    "lua-real-script-inzektor-axe-damage-phase-activation-lock.test.ts",
+    "lua-real-script-lunalight-kaleido-chick-remove-activation-lock.test.ts",
+    "lua-real-script-sangan-same-code-activation-lock.test.ts",
+    "lua-real-script-sasuke-samurai-spelltrap-activation-lock.test.ts",
+    "lua-real-script-shopina-light-activation-lock.test.ts",
+    "lua-real-script-sonic-jammer-spell-activation-lock.test.ts",
+    "lua-real-script-timegazer-trap-activation-lock.test.ts",
+    "lua-real-script-ultimate-falcon-activation-lock.test.ts",
+    "lua-real-script-vernusylph-attribute-activation-lock.test.ts",
+    "lua-real-script-wattgiraffe-battle-activation-lock.test.ts",
+    "lua-real-script-wynn-channeler-attribute-activation-lock.test.ts",
+  ]
+    .map((file) => path.join("test", file))
+    .sort();
+}
 
 function realScriptActivationLockFixtureFiles(): string[] {
   return [
