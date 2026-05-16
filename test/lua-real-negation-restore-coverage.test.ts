@@ -7,8 +7,14 @@ const root = process.cwd();
 const negationFixtureCount = 10;
 const chainResponseNegationFixtureCount = 9;
 const destroyOnlyResponseFixtureCount = 4;
+const negationInventoryFixtureCount = 14;
 
 describe("Lua real negation restore coverage", () => {
+  it("keeps the combined negation restore fixture inventory explicit", () => {
+    expect(combinedNegationFixtureFiles()).toHaveLength(negationInventoryFixtureCount);
+    expect(combinedNegationFixtureFiles()).toEqual(realScriptNegationInventoryFiles());
+  });
+
   it("requires representative real-script negation fixtures to assert grouped legal actions and clean Lua registry restore", () => {
     const files = realScriptNegationFixtureFiles();
     expect(files).toHaveLength(negationFixtureCount);
@@ -86,6 +92,35 @@ describe("Lua real negation restore coverage", () => {
     expect(missing).toEqual([]);
   });
 });
+
+function combinedNegationFixtureFiles(): string[] {
+  return [
+    ...realScriptNegationFixtureFiles(),
+    ...realScriptChainResponseNegationFixtureFiles(),
+    ...realScriptDestroyOnlyResponseFixtureFiles(),
+  ].filter((file, index, files) => files.indexOf(file) === index).sort();
+}
+
+function realScriptNegationInventoryFiles(): string[] {
+  return [
+    "lua-real-script-ash-blossom-chain-negate.test.ts",
+    "lua-real-script-dark-bribe-negate-draw.test.ts",
+    "lua-real-script-divine-wrath-monster-negate.test.ts",
+    "lua-real-script-effect-veiler-chain-disable.test.ts",
+    "lua-real-script-ghost-ogre-chain-destroy.test.ts",
+    "lua-real-script-magic-jammer-chain-negate.test.ts",
+    "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
+    "lua-real-script-raigeki-break-discard-cost.test.ts",
+    "lua-real-script-seven-tools-trap-negate.test.ts",
+    "lua-real-script-solemn-judgment-summon-negate-part2.test.ts",
+    "lua-real-script-solemn-strike-special-summon-negate.test.ts",
+    "lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
+    "lua-real-script-twin-twisters-discard-cost.test.ts",
+    "lua-real-script-wiretap-trap-negate-to-deck.test.ts",
+  ]
+    .map((file) => path.join("test", file))
+    .sort();
+}
 
 function realScriptNegationFixtureFiles(): string[] {
   return [
