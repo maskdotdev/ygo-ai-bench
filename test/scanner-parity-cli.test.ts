@@ -180,6 +180,10 @@ describe("parity scanner CLIs", () => {
       "2",
       "--min-group-evidence-blocks",
       "2",
+      "--min-absent-action-evidence-blocks",
+      "1",
+      "--min-absent-group-evidence-blocks",
+      "1",
       "--min-action-evidence-percent",
       "100",
       "--min-group-evidence-percent",
@@ -192,6 +196,8 @@ describe("parity scanner CLIs", () => {
     expect(result.stderr).toContain("EDOPro expectation blocks 1 is below required 2");
     expect(result.stderr).toContain("Action evidence blocks 1 is below required 2");
     expect(result.stderr).toContain("Group evidence blocks 1 is below required 2");
+    expect(result.stderr).toContain("Absent action evidence blocks 0 is below required 1");
+    expect(result.stderr).toContain("Absent group evidence blocks 0 is below required 1");
   });
 
   it("fails when legal-action evidence is below required coverage percentages", () => {
