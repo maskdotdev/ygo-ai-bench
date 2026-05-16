@@ -15,6 +15,10 @@ function main(argv) {
   const testRoot = path.resolve(options.testRoot ?? defaultTestRoot);
   const minPercent = options.minPercent ?? 75;
   const realScriptFiles = realScriptFixtureFiles(testRoot);
+  const completeDiagnostics = realScriptFiles.filter((file) => {
+    const text = readTestFile(file);
+    return text.includes("restoreComplete") && text.includes('incompleteReasons.join("; ")');
+  });
   const cleanRestored = realScriptFiles.filter((file) => readTestFile(file).includes("missingRegistryKeys).toEqual([])"));
   const chainLimitCleanRestored = realScriptFiles.filter((file) => readTestFile(file).includes("missingChainLimitRegistryKeys).toEqual([])"));
   const coverageFiles = restoreCoverageFiles(testRoot);
@@ -22,7 +26,7 @@ function main(argv) {
   const unreferenced = cleanRestored.filter((file) => !referenced.has(toRepoPath(file)));
   const percent = realScriptFiles.length === 0 ? 100 : (cleanRestored.length / realScriptFiles.length) * 100;
 
-  console.log(`Lua real-script clean restore coverage: ${cleanRestored.length}/${realScriptFiles.length} (${percent.toFixed(1)}%), chain-limit ${chainLimitCleanRestored.length}/${realScriptFiles.length}, ${coverageFiles.length} coverage files`);
+  console.log(`Lua real-script clean restore coverage: ${cleanRestored.length}/${realScriptFiles.length} (${percent.toFixed(1)}%), chain-limit ${chainLimitCleanRestored.length}/${realScriptFiles.length}, diagnostics ${completeDiagnostics.length}/${realScriptFiles.length}, ${coverageFiles.length} coverage files`);
 
   const failures = [];
   if (options.minFixtures !== undefined && realScriptFiles.length < options.minFixtures) failures.push(`Real-script fixtures ${realScriptFiles.length} is below required ${options.minFixtures}`);
@@ -36,6 +40,10 @@ function main(argv) {
     const missing = realScriptFiles.filter((file) => !chainLimitCleanRestored.includes(file)).map(toRepoPath);
     failures.push(`Fixtures missing chain-limit clean restore assertions:\n${formatList(missing)}`);
   }
+  if (options.failOnMissingDiagnostics && completeDiagnostics.length !== realScriptFiles.length) {
+    const missing = realScriptFiles.filter((file) => !completeDiagnostics.includes(file)).map(toRepoPath);
+    failures.push(`Fixtures missing complete restore diagnostics:\n${formatList(missing)}`);
+  }
   if (options.failOnUnreferenced && unreferenced.length > 0) {
     failures.push(`Clean-restored fixtures missing restore coverage ownership:\n${formatList(unreferenced.map(toRepoPath))}`);
   }
@@ -46,7 +54,7 @@ function main(argv) {
 }
 
 function parseArgs(argv) {
-  const options = { failOnMissing: false, failOnUnreferenced: false, help: false };
+  const options = { failOnMissing: false, failOnMissingDiagnostics: false, failOnUnreferenced: false, help: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--help" || arg === "-h") options.help = true;
@@ -55,6 +63,7 @@ function parseArgs(argv) {
     else if (arg === "--min-fixtures") options.minFixtures = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
     else if (arg === "--min-coverage-files") options.minCoverageFiles = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
     else if (arg === "--fail-on-missing") options.failOnMissing = true;
+    else if (arg === "--fail-on-missing-diagnostics") options.failOnMissingDiagnostics = true;
     else if (arg === "--fail-on-unreferenced") options.failOnUnreferenced = true;
     else throw new Error(`Unknown argument: ${arg}`);
   }
@@ -133,6 +142,8 @@ Options:
   --min-coverage-files <count>
                               Fail unless at least this many restore coverage files are scanned
   --fail-on-missing          Exit non-zero unless every real-script fixture asserts clean restore
+  --fail-on-missing-diagnostics
+                              Exit non-zero unless every real-script fixture asserts restoreComplete diagnostics
   --fail-on-unreferenced     Exit non-zero when clean-restored fixtures lack restore coverage ownership
 `);
 }
