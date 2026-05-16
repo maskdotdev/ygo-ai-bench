@@ -111,7 +111,7 @@ describe("coverage inventory guards", () => {
     expect(missingRestoreEvidence).toEqual([]);
   });
 
-  it("requires chain-limit restore helpers to prove restored actions and groups", () => {
+  it("requires chain-limit restore helpers to prove raw, grouped, and flattened restored actions", () => {
     const chainLimitRestoreFiles = fs.readdirSync(testRoot)
       .filter((file) => /^lua-chain-limit-.*restore\.test\.ts$/.test(file));
     const helperFiles = chainLimitRestoreFiles
@@ -119,10 +119,11 @@ describe("coverage inventory guards", () => {
     const weakHelpers = helperFiles
       .filter((file) => {
         const text = fs.readFileSync(path.join(testRoot, file), "utf8");
-        const helper = text.slice(text.indexOf("function expectRestoredChainLimit"), text.indexOf("function expectRestoredChainLimit") + 1200);
+        const helper = text.slice(text.indexOf("function expectRestoredChainLimit"), text.indexOf("function expectRestoredChainLimit") + 1600);
         return !helper.includes("getLuaRestoreLegalActions")
           || !helper.includes("getLegalActions(restored.session")
-          || !helper.includes("getLuaRestoreLegalActionGroups");
+          || !helper.includes("getLuaRestoreLegalActionGroups")
+          || !hasFlattenedGroupedRestoreEvidence(helper);
       });
     const helperCalls = chainLimitRestoreFiles
       .reduce((count, file) => {
