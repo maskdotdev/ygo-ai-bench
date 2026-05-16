@@ -39,6 +39,12 @@ const phaseOpenFastFamilies = [
   { base: "end-turn-open-fast", restore: "end-turn" },
 ] as const;
 
+const openFastResponsePlayerFixtureFileCount = 432;
+const openFastWaitingForTurnPlayerProofCount = 1380;
+const openFastWaitingForOpponentProofCount = 823;
+const openFastBattleWindowTurnPlayerResponseProofCount = 127;
+const openFastBattleWindowOpponentResponseProofCount = 188;
+
 const chainEndedOpenFastFiles = [
   "test/parity-chain-ended-open-fast-chain-response-chain-limit-fixture.test.ts",
   "test/parity-chain-ended-open-fast-chain-response-fixture.test.ts",
@@ -169,6 +175,19 @@ describe("EDOPro open fast-effect fixture coverage", () => {
     expect(weak).toEqual([]);
   });
 
+  it("keeps open-fast response-player evidence ratcheted", () => {
+    const files = allOpenFastResponsePlayerFixtureFiles();
+    const evidence = countResponsePlayerEvidence(files);
+
+    expect(files).toHaveLength(openFastResponsePlayerFixtureFileCount);
+    expect(evidence).toEqual({
+      waitingForTurnPlayer: openFastWaitingForTurnPlayerProofCount,
+      waitingForOpponent: openFastWaitingForOpponentProofCount,
+      battleWindowTurnPlayerResponse: openFastBattleWindowTurnPlayerResponseProofCount,
+      battleWindowOpponentResponse: openFastBattleWindowOpponentResponseProofCount,
+    });
+  });
+
   it("requires open-fast fixture windows to carry EDOPro provenance notes", () => {
     const weak = allRequiredParityOpenFastFiles().filter((file) => !hasEdoproProvenanceNote(file));
 
@@ -273,6 +292,35 @@ function allRequiredOpenFastRestoreFiles(): string[] {
     "test/duel-chain-ended-open-fast-handoff-restore.test.ts",
     "test/duel-chain-ended-open-fast-handoff-limit-restore.test.ts",
   ];
+}
+
+function allOpenFastResponsePlayerFixtureFiles(): string[] {
+  return fs.readdirSync(path.join(root, "test"))
+    .filter((file) => file.startsWith("parity-") && file.endsWith(".test.ts"))
+    .filter((file) => file.includes("open-fast") || file.includes("quick-effect"))
+    .map((file) => `test/${file}`)
+    .sort();
+}
+
+function countResponsePlayerEvidence(files: string[]): {
+  waitingForTurnPlayer: number;
+  waitingForOpponent: number;
+  battleWindowTurnPlayerResponse: number;
+  battleWindowOpponentResponse: number;
+} {
+  return files.reduce((counts, file) => {
+    const text = fs.readFileSync(path.join(root, file), "utf8");
+    counts.waitingForTurnPlayer += text.match(/waitingFor:\s*0/g)?.length ?? 0;
+    counts.waitingForOpponent += text.match(/waitingFor:\s*1/g)?.length ?? 0;
+    counts.battleWindowTurnPlayerResponse += text.match(/responsePlayer:\s*0/g)?.length ?? 0;
+    counts.battleWindowOpponentResponse += text.match(/responsePlayer:\s*1/g)?.length ?? 0;
+    return counts;
+  }, {
+    waitingForTurnPlayer: 0,
+    waitingForOpponent: 0,
+    battleWindowTurnPlayerResponse: 0,
+    battleWindowOpponentResponse: 0,
+  });
 }
 
 function hasRawAndGroupedLegalActionProof(file: string): boolean {
