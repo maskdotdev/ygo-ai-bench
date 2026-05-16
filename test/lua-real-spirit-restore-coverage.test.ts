@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 15;
+const spiritFixtureCount = 16;
 
 describe("Lua real Spirit restore coverage", () => {
   it("requires representative Spirit fixtures to prove clean Lua restore and replayed legal actions", () => {
@@ -235,6 +235,23 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
         "category: 8",
         'location: "hand", controller: 1',
         'host.messages).not.toContain("yaksha responder resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-sacred-spirit-ice-barrier-return.test.ts",
+      required: [
+        'action.type === "normalSummon"',
+        'action.type === "activateTrigger"',
+        'action.type === "passChain"',
+        'eventName: "phaseEnd"',
+        '"triggerBucket": "turnMandatory"',
+        'eventName: "sentToHand"',
+        "category: 8",
+        "targetUids",
+        "property).toBe(0x10)",
+        'location: "hand", controller: 1',
+        'location: "monsterZone", controller: 0',
+        'host.messages).not.toContain("sacred spirit responder resolved")',
       ],
     },
   ].map(({ file, required }) => ({ file: path.join("test", file), required }));

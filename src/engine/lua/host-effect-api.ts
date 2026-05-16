@@ -152,7 +152,7 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
   pushEffectMethod(L, effects, "SetCode", setEffectNumberField("code"));
   pushEffectMethod(L, effects, "SetDescription", setEffectNumberField("description"));
   pushEffectMethod(L, effects, "SetCategory", setEffectNumberField("category"));
-  pushEffectMethod(L, effects, "SetProperty", setEffectNumberField("property"));
+  pushEffectMethod(L, effects, "SetProperty", (state, effect) => { if (lua.lua_isnumber(state, 2)) effect.property = normalizeLuaUnsignedInteger(lua.lua_tonumber(state, 2)); syncRegisteredDuelEffectProperty(hostState, effect); return 0; });
   pushEffectMethod(L, effects, "SetHintTiming", (state, effect) => {
     const primary = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
     if (primary === undefined) return 0;
@@ -568,6 +568,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
         ctx.log("Lua effect resolved without an operation");
         return;
       }
+      syncLuaEffectPropertyFromRegisteredDuelEffect(hostState, luaEffect);
       withLuaCallbackContext(hostState, ctx, luaEffect.id, "operation", () => {
         if (ctx.chainLink?.effectLabel !== undefined) luaEffect.label = ctx.chainLink.effectLabel;
         if (ctx.chainLink?.effectLabels !== undefined) luaEffect.labels = [...ctx.chainLink.effectLabels];
@@ -956,6 +957,7 @@ function chainLinkByLuaIndex(session: DuelSession, requestedIndex: number): Duel
 
 function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, ref: number | undefined, fallback: boolean, kind: LuaEffectCallbackKind, ctx?: DuelEffectContext): boolean {
   if (ref === undefined) return fallback;
+  syncLuaEffectPropertyFromRegisteredDuelEffect(hostState, luaEffect);
   return withLuaCallbackContext(hostState, ctx, luaEffect.id, kind, () => {
     applyLuaEffectContextLabelObject(L, luaEffect, ctx);
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, ref);
@@ -975,6 +977,7 @@ function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: Lu
 
 function callLuaEffectCardTargetPredicate(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, ctx: DuelEffectContext, card: DuelCardInstance): boolean {
   if (luaEffect.targetRef === undefined) return true;
+  syncLuaEffectPropertyFromRegisteredDuelEffect(hostState, luaEffect);
   return withLuaCallbackContext(hostState, ctx, luaEffect.id, "target", () => {
     applyLuaEffectContextLabelObject(L, luaEffect, ctx);
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.targetRef);
@@ -1019,15 +1022,15 @@ function syncActiveLabelObject(hostState: LuaHostState, effect: LuaEffectRecord,
 
 function syncActiveLabels(hostState: LuaHostState, label: number, labels: number[]): void { const ctx = hostState.activeContext; if (!ctx) return; ctx.effectLabel = label; if (labels.length > 1) ctx.effectLabels = labels; else delete ctx.effectLabels; if (ctx.chainLink) { ctx.chainLink.effectLabel = label; if (labels.length > 1) ctx.chainLink.effectLabels = [...labels]; else delete ctx.chainLink.effectLabels; } }
 
-function syncDuelEffectLabelObjectUid(effect: DuelEffectDefinition, luaEffect: LuaEffectRecord): void {
-  if (luaEffect.labelObjectUid === undefined) delete effect.labelObjectUid; else effect.labelObjectUid = luaEffect.labelObjectUid;
-  if (luaEffect.labelObjectUids === undefined) delete effect.labelObjectUids; else effect.labelObjectUids = [...luaEffect.labelObjectUids];
-}
+function syncDuelEffectLabelObjectUid(effect: DuelEffectDefinition, luaEffect: LuaEffectRecord): void { if (luaEffect.labelObjectUid === undefined) delete effect.labelObjectUid; else effect.labelObjectUid = luaEffect.labelObjectUid; if (luaEffect.labelObjectUids === undefined) delete effect.labelObjectUids; else effect.labelObjectUids = [...luaEffect.labelObjectUids]; }
 
-function syncRegisteredDuelEffectLabelObject(hostState: LuaHostState, luaEffect: LuaEffectRecord): void {
-  const duelEffectId = luaEffectDuelId(luaEffect);
-  for (const effect of hostState.session.state.effects) if (effect.id === duelEffectId && (luaEffect.sourceUid === undefined || effect.sourceUid === luaEffect.sourceUid)) syncDuelEffectLabelObjectUid(effect, luaEffect);
-}
+function syncRegisteredDuelEffectLabelObject(hostState: LuaHostState, luaEffect: LuaEffectRecord): void { for (const effect of registeredDuelEffectsForLuaEffect(hostState, luaEffect)) syncDuelEffectLabelObjectUid(effect, luaEffect); }
+
+function syncRegisteredDuelEffectProperty(hostState: LuaHostState, luaEffect: LuaEffectRecord): void { for (const effect of registeredDuelEffectsForLuaEffect(hostState, luaEffect)) if (luaEffect.property === undefined) delete effect.property; else effect.property = luaEffect.property; }
+
+function syncLuaEffectPropertyFromRegisteredDuelEffect(hostState: LuaHostState, luaEffect: LuaEffectRecord): void { const effect = registeredDuelEffectsForLuaEffect(hostState, luaEffect)[0]; if (!effect) return; if (effect.property === undefined) delete luaEffect.property; else luaEffect.property = effect.property; }
+
+function registeredDuelEffectsForLuaEffect(hostState: LuaHostState, luaEffect: LuaEffectRecord): DuelEffectDefinition[] { const duelEffectId = luaEffectDuelId(luaEffect); return hostState.session.state.effects.filter((effect) => effect.id === duelEffectId && (luaEffect.sourceUid === undefined || effect.sourceUid === luaEffect.sourceUid)); }
 
 function sameUids(left: string[] | undefined, right: string[]): boolean { return left?.length === right.length && left.every((uid, index) => uid === right[index]); }
 
