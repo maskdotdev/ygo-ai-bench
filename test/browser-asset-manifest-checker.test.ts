@@ -44,6 +44,21 @@ describe("browser asset manifest checker", () => {
     expect(result.stderr).toContain("CDB rows payload hash mismatch");
   });
 
+  it("fails when a CDB manifest payload escapes the export directory", () => {
+    const root = makeTempRoot();
+    const cardDataDir = path.join(root, "card-data");
+    writeCardDataExport(cardDataDir, { datas: [{ id: 100, type: 1 }], texts: [{ id: 100, name: "Manifest Monster" }] });
+    const manifestPath = path.join(cardDataDir, "manifest.json");
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as { payload: string };
+    manifest.payload = "../cdb-rows.json";
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+
+    const result = spawnSync(process.execPath, [checkerPath, "--card-data", cardDataDir], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("CDB rows manifest payload must be a file name");
+  });
+
   it("fails when selected CDB passcodes do not match payload row ids", () => {
     const root = makeTempRoot();
     const cardDataDir = path.join(root, "card-data");
@@ -95,6 +110,21 @@ describe("browser asset manifest checker", () => {
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("Lua script manifest selectedCodes 100,200 does not match copied/missing script codes 100");
+  });
+
+  it("fails when a Lua script manifest lists non-card-script filenames", () => {
+    const root = makeTempRoot();
+    const cardScriptsDir = path.join(root, "card-scripts");
+    writeScriptExport(cardScriptsDir, { "c100.lua": "c100={}\n" });
+    const manifestPath = path.join(cardScriptsDir, "manifest.json");
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as { copied: string[] };
+    manifest.copied = ["../c100.lua"];
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+
+    const result = spawnSync(process.execPath, [checkerPath, "--card-scripts", cardScriptsDir], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("Lua script manifest contains invalid script filename ../c100.lua");
   });
 
   it("fails when copied Lua scripts are missing exact file metadata", () => {
