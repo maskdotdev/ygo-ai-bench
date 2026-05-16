@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 105;
-const chainedResponseFixtureCount = 104;
-const responseOperationInfoFixtureCount = 96;
+const responseFixtureCount = 109;
+const chainedResponseFixtureCount = 108;
+const responseOperationInfoFixtureCount = 100;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -102,10 +102,12 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-armor-blast-multi-target-free-chain.test.ts",
     "lua-real-script-bad-reaction-reverse-recover.test.ts",
     "lua-real-script-black-horn-special-summon-negate.test.ts",
+    "lua-real-script-blazewing-butterfly-gemini-revive-status.test.ts",
     "lua-real-script-book-of-moon-free-chain.test.ts",
     "lua-real-script-bottomless-trap-hole-summon-success.test.ts",
     "lua-real-script-branded-fusion-deck-material.test.ts",
     "lua-real-script-chemicritter-hydron-hawk-discard-revive.test.ts",
+    "lua-real-script-chemicritter-oxy-ox-gemini-level-change.test.ts",
     "lua-real-script-called-by-the-grave.test.ts",
     "lua-real-script-castle-gate-release-cost-damage.test.ts",
     "lua-real-script-compulsory-evacuation-device-free-chain.test.ts",
@@ -113,6 +115,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-contract-dark-master-ritual-spell.test.ts",
     "lua-real-script-dark-bribe-negate-draw.test.ts",
     "lua-real-script-dark-dust-spirit-destroy.test.ts",
+    "lua-real-script-dark-valkyria-gemini-counter-destroy.test.ts",
     "lua-real-script-des-wombat-no-effect-damage.test.ts",
     "lua-real-script-dicelops-toss-dice-restore.test.ts",
     "lua-real-script-dimensional-prison-battle-window.test.ts",
@@ -127,6 +130,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-foolish-burial-deck-to-grave.test.ts",
     "lua-real-script-forbidden-arts-gishki-opponent-ritual.test.ts",
     "lua-real-script-fushi-no-tori-battle-recover.test.ts",
+    "lua-real-script-future-samurai-gemini-banish-destroy.test.ts",
     "lua-real-script-gagaga-escape-position-lockout.test.ts",
     "lua-real-script-gemini-spark-release-destroy-draw.test.ts",
     "lua-real-script-ghost-ogre-chain-destroy.test.ts",

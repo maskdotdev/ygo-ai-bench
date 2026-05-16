@@ -88,6 +88,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     const counterIgnition = getLuaRestoreLegalActions(restoredCounterIgnition, 0).find((action) => action.type === "activateEffect" && action.uid === valkyria!.uid);
     expect(counterIgnition, JSON.stringify(getLuaRestoreLegalActions(restoredCounterIgnition, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredCounterIgnition, counterIgnition!);
+    expect(restoredCounterIgnition.session.state.chain).toHaveLength(1);
     expect(restoredCounterIgnition.session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "monsterZone",
@@ -185,6 +186,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
         },
       },
     ]);
+    expect(restoredDestroyIgnition.session.state.chain).toHaveLength(1);
     expect(restoredDestroyIgnition.session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "monsterZone",

@@ -83,6 +83,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
     const ignition = getLuaRestoreLegalActions(restoredIgnition, 0).find((action) => action.type === "activateEffect" && action.uid === oxyOx!.uid);
     expect(ignition, JSON.stringify(getLuaRestoreLegalActions(restoredIgnition, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredIgnition, ignition!);
+    expect(restoredIgnition.session.state.chain).toHaveLength(1);
     expect(restoredIgnition.session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "monsterZone",

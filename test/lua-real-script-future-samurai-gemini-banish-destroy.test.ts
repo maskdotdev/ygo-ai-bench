@@ -113,6 +113,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
         },
       },
     ]);
+    expect(restoredIgnition.session.state.chain).toHaveLength(1);
     expect(restoredIgnition.session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "monsterZone",
