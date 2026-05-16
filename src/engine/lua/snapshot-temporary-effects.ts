@@ -12,6 +12,7 @@ const luaSelfTurnMain1ResetFlags = 0x50000004;
 const luaOpponentTurnPhaseEndResetFlags = 0x60000200;
 const luaOpponentTurnMain1ResetFlags = 0x60000004;
 const luaPhaseDamageResetFlags = 0x40000020;
+const luaResetsStandardPhaseEnd = 0x41fe1200;
 
 export function isKnownTemporaryPlayerAttackAnnounceLockEffect(effect: SerializedDuelEffect): boolean {
   return (
@@ -218,6 +219,38 @@ export function isKnownTemporaryEarthshatteringDeckGraveLockEffect(effect: Seria
     hasDefaultLuaFieldRange(effect) &&
     (effect.code !== 68 || !hasPlayerTargetFlag(effect)) &&
     (effect.code !== 56 || hasPlayerTargetFlag(effect))
+  );
+}
+
+export function isKnownTemporaryMonsterNoBattleDamageEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 200 &&
+    effect.sourceUid !== undefined &&
+    effect.reset?.flags === luaResetsStandardPhaseEnd &&
+    effect.value === undefined &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    !hasPlayerTargetFlag(effect) &&
+    effect.targetRange === undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone"
+  );
+}
+
+export function isKnownTemporaryMonsterExtraAttackEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 346 &&
+    effect.sourceUid !== undefined &&
+    effect.reset?.flags === luaResetsStandardPhaseEnd &&
+    effect.value === 1 &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    !hasPlayerTargetFlag(effect) &&
+    effect.targetRange === undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone"
   );
 }
 

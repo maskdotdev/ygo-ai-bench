@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const damagePreventionFixtureCount = 10;
+const damagePreventionFixtureCount = 11;
 
 describe("Lua real damage-prevention restore coverage", () => {
   it("requires representative real-script damage prevention fixtures to assert restore and response replay", () => {
@@ -142,6 +142,19 @@ function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; require
         "expect(restored.session.state.players[1].lifePoints).toBe(8000)",
         "expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 0 })",
         'eventName: "battleDamageDealt", eventPlayer: 0',
+      ],
+    },
+    {
+      file: "lua-real-script-miracle-locus-temporary-no-battle-damage.test.ts",
+      required: [
+        "expect(restoredEffects.session.state.players[0].lifePoints).toBe(7200)",
+        "expect(restoredEffects.session.state.players[1].lifePoints).toBe(8000)",
+        "expect(restoredEffects.session.state.battleDamage).toEqual({ 0: 800, 1: 0 })",
+        "code: 200",
+        "code: 346",
+        'eventName: "battleDamageDealt"',
+        "eventPlayer: 0, eventValue: 800",
+        'event.eventName === "battleDamageDealt" && event.eventPlayer === 1)).toEqual([])',
       ],
     },
   ].map(({ file, required }) => ({ file: path.join("test", file), required }));
