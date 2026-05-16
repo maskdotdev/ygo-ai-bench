@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { duelActionAnchorUids, duelActionUiGroupLabel, isOrphanDuelAction, orphanDuelActionGroups, partitionDuelActionsByAnchor } from "../src/playtest-app/duel-action-anchors.js";
+import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import type { DuelAction } from "#duel/types.js";
 
 describe("duel action anchors", () => {
@@ -108,6 +109,41 @@ describe("duel action anchors", () => {
       { key: "7:prompt:prompt:prompt-a", label: "Option Prompt", promptId: "prompt-a", promptType: "selectOption", windowId: 7, windowKind: "prompt", windowToken: "prompt-window", actions: [prompt] },
       { key: "6:chainResponse:effect", label: "Effects", windowId: 6, windowKind: "chainResponse", actions: [hiddenHandEffect] },
     ]);
+  });
+
+  it("preserves trigger bucket metadata on unreachable trigger UI groups", () => {
+    const hiddenTrigger: DuelAction = {
+      type: "activateTrigger",
+      player: 0,
+      uid: "hidden-hand",
+      triggerId: "trigger-a",
+      triggerBucket: "turnMandatory",
+      effectId: "trigger-effect-a",
+      label: "Hidden trigger",
+      windowId: 9,
+      windowKind: "triggerBucket",
+    };
+    const triggerGroup: DuelLegalActionGroup = {
+      key: "9:triggerBucket:trigger-activate:turnMandatory:0",
+      label: "Trigger Activations",
+      windowId: 9,
+      windowKind: "triggerBucket",
+      triggerBucket: { player: 0, triggerBucket: "turnMandatory", triggerIds: ["trigger-a", "trigger-b"] },
+      triggerOrderPrompt: { id: "9:turnMandatory:0", type: "orderTriggers", player: 0, triggerBucket: "turnMandatory", triggerIds: ["trigger-a", "trigger-b"] },
+      actions: [hiddenTrigger],
+    };
+
+    const [group] = orphanDuelActionGroups([hiddenTrigger], [triggerGroup], new Set());
+    expect(group).toMatchObject({
+      triggerBucket: { player: 0, triggerBucket: "turnMandatory", triggerIds: ["trigger-a", "trigger-b"] },
+      triggerOrderPrompt: { id: "9:turnMandatory:0", triggerIds: ["trigger-a", "trigger-b"] },
+    });
+
+    group!.triggerBucket!.triggerIds.push("mutated-bucket");
+    group!.triggerOrderPrompt!.triggerIds.push("mutated-prompt");
+
+    expect(triggerGroup.triggerBucket!.triggerIds).toEqual(["trigger-a", "trigger-b"]);
+    expect(triggerGroup.triggerOrderPrompt!.triggerIds).toEqual(["trigger-a", "trigger-b"]);
   });
 
   it("uses app-facing battle group labels without changing engine labels", () => {

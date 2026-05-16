@@ -1,5 +1,5 @@
 import { copyDuelAction } from "#duel/action-copy.js";
-import type { DuelAction } from "#duel/types.js";
+import type { DuelAction, PendingTriggerBucketState, TriggerOrderPromptState } from "#duel/types.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 
 export interface DuelActionUiGroup {
@@ -10,6 +10,8 @@ export interface DuelActionUiGroup {
   windowId?: number;
   windowKind?: DuelLegalActionGroup["windowKind"];
   windowToken?: string;
+  triggerBucket?: PendingTriggerBucketState;
+  triggerOrderPrompt?: TriggerOrderPromptState;
   actions: DuelAction[];
 }
 
@@ -134,6 +136,8 @@ export function orphanDuelActionGroups(
       ...(group.windowId === undefined ? {} : { windowId: group.windowId }),
       ...(group.windowKind === undefined ? {} : { windowKind: group.windowKind }),
       ...(group.windowToken === undefined ? {} : { windowToken: group.windowToken }),
+      ...(group.triggerBucket === undefined ? {} : { triggerBucket: { ...group.triggerBucket, triggerIds: [...group.triggerBucket.triggerIds] } }),
+      ...(group.triggerOrderPrompt === undefined ? {} : { triggerOrderPrompt: { ...group.triggerOrderPrompt, triggerIds: [...group.triggerOrderPrompt.triggerIds] } }),
       actions: dedupeDuelActions(group.actions.filter((action) => orphanKeys.has(duelActionUiKey(action)))),
     }))
     .filter((group) => group.actions.length > 0);
