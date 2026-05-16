@@ -10,6 +10,7 @@ const luaPhaseEndEventCode = 0x1000 | 0x200;
 const luaPhaseEndResetFlags = 0x40000000 | 0x200;
 const luaYellowAlertCode = "59277750";
 const luaUnleashYourPowerCode = "73567374";
+const luaTsumuhaKutsunagiCode = "78098950";
 
 export function isKnownYellowAlertDelayedReturnEffect(effect: SerializedDuelEffect): boolean {
   return (
@@ -53,6 +54,41 @@ export function isKnownUnleashYourPowerDelayedSetEffect(effect: SerializedDuelEf
     effect.reset?.flags === luaPhaseEndResetFlags &&
     hasDefaultLuaFieldRange(effect)
   );
+}
+
+export function isKnownTsumuhaKutsunagiDelayedShuffleEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaTsumuhaKutsunagiCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === luaPhaseEndEventCode &&
+    effect.triggerEvent === "phaseEnd" &&
+    effect.triggerCode === luaPhaseEndEventCode &&
+    effect.sourceUid !== undefined &&
+    effect.targetRange === undefined &&
+    effect.countLimit === 1 &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
+export function tsumuhaKutsunagiDelayedShuffleOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const targetUids = ctx.duel.cards
+      .filter((card) => card.location === "monsterZone" || card.location === "spellTrapZone" || card.location === "graveyard" || card.location === "banished")
+      .sort((left, right) => left.controller - right.controller || left.sequence - right.sequence || left.uid.localeCompare(right.uid))
+      .map((card) => card.uid);
+    for (const uid of targetUids) {
+      const target = ctx.duel.cards.find((card) => card.uid === uid);
+      if (!target) continue;
+      try {
+        moveDuelCardWithRedirects(ctx.duel, target.uid, "deck", target.controller, duelReason.effect, effect.controller, {
+          eventReasonCardUid: effect.sourceUid,
+        });
+      } catch {
+        // EDOPro-style delayed operations ignore cards that can no longer move.
+      }
+    }
+  };
 }
 
 export function unleashYourPowerDelayedSetOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {

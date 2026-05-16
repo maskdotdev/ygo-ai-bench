@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 17;
+const spiritFixtureCount = 18;
 
 describe("Lua real Spirit restore coverage", () => {
   it("requires representative Spirit fixtures to prove clean Lua restore and replayed legal actions", () => {
@@ -195,6 +195,25 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
         'eventName: "specialSummoned"',
         'location: "hand", controller: 0',
         'summonType: "pendulum"',
+      ],
+    },
+    {
+      file: "lua-real-script-tsumuha-kutsunagi-delayed-shuffle.test.ts",
+      required: [
+        'action.type === "tributeSummon"',
+        'action.type === "activateTrigger"',
+        'action.type === "passChain"',
+        'api: "SelectYesNo"',
+        'eventName: "normalSummoned"',
+        'eventName: "sentToGraveyard"',
+        'eventName: "cardsDrawn"',
+        'eventName: "sentToDeck"',
+        "possibleOperationInfos",
+        "category: 32",
+        "category: 16",
+        'location: "graveyard", controller: 1',
+        'location: "hand", controller: 0',
+        'location: "deck", controller: 0',
       ],
     },
     {
