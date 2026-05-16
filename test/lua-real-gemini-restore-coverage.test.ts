@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const geminiFixtureCount = 14;
-const geminiStatusFixtureCount = 12;
+const geminiFixtureCount = 15;
+const geminiStatusFixtureCount = 13;
 const geminiOperationFixtureCount = 10;
 const geminiStateFixtureCount = 4;
 
@@ -104,6 +104,7 @@ function geminiFixtureFiles(): string[] {
     "lua-real-script-magical-reflect-slime-gemini-battle-damage.test.ts",
     "lua-real-script-super-double-summon-gemini-return.test.ts",
     "lua-real-script-supervise-gemini-equip-revive.test.ts",
+    "lua-real-script-tuned-magician-gemini-tuner-type.test.ts",
     "lua-real-script-unleash-your-power-gemini-delayed-set.test.ts",
   ]
     .map((file) => path.join("test", file))
@@ -123,6 +124,7 @@ function geminiStatusFixtureFiles(): string[] {
     "lua-real-script-magical-reflect-slime-gemini-battle-damage.test.ts",
     "lua-real-script-super-double-summon-gemini-return.test.ts",
     "lua-real-script-supervise-gemini-equip-revive.test.ts",
+    "lua-real-script-tuned-magician-gemini-tuner-type.test.ts",
     "lua-real-script-unleash-your-power-gemini-delayed-set.test.ts",
   ]
     .map((file) => path.join("test", file))
