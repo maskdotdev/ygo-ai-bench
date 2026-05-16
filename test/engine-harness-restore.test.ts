@@ -407,6 +407,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
                   eventName: "normalSummoned",
                   triggerBucket: "turnOptional",
                   eventCardUid: "p0-deck-100-0",
+                  eventTriggerTiming: "if",
                 },
               ],
               legalActions: [
@@ -431,6 +432,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               eventName: "normalSummoned",
               triggerBucket: "turnOptional",
               eventCardUid: "p0-deck-100-0",
+              eventTriggerTiming: "if",
             },
           ],
           chain: [],

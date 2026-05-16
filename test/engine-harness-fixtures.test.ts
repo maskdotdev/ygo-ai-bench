@@ -422,7 +422,7 @@ describe("EDOPro compatibility harness fixtures", () => {
               source: "edopro",
               windowId: 1,
               waitingFor: 0,
-              pendingTriggers: [{ player: 0, effectId: "fixture-normal-summon-trigger", eventName: "normalSummoned", triggerBucket: "turnOptional", eventCardUid: "p0-deck-100-0" }],
+              pendingTriggers: [{ player: 0, effectId: "fixture-normal-summon-trigger", eventName: "normalSummoned", triggerBucket: "turnOptional", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
               legalActions: [{ type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "fixture-normal-summon-trigger", triggerBucket: "turnOptional", count: 1 }],
               legalActionGroups: [triggerActivationGroup(0, "fixture-normal-summon-trigger", "turnOptional", 1, 1)],
             },
