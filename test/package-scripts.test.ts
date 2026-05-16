@@ -37,6 +37,8 @@ describe("package scripts", () => {
     expect(pkg.scripts?.["check:pvp-bridge-bundle"]).toContain("--required autoRunVisible");
     expect(pkg.scripts?.["export:browser-cdb"]).toContain("tools/export-browser-cdb-rows.mjs");
     expect(pkg.scripts?.["export:browser-cdb"]).toContain("--out public/card-data/cdb-rows.json");
+    expect(pkg.scripts?.["export:browser-scripts"]).toContain("tools/export-browser-lua-scripts.mjs");
+    expect(pkg.scripts?.["export:browser-scripts"]).toContain("--out public/card-scripts");
     expect(pkg.scripts?.check?.split(" && ")).toEqual([
       "bun run check:loc",
       "bun run scan:lua-parity",
