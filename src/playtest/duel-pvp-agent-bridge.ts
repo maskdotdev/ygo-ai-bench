@@ -107,7 +107,8 @@ export function createDuelPvpAgent(): DuelPvpAgent {
       return getLegalActions(session, player ?? queryPublicState(session).waitingFor ?? 0).map(copyDuelAction);
     },
     visibleBattlefield(player, sessionId) {
-      return visibleBattlefieldView(getSession(sessionId), player ?? 0);
+      const session = getSession(sessionId);
+      return visibleBattlefieldView(session, player ?? queryPublicState(session).waitingFor ?? 0);
     },
     action(action, sessionId) {
       return applyResponse(getSession(sessionId), action);

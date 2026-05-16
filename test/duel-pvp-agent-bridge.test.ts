@@ -51,6 +51,21 @@ describe("duel pvp agent bridge", () => {
     expect(agent.visibleBattlefield(0, restored.sessionId)).toEqual(before);
   });
 
+  it("defaults visible battlefield reads to the waiting player", () => {
+    const agent = createDuelPvpAgent();
+    const started = agent.start({ player0Ydk: starterYdk, player1Ydk: starterYdk, seed: "pvp-agent-waiting-player", handSize: 2 });
+    const snapshot = agent.serialize(started.sessionId);
+    snapshot.state.prompt = { id: "agent-waiting-prompt", type: "selectOption", player: 1, options: [3, 5], returnTo: 0 };
+    snapshot.state.waitingFor = 1;
+    agent.restore(snapshot);
+
+    const visible = agent.visibleBattlefield(undefined, started.sessionId);
+
+    expect(visible.player).toBe(1);
+    expect(visible.prompt).toMatchObject({ label: "Option Prompt", detail: "P2 · Prompt agent-waiting-prompt · returns P1 · options 3, 5" });
+    expect(visible.actions).toContainEqual(expect.objectContaining({ type: "selectOption", player: 1, promptId: "agent-waiting-prompt", option: 5 }));
+  });
+
   it("runs visible battlefield scripts and reports divergence through visible actions", () => {
     const agent = createDuelPvpAgent();
     const started = agent.start({ player0Ydk: starterYdk, player1Ydk: starterYdk, seed: "pvp-agent-script", handSize: 2 });
