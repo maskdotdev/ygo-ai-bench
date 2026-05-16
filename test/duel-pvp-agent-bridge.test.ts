@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getLegalActions, loadDecks, queryPublicState, registerEffect, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
-import type { DuelCardData } from "#duel/types.js";
+import type { DuelCardData, PublicDuelState } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import type { LuaScriptSource } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
@@ -61,8 +61,12 @@ describe("duel pvp agent bridge", () => {
     expect(agent.status()).toMatchObject({ sessions: 1, activeSessionId: started.sessionId });
     expect(started.state.status).toBe("awaiting");
     expect(started.legalActionGroups.flatMap((group) => group.actions)).toEqual(started.legalActions);
+    expectActionsStampedWithCurrentWindow(started.legalActions, started.state);
+    expectGroupsStampedWithCurrentWindow(started.legalActionGroups, started.state);
     expect(started.visibleBattlefield.actions).toHaveLength(4);
     expect(started.visibleBattlefield.prompt).toBeUndefined();
+    expectActionsStampedWithCurrentWindow(started.visibleBattlefield.actions, started.state);
+    expectGroupsStampedWithCurrentWindow(started.visibleBattlefield.groups, started.state);
     expect(started.visibleBattlefield.groups.flatMap((group) => group.actions).every((action) => (
       started.visibleBattlefield.actions.some((visible) => JSON.stringify(visible) === JSON.stringify(action))
     ))).toBe(true);
@@ -235,6 +239,7 @@ describe("duel pvp agent bridge", () => {
       label: "Trigger Order",
       detail: "P1 · turnMandatory · 2 triggers",
     });
+    expectGroupsStampedWithCurrentWindow(visible.triggerOrder?.groups ?? [], restored.state);
     expect(visible.triggerOrder?.groups.flatMap((group) => group.actions).map((action) => (
       action.type === "activateTrigger" ? action.effectId : action.type
     ))).toEqual(["agent-first-mandatory", "agent-second-mandatory"]);
@@ -276,6 +281,7 @@ describe("duel pvp agent bridge", () => {
     expect(restored.state.triggerOrderPrompt).toMatchObject({ player: 0, triggerBucket: "turnMandatory" });
     expect(restored.legalActions.filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toHaveLength(2);
     expect(restored.visibleBattlefield.triggerOrder).toMatchObject({ label: "Trigger Order", detail: "P1 · turnMandatory · 2 triggers" });
+    expectGroupsStampedWithCurrentWindow(restored.visibleBattlefield.triggerOrder?.groups ?? [], restored.state);
   });
 
   it("runs visible scripts through restored Lua trigger-order windows", () => {
@@ -321,6 +327,7 @@ describe("duel pvp agent bridge", () => {
     const visible = agent.visibleBattlefield(0, started.sessionId);
     expect(visible.prompt?.detail).toBe("P1 · Prompt lua-prompt-1 · Lua operation · returns P1 · SelectOption · options 0, 1 · text 700, 800");
     expect(visible.prompt?.luaPrompt).toEqual(prompted.state.luaOperationPrompt?.prompt);
+    expectGroupsStampedWithCurrentWindow(visible.prompt?.groups ?? [], prompted.state);
     if (!visible.prompt?.luaPrompt || !("options" in visible.prompt.luaPrompt)) throw new Error("Expected Lua option prompt");
     visible.prompt.luaPrompt.options.push(9);
     visible.prompt.luaPrompt.descriptions.push(900);
@@ -441,6 +448,7 @@ describe("duel pvp agent bridge", () => {
       { type: "selectOption", option: 3, action: { type: "selectOption", promptId: "agent-waiting-prompt", option: 3 } },
       { type: "selectOption", option: 5, action: { type: "selectOption", promptId: "agent-waiting-prompt", option: 5 } },
     ]);
+    expectGroupsStampedWithCurrentWindow(visible.prompt?.groups ?? [], agent.state(started.sessionId).state);
     expect(visible.actions).toContainEqual(expect.objectContaining({ type: "selectOption", player: 1, promptId: "agent-waiting-prompt", option: 5 }));
   });
 
@@ -571,10 +579,40 @@ describe("duel pvp agent bridge", () => {
     expect(result.ok).toBe(true);
     expect(result.reason).toBe("maxActions");
     expect(result.prompt).toMatchObject({ label: "Yes / No Prompt", detail: "P1 · Prompt agent-auto-prompt · returns P2 · text 901" });
+    expectGroupsStampedWithCurrentWindow(result.prompt?.groups ?? [], result.state);
     expect(result.prompt?.groups.flatMap((group) => group.actions)).toEqual(result.visibleActions);
     expect(result.visibleActions).toContainEqual(expect.objectContaining({ type: "selectYesNo", promptId: "agent-auto-prompt", yes: true }));
   });
 });
+
+interface WindowStampedAction {
+  windowId?: number;
+  windowKind?: PublicDuelState["windowKind"];
+  windowToken?: string;
+}
+
+interface WindowStampedGroup extends WindowStampedAction {
+  actions: readonly WindowStampedAction[];
+}
+
+function expectActionsStampedWithCurrentWindow(actions: readonly WindowStampedAction[], state: PublicDuelState): void {
+  expect(actions.length).toBeGreaterThan(0);
+  for (const action of actions) {
+    expect(action.windowId).toBe(state.actionWindowId);
+    expect(action.windowKind).toBe(state.windowKind);
+    expect(action.windowToken).toBe(state.actionWindowToken);
+  }
+}
+
+function expectGroupsStampedWithCurrentWindow(groups: readonly WindowStampedGroup[], state: PublicDuelState): void {
+  expect(groups.length).toBeGreaterThan(0);
+  for (const group of groups) {
+    expect(group.windowId).toBe(state.actionWindowId);
+    expect(group.windowKind).toBe(state.windowKind);
+    expect(group.windowToken).toBe(state.actionWindowToken);
+    expectActionsStampedWithCurrentWindow(group.actions, state);
+  }
+}
 
 function luaMandatoryTriggerScript(code: "200" | "300"): string {
   return `
