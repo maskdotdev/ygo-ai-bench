@@ -755,6 +755,181 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       expect(restoredBattle.session.state.cards.find((card) => card.uid === battleTarget!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
       expect(restoredBattle.session.state.players[1].lifePoints).toBe(7200);
     });
+
+    it("restores Cestus of Dagla equip Fairy filtering, attack boost, and battle-damage recovery", () => {
+      const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+      const cestusCode = "28106077";
+      const fairyCode = "601044";
+      const warriorCode = "601045";
+      const battleTargetCode = "601046";
+      const responderCode = "601047";
+      const cards = [
+        ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === cestusCode),
+        { code: fairyCode, name: "Cestus Fairy Target", kind: "monster" as const, typeFlags: 0x1, race: 0x4, level: 4, attack: 1500, defense: 1200 },
+        { code: warriorCode, name: "Cestus Warrior Decoy", kind: "monster" as const, typeFlags: 0x1, race: 0x1, level: 4, attack: 1600, defense: 1000 },
+        { code: battleTargetCode, name: "Cestus Battle Target", kind: "monster" as const, typeFlags: 0x1, race: 0x1, level: 4, attack: 1000, defense: 1000 },
+        { code: responderCode, name: "Cestus Chain Responder", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      ];
+      const reader = createCardReader(cards);
+      const session = createDuel({ seed: 309, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+      loadDecks(session, { 0: { main: [cestusCode, fairyCode, warriorCode] }, 1: { main: [battleTargetCode, responderCode] } });
+      startDuel(session);
+
+      const cestus = session.state.cards.find((card) => card.code === cestusCode);
+      const fairy = session.state.cards.find((card) => card.code === fairyCode);
+      const warrior = session.state.cards.find((card) => card.code === warriorCode);
+      const battleTarget = session.state.cards.find((card) => card.code === battleTargetCode);
+      const responder = session.state.cards.find((card) => card.code === responderCode);
+      expect(cestus).toBeDefined();
+      expect(fairy).toBeDefined();
+      expect(warrior).toBeDefined();
+      expect(battleTarget).toBeDefined();
+      expect(responder).toBeDefined();
+      moveDuelCard(session.state, cestus!.uid, "hand", 0);
+      moveDuelCard(session.state, fairy!.uid, "monsterZone", 0).position = "faceUpAttack";
+      moveDuelCard(session.state, warrior!.uid, "monsterZone", 0).position = "faceUpAttack";
+      moveDuelCard(session.state, battleTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
+      moveDuelCard(session.state, responder!.uid, "hand", 1);
+      session.state.phase = "main1";
+      session.state.waitingFor = 0;
+
+      const source = {
+        readScript(name: string) {
+          if (name === `c${responderCode}.lua`) return chainResponderScript();
+          return workspace.readScript(name);
+        },
+      };
+      const host = createLuaScriptHost(session, workspace);
+      expect(host.loadCardScript(Number(cestusCode), source).ok).toBe(true);
+      expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+      expect(host.registerInitialEffects()).toBe(2);
+
+      const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+      expectCleanRestore(restoredEquipWindow);
+      expectRestoredLegalActions(restoredEquipWindow, restoredEquipWindow.session.state.waitingFor ?? restoredEquipWindow.session.state.turnPlayer);
+      const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === cestus!.uid);
+      expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
+      applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
+
+      expect(restoredEquipWindow.session.state.chain).toHaveLength(1);
+      const equipChain = restoredEquipWindow.session.state.chain[0]!;
+      expect(equipChain.activationLocation).toBe("hand");
+      expect(equipChain.sourceUid).toBe(cestus!.uid);
+      expect(equipChain.targetUids).toEqual([fairy!.uid]);
+      expect(equipChain.operationInfos).toEqual([{ category: 0x40000, targetUids: [cestus!.uid], count: 1, player: 0, parameter: 0 }]);
+      expect(restoredEquipWindow.session.state.chain[0]?.targetUids).not.toContain(warrior!.uid);
+
+      const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
+      expectCleanRestore(restoredChain);
+      expectRestoredLegalActions(restoredChain, restoredChain.session.state.waitingFor ?? restoredChain.session.state.turnPlayer);
+      expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+      resolveRestoredChain(restoredChain);
+
+      expect(restoredChain.host.messages).not.toContain("equip responder resolved");
+      expect(restoredChain.session.state.cards.find((card) => card.uid === cestus!.uid)).toMatchObject({
+        location: "spellTrapZone",
+        equippedToUid: fairy!.uid,
+        faceUp: true,
+      });
+      const restoredWarrior = restoredChain.session.state.cards.find((card) => card.uid === warrior!.uid);
+      expect(restoredWarrior).toMatchObject({ location: "monsterZone" });
+      expect(restoredWarrior?.equippedToUid).toBeUndefined();
+
+      const restoredEquipState = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
+      expectCleanRestore(restoredEquipState);
+      expectRestoredLegalActions(restoredEquipState, restoredEquipState.session.state.waitingFor ?? restoredEquipState.session.state.turnPlayer);
+      const restoredCestusTrigger = restoredEquipState.session.state.effects.find((effect) => effect.sourceUid === cestus!.uid && effect.code === 1143);
+      expect(restoredCestusTrigger?.event).toBe("trigger");
+      expect(restoredCestusTrigger?.range).toEqual(["spellTrapZone"]);
+      const restoredCestusAttack = restoredEquipState.session.state.effects.find((effect) => effect.sourceUid === cestus!.uid && effect.code === 100);
+      expect(restoredCestusAttack?.event).toBe("continuous");
+      expect(restoredCestusAttack?.range).toEqual(["spellTrapZone"]);
+      expect(restoredCestusAttack?.value).toBe(500);
+      expectLuaEquipProbe(restoredEquipState, fairyCode, cestusCode, "equip probe 28106077/2000");
+
+      restoredEquipState.session.state.turnPlayer = 0;
+      restoredEquipState.session.state.phase = "battle";
+      restoredEquipState.session.state.waitingFor = 0;
+      const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredEquipState.session), source, reader);
+      expectCleanRestore(restoredBattle);
+      expectRestoredLegalActions(restoredBattle, restoredBattle.session.state.waitingFor ?? restoredBattle.session.state.turnPlayer);
+      const attack = getLuaRestoreLegalActions(restoredBattle, 0).find(
+        (action) => action.type === "declareAttack" && action.attackerUid === fairy!.uid && action.targetUid === battleTarget!.uid,
+      );
+      expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredBattle, 0), null, 2)).toBeDefined();
+      applyLuaRestoreAndAssert(restoredBattle, attack!);
+      passRestoredBattleResponsesUntilTrigger(restoredBattle);
+
+      expect(restoredBattle.session.state.players[0].lifePoints).toBe(8000);
+      expect(restoredBattle.session.state.players[1].lifePoints).toBe(7000);
+      const pendingTrigger = restoredBattle.session.state.pendingTriggers[0]!;
+      expect(restoredBattle.session.state.pendingTriggers).toEqual([
+        {
+          effectId: pendingTrigger.effectId,
+          eventName: "battleDamageDealt",
+          eventCode: 1143,
+          eventCardUid: fairy!.uid,
+          eventCurrentState: {
+            controller: 0,
+            faceUp: true,
+            location: "monsterZone",
+            position: "faceUpAttack",
+            sequence: 0,
+          },
+          eventPlayer: 1,
+          eventPreviousState: {
+            controller: 0,
+            faceUp: false,
+            location: "deck",
+            position: "faceDown",
+            sequence: 2,
+          },
+          eventReason: duelReason.battle,
+          eventReasonPlayer: 0,
+          eventTriggerTiming: "when",
+          eventValue: 1000,
+          id: pendingTrigger.id,
+          player: 0,
+          sourceUid: cestus!.uid,
+          triggerBucket: "turnMandatory",
+        },
+      ]);
+
+      const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredBattle.session), source, reader);
+      expectCleanRestore(restoredTrigger);
+      expectRestoredLegalActions(restoredTrigger, 0);
+      const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === cestus!.uid);
+      expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
+      applyLuaRestoreAndAssert(restoredTrigger, trigger!);
+      expect(restoredTrigger.session.state.chain).toHaveLength(1);
+      const recoveryChain = restoredTrigger.session.state.chain[0]!;
+      expect(recoveryChain.activationLocation).toBe("spellTrapZone");
+      expect(recoveryChain.sourceUid).toBe(cestus!.uid);
+      expect(recoveryChain.targetParam).toBe(1000);
+      expect(recoveryChain.targetPlayer).toBe(0);
+      expect(recoveryChain.operationInfos).toEqual([{ category: 0x100000, targetUids: [], count: 0, player: 0, parameter: 1000 }]);
+
+      const restoredRecoveryChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);
+      expectCleanRestore(restoredRecoveryChain);
+      expectRestoredLegalActions(restoredRecoveryChain, 1);
+      resolveRestoredChain(restoredRecoveryChain);
+
+      expect(restoredRecoveryChain.session.state.players[0].lifePoints).toBe(9000);
+      expect(restoredRecoveryChain.session.state.players[1].lifePoints).toBe(7000);
+      expect(restoredRecoveryChain.session.state.cards.find((card) => card.uid === battleTarget!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
+      expect(restoredRecoveryChain.session.state.eventHistory.filter((event) => event.eventName === "recoveredLifePoints" && event.eventPlayer === 0)).toEqual([
+        {
+          eventName: "recoveredLifePoints",
+          eventCode: 1112,
+          eventPlayer: 0,
+          eventValue: 1000,
+          eventReason: duelReason.effect,
+          eventReasonPlayer: 0,
+          eventReasonCardUid: cestus!.uid,
+          eventReasonEffectId: 3,
+        },
+      ]);
+    });
 });
 
 function chainResponderScript(): string {
@@ -764,6 +939,8 @@ function chainResponderScript(): string {
       local e=Effect.CreateEffect(c)
       e:SetType(EFFECT_TYPE_QUICK_O)
       e:SetCode(EVENT_FREE_CHAIN)
+      e:SetProperty(EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_DAMAGE_CAL)
+      e:SetHintTiming(TIMING_BATTLE_PHASE)
       e:SetRange(LOCATION_HAND)
       e:SetCondition(function(e,tp) return Duel.GetCurrentChain()>0 end)
       e:SetOperation(function(e,tp) Debug.Message("equip responder resolved") end)
