@@ -40,6 +40,7 @@ describe("package scripts", () => {
     expect(pkg.scripts?.["export:browser-scripts"]).toContain("tools/export-browser-lua-scripts.mjs");
     expect(pkg.scripts?.["export:browser-scripts"]).toContain("--local-scripts local-card-scripts");
     expect(pkg.scripts?.["export:browser-scripts"]).toContain("--out public/card-scripts");
+    expect(pkg.scripts?.["export:browser-data"]).toBe("bun run export:browser-cdb && bun run export:browser-scripts");
     expect(pkg.scripts?.check?.split(" && ")).toEqual([
       "bun run check:loc",
       "bun run scan:lua-parity",
