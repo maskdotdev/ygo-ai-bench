@@ -6,7 +6,7 @@ import {
 } from "#duel/core.js";
 import { copyDuelAction } from "#duel/action-copy.js";
 import type { ApplyDuelResponseResult, DuelAction, DuelActionWindowKind, DuelPhase, DuelSession, PlayerId, PublicDuelState, TriggerBucket } from "#duel/types.js";
-import { duelActionAnchorUids, duelActionUiGroupLabel, type DuelActionUiGroup } from "./duel-action-anchors.js";
+import { duelActionAnchorUids, duelActionUiGroupLabel, duelActionUiGroupSelectionKind, type DuelActionUiGroup, type DuelActionUiSelectionKind } from "./duel-action-anchors.js";
 import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "./duel-battlefield-actions.js";
 import { duelPromptView, type DuelPromptView } from "./duel-prompt-view.js";
 import { copyDuelTriggerOrderView, duelTriggerOrderView, type DuelTriggerOrderView } from "./duel-trigger-order-view.js";
@@ -33,6 +33,7 @@ export interface DuelBattlefieldActionSelector {
   triggerBucket?: TriggerBucket;
   labelIncludes?: string;
   groupLabel?: string;
+  groupSelectionKind?: DuelActionUiSelectionKind;
   occurrence?: number;
 }
 
@@ -189,13 +190,12 @@ function selectVisibleBattlefieldAction(
   visibleActions: readonly DuelAction[],
   visibleGroups: readonly DuelActionUiGroup[],
 ): DuelAction | undefined {
-  const groupKeys = new Set(
-    selector.groupLabel === undefined
-      ? []
-      : visibleGroups
-        .filter((group) => duelActionUiGroupLabel(group) === selector.groupLabel)
-        .flatMap((group) => group.actions.map((action) => JSON.stringify(action))),
-  );
+  const groupKeys = selector.groupLabel === undefined && selector.groupSelectionKind === undefined
+    ? undefined
+    : new Set(visibleGroups
+      .filter((group) => selector.groupLabel === undefined || duelActionUiGroupLabel(group) === selector.groupLabel)
+      .filter((group) => selector.groupSelectionKind === undefined || group.selectionKind === selector.groupSelectionKind)
+      .flatMap((group) => group.actions.map((action) => JSON.stringify(action))));
   const matches = visibleActions.filter((action) => {
     if (action.type !== selector.type) return false;
     if (selector.windowId !== undefined && action.windowId !== selector.windowId) return false;
@@ -229,7 +229,8 @@ function selectVisibleBattlefieldAction(
     if (selector.triggerId !== undefined && (!("triggerId" in action) || action.triggerId !== selector.triggerId)) return false;
     if (selector.triggerBucket !== undefined && (!("triggerBucket" in action) || action.triggerBucket !== selector.triggerBucket)) return false;
     if (selector.labelIncludes !== undefined && !action.label.includes(selector.labelIncludes)) return false;
-    if (selector.groupLabel !== undefined && !groupKeys.has(JSON.stringify(action))) return false;
+    if (selector.groupLabel !== undefined && !groupKeys?.has(JSON.stringify(action))) return false;
+    if (selector.groupSelectionKind !== undefined && !groupKeys?.has(JSON.stringify(action)) && actionSelectionKind(action) !== selector.groupSelectionKind) return false;
     return true;
   });
   const selected = matches[selector.occurrence ?? 0];
@@ -260,12 +261,17 @@ function describeBattlefieldSelector(selector: DuelBattlefieldActionSelector): s
     selector.triggerBucket !== undefined ? `triggerBucket=${selector.triggerBucket}` : undefined,
     selector.labelIncludes ? `labelIncludes=${selector.labelIncludes}` : undefined,
     selector.groupLabel ? `groupLabel=${selector.groupLabel}` : undefined,
+    selector.groupSelectionKind ? `groupSelectionKind=${selector.groupSelectionKind}` : undefined,
     selector.occurrence !== undefined ? `occurrence=${selector.occurrence}` : undefined,
   ].filter(Boolean).join(" ");
 }
 
 function isMaterialSelectionAction(action: DuelAction): action is Extract<DuelAction, { materialUids: string[] }> {
   return action.type === "fusionSummon" || action.type === "synchroSummon" || action.type === "xyzSummon" || action.type === "linkSummon" || action.type === "ritualSummon";
+}
+
+function actionSelectionKind(action: DuelAction): DuelActionUiSelectionKind | undefined {
+  return duelActionUiGroupSelectionKind({ actions: [action], windowKind: action.windowKind });
 }
 
 function sameStringMembers(a: readonly string[], b: readonly string[]): boolean {

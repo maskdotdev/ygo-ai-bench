@@ -187,6 +187,30 @@ describe("duel battlefield action view", () => {
     expect(result.state.cards.find((card) => card.uid === second!.uid)).toMatchObject({ location: "graveyard" });
   });
 
+  it("matches visible scripts by structured selection group kind", () => {
+    const session = createDuel({ seed: 992, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const first = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const second = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const fusion = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    expect(fusion).toBeDefined();
+    specialSummonDuelCard(session.state, first!.uid, 0);
+    specialSummonDuelCard(session.state, second!.uid, 0);
+
+    const result = runDuelBattlefieldScript(session, [
+      { player: 0, type: "fusionSummon", uid: fusion!.uid, materialUids: [first!.uid, second!.uid], groupSelectionKind: "material" },
+    ]);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === fusion!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
+  });
+
   it("reports material selector fields when visible summon scripts diverge", () => {
     const session = createDuel({ seed: 993, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -369,6 +393,26 @@ describe("duel battlefield action view", () => {
     expect(result.failedStep).toBe(2);
     expect(result.failure).toBe("No visible battlefield action matched player=1 type=passDamage groupLabel=Damage Step Response");
     expect(result.visibleGroups).toContainEqual(expect.objectContaining({ label: "Attack Response" }));
+    expect(result.visibleActions).toContainEqual(expect.objectContaining({ type: "passAttack" }));
+  });
+
+  it("reports visible group selection kind when a battlefield script diverges", () => {
+    const session = directBattleSession();
+    const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "monsterZone" && card.code === "100");
+    expect(attacker).toBeDefined();
+
+    const result = runDuelBattlefieldScript(session, [
+      { player: 0, type: "changePhase", labelIncludes: "battle" },
+      { player: 0, type: "declareAttack", uid: attacker!.uid },
+      { player: 1, type: "passAttack", groupSelectionKind: "battleReplay" },
+    ]);
+
+    expect(result.ok).toBe(false);
+    expect(result.failedStep).toBe(2);
+    expect(result.failure).toBe("No visible battlefield action matched player=1 type=passAttack groupSelectionKind=battleReplay");
+    const responseGroup = result.visibleGroups.find((group) => group.label === "Attack Response");
+    expect(responseGroup).toBeDefined();
+    expect(responseGroup?.selectionKind).toBeUndefined();
     expect(result.visibleActions).toContainEqual(expect.objectContaining({ type: "passAttack" }));
   });
 
