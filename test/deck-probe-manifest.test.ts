@@ -1,5 +1,10 @@
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
+import { createUpstreamSourceConfig } from "#engine/data-loaders.js";
+import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
+
+const upstreamRoot = ".upstream/ignis";
+const hasUpstreamDatabase = fs.existsSync(`${upstreamRoot}/cdb/cards.cdb`);
 
 describe("Lua deck probe manifest", () => {
   it("keeps every root .ydk deck covered by a package-level Lua probe gate", () => {
@@ -167,3 +172,56 @@ describe("Lua deck probe manifest", () => {
     expect(uncovered).toEqual([]);
   });
 });
+
+describe.skipIf(!hasUpstreamDatabase)("Lua deck expected-missing script manifest", () => {
+  it("only budgets scriptless normal monsters as expected missing scripts", () => {
+    const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")) as { scripts?: Record<string, string> };
+    const packageProbeCommands = [
+      ...(pkg.scripts?.["probe:top-tier-deck"] ?? "").split(" && "),
+      ...(pkg.scripts?.["probe:competitive-decks"] ?? "").split(" && "),
+      ...(pkg.scripts?.["probe:fallback-decks"] ?? "").split(" && "),
+    ];
+    const expectedMissingCodes = [...new Set(packageProbeCommands.flatMap((command) => [...command.matchAll(/--expected-missing-script-code (\d+)/g)].flatMap((match) => match[1] ? [match[1]] : [])))].sort();
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const cardsByCode = new Map(workspace.readDatabaseCards("cards.cdb").map((card) => [card.code, card]));
+    const expectedMissingCards = Object.fromEntries(
+      expectedMissingCodes.map((code) => {
+        const card = cardsByCode.get(code);
+        return [
+          code,
+          {
+            name: card?.name,
+            typeFlags: card?.typeFlags,
+            scriptlessNormal: isScriptlessNormalMonster(card?.typeFlags),
+          },
+        ];
+      }),
+    );
+
+    expect(expectedMissingCards).toEqual({
+      "27520594": { name: "Sunseed Genius Loci", typeFlags: 17, scriptlessNormal: true },
+      "46986414": { name: "Dark Magician", typeFlags: 17, scriptlessNormal: true },
+      "74677422": { name: "Red-Eyes Black Dragon", typeFlags: 17, scriptlessNormal: true },
+      "89631139": { name: "Blue-Eyes White Dragon", typeFlags: 17, scriptlessNormal: true },
+      "89943723": { name: "Elemental HERO Neos", typeFlags: 17, scriptlessNormal: true },
+    });
+  });
+});
+
+function isScriptlessNormalMonster(typeFlags: number | undefined): boolean {
+  if (typeFlags === undefined) return false;
+  const isMonster = (typeFlags & 0x1) !== 0;
+  const isNormal = (typeFlags & 0x10) !== 0;
+  const hasScriptBearingType = (typeFlags & (
+    0x2 |
+    0x4 |
+    0x20 |
+    0x40 |
+    0x80 |
+    0x2000 |
+    0x800000 |
+    0x1000000 |
+    0x4000000
+  )) !== 0;
+  return isMonster && isNormal && !hasScriptBearingType;
+}
