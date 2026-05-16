@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelCardData, DuelResponse } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -80,6 +81,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wa
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredActivation, activation!);
 
+    expect(restoredActivation.session.state.chain).toHaveLength(1);
     expect(restoredActivation.session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "spellTrapZone",
@@ -189,6 +191,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wa
     expect((restoredChain.session.state.effects.find((effect) => effect.sourceUid === waboku!.uid && effect.code === effectAvoidBattleDamage)?.property ?? 0) & effectFlagPlayerTarget).toBe(
       effectFlagPlayerTarget,
     );
+    expect(restoredChain.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard" && event.eventCardUid === waboku!.uid)).toEqual([
+      {
+        eventName: "sentToGraveyard",
+        eventCode: 1014,
+        eventCardUid: waboku!.uid,
+        eventReason: duelReason.rule,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "spellTrapZone",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredChain.host.messages).not.toContain("waboku responder resolved");
 
     const restoredProtection = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
