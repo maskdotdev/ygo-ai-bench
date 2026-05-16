@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleDamageConversionFixtureCount = 4;
+const battleDamageConversionFixtureCount = 5;
 
 describe("Lua real battle damage conversion restore coverage", () => {
   it("requires battle damage conversion fixtures to assert clean Lua registry restore and final battle outcomes", () => {
@@ -60,6 +60,20 @@ function battleDamageConversionFixtureFiles(): Array<{ file: string; required: s
         "eventName: \"battleDamageDealt\"",
         "eventPlayer: 0",
         "eventValue: 500",
+      ],
+    },
+    {
+      file: "lua-real-script-gravekeepers-vassal-battle-damage-to-effect.test.ts",
+      required: [
+        "Gravekeeper's Vassal battle damage to effect",
+        "code: 205",
+        "battleDamage).toEqual({ 0: 0, 1: 700 })",
+        "players[0].lifePoints).toBe(8000)",
+        "players[1].lifePoints).toBe(7300)",
+        "effectDamage",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: 64",
+        "eventValue: 700",
       ],
     },
     {
