@@ -603,7 +603,7 @@ interface WindowStampedGroup extends WindowStampedAction {
 }
 
 function expectActionsStampedWithCurrentWindow(actions: readonly WindowStampedAction[], state: PublicDuelState): void {
-  expect(actions.length).toBeGreaterThan(0);
+  expect(actions).not.toEqual([]);
   for (const action of actions) {
     expect(action.windowId).toBe(state.actionWindowId);
     expect(action.windowKind).toBe(state.windowKind);
@@ -612,7 +612,7 @@ function expectActionsStampedWithCurrentWindow(actions: readonly WindowStampedAc
 }
 
 function expectGroupsStampedWithCurrentWindow(groups: readonly WindowStampedGroup[], state: PublicDuelState): void {
-  expect(groups.length).toBeGreaterThan(0);
+  expect(groups).not.toEqual([]);
   for (const group of groups) {
     expect(group.windowId).toBe(state.actionWindowId);
     expect(group.windowKind).toBe(state.windowKind);
