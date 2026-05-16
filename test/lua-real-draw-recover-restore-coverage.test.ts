@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 7;
+const DRAW_RECOVER_FIXTURE_COUNT = 8;
 
 describe("Lua real draw and recover restore coverage", () => {
   it("requires draw/recover fixtures to assert clean Lua registry restore and restored event outcomes", () => {
@@ -59,6 +59,18 @@ function drawRecoverFixtureFiles(): Array<{ file: string; required: string[] }> 
         'location: "graveyard"',
         'location: "hand", controller: 0',
         'recoveredLifePoints")).toEqual([])',
+      ],
+    },
+    {
+      file: "test/lua-real-script-gemini-spark-release-destroy-draw.test.ts",
+      required: [
+        'eventName: "cardsDrawn"',
+        'eventName: "released"',
+        "category: 0x10000",
+        "parameter: 1",
+        'location: "graveyard"',
+        'location: "hand", controller: 0',
+        "gemini spark responder resolved",
       ],
     },
     {
