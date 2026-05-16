@@ -291,7 +291,8 @@ function discardHandCards(session: DuelSession, hostState: LuaDuelDeckApiHostSta
     releaseOptionalFunctionRef(L, filterRef);
     return [];
   }
-  const selected = matchingCardUidsWithFilter(L, session, filterRef, player, 0x02, 0, undefined, readFilterArgs(L, 6)).slice(0, max);
+  const excluded = activeHandActivationCostSourceUid(session, hostState, player, reason);
+  const selected = matchingCardUidsWithFilter(L, session, filterRef, player, 0x02, 0, excluded, readFilterArgs(L, 6)).slice(0, max);
   releaseOptionalFunctionRef(L, filterRef);
   if (selected.length < min) return [];
   const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
@@ -312,6 +313,13 @@ function discardHandCards(session: DuelSession, hostState: LuaDuelDeckApiHostSta
   }
   finishDiscardOperation(session, hostState, triggerStart, discarded);
   return discarded;
+}
+
+function activeHandActivationCostSourceUid(session: DuelSession, hostState: LuaDuelDeckApiHostState, player: PlayerId, reason: number): string | undefined {
+  const source = hostState.activeContext?.source;
+  if ((reason & duelReason.cost) === 0 || hostState.activeContext?.checkOnly || !source) return undefined;
+  const current = session.state.cards.find((card) => card.uid === source.uid);
+  return current?.location === "hand" && current.controller === player ? current.uid : undefined;
 }
 
 function finishDiscardOperation(session: DuelSession, hostState: LuaDuelDeckApiHostState, triggerStart: number, discarded: string[]): void {

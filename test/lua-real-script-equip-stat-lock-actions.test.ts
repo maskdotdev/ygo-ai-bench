@@ -561,6 +561,171 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
     expect(restoredOpponentMain.host.messages).toContain("gravity axe position probe false");
   });
 
+  it("restores Twin Swords discard-cost equip, attack loss, and extra attack", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const tryceCode = "21900719";
+    const targetCode = "601037";
+    const discardCode = "601038";
+    const battleTargetCode = "601039";
+    const responderCode = "601040";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === tryceCode),
+      { code: targetCode, name: "Twin Swords Target", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1800, defense: 1000 },
+      { code: discardCode, name: "Twin Swords Discard Cost", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: battleTargetCode, name: "Twin Swords Battle Target", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: responderCode, name: "Twin Swords Chain Responder", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 317, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [tryceCode, targetCode, discardCode] }, 1: { main: [battleTargetCode, responderCode] } });
+    startDuel(session);
+
+    const tryce = session.state.cards.find((card) => card.code === tryceCode);
+    const target = session.state.cards.find((card) => card.code === targetCode);
+    const discard = session.state.cards.find((card) => card.code === discardCode);
+    const battleTarget = session.state.cards.find((card) => card.code === battleTargetCode);
+    const responder = session.state.cards.find((card) => card.code === responderCode);
+    expect(tryce).toBeDefined();
+    expect(target).toBeDefined();
+    expect(discard).toBeDefined();
+    expect(battleTarget).toBeDefined();
+    expect(responder).toBeDefined();
+    moveDuelCard(session.state, tryce!.uid, "hand", 0);
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, discard!.uid, "hand", 0);
+    moveDuelCard(session.state, battleTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
+    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const source = {
+      readScript(name: string) {
+        if (name === `c${responderCode}.lua`) return chainResponderScript();
+        return workspace.readScript(name);
+      },
+    };
+    const host = createLuaScriptHost(session, source);
+    expect(host.loadCardScript(Number(tryceCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expectCleanRestore(restoredEquipWindow);
+    expectRestoredLegalActions(restoredEquipWindow, restoredEquipWindow.session.state.waitingFor ?? restoredEquipWindow.session.state.turnPlayer);
+    const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === tryce!.uid);
+    expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
+
+    expect(restoredEquipWindow.session.state.cards.find((card) => card.uid === discard!.uid)).toMatchObject({
+      location: "graveyard",
+      previousLocation: "hand",
+      reason: duelReason.cost,
+    });
+    expect(restoredEquipWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+      {
+        "activationLocation": "hand",
+        "activationSequence": 0,
+        "chainIndex": 1,
+        "effectId": "lua-1-1002",
+        "id": "chain-3",
+        "operationInfos": [
+          {
+            "category": 262144,
+            "count": 1,
+            "parameter": 0,
+            "player": 0,
+            "targetUids": [
+              "p0-deck-21900719-0",
+            ],
+          },
+        ],
+        "player": 0,
+        "sourceUid": "p0-deck-21900719-0",
+        "targetUids": [
+          "p0-deck-601037-1",
+        ],
+      }
+    `);
+
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
+    expectCleanRestore(restoredChain);
+    expectRestoredLegalActions(restoredChain, restoredChain.session.state.waitingFor ?? restoredChain.session.state.turnPlayer);
+    expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+    resolveRestoredChain(restoredChain);
+
+    expect(restoredChain.host.messages).not.toContain("equip responder resolved");
+    expect(restoredChain.session.state.cards.find((card) => card.uid === tryce!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      equippedToUid: target!.uid,
+      faceUp: true,
+    });
+
+    const restoredEquipState = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
+    expectCleanRestore(restoredEquipState);
+    expectRestoredLegalActions(restoredEquipState, restoredEquipState.session.state.waitingFor ?? restoredEquipState.session.state.turnPlayer);
+    expect(restoredEquipState.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === tryce!.uid && [100, 194].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
+      [
+        {
+          "canActivate": [Function],
+          "code": 100,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-3-100",
+          "luaTypeFlags": 4,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:21900719:lua-3-100",
+          "sourceUid": "p0-deck-21900719-0",
+          "target": [Function],
+          "value": -500,
+        },
+        {
+          "canActivate": [Function],
+          "code": 194,
+          "controller": 0,
+          "cost": [Function],
+          "event": "continuous",
+          "id": "lua-4-194",
+          "luaTypeFlags": 4,
+          "oncePerTurn": false,
+          "operation": [Function],
+          "range": [
+            "spellTrapZone",
+          ],
+          "registryKey": "lua:21900719:lua-4-194",
+          "sourceUid": "p0-deck-21900719-0",
+          "target": [Function],
+          "value": 1,
+        },
+      ]
+    `);
+    expectLuaEquipProbe(restoredEquipState, targetCode, tryceCode, "equip probe 21900719/1300");
+
+    restoredEquipState.session.state.turnPlayer = 0;
+    restoredEquipState.session.state.phase = "battle";
+    restoredEquipState.session.state.waitingFor = 0;
+    const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredEquipState.session), source, reader);
+    expectCleanRestore(restoredBattle);
+    expectRestoredLegalActions(restoredBattle, restoredBattle.session.state.waitingFor ?? restoredBattle.session.state.turnPlayer);
+    const firstAttack = getLuaRestoreLegalActions(restoredBattle, 0).find(
+      (action) => action.type === "declareAttack" && action.attackerUid === target!.uid && action.targetUid === battleTarget!.uid,
+    );
+    expect(firstAttack, JSON.stringify(getLuaRestoreLegalActions(restoredBattle, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredBattle, firstAttack!);
+    passRestoredBattleResponsesUntilTrigger(restoredBattle);
+    expect(restoredBattle.session.state.cards.find((card) => card.uid === battleTarget!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
+    expect(restoredBattle.session.state.players[1].lifePoints).toBe(7700);
+
+    const restoredSecondAttack = restoreDuelWithLuaScripts(serializeDuel(restoredBattle.session), source, reader);
+    expectCleanRestore(restoredSecondAttack);
+    expectRestoredLegalActions(restoredSecondAttack, 0);
+    expect(getLuaRestoreLegalActions(restoredSecondAttack, 0).some((action) => action.type === "declareAttack" && action.attackerUid === target!.uid && action.directAttack === true)).toBe(true);
+  });
+
   it("restores Guardian Grarl summon procedure gated by face-up Gravity Axe", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const guardianCode = "47150851";
