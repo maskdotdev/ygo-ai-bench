@@ -553,6 +553,8 @@ describe("duel pvp agent bridge", () => {
     expect(result.reason).toBe("maxActions");
     expect(result.steps).toHaveLength(2);
     expect(firstVisibleKeys.has(JSON.stringify(result.steps[0]?.action))).toBe(true);
+    expectActionsStampedWithCurrentWindow([result.steps[0]!.action], started.state);
+    expectActionsHaveWindowStamps(result.steps.map((step) => step.action));
     expect(result.state.id).toBe(started.sessionId);
     expectActionsStampedWithCurrentWindow(result.visibleActions, result.state);
     expectGroupsStampedWithCurrentWindow(result.visibleGroups, result.state);
@@ -608,6 +610,15 @@ function expectActionsStampedWithCurrentWindow(actions: readonly WindowStampedAc
     expect(action.windowId).toBe(state.actionWindowId);
     expect(action.windowKind).toBe(state.windowKind);
     expect(action.windowToken).toBe(state.actionWindowToken);
+  }
+}
+
+function expectActionsHaveWindowStamps(actions: readonly WindowStampedAction[]): void {
+  expect(actions).not.toEqual([]);
+  for (const action of actions) {
+    expect(action.windowId).not.toBeUndefined();
+    expect(action.windowKind).not.toBeUndefined();
+    expect(action.windowToken).not.toBeUndefined();
   }
 }
 
