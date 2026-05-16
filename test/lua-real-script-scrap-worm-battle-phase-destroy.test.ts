@@ -63,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sc
           "target": [Function],
           "triggerCode": 1130,
           "triggerEvent": "attackDeclared",
+          "triggerTiming": "when",
         },
         {
           "canActivate": [Function],

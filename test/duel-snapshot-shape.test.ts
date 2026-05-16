@@ -784,7 +784,7 @@ describe("duel snapshot restore shape validation", () => {
     badActivationLocation.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "effect", activationLocation: "field" as "hand" }];
     missingTriggerTiming.state.effects = [{ id: "trigger-effect", sourceUid, controller: 0, event: "trigger", triggerEvent: "customEvent", triggerTiming: "if", range: ["hand"] }];
     missingTriggerTiming.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "trigger-effect", eventName: "customEvent" }];
-    quickEventPayload.state.effects = [{ id: "quick-effect", sourceUid, controller: 0, event: "quick", triggerEvent: "customEvent", range: ["hand"] }];
+    quickEventPayload.state.effects = [{ id: "quick-effect", sourceUid, controller: 0, event: "quick", triggerEvent: "customEvent", triggerTiming: "if", range: ["hand"] }];
     quickEventPayload.state.chain = [{ id: "link", player: 0, sourceUid, effectId: "quick-effect", eventName: "customEvent" }];
 
     expect(() => restoreDuel(badTargetUids, createCardReader(cards))).toThrow("Malformed duel snapshot: state.chain.0.targetUids.1 must be a string");

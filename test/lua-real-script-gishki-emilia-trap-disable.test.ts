@@ -219,6 +219,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
           "target": [Function],
           "triggerCode": 1020,
           "triggerEvent": "chainSolving",
+          "triggerTiming": "when",
         },
       ]
     `);

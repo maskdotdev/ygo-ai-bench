@@ -113,6 +113,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
           "target": [Function],
           "triggerCode": 4224,
           "triggerEvent": "phaseBattle",
+          "triggerTiming": "when",
         },
         {
           "battleDamageValue": [Function],
@@ -193,6 +194,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
           "sourceUid": "p1-deck-59277750-0",
           "triggerCode": 4224,
           "triggerEvent": "phaseBattle",
+          "triggerTiming": "when",
         },
       ]
     `);

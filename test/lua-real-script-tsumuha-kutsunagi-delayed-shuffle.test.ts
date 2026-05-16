@@ -232,6 +232,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ts
         "target": [Function],
         "triggerCode": 4608,
         "triggerEvent": "phaseEnd",
+        "triggerTiming": "when",
       }
     `);
     expect(restoredPrompt.session.state.eventHistory.filter((event) => event.eventReasonEffectId === 9 && ["sentToGraveyard", "cardsDrawn"].includes(event.eventName))).toEqual([
@@ -392,6 +393,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ts
           "sourceUid": "p0-deck-78098950-0",
           "triggerCode": 4608,
           "triggerEvent": "phaseEnd",
+          "triggerTiming": "when",
         },
       ]
     `);

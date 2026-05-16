@@ -60,6 +60,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
         "target": [Function],
         "triggerCode": 4224,
         "triggerEvent": "phaseBattle",
+        "triggerTiming": "when",
       }
     `);
 
@@ -103,6 +104,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
         "target": [Function],
         "triggerCode": 4224,
         "triggerEvent": "phaseBattle",
+        "triggerTiming": "when",
       }
     `);
     expect(restored.host.messages).toEqual(host.messages);

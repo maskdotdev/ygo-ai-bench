@@ -611,6 +611,7 @@ function assertSnapshotEffects(effects: unknown, cardUids: ReadonlySet<string>):
     }
     if (effect.triggerEvent !== undefined && typeof effect.triggerEvent !== "string") throw new Error(`Malformed duel snapshot: ${path}.triggerEvent must be a string`);
     if (effect.triggerEvent !== undefined && !isDuelEventName(effect.triggerEvent)) throw new Error(`Malformed duel snapshot: ${path}.triggerEvent must be a duel event`);
+    if (effect.triggerEvent !== undefined && effect.triggerTiming === undefined) throw new Error(`Malformed duel snapshot: ${path}.triggerTiming is required when triggerEvent is set`);
     if (effect.triggerTiming !== undefined && effect.triggerTiming !== "if" && effect.triggerTiming !== "when") throw new Error(`Malformed duel snapshot: ${path}.triggerTiming must be trigger timing`);
     if (effect.labelObjectUid !== undefined && typeof effect.labelObjectUid !== "string") throw new Error(`Malformed duel snapshot: ${path}.labelObjectUid must be a string`);
     if (effect.labelObjectUid !== undefined && !cardUids.has(effect.labelObjectUid)) throw new Error(`Malformed duel snapshot: ${path}.labelObjectUid must reference a card`);

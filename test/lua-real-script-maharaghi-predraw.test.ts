@@ -127,6 +127,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
         "sourceUid": "p0-deck-40695128-0",
         "triggerCode": 1113,
         "triggerEvent": "preDraw",
+        "triggerTiming": "when",
       }
     `);
 

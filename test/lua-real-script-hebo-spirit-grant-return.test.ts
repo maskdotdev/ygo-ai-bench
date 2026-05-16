@@ -172,6 +172,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script He
           "sourceUid": "p0-deck-90365483-1",
           "triggerCode": 4608,
           "triggerEvent": "phaseEnd",
+          "triggerTiming": "when",
         },
       ]
     `);

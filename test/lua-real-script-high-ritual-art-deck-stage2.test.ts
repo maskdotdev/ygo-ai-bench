@@ -200,6 +200,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
         "target": [Function],
         "triggerCode": 4608,
         "triggerEvent": "phaseEnd",
+        "triggerTiming": "when",
       }
     `);
 

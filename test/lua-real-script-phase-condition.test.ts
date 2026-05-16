@@ -75,6 +75,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ph
           "targetCardPredicate": [Function],
           "triggerCode": 1027,
           "triggerEvent": "chaining",
+          "triggerTiming": "when",
         },
         {
           "canActivate": [Function],

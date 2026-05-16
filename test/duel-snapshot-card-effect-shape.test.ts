@@ -170,6 +170,33 @@ describe("duel snapshot card and effect shape validation", () => {
     expect(() => restoreDuel(duplicateEffect, createCardReader(cards))).toThrow("Malformed duel snapshot: state.effects.1.id must be unique per source");
   });
 
+  it("requires serialized trigger effects to pin trigger timing", () => {
+    const session = createDuel({ seed: 170, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const source = findPublicCard(session, 0, "hand", "100");
+    expect(source).toBeTruthy();
+    registerEffect(session, {
+      id: "snapshot-default-trigger-timing",
+      registryKey: "snapshot-default-trigger-timing",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "trigger",
+      triggerEvent: "normalSummoned",
+      range: ["hand"],
+      operation() {},
+    });
+    const snapshot = serializeDuel(session);
+    expect(snapshot.state.effects[0]).toMatchObject({ triggerEvent: "normalSummoned", triggerTiming: "if" });
+    const missingTriggerTiming = serializeDuel(session);
+    delete missingTriggerTiming.state.effects[0]!.triggerTiming;
+
+    expect(() => restoreDuel(missingTriggerTiming, createCardReader(cards))).toThrow("Malformed duel snapshot: state.effects.0.triggerTiming is required when triggerEvent is set");
+  });
+
   it("rejects unknown effect snapshot fields before restore", () => {
     const session = createDuel({ seed: 168, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {

@@ -128,6 +128,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
           "target": [Function],
           "triggerCode": 1020,
           "triggerEvent": "chainSolving",
+          "triggerTiming": "when",
         },
       ]
     `);
@@ -203,6 +204,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
           "sourceUid": "p0-deck-24224830-0",
           "triggerCode": 1020,
           "triggerEvent": "chainSolving",
+          "triggerTiming": "when",
         },
       ]
     `);

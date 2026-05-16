@@ -314,7 +314,8 @@ const responseHandlers: DuelResponseHandlers = {
 
 export function registerEffect(session: DuelSession, effect: DuelEffectDefinition): void {
   const disabledBefore = effect.event === "continuous" && effect.code === 2 ? disabledCardUids(session.state) : undefined;
-  session.state.effects.push(effect);
+  const registeredEffect = effect.triggerEvent !== undefined && effect.triggerTiming === undefined ? { ...effect, triggerTiming: "if" as const } : effect;
+  session.state.effects.push(registeredEffect);
   if (disabledBefore) pruneNewlyDisabledCardResets(session.state, disabledBefore, effect.id);
 }
 

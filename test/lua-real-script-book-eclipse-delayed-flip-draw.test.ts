@@ -153,6 +153,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bo
         "target": [Function],
         "triggerCode": 4608,
         "triggerEvent": "phaseEnd",
+        "triggerTiming": "when",
       }
     `);
     expect(restoredChain.host.messages).not.toContain("book of eclipse responder resolved");

@@ -84,6 +84,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script El
           "target": [Function],
           "triggerCode": 1138,
           "triggerEvent": "afterDamageCalculation",
+          "triggerTiming": "when",
         },
         {
           "canActivate": [Function],

@@ -147,6 +147,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
         "sourceUid": "p0-deck-75745607-0",
         "triggerCode": 1113,
         "triggerEvent": "preDraw",
+        "triggerTiming": "when",
       }
     `);
     expect(restoredChain.session.state.cards.find((card) => card.uid === discardA!.uid)).toMatchObject({ location: "hand", controller: 1 });
