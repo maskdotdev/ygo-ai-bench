@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 41;
-const chainedResponseFixtureCount = 40;
-const responseOperationInfoFixtureCount = 36;
+const responseFixtureCount = 46;
+const chainedResponseFixtureCount = 45;
+const responseOperationInfoFixtureCount = 41;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -113,6 +113,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-harpies-feather-duster-group-destroy.test.ts",
     "lua-real-script-grand-horn-special-summon-negate.test.ts",
     "lua-real-script-horn-of-heaven-release-cost-negate.test.ts",
+    "lua-real-script-lightning-storm-select-effect.test.ts",
     "lua-real-script-magic-jammer-chain-negate.test.ts",
     "lua-real-script-magic-cylinder-battle-window.test.ts",
     "lua-real-script-mirror-force-battle-window.test.ts",
@@ -120,6 +121,10 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
     "lua-real-script-negate-attack-battle-window.test.ts",
     "lua-real-script-phoenix-wing-wind-blast-discard-cost.test.ts",
+    "lua-real-script-pot-of-desires-deck-cost.test.ts",
+    "lua-real-script-pot-of-duality-excavate.test.ts",
+    "lua-real-script-pot-of-extravagance-extra-cost.test.ts",
+    "lua-real-script-pot-of-prosperity-excavate.test.ts",
     "lua-real-script-raigeki-group-destroy.test.ts",
     "lua-real-script-raigeki-break-discard-cost.test.ts",
     "lua-real-script-reinforcement-of-the-army-search.test.ts",
