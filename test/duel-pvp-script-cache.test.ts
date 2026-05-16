@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createDuel, loadDecks } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { createBrowserLuaScriptCache, createBrowserLuaScriptFetchLoader } from "../src/playtest-app/duel-pvp-script-cache.js";
+import { createBrowserLuaScriptCache, createBrowserLuaScriptFetchLoader, createBrowserLuaScriptManifestLoader } from "../src/playtest-app/duel-pvp-script-cache.js";
 
 describe("browser PvP Lua script cache", () => {
   it("preloads only missing card scripts and exposes a synchronous Lua source", async () => {
@@ -78,5 +78,43 @@ describe("browser PvP Lua script cache", () => {
     expect(requestedUrls).toEqual(["/card-scripts/c90000013.lua", "/card-scripts/c90000014.lua"]);
     expect(preload).toEqual({ loaded: ["c90000013.lua"], missing: ["c90000014.lua"] });
     expect(cache.readScript("c90000013.lua")).toBe("c90000013={}");
+  });
+
+  it("loads browser Lua script sidecar manifests from the script base URL", async () => {
+    const requestedUrls: string[] = [];
+    const loadManifest = createBrowserLuaScriptManifestLoader({
+      baseUrl: "/card-scripts",
+      fetchJson: async (url) => {
+        requestedUrls.push(url);
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              schemaVersion: 1,
+              kind: "browser-lua-scripts",
+              selectedCodes: ["90000015"],
+              copiedCount: 1,
+              missingCount: 0,
+              copied: ["c90000015.lua"],
+              missing: [],
+              files: [{ name: "c90000015.lua", bytes: 16, sha256: "def456" }],
+            };
+          },
+        };
+      },
+    });
+
+    await expect(loadManifest()).resolves.toEqual({
+      schemaVersion: 1,
+      kind: "browser-lua-scripts",
+      selectedCodes: ["90000015"],
+      copiedCount: 1,
+      missingCount: 0,
+      copied: ["c90000015.lua"],
+      missing: [],
+      files: [{ name: "c90000015.lua", bytes: 16, sha256: "def456" }],
+    });
+    expect(requestedUrls).toEqual(["/card-scripts/manifest.json"]);
   });
 });

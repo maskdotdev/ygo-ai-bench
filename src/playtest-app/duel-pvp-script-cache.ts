@@ -16,6 +16,37 @@ export interface BrowserLuaScriptFetchLoaderOptions {
   fetchText?: BrowserLuaScriptFetch;
 }
 
+export interface BrowserLuaScriptJsonResponse {
+  ok: boolean;
+  status: number;
+  json(): Promise<unknown>;
+}
+
+export type BrowserLuaScriptJsonFetch = (url: string) => Promise<BrowserLuaScriptJsonResponse>;
+
+export interface BrowserLuaScriptManifestLoaderOptions {
+  baseUrl: string;
+  manifestUrl?: string;
+  fetchJson?: BrowserLuaScriptJsonFetch;
+}
+
+export interface BrowserLuaScriptManifest {
+  schemaVersion: 1;
+  kind: "browser-lua-scripts";
+  selectedCodes: string[];
+  copiedCount: number;
+  missingCount: number;
+  copied: string[];
+  missing: string[];
+  files: BrowserLuaScriptManifestFile[];
+}
+
+export interface BrowserLuaScriptManifestFile {
+  name: string;
+  bytes: number;
+  sha256: string;
+}
+
 export interface BrowserLuaScriptPreloadResult {
   loaded: string[];
   missing: string[];
@@ -78,7 +109,56 @@ export function createBrowserLuaScriptFetchLoader(options: BrowserLuaScriptFetch
   };
 }
 
+export function createBrowserLuaScriptManifestLoader(options: BrowserLuaScriptManifestLoaderOptions): () => Promise<BrowserLuaScriptManifest> {
+  const fetchJson = options.fetchJson ?? ((url) => fetch(url));
+  return async () => {
+    const response = await fetchJson(options.manifestUrl ?? scriptUrl(options.baseUrl, "manifest.json"));
+    if (!response.ok) throw new Error(`Lua script manifest fetch failed with HTTP ${response.status}`);
+    return parseBrowserLuaScriptManifest(await response.json());
+  };
+}
+
 function scriptUrl(baseUrl: string, name: string): string {
   const normalizedBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
   return `${normalizedBase}${encodeURIComponent(name)}`;
+}
+
+function parseBrowserLuaScriptManifest(value: unknown): BrowserLuaScriptManifest {
+  if (
+    !isRecord(value) ||
+    value.schemaVersion !== 1 ||
+    value.kind !== "browser-lua-scripts" ||
+    !Array.isArray(value.selectedCodes) ||
+    !value.selectedCodes.every((code) => typeof code === "string") ||
+    typeof value.copiedCount !== "number" ||
+    !Number.isInteger(value.copiedCount) ||
+    typeof value.missingCount !== "number" ||
+    !Number.isInteger(value.missingCount) ||
+    !Array.isArray(value.copied) ||
+    !value.copied.every((name) => typeof name === "string") ||
+    !Array.isArray(value.missing) ||
+    !value.missing.every((name) => typeof name === "string") ||
+    !Array.isArray(value.files) ||
+    !value.files.every(isBrowserLuaScriptManifestFile)
+  ) {
+    throw new Error("Lua script manifest must describe browser-lua-scripts payload metadata");
+  }
+  return {
+    schemaVersion: 1,
+    kind: "browser-lua-scripts",
+    selectedCodes: [...value.selectedCodes],
+    copiedCount: value.copiedCount,
+    missingCount: value.missingCount,
+    copied: [...value.copied],
+    missing: [...value.missing],
+    files: value.files.map((file) => ({ ...file })),
+  };
+}
+
+function isBrowserLuaScriptManifestFile(value: unknown): value is BrowserLuaScriptManifestFile {
+  return isRecord(value) && typeof value.name === "string" && typeof value.bytes === "number" && Number.isInteger(value.bytes) && typeof value.sha256 === "string";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }

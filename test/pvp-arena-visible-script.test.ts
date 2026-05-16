@@ -176,6 +176,24 @@ describe("PvP arena visible scripts", () => {
           async text() { return ""; },
         } as Response;
       }
+      if (url === "/card-data/manifest.json") {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              schemaVersion: 1,
+              kind: "browser-cdb-rows",
+              payload: "cdb-rows.json",
+              selectedCodes: ["90000003"],
+              datasRows: 1,
+              textsRows: 1,
+              sha256: "card-data-hash",
+            };
+          },
+          async text() { return ""; },
+        } as Response;
+      }
       if (url === "/card-scripts/c90000003.lua") {
         return {
           ok: true,
@@ -191,6 +209,25 @@ describe("PvP arena visible scripts", () => {
           async json() { return {}; },
         } as Response;
       }
+      if (url === "/card-scripts/manifest.json") {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              schemaVersion: 1,
+              kind: "browser-lua-scripts",
+              selectedCodes: ["90000003"],
+              copiedCount: 1,
+              missingCount: 0,
+              copied: ["c90000003.lua"],
+              missing: [],
+              files: [{ name: "c90000003.lua", bytes: 91, sha256: "script-hash" }],
+            };
+          },
+          async text() { return ""; },
+        } as Response;
+      }
       return { ok: false, status: 404, async text() { return ""; }, async json() { return {}; } } as Response;
     }) as typeof fetch;
     try {
@@ -199,13 +236,21 @@ describe("PvP arena visible scripts", () => {
         scriptBaseUrl: "/card-scripts",
       });
 
+      const [cardManifest, scriptManifest] = await Promise.all([
+        caches.loadCardDataManifest(),
+        caches.loadLuaScriptManifest(),
+      ]);
       const result = await bootstrapPvpDuelWithBrowserData(lazyLoadedYdk, pvpVisibleBattleFixtureYdk, "pvp-exported-endpoints", 1, caches);
 
       expect(requestedUrls).toEqual([
+        "/card-data/manifest.json",
+        "/card-scripts/manifest.json",
         "/card-data/cdb-rows.json?codes=90000003",
         "/card-scripts/c7084129.lua",
         "/card-scripts/c90000003.lua",
       ]);
+      expect(cardManifest).toMatchObject({ kind: "browser-cdb-rows", datasRows: 1, textsRows: 1, sha256: "card-data-hash" });
+      expect(scriptManifest).toMatchObject({ kind: "browser-lua-scripts", copiedCount: 1, files: [{ name: "c90000003.lua", bytes: 91, sha256: "script-hash" }] });
       expect(result.cardPreload).toEqual({ loaded: ["7084129", "90000003"], missing: [] });
       expect(result.scriptPreload).toEqual({ loaded: ["c90000003.lua"], missing: ["c7084129.lua"] });
       expect(result.luaHost.messages).toContain("endpoint script 2400");

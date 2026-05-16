@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createBrowserCdbCardDataLoader, createBrowserCdbJsonRowsLoader, createBrowserDuelCardDataCache } from "../src/playtest-app/duel-pvp-card-reader.js";
+import { createBrowserCdbCardDataLoader, createBrowserCdbJsonManifestLoader, createBrowserCdbJsonRowsLoader, createBrowserDuelCardDataCache } from "../src/playtest-app/duel-pvp-card-reader.js";
 import type { DuelCardData } from "#duel/types.js";
 
 describe("browser PvP card data cache", () => {
@@ -102,5 +102,41 @@ describe("browser PvP card data cache", () => {
     });
 
     await expect(loadRows(["90000008"])).rejects.toThrow("CDB rows payload must contain datas and texts arrays");
+  });
+
+  it("loads browser CDB sidecar manifests from the endpoint directory", async () => {
+    const requestedUrls: string[] = [];
+    const loadManifest = createBrowserCdbJsonManifestLoader({
+      endpoint: "/card-data/cdb-rows.json?format=browser",
+      fetchJson: async (url) => {
+        requestedUrls.push(url);
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              schemaVersion: 1,
+              kind: "browser-cdb-rows",
+              payload: "cdb-rows.json",
+              selectedCodes: ["90000009"],
+              datasRows: 1,
+              textsRows: 1,
+              sha256: "abc123",
+            };
+          },
+        };
+      },
+    });
+
+    await expect(loadManifest()).resolves.toEqual({
+      schemaVersion: 1,
+      kind: "browser-cdb-rows",
+      payload: "cdb-rows.json",
+      selectedCodes: ["90000009"],
+      datasRows: 1,
+      textsRows: 1,
+      sha256: "abc123",
+    });
+    expect(requestedUrls).toEqual(["/card-data/manifest.json"]);
   });
 });

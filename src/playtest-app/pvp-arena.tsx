@@ -3,10 +3,10 @@ import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions,
 import type { DuelAction, DuelCardReader, DuelSession, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
 import type { LuaInitialEffectRegistrationResult, LuaScriptHost, LuaScriptLoadResult } from "#lua/host.js";
 import { parseYdk } from "#playtest/ydk.js";
-import { createBrowserCdbCardDataLoader, createBrowserCdbJsonRowsLoader, createBrowserDuelCardDataCache, getBrowserDuelCardReader } from "./duel-pvp-card-reader.js";
-import type { BrowserDuelCardDataCache, BrowserDuelCardDataPreloadResult } from "./duel-pvp-card-reader.js";
-import { createBrowserLuaScriptCache, createBrowserLuaScriptFetchLoader } from "./duel-pvp-script-cache.js";
-import type { BrowserLuaScriptCache, BrowserLuaScriptPreloadResult } from "./duel-pvp-script-cache.js";
+import { createBrowserCdbCardDataLoader, createBrowserCdbJsonManifestLoader, createBrowserCdbJsonRowsLoader, createBrowserDuelCardDataCache, getBrowserDuelCardReader } from "./duel-pvp-card-reader.js";
+import type { BrowserCdbRowsManifest, BrowserDuelCardDataCache, BrowserDuelCardDataPreloadResult } from "./duel-pvp-card-reader.js";
+import { createBrowserLuaScriptCache, createBrowserLuaScriptFetchLoader, createBrowserLuaScriptManifestLoader } from "./duel-pvp-script-cache.js";
+import type { BrowserLuaScriptCache, BrowserLuaScriptManifest, BrowserLuaScriptPreloadResult } from "./duel-pvp-script-cache.js";
 import { DuelBattlefield, DuelLogList } from "./duel-battlefield.js";
 import { runDuelBattlefieldScript, runDuelBattlefieldScriptStep, type DuelBattlefieldActionSelector, type DuelBattlefieldScriptResult, type DuelBattlefieldScriptStepResult } from "./duel-battlefield-script.js";
 import { CardZoom, ToastStack, readBuilderDeck, starterYdk } from "./ui.js";
@@ -76,19 +76,33 @@ export interface BootstrapPvpDuelWithBrowserDataResult extends BootstrapPvpDuelW
 
 export interface BrowserPvpAssetCacheOptions {
   cardRowsEndpoint?: string;
+  cardRowsManifestEndpoint?: string;
   scriptBaseUrl?: string;
+  scriptManifestUrl?: string;
 }
 
 export interface BrowserPvpAssetCaches {
   cardDataCache: BrowserDuelCardDataCache;
   luaScriptCache: BrowserLuaScriptCache;
+  loadCardDataManifest(): Promise<BrowserCdbRowsManifest>;
+  loadLuaScriptManifest(): Promise<BrowserLuaScriptManifest>;
 }
 
 export function createBrowserPvpAssetCaches(options: BrowserPvpAssetCacheOptions = {}): BrowserPvpAssetCaches {
-  const cardRowsLoader = createBrowserCdbJsonRowsLoader({ endpoint: options.cardRowsEndpoint ?? "./card-data/cdb-rows.json" });
+  const cardRowsEndpoint = options.cardRowsEndpoint ?? "./card-data/cdb-rows.json";
+  const scriptBaseUrl = options.scriptBaseUrl ?? "./card-scripts";
+  const cardRowsLoader = createBrowserCdbJsonRowsLoader({ endpoint: cardRowsEndpoint });
   return {
     cardDataCache: createBrowserDuelCardDataCache(createBrowserCdbCardDataLoader(cardRowsLoader)),
-    luaScriptCache: createBrowserLuaScriptCache(createBrowserLuaScriptFetchLoader({ baseUrl: options.scriptBaseUrl ?? "./card-scripts" })),
+    luaScriptCache: createBrowserLuaScriptCache(createBrowserLuaScriptFetchLoader({ baseUrl: scriptBaseUrl })),
+    loadCardDataManifest: createBrowserCdbJsonManifestLoader({
+      endpoint: cardRowsEndpoint,
+      ...(options.cardRowsManifestEndpoint === undefined ? {} : { manifestEndpoint: options.cardRowsManifestEndpoint }),
+    }),
+    loadLuaScriptManifest: createBrowserLuaScriptManifestLoader({
+      baseUrl: scriptBaseUrl,
+      ...(options.scriptManifestUrl === undefined ? {} : { manifestUrl: options.scriptManifestUrl }),
+    }),
   };
 }
 

@@ -29,6 +29,22 @@ export interface BrowserCdbJsonRowsLoaderOptions {
   fetchJson?: BrowserCdbJsonFetch;
 }
 
+export interface BrowserCdbJsonManifestLoaderOptions {
+  endpoint: string;
+  manifestEndpoint?: string;
+  fetchJson?: BrowserCdbJsonFetch;
+}
+
+export interface BrowserCdbRowsManifest {
+  schemaVersion: 1;
+  kind: "browser-cdb-rows";
+  payload: string;
+  selectedCodes: string[];
+  datasRows: number;
+  textsRows: number;
+  sha256: string;
+}
+
 export interface BrowserDuelCardDataPreloadResult {
   loaded: string[];
   missing: string[];
@@ -118,9 +134,25 @@ export function createBrowserCdbJsonRowsLoader(options: BrowserCdbJsonRowsLoader
   };
 }
 
+export function createBrowserCdbJsonManifestLoader(options: BrowserCdbJsonManifestLoaderOptions): () => Promise<BrowserCdbRowsManifest> {
+  const fetchJson = options.fetchJson ?? ((url) => fetch(url));
+  return async () => {
+    const response = await fetchJson(options.manifestEndpoint ?? cdbManifestUrl(options.endpoint));
+    if (!response.ok) throw new Error(`CDB rows manifest fetch failed with HTTP ${response.status}`);
+    return parseBrowserCdbRowsManifest(await response.json());
+  };
+}
+
 function cdbRowsUrl(endpoint: string, codes: readonly string[]): string {
   const separator = endpoint.includes("?") ? "&" : "?";
   return `${endpoint}${separator}codes=${codes.map(encodeURIComponent).join(",")}`;
+}
+
+function cdbManifestUrl(endpoint: string): string {
+  const endpointPath = endpoint.split("?")[0] ?? endpoint;
+  const slashIndex = endpointPath.lastIndexOf("/");
+  const base = slashIndex >= 0 ? endpointPath.slice(0, slashIndex + 1) : "";
+  return `${base}manifest.json`;
 }
 
 function parseBrowserCdbCardRows(value: unknown): BrowserCdbCardRows {
@@ -130,6 +162,33 @@ function parseBrowserCdbCardRows(value: unknown): BrowserCdbCardRows {
   return {
     datas: value.datas as RawCdbDataRow[],
     texts: value.texts as RawCdbTextRow[],
+  };
+}
+
+function parseBrowserCdbRowsManifest(value: unknown): BrowserCdbRowsManifest {
+  if (
+    !isRecord(value) ||
+    value.schemaVersion !== 1 ||
+    value.kind !== "browser-cdb-rows" ||
+    typeof value.payload !== "string" ||
+    !Array.isArray(value.selectedCodes) ||
+    !value.selectedCodes.every((code) => typeof code === "string") ||
+    typeof value.datasRows !== "number" ||
+    !Number.isInteger(value.datasRows) ||
+    typeof value.textsRows !== "number" ||
+    !Number.isInteger(value.textsRows) ||
+    typeof value.sha256 !== "string"
+  ) {
+    throw new Error("CDB rows manifest must describe browser-cdb-rows payload metadata");
+  }
+  return {
+    schemaVersion: 1,
+    kind: "browser-cdb-rows",
+    payload: value.payload,
+    selectedCodes: [...value.selectedCodes],
+    datasRows: value.datasRows,
+    textsRows: value.textsRows,
+    sha256: value.sha256,
   };
 }
 
