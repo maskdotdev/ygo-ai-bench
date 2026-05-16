@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 32;
-const chainedResponseFixtureCount = 31;
-const responseOperationInfoFixtureCount = 27;
+const responseFixtureCount = 41;
+const chainedResponseFixtureCount = 40;
+const responseOperationInfoFixtureCount = 36;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -98,17 +98,21 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-amaterasu-set-available-chain.test.ts",
     "lua-real-script-armor-blast-multi-target-free-chain.test.ts",
     "lua-real-script-bad-reaction-reverse-recover.test.ts",
+    "lua-real-script-black-horn-special-summon-negate.test.ts",
     "lua-real-script-book-of-moon-free-chain.test.ts",
     "lua-real-script-called-by-the-grave.test.ts",
     "lua-real-script-compulsory-evacuation-device-free-chain.test.ts",
     "lua-real-script-cosmic-cyclone-free-chain.test.ts",
     "lua-real-script-dark-bribe-negate-draw.test.ts",
     "lua-real-script-dimensional-prison-battle-window.test.ts",
+    "lua-real-script-divine-wrath-monster-negate.test.ts",
     "lua-real-script-draining-shield-battle-window.test.ts",
     "lua-real-script-droll-lock-bird-draw-search-lock.test.ts",
     "lua-real-script-foolish-burial-deck-to-grave.test.ts",
     "lua-real-script-ghost-ogre-chain-destroy.test.ts",
     "lua-real-script-harpies-feather-duster-group-destroy.test.ts",
+    "lua-real-script-grand-horn-special-summon-negate.test.ts",
+    "lua-real-script-horn-of-heaven-release-cost-negate.test.ts",
     "lua-real-script-magic-jammer-chain-negate.test.ts",
     "lua-real-script-magic-cylinder-battle-window.test.ts",
     "lua-real-script-mirror-force-battle-window.test.ts",
@@ -122,6 +126,11 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-sakuretsu-armor-battle-window.test.ts",
     "lua-real-script-scrap-iron-scarecrow-battle-window.test.ts",
     "lua-real-script-seven-tools-trap-negate.test.ts",
+    "lua-real-script-solemn-judgment-summon-negate-part2.test.ts",
+    "lua-real-script-solemn-judgment-summon-negate.test.ts",
+    "lua-real-script-solemn-strike-special-summon-negate.test.ts",
+    "lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
+    "lua-real-script-solemn-warning-special-summon-effect-negate.test.ts",
     "lua-real-script-threatening-roar-temporary-attack-lock.test.ts",
     "lua-real-script-twin-twisters-discard-cost.test.ts",
     "lua-real-script-upstart-goblin-draw-recover.test.ts",
