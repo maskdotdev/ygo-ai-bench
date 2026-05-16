@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 24;
-const chainedResponseFixtureCount = 23;
-const responseOperationInfoFixtureCount = 19;
+const responseFixtureCount = 25;
+const chainedResponseFixtureCount = 24;
+const responseOperationInfoFixtureCount = 20;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -97,6 +97,7 @@ function realScriptResponseFixtureFiles(): string[] {
   return [
     "lua-real-script-amaterasu-set-available-chain.test.ts",
     "lua-real-script-armor-blast-multi-target-free-chain.test.ts",
+    "lua-real-script-bad-reaction-reverse-recover.test.ts",
     "lua-real-script-book-of-moon-free-chain.test.ts",
     "lua-real-script-called-by-the-grave.test.ts",
     "lua-real-script-compulsory-evacuation-device-free-chain.test.ts",
