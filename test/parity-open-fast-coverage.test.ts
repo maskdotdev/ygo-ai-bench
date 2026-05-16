@@ -94,6 +94,12 @@ describe("EDOPro open fast-effect fixture coverage", () => {
     expect(weak).toEqual([]);
   });
 
+  it("requires open-fast fixture windows to pin response player ownership", () => {
+    const weak = allRequiredParityOpenFastFiles().filter((file) => !hasWaitingForProof(file));
+
+    expect(weak).toEqual([]);
+  });
+
   it("requires open-fast fixture windows to carry EDOPro provenance notes", () => {
     const weak = allRequiredParityOpenFastFiles().filter((file) => !hasEdoproProvenanceNote(file));
 
@@ -213,6 +219,14 @@ function hasSnapshotRestoreProof(file: string): boolean {
   return (
     /source:\s*["']edopro["']/.test(text) &&
     /snapshotRestore:\s*["']both["']/.test(text)
+  );
+}
+
+function hasWaitingForProof(file: string): boolean {
+  const text = fs.readFileSync(path.join(root, file), "utf8");
+  return (
+    /source:\s*["']edopro["']/.test(text) &&
+    /waitingFor:\s*[01]/.test(text)
   );
 }
 
