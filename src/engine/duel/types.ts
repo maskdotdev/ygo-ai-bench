@@ -934,6 +934,7 @@ export interface ScriptedFixtureEffect {
   luaTypeFlags?: number;
   value?: number;
   valueCardCode?: string;
+  targetCardCode?: string;
   targetRange?: DuelEffectDefinition["targetRange"];
   triggerEvent?: DuelEventName;
   triggerCode?: number;

@@ -7,7 +7,7 @@ import { isRecord, isSafeBoolean, isSafeCount, isSafeLocationKey, isSafePlayerId
 const TRIGGER_TIMINGS = new Set<NonNullable<DuelEffectDefinition["triggerTiming"]>>(["if", "when"]);
 const ACTIVATION_CHAINS = new Set<NonNullable<ScriptedFixtureEffect["activationChain"]>>(["open", "chain"]);
 const EFFECT_KEYS = [
-  "id", "player", "code", "location", "event", "effectCode", "luaTypeFlags", "value", "valueCardCode", "targetRange", "triggerEvent", "triggerCode", "triggerTiming",
+  "id", "player", "code", "location", "event", "effectCode", "luaTypeFlags", "value", "valueCardCode", "targetCardCode", "targetRange", "triggerEvent", "triggerCode", "triggerTiming",
   "eventCardCode", "optional", "range", "oncePerTurn", "property", "activationChain", "logMessage", "negateChainEffectOnResolve", "negateAttackOnResolve", "negateSummonOnResolve",
   "chainLimitOnTarget", "targetCardsOnActivation", "collectEventsOnResolve", "drawCardsOnResolve", "moveCardsOnResolve", "occurrence",
 ];
@@ -62,6 +62,7 @@ function assertEffect(description: string, effect: Partial<ScriptedFixtureEffect
   if (effect.luaTypeFlags !== undefined && !Number.isSafeInteger(effect.luaTypeFlags)) failures.push(`${description}.luaTypeFlags has malformed value ${String(effect.luaTypeFlags)}`);
   if (effect.value !== undefined && !Number.isSafeInteger(effect.value)) failures.push(`${description}.value has malformed value ${String(effect.value)}`);
   if (effect.valueCardCode !== undefined && !isSafeString(effect.valueCardCode)) failures.push(`${description}.valueCardCode has malformed value ${String(effect.valueCardCode)}`);
+  if (effect.targetCardCode !== undefined && !isSafeString(effect.targetCardCode)) failures.push(`${description}.targetCardCode has malformed value ${String(effect.targetCardCode)}`);
   assertNumberTuple(`${description}.targetRange`, effect.targetRange, failures);
   if (effect.triggerEvent !== undefined && !isDuelEventName(effect.triggerEvent)) failures.push(`${description}.triggerEvent has malformed value ${String(effect.triggerEvent)}`);
   if (effect.triggerCode !== undefined && !Number.isSafeInteger(effect.triggerCode)) failures.push(`${description}.triggerCode has malformed value ${String(effect.triggerCode)}`);
