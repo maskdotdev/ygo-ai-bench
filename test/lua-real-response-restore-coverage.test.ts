@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 51;
-const chainedResponseFixtureCount = 50;
-const responseOperationInfoFixtureCount = 46;
+const responseFixtureCount = 62;
+const chainedResponseFixtureCount = 61;
+const responseOperationInfoFixtureCount = 57;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -97,6 +97,7 @@ function realScriptResponseFixtureFiles(): string[] {
   return [
     "lua-real-script-advanced-ritual-art-extra-material.test.ts",
     "lua-real-script-amaterasu-set-available-chain.test.ts",
+    "lua-real-script-aratama-spirit-search.test.ts",
     "lua-real-script-armor-blast-multi-target-free-chain.test.ts",
     "lua-real-script-bad-reaction-reverse-recover.test.ts",
     "lua-real-script-black-horn-special-summon-negate.test.ts",
@@ -106,16 +107,21 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-cosmic-cyclone-free-chain.test.ts",
     "lua-real-script-contract-dark-master-ritual-spell.test.ts",
     "lua-real-script-dark-bribe-negate-draw.test.ts",
+    "lua-real-script-dark-dust-spirit-destroy.test.ts",
     "lua-real-script-dimensional-prison-battle-window.test.ts",
     "lua-real-script-divine-wrath-monster-negate.test.ts",
     "lua-real-script-draining-shield-battle-window.test.ts",
     "lua-real-script-droll-lock-bird-draw-search-lock.test.ts",
     "lua-real-script-earth-chant-ritual-equal.test.ts",
+    "lua-real-script-fenghuang-set-backrow-destroy.test.ts",
     "lua-real-script-foolish-burial-deck-to-grave.test.ts",
+    "lua-real-script-fushi-no-tori-battle-recover.test.ts",
     "lua-real-script-ghost-ogre-chain-destroy.test.ts",
     "lua-real-script-harpies-feather-duster-group-destroy.test.ts",
     "lua-real-script-grand-horn-special-summon-negate.test.ts",
     "lua-real-script-horn-of-heaven-release-cost-negate.test.ts",
+    "lua-real-script-izanami-spirit-grave-return.test.ts",
+    "lua-real-script-kinka-byo-relation-banish.test.ts",
     "lua-real-script-lightning-storm-select-effect.test.ts",
     "lua-real-script-magic-jammer-chain-negate.test.ts",
     "lua-real-script-magic-cylinder-battle-window.test.ts",
@@ -132,20 +138,25 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-polymerization-fusion-summon.test.ts",
     "lua-real-script-raigeki-group-destroy.test.ts",
     "lua-real-script-raigeki-break-discard-cost.test.ts",
+    "lua-real-script-rasetsu-spirit-cost-return.test.ts",
     "lua-real-script-reinforcement-of-the-army-search.test.ts",
     "lua-real-script-sakuretsu-armor-battle-window.test.ts",
     "lua-real-script-scrap-iron-scarecrow-battle-window.test.ts",
     "lua-real-script-seven-tools-trap-negate.test.ts",
+    "lua-real-script-shinobird-crane-spirit-summon-draw.test.ts",
+    "lua-real-script-shinobird-pigeon-spirit-return.test.ts",
     "lua-real-script-solemn-judgment-summon-negate-part2.test.ts",
     "lua-real-script-solemn-judgment-summon-negate.test.ts",
     "lua-real-script-solemn-strike-special-summon-negate.test.ts",
     "lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
     "lua-real-script-solemn-warning-special-summon-effect-negate.test.ts",
     "lua-real-script-threatening-roar-temporary-attack-lock.test.ts",
+    "lua-real-script-tsukuyomi-position-trigger.test.ts",
     "lua-real-script-twin-twisters-discard-cost.test.ts",
     "lua-real-script-upstart-goblin-draw-recover.test.ts",
     "lua-real-script-waboku-temporary-battle-protection.test.ts",
     "lua-real-script-wiretap-trap-negate-to-deck.test.ts",
+    "lua-real-script-yamato-no-kami-battle-destroy-backrow.test.ts",
   ]
     .map((file) => path.join("test", file))
     .sort();
