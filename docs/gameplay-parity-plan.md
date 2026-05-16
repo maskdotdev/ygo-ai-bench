@@ -410,6 +410,12 @@ Acceptance gates:
 
 UI work should follow stable engine windows so the app does not grow one-off state for timing rules that the engine should own.
 
+Current status:
+
+- The PvP battlefield action view can drive a direct battle fixture from visible legal actions, including phase change, attack declaration, attack-response passes, and damage-step passes.
+- The agent bridge can run bounded visible autoplay and fixture-style visible scripts, and visible script divergence now reports exact selector fields for action/window mismatches, including `windowId`, `windowKind`, `windowToken`, `phase`, prompt id/option/yes-no choices, effect id, trigger id, trigger bucket, group label, and occurrence.
+- Broader prompt UI surfaces, browser lazy-loading, and full app-level fixture autoplay are still open.
+
 Deliverables:
 
 - Display legal actions grouped by current window: phase action, chain response, trigger order, attack response, damage-step response, replay choice, target/material selection.
