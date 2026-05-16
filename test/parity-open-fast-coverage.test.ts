@@ -44,6 +44,10 @@ describe("EDOPro open fast-effect fixture coverage", () => {
     expect(allRequiredParityOpenFastFiles()).toHaveLength(192);
   });
 
+  it("keeps the open-fast lower-level restore test inventory ratcheted", () => {
+    expect(allRequiredOpenFastRestoreFiles()).toHaveLength(16);
+  });
+
   it("keeps triggerless action families pinned to base, chain-response, and restored pass-handoff fixtures", () => {
     const missing = triggerlessOpenFastFamilies.flatMap(({ base, post, restore }) =>
       requiredFiles(base, post, restore).filter((file) => !fs.existsSync(path.join(root, file))),
@@ -90,6 +94,12 @@ describe("EDOPro open fast-effect fixture coverage", () => {
 
   it("requires open-fast fixture windows to prove snapshot restore", () => {
     const weak = allRequiredParityOpenFastFiles().filter((file) => !hasSnapshotRestoreProof(file));
+
+    expect(weak).toEqual([]);
+  });
+
+  it("requires open-fast restore tests to prove clean restored windows", () => {
+    const weak = allRequiredOpenFastRestoreFiles().filter((file) => !hasCleanRestoreWindowProof(file));
 
     expect(weak).toEqual([]);
   });
@@ -196,6 +206,13 @@ function allRequiredParityOpenFastFiles(): string[] {
   ])].filter((file) => path.basename(file).startsWith("parity-"));
 }
 
+function allRequiredOpenFastRestoreFiles(): string[] {
+  return [
+    ...triggerlessOpenFastFamilies.map(({ restore }) => `test/duel-post-${restore}-open-fast-pass-handoff-restore.test.ts`),
+    ...phaseOpenFastFamilies.map(({ restore }) => `test/duel-${restore}-open-fast-pass-handoff-restore.test.ts`),
+  ];
+}
+
 function hasRawAndGroupedLegalActionProof(file: string): boolean {
   const text = fs.readFileSync(path.join(root, file), "utf8");
   return (
@@ -219,6 +236,17 @@ function hasSnapshotRestoreProof(file: string): boolean {
   return (
     /source:\s*["']edopro["']/.test(text) &&
     /snapshotRestore:\s*["']both["']/.test(text)
+  );
+}
+
+function hasCleanRestoreWindowProof(file: string): boolean {
+  const text = fs.readFileSync(path.join(root, file), "utf8");
+  return (
+    /pendingTriggers:\s*\[\],\s*pendingTriggerBuckets:\s*\[\]/.test(text) &&
+    /state\.chainPasses/.test(text) &&
+    /getGroupedDuelLegalActions/.test(text) &&
+    /flatMap\(\(group\) => group\.actions\)/.test(text) &&
+    /not\.toContain/.test(text)
   );
 }
 
