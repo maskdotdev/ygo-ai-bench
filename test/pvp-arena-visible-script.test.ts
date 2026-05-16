@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   bootstrapPvpDuel,
   bootstrapPvpDuelWithCardData,
+  bootstrapPvpDuelWithLuaScripts,
   pvpVisibleBattleFixtureScript,
   pvpVisibleBattleFixtureYdk,
   runPvpArenaVisibleScript,
 } from "../src/playtest-app/pvp-arena.js";
 import { createBrowserDuelCardDataCache } from "../src/playtest-app/duel-pvp-card-reader.js";
+import { createBrowserLuaScriptCache } from "../src/playtest-app/duel-pvp-script-cache.js";
 
 const lazyLoadedYdk = `#created by test
 #main
@@ -65,5 +67,31 @@ describe("PvP arena visible scripts", () => {
       code: "7084129",
       name: "Magician's Rod",
     }));
+  });
+
+  it("preloads PvP deck scripts and registers initial Lua effects", async () => {
+    const requestedBatches: string[][] = [];
+    const scriptCache = createBrowserLuaScriptCache(async (names) => {
+      requestedBatches.push([...names]);
+      return {
+        "c90000003.lua": `
+          c90000003={}
+          function c90000003.initial_effect(c)
+            Debug.Message("pvp script loaded " .. c:GetCode())
+          end
+        `,
+      };
+    });
+
+    const result = await bootstrapPvpDuelWithLuaScripts(lazyLoadedYdk, pvpVisibleBattleFixtureYdk, "pvp-arena-lua-preload", 1, {
+      luaScriptCache: scriptCache,
+    });
+
+    expect(requestedBatches).toEqual([["c7084129.lua", "c90000003.lua"]]);
+    expect(result.scriptPreload).toEqual({ loaded: ["c90000003.lua"], missing: ["c7084129.lua"] });
+    expect(result.scriptLoads).toContainEqual(expect.objectContaining({ ok: true, name: "c90000003.lua" }));
+    expect(result.scriptLoads).toContainEqual(expect.objectContaining({ ok: false, name: "c7084129.lua" }));
+    expect(result.scriptRegistrations).toContainEqual(expect.objectContaining({ code: "90000003", ok: true }));
+    expect(result.luaHost.messages).toContain("pvp script loaded 90000003");
   });
 });
