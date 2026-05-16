@@ -20,6 +20,7 @@ const missedTimingChainActivatingStateFixtureCount = 2;
 const missedTimingChainLifecycleOriginFixtureCount = 12;
 const missedTimingBattleDamageCauseFixtureCount = 4;
 const missedTimingPhaseBoundaryFixtureCount = 22;
+const missedTimingPhaseEndBoundaryCauseFixtureCount = 4;
 const missedTimingSourceEffectCauseExceptions = [
   "parity-missed-timing-battle-damage-decline-fixture.test.ts",
   "parity-missed-timing-battle-damage-fixture.test.ts",
@@ -162,6 +163,16 @@ describe("EDOPro parity missed-timing event coverage", () => {
     expect(phaseBoundaryFiles).toHaveLength(missedTimingPhaseBoundaryFixtureCount);
     expect(phaseBoundaryMetadataFiles).toEqual(phaseBoundaryFiles);
   });
+
+  it("pins missed-timing phase-end boundary source-effect cause metadata coverage", () => {
+    const phaseEndBoundaryFiles = fs.readdirSync(testRoot)
+      .filter((file) => /^parity-missed-timing-(?:phase-end|phase-start-end)(?:-decline)?-fixture\.test\.ts$/.test(file))
+      .sort();
+    const phaseEndCauseFiles = phaseEndBoundaryFiles.filter((file) => hasPhaseEndBoundaryCauseMetadata(file));
+
+    expect(phaseEndBoundaryFiles).toHaveLength(missedTimingPhaseEndBoundaryCauseFixtureCount);
+    expect(phaseEndCauseFiles).toEqual(phaseEndBoundaryFiles);
+  });
 });
 
 function camelToKebab(value: string): string {
@@ -297,6 +308,16 @@ function hasPhaseBoundaryMetadata(file: string): boolean {
     /eventName:\s*["'](?:phaseDraw|phaseStandby|phaseMain1|phaseBattle|phaseMain2|phaseStartDraw|phaseStartStandby|phaseStartMain1|phaseStartBattle|phaseStartMain2|startup)["']/.test(text) &&
     /eventTriggerTiming:\s*["']if["']/.test(text) &&
     !/eventReasonEffectId/.test(text)
+  );
+}
+
+function hasPhaseEndBoundaryCauseMetadata(file: string): boolean {
+  const text = readTestFile(file);
+  return (
+    /collectEventsOnResolve:\s*\[\s*\{[\s\S]*collectEvent:\s*["'](?:phaseEnd|phaseStartEnd)["']/.test(text) &&
+    /eventCode:\s*(?:0x1200|0x2200)/.test(text) &&
+    /eventName:\s*["'](?:phaseEnd|phaseStartEnd)["']/.test(text) &&
+    hasSourceEffectCauseMetadata(file)
   );
 }
 
