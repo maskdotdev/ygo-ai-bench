@@ -307,6 +307,10 @@ describe("duel battlefield action view", () => {
 
     expect(result.ok).toBe(false);
     expect(result.prompt).toMatchObject({ label: "Option Prompt", detail: "P2 · Prompt battlefield-diverge-prompt · returns P1 · options 2, 4 · text 200, 400" });
+    expect(result.prompt?.choices).toMatchObject([
+      { type: "selectOption", option: 2, description: 200, action: { type: "selectOption", option: 2 } },
+      { type: "selectOption", option: 4, description: 400, action: { type: "selectOption", option: 4 } },
+    ]);
     expect(result.prompt?.groups.flatMap((group) => group.actions)).toEqual(result.visibleActions);
     expect(result.visibleActions).toContainEqual(expect.objectContaining({ type: "selectOption", promptId: "battlefield-diverge-prompt", option: 4 }));
   });

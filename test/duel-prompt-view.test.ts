@@ -80,15 +80,16 @@ describe("duel prompt view", () => {
       promptGroups: [promptGroup],
       globalGroups: [globalGroup],
     });
-    expect(duelPromptView(prompt, [promptGroup, globalGroup])).toEqual({
+    expect(duelPromptView(prompt, [promptGroup, globalGroup])).toMatchObject({
       label: "Option Prompt",
       detail: "P1 · Prompt prompt-a · options 1",
       prompt,
+      choices: [{ type: "selectOption", option: 1, action: promptGroup.actions[0] }],
       groups: [promptGroup],
     });
   });
 
-  it("deep-copies structured prompt metadata for browser renderers", () => {
+  it("surfaces structured option choices with copied prompt metadata for browser renderers", () => {
     const prompt: DuelPromptState = {
       id: "prompt-copy",
       type: "selectOption",
@@ -109,15 +110,47 @@ describe("duel prompt view", () => {
 
     const view = duelPromptView(prompt, [promptGroup]);
     expect(view?.prompt).toEqual(prompt);
+    expect(view?.choices).toEqual([
+      { type: "selectOption", option: 1, description: 101, descriptionList: [1001], action: promptGroup.actions[0] },
+    ]);
     if (view?.prompt.type !== "selectOption") throw new Error("Expected selectOption prompt view");
+    const [choice] = view.choices;
+    if (choice?.type !== "selectOption") throw new Error("Expected selectOption prompt choice");
 
     view.prompt.options.push(3);
     view.prompt.descriptions?.push(303);
     view.prompt.descriptionLists?.[0]?.push(1002);
+    choice.descriptionList?.push(1003);
+    choice.action.option = 9;
 
     expect(prompt.options).toEqual([1, 2]);
     expect(prompt.descriptions).toEqual([101, 202]);
     expect(prompt.descriptionLists).toEqual([[1001], [2002, 2003]]);
+    expect(promptGroup.actions[0]).toMatchObject({ type: "selectOption", option: 1 });
+  });
+
+  it("surfaces yes/no prompt choices with shared description metadata", () => {
+    const prompt: DuelPromptState = {
+      id: "yes-no-choice",
+      type: "selectYesNo",
+      player: 1,
+      description: 900,
+    };
+    const promptGroup: DuelActionUiGroup = {
+      key: "yes-no-choice",
+      label: "Yes / No Prompt",
+      promptId: "yes-no-choice",
+      promptType: "selectYesNo",
+      actions: [
+        { type: "selectYesNo", player: 1, promptId: "yes-no-choice", yes: false, label: "No" },
+        { type: "selectYesNo", player: 1, promptId: "yes-no-choice", yes: true, label: "Yes" },
+      ],
+    };
+
+    expect(duelPromptView(prompt, [promptGroup])?.choices).toEqual([
+      { type: "selectYesNo", yes: true, description: 900, action: promptGroup.actions[1] },
+      { type: "selectYesNo", yes: false, description: 900, action: promptGroup.actions[0] },
+    ]);
   });
 
   it("does not steal stale prompt groups for a different pending prompt", () => {

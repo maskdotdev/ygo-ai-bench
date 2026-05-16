@@ -1,10 +1,30 @@
-import type { DuelPromptState } from "#duel/types.js";
+import { copyDuelAction } from "#duel/action-copy.js";
+import type { DuelAction, DuelPromptState } from "#duel/types.js";
 import type { DuelActionUiGroup } from "./duel-action-anchors.js";
+
+export type DuelPromptChoice =
+  | {
+    type: "selectOption";
+    option: number;
+    action: Extract<DuelAction, { type: "selectOption" }>;
+    description?: number;
+    descriptionList?: number[];
+  }
+  | {
+    type: "selectYesNo";
+    yes: boolean;
+    action: Extract<DuelAction, { type: "selectYesNo" }>;
+    description?: number;
+  };
+
+type SelectOptionAction = Extract<DuelAction, { type: "selectOption" }>;
+type SelectYesNoAction = Extract<DuelAction, { type: "selectYesNo" }>;
 
 export interface DuelPromptView {
   label: string;
   detail: string;
   prompt: DuelPromptState;
+  choices: DuelPromptChoice[];
   groups: DuelActionUiGroup[];
 }
 
@@ -72,8 +92,55 @@ export function duelPromptView(prompt: DuelPromptState | undefined, groups: read
     label: promptViewLabel(prompt),
     detail: promptViewDetail(prompt),
     prompt: copyPrompt(prompt),
+    choices: promptChoices(prompt, promptGroups),
     groups: promptGroups,
   };
+}
+
+function promptChoices(prompt: DuelPromptState, groups: readonly DuelActionUiGroup[]): DuelPromptChoice[] {
+  const actions = groups.flatMap((group) => group.actions);
+  if (prompt.type === "selectOption") {
+    return prompt.options.flatMap((option, index) => {
+      const action = actions.find((candidate): candidate is SelectOptionAction => (
+        candidate.type === "selectOption" &&
+        candidate.promptId === prompt.id &&
+        candidate.player === prompt.player &&
+        candidate.option === option
+      ));
+      if (!action) return [];
+      return [{
+        type: "selectOption",
+        option,
+        action: copySelectOptionAction(action),
+        ...(prompt.descriptions?.[index] === undefined ? {} : { description: prompt.descriptions[index] }),
+        ...(prompt.descriptionLists?.[index] === undefined ? {} : { descriptionList: [...prompt.descriptionLists[index]!] }),
+      }];
+    });
+  }
+
+  return [true, false].flatMap((yes) => {
+    const action = actions.find((candidate): candidate is SelectYesNoAction => (
+      candidate.type === "selectYesNo" &&
+      candidate.promptId === prompt.id &&
+      candidate.player === prompt.player &&
+      candidate.yes === yes
+    ));
+    if (!action) return [];
+    return [{
+      type: "selectYesNo",
+      yes,
+      action: copySelectYesNoAction(action),
+      ...(prompt.description === undefined ? {} : { description: prompt.description }),
+    }];
+  });
+}
+
+function copySelectOptionAction(action: SelectOptionAction): SelectOptionAction {
+  return copyDuelAction(action) as SelectOptionAction;
+}
+
+function copySelectYesNoAction(action: SelectYesNoAction): SelectYesNoAction {
+  return copyDuelAction(action) as SelectYesNoAction;
 }
 
 function copyPrompt(prompt: DuelPromptState): DuelPromptState {

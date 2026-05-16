@@ -295,6 +295,10 @@ describe("duel pvp agent bridge", () => {
 
     expect(visible.player).toBe(1);
     expect(visible.prompt).toMatchObject({ label: "Option Prompt", detail: "P2 · Prompt agent-waiting-prompt · returns P1 · options 3, 5" });
+    expect(visible.prompt?.choices).toMatchObject([
+      { type: "selectOption", option: 3, action: { type: "selectOption", promptId: "agent-waiting-prompt", option: 3 } },
+      { type: "selectOption", option: 5, action: { type: "selectOption", promptId: "agent-waiting-prompt", option: 5 } },
+    ]);
     expect(visible.actions).toContainEqual(expect.objectContaining({ type: "selectOption", player: 1, promptId: "agent-waiting-prompt", option: 5 }));
   });
 
@@ -321,12 +325,22 @@ describe("duel pvp agent bridge", () => {
     visible.prompt.prompt.options.push(3);
     visible.prompt.prompt.descriptions?.push(303);
     visible.prompt.prompt.descriptionLists?.[0]?.push(1002);
+    const [choice] = visible.prompt.choices;
+    if (choice?.type !== "selectOption") throw new Error("Expected selectOption prompt choice");
+    choice.descriptionList?.push(1003);
+    choice.action.option = 9;
 
     const fresh = agent.visibleBattlefield(0, started.sessionId);
     expect(fresh.prompt?.prompt).toMatchObject({
       options: [1, 2],
       descriptions: [101, 202],
       descriptionLists: [[1001], [2002]],
+    });
+    expect(fresh.prompt?.choices[0]).toMatchObject({
+      option: 1,
+      description: 101,
+      descriptionList: [1001],
+      action: { type: "selectOption", option: 1 },
     });
   });
 

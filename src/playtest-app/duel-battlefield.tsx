@@ -486,7 +486,17 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
                   <p className="truncate text-[9px] font-bold uppercase tracking-[0.12em] text-violet-100">{promptView.label}</p>
                   <p className="truncate text-[10px] font-semibold text-violet-50/65">{promptView.detail}</p>
                 </div>
-                {promptView.groups.flatMap((group) =>
+                {promptView.choices.map((choice) => (
+                  <button
+                    key={`prompt-${duelActionUiKey(choice.action)}`}
+                    type="button"
+                    className="shrink-0 rounded-md border border-violet-300/35 bg-violet-800/65 px-2.5 py-1 text-left text-[10px] font-bold leading-tight text-violet-50 hover:border-violet-200/70 hover:bg-violet-700/75"
+                    onClick={() => props.onPlayAction?.(choice.action)}
+                  >
+                    <span className="line-clamp-2 max-w-[220px]">{choice.action.label}</span>
+                  </button>
+                ))}
+                {!promptView.choices.length ? promptView.groups.flatMap((group) =>
                   group.actions.map((action) => (
                     <button
                       key={`prompt-${group.key}-${duelActionUiKey(action)}`}
@@ -497,7 +507,7 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
                       <span className="line-clamp-2 max-w-[220px]">{action.label}</span>
                     </button>
                   )),
-                )}
+                ) : null}
               </div>
             </div>
           ) : null}
