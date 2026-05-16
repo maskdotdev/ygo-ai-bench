@@ -33,6 +33,7 @@ describe("EDOPro parity battle damage conversion fixtures", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" }), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro opens the direct-attack response window before battle damage is converted to effect damage",
