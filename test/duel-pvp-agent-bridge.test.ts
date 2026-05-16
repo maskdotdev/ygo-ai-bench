@@ -140,6 +140,8 @@ describe("duel pvp agent bridge", () => {
 
     const result = agent.action({ ...fusion, materialUids: [first!.uid] }, restored.sessionId);
     expect(result.ok).toBe(false);
+    expectActionsStampedWithCurrentWindow(result.legalActions, result.state);
+    expectGroupsStampedWithCurrentWindow(result.legalActionGroups, result.state);
     const returnedFusion = result.legalActions.find((action) => action.type === "fusionSummon");
     const returnedGroupedFusion = result.legalActionGroups.flatMap((group) => group.actions).find((action) => action.type === "fusionSummon");
     if (!returnedFusion || returnedFusion.type !== "fusionSummon") throw new Error("Expected returned Fusion action");
@@ -415,6 +417,7 @@ describe("duel pvp agent bridge", () => {
     expect(result.ok).toBe(false);
     expect(result.failure).toBe("No visible battlefield action matched player=0 type=selectOption luaPromptApi=SelectEffect promptDescription=800");
     expect(result.prompt?.luaPrompt).toMatchObject({ api: "SelectOption", descriptions: [700, 800] });
+    expectGroupsStampedWithCurrentWindow(result.prompt?.groups ?? [], result.state);
   });
 
   it("restores serialized sessions with the same visible action surface", () => {
@@ -504,6 +507,8 @@ describe("duel pvp agent bridge", () => {
     expect(result.failedStep).toBe(0);
     expect(result.failure).toBe("No visible battlefield action matched player=0 type=passDamage groupLabel=Damage Step Response");
     expect(result.visibleActions).toHaveLength(3);
+    expectActionsStampedWithCurrentWindow(result.visibleActions, result.state);
+    expectGroupsStampedWithCurrentWindow(result.visibleGroups, result.state);
     expect(result.visibleGroups.flatMap((group) => group.actions).every((action) => (
       result.visibleActions.some((visible) => JSON.stringify(visible) === JSON.stringify(action))
     ))).toBe(true);
@@ -549,6 +554,8 @@ describe("duel pvp agent bridge", () => {
     expect(result.steps).toHaveLength(2);
     expect(firstVisibleKeys.has(JSON.stringify(result.steps[0]?.action))).toBe(true);
     expect(result.state.id).toBe(started.sessionId);
+    expectActionsStampedWithCurrentWindow(result.visibleActions, result.state);
+    expectGroupsStampedWithCurrentWindow(result.visibleGroups, result.state);
     expect(result.visibleGroups.flatMap((group) => group.actions).every((action) => (
       result.visibleActions.some((visible) => JSON.stringify(visible) === JSON.stringify(action))
     ))).toBe(true);
