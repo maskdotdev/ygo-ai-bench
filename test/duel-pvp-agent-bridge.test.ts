@@ -74,6 +74,48 @@ describe("duel pvp agent bridge", () => {
     expect(freshFusion.materialUids).toEqual(expect.arrayContaining([first!.uid, second!.uid]));
   });
 
+  it("deep-copies action result selection arrays at the bridge boundary", () => {
+    const session = createDuel({ seed: 482, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const first = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const second = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    specialSummonDuelCard(session.state, first!.uid, 0);
+    specialSummonDuelCard(session.state, second!.uid, 0);
+    const agent = createDuelPvpAgent();
+    const restored = agent.restore(serializeDuel(session));
+    const visible = agent.visibleBattlefield(0, restored.sessionId);
+    const fusion = visible.actions.find((action) => action.type === "fusionSummon");
+    expect(fusion?.type).toBe("fusionSummon");
+    if (!fusion || fusion.type !== "fusionSummon") throw new Error("Expected visible Fusion action");
+
+    const result = agent.action({ ...fusion, materialUids: [first!.uid] }, restored.sessionId);
+    expect(result.ok).toBe(false);
+    const returnedFusion = result.legalActions.find((action) => action.type === "fusionSummon");
+    const returnedGroupedFusion = result.legalActionGroups.flatMap((group) => group.actions).find((action) => action.type === "fusionSummon");
+    if (!returnedFusion || returnedFusion.type !== "fusionSummon") throw new Error("Expected returned Fusion action");
+    if (!returnedGroupedFusion || returnedGroupedFusion.type !== "fusionSummon") throw new Error("Expected returned grouped Fusion action");
+
+    returnedFusion.materialUids.push("mutated-action-material");
+    returnedGroupedFusion.materialUids.push("mutated-group-material");
+
+    const fresh = agent.action({ ...fusion, materialUids: [first!.uid] }, restored.sessionId);
+    expect(fresh.ok).toBe(false);
+    const freshFusion = fresh.legalActions.find((action) => action.type === "fusionSummon");
+    const freshGroupedFusion = fresh.legalActionGroups.flatMap((group) => group.actions).find((action) => action.type === "fusionSummon");
+    if (!freshFusion || freshFusion.type !== "fusionSummon") throw new Error("Expected fresh Fusion action");
+    if (!freshGroupedFusion || freshGroupedFusion.type !== "fusionSummon") throw new Error("Expected fresh grouped Fusion action");
+    expect(freshFusion.materialUids).toHaveLength(2);
+    expect(freshFusion.materialUids).toEqual(expect.arrayContaining([first!.uid, second!.uid]));
+    expect(freshGroupedFusion.materialUids).toHaveLength(2);
+    expect(freshGroupedFusion.materialUids).toEqual(expect.arrayContaining([first!.uid, second!.uid]));
+  });
+
   it("restores serialized sessions with the same visible action surface", () => {
     const agent = createDuelPvpAgent();
     const started = agent.start({ player0Ydk: starterYdk, player1Ydk: starterYdk, seed: "pvp-agent-restore", handSize: 2 });

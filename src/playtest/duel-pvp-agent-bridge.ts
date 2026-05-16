@@ -10,7 +10,8 @@ import {
   startDuel,
 } from "#duel/core.js";
 import { copyDuelAction } from "#duel/action-copy.js";
-import type { DuelAction, DuelSession, PlayerId, SerializedDuel } from "#duel/types.js";
+import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
+import type { ApplyDuelResponseResult, DuelAction, DuelSession, PlayerId, SerializedDuel } from "#duel/types.js";
 import { parseYdk } from "#playtest/ydk.js";
 import { getBrowserDuelCardReader } from "../playtest-app/duel-pvp-card-reader.js";
 import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "../playtest-app/duel-battlefield-actions.js";
@@ -112,7 +113,7 @@ export function createDuelPvpAgent(): DuelPvpAgent {
       return visibleBattlefieldView(session, player ?? queryPublicState(session).waitingFor ?? 0);
     },
     action(action, sessionId) {
-      return applyResponse(getSession(sessionId), action);
+      return copyApplyResponseResult(applyResponse(getSession(sessionId), action));
     },
     autoRunVisible(options = {}) {
       return autoRunVisibleBattlefield(getSession(options.sessionId), options);
@@ -219,6 +220,23 @@ function visibleAutoRunResult(
     visibleActions: view.actions,
     visibleGroups: view.groups,
     ...(view.prompt === undefined ? {} : { prompt: copyPromptView(view.prompt) }),
+  };
+}
+
+function copyApplyResponseResult(result: ApplyDuelResponseResult): ApplyDuelResponseResult {
+  return {
+    ...result,
+    legalActions: result.legalActions.map(copyDuelAction),
+    legalActionGroups: result.legalActionGroups.map(copyLegalActionGroup),
+  };
+}
+
+function copyLegalActionGroup(group: DuelLegalActionGroup): DuelLegalActionGroup {
+  return {
+    ...group,
+    ...(group.triggerBucket === undefined ? {} : { triggerBucket: { ...group.triggerBucket, triggerIds: [...group.triggerBucket.triggerIds] } }),
+    ...(group.triggerOrderPrompt === undefined ? {} : { triggerOrderPrompt: { ...group.triggerOrderPrompt, triggerIds: [...group.triggerOrderPrompt.triggerIds] } }),
+    actions: group.actions.map(copyDuelAction),
   };
 }
 
