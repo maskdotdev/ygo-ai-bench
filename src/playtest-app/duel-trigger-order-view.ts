@@ -5,6 +5,7 @@ import { copyDuelLegalActionGroup } from "./duel-action-anchors.js";
 export interface DuelTriggerOrderView {
   label: string;
   detail: string;
+  prompt: TriggerOrderPromptState;
   groups: DuelLegalActionGroup[];
 }
 
@@ -18,6 +19,7 @@ export function duelTriggerOrderView(
   return {
     label: "Trigger Order",
     detail: `P${prompt.player + 1} · ${prompt.triggerBucket} · ${prompt.triggerIds.length} triggers`,
+    prompt: copyTriggerOrderPrompt(prompt),
     groups: promptGroups,
   };
 }
@@ -25,7 +27,15 @@ export function duelTriggerOrderView(
 export function copyDuelTriggerOrderView(view: DuelTriggerOrderView): DuelTriggerOrderView {
   return {
     ...view,
+    prompt: copyTriggerOrderPrompt(view.prompt),
     groups: view.groups.map(copyDuelLegalActionGroup),
+  };
+}
+
+function copyTriggerOrderPrompt(prompt: TriggerOrderPromptState): TriggerOrderPromptState {
+  return {
+    ...prompt,
+    triggerIds: [...prompt.triggerIds],
   };
 }
 
