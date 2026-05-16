@@ -92,6 +92,32 @@ describe("EDOPro compatibility harness pending trigger validation", () => {
     ]);
   });
 
+  it("requires pending trigger event expectations to pin trigger timing", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture(
+      {
+        name: "missing pending trigger event timing fixture",
+        options: { seed: 62, startingHandSize: 1 },
+        decks: {
+          0: { main: ["100"] },
+          1: { main: ["200"] },
+        },
+        before: {
+          source: "edopro",
+          pendingTriggers: [{ player: 0, effectId: "fixture-trigger", ["eventName"]: "normalSummoned", triggerBucket: "turnOptional" }],
+        },
+        responses: [],
+        expected: { source: "edopro" },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      { fixture: "missing pending trigger event timing fixture", message: "before fixture (edopro): Expected pendingTriggers[0].eventTriggerTiming is required when eventName is set" },
+    ]);
+  });
+
   it("rejects malformed pending trigger expectation containers", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const result = runScriptedDuelFixture(

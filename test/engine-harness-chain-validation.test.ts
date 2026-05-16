@@ -90,6 +90,32 @@ describe("EDOPro compatibility harness chain validation", () => {
     ]);
   });
 
+  it("requires chain event expectations to pin trigger timing", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
+    const result = runScriptedDuelFixture(
+      {
+        name: "missing chain event trigger timing fixture",
+        options: { seed: 64, startingHandSize: 1 },
+        decks: {
+          0: { main: ["100"] },
+          1: { main: ["200"] },
+        },
+        before: {
+          source: "edopro",
+          chain: [{ player: 0, effectId: "fixture-trigger", ["eventName"]: "normalSummoned" }],
+        },
+        responses: [],
+        expected: { source: "edopro" },
+      },
+      { cardReader: createCardReader(cards) },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.failures).toEqual([
+      { fixture: "missing chain event trigger timing fixture", message: "before fixture (edopro): Expected chain[0].eventTriggerTiming is required when eventName is set" },
+    ]);
+  });
+
   it("rejects malformed chain expectation containers", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const result = runScriptedDuelFixture(

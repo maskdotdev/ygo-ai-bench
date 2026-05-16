@@ -42,6 +42,7 @@ function malformedPendingTriggerExpectation(partial: Partial<PendingTrigger>, de
   if (partial.eventReasonPlayer !== undefined && !isSafePlayerId(partial.eventReasonPlayer)) failures.push(`Expected ${description}.eventReasonPlayer has malformed player ${String(partial.eventReasonPlayer)}`);
   if (partial.eventName !== undefined && !isDuelEventName(partial.eventName)) failures.push(`Expected ${description}.eventName has malformed value ${String(partial.eventName)}`);
   if (partial.triggerBucket !== undefined && !isTriggerBucket(partial.triggerBucket)) failures.push(`Expected ${description}.triggerBucket has malformed value ${String(partial.triggerBucket)}`);
+  if (partial.eventName !== undefined && partial.eventTriggerTiming === undefined) failures.push(`Expected ${description}.eventTriggerTiming is required when eventName is set`);
   if (partial.eventTriggerTiming !== undefined && !TRIGGER_TIMINGS.has(partial.eventTriggerTiming as TriggerTiming)) failures.push(`Expected ${description}.eventTriggerTiming has malformed value ${String(partial.eventTriggerTiming)}`);
   failures.push(...malformedEventCardStateExpectation(partial.eventPreviousState, `${description}.eventPreviousState`));
   failures.push(...malformedEventCardStateExpectation(partial.eventCurrentState, `${description}.eventCurrentState`));
