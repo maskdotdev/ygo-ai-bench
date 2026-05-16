@@ -14,11 +14,7 @@ afterEach(() => {
 });
 
 describe("browser CDB row exporter", () => {
-  it("exports JSON-safe datas/texts rows for selected passcodes", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "browser-cdb-export-"));
-    tempRoots.push(root);
-    const databasePath = path.join(root, "cards.cdb");
-    const outPath = path.join(root, "public", "card-data", "cdb-rows.json");
+  function writeFixtureDatabase(databasePath: string): void {
     execFileSync("sqlite3", [databasePath, [
       "create table datas(id integer, alias integer, setcode integer, type integer, atk integer, def integer, level integer, race integer, attribute integer);",
       "create table texts(id integer, name text);",
@@ -26,9 +22,17 @@ describe("browser CDB row exporter", () => {
       "insert into datas values(200,0,0,2,0,0,0,0,0);",
       "insert into datas values(300,0,0,4,0,0,0,0,0);",
       "insert into texts values(100,'Exported Monster');",
-      "insert into texts values(200,'Skipped Spell');",
+      "insert into texts values(200,'Exported Spell');",
       "insert into texts values(300,'Exported Trap');",
     ].join("")]);
+  }
+
+  it("exports JSON-safe datas/texts rows for selected passcodes", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "browser-cdb-export-"));
+    tempRoots.push(root);
+    const databasePath = path.join(root, "cards.cdb");
+    const outPath = path.join(root, "public", "card-data", "cdb-rows.json");
+    writeFixtureDatabase(databasePath);
 
     execFileSync("node", [exporterPath, "--database", databasePath, "--out", outPath, "--codes", "300,100"]);
     const checked = execFileSync("node", [checkerPath, "--card-data", path.dirname(outPath)], { encoding: "utf8" });
@@ -51,6 +55,38 @@ describe("browser CDB row exporter", () => {
       selectedCodes: ["100", "300"],
       datasRows: 2,
       textsRows: 2,
+      sha256: crypto.createHash("sha256").update(payload).digest("hex"),
+    });
+    expect(checked).toContain("Browser asset manifest check passed");
+  });
+
+  it("exports and verifies full JSON-safe datas/texts payloads", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "browser-cdb-export-"));
+    tempRoots.push(root);
+    const databasePath = path.join(root, "cards.cdb");
+    const outPath = path.join(root, "public", "card-data", "cdb-rows.json");
+    writeFixtureDatabase(databasePath);
+
+    execFileSync("node", [exporterPath, "--database", databasePath, "--out", outPath]);
+    const checked = execFileSync("node", [checkerPath, "--card-data", path.dirname(outPath)], { encoding: "utf8" });
+
+    const payload = fs.readFileSync(outPath, "utf8");
+    expect(JSON.parse(payload)).toMatchObject({
+      datas: [
+        { id: 100 },
+        { id: 200 },
+        { id: 300 },
+      ],
+      texts: [
+        { id: 100 },
+        { id: 200 },
+        { id: 300 },
+      ],
+    });
+    expect(JSON.parse(fs.readFileSync(path.join(root, "public", "card-data", "manifest.json"), "utf8"))).toMatchObject({
+      selectedCodes: [],
+      datasRows: 3,
+      textsRows: 3,
       sha256: crypto.createHash("sha256").update(payload).digest("hex"),
     });
     expect(checked).toContain("Browser asset manifest check passed");
