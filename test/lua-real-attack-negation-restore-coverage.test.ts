@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const attackNegationFixtureCount = 6;
+const attackNegationFixtureCount = 7;
 
 describe("Lua real attack negation restore coverage", () => {
   it("requires representative attack-negation fixtures to assert clean Lua restore and legal-action parity", () => {
@@ -111,6 +111,19 @@ function realScriptAttackNegationFixtureFiles(): Array<{ file: string; required:
         "attackCanceledUids).toEqual([attacker!.uid])",
         'location: "spellTrapZone", position: "faceDown", faceUp: false',
         'host.messages).not.toContain("scrap-iron responder resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-super-junior-confrontation-calculate-damage.test.ts",
+      required: [
+        'action.type === "activateEffect" && action.uid === confrontation!.uid',
+        'battleWindow?.kind).toBe("attackNegationResponse")',
+      ],
+      outcome: [
+        "attackCanceledUids).toEqual([attacker!.uid])",
+        "skippedPhases).toEqual([{ player: 1, phase: \"battle\", remaining: 1 }])",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+        'eventName: "attackDisabled"',
       ],
     },
     {
