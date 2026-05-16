@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const protectionReplacementFixtureCount = 10;
+const protectionReplacementFixtureCount = 11;
 
 describe("Lua real protection and replacement restore coverage", () => {
   it("requires representative protection/replacement fixtures to assert Lua-aware restore", () => {
@@ -137,6 +137,15 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
         "const attackPositionDestroy = destroyDuelCard(restored.session.state, restoredDragon!.uid, 0, duelReason.battle | duelReason.destroy, 1)",
         "expect(attackPositionDestroy).toMatchObject({ uid: restoredDragon!.uid, location: \"monsterZone\" })",
         "expect(defensePositionDestroy).toMatchObject({ uid: restoredDragon!.uid, location: \"graveyard\", reason: duelReason.battle | duelReason.destroy })",
+      ],
+    },
+    {
+      file: "lua-real-script-nightmare-magician-battle-control.test.ts",
+      required: [
+        'luaTargetDescriptor: "target:source-or-battle-target"',
+        "expect(session.state.battleDamage).toEqual({ 0: 0, 1: 500 })",
+        "expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: \"monsterZone\", controller: 1 })",
+        "previousController: 1",
       ],
     },
   ].map(({ file, required }) => ({ file: path.join("test", file), required }));

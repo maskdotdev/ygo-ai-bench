@@ -6,13 +6,13 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const battleKeywords = ["battle", "attack", "damage"];
-const realScriptBattleFixtureCount = 136;
+const realScriptBattleFixtureCount = 137;
 const battleLegalActionFixtureCount = 4;
 const attackDeclarationTrapFixtureCount = 6;
 const battleRoutingFixtureCount = 6;
 const damageStepRestoreFixtureCount = 4;
 const battleDamageSemanticFixtureCount = 8;
-const battleTriggerSemanticFixtureCount = 7;
+const battleTriggerSemanticFixtureCount = 8;
 
 describe("Lua real battle restore coverage", () => {
   it("requires real-script battle fixtures to assert Lua-aware complete restore with diagnostics", () => {
@@ -449,6 +449,16 @@ function realScriptBattleTriggerSemanticFixtureFiles(): Array<{ file: string; re
         "eventCode: 1141",
         'eventName: "destroyed"',
         'location: "graveyard"',
+      ],
+    },
+    {
+      file: "lua-real-script-nightmare-magician-battle-control.test.ts",
+      required: [
+        'luaTargetDescriptor: "target:source-or-battle-target"',
+        'battleWindow?.kind).toBe("endDamageStep")',
+        'triggerBucket: "turnOptional"',
+        'eventName: "damageStepEnded"',
+        "previousController: 1",
       ],
     },
   ].map(({ file, required }) => ({ file: path.join("test", file), required }));
