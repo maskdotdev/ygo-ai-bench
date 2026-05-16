@@ -75,6 +75,7 @@ describe("EDOPro parity battle attack announce lock fixtures", () => {
             pendingBattle: false,
             currentAttack: false,
             windowId: 1,
+            windowKind: "open",
             battleWindow: null,
             attacksDeclared: [],
             absentLegalActions: [
