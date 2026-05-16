@@ -115,6 +115,10 @@ describe("parity fixture metadata", () => {
     expect(missingPendingTriggerBucketCoverage()).toEqual([]);
   });
 
+  it("requires pending trigger event expectations to pin trigger timing", () => {
+    expect(missingPendingTriggerEventTimings()).toEqual([]);
+  });
+
   it("requires trigger legal-action groups to pin trigger bucket summaries", () => {
     expect(missingTriggerGroupBucketCoverage()).toEqual([]);
   });
@@ -368,6 +372,22 @@ describe("parity fixture metadata", () => {
       ]),
     ).toEqual([]);
     expect(missingPendingTriggerBucketCoverageInLines("fixture.ts", [...lines.slice(0, 4), "  pendingTriggers: [],", ...lines.slice(4)])).toEqual([]);
+    expect(missingPendingTriggerEventTimingsInText("fixture.ts", [
+      "after: {",
+      "  pendingTriggers: [{ player: 0, effectId: 'trigger', eventName: 'normalSummoned' }],",
+      "},",
+    ].join("\n"))).toEqual(["fixture.ts:2"]);
+    expect(missingPendingTriggerEventTimingsInText("fixture.ts", [
+      "after: {",
+      "  pendingTriggers: [{ player: 0, effectId: 'trigger', eventName: 'normalSummoned', eventTriggerTiming: 'if' }],",
+      "},",
+    ].join("\n"))).toEqual([]);
+    expect(missingPendingTriggerEventTimingsInText("fixture.ts", [
+      "after: {",
+      "  eventHistory: [{ eventName: 'normalSummoned' }],",
+      "  pendingTriggers: [],",
+      "},",
+    ].join("\n"))).toEqual([]);
     expect(
       missingTriggerGroupBucketCoverageInLines("fixture.ts", [
         ...lines.slice(0, 4),
@@ -580,6 +600,10 @@ function mismatchedBattleWindowSteps(): string[] { return parityFixtureFiles().f
 
 function missingPendingTriggerBucketCoverage(): string[] {
   return parityFixtureFiles().flatMap((file) => missingPendingTriggerBucketCoverageInLines(file, readFixtureLines(file)));
+}
+
+function missingPendingTriggerEventTimings(): string[] {
+  return scriptedFixtureFiles().flatMap((file) => missingPendingTriggerEventTimingsInText(file, readFixtureText(file)));
 }
 
 function missingTriggerGroupBucketCoverage(): string[] {
@@ -816,6 +840,30 @@ function missingPendingTriggerBucketCoverageInLines(file: string, lines: string[
   return missingBuckets;
 }
 
+function missingPendingTriggerEventTimingsInText(file: string, text: string): string[] {
+  const missingTimings: string[] = [];
+  let index = 0;
+  while ((index = text.indexOf("pendingTriggers:", index)) !== -1) {
+    const arrayStart = text.indexOf("[", index);
+    const arrayEnd = arrayStart < 0 ? -1 : findArrayEnd(text, arrayStart);
+    if (arrayEnd < 0) {
+      index += "pendingTriggers:".length;
+      continue;
+    }
+    let eventIndex = arrayStart;
+    while ((eventIndex = text.indexOf("eventName:", eventIndex)) !== -1 && eventIndex < arrayEnd) {
+      const objectStart = findObjectStart(text, eventIndex);
+      const objectEnd = objectStart < 0 ? -1 : findObjectEnd(text, objectStart);
+      if (objectStart >= arrayStart && objectEnd >= 0 && objectEnd <= arrayEnd && !text.slice(objectStart, objectEnd).includes("eventTriggerTiming:")) {
+        missingTimings.push(`${file}:${lineNumberAt(text, eventIndex)}`);
+      }
+      eventIndex += "eventName:".length;
+    }
+    index = arrayEnd;
+  }
+  return missingTimings;
+}
+
 function missingTriggerGroupBucketCoverageInLines(file: string, lines: string[]): string[] {
   const missingBuckets: string[] = [];
   lines.forEach((line, index) => {
@@ -858,6 +906,14 @@ function findObjectStart(text: string, sourceIndex: number): number {
 }
 
 function findObjectEnd(text: string, startIndex: number): number {
+  return findBalancedEnd(text, startIndex, "{", "}");
+}
+
+function findArrayEnd(text: string, startIndex: number): number {
+  return findBalancedEnd(text, startIndex, "[", "]");
+}
+
+function findBalancedEnd(text: string, startIndex: number, open: string, close: string): number {
   let depth = 0;
   let quote: string | undefined;
   let escaped = false;
@@ -873,8 +929,8 @@ function findObjectEnd(text: string, startIndex: number): number {
       quote = char;
       continue;
     }
-    if (char === "{") depth += 1;
-    if (char === "}") depth -= 1;
+    if (char === open) depth += 1;
+    if (char === close) depth -= 1;
     if (depth === 0) return index + 1;
   }
   return -1;
