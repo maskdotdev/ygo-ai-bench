@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 46;
-const chainedResponseFixtureCount = 45;
-const responseOperationInfoFixtureCount = 41;
+const responseFixtureCount = 51;
+const chainedResponseFixtureCount = 50;
+const responseOperationInfoFixtureCount = 46;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -95,6 +95,7 @@ describe("Lua real response restore coverage", () => {
 
 function realScriptResponseFixtureFiles(): string[] {
   return [
+    "lua-real-script-advanced-ritual-art-extra-material.test.ts",
     "lua-real-script-amaterasu-set-available-chain.test.ts",
     "lua-real-script-armor-blast-multi-target-free-chain.test.ts",
     "lua-real-script-bad-reaction-reverse-recover.test.ts",
@@ -103,11 +104,13 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-called-by-the-grave.test.ts",
     "lua-real-script-compulsory-evacuation-device-free-chain.test.ts",
     "lua-real-script-cosmic-cyclone-free-chain.test.ts",
+    "lua-real-script-contract-dark-master-ritual-spell.test.ts",
     "lua-real-script-dark-bribe-negate-draw.test.ts",
     "lua-real-script-dimensional-prison-battle-window.test.ts",
     "lua-real-script-divine-wrath-monster-negate.test.ts",
     "lua-real-script-draining-shield-battle-window.test.ts",
     "lua-real-script-droll-lock-bird-draw-search-lock.test.ts",
+    "lua-real-script-earth-chant-ritual-equal.test.ts",
     "lua-real-script-foolish-burial-deck-to-grave.test.ts",
     "lua-real-script-ghost-ogre-chain-destroy.test.ts",
     "lua-real-script-harpies-feather-duster-group-destroy.test.ts",
@@ -116,6 +119,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-lightning-storm-select-effect.test.ts",
     "lua-real-script-magic-jammer-chain-negate.test.ts",
     "lua-real-script-magic-cylinder-battle-window.test.ts",
+    "lua-real-script-miracle-fusion-extra-material.test.ts",
     "lua-real-script-mirror-force-battle-window.test.ts",
     "lua-real-script-monster-reborn-free-chain.test.ts",
     "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
@@ -125,6 +129,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-pot-of-duality-excavate.test.ts",
     "lua-real-script-pot-of-extravagance-extra-cost.test.ts",
     "lua-real-script-pot-of-prosperity-excavate.test.ts",
+    "lua-real-script-polymerization-fusion-summon.test.ts",
     "lua-real-script-raigeki-group-destroy.test.ts",
     "lua-real-script-raigeki-break-discard-cost.test.ts",
     "lua-real-script-reinforcement-of-the-army-search.test.ts",
