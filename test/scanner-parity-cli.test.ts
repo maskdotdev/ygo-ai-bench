@@ -628,6 +628,39 @@ describe("parity scanner CLIs", () => {
     expect(result.stderr).toContain("parity-unpaired-absent-evidence.test.ts:8");
   });
 
+  it("fails when absent legal-action evidence arrays are empty", () => {
+    const testRoot = makeTestRoot({
+      "parity-empty-absent-evidence.test.ts": `
+        runScriptedDuelFixture({
+          before: {
+            source: "edopro",
+            note: "EDOPro observed an empty raw absent evidence list.",
+            absentLegalActions: [],
+            absentLegalActionGroups: [{ player: 0, label: "Effects", actions: [{ type: "activateEffect", player: 0 }] }],
+          },
+          after: {
+            source: "edopro",
+            note: "EDOPro observed an empty grouped absent evidence list.",
+            absentLegalActions: [{ type: "activateEffect", player: 0 }],
+            absentLegalActionGroups: [],
+          },
+        });
+      `,
+    });
+
+    const result = spawnSync(process.execPath, [
+      legalActionScannerPath,
+      "--test-root",
+      testRoot,
+      "--fail-on-empty-absent",
+    ], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("Absent legal-action evidence arrays must not be empty");
+    expect(result.stderr).toContain("parity-empty-absent-evidence.test.ts:3");
+    expect(result.stderr).toContain("parity-empty-absent-evidence.test.ts:9");
+  });
+
   it("rejects malformed provenance and legal-action scanner options", () => {
     const missingProvenanceRoot = spawnSync(process.execPath, [provenanceScannerPath, "--test-root"], { encoding: "utf8" });
     const missingProvenanceValue = spawnSync(process.execPath, [provenanceScannerPath, "--min-files"], { encoding: "utf8" });

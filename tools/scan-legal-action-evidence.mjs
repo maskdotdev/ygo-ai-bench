@@ -19,6 +19,7 @@ function main(argv) {
   const zeroOnly = [];
   const zeroEvidence = [];
   const unpairedAbsent = [];
+  const emptyAbsent = [];
   const missingWindowEvidence = [];
   const missingTopLevelWindowEvidence = [];
   let edoproBlocks = 0;
@@ -47,6 +48,7 @@ function main(argv) {
       if (hasAbsentGroups) absentGroupEvidenceBlocks += 1;
       if (hasAbsentActions && hasAbsentGroups) pairedAbsentEvidenceBlocks += 1;
       if (hasAbsentActions !== hasAbsentGroups) unpairedAbsent.push(`${file}:${block.line}`);
+      emptyAbsent.push(...emptyAbsentEvidence(file, block));
       missing.push(...missingAggregateEvidence(file, block));
       empty.push(...emptyAggregateEvidence(file, block));
       zeroOnly.push(...zeroOnlyAggregateEvidence(file, block));
@@ -75,6 +77,7 @@ function main(argv) {
   if (options.failOnZeroOnly && zeroOnly.length > 0) failures.push(`Positive aggregate counts with only zero-count legal-action evidence:\n${formatList(zeroOnly)}`);
   if (options.failOnZeroEvidence && zeroEvidence.length > 0) failures.push(`Zero-count legal-action evidence must move to absent expectations:\n${formatList(zeroEvidence)}`);
   if (options.failOnUnpairedAbsent && unpairedAbsent.length > 0) failures.push(`Absent legal-action evidence must include both raw and grouped assertions:\n${formatList(unpairedAbsent)}`);
+  if (options.failOnEmptyAbsent && emptyAbsent.length > 0) failures.push(`Absent legal-action evidence arrays must not be empty:\n${formatList(emptyAbsent)}`);
   if (options.failOnMissingWindowEvidence && missingWindowEvidence.length > 0) failures.push(`EDOPro blocks missing windowId/windowKind evidence:\n${formatList(missingWindowEvidence)}`);
   if (options.failOnMissingTopLevelWindowEvidence && missingTopLevelWindowEvidence.length > 0) failures.push(`EDOPro blocks missing top-level windowId/windowKind evidence:\n${formatList(missingTopLevelWindowEvidence)}`);
 
@@ -100,6 +103,7 @@ function parseArgs(argv) {
     else if (arg === "--fail-on-zero-only") options.failOnZeroOnly = true;
     else if (arg === "--fail-on-zero-evidence") options.failOnZeroEvidence = true;
     else if (arg === "--fail-on-unpaired-absent") options.failOnUnpairedAbsent = true;
+    else if (arg === "--fail-on-empty-absent") options.failOnEmptyAbsent = true;
     else if (arg === "--fail-on-missing-window-evidence") options.failOnMissingWindowEvidence = true;
     else if (arg === "--fail-on-missing-top-level-window-evidence") options.failOnMissingTopLevelWindowEvidence = true;
     else if (arg === "--min-files") options.minFiles = readMinimum(argv, ++index, arg);
@@ -203,6 +207,13 @@ function zeroCountEvidence(file, block) {
   return [...new Set(zero)];
 }
 
+function emptyAbsentEvidence(file, block) {
+  const empty = [];
+  if (hasEmptyArray(block.text, "absentLegalActions")) empty.push(`${file}:${block.line}`);
+  if (hasEmptyArray(block.text, "absentLegalActionGroups")) empty.push(`${file}:${block.line}`);
+  return [...new Set(empty)];
+}
+
 function hasWindowEvidence(block) {
   return /\bwindowId:\s*/.test(block) && /\bwindowKind:\s*/.test(block);
 }
@@ -246,6 +257,7 @@ Options:
   --fail-on-zero-only         Fail when positive aggregate counts only have zero-count evidence
   --fail-on-zero-evidence     Fail when legal-action evidence uses count: 0 instead of absent expectations
   --fail-on-unpaired-absent   Fail when absent raw/grouped legal-action evidence is not paired
+  --fail-on-empty-absent      Fail when absent evidence arrays are empty
   --fail-on-missing-window-evidence
                               Fail when EDOPro blocks omit windowId/windowKind evidence
   --fail-on-missing-top-level-window-evidence
