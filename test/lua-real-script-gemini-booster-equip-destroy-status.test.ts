@@ -73,6 +73,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const activate = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === booster!.uid);
     expect(activate, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredActivation, activate!);
+    expect(restoredActivation.session.state.chain).toHaveLength(1);
     expect(restoredActivation.session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "spellTrapZone",
@@ -241,6 +242,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === booster!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTrigger, trigger!);
+    expect(restoredTrigger.session.state.chain).toHaveLength(1);
     expect(restoredTrigger.session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "graveyard",

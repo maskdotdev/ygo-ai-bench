@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const equipFixtureCount = 4;
-const equipRelationFixtureCount = 8;
+const equipFixtureCount = 7;
+const equipRelationFixtureCount = 11;
 const equipProbeFixtureCount = 8;
-const equipOperationInfoFixtureCount = 6;
+const equipOperationInfoFixtureCount = 9;
 const equipCleanupFixtureCount = 6;
 
 describe("Lua real equip restore coverage", () => {
@@ -125,6 +125,9 @@ describe("Lua real equip restore coverage", () => {
 function realScriptEquipFixtureFiles(): string[] {
   return [
     "lua-real-script-equip-procedure-actions.test.ts",
+    "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
+    "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
+    "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
     "lua-real-script-premature-burial-revive-destroy.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
     "lua-real-script-train-connection-equip-cost.test.ts",
@@ -138,6 +141,9 @@ function realScriptEquipRelationFixtureFiles(): string[] {
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-equip-return-actions.test.ts",
     "lua-real-script-equip-stat-lock-actions.test.ts",
+    "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
+    "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
+    "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
     "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
     "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
@@ -168,6 +174,9 @@ function realScriptEquipOperationInfoFixtureFiles(): string[] {
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-equip-return-actions.test.ts",
     "lua-real-script-equip-stat-lock-actions.test.ts",
+    "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
+    "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
+    "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
     "lua-real-script-supervise-gemini-equip-revive.test.ts",
     "lua-real-script-train-connection-equip-cost.test.ts",

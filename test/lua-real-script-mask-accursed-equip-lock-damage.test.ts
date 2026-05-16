@@ -62,6 +62,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === mask!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredActivation, activation!);
+    expect(restoredActivation.session.state.chain).toHaveLength(1);
     expect(restoredActivation.session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "hand",
@@ -141,6 +142,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === mask!.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredTrigger, trigger!);
+    expect(restoredTrigger.session.state.chain).toHaveLength(1);
     expect(restoredTrigger.session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "spellTrapZone",
