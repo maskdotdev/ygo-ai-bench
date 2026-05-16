@@ -108,6 +108,10 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
         'eventName === "sentToGraveyard"',
         'location: "graveyard", controller: 1',
         'location: "spellTrapZone", controller: 1, sequence: 1',
+        'action.type === "pendulumSummon"',
+        'eventName: "specialSummoned"',
+        'location: "hand", controller: 0',
+        'summonType: "pendulum"',
       ],
     },
   ].map(({ file, required }) => ({ file: path.join("test", file), required }));

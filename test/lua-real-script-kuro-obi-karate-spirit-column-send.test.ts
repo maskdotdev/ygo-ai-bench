@@ -175,6 +175,125 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ku
       },
     ]);
   });
+
+  it("restores its Pendulum Zone return trigger after a Pendulum Summon", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const kuroObiCode = "77511331";
+    const lowScaleCode = "77511336";
+    const candidateCode = "77511337";
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === kuroObiCode),
+      { code: lowScaleCode, name: "Kuro-Obi Low Scale", kind: "monster", typeFlags: typePendulumMonster, level: 4, attack: 1000, defense: 1000, leftScale: 1, rightScale: 1 },
+      { code: candidateCode, name: "Kuro-Obi Pendulum Candidate", kind: "monster", typeFlags: typePendulumMonster, level: 4, attack: 1400, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 776, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [kuroObiCode, lowScaleCode, candidateCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const kuroObi = session.state.cards.find((card) => card.code === kuroObiCode);
+    const lowScale = session.state.cards.find((card) => card.code === lowScaleCode);
+    const candidate = session.state.cards.find((card) => card.code === candidateCode);
+    expect(kuroObi).toBeDefined();
+    expect(lowScale).toBeDefined();
+    expect(candidate).toBeDefined();
+    moveDuelCard(session.state, lowScale!.uid, "spellTrapZone", 0);
+    lowScale!.sequence = 0;
+    lowScale!.position = "faceUpAttack";
+    lowScale!.faceUp = true;
+    moveDuelCard(session.state, kuroObi!.uid, "spellTrapZone", 0);
+    kuroObi!.sequence = 1;
+    kuroObi!.position = "faceUpAttack";
+    kuroObi!.faceUp = true;
+    moveDuelCard(session.state, candidate!.uid, "hand", 0);
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(kuroObiCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const restoredPendulumWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restoredPendulumWindow.restoreComplete, restoredPendulumWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredPendulumWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredPendulumWindow.missingChainLimitRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredPendulumWindow, 0);
+    const pendulumSummon = getLuaRestoreLegalActions(restoredPendulumWindow, 0).find(
+      (action): action is Extract<DuelAction, { type: "pendulumSummon" }> => action.type === "pendulumSummon" && action.summonUids.includes(candidate!.uid),
+    );
+    expect(pendulumSummon, JSON.stringify(getLuaRestoreLegalActions(restoredPendulumWindow, 0), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restoredPendulumWindow, { ...pendulumSummon!, summonUids: [candidate!.uid] });
+
+    const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredPendulumWindow.session), workspace, reader);
+    expect(restoredTriggerWindow.restoreComplete, restoredTriggerWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredTriggerWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredTriggerWindow.missingChainLimitRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredTriggerWindow, 0);
+    expect(restoredTriggerWindow.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-8-1102",
+          "eventCardUid": "p0-deck-77511337-2",
+          "eventCode": 1102,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "specialSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 2064,
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "id": "trigger-4-1",
+          "player": 0,
+          "sourceUid": "p0-deck-77511331-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
+    const trigger = getLuaRestoreLegalActions(restoredTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.uid === kuroObi!.uid);
+    expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restoredTriggerWindow, trigger!);
+
+    expect(restoredTriggerWindow.session.state.cards.find((card) => card.uid === kuroObi!.uid)).toMatchObject({ location: "hand", controller: 0 });
+    expect(restoredTriggerWindow.session.state.cards.find((card) => card.uid === lowScale!.uid)).toMatchObject({ location: "spellTrapZone", controller: 0, sequence: 0 });
+    expect(restoredTriggerWindow.session.state.cards.find((card) => card.uid === candidate!.uid)).toMatchObject({ location: "monsterZone", controller: 0, summonType: "pendulum" });
+    expect(restoredTriggerWindow.session.state.players[0].pendulumSummonAvailable).toBe(false);
+    expect(restoredTriggerWindow.session.state.eventHistory.filter((event) => event.eventName === "sentToHand" && event.eventCardUid === kuroObi!.uid)).toEqual([
+      {
+        eventName: "sentToHand",
+        eventCode: 1012,
+        eventCardUid: kuroObi!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: kuroObi!.uid,
+        eventReasonEffectId: 8,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "spellTrapZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
+  });
 });
 
 function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: DuelAction): void {
