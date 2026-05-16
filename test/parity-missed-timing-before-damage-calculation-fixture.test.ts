@@ -30,7 +30,17 @@ describe("EDOPro parity before-damage-calculation missed timing fixture", () => 
             location: "hand",
             event: "ignition",
             range: ["hand"],
-            collectEventsOnResolve: [{ collectEvent: "beforeDamageCalculation", eventCode: 1134, eventIsLast: false }],
+            collectEventsOnResolve: [
+              {
+                collectEvent: "beforeDamageCalculation",
+                eventCode: 1134,
+                eventIsLast: false,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 33701,
+              },
+            ],
             moveCardsOnResolve: [{ player: 0, code: "700", from: "monsterZone", to: "graveyard" }],
             logMessage: "Before-damage-calculation activation multi step resolved",
           },
@@ -95,7 +105,18 @@ describe("EDOPro parity before-damage-calculation missed timing fixture", () => 
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "before-damage-calculation-activation-optional-if", eventName: "beforeDamageCalculation", eventCode: 1134 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "before-damage-calculation-activation-optional-if",
+                eventName: "beforeDamageCalculation",
+                eventCode: 1134,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 33701,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "before-damage-calculation-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
@@ -126,7 +147,18 @@ describe("EDOPro parity before-damage-calculation missed timing fixture", () => 
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "before-damage-calculation-activation-optional-if", eventName: "beforeDamageCalculation", eventCode: 1134 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "before-damage-calculation-activation-optional-if",
+                eventName: "beforeDamageCalculation",
+                eventCode: 1134,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 33701,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "before-damage-calculation-activation-optional-if", triggerBucket: "turnOptional", count: 1 },

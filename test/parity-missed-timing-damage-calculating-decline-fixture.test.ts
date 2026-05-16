@@ -30,7 +30,17 @@ describe("EDOPro parity damage-calculating missed timing decline fixture", () =>
             location: "hand",
             event: "ignition",
             range: ["hand"],
-            collectEventsOnResolve: [{ collectEvent: "damageCalculating", eventCode: 1135, eventIsLast: false }],
+            collectEventsOnResolve: [
+              {
+                collectEvent: "damageCalculating",
+                eventCode: 1135,
+                eventIsLast: false,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 34001,
+              },
+            ],
             moveCardsOnResolve: [{ player: 0, code: "700", from: "monsterZone", to: "graveyard" }],
             logMessage: "Damage-calculating decline multi step resolved",
           },
@@ -95,7 +105,18 @@ describe("EDOPro parity damage-calculating missed timing decline fixture", () =>
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "damage-calculating-decline-optional-if", eventName: "damageCalculating", eventCode: 1135 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "damage-calculating-decline-optional-if",
+                eventName: "damageCalculating",
+                eventCode: 1135,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 34001,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "damage-calculating-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
@@ -126,7 +147,18 @@ describe("EDOPro parity damage-calculating missed timing decline fixture", () =>
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "damage-calculating-decline-optional-if", eventName: "damageCalculating", eventCode: 1135 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "damage-calculating-decline-optional-if",
+                eventName: "damageCalculating",
+                eventCode: 1135,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 34001,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "damage-calculating-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
