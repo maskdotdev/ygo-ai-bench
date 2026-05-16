@@ -153,6 +153,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
         ],
       }
     `);
+    expect(restored.session.state.chain[1]?.operationInfos).toEqual([
+      { category: 0x10, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 },
+    ]);
 
     const pass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
