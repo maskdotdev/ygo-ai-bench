@@ -1,5 +1,5 @@
 import { cardRegistry } from "#cards/definitions.js";
-import { createCardReader } from "#engine/data-loaders.js";
+import { createCardReader, normalizeCdbRows, type RawCdbDataRow, type RawCdbTextRow } from "#engine/data-loaders.js";
 import type { CardDefinition } from "#engine/types.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
 import type { DuelCardData, DuelCardKind } from "#duel/types.js";
@@ -8,6 +8,13 @@ let cachedReader: ((code: string) => DuelCardData) | undefined;
 let cachedBuiltinCards: Map<string, DuelCardData> | undefined;
 
 export type BrowserDuelCardDataLoader = (codes: readonly string[]) => Promise<readonly DuelCardData[]>;
+
+export interface BrowserCdbCardRows {
+  datas: RawCdbDataRow[];
+  texts: RawCdbTextRow[];
+}
+
+export type BrowserCdbCardRowsLoader = (codes: readonly string[]) => Promise<BrowserCdbCardRows>;
 
 export interface BrowserDuelCardDataPreloadResult {
   loaded: string[];
@@ -73,6 +80,17 @@ export function createBrowserDuelCardDataCache(loader?: BrowserDuelCardDataLoade
     missingCodes(codes) {
       return normalizedCodes(codes).filter((code) => !builtins.has(code) && !dynamicCards.has(code));
     },
+  };
+}
+
+export function createBrowserCdbCardDataLoader(loadRows: BrowserCdbCardRowsLoader): BrowserDuelCardDataLoader {
+  return async (codes) => {
+    const requested = new Set(normalizedCodes(codes));
+    const rows = await loadRows([...requested]);
+    return normalizeCdbRows(
+      rows.datas.filter((row) => requested.has(String(row.id))),
+      rows.texts.filter((row) => requested.has(String(row.id))),
+    );
   };
 }
 
