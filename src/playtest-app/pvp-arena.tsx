@@ -3,8 +3,9 @@ import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions,
 import type { DuelAction, DuelCardReader, DuelSession, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
 import type { LuaInitialEffectRegistrationResult, LuaScriptHost, LuaScriptLoadResult } from "#lua/host.js";
 import { parseYdk } from "#playtest/ydk.js";
-import { getBrowserDuelCardReader } from "./duel-pvp-card-reader.js";
+import { createBrowserCdbCardDataLoader, createBrowserCdbJsonRowsLoader, createBrowserDuelCardDataCache, getBrowserDuelCardReader } from "./duel-pvp-card-reader.js";
 import type { BrowserDuelCardDataCache, BrowserDuelCardDataPreloadResult } from "./duel-pvp-card-reader.js";
+import { createBrowserLuaScriptCache, createBrowserLuaScriptFetchLoader } from "./duel-pvp-script-cache.js";
 import type { BrowserLuaScriptCache, BrowserLuaScriptPreloadResult } from "./duel-pvp-script-cache.js";
 import { DuelBattlefield, DuelLogList } from "./duel-battlefield.js";
 import { runDuelBattlefieldScript, type DuelBattlefieldActionSelector, type DuelBattlefieldScriptResult } from "./duel-battlefield-script.js";
@@ -71,6 +72,24 @@ export interface BootstrapPvpDuelWithBrowserDataOptions extends BootstrapPvpDuel
 
 export interface BootstrapPvpDuelWithBrowserDataResult extends BootstrapPvpDuelWithLuaScriptsResult {
   cardPreload: BrowserDuelCardDataPreloadResult;
+}
+
+export interface BrowserPvpAssetCacheOptions {
+  cardRowsEndpoint?: string;
+  scriptBaseUrl?: string;
+}
+
+export interface BrowserPvpAssetCaches {
+  cardDataCache: BrowserDuelCardDataCache;
+  luaScriptCache: BrowserLuaScriptCache;
+}
+
+export function createBrowserPvpAssetCaches(options: BrowserPvpAssetCacheOptions = {}): BrowserPvpAssetCaches {
+  const cardRowsLoader = createBrowserCdbJsonRowsLoader({ endpoint: options.cardRowsEndpoint ?? "./card-data/cdb-rows.json" });
+  return {
+    cardDataCache: createBrowserDuelCardDataCache(createBrowserCdbCardDataLoader(cardRowsLoader)),
+    luaScriptCache: createBrowserLuaScriptCache(createBrowserLuaScriptFetchLoader({ baseUrl: options.scriptBaseUrl ?? "./card-scripts" })),
+  };
 }
 
 export function bootstrapPvpDuel(
@@ -182,6 +201,7 @@ export function PvpArena() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [imageRevision, setImageRevision] = useState(0);
   const cardImages = useRef(new Map<string, CardImageInfo>());
+  const browserAssetCaches = useRef<BrowserPvpAssetCaches | undefined>(undefined);
 
   const notify = useCallback((title: string, message: string, tone: ToastMessage["tone"] = "default") => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -236,15 +256,28 @@ export function PvpArena() {
     return () => window.removeEventListener("keydown", onKey);
   }, [zoomCard, pileModal, menuOpen]);
 
-  const restartDuel = useCallback(() => {
+  const restartDuel = useCallback(async () => {
     try {
       const seed = seedDraft.trim().toLowerCase() === "random" || !seedDraft.trim() ? Date.now() : seedDraft;
-      const next = bootstrapPvpDuel(deckP0, deckP1, seed, handSizeDraft);
+      let next: DuelSession;
+      let detail = "Two-player duel (DuelSession).";
+      try {
+        browserAssetCaches.current ??= createBrowserPvpAssetCaches();
+        const boot = await bootstrapPvpDuelWithBrowserData(deckP0, deckP1, seed, handSizeDraft, browserAssetCaches.current);
+        next = boot.session;
+        const missingCards = boot.cardPreload.missing.length;
+        const missingScripts = boot.scriptPreload.missing.length;
+        detail = `Browser data loaded (${boot.cardPreload.loaded.length} cards, ${boot.scriptPreload.loaded.length} scripts; missing ${missingCards}/${missingScripts}).`;
+      } catch (error) {
+        console.warn("Browser PvP data unavailable", error);
+        next = bootstrapPvpDuel(deckP0, deckP1, seed, handSizeDraft);
+        notify("Browser data unavailable", error instanceof Error ? error.message : "Using bundled fallback data.", "warning");
+      }
       session.state = next.state;
       session.cardReader = next.cardReader;
       setRevision((current) => current + 1);
       setMenuOpen(false);
-      notify("Duel started", "Two-player duel (DuelSession).", "success");
+      notify("Duel started", detail, "success");
     } catch (error) {
       notify("Could not start", error instanceof Error ? error.message : "Invalid deck", "error");
     }

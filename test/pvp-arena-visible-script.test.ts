@@ -4,6 +4,7 @@ import {
   bootstrapPvpDuelWithBrowserData,
   bootstrapPvpDuelWithCardData,
   bootstrapPvpDuelWithLuaScripts,
+  createBrowserPvpAssetCaches,
   pvpVisibleBattleFixtureScript,
   pvpVisibleBattleFixtureYdk,
   runPvpArenaVisibleScript,
@@ -133,5 +134,62 @@ describe("PvP arena visible scripts", () => {
     }));
     expect(result.scriptRegistrations).toContainEqual(expect.objectContaining({ code: "90000003", ok: true }));
     expect(result.luaHost.messages).toContain("browser bootstrap 2300");
+  });
+
+  it("creates browser asset caches against exported endpoint paths", async () => {
+    const originalFetch = globalThis.fetch;
+    const requestedUrls: string[] = [];
+    globalThis.fetch = (async (input: string | URL | Request) => {
+      const url = String(input);
+      requestedUrls.push(url);
+      if (url === "/card-data/cdb-rows.json?codes=90000003") {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              datas: [{ id: 90000003, type: 1, atk: 2400 }],
+              texts: [{ id: 90000003, name: "Endpoint Duelist" }],
+            };
+          },
+          async text() { return ""; },
+        } as Response;
+      }
+      if (url === "/card-scripts/c90000003.lua") {
+        return {
+          ok: true,
+          status: 200,
+          async text() {
+            return `
+              c90000003={}
+              function c90000003.initial_effect(c)
+                Debug.Message("endpoint script " .. c:GetAttack())
+              end
+            `;
+          },
+          async json() { return {}; },
+        } as Response;
+      }
+      return { ok: false, status: 404, async text() { return ""; }, async json() { return {}; } } as Response;
+    }) as typeof fetch;
+    try {
+      const caches = createBrowserPvpAssetCaches({
+        cardRowsEndpoint: "/card-data/cdb-rows.json",
+        scriptBaseUrl: "/card-scripts",
+      });
+
+      const result = await bootstrapPvpDuelWithBrowserData(lazyLoadedYdk, pvpVisibleBattleFixtureYdk, "pvp-exported-endpoints", 1, caches);
+
+      expect(requestedUrls).toEqual([
+        "/card-data/cdb-rows.json?codes=90000003",
+        "/card-scripts/c7084129.lua",
+        "/card-scripts/c90000003.lua",
+      ]);
+      expect(result.cardPreload).toEqual({ loaded: ["7084129", "90000003"], missing: [] });
+      expect(result.scriptPreload).toEqual({ loaded: ["c90000003.lua"], missing: ["c7084129.lua"] });
+      expect(result.luaHost.messages).toContain("endpoint script 2400");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });
