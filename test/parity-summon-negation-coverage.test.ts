@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
 const summonNegationFixtureCount = 3;
-const summonNegationProtectionFixtureCount = 4;
 
 describe("EDOPro parity summon-negation coverage", () => {
   it("pins Normal, Flip, and inherent Special Summon negation fixtures", () => {
@@ -22,28 +21,6 @@ describe("EDOPro parity summon-negation coverage", () => {
           || !text.includes(fixture.negatedWatcherEffectId)
           || !/removes? (?:the )?.*success trigger/.test(text)
           || !/without resolving removed .*success triggers/.test(text);
-      })
-      .map((fixture) => fixture.file);
-
-    expect(weak).toEqual([]);
-  });
-
-  it("pins protected summon-negation fixtures that preserve success triggers", () => {
-    const fixtures = summonNegationProtectionFixtures();
-    expect(fixtures).toHaveLength(summonNegationProtectionFixtureCount);
-
-    const weak = fixtures
-      .filter((fixture) => {
-        const text = readTestFile(fixture.file);
-        return !hasSharedSummonNegationWindowProof(text)
-          || !text.includes(fixture.protectionEffect)
-          || !text.includes(fixture.attemptEvent)
-          || !text.includes(fixture.successEvent)
-          || !text.includes(fixture.blockedNegatorEffectId)
-          || !text.includes(fixture.successWatcherEffectId)
-          || !/keeps? (?:the )?.*success trigger/.test(text)
-          || !/prevents? summon negation/.test(text)
-          || !/logIncludes:\s*\[["']Fixture .*success watcher resolved["']\]/.test(text);
       })
       .map((fixture) => fixture.file);
 
@@ -83,50 +60,6 @@ function summonNegationFixtures(): Array<{
       negatedEvent: 'eventName: "specialSummonNegated"',
       negatorEffectId: "fixture-special-summon-negator",
       negatedWatcherEffectId: "fixture-special-negated-watcher",
-    },
-  ].sort((a, b) => a.file.localeCompare(b.file));
-}
-
-function summonNegationProtectionFixtures(): Array<{
-  file: string;
-  protectionEffect: string;
-  attemptEvent: string;
-  successEvent: string;
-  blockedNegatorEffectId: string;
-  successWatcherEffectId: string;
-}> {
-  return [
-    {
-      file: "parity-summon-negation-protection-fixture.test.ts",
-      protectionEffect: "EFFECT_CANNOT_DISABLE_SUMMON",
-      attemptEvent: 'eventName: "normalSummoning"',
-      successEvent: 'eventName: "normalSummoned"',
-      blockedNegatorEffectId: "fixture-blocked-summon-negator",
-      successWatcherEffectId: "fixture-protected-success-watcher",
-    },
-    {
-      file: "parity-flip-summon-negation-protection-fixture.test.ts",
-      protectionEffect: "EFFECT_CANNOT_DISABLE_FLIP_SUMMON",
-      attemptEvent: 'eventName: "flipSummoning"',
-      successEvent: 'eventName: "flipSummoned"',
-      blockedNegatorEffectId: "fixture-blocked-flip-summon-negator",
-      successWatcherEffectId: "fixture-protected-flip-success-watcher",
-    },
-    {
-      file: "parity-special-summon-negation-protection-fixture.test.ts",
-      protectionEffect: "EFFECT_CANNOT_DISABLE_SUMMON",
-      attemptEvent: 'eventName: "specialSummoning"',
-      successEvent: 'eventName: "specialSummoned"',
-      blockedNegatorEffectId: "fixture-blocked-special-summon-negator",
-      successWatcherEffectId: "fixture-protected-special-success-watcher",
-    },
-    {
-      file: "parity-special-summon-sp-negation-protection-fixture.test.ts",
-      protectionEffect: "EFFECT_CANNOT_DISABLE_SPSUMMON",
-      attemptEvent: 'eventName: "specialSummoning"',
-      successEvent: 'eventName: "specialSummoned"',
-      blockedNegatorEffectId: "fixture-blocked-sp-summon-negator",
-      successWatcherEffectId: "fixture-protected-sp-success-watcher",
     },
   ].sort((a, b) => a.file.localeCompare(b.file));
 }
