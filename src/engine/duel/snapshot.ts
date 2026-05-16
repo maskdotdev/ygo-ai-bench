@@ -582,6 +582,7 @@ function assertSnapshotCardReferences(card: Record<string, unknown>, path: strin
 function assertSnapshotEffects(effects: unknown, cardUids: ReadonlySet<string>): Map<string, unknown> {
   if (!Array.isArray(effects)) throw new Error("Malformed duel snapshot: state.effects must be an array");
   const effectEvents = new Map<string, unknown>();
+  const seenEffectKeys = new Set<string>();
   for (const [index, effect] of effects.entries()) {
     const path = `state.effects.${index}`;
     if (!isRecord(effect)) throw new Error(`Malformed duel snapshot: ${path} must be an object`);
@@ -589,6 +590,9 @@ function assertSnapshotEffects(effects: unknown, cardUids: ReadonlySet<string>):
     for (const field of ["id", "sourceUid"] as const) {
       if (typeof effect[field] !== "string") throw new Error(`Malformed duel snapshot: ${path}.${field} must be a string`);
     }
+    const effectKey = `${effect.sourceUid}:${effect.id}`;
+    if (seenEffectKeys.has(effectKey)) throw new Error(`Malformed duel snapshot: ${path}.id must be unique per source`);
+    seenEffectKeys.add(effectKey);
     if (!cardUids.has(effect.sourceUid as string)) throw new Error(`Malformed duel snapshot: ${path}.sourceUid must reference a card`);
     assertSnapshotPlayerId(effect.controller, `${path}.controller`);
     if (effect.ownerPlayer !== undefined) assertSnapshotPlayerId(effect.ownerPlayer, `${path}.ownerPlayer`);

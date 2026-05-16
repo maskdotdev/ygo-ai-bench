@@ -146,6 +146,30 @@ describe("duel snapshot card and effect shape validation", () => {
     expect(() => restoreDuel(badTriggerEvent, createCardReader(cards))).toThrow("Malformed duel snapshot: state.effects.0.triggerEvent must be a duel event");
   });
 
+  it("rejects duplicate effect identities before restore", () => {
+    const session = createDuel({ seed: 169, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const source = findPublicCard(session, 0, "hand", "100");
+    expect(source).toBeTruthy();
+    registerEffect(session, {
+      id: "snapshot-duplicate-effect",
+      registryKey: "snapshot-duplicate-effect",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "ignition",
+      range: ["hand"],
+      operation() {},
+    });
+    const duplicateEffect = serializeDuel(session);
+    duplicateEffect.state.effects.push({ ...duplicateEffect.state.effects[0]! });
+
+    expect(() => restoreDuel(duplicateEffect, createCardReader(cards))).toThrow("Malformed duel snapshot: state.effects.1.id must be unique per source");
+  });
+
   it("rejects unknown effect snapshot fields before restore", () => {
     const session = createDuel({ seed: 168, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
