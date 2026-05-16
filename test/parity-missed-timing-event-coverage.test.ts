@@ -12,6 +12,50 @@ const canonicalDuelEventCount = 84;
 const missedTimingFixtureFileCount = 171;
 const missedTimingActivationFixtureCount = 86;
 const missedTimingDeclineFixtureCount = 85;
+const missedTimingMultiStepFixtureCount = 166;
+const missedTimingFullSourceEffectCauseFixtureCount = 126;
+const missedTimingSourceEffectCauseExceptions = [
+  "parity-missed-timing-battle-damage-decline-fixture.test.ts",
+  "parity-missed-timing-battle-damage-fixture.test.ts",
+  "parity-missed-timing-before-battle-damage-decline-fixture.test.ts",
+  "parity-missed-timing-before-battle-damage-fixture.test.ts",
+  "parity-missed-timing-chain-activating-decline-fixture.test.ts",
+  "parity-missed-timing-chain-activating-fixture.test.ts",
+  "parity-missed-timing-chain-disabled-decline-fixture.test.ts",
+  "parity-missed-timing-chain-disabled-fixture.test.ts",
+  "parity-missed-timing-chain-ended-decline-fixture.test.ts",
+  "parity-missed-timing-chain-ended-fixture.test.ts",
+  "parity-missed-timing-chain-negated-decline-fixture.test.ts",
+  "parity-missed-timing-chain-negated-fixture.test.ts",
+  "parity-missed-timing-chain-solved-decline-fixture.test.ts",
+  "parity-missed-timing-chain-solved-fixture.test.ts",
+  "parity-missed-timing-chain-solving-decline-fixture.test.ts",
+  "parity-missed-timing-chain-solving-fixture.test.ts",
+  "parity-missed-timing-chaining-decline-fixture.test.ts",
+  "parity-missed-timing-chaining-fixture.test.ts",
+  "parity-missed-timing-phase-battle-decline-fixture.test.ts",
+  "parity-missed-timing-phase-battle-fixture.test.ts",
+  "parity-missed-timing-phase-draw-decline-fixture.test.ts",
+  "parity-missed-timing-phase-draw-fixture.test.ts",
+  "parity-missed-timing-phase-main1-decline-fixture.test.ts",
+  "parity-missed-timing-phase-main1-fixture.test.ts",
+  "parity-missed-timing-phase-main2-decline-fixture.test.ts",
+  "parity-missed-timing-phase-main2-fixture.test.ts",
+  "parity-missed-timing-phase-standby-decline-fixture.test.ts",
+  "parity-missed-timing-phase-standby-fixture.test.ts",
+  "parity-missed-timing-phase-start-battle-decline-fixture.test.ts",
+  "parity-missed-timing-phase-start-battle-fixture.test.ts",
+  "parity-missed-timing-phase-start-draw-decline-fixture.test.ts",
+  "parity-missed-timing-phase-start-draw-fixture.test.ts",
+  "parity-missed-timing-phase-start-main1-decline-fixture.test.ts",
+  "parity-missed-timing-phase-start-main1-fixture.test.ts",
+  "parity-missed-timing-phase-start-main2-decline-fixture.test.ts",
+  "parity-missed-timing-phase-start-main2-fixture.test.ts",
+  "parity-missed-timing-phase-start-standby-decline-fixture.test.ts",
+  "parity-missed-timing-phase-start-standby-fixture.test.ts",
+  "parity-missed-timing-startup-decline-fixture.test.ts",
+  "parity-missed-timing-startup-fixture.test.ts",
+];
 
 describe("EDOPro parity missed-timing event coverage", () => {
   it("has activation and decline fixtures for each canonical duel event", () => {
@@ -50,6 +94,22 @@ describe("EDOPro parity missed-timing event coverage", () => {
       .filter((file) => !hasActivationRestoreProof(file));
 
     expect(weak).toEqual([]);
+  });
+
+  it("pins multi-step missed-timing source-effect cause metadata coverage", () => {
+    const multiStepFiles = fs.readdirSync(testRoot)
+      .filter((file) => file.startsWith("parity-missed-timing-") && file.endsWith("-fixture.test.ts"))
+      .filter((file) => readTestFile(file).includes("eventIsLast: false"))
+      .sort();
+    const fullSourceEffectCauseFiles = multiStepFiles
+      .filter((file) => hasSourceEffectCauseMetadata(file));
+    const exceptions = multiStepFiles
+      .filter((file) => !hasSourceEffectCauseMetadata(file))
+      .sort();
+
+    expect(multiStepFiles).toHaveLength(missedTimingMultiStepFixtureCount);
+    expect(fullSourceEffectCauseFiles).toHaveLength(missedTimingFullSourceEffectCauseFixtureCount);
+    expect(exceptions).toEqual([...missedTimingSourceEffectCauseExceptions].sort());
   });
 });
 
@@ -95,6 +155,17 @@ function hasActivationRestoreProof(file: string): boolean {
     /absentLegalActions:\s*\[/.test(text) &&
     /absentLegalActionGroups:\s*\[/.test(text) &&
     /optional-when/.test(text)
+  );
+}
+
+function hasSourceEffectCauseMetadata(file: string): boolean {
+  const text = readTestFile(file);
+  return (
+    /eventReason:\s*0x(?:40|80)/.test(text) &&
+    /eventReasonPlayer:\s*0/.test(text) &&
+    /eventReasonCardUid:\s*["']p0-deck-100-0["']/.test(text) &&
+    /eventReasonEffectId:\s*\d+/.test(text) &&
+    /eventTriggerTiming:\s*["']if["']/.test(text)
   );
 }
 
