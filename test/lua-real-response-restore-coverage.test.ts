@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 82;
-const chainedResponseFixtureCount = 81;
-const responseOperationInfoFixtureCount = 73;
+const responseFixtureCount = 85;
+const chainedResponseFixtureCount = 84;
+const responseOperationInfoFixtureCount = 76;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -134,11 +134,14 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-izanami-spirit-grave-return.test.ts",
     "lua-real-script-kinka-byo-relation-banish.test.ts",
     "lua-real-script-lightning-storm-select-effect.test.ts",
+    "lua-real-script-machine-angel-absolute-grave-ritual.test.ts",
     "lua-real-script-magic-jammer-chain-negate.test.ts",
     "lua-real-script-magic-cylinder-battle-window.test.ts",
+    "lua-real-script-magikey-duo-defense-ritual.test.ts",
     "lua-real-script-megalith-bethor-ritual-procedure.test.ts",
     "lua-real-script-miracle-fusion-extra-material.test.ts",
     "lua-real-script-mirror-force-battle-window.test.ts",
+    "lua-real-script-mitsurugi-mirror-grave-ritual.test.ts",
     "lua-real-script-monster-reborn-free-chain.test.ts",
     "lua-real-script-mutiny-sky-shuffle-fusion-material.test.ts",
     "lua-real-script-mystical-space-typhoon-free-chain.test.ts",

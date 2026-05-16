@@ -119,6 +119,88 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
     expect(restored.session.state.cards.find((card) => card.uid === warriorMaterial!.uid)).toMatchObject({ location: "hand" });
     expect(restored.session.state.cards.find((card) => card.uid === reptileMaterialB!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.material | duelReason.ritual });
     expect(restored.session.state.cards.find((card) => card.uid === mirror!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === ritualTarget!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-4972-1",
+          "eventCode": 1102,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "specialSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 1050640,
+          "eventReasonCardUid": "p0-deck-49721684-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
+    expect(
+      restored.session.state.eventHistory.filter((event) =>
+        event.eventName === "sentToGraveyard"
+        && (event.eventCardUid === reptileMaterialA!.uid || event.eventCardUid === reptileMaterialB!.uid)
+      ),
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-4973-2",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 1048584,
+          "eventReasonCardUid": "p0-deck-49721684-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-4975-4",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 2,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 3,
+          },
+          "eventReason": 1048584,
+          "eventReasonCardUid": "p0-deck-49721684-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     expect(restored.host.messages).not.toContain("mitsurugi responder resolved");
   });
 });
