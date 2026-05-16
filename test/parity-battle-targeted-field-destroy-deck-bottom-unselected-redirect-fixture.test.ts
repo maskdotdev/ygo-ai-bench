@@ -44,6 +44,7 @@ describe("EDOPro parity targeted field battle destroy deck-bottom unselected red
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-400-2", targetUid: "p1-deck-200-1" }), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro opens the attack-response window before unselected targeted deck-bottom battle-destroy redirects are tested",

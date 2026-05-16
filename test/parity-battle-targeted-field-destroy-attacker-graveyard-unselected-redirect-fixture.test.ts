@@ -43,6 +43,7 @@ describe("EDOPro parity targeted field battle destroy attacker graveyard unselec
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-400-2" }), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro opens the attack-response window before unselected defending targeted graveyard redirects are tested",
