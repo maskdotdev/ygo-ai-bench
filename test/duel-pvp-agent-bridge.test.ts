@@ -247,6 +247,27 @@ describe("duel pvp agent bridge", () => {
     expect(restored.visibleBattlefield.triggerOrder).toMatchObject({ label: "Trigger Order", detail: "P1 · turnMandatory · 2 triggers" });
   });
 
+  it("runs visible scripts through restored Lua trigger-order windows", () => {
+    const agent = createDuelPvpAgent({
+      cardReader: createCardReader(luaBridgeCards),
+      luaScriptSource: luaBridgeScripts,
+      luaRuntime: luaBridgeRuntime,
+    });
+    const started = agent.start({ player0Ydk: luaBridgeYdk, player1Ydk: "#main\n100\n#extra\n!side", seed: "pvp-agent-lua-script-restore", handSize: 3 });
+    const summon = started.visibleBattlefield.actions.find((action) => action.type === "normalSummon" && action.label.includes("Lua Bridge Summon"));
+    expect(summon).toBeDefined();
+    expect(agent.action(summon, started.sessionId).ok).toBe(true);
+    const restored = agent.restore(agent.serialize(started.sessionId));
+
+    const result = agent.runVisibleScript([
+      { player: 0, type: "activateTrigger", triggerBucket: "turnMandatory", occurrence: 0 },
+    ], restored.sessionId);
+
+    expect(result.ok).toBe(true);
+    expect(result.failedStep).toBeUndefined();
+    expect(result.state.id).toBe(restored.sessionId);
+  });
+
   it("restores serialized sessions with the same visible action surface", () => {
     const agent = createDuelPvpAgent();
     const started = agent.start({ player0Ydk: starterYdk, player1Ydk: starterYdk, seed: "pvp-agent-restore", handSize: 2 });

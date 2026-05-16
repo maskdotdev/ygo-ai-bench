@@ -17,7 +17,7 @@ import { parseYdk } from "#playtest/ydk.js";
 import { getBrowserDuelCardReader } from "../playtest-app/duel-pvp-card-reader.js";
 import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "../playtest-app/duel-battlefield-actions.js";
 import { copyDuelLegalActionGroup, duelActionUiGroupLabel, type DuelActionUiGroup } from "../playtest-app/duel-action-anchors.js";
-import { runDuelBattlefieldScript, type DuelBattlefieldActionSelector } from "../playtest-app/duel-battlefield-script.js";
+import { runDuelBattlefieldScript, type DuelBattlefieldActionSelector, type DuelBattlefieldScriptRuntime } from "../playtest-app/duel-battlefield-script.js";
 import { duelPromptView, type DuelPromptView } from "../playtest-app/duel-prompt-view.js";
 import { copyDuelTriggerOrderView, duelTriggerOrderView, type DuelTriggerOrderView } from "../playtest-app/duel-trigger-order-view.js";
 
@@ -148,7 +148,8 @@ export function createDuelPvpAgent(agentOptions: DuelPvpAgentOptions = {}): Duel
       return autoRunVisibleBattlefield(getRecord(options.sessionId), options);
     },
     runVisibleScript(steps, sessionId) {
-      return runDuelBattlefieldScript(getSession(sessionId), steps);
+      const record = getRecord(sessionId);
+      return runDuelBattlefieldScript(record.session, steps, pvpAgentBattlefieldScriptRuntime(record));
     },
     clear(sessionId) {
       if (sessionId) {
@@ -216,6 +217,20 @@ function recordLegalActions(record: DuelPvpSessionRecord, player: PlayerId): Due
 function recordLegalActionGroups(record: DuelPvpSessionRecord, player: PlayerId) {
   if (record.luaRestore?.runtime) return record.luaRestore.runtime.getLuaRestoreLegalActionGroups(record.luaRestore.restore, player);
   return getGroupedDuelLegalActions(record.session, player);
+}
+
+function pvpAgentBattlefieldScriptRuntime(record: DuelPvpSessionRecord): DuelBattlefieldScriptRuntime {
+  return {
+    getLegalActions(_session, player) {
+      return recordLegalActions(record, player);
+    },
+    getGroupedLegalActions(_session, player) {
+      return recordLegalActionGroups(record, player);
+    },
+    applyResponse(_session, action) {
+      return applyAgentResponse(record, action);
+    },
+  };
 }
 
 function duelSnapshot(record: DuelPvpSessionRecord) {

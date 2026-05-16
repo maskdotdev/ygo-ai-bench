@@ -5,7 +5,7 @@ import {
   queryPublicState,
 } from "#duel/core.js";
 import { copyDuelAction } from "#duel/action-copy.js";
-import type { DuelAction, DuelActionWindowKind, DuelPhase, DuelSession, PlayerId, PublicDuelState, TriggerBucket } from "#duel/types.js";
+import type { ApplyDuelResponseResult, DuelAction, DuelActionWindowKind, DuelPhase, DuelSession, PlayerId, PublicDuelState, TriggerBucket } from "#duel/types.js";
 import { duelActionAnchorUids, duelActionUiGroupLabel, type DuelActionUiGroup } from "./duel-action-anchors.js";
 import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "./duel-battlefield-actions.js";
 import { duelPromptView, type DuelPromptView } from "./duel-prompt-view.js";
@@ -53,34 +53,48 @@ export interface DuelBattlefieldScriptStepResult extends DuelBattlefieldScriptRe
   appliedAction?: DuelAction;
 }
 
+export interface DuelBattlefieldScriptRuntime {
+  getLegalActions(session: DuelSession, player: PlayerId): DuelAction[];
+  getGroupedLegalActions(session: DuelSession, player: PlayerId): ReturnType<typeof getGroupedDuelLegalActions>;
+  applyResponse(session: DuelSession, action: DuelAction): ApplyDuelResponseResult;
+}
+
+const defaultBattlefieldScriptRuntime: DuelBattlefieldScriptRuntime = {
+  getLegalActions: getDuelLegalActions,
+  getGroupedLegalActions: getGroupedDuelLegalActions,
+  applyResponse,
+};
+
 export function runDuelBattlefieldScript(
   session: DuelSession,
   steps: readonly DuelBattlefieldActionSelector[],
+  runtime: DuelBattlefieldScriptRuntime = defaultBattlefieldScriptRuntime,
 ): DuelBattlefieldScriptResult {
   for (let index = 0; index < steps.length; index += 1) {
     const selector = steps[index]!;
-    const view = battlefieldScriptView(session, selector.player);
+    const view = battlefieldScriptView(session, selector.player, runtime);
     const action = selectVisibleBattlefieldAction(selector, view.visibleActions, view.visibleGroups);
     if (!action) {
-      return battlefieldScriptResult(session, selector.player, index, `No visible battlefield action matched ${describeBattlefieldSelector(selector)}`);
+      return battlefieldScriptResult(session, selector.player, runtime, index, `No visible battlefield action matched ${describeBattlefieldSelector(selector)}`);
     }
-    const result = applyResponse(session, action);
+    const result = runtime.applyResponse(session, action);
     if (!result.ok) {
-      return battlefieldScriptResult(session, selector.player, index, result.error ?? `Rejected ${describeBattlefieldSelector(selector)}`);
+      return battlefieldScriptResult(session, selector.player, runtime, index, result.error ?? `Rejected ${describeBattlefieldSelector(selector)}`);
     }
   }
   const lastPlayer = steps[steps.length - 1]?.player ?? 0;
-  return battlefieldScriptResult(session, lastPlayer);
+  return battlefieldScriptResult(session, lastPlayer, runtime);
 }
 
 export function runDuelBattlefieldScriptStep(
   session: DuelSession,
   steps: readonly DuelBattlefieldActionSelector[],
   step: number,
+  runtime: DuelBattlefieldScriptRuntime = defaultBattlefieldScriptRuntime,
 ): DuelBattlefieldScriptStepResult {
   if (!Number.isInteger(step) || step < 0) {
     return {
-      ...battlefieldScriptResult(session, 0, 0, `Invalid script step ${step}`),
+      ...battlefieldScriptResult(session, 0, runtime, 0, `Invalid script step ${step}`),
       nextStep: 0,
       done: true,
     };
@@ -88,26 +102,26 @@ export function runDuelBattlefieldScriptStep(
   if (step >= steps.length) {
     const lastPlayer = steps[steps.length - 1]?.player ?? 0;
     return {
-      ...battlefieldScriptResult(session, lastPlayer),
+      ...battlefieldScriptResult(session, lastPlayer, runtime),
       nextStep: steps.length,
       done: true,
     };
   }
 
   const selector = steps[step]!;
-  const view = battlefieldScriptView(session, selector.player);
+  const view = battlefieldScriptView(session, selector.player, runtime);
   const action = selectVisibleBattlefieldAction(selector, view.visibleActions, view.visibleGroups);
   if (!action) {
     return {
-      ...battlefieldScriptResult(session, selector.player, step, `No visible battlefield action matched ${describeBattlefieldSelector(selector)}`),
+      ...battlefieldScriptResult(session, selector.player, runtime, step, `No visible battlefield action matched ${describeBattlefieldSelector(selector)}`),
       nextStep: step,
       done: true,
     };
   }
-  const result = applyResponse(session, action);
+  const result = runtime.applyResponse(session, action);
   if (!result.ok) {
     return {
-      ...battlefieldScriptResult(session, selector.player, step, result.error ?? `Rejected ${describeBattlefieldSelector(selector)}`),
+      ...battlefieldScriptResult(session, selector.player, runtime, step, result.error ?? `Rejected ${describeBattlefieldSelector(selector)}`),
       nextStep: step,
       done: true,
     };
@@ -115,7 +129,7 @@ export function runDuelBattlefieldScriptStep(
 
   const nextStep = step + 1;
   return {
-    ...battlefieldScriptResult(session, selector.player),
+    ...battlefieldScriptResult(session, selector.player, runtime),
     nextStep,
     done: nextStep >= steps.length,
     appliedAction: copyDuelAction(action),
@@ -125,11 +139,12 @@ export function runDuelBattlefieldScriptStep(
 function battlefieldScriptResult(
   session: DuelSession,
   player: PlayerId,
+  runtime: DuelBattlefieldScriptRuntime,
   failedStep?: number,
   failure?: string,
 ): DuelBattlefieldScriptResult {
   const state = queryPublicState(session);
-  const view = battlefieldScriptView(session, player);
+  const view = battlefieldScriptView(session, player, runtime);
   const visibleGroups = view.visibleGroups.map((group) => ({
     ...group,
     label: duelActionUiGroupLabel(group),
@@ -149,13 +164,17 @@ function battlefieldScriptResult(
   };
 }
 
-function battlefieldScriptView(session: DuelSession, player: PlayerId): { visibleActions: DuelAction[]; visibleGroups: DuelActionUiGroup[]; legalGroups: ReturnType<typeof getGroupedDuelLegalActions> } {
+function battlefieldScriptView(
+  session: DuelSession,
+  player: PlayerId,
+  runtime: DuelBattlefieldScriptRuntime,
+): { visibleActions: DuelAction[]; visibleGroups: DuelActionUiGroup[]; legalGroups: ReturnType<typeof getGroupedDuelLegalActions> } {
   const state = queryPublicState(session);
-  const legalGroups = getGroupedDuelLegalActions(session, player);
+  const legalGroups = runtime.getGroupedLegalActions(session, player);
   const view = duelBattlefieldActionView(
     state,
     player,
-    getDuelLegalActions(session, player),
+    runtime.getLegalActions(session, player),
     legalGroups,
   );
   return {
