@@ -29,6 +29,7 @@ function main(argv) {
   let restoredFixtures = 0;
   let restoredBeforeBlocks = 0;
   let restoredAfterBlocks = 0;
+  let finalExpectedBlocks = 0;
 
   for (const file of files) {
     const text = fs.readFileSync(path.join(testRoot, file), "utf8");
@@ -50,6 +51,7 @@ function main(argv) {
       if (!validSources.has(source)) invalidSource.push(`${file}:${block.line}`);
       if (source === "edopro") edoproBlocks += 1;
       if (source === "parity-backlog") backlogBlocks += 1;
+      if (source === "edopro" && block.kind === "expected") finalExpectedBlocks += 1;
       if (source === "edopro" && block.kind === "before" && (block.snapshotRestore === "before" || block.snapshotRestore === "both")) restoredBeforeBlocks += 1;
       if (source === "edopro" && block.kind === "after" && (block.snapshotRestore === "after" || block.snapshotRestore === "both")) restoredAfterBlocks += 1;
       if (source === "edopro" && block.kind === "before" && block.snapshotRestore !== "before" && block.snapshotRestore !== "both") {
@@ -64,7 +66,7 @@ function main(argv) {
   }
 
   const restoredWindowBlocks = restoredBeforeBlocks + restoredAfterBlocks;
-  console.log(`Parity fixture provenance: ${files.length} files, ${blocks} expectation blocks, ${edoproBlocks} EDOPro, ${backlogBlocks} backlog, ${restoredFixtures} restored scripted fixtures, ${restoredBeforeBlocks} restored before blocks, ${restoredAfterBlocks} restored after blocks, ${restoredWindowBlocks} restored window blocks, ${afterOnlyRestoreSteps.length} after-only restore steps`);
+  console.log(`Parity fixture provenance: ${files.length} files, ${blocks} expectation blocks, ${edoproBlocks} EDOPro, ${backlogBlocks} backlog, ${restoredFixtures} restored scripted fixtures, ${restoredBeforeBlocks} restored before blocks, ${restoredAfterBlocks} restored after blocks, ${restoredWindowBlocks} restored window blocks, ${finalExpectedBlocks} final expected blocks, ${afterOnlyRestoreSteps.length} after-only restore steps`);
 
   const failures = [];
   if (options.minFiles !== undefined && files.length < options.minFiles) failures.push(`Parity fixture files ${files.length} is below required ${options.minFiles}`);
@@ -74,6 +76,7 @@ function main(argv) {
   if (options.minRestoredBeforeBlocks !== undefined && restoredBeforeBlocks < options.minRestoredBeforeBlocks) failures.push(`Restored before blocks ${restoredBeforeBlocks} is below required ${options.minRestoredBeforeBlocks}`);
   if (options.minRestoredAfterBlocks !== undefined && restoredAfterBlocks < options.minRestoredAfterBlocks) failures.push(`Restored after blocks ${restoredAfterBlocks} is below required ${options.minRestoredAfterBlocks}`);
   if (options.minRestoredWindowBlocks !== undefined && restoredWindowBlocks < options.minRestoredWindowBlocks) failures.push(`Restored window blocks ${restoredWindowBlocks} is below required ${options.minRestoredWindowBlocks}`);
+  if (options.minFinalExpectedBlocks !== undefined && finalExpectedBlocks < options.minFinalExpectedBlocks) failures.push(`Final expected blocks ${finalExpectedBlocks} is below required ${options.minFinalExpectedBlocks}`);
   if (options.maxUnrestoredBeforeBlocks !== undefined && unrestoredBeforeBlocks.length > options.maxUnrestoredBeforeBlocks) {
     failures.push(`Unrestored EDOPro before blocks ${unrestoredBeforeBlocks.length} exceeds allowed ${options.maxUnrestoredBeforeBlocks}:\n${formatList(unrestoredBeforeBlocks.map(({ location }) => location))}`);
   }
@@ -130,6 +133,7 @@ function parseArgs(argv) {
     else if (arg === "--min-restored-before-blocks") options.minRestoredBeforeBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-restored-after-blocks") options.minRestoredAfterBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-restored-window-blocks") options.minRestoredWindowBlocks = readMinimum(argv, ++index, arg);
+    else if (arg === "--min-final-expected-blocks") options.minFinalExpectedBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--max-unrestored-before-blocks") options.maxUnrestoredBeforeBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--max-unrestored-after-blocks") options.maxUnrestoredAfterBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--max-after-only-restore-steps") options.maxAfterOnlyRestoreSteps = readMinimum(argv, ++index, arg);
@@ -251,6 +255,8 @@ Options:
                                Fail unless at least this many EDOPro after blocks restore snapshots
   --min-restored-window-blocks <count>
                                Fail unless at least this many EDOPro before/after blocks restore snapshots
+  --min-final-expected-blocks <count>
+                               Fail unless at least this many EDOPro final expected blocks are scanned
   --max-unrestored-before-blocks <count>
                                Fail when more than this many EDOPro before blocks lack before/both restore
   --max-unrestored-after-blocks <count>

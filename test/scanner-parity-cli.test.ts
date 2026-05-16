@@ -127,10 +127,12 @@ describe("parity scanner CLIs", () => {
       "1",
       "--min-restored-window-blocks",
       "2",
+      "--min-final-expected-blocks",
+      "2",
     ], { encoding: "utf8" });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("Parity fixture provenance: 1 files, 1 expectation blocks, 1 EDOPro, 0 backlog, 0 restored scripted fixtures, 0 restored before blocks, 0 restored after blocks, 0 restored window blocks");
+    expect(result.stdout).toContain("Parity fixture provenance: 1 files, 1 expectation blocks, 1 EDOPro, 0 backlog, 0 restored scripted fixtures, 0 restored before blocks, 0 restored after blocks, 0 restored window blocks, 1 final expected blocks");
     expect(result.stderr).toContain("Parity fixture files 1 is below required 2");
     expect(result.stderr).toContain("Expectation blocks 1 is below required 2");
     expect(result.stderr).toContain("EDOPro expectation blocks 1 is below required 2");
@@ -138,6 +140,41 @@ describe("parity scanner CLIs", () => {
     expect(result.stderr).toContain("Restored before blocks 0 is below required 1");
     expect(result.stderr).toContain("Restored after blocks 0 is below required 1");
     expect(result.stderr).toContain("Restored window blocks 0 is below required 2");
+    expect(result.stderr).toContain("Final expected blocks 1 is below required 2");
+  });
+
+  it("counts EDOPro final expected blocks", () => {
+    const testRoot = makeTestRoot({
+      "parity-final-expected-blocks.test.ts": `
+        runScriptedDuelFixture({
+          expected: {
+            source: "edopro",
+            note: "EDOPro observed the final state.",
+          },
+        });
+      `,
+      "parity-backlog-final-expected-block.test.ts": `
+        runScriptedDuelFixture({
+          expected: {
+            source: "parity-backlog",
+            note: "EDOPro observation is still pending.",
+          },
+        });
+      `,
+    });
+
+    const result = spawnSync(process.execPath, [
+      provenanceScannerPath,
+      "--test-root",
+      testRoot,
+      "--min-final-expected-blocks",
+      "2",
+    ], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("2 files, 2 expectation blocks, 1 EDOPro, 1 backlog");
+    expect(result.stdout).toContain("1 final expected blocks");
+    expect(result.stderr).toContain("Final expected blocks 1 is below required 2");
   });
 
   it("counts before and after EDOPro blocks with matching snapshot restore coverage", () => {
@@ -309,7 +346,7 @@ describe("parity scanner CLIs", () => {
     ], { encoding: "utf8" });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("2 restored after blocks, 2 restored window blocks, 1 after-only restore steps");
+    expect(result.stdout).toContain("2 restored after blocks, 2 restored window blocks, 0 final expected blocks, 1 after-only restore steps");
     expect(result.stderr).toContain("After-only restore steps 1 exceeds allowed 0");
     expect(result.stderr).toContain("parity-after-only-restore.test.ts:5");
     expect(result.stderr).not.toContain("parity-after-only-restore.test.ts:12");
@@ -500,6 +537,7 @@ describe("parity scanner CLIs", () => {
     const missingProvenanceRoot = spawnSync(process.execPath, [provenanceScannerPath, "--test-root"], { encoding: "utf8" });
     const missingProvenanceValue = spawnSync(process.execPath, [provenanceScannerPath, "--min-files"], { encoding: "utf8" });
     const badProvenanceMinimum = spawnSync(process.execPath, [provenanceScannerPath, "--min-files", "-1"], { encoding: "utf8" });
+    const missingProvenanceExpectedValue = spawnSync(process.execPath, [provenanceScannerPath, "--min-final-expected-blocks"], { encoding: "utf8" });
     const missingProvenanceBeforeValue = spawnSync(process.execPath, [provenanceScannerPath, "--max-unrestored-before-blocks"], { encoding: "utf8" });
     const missingProvenanceAfterOnlyValue = spawnSync(process.execPath, [provenanceScannerPath, "--max-after-only-restore-steps"], { encoding: "utf8" });
     const unknownProvenanceFlag = spawnSync(process.execPath, [provenanceScannerPath, "--unknown"], { encoding: "utf8" });
@@ -514,6 +552,8 @@ describe("parity scanner CLIs", () => {
     expect(missingProvenanceValue.stderr).toContain("Missing value for --min-files");
     expect(badProvenanceMinimum.status).toBe(1);
     expect(badProvenanceMinimum.stderr).toContain("--min-files must be a non-negative integer");
+    expect(missingProvenanceExpectedValue.status).toBe(1);
+    expect(missingProvenanceExpectedValue.stderr).toContain("Missing value for --min-final-expected-blocks");
     expect(missingProvenanceBeforeValue.status).toBe(1);
     expect(missingProvenanceBeforeValue.stderr).toContain("Missing value for --max-unrestored-before-blocks");
     expect(missingProvenanceAfterOnlyValue.status).toBe(1);
