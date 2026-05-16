@@ -30,7 +30,7 @@ describe("EDOPro parity battle-damage missed timing decline fixture", () => {
             location: "hand",
             event: "ignition",
             range: ["hand"],
-            collectEventsOnResolve: [{ collectEvent: "battleDamageDealt", eventCard: { player: 0, code: "700", location: "monsterZone" }, eventCode: 1143, eventIsLast: false, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 }],
+            collectEventsOnResolve: [{ collectEvent: "battleDamageDealt", eventCard: { player: 0, code: "700", location: "monsterZone" }, eventCode: 1143, eventIsLast: false, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-700-4" }],
             moveCardsOnResolve: [{ player: 0, code: "700", from: "monsterZone", to: "graveyard" }],
             logMessage: "Battle-damage decline multi step resolved",
           },
@@ -95,7 +95,7 @@ describe("EDOPro parity battle-damage missed timing decline fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "battle-damage-decline-optional-if", eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 }],
+            pendingTriggers: [{ player: 0, effectId: "battle-damage-decline-optional-if", eventName: "battleDamageDealt", eventCode: 1143, eventCardUid: "p0-deck-700-4", eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-700-4" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-damage-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
@@ -126,7 +126,7 @@ describe("EDOPro parity battle-damage missed timing decline fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "battle-damage-decline-optional-if", eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 }],
+            pendingTriggers: [{ player: 0, effectId: "battle-damage-decline-optional-if", eventName: "battleDamageDealt", eventCode: 1143, eventCardUid: "p0-deck-700-4", eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-700-4" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-damage-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
