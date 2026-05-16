@@ -39,6 +39,10 @@ describe("EDOPro parity normal-summon-negated missed timing fixture", () => {
                 collectEvent: "normalSummonNegated",
                 eventCard: { player: 0, code: "600", location: "monsterZone" },
                 eventIsLast: false,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 30001,
               },
             ],
             moveCardsOnResolve: [{ player: 0, code: "700", from: "monsterZone", to: "graveyard" }],
@@ -112,7 +116,17 @@ describe("EDOPro parity normal-summon-negated missed timing fixture", () => {
             windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [
-              { player: 0, effectId: "normal-summon-negated-activation-optional-if", eventName: "normalSummonNegated", eventCode: 1114, eventCardUid: "p0-deck-600-4" },
+              {
+                player: 0,
+                effectId: "normal-summon-negated-activation-optional-if",
+                eventName: "normalSummonNegated",
+                eventCode: 1114,
+                eventCardUid: "p0-deck-600-4",
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 30001,
+              },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
@@ -145,7 +159,17 @@ describe("EDOPro parity normal-summon-negated missed timing fixture", () => {
             windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [
-              { player: 0, effectId: "normal-summon-negated-activation-optional-if", eventName: "normalSummonNegated", eventCode: 1114, eventCardUid: "p0-deck-600-4" },
+              {
+                player: 0,
+                effectId: "normal-summon-negated-activation-optional-if",
+                eventName: "normalSummonNegated",
+                eventCode: 1114,
+                eventCardUid: "p0-deck-600-4",
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 30001,
+              },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
