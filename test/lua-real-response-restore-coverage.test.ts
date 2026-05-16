@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 91;
-const chainedResponseFixtureCount = 90;
-const responseOperationInfoFixtureCount = 82;
+const responseFixtureCount = 94;
+const chainedResponseFixtureCount = 93;
+const responseOperationInfoFixtureCount = 85;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -116,6 +116,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-dicelops-toss-dice-restore.test.ts",
     "lua-real-script-dimensional-prison-battle-window.test.ts",
     "lua-real-script-divine-wrath-monster-negate.test.ts",
+    "lua-real-script-dogmatikalamity-extra-ritual-lock.test.ts",
     "lua-real-script-draining-shield-battle-window.test.ts",
     "lua-real-script-droll-lock-bird-draw-search-lock.test.ts",
     "lua-real-script-earth-chant-ritual-equal.test.ts",
@@ -131,6 +132,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-gunkan-suship-catch-select-codes.test.ts",
     "lua-real-script-harpies-feather-duster-group-destroy.test.ts",
     "lua-real-script-hebo-spirit-grant-return.test.ts",
+    "lua-real-script-heavy-polymerization-partial-extraop.test.ts",
     "lua-real-script-grand-horn-special-summon-negate.test.ts",
     "lua-real-script-horn-of-heaven-release-cost-negate.test.ts",
     "lua-real-script-high-ritual-art-deck-stage2.test.ts",
@@ -141,6 +143,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-machine-angel-absolute-grave-ritual.test.ts",
     "lua-real-script-magic-jammer-chain-negate.test.ts",
     "lua-real-script-magic-cylinder-battle-window.test.ts",
+    "lua-real-script-magia-magic-select-effect.test.ts",
     "lua-real-script-magikey-duo-defense-ritual.test.ts",
     "lua-real-script-megalith-bethor-ritual-procedure.test.ts",
     "lua-real-script-megalith-unformed-deck-ritual.test.ts",
