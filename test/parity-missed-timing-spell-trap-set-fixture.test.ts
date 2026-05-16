@@ -39,6 +39,10 @@ describe("EDOPro parity spell/trap-set missed timing fixture", () => {
                 collectEvent: "spellTrapSet",
                 eventCard: { player: 0, code: "600", location: "spellTrapZone" },
                 eventIsLast: false,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 30801,
               },
             ],
             moveCardsOnResolve: [{ player: 0, code: "700", from: "monsterZone", to: "graveyard" }],
@@ -112,7 +116,17 @@ describe("EDOPro parity spell/trap-set missed timing fixture", () => {
             windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [
-              { player: 0, effectId: "spell-trap-set-activation-optional-if", eventName: "spellTrapSet", eventCode: 1107, eventCardUid: "p0-deck-600-4" },
+              {
+                player: 0,
+                effectId: "spell-trap-set-activation-optional-if",
+                eventName: "spellTrapSet",
+                eventCode: 1107,
+                eventCardUid: "p0-deck-600-4",
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 30801,
+              },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
@@ -145,7 +159,17 @@ describe("EDOPro parity spell/trap-set missed timing fixture", () => {
             windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [
-              { player: 0, effectId: "spell-trap-set-activation-optional-if", eventName: "spellTrapSet", eventCode: 1107, eventCardUid: "p0-deck-600-4" },
+              {
+                player: 0,
+                effectId: "spell-trap-set-activation-optional-if",
+                eventName: "spellTrapSet",
+                eventCode: 1107,
+                eventCardUid: "p0-deck-600-4",
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 30801,
+              },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
