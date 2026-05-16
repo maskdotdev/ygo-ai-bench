@@ -58,6 +58,7 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" }), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro opens an attack-response window where the opponent may answer a direct attack",
@@ -93,6 +94,7 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("passAttack", 1), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro passes attack-response priority to the turn player before the Damage Step begins",
@@ -227,6 +229,7 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("passChain", 0), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro clears one-chain chain limits after the restricted chain resolves and returns to the attack-response window",
@@ -277,6 +280,7 @@ describe("EDOPro parity battle chain-limit fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro continues direct battle resolution after attack-response chain limits expire",

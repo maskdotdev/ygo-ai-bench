@@ -85,6 +85,7 @@ describe("EDOPro parity cross-player chain negated/disabled trigger bucket fixtu
       },
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-negated-trigger-starter" }), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro opens a chain-response window before the opponent negates the turn player's chain link",

@@ -96,6 +96,7 @@ describe("EDOPro parity fixture event codes", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-raise-custom-event" }), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro custom events preserve event code, player, value, reason, reason player, and related effect payload for trigger filtering",

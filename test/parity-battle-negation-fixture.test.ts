@@ -85,6 +85,7 @@ describe("EDOPro parity battle negation fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("passAttack", 1), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro passes attack-response priority to the turn player, who may activate attack-negating fast effects",
