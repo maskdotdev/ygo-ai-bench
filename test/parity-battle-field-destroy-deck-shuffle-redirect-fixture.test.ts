@@ -43,6 +43,7 @@ describe("EDOPro parity field battle destroy deck-shuffle redirect fixtures", ()
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-2" }), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro opens the attack-response window before field-scoped deck-shuffle battle-destroy redirects can apply",
