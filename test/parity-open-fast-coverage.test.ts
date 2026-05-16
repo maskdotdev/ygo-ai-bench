@@ -201,6 +201,7 @@ describe("EDOPro open fast-effect fixture coverage", () => {
       !hasRawAndGroupedLegalActionProof(file)
         || !hasAbsentRawAndGroupedLegalActionProof(file)
         || !hasSnapshotRestoreProof(file)
+        || !hasPublicWindowIdentityProof(file)
         || !hasEdoproProvenanceNote(file),
     );
 
@@ -418,6 +419,15 @@ function hasSnapshotRestoreProof(file: string): boolean {
   return (
     /source:\s*["']edopro["']/.test(text) &&
     /snapshotRestore:\s*["']both["']/.test(text)
+  );
+}
+
+function hasPublicWindowIdentityProof(file: string): boolean {
+  const text = fs.readFileSync(path.join(root, file), "utf8");
+  return (
+    /source:\s*["']edopro["']/.test(text) &&
+    /windowId:\s*\d+/.test(text) &&
+    /windowKind:\s*["'](?:open|chainResponse|battle)["']/.test(text)
   );
 }
 
