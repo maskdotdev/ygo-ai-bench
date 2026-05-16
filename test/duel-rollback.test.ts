@@ -322,6 +322,7 @@ describe("duel rollback", () => {
       range: ["hand"],
       targetRange: [1, 2],
       hintTiming: [4, 8],
+      labelObjectUids: [source!.uid],
       operation(ctx) {
         ctx.log("metadata effect");
       },
@@ -330,14 +331,18 @@ describe("duel rollback", () => {
 
     session.state.effects[0]!.targetRange![0] = 9;
     session.state.effects[0]!.hintTiming!.push(16);
+    session.state.effects[0]!.labelObjectUids!.push("mutated-label-object");
     restoreDuelState(session.state, rollback);
 
     expect(session.state.effects[0]?.targetRange).toEqual([1, 2]);
     expect(session.state.effects[0]?.hintTiming).toEqual([4, 8]);
+    expect(session.state.effects[0]?.labelObjectUids).toEqual([source!.uid]);
     rollback.effects[0]!.targetRange![0] = 12;
     rollback.effects[0]!.hintTiming!.push(32);
+    rollback.effects[0]!.labelObjectUids!.push("rollback-label-object");
     expect(session.state.effects[0]?.targetRange).toEqual([1, 2]);
     expect(session.state.effects[0]?.hintTiming).toEqual([4, 8]);
+    expect(session.state.effects[0]?.labelObjectUids).toEqual([source!.uid]);
   });
 
   it("rolls back nested chain target arrays", () => {
@@ -377,23 +382,52 @@ describe("duel rollback", () => {
     });
     startDuel(session);
     const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
-    session.state.chain = [{ id: "chain-1", player: 0, sourceUid, effectId: "effect", eventUids: [sourceUid] }];
-    session.state.pendingTriggers = [{ id: "trigger-1", player: 0, sourceUid, effectId: "effect", eventName: "customEvent", triggerBucket: "turnOptional", eventUids: [sourceUid] }];
+    session.state.chain = [{
+      id: "chain-1",
+      player: 0,
+      sourceUid,
+      effectId: "effect",
+      eventUids: [sourceUid],
+      effectLabels: [10, 20],
+      effectLabelObjectUids: [sourceUid],
+    }];
+    session.state.pendingTriggers = [{
+      id: "trigger-1",
+      player: 0,
+      sourceUid,
+      effectId: "effect",
+      eventName: "customEvent",
+      triggerBucket: "turnOptional",
+      eventUids: [sourceUid],
+      effectLabelObjectUids: [sourceUid],
+    }];
     session.state.eventHistory = [{ eventName: "customEvent", eventUids: [sourceUid] }];
     const rollback = captureDuelState(session.state);
 
     session.state.chain[0]!.eventUids!.push("chain-mutation");
+    session.state.chain[0]!.effectLabels!.push(30);
+    session.state.chain[0]!.effectLabelObjectUids!.push("chain-label-mutation");
     session.state.pendingTriggers[0]!.eventUids!.push("trigger-mutation");
+    session.state.pendingTriggers[0]!.effectLabelObjectUids!.push("trigger-label-mutation");
     session.state.eventHistory[0]!.eventUids!.push("history-mutation");
     restoreDuelState(session.state, rollback);
     expect(session.state.chain[0]?.eventUids).toEqual([sourceUid]);
+    expect(session.state.chain[0]?.effectLabels).toEqual([10, 20]);
+    expect(session.state.chain[0]?.effectLabelObjectUids).toEqual([sourceUid]);
     expect(session.state.pendingTriggers[0]?.eventUids).toEqual([sourceUid]);
+    expect(session.state.pendingTriggers[0]?.effectLabelObjectUids).toEqual([sourceUid]);
     expect(session.state.eventHistory[0]?.eventUids).toEqual([sourceUid]);
     rollback.chain[0]!.eventUids!.push("rollback-chain-mutation");
+    rollback.chain[0]!.effectLabels!.push(40);
+    rollback.chain[0]!.effectLabelObjectUids!.push("rollback-chain-label-mutation");
     rollback.pendingTriggers[0]!.eventUids!.push("rollback-trigger-mutation");
+    rollback.pendingTriggers[0]!.effectLabelObjectUids!.push("rollback-trigger-label-mutation");
     rollback.eventHistory[0]!.eventUids!.push("rollback-history-mutation");
     expect(session.state.chain[0]?.eventUids).toEqual([sourceUid]);
+    expect(session.state.chain[0]?.effectLabels).toEqual([10, 20]);
+    expect(session.state.chain[0]?.effectLabelObjectUids).toEqual([sourceUid]);
     expect(session.state.pendingTriggers[0]?.eventUids).toEqual([sourceUid]);
+    expect(session.state.pendingTriggers[0]?.effectLabelObjectUids).toEqual([sourceUid]);
     expect(session.state.eventHistory[0]?.eventUids).toEqual([sourceUid]);
   });
 

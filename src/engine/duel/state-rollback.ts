@@ -213,6 +213,7 @@ function copyEffect(effect: DuelEffectDefinition): DuelEffectDefinition {
     ...(effect.reset ? { reset: { ...effect.reset } } : {}),
     ...(effect.targetRange ? { targetRange: [...effect.targetRange] } : {}),
     ...(effect.hintTiming ? { hintTiming: [...effect.hintTiming] } : {}),
+    ...(effect.labelObjectUids ? { labelObjectUids: [...effect.labelObjectUids] } : {}),
   };
 }
 
@@ -247,6 +248,8 @@ function copyEventPayload<T extends ChainLink | PendingTrigger | DuelEventRecord
   return {
     ...payload,
     ...(payload.eventUids ? { eventUids: [...payload.eventUids] } : {}),
+    ...("effectLabels" in payload && payload.effectLabels !== undefined ? { effectLabels: [...payload.effectLabels] } : {}),
+    ...("effectLabelObjectUids" in payload && payload.effectLabelObjectUids !== undefined ? { effectLabelObjectUids: [...payload.effectLabelObjectUids] } : {}),
     ...(payload.eventPreviousState ? { eventPreviousState: { ...payload.eventPreviousState } } : {}),
     ...(payload.eventCurrentState ? { eventCurrentState: { ...payload.eventCurrentState } } : {}),
   };
