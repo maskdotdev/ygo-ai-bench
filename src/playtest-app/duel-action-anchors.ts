@@ -5,6 +5,7 @@ import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 export interface DuelActionUiGroup {
   key: string;
   label: string;
+  selectionKind?: DuelActionUiSelectionKind;
   promptId?: string;
   promptType?: "selectOption" | "selectYesNo";
   windowId?: number;
@@ -14,6 +15,8 @@ export interface DuelActionUiGroup {
   triggerOrderPrompt?: TriggerOrderPromptState;
   actions: DuelAction[];
 }
+
+export type DuelActionUiSelectionKind = "attackTarget" | "battleReplay" | "material" | "pendulum" | "tribute";
 
 /** Stable key for de-duplicating action references in UI maps. */
 export function duelActionUiKey(action: DuelAction): string {
@@ -137,19 +140,38 @@ export function orphanDuelActionGroups(
     ? groups
     : [{ key: "ungrouped", label: "Other", actions: [...actions] }];
   return sourceGroups
-    .map((group) => ({
-      key: group.key,
-      label: group.label,
-      ...(group.promptId === undefined ? {} : { promptId: group.promptId }),
-      ...(group.promptType === undefined ? {} : { promptType: group.promptType }),
-      ...(group.windowId === undefined ? {} : { windowId: group.windowId }),
-      ...(group.windowKind === undefined ? {} : { windowKind: group.windowKind }),
-      ...(group.windowToken === undefined ? {} : { windowToken: group.windowToken }),
-      ...(group.triggerBucket === undefined ? {} : { triggerBucket: { ...group.triggerBucket, triggerIds: [...group.triggerBucket.triggerIds] } }),
-      ...(group.triggerOrderPrompt === undefined ? {} : { triggerOrderPrompt: { ...group.triggerOrderPrompt, triggerIds: [...group.triggerOrderPrompt.triggerIds] } }),
-      actions: dedupeDuelActions(group.actions.filter((action) => orphanKeys.has(duelActionUiKey(action)))).map(copyDuelAction),
-    }))
+    .map((group) => {
+      const groupActions = dedupeDuelActions(group.actions.filter((action) => orphanKeys.has(duelActionUiKey(action))));
+      return {
+        key: group.key,
+        label: group.label,
+        ...selectionKindState({ actions: groupActions, windowKind: group.windowKind }),
+        ...(group.promptId === undefined ? {} : { promptId: group.promptId }),
+        ...(group.promptType === undefined ? {} : { promptType: group.promptType }),
+        ...(group.windowId === undefined ? {} : { windowId: group.windowId }),
+        ...(group.windowKind === undefined ? {} : { windowKind: group.windowKind }),
+        ...(group.windowToken === undefined ? {} : { windowToken: group.windowToken }),
+        ...(group.triggerBucket === undefined ? {} : { triggerBucket: { ...group.triggerBucket, triggerIds: [...group.triggerBucket.triggerIds] } }),
+        ...(group.triggerOrderPrompt === undefined ? {} : { triggerOrderPrompt: { ...group.triggerOrderPrompt, triggerIds: [...group.triggerOrderPrompt.triggerIds] } }),
+        actions: groupActions.map(copyDuelAction),
+      };
+    })
     .filter((group) => group.actions.length > 0);
+}
+
+function selectionKindState(group: Pick<DuelActionUiGroup, "actions" | "windowKind">): { selectionKind: DuelActionUiSelectionKind } | Record<string, never> {
+  const selectionKind = duelActionUiGroupSelectionKind(group);
+  return selectionKind === undefined ? {} : { selectionKind };
+}
+
+export function duelActionUiGroupSelectionKind(group: Pick<DuelActionUiGroup, "actions" | "windowKind">): DuelActionUiSelectionKind | undefined {
+  if (group.actions.some((action) => action.type === "fusionSummon" || action.type === "synchroSummon" || action.type === "xyzSummon" || action.type === "linkSummon" || action.type === "ritualSummon")) return "material";
+  if (group.actions.some((action) => action.type === "pendulumSummon")) return "pendulum";
+  if (group.actions.some((action) => action.type === "tributeSummon" || action.type === "tributeSet")) return "tribute";
+  if (group.windowKind !== "battle") return undefined;
+  if (group.actions.some((action) => action.type === "replayAttack" || action.type === "cancelAttack")) return "battleReplay";
+  if (group.actions.some((action) => action.type === "declareAttack")) return "attackTarget";
+  return undefined;
 }
 
 export function duelActionUiGroupLabel(group: Pick<DuelActionUiGroup, "label" | "windowKind" | "actions">): string {

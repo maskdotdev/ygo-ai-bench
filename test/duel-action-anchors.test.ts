@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { duelActionAnchorUids, duelActionUiGroupLabel, isOrphanDuelAction, orphanDuelActionGroups, partitionDuelActionsByAnchor } from "../src/playtest-app/duel-action-anchors.js";
+import { duelActionAnchorUids, duelActionUiGroupLabel, duelActionUiGroupSelectionKind, isOrphanDuelAction, orphanDuelActionGroups, partitionDuelActionsByAnchor } from "../src/playtest-app/duel-action-anchors.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import type { DuelAction } from "#duel/types.js";
 
@@ -185,5 +185,57 @@ describe("duel action anchors", () => {
       windowKind: "open",
       actions: [{ type: "tributeSummon", player: 0, uid: "tribute", tributeUids: ["mat-a"], label: "Tribute Summon" }],
     })).toBe("Tribute Selection");
+  });
+
+  it("tags app-facing selection groups without parsing display labels", () => {
+    expect(duelActionUiGroupSelectionKind({
+      windowKind: "open",
+      actions: [{ type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["mat-a", "mat-b"], label: "Fusion Summon" }],
+    })).toBe("material");
+    expect(duelActionUiGroupSelectionKind({
+      windowKind: "open",
+      actions: [{ type: "pendulumSummon", player: 0, summonUids: ["hand-a"], maxSummons: 1, label: "Pendulum Summon" }],
+    })).toBe("pendulum");
+    expect(duelActionUiGroupSelectionKind({
+      windowKind: "open",
+      actions: [{ type: "tributeSet", player: 0, uid: "tribute-set", tributeUids: ["mat-a"], label: "Tribute Set" }],
+    })).toBe("tribute");
+    expect(duelActionUiGroupSelectionKind({
+      windowKind: "battle",
+      actions: [{ type: "declareAttack", player: 0, attackerUid: "attacker", targetUid: "target", label: "Attack" }],
+    })).toBe("attackTarget");
+    expect(duelActionUiGroupSelectionKind({
+      windowKind: "battle",
+      actions: [{ type: "cancelAttack", player: 0, attackerUid: "attacker", label: "Cancel Attack" }],
+    })).toBe("battleReplay");
+    expect(duelActionUiGroupSelectionKind({
+      windowKind: "chainResponse",
+      actions: [{ type: "passChain", player: 0, label: "Pass" }],
+    })).toBeUndefined();
+  });
+
+  it("derives selection tags from the filtered actions visible in orphan groups", () => {
+    const reachableFusion: DuelAction = { type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["mat-a", "mat-b"], label: "Fusion Summon" };
+    const hiddenReplay: DuelAction = { type: "replayAttack", player: 0, attackerUid: "hidden-attacker", targetUid: "hidden-target", label: "Attack", windowKind: "battle" };
+    const reachableReplay: DuelAction = { type: "replayAttack", player: 0, attackerUid: "visible-attacker", targetUid: "visible-target", label: "Attack", windowKind: "battle" };
+
+    const groups = orphanDuelActionGroups([
+      reachableFusion,
+      hiddenReplay,
+      reachableReplay,
+    ], [
+      { key: "summons", label: "Summons", windowKind: "open", actions: [reachableFusion] },
+      { key: "battle", label: "Attacks", windowKind: "battle", actions: [hiddenReplay, reachableReplay] },
+    ], new Set(["fusion", "mat-a", "mat-b", "visible-attacker", "visible-target"]));
+
+    expect(groups).toEqual([
+      {
+        key: "battle",
+        label: "Attacks",
+        selectionKind: "battleReplay",
+        windowKind: "battle",
+        actions: [hiddenReplay],
+      },
+    ]);
   });
 });
