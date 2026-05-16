@@ -29,6 +29,7 @@ describe("EDOPro compatibility harness chain validation", () => {
               eventCurrentState: { controller: 3, location: "sideDeck", sequence: 1.5, position: "defense", faceUp: null, extra: 1 },
               eventUids: ["ok", false],
               eventTriggerTiming: "sometimes",
+              effectLabels: [1, Number.NaN],
               effectLabelObjectUids: "bad",
               bogus: 1,
             },
@@ -60,6 +61,7 @@ describe("EDOPro compatibility harness chain validation", () => {
       { fixture: "malformed chain fixture", message: "before fixture (edopro): Expected chain[0].eventCurrentState.position has malformed value defense" },
       { fixture: "malformed chain fixture", message: "before fixture (edopro): Expected chain[0].eventCurrentState.faceUp has malformed value null" },
       { fixture: "malformed chain fixture", message: "before fixture (edopro): Expected chain[0].eventUids[1] has malformed value false" },
+      { fixture: "malformed chain fixture", message: "before fixture (edopro): Expected chain[0].effectLabels[1] has malformed value NaN" },
       { fixture: "malformed chain fixture", message: "before fixture (edopro): Expected chain[0].effectLabelObjectUids has malformed value bad" },
     ]);
   });

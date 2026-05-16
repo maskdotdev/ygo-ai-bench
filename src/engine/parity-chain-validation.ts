@@ -7,7 +7,7 @@ const TRIGGER_TIMINGS = new Set<TriggerTiming>(["if", "when"]);
 const CHAIN_KEYS = new Set([
   "id", "player", "sourceUid", "effectId", "eventName", "eventCode", "eventPlayer", "eventValue", "eventReason", "eventReasonPlayer", "eventReasonCardUid", "eventReasonEffectId",
   "relatedEffectId", "eventChainDepth", "eventChainLinkId", "eventUids", "eventCardUid", "eventPreviousState", "eventCurrentState", "eventTriggerTiming", "effectLabelObjectUid",
-  "effectLabelObjectUids",
+  "effectLabels", "effectLabelObjectUids",
 ]);
 
 export function assertChainExpectations(actual: ChainLink[], expected: Array<Partial<ChainLink>> | undefined, fail: (message: string) => void): void {
@@ -45,6 +45,7 @@ function malformedChainExpectation(partial: Partial<ChainLink>, description: str
   failures.push(...malformedEventCardStateExpectation(partial.eventPreviousState, `${description}.eventPreviousState`));
   failures.push(...malformedEventCardStateExpectation(partial.eventCurrentState, `${description}.eventCurrentState`));
   checkStringArray(failures, description, partial, "eventUids");
+  checkNumberArray(failures, description, partial, "effectLabels");
   checkStringArray(failures, description, partial, "effectLabelObjectUids");
   return failures;
 }
@@ -66,6 +67,18 @@ function checkStringArray(failures: string[], description: string, partial: Part
   }
   value.forEach((entry, index) => {
     if (!isSafeString(entry)) failures.push(`Expected ${description}.${key}[${index}] has malformed value ${String(entry)}`);
+  });
+}
+
+function checkNumberArray(failures: string[], description: string, partial: Partial<ChainLink>, key: "effectLabels"): void {
+  const value = partial[key];
+  if (value === undefined) return;
+  if (!Array.isArray(value)) {
+    failures.push(`Expected ${description}.${key} has malformed value ${String(value)}`);
+    return;
+  }
+  value.forEach((entry, index) => {
+    if (typeof entry !== "number" || !Number.isFinite(entry)) failures.push(`Expected ${description}.${key}[${index}] has malformed value ${String(entry)}`);
   });
 }
 
