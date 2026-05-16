@@ -178,6 +178,7 @@ describe("EDOPro parity special summon negation protection fixtures", () => {
         source: "edopro",
         note: "EDOPro final state resolves the protected Special Summon success trigger after blocked summon negation",
         windowId: 3,
+        windowKind: "open",
         phase: "main1",
         pendingTriggers: [],
         chain: [],

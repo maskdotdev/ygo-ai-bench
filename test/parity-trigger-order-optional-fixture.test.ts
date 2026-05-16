@@ -229,6 +229,7 @@ describe("EDOPro parity optional trigger ordering fixture", () => {
         source: "edopro",
         note: "EDOPro resolves the selected optional trigger and leaves the declined same-bucket trigger unresolved",
         windowId: 3,
+        windowKind: "open",
         phase: "main1",
         waitingFor: 0,
         pendingTriggers: [],

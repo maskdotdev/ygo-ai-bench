@@ -180,6 +180,7 @@ describe("EDOPro parity special summon negation fixtures", () => {
         source: "edopro",
         note: "EDOPro final state resolves Special Summon negated triggers without resolving removed Special Summon success triggers",
         windowId: 3,
+        windowKind: "open",
         phase: "main1",
         pendingTriggers: [],
         chain: [],

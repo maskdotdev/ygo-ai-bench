@@ -395,6 +395,7 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
         source: "edopro",
         note: "EDOPro final state resolves all SEGOC buckets in mandatory-then-optional player order",
         windowId: 5,
+        windowKind: "open",
         phase: "main1",
         waitingFor: 0,
         pendingTriggers: [],

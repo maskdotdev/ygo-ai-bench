@@ -162,6 +162,7 @@ describe("EDOPro parity flip summon negation fixtures", () => {
         source: "edopro",
         note: "EDOPro final state resolves Flip Summon negated triggers without resolving removed Flip Summon success triggers",
         windowId: 3,
+        windowKind: "open",
         phase: "main1",
         pendingTriggers: [],
         chain: [],

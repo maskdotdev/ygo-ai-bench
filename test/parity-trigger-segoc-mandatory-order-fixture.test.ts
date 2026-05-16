@@ -202,6 +202,7 @@ describe("EDOPro parity SEGOC mandatory order fixture", () => {
         source: "edopro",
         note: "EDOPro resolves turn-player mandatory triggers before non-turn mandatory triggers in SEGOC order",
         windowId: 3,
+        windowKind: "open",
         phase: "main1",
         waitingFor: 0,
         pendingTriggers: [],

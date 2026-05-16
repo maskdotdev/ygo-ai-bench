@@ -163,6 +163,7 @@ describe("EDOPro parity optional trigger decline fixtures", () => {
         source: "edopro",
         note: "EDOPro final state records the declined optional trigger while resolving the remaining same-bucket optional trigger",
         windowId: 3,
+        windowKind: "open",
         phase: "main1",
         waitingFor: 0,
         pendingTriggers: [],

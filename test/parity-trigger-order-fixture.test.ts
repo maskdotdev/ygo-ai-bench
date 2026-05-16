@@ -215,6 +215,7 @@ describe("EDOPro parity trigger ordering fixtures", () => {
         source: "edopro",
         note: "EDOPro final state preserves the controller-selected same-bucket mandatory trigger order",
         windowId: 3,
+        windowKind: "open",
         phase: "main1",
         waitingFor: 0,
         pendingTriggers: [],

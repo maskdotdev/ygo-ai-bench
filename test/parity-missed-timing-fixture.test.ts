@@ -359,6 +359,7 @@ describe("EDOPro parity missed timing fixtures", () => {
         source: "edopro",
         note: "EDOPro final state resolves mandatory when and both players' optional if triggers while optional when triggers remain missed",
         windowId: 4,
+        windowKind: "open",
         phase: "main1",
         waitingFor: 0,
         pendingTriggers: [],
