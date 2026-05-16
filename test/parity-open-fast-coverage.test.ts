@@ -39,7 +39,7 @@ const phaseOpenFastFamilies = [
   { base: "end-turn-open-fast", restore: "end-turn" },
 ] as const;
 
-const openFastResponsePlayerFixtureFileCount = 432;
+const openFastResponsePlayerFixtureFileCount = 431;
 const openFastWaitingForTurnPlayerProofCount = 1380;
 const openFastWaitingForOpponentProofCount = 823;
 const openFastBattleWindowTurnPlayerResponseProofCount = 127;
@@ -195,6 +195,19 @@ describe("EDOPro open fast-effect fixture coverage", () => {
     });
   });
 
+  it("requires every open-fast response-player fixture to carry parity proof metadata", () => {
+    const files = allOpenFastResponsePlayerFixtureFiles();
+    const weak = files.filter((file) =>
+      !hasRawAndGroupedLegalActionProof(file)
+        || !hasAbsentRawAndGroupedLegalActionProof(file)
+        || !hasSnapshotRestoreProof(file)
+        || !hasEdoproProvenanceNote(file),
+    );
+
+    expect(files).toHaveLength(openFastResponsePlayerFixtureFileCount);
+    expect(weak).toEqual([]);
+  });
+
   it("keeps open-fast pass handoff and resolution evidence ratcheted", () => {
     const files = allOpenFastResponsePlayerFixtureFiles();
     const evidence = countOpenFastHandoffEvidence(files);
@@ -320,6 +333,7 @@ function allRequiredOpenFastRestoreFiles(): string[] {
 function allOpenFastResponsePlayerFixtureFiles(): string[] {
   return fs.readdirSync(path.join(root, "test"))
     .filter((file) => file.startsWith("parity-") && file.endsWith(".test.ts"))
+    .filter((file) => !file.endsWith("-coverage.test.ts"))
     .filter((file) => file.includes("open-fast") || file.includes("quick-effect"))
     .map((file) => `test/${file}`)
     .sort();
