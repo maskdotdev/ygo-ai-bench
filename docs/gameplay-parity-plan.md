@@ -416,7 +416,8 @@ Current status:
 - The agent bridge can run bounded visible autoplay and fixture-style visible scripts, including a bridge-level visible-script battle fixture. Visible script divergence now reports exact selector fields for action/window mismatches, including `windowId`, `windowKind`, `windowToken`, `phase`, prompt id/option/yes-no choices, effect id, trigger id, trigger bucket, group label, and occurrence. Visible script failures and autoplay stop payloads also include prompt views when a pending prompt owns the current visible actions.
 - The PvP arena now exposes a deterministic visible-script battle fixture through a browser UI control and an exported helper, so the app path can run a Normal Summon, Battle Phase entry, direct attack, and battle-window passes without hidden rule decisions.
 - Browser card data now has a deterministic preload/cache seam that requests only missing passcodes, keeps bundled definitions available without fetching, preserves the synchronous `cardReader` contract after preload, and can feed PvP arena bootstrap with loaded card names/stats instead of fallback stubs.
-- Broader prompt UI surfaces and browser lazy-loading for Lua scripts/upstream databases are still open.
+- Browser Lua script text now has a deterministic preload/cache seam that requests only missing card script filenames by passcode and exposes a synchronous `LuaScriptSource` for `createLuaScriptHost` after preload.
+- Broader prompt UI surfaces and browser lazy-loading for upstream database payloads are still open.
 
 Deliverables:
 
