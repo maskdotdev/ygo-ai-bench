@@ -34,6 +34,10 @@ const officialPromptApiCounts: Record<string, number> = {
 };
 
 const officialPromptApisWithoutOfficialUsage = ["AnnounceType", "SelectField"].sort();
+const officialPromptApisWithOfficialUsage = Object.entries(officialPromptApiCounts)
+  .filter(([, count]) => count > 0)
+  .map(([api]) => api)
+  .sort();
 
 const officialPromptPatternCounts: Record<string, number> = {
   "SelectYesNo:description": 1172,
@@ -94,6 +98,12 @@ describe("Lua real prompt helper restore coverage", () => {
     expect(representativePromptHelperFixtures()).toHaveLength(18);
   });
 
+  it("keeps every officially-used prompt API represented by restore fixtures", () => {
+    const representedApis = [...new Set(representativePromptHelperFixtures().flatMap(({ apis }) => apis))].sort();
+
+    expect(representedApis).toEqual(officialPromptApisWithOfficialUsage);
+  });
+
   it("requires representative prompt helper fixtures to assert clean Lua restore", () => {
     const missing = representativePromptHelperFixtures()
       .filter(({ file }) => {
@@ -135,10 +145,13 @@ describe("Lua real prompt helper restore coverage", () => {
   });
 });
 
-function representativePromptHelperFixtures(): Array<{ file: string; required: string[] }> {
+type OfficialPromptApi = keyof typeof officialPromptApiCounts;
+
+function representativePromptHelperFixtures(): Array<{ file: string; apis: OfficialPromptApi[]; required: string[] }> {
   return [
     {
       file: "test/lua-real-script-gunkan-suship-catch-select-codes.test.ts",
+      apis: ["SelectCardsFromCodes"],
       required: [
         "restores the opponent code-selection prompt into the chosen Suship search",
         'api: "SelectCardsFromCodes"',
@@ -151,6 +164,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-gishki-psychelone-announce-traits.test.ts",
+      apis: ["AnnounceAttribute", "AnnounceRace"],
       required: [
         "restores announced race and attribute labels into the opponent hand shuffle",
         'api: "AnnounceRace"',
@@ -163,6 +177,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-gagaga-magician-announce-level.test.ts",
+      apis: ["AnnounceLevel"],
       required: [
         "restores announced level label into the temporary level change",
         'api: "AnnounceLevel"',
@@ -174,6 +189,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-gachi-gachi-select-effect-yes-no.test.ts",
+      apis: ["SelectEffectYesNo"],
       required: [
         "restores SelectEffectYesNo destroy replacement into Xyz material detach",
         'api: "SelectEffectYesNo"',
@@ -184,6 +200,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-inferno-ashened-field-zone-option.test.ts",
+      apis: ["SelectOption"],
       required: [
         "restores a leading-false SelectOption branch that places Obsidim in the opponent Field Zone",
         "descriptions: [fieldZoneOptionDescription, opponentFieldZoneOptionDescription]",
@@ -194,6 +211,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-primite-lordly-lode.test.ts",
+      apis: ["AnnounceCard"],
       required: [
         "restores dynamic AnnounceCard into the declared Normal Monster summon and effect lock",
         "targetParam: Number(darkMagicianCode)",
@@ -203,6 +221,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-pyro-clock-select-option-table-unpack.test.ts",
+      apis: ["SelectOption"],
       required: [
         "restores table-unpacked SelectOption into the selected turn-count effect operation",
         'api: "SelectOption"',
@@ -214,6 +233,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-primathmech-laplacian-dynamic-select-effect.test.ts",
+      apis: ["SelectEffect"],
       required: [
         "restores table-unpacked SelectEffect choices from its Xyz Summon trigger",
         'api: "SelectEffect"',
@@ -225,6 +245,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-laval-blaster-announce-number.test.ts",
+      apis: ["AnnounceNumber"],
       required: [
         "restores dynamic AnnounceNumber deck-discard cost into its ATK boost",
         "currentAttack(restoredBlaster, restoredChainWindow.session.state)).toBe((lavalBlaster!.data.attack ?? 0) + 1000)",
@@ -233,6 +254,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-lightning-storm-select-effect.test.ts",
+      apis: ["SelectEffect"],
       required: [
         "restores Lightning Storm's selected attack-position monster destroy mode",
         "restores Lightning Storm's selected Spell/Trap destroy mode",
@@ -243,6 +265,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-magikey-duo-defense-ritual.test.ts",
+      apis: ["SelectOption"],
       required: [
         "restores a target-returning Ritual.Operation branch with sumpos face-up Defense",
         "descriptions: [returnOptionDescription, ritualOptionDescription]",
@@ -253,6 +276,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-magikey-maftea-deck-ritual.test.ts",
+      apis: ["SelectOption"],
       required: [
         "restores non-sentinel SelectOption into Ritual extra material extraop",
         "descriptions: [ritualOptionDescription]",
@@ -263,6 +287,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-magia-magic-select-effect.test.ts",
+      apis: ["SelectEffect"],
       required: [
         "restores multi-option SelectEffect into Magia Magic's Special Summon branch",
         'api: "SelectEffect"',
@@ -274,6 +299,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-mirror-mage-announce-number-range.test.ts",
+      apis: ["AnnounceNumberRange"],
       required: [
         "restores announced token count into token summons and level update",
         'api: "AnnounceNumberRange"',
@@ -285,6 +311,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-naturia-blessing-select-effect.test.ts",
+      apis: ["SelectEffect"],
       required: [
         "restores selected SelectEffect branch into the Naturia Special Summon operation",
         'api: "SelectEffect"',
@@ -295,6 +322,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-springans-ship-select-field-zone.test.ts",
+      apis: ["SelectFieldZone"],
       required: [
         "restores Exblowrer's selected opponent field zone chain label",
         'api: "SelectFieldZone"',
@@ -306,6 +334,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-sprind-select-disable-field.test.ts",
+      apis: ["SelectDisableField"],
       required: [
         "restores the selected disabled-field zone into the column movement operation",
         'api: "SelectDisableField"',
@@ -316,6 +345,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-vernusylph-attribute-activation-lock.test.ts",
+      apis: ["SelectYesNo"],
       required: [
         "restores the shared helper's non-EARTH monster effect activation lock",
         'expect.objectContaining({ api: "SelectYesNo", player: 0, returned: true })',
