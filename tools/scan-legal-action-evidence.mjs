@@ -20,6 +20,8 @@ function main(argv) {
   const zeroEvidence = [];
   const unpairedAbsent = [];
   const emptyAbsent = [];
+  const missingActionCountEvidence = [];
+  const missingGroupCountEvidence = [];
   const missingActionWindowEvidence = [];
   const missingGroupActionEvidence = [];
   const missingGroupWindowEvidence = [];
@@ -28,6 +30,9 @@ function main(argv) {
   const missingWindowEvidence = [];
   const missingTopLevelWindowEvidence = [];
   let edoproBlocks = 0;
+  let actionCountEvidenceBlocks = 0;
+  let groupCountEvidenceBlocks = 0;
+  let pairedCountEvidenceBlocks = 0;
   let actionEvidenceBlocks = 0;
   let groupEvidenceBlocks = 0;
   let groupActionEvidenceBlocks = 0;
@@ -48,8 +53,15 @@ function main(argv) {
       edoproBlocks += 1;
       const hasAbsentActions = block.text.includes("absentLegalActions:");
       const hasAbsentGroups = block.text.includes("absentLegalActionGroups:");
+      const hasActionCounts = block.text.includes("legalActionCounts:");
+      const hasGroupCounts = block.text.includes("legalActionGroupCounts:");
       const hasActions = block.text.includes("legalActions:");
       const hasGroups = block.text.includes("legalActionGroups:");
+      if (hasActionCounts) actionCountEvidenceBlocks += 1;
+      else missingActionCountEvidence.push(`${file}:${block.line}`);
+      if (hasGroupCounts) groupCountEvidenceBlocks += 1;
+      else missingGroupCountEvidence.push(`${file}:${block.line}`);
+      if (hasActionCounts && hasGroupCounts) pairedCountEvidenceBlocks += 1;
       if (hasActions) actionEvidenceBlocks += 1;
       if (hasGroups) groupEvidenceBlocks += 1;
       if (hasActions && hasWindowEvidenceInArray(block.text, "legalActions")) actionWindowEvidenceBlocks += 1;
@@ -78,11 +90,14 @@ function main(argv) {
     }
   }
 
-  console.log(`EDOPro legal-action evidence: ${fixtureFiles.length} parity files, ${edoproBlocks} EDOPro expectation blocks, ${actionEvidenceBlocks} action evidence blocks, ${groupEvidenceBlocks} group evidence blocks, ${windowEvidenceBlocks} window evidence blocks, ${topLevelWindowEvidenceBlocks} top-level window evidence blocks, ${actionWindowEvidenceBlocks} action window evidence blocks, ${groupActionEvidenceBlocks} group action evidence blocks, ${groupWindowEvidenceBlocks} group window evidence blocks, ${absentActionEvidenceBlocks} absent action evidence blocks, ${absentGroupEvidenceBlocks} absent group evidence blocks, ${pairedAbsentEvidenceBlocks} paired absent evidence blocks, ${absentActionWindowEvidenceBlocks} absent action window evidence blocks, ${absentGroupWindowEvidenceBlocks} absent group window evidence blocks`);
+  console.log(`EDOPro legal-action evidence: ${fixtureFiles.length} parity files, ${edoproBlocks} EDOPro expectation blocks, ${actionCountEvidenceBlocks} action count evidence blocks, ${groupCountEvidenceBlocks} group count evidence blocks, ${pairedCountEvidenceBlocks} paired count evidence blocks, ${actionEvidenceBlocks} action evidence blocks, ${groupEvidenceBlocks} group evidence blocks, ${windowEvidenceBlocks} window evidence blocks, ${topLevelWindowEvidenceBlocks} top-level window evidence blocks, ${actionWindowEvidenceBlocks} action window evidence blocks, ${groupActionEvidenceBlocks} group action evidence blocks, ${groupWindowEvidenceBlocks} group window evidence blocks, ${absentActionEvidenceBlocks} absent action evidence blocks, ${absentGroupEvidenceBlocks} absent group evidence blocks, ${pairedAbsentEvidenceBlocks} paired absent evidence blocks, ${absentActionWindowEvidenceBlocks} absent action window evidence blocks, ${absentGroupWindowEvidenceBlocks} absent group window evidence blocks`);
 
   const failures = [];
   if (options.minFiles !== undefined && fixtureFiles.length < options.minFiles) failures.push(`Parity fixture files ${fixtureFiles.length} is below required ${options.minFiles}`);
   if (options.minEdoproBlocks !== undefined && edoproBlocks < options.minEdoproBlocks) failures.push(`EDOPro expectation blocks ${edoproBlocks} is below required ${options.minEdoproBlocks}`);
+  if (options.minActionCountEvidenceBlocks !== undefined && actionCountEvidenceBlocks < options.minActionCountEvidenceBlocks) failures.push(`Action count evidence blocks ${actionCountEvidenceBlocks} is below required ${options.minActionCountEvidenceBlocks}`);
+  if (options.minGroupCountEvidenceBlocks !== undefined && groupCountEvidenceBlocks < options.minGroupCountEvidenceBlocks) failures.push(`Group count evidence blocks ${groupCountEvidenceBlocks} is below required ${options.minGroupCountEvidenceBlocks}`);
+  if (options.minPairedCountEvidenceBlocks !== undefined && pairedCountEvidenceBlocks < options.minPairedCountEvidenceBlocks) failures.push(`Paired count evidence blocks ${pairedCountEvidenceBlocks} is below required ${options.minPairedCountEvidenceBlocks}`);
   if (options.minActionEvidenceBlocks !== undefined && actionEvidenceBlocks < options.minActionEvidenceBlocks) failures.push(`Action evidence blocks ${actionEvidenceBlocks} is below required ${options.minActionEvidenceBlocks}`);
   if (options.minGroupEvidenceBlocks !== undefined && groupEvidenceBlocks < options.minGroupEvidenceBlocks) failures.push(`Group evidence blocks ${groupEvidenceBlocks} is below required ${options.minGroupEvidenceBlocks}`);
   if (options.minGroupActionEvidenceBlocks !== undefined && groupActionEvidenceBlocks < options.minGroupActionEvidenceBlocks) failures.push(`Group action evidence blocks ${groupActionEvidenceBlocks} is below required ${options.minGroupActionEvidenceBlocks}`);
@@ -99,6 +114,8 @@ function main(argv) {
   const groupEvidencePercent = percentage(groupEvidenceBlocks, edoproBlocks);
   if (options.minActionEvidencePercent !== undefined && actionEvidencePercent < options.minActionEvidencePercent) failures.push(`Action evidence coverage ${actionEvidencePercent.toFixed(1)}% is below required ${options.minActionEvidencePercent.toFixed(1)}%`);
   if (options.minGroupEvidencePercent !== undefined && groupEvidencePercent < options.minGroupEvidencePercent) failures.push(`Group evidence coverage ${groupEvidencePercent.toFixed(1)}% is below required ${options.minGroupEvidencePercent.toFixed(1)}%`);
+  if (options.failOnMissingCounts && missingActionCountEvidence.length > 0) failures.push(`EDOPro legal-action expectations must include legalActionCounts:\n${formatList(missingActionCountEvidence)}`);
+  if (options.failOnMissingCounts && missingGroupCountEvidence.length > 0) failures.push(`EDOPro legal-action expectations must include legalActionGroupCounts:\n${formatList(missingGroupCountEvidence)}`);
   if (options.failOnMissing && missing.length > 0) failures.push(`Aggregate counts missing concrete legal-action evidence:\n${formatList(missing)}`);
   if (options.failOnEmpty && empty.length > 0) failures.push(`Positive aggregate counts with empty legal-action evidence:\n${formatList(empty)}`);
   if (options.failOnZeroOnly && zeroOnly.length > 0) failures.push(`Positive aggregate counts with only zero-count legal-action evidence:\n${formatList(zeroOnly)}`);
@@ -131,6 +148,7 @@ function parseArgs(argv) {
     if (arg === "--help" || arg === "-h") options.help = true;
     else if (arg === "--test-root") options.testRoot = requireOptionValue(argv, ++index, arg);
     else if (arg === "--fail-on-missing") options.failOnMissing = true;
+    else if (arg === "--fail-on-missing-counts") options.failOnMissingCounts = true;
     else if (arg === "--fail-on-empty") options.failOnEmpty = true;
     else if (arg === "--fail-on-zero-only") options.failOnZeroOnly = true;
     else if (arg === "--fail-on-zero-evidence") options.failOnZeroEvidence = true;
@@ -145,6 +163,9 @@ function parseArgs(argv) {
     else if (arg === "--fail-on-missing-top-level-window-evidence") options.failOnMissingTopLevelWindowEvidence = true;
     else if (arg === "--min-files") options.minFiles = readMinimum(argv, ++index, arg);
     else if (arg === "--min-edopro-blocks") options.minEdoproBlocks = readMinimum(argv, ++index, arg);
+    else if (arg === "--min-action-count-evidence-blocks") options.minActionCountEvidenceBlocks = readMinimum(argv, ++index, arg);
+    else if (arg === "--min-group-count-evidence-blocks") options.minGroupCountEvidenceBlocks = readMinimum(argv, ++index, arg);
+    else if (arg === "--min-paired-count-evidence-blocks") options.minPairedCountEvidenceBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-action-evidence-blocks") options.minActionEvidenceBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-group-evidence-blocks") options.minGroupEvidenceBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-group-action-evidence-blocks") options.minGroupActionEvidenceBlocks = readMinimum(argv, ++index, arg);
@@ -345,6 +366,7 @@ function printHelp() {
 Options:
   --test-root <path>          Test directory to scan. Default: ${defaultTestRoot}
   --fail-on-missing           Fail when aggregate legal-action counts lack concrete evidence
+  --fail-on-missing-counts    Fail when EDOPro legal-action expectations omit aggregate counts
   --fail-on-empty             Fail when positive aggregate counts have empty evidence arrays
   --fail-on-zero-only         Fail when positive aggregate counts only have zero-count evidence
   --fail-on-zero-evidence     Fail when legal-action evidence uses count: 0 instead of absent expectations
@@ -366,6 +388,12 @@ Options:
                               Fail when EDOPro blocks omit top-level windowId/windowKind evidence
   --min-files <count>         Fail unless at least this many parity fixture files are scanned
   --min-edopro-blocks <count> Fail unless at least this many EDOPro blocks are scanned
+  --min-action-count-evidence-blocks <count>
+                              Fail unless at least this many blocks carry legalActionCounts
+  --min-group-count-evidence-blocks <count>
+                              Fail unless at least this many blocks carry legalActionGroupCounts
+  --min-paired-count-evidence-blocks <count>
+                              Fail unless at least this many blocks carry both aggregate count fields
   --min-action-evidence-blocks <count>
                               Fail unless at least this many action evidence blocks are scanned
   --min-group-evidence-blocks <count>

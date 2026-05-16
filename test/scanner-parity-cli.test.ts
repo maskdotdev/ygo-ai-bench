@@ -397,6 +397,12 @@ describe("parity scanner CLIs", () => {
       "2",
       "--min-edopro-blocks",
       "2",
+      "--min-action-count-evidence-blocks",
+      "2",
+      "--min-group-count-evidence-blocks",
+      "2",
+      "--min-paired-count-evidence-blocks",
+      "2",
       "--min-action-evidence-blocks",
       "2",
       "--min-group-evidence-blocks",
@@ -428,9 +434,12 @@ describe("parity scanner CLIs", () => {
     ], { encoding: "utf8" });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("EDOPro legal-action evidence: 1 parity files, 1 EDOPro expectation blocks, 1 action evidence blocks, 1 group evidence blocks, 0 window evidence blocks, 0 top-level window evidence blocks");
+    expect(result.stdout).toContain("EDOPro legal-action evidence: 1 parity files, 1 EDOPro expectation blocks, 1 action count evidence blocks, 1 group count evidence blocks, 1 paired count evidence blocks, 1 action evidence blocks, 1 group evidence blocks, 0 window evidence blocks, 0 top-level window evidence blocks");
     expect(result.stderr).toContain("Parity fixture files 1 is below required 2");
     expect(result.stderr).toContain("EDOPro expectation blocks 1 is below required 2");
+    expect(result.stderr).toContain("Action count evidence blocks 1 is below required 2");
+    expect(result.stderr).toContain("Group count evidence blocks 1 is below required 2");
+    expect(result.stderr).toContain("Paired count evidence blocks 1 is below required 2");
     expect(result.stderr).toContain("Action evidence blocks 1 is below required 2");
     expect(result.stderr).toContain("Group evidence blocks 1 is below required 2");
     expect(result.stderr).toContain("Group action evidence blocks 0 is below required 2");
@@ -476,9 +485,55 @@ describe("parity scanner CLIs", () => {
     ], { encoding: "utf8" });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("EDOPro legal-action evidence: 1 parity files, 2 EDOPro expectation blocks, 1 action evidence blocks, 1 group evidence blocks");
+    expect(result.stdout).toContain("EDOPro legal-action evidence: 1 parity files, 2 EDOPro expectation blocks, 1 action count evidence blocks, 1 group count evidence blocks, 1 paired count evidence blocks, 1 action evidence blocks, 1 group evidence blocks");
     expect(result.stderr).toContain("Action evidence coverage 50.0% is below required 75.0%");
     expect(result.stderr).toContain("Group evidence coverage 50.0% is below required 75.0%");
+  });
+
+  it("fails when EDOPro legal-action evidence omits aggregate counts", () => {
+    const testRoot = makeTestRoot({
+      "parity-missing-count-evidence.test.ts": `
+        runScriptedDuelFixture({
+          before: {
+            source: "edopro",
+            note: "EDOPro observed raw actions without aggregate raw counts.",
+            legalActions: [{ type: "normalSummon", player: 0, windowId: 1, windowKind: "open", count: 1 }],
+            legalActionGroupCounts: { 0: 1, 1: 0 },
+            legalActionGroups: [turnGroup(1)],
+          },
+          after: {
+            source: "edopro",
+            note: "EDOPro observed grouped actions without aggregate group counts.",
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 }],
+            legalActionGroups: [turnGroup(2)],
+          },
+        });
+      `,
+    });
+
+    const result = spawnSync(process.execPath, [
+      legalActionScannerPath,
+      "--test-root",
+      testRoot,
+      "--min-action-count-evidence-blocks",
+      "2",
+      "--min-group-count-evidence-blocks",
+      "2",
+      "--min-paired-count-evidence-blocks",
+      "2",
+      "--fail-on-missing-counts",
+    ], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("1 action count evidence blocks, 1 group count evidence blocks, 0 paired count evidence blocks");
+    expect(result.stderr).toContain("Action count evidence blocks 1 is below required 2");
+    expect(result.stderr).toContain("Group count evidence blocks 1 is below required 2");
+    expect(result.stderr).toContain("Paired count evidence blocks 0 is below required 2");
+    expect(result.stderr).toContain("EDOPro legal-action expectations must include legalActionCounts");
+    expect(result.stderr).toContain("parity-missing-count-evidence.test.ts:3");
+    expect(result.stderr).toContain("EDOPro legal-action expectations must include legalActionGroupCounts");
+    expect(result.stderr).toContain("parity-missing-count-evidence.test.ts:10");
   });
 
   it("fails when EDOPro evidence omits window IDs or kinds", () => {
@@ -517,7 +572,7 @@ describe("parity scanner CLIs", () => {
     ], { encoding: "utf8" });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("2 EDOPro expectation blocks, 2 action evidence blocks, 2 group evidence blocks, 1 window evidence blocks");
+    expect(result.stdout).toContain("2 action evidence blocks, 2 group evidence blocks, 1 window evidence blocks");
     expect(result.stderr).toContain("Window evidence blocks 1 is below required 2");
     expect(result.stderr).toContain("EDOPro blocks missing windowId/windowKind evidence");
     expect(result.stderr).toContain("parity-missing-window-evidence.test.ts:3");
@@ -727,7 +782,7 @@ describe("parity scanner CLIs", () => {
     ], { encoding: "utf8" });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("EDOPro legal-action evidence: 2 parity files, 2 EDOPro expectation blocks, 1 action evidence blocks, 1 group evidence blocks");
+    expect(result.stdout).toContain("1 action evidence blocks, 1 group evidence blocks");
     expect(result.stderr).toContain("Positive aggregate counts with empty legal-action evidence");
     expect(result.stderr).toContain("parity-empty-evidence.test.ts:3");
     expect(result.stderr).toContain("Positive aggregate counts with only zero-count legal-action evidence");
@@ -891,6 +946,9 @@ describe("parity scanner CLIs", () => {
     const unknownProvenanceFlag = spawnSync(process.execPath, [provenanceScannerPath, "--unknown"], { encoding: "utf8" });
     const missingLegalActionRoot = spawnSync(process.execPath, [legalActionScannerPath, "--test-root"], { encoding: "utf8" });
     const missingLegalActionPercent = spawnSync(process.execPath, [legalActionScannerPath, "--min-action-evidence-percent"], { encoding: "utf8" });
+    const missingLegalActionCountValue = spawnSync(process.execPath, [legalActionScannerPath, "--min-action-count-evidence-blocks"], { encoding: "utf8" });
+    const missingLegalActionGroupCountValue = spawnSync(process.execPath, [legalActionScannerPath, "--min-group-count-evidence-blocks"], { encoding: "utf8" });
+    const missingLegalActionPairedCountValue = spawnSync(process.execPath, [legalActionScannerPath, "--min-paired-count-evidence-blocks"], { encoding: "utf8" });
     const missingLegalActionGroupActionValue = spawnSync(process.execPath, [legalActionScannerPath, "--min-group-action-evidence-blocks"], { encoding: "utf8" });
     const missingLegalActionWindowValue = spawnSync(process.execPath, [legalActionScannerPath, "--min-window-evidence-blocks"], { encoding: "utf8" });
     const missingLegalActionTopLevelWindowValue = spawnSync(process.execPath, [legalActionScannerPath, "--min-top-level-window-evidence-blocks"], { encoding: "utf8" });
@@ -919,6 +977,12 @@ describe("parity scanner CLIs", () => {
     expect(missingLegalActionRoot.stderr).toContain("Missing value for --test-root");
     expect(missingLegalActionPercent.status).toBe(1);
     expect(missingLegalActionPercent.stderr).toContain("Missing value for --min-action-evidence-percent");
+    expect(missingLegalActionCountValue.status).toBe(1);
+    expect(missingLegalActionCountValue.stderr).toContain("Missing value for --min-action-count-evidence-blocks");
+    expect(missingLegalActionGroupCountValue.status).toBe(1);
+    expect(missingLegalActionGroupCountValue.stderr).toContain("Missing value for --min-group-count-evidence-blocks");
+    expect(missingLegalActionPairedCountValue.status).toBe(1);
+    expect(missingLegalActionPairedCountValue.stderr).toContain("Missing value for --min-paired-count-evidence-blocks");
     expect(missingLegalActionGroupActionValue.status).toBe(1);
     expect(missingLegalActionGroupActionValue.stderr).toContain("Missing value for --min-group-action-evidence-blocks");
     expect(missingLegalActionWindowValue.status).toBe(1);
