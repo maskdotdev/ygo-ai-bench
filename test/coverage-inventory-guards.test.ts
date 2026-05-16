@@ -230,6 +230,21 @@ describe("coverage inventory guards", () => {
     expect(weak).toEqual([]);
   });
 
+  it("requires public restore metadata helpers to prove trigger buckets and order prompts", () => {
+    const helpers = publicRestoreMetadataHelpers();
+    const weak = helpers
+      .filter((helper) => !hasStrongPublicRestoreMetadataHelper(helper.text))
+      .map((helper) => `${helper.file}:${helper.line}`);
+    const helperReferences = fs.readdirSync(testRoot)
+      .filter((file) => file.endsWith(".ts"))
+      .filter((file) => file !== "coverage-inventory-guards.test.ts")
+      .reduce((count, file) => count + (readTestFile(file).match(/\bassertPublicRestoreMetadata\(/g)?.length ?? 0), 0);
+
+    expect(helpers).toHaveLength(27);
+    expect(helperReferences).toBe(90);
+    expect(weak).toEqual([]);
+  });
+
   it("requires test proof floors to be exact", () => {
     const greaterThanAllowlist = new Set([
       "lua-field-query-helpers.test.ts:59",
@@ -490,6 +505,36 @@ function hasStrongResultActionsMatchStateProof(text: string, fileText: string): 
   return helperText.includes("result.legalActionGroups.flatMap((group) => group.actions)")
     && helperText.includes("groupedActions).toHaveLength(result.legalActions.length)")
     && helperText.includes("groupedActions).toEqual(expect.arrayContaining(result.legalActions))");
+}
+
+type PublicRestoreMetadataHelper = { file: string; line: number; text: string };
+
+function publicRestoreMetadataHelpers(): PublicRestoreMetadataHelper[] {
+  return fs.readdirSync(testRoot)
+    .filter((file) => file.endsWith(".ts"))
+    .filter((file) => file !== "coverage-inventory-guards.test.ts")
+    .flatMap((file) => {
+      const text = readTestFile(file);
+      return [...text.matchAll(/(?:export\s+)?function assertPublicRestoreMetadata\b/g)]
+        .map((match) => {
+          const start = match.index ?? 0;
+          return {
+            file,
+            line: lineNumber(text, start),
+            text: text.slice(start, functionBodyEnd(text, start)),
+          };
+        });
+    });
+}
+
+function hasStrongPublicRestoreMetadataHelper(text: string): boolean {
+  return text.includes("const publicState = queryPublicState(restored.session)")
+    && /\b\w+\.state\.pendingTriggerBuckets/.test(text)
+    && text.includes("publicState.pendingTriggerBuckets")
+    && text.includes("\"triggerOrderPrompt\" in publicState")
+    && text.includes(".state.triggerOrderPrompt")
+    && text.includes("publicState.triggerOrderPrompt")
+    && text.includes(".state).not.toHaveProperty(\"triggerOrderPrompt\")");
 }
 
 function hasNearbyRestoredActionEvidence(text: string, variable: string, fileText: string): boolean {
