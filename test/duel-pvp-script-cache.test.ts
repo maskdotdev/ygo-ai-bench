@@ -5,6 +5,8 @@ import { createLuaScriptHost } from "#lua/host.js";
 import { createBrowserLuaScriptCache, createBrowserLuaScriptFetchLoader, createBrowserLuaScriptManifestLoader } from "../src/playtest-app/duel-pvp-script-cache.js";
 
 describe("browser PvP Lua script cache", () => {
+  const manifestHash = "b".repeat(64);
+
   it("preloads only missing card scripts and exposes a synchronous Lua source", async () => {
     const requestedBatches: string[][] = [];
     const cache = createBrowserLuaScriptCache(async (names) => {
@@ -98,7 +100,7 @@ describe("browser PvP Lua script cache", () => {
               missingCount: 0,
               copied: ["c90000015.lua"],
               missing: [],
-              files: [{ name: "c90000015.lua", bytes: 16, sha256: "def456" }],
+              files: [{ name: "c90000015.lua", bytes: 16, sha256: manifestHash }],
             };
           },
         };
@@ -113,8 +115,32 @@ describe("browser PvP Lua script cache", () => {
       missingCount: 0,
       copied: ["c90000015.lua"],
       missing: [],
-      files: [{ name: "c90000015.lua", bytes: 16, sha256: "def456" }],
+      files: [{ name: "c90000015.lua", bytes: 16, sha256: manifestHash }],
     });
     expect(requestedUrls).toEqual(["/card-scripts/manifest.json"]);
+  });
+
+  it("rejects inconsistent browser Lua script sidecar manifest counts", async () => {
+    const loadManifest = createBrowserLuaScriptManifestLoader({
+      baseUrl: "/card-scripts",
+      fetchJson: async () => ({
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            schemaVersion: 1,
+            kind: "browser-lua-scripts",
+            selectedCodes: [],
+            copiedCount: 2,
+            missingCount: 0,
+            copied: ["c90000016.lua"],
+            missing: [],
+            files: [{ name: "c90000016.lua", bytes: 16, sha256: manifestHash }],
+          };
+        },
+      }),
+    });
+
+    await expect(loadManifest()).rejects.toThrow("Lua script manifest must describe browser-lua-scripts payload metadata");
   });
 });

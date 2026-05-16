@@ -20,6 +20,9 @@ const lazyLoadedYdk = `#created by test
 !side`;
 
 describe("PvP arena visible scripts", () => {
+  const cardManifestHash = "c".repeat(64);
+  const scriptManifestHash = "d".repeat(64);
+
   it("drives the browser arena fixture through visible actions", () => {
     const session = bootstrapPvpDuel(pvpVisibleBattleFixtureYdk, pvpVisibleBattleFixtureYdk, "pvp-arena-visible-script", 1);
 
@@ -188,7 +191,7 @@ describe("PvP arena visible scripts", () => {
               selectedCodes: ["90000003"],
               datasRows: 1,
               textsRows: 1,
-              sha256: "card-data-hash",
+              sha256: cardManifestHash,
             };
           },
           async text() { return ""; },
@@ -222,7 +225,7 @@ describe("PvP arena visible scripts", () => {
               missingCount: 0,
               copied: ["c90000003.lua"],
               missing: [],
-              files: [{ name: "c90000003.lua", bytes: 91, sha256: "script-hash" }],
+              files: [{ name: "c90000003.lua", bytes: 91, sha256: scriptManifestHash }],
             };
           },
           async text() { return ""; },
@@ -249,8 +252,8 @@ describe("PvP arena visible scripts", () => {
         "/card-scripts/c7084129.lua",
         "/card-scripts/c90000003.lua",
       ]);
-      expect(cardManifest).toMatchObject({ kind: "browser-cdb-rows", datasRows: 1, textsRows: 1, sha256: "card-data-hash" });
-      expect(scriptManifest).toMatchObject({ kind: "browser-lua-scripts", copiedCount: 1, files: [{ name: "c90000003.lua", bytes: 91, sha256: "script-hash" }] });
+      expect(cardManifest).toMatchObject({ kind: "browser-cdb-rows", datasRows: 1, textsRows: 1, sha256: cardManifestHash });
+      expect(scriptManifest).toMatchObject({ kind: "browser-lua-scripts", copiedCount: 1, files: [{ name: "c90000003.lua", bytes: 91, sha256: scriptManifestHash }] });
       expect(result.cardPreload).toEqual({ loaded: ["7084129", "90000003"], missing: [] });
       expect(result.scriptPreload).toEqual({ loaded: ["c90000003.lua"], missing: ["c7084129.lua"] });
       expect(result.luaHost.messages).toContain("endpoint script 2400");

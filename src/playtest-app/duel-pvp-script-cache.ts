@@ -139,7 +139,10 @@ function parseBrowserLuaScriptManifest(value: unknown): BrowserLuaScriptManifest
     !Array.isArray(value.missing) ||
     !value.missing.every((name) => typeof name === "string") ||
     !Array.isArray(value.files) ||
-    !value.files.every(isBrowserLuaScriptManifestFile)
+    !value.files.every(isBrowserLuaScriptManifestFile) ||
+    value.copiedCount !== value.copied.length ||
+    value.missingCount !== value.missing.length ||
+    value.files.length !== value.copied.length
   ) {
     throw new Error("Lua script manifest must describe browser-lua-scripts payload metadata");
   }
@@ -156,7 +159,11 @@ function parseBrowserLuaScriptManifest(value: unknown): BrowserLuaScriptManifest
 }
 
 function isBrowserLuaScriptManifestFile(value: unknown): value is BrowserLuaScriptManifestFile {
-  return isRecord(value) && typeof value.name === "string" && typeof value.bytes === "number" && Number.isInteger(value.bytes) && typeof value.sha256 === "string";
+  return isRecord(value) && typeof value.name === "string" && typeof value.bytes === "number" && Number.isInteger(value.bytes) && typeof value.sha256 === "string" && isSha256(value.sha256);
+}
+
+function isSha256(value: string): boolean {
+  return /^[a-f0-9]{64}$/u.test(value);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

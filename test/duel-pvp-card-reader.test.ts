@@ -3,6 +3,8 @@ import { createBrowserCdbCardDataLoader, createBrowserCdbJsonManifestLoader, cre
 import type { DuelCardData } from "#duel/types.js";
 
 describe("browser PvP card data cache", () => {
+  const manifestHash = "a".repeat(64);
+
   it("preloads only missing requested passcodes and keeps reader access synchronous", async () => {
     const loadedCards: DuelCardData[] = [
       { code: "90000001", name: "Loaded Monster", kind: "monster", attack: 1800 },
@@ -121,7 +123,7 @@ describe("browser PvP card data cache", () => {
               selectedCodes: ["90000009"],
               datasRows: 1,
               textsRows: 1,
-              sha256: "abc123",
+              sha256: manifestHash,
             };
           },
         };
@@ -135,8 +137,31 @@ describe("browser PvP card data cache", () => {
       selectedCodes: ["90000009"],
       datasRows: 1,
       textsRows: 1,
-      sha256: "abc123",
+      sha256: manifestHash,
     });
     expect(requestedUrls).toEqual(["/card-data/manifest.json"]);
+  });
+
+  it("rejects malformed browser CDB sidecar manifest hashes", async () => {
+    const loadManifest = createBrowserCdbJsonManifestLoader({
+      endpoint: "/card-data/cdb-rows.json",
+      fetchJson: async () => ({
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            schemaVersion: 1,
+            kind: "browser-cdb-rows",
+            payload: "cdb-rows.json",
+            selectedCodes: [],
+            datasRows: 0,
+            textsRows: 0,
+            sha256: "abc123",
+          };
+        },
+      }),
+    });
+
+    await expect(loadManifest()).rejects.toThrow("CDB rows manifest must describe browser-cdb-rows payload metadata");
   });
 });

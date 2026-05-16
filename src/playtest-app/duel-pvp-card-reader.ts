@@ -177,7 +177,8 @@ function parseBrowserCdbRowsManifest(value: unknown): BrowserCdbRowsManifest {
     !Number.isInteger(value.datasRows) ||
     typeof value.textsRows !== "number" ||
     !Number.isInteger(value.textsRows) ||
-    typeof value.sha256 !== "string"
+    typeof value.sha256 !== "string" ||
+    !isSha256(value.sha256)
   ) {
     throw new Error("CDB rows manifest must describe browser-cdb-rows payload metadata");
   }
@@ -190,6 +191,10 @@ function parseBrowserCdbRowsManifest(value: unknown): BrowserCdbRowsManifest {
     textsRows: value.textsRows,
     sha256: value.sha256,
   };
+}
+
+function isSha256(value: string): boolean {
+  return /^[a-f0-9]{64}$/u.test(value);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
