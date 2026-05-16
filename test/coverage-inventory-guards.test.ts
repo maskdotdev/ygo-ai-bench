@@ -149,6 +149,23 @@ describe("coverage inventory guards", () => {
     expect(weak).toEqual([]);
   });
 
+  it("requires local legal-window helpers to prove raw, grouped, and flattened returned legal actions", () => {
+    const helpers = localLegalWindowHelpers();
+    const weak = helpers
+      .filter((helper) => !hasReturnedRawLegalActionProof(helper.text)
+        || !hasReturnedGroupedLegalActionProof(helper.text)
+        || !hasReturnedLegalActionFlattenProof(helper.text))
+      .map((helper) => `${helper.file}:${helper.line}:${helper.name}`);
+    const helperReferences = fs.readdirSync(testRoot)
+      .filter((file) => file.endsWith(".test.ts"))
+      .filter((file) => file !== "coverage-inventory-guards.test.ts")
+      .reduce((count, file) => count + (readTestFile(file).match(/assertLegalWindow(?:Metadata)?\(/g)?.length ?? 0), 0);
+
+    expect(helpers).toHaveLength(4);
+    expect(helperReferences).toBe(63);
+    expect(weak).toEqual([]);
+  });
+
   it("requires chain-limit restore helpers to prove raw, grouped, and flattened restored actions", () => {
     const chainLimitRestoreFiles = fs.readdirSync(testRoot)
       .filter((file) => /^lua-chain-limit-.*restore\.test\.ts$/.test(file));
@@ -287,6 +304,27 @@ function restoreLegalWindowHelpers(): RestoreLegalWindowHelper[] {
           return {
             file,
             line: lineNumber(text, start),
+            text: text.slice(start, functionBodyEnd(text, start)),
+          };
+        });
+    });
+}
+
+type LocalLegalWindowHelper = { file: string; line: number; name: string; text: string };
+
+function localLegalWindowHelpers(): LocalLegalWindowHelper[] {
+  return fs.readdirSync(testRoot)
+    .filter((file) => file.endsWith(".test.ts"))
+    .filter((file) => file !== "coverage-inventory-guards.test.ts")
+    .flatMap((file) => {
+      const text = readTestFile(file);
+      return [...text.matchAll(/function (assertLegalWindow(?:Metadata)?)\b/g)]
+        .map((match) => {
+          const start = match.index ?? 0;
+          return {
+            file,
+            line: lineNumber(text, start),
+            name: match[1]!,
             text: text.slice(start, functionBodyEnd(text, start)),
           };
         });
