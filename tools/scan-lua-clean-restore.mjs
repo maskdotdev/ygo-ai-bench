@@ -19,6 +19,13 @@ function main(argv) {
     const text = readTestFile(file);
     return text.includes("restoreComplete") && text.includes('incompleteReasons.join("; ")');
   });
+  const legalActionEvidence = realScriptFiles.filter((file) => {
+    const text = readTestFile(file);
+    return text.includes("getLuaRestoreLegalActions")
+      && text.includes("getLuaRestoreLegalActionGroups")
+      && text.includes("getGroupedDuelLegalActions")
+      && text.includes("flatMap((group) => group.actions)");
+  });
   const cleanRestored = realScriptFiles.filter((file) => readTestFile(file).includes("missingRegistryKeys).toEqual([])"));
   const chainLimitCleanRestored = realScriptFiles.filter((file) => readTestFile(file).includes("missingChainLimitRegistryKeys).toEqual([])"));
   const coverageFiles = restoreCoverageFiles(testRoot);
@@ -26,7 +33,7 @@ function main(argv) {
   const unreferenced = cleanRestored.filter((file) => !referenced.has(toRepoPath(file)));
   const percent = realScriptFiles.length === 0 ? 100 : (cleanRestored.length / realScriptFiles.length) * 100;
 
-  console.log(`Lua real-script clean restore coverage: ${cleanRestored.length}/${realScriptFiles.length} (${percent.toFixed(1)}%), chain-limit ${chainLimitCleanRestored.length}/${realScriptFiles.length}, diagnostics ${completeDiagnostics.length}/${realScriptFiles.length}, ${coverageFiles.length} coverage files`);
+  console.log(`Lua real-script clean restore coverage: ${cleanRestored.length}/${realScriptFiles.length} (${percent.toFixed(1)}%), chain-limit ${chainLimitCleanRestored.length}/${realScriptFiles.length}, diagnostics ${completeDiagnostics.length}/${realScriptFiles.length}, legal-actions ${legalActionEvidence.length}/${realScriptFiles.length}, ${coverageFiles.length} coverage files`);
 
   const failures = [];
   if (options.minFixtures !== undefined && realScriptFiles.length < options.minFixtures) failures.push(`Real-script fixtures ${realScriptFiles.length} is below required ${options.minFixtures}`);
@@ -44,6 +51,10 @@ function main(argv) {
     const missing = realScriptFiles.filter((file) => !completeDiagnostics.includes(file)).map(toRepoPath);
     failures.push(`Fixtures missing complete restore diagnostics:\n${formatList(missing)}`);
   }
+  if (options.failOnMissingLegalActions && legalActionEvidence.length !== realScriptFiles.length) {
+    const missing = realScriptFiles.filter((file) => !legalActionEvidence.includes(file)).map(toRepoPath);
+    failures.push(`Fixtures missing restored legal-action evidence:\n${formatList(missing)}`);
+  }
   if (options.failOnUnreferenced && unreferenced.length > 0) {
     failures.push(`Clean-restored fixtures missing restore coverage ownership:\n${formatList(unreferenced.map(toRepoPath))}`);
   }
@@ -54,7 +65,7 @@ function main(argv) {
 }
 
 function parseArgs(argv) {
-  const options = { failOnMissing: false, failOnMissingDiagnostics: false, failOnUnreferenced: false, help: false };
+  const options = { failOnMissing: false, failOnMissingDiagnostics: false, failOnMissingLegalActions: false, failOnUnreferenced: false, help: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--help" || arg === "-h") options.help = true;
@@ -64,6 +75,7 @@ function parseArgs(argv) {
     else if (arg === "--min-coverage-files") options.minCoverageFiles = parseMinimum(requireOptionValue(argv, ++index, arg), arg);
     else if (arg === "--fail-on-missing") options.failOnMissing = true;
     else if (arg === "--fail-on-missing-diagnostics") options.failOnMissingDiagnostics = true;
+    else if (arg === "--fail-on-missing-legal-actions") options.failOnMissingLegalActions = true;
     else if (arg === "--fail-on-unreferenced") options.failOnUnreferenced = true;
     else throw new Error(`Unknown argument: ${arg}`);
   }
@@ -144,6 +156,8 @@ Options:
   --fail-on-missing          Exit non-zero unless every real-script fixture asserts clean restore
   --fail-on-missing-diagnostics
                               Exit non-zero unless every real-script fixture asserts restoreComplete diagnostics
+  --fail-on-missing-legal-actions
+                              Exit non-zero unless every real-script fixture asserts restored raw/grouped legal actions
   --fail-on-unreferenced     Exit non-zero when clean-restored fixtures lack restore coverage ownership
 `);
 }

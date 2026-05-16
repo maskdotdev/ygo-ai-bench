@@ -127,6 +127,28 @@ describe("Lua real-script clean restore coverage", () => {
     expect(result.stderr).toContain("lua-real-script-small.test.ts");
   });
 
+  it("fails the scanner when a real-script fixture lacks restored legal-action evidence", () => {
+    const testRoot = fs.mkdtempSync(path.join(fs.realpathSync("/tmp"), "lua-clean-restore-cli-"));
+    fs.writeFileSync(path.join(testRoot, "lua-real-script-small.test.ts"), [
+      "expect(restored.restoreComplete).toBe(true);",
+      'expect(restored.incompleteReasons.join("; ")).toBe("");',
+      "expect(missingRegistryKeys).toEqual([]);",
+      "expect(missingChainLimitRegistryKeys).toEqual([]);",
+    ].join("\n"));
+
+    const result = spawnSync(process.execPath, [
+      scannerPath,
+      "--test-root",
+      testRoot,
+      "--fail-on-missing-legal-actions",
+    ], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("Lua real-script clean restore coverage: 1/1 (100.0%), chain-limit 1/1, diagnostics 1/1, legal-actions 0/1");
+    expect(result.stderr).toContain("Fixtures missing restored legal-action evidence:");
+    expect(result.stderr).toContain("lua-real-script-small.test.ts");
+  });
+
   it("fails the scanner when the restore coverage-file corpus is below the required floor", () => {
     const testRoot = fs.mkdtempSync(path.join(fs.realpathSync("/tmp"), "lua-clean-restore-cli-"));
     fs.writeFileSync(path.join(testRoot, "lua-real-script-small.test.ts"), "expect(missingRegistryKeys).toEqual([]);");
@@ -140,7 +162,7 @@ describe("Lua real-script clean restore coverage", () => {
     ], { encoding: "utf8" });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("Lua real-script clean restore coverage: 1/1 (100.0%), chain-limit 0/1, diagnostics 0/1, 0 coverage files");
+    expect(result.stdout).toContain("Lua real-script clean restore coverage: 1/1 (100.0%), chain-limit 0/1, diagnostics 0/1, legal-actions 0/1, 0 coverage files");
     expect(result.stderr).toContain("Restore coverage files 0 is below required 1");
   });
 
