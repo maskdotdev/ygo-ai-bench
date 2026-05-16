@@ -145,6 +145,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
         ],
       }
     `);
+    expect(restored.session.state.chain[1]?.operationInfos).toEqual([
+      { category: 0x4, targetUids: [targetTrap!.uid], count: 1, player: 0, parameter: 0 },
+    ]);
 
     const pass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
@@ -153,6 +156,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
 
     expect(restored.session.state.cards.find((card) => card.uid === targetTrap!.uid)).toMatchObject({ location: "banished", faceUp: true });
     expect(restored.session.state.cards.find((card) => card.uid === cosmic!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "banished" && event.eventCardUid === targetTrap!.uid)).toEqual([
+      {
+        eventName: "banished",
+        eventCode: 1011,
+        eventCardUid: targetTrap!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: cosmic!.uid,
+        eventReasonEffectId: 3,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "spellTrapZone",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "banished",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.host.messages).toContain("cosmic chain starter resolved");
     expect(restored.host.messages).not.toContain("cosmic chain responder resolved");
   });
