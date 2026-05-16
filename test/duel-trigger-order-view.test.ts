@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { duelTriggerOrderView } from "../src/playtest-app/duel-trigger-order-view.js";
+import { copyDuelTriggerOrderView, duelTriggerOrderView } from "../src/playtest-app/duel-trigger-order-view.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import type { TriggerOrderPromptState } from "#duel/types.js";
 
@@ -54,5 +54,37 @@ describe("duel trigger order view", () => {
 
   it("stays hidden until engine exposes an active trigger-order prompt", () => {
     expect(duelTriggerOrderView(undefined, [])).toBeUndefined();
+  });
+
+  it("deep-copies trigger-order groups for bridge payloads", () => {
+    const prompt: TriggerOrderPromptState = {
+      id: "9:turnMandatory:0",
+      type: "orderTriggers",
+      player: 0,
+      triggerBucket: "turnMandatory",
+      triggerIds: ["first", "second"],
+    };
+    const view = duelTriggerOrderView(prompt, [{
+      key: "9:triggerBucket:trigger-activate:turnMandatory:0",
+      label: "Trigger Activations",
+      windowId: 9,
+      windowKind: "triggerBucket",
+      triggerBucket: { player: 0, triggerBucket: "turnMandatory", triggerIds: ["first", "second"] },
+      triggerOrderPrompt: prompt,
+      actions: [
+        { type: "activateTrigger", player: 0, triggerId: "first", triggerBucket: "turnMandatory", uid: "a", effectId: "first-effect", label: "First" },
+        { type: "activateTrigger", player: 0, triggerId: "second", triggerBucket: "turnMandatory", uid: "b", effectId: "second-effect", label: "Second" },
+      ],
+    }]);
+    expect(view).toBeDefined();
+
+    const copied = copyDuelTriggerOrderView(view!);
+    copied.groups[0]!.triggerBucket!.triggerIds.push("mutated-bucket");
+    copied.groups[0]!.triggerOrderPrompt!.triggerIds.push("mutated-prompt");
+    copied.groups[0]!.actions[0]!.label = "Mutated";
+
+    expect(view!.groups[0]!.triggerBucket!.triggerIds).toEqual(["first", "second"]);
+    expect(view!.groups[0]!.triggerOrderPrompt!.triggerIds).toEqual(["first", "second"]);
+    expect(view!.groups[0]!.actions[0]!.label).toBe("First");
   });
 });
