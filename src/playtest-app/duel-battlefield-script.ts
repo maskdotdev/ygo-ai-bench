@@ -184,7 +184,7 @@ function selectVisibleBattlefieldAction(
       if (!isMaterialSelectionAction(action) || !sameStringMembers(action.materialUids, selector.materialUids)) return false;
     }
     if (selector.summonUids !== undefined) {
-      if (action.type !== "pendulumSummon" || !sameStringMembers(action.summonUids, selector.summonUids)) return false;
+      if (action.type !== "pendulumSummon" || !isPendulumSummonSelection(action.summonUids, selector.summonUids, action.maxSummons)) return false;
     }
     if (selector.attackerUid !== undefined) {
       if ((action.type !== "declareAttack" && action.type !== "replayAttack" && action.type !== "cancelAttack") || action.attackerUid !== selector.attackerUid) return false;
@@ -206,7 +206,9 @@ function selectVisibleBattlefieldAction(
     if (selector.groupLabel !== undefined && !groupKeys.has(JSON.stringify(action))) return false;
     return true;
   });
-  return matches[selector.occurrence ?? 0];
+  const selected = matches[selector.occurrence ?? 0];
+  if (selected?.type === "pendulumSummon" && selector.summonUids !== undefined) return { ...selected, summonUids: [...selector.summonUids] };
+  return selected;
 }
 
 function describeBattlefieldSelector(selector: DuelBattlefieldActionSelector): string {
@@ -251,4 +253,10 @@ function sameStringMembers(a: readonly string[], b: readonly string[]): boolean 
     else remaining.set(value, count - 1);
   }
   return remaining.size === 0;
+}
+
+function isPendulumSummonSelection(candidates: readonly string[], selected: readonly string[], maxSummons: number): boolean {
+  if (!selected.length || selected.length > candidates.length || selected.length > maxSummons) return false;
+  if (new Set(selected).size !== selected.length) return false;
+  return selected.every((uid) => candidates.includes(uid));
 }

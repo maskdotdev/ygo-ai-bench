@@ -9,6 +9,7 @@ import {
   specialSummonDuelCard,
   startDuel,
 } from "#duel/core.js";
+import { moveDuelCard } from "#duel/card-state.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "../src/playtest-app/duel-battlefield-actions.js";
 import { runDuelBattlefieldScript } from "../src/playtest-app/duel-battlefield-script.js";
@@ -159,6 +160,59 @@ describe("duel battlefield action view", () => {
     expect(result.failedStep).toBe(0);
     expect(result.failure).toBe(`No visible battlefield action matched player=0 type=fusionSummon uid=${fusion!.uid} materialUids=${first!.uid}`);
     expect(result.visibleActions).toContainEqual(expect.objectContaining({ type: "fusionSummon", uid: fusion!.uid, materialUids: expect.arrayContaining([first!.uid, second!.uid]) }));
+  });
+
+  it("matches visible summon scripts by exact tribute selection", () => {
+    const session = createDuel({ seed: 994, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["600", "100"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const tributeMonster = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "600");
+    const tribute = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    expect(tributeMonster).toBeDefined();
+    expect(tribute).toBeDefined();
+    specialSummonDuelCard(session.state, tribute!.uid, 0);
+
+    const result = runDuelBattlefieldScript(session, [
+      { player: 0, type: "tributeSummon", uid: tributeMonster!.uid, tributeUids: [tribute!.uid] },
+    ]);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === tributeMonster!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
+    expect(result.state.cards.find((card) => card.uid === tribute!.uid)).toMatchObject({ location: "graveyard" });
+  });
+
+  it("matches visible Pendulum scripts by selected summon subset", () => {
+    const pendulumCards = [
+      { code: "101", name: "Visible Low Scale", kind: "monster" as const, typeFlags: 0x1000001, level: 4, leftScale: 1, rightScale: 1 },
+      { code: "102", name: "Visible High Scale", kind: "monster" as const, typeFlags: 0x1000001, level: 4, leftScale: 8, rightScale: 8 },
+      { code: "103", name: "Visible Pendulum Candidate", kind: "monster" as const, typeFlags: 0x1000001, level: 4 },
+    ];
+    const session = createDuel({ seed: 995, startingHandSize: 3, cardReader: createCardReader(pendulumCards) });
+    loadDecks(session, {
+      0: { main: ["101", "102", "103"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const low = session.state.cards.find((card) => card.code === "101");
+    const high = session.state.cards.find((card) => card.code === "102");
+    const candidate = session.state.cards.find((card) => card.code === "103");
+    expect(low).toBeDefined();
+    expect(high).toBeDefined();
+    expect(candidate).toBeDefined();
+    moveDuelCard(session.state, low!.uid, "spellTrapZone", 0).sequence = 0;
+    moveDuelCard(session.state, high!.uid, "spellTrapZone", 0).sequence = 1;
+
+    const result = runDuelBattlefieldScript(session, [
+      { player: 0, type: "pendulumSummon", summonUids: [candidate!.uid] },
+    ]);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === candidate!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
+    expect(session.state.cards.find((card) => card.uid === candidate!.uid)).toMatchObject({ summonType: "pendulum" });
+    expect(result.state.players[0].pendulumSummonAvailable).toBe(false);
   });
 
   it("reports prompt views when a visible prompt script diverges", () => {
