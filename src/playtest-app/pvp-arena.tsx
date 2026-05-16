@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, queryPublicState, startDuel } from "#duel/core.js";
-import type { DuelAction, DuelSession, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
+import type { DuelAction, DuelCardReader, DuelSession, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
 import { parseYdk } from "#playtest/ydk.js";
 import { getBrowserDuelCardReader } from "./duel-pvp-card-reader.js";
 import { DuelBattlefield, DuelLogList } from "./duel-battlefield.js";
@@ -35,13 +35,23 @@ export const pvpVisibleBattleFixtureScript: readonly DuelBattlefieldActionSelect
   { player: 0, type: "passDamage", groupLabel: "Damage Step Response" },
 ];
 
-export function bootstrapPvpDuel(p0Text: string, p1Text: string, seed: string | number, handSize: number): DuelSession {
+export interface BootstrapPvpDuelOptions {
+  cardReader?: DuelCardReader;
+}
+
+export function bootstrapPvpDuel(
+  p0Text: string,
+  p1Text: string,
+  seed: string | number,
+  handSize: number,
+  options: BootstrapPvpDuelOptions = {},
+): DuelSession {
   const p0 = parseYdk(p0Text);
   const p1 = parseYdk(p1Text);
   const session = createDuel({
     seed,
     startingHandSize: handSize,
-    cardReader: getBrowserDuelCardReader(),
+    cardReader: options.cardReader ?? getBrowserDuelCardReader(),
   });
   loadDecks(session, {
     0: { main: p0.main, extra: p0.extra },
