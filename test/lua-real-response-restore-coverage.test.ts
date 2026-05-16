@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 26;
-const chainedResponseFixtureCount = 25;
-const responseOperationInfoFixtureCount = 21;
+const responseFixtureCount = 28;
+const chainedResponseFixtureCount = 27;
+const responseOperationInfoFixtureCount = 23;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -107,12 +107,14 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-droll-lock-bird-draw-search-lock.test.ts",
     "lua-real-script-foolish-burial-deck-to-grave.test.ts",
     "lua-real-script-ghost-ogre-chain-destroy.test.ts",
+    "lua-real-script-harpies-feather-duster-group-destroy.test.ts",
     "lua-real-script-magic-cylinder-battle-window.test.ts",
     "lua-real-script-mirror-force-battle-window.test.ts",
     "lua-real-script-monster-reborn-free-chain.test.ts",
     "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
     "lua-real-script-negate-attack-battle-window.test.ts",
     "lua-real-script-phoenix-wing-wind-blast-discard-cost.test.ts",
+    "lua-real-script-raigeki-group-destroy.test.ts",
     "lua-real-script-raigeki-break-discard-cost.test.ts",
     "lua-real-script-reinforcement-of-the-army-search.test.ts",
     "lua-real-script-sakuretsu-armor-battle-window.test.ts",
