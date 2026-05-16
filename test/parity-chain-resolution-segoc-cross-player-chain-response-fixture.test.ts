@@ -181,10 +181,10 @@ describe("EDOPro parity chain-resolution cross-player SEGOC chain response fixtu
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-cross-chain-turn-mandatory", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-4" },
-              { player: 1, effectId: "fixture-cross-chain-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-4" },
-              { player: 0, effectId: "fixture-cross-chain-turn-optional", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-4" },
-              { player: 1, effectId: "fixture-cross-chain-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-chain-turn-mandatory", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-cross-chain-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-cross-chain-turn-optional", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-cross-chain-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnMandatory" },
@@ -234,8 +234,8 @@ describe("EDOPro parity chain-resolution cross-player SEGOC chain response fixtu
               { player: 1, effectId: "fixture-cross-chain-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
             ],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-cross-chain-turn-optional", triggerBucket: "turnOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
-              { player: 1, effectId: "fixture-cross-chain-opponent-optional", triggerBucket: "opponentOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-chain-turn-optional", triggerBucket: "turnOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-cross-chain-opponent-optional", triggerBucket: "opponentOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnOptional" },

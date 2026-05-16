@@ -159,8 +159,8 @@ describe("EDOPro parity missed timing fixtures", () => {
             waitingFor: 0,
             pendingTriggers: [
               { player: 0, effectId: "fixture-mandatory-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "when" },
-              { player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301 },
-              { player: 1, effectId: "fixture-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301 },
+              { player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnMandatory" },
@@ -198,8 +198,8 @@ describe("EDOPro parity missed timing fixtures", () => {
             waitingFor: 0,
             pendingTriggers: [
               { player: 0, effectId: "fixture-mandatory-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "when" },
-              { player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301 },
-              { player: 1, effectId: "fixture-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301 },
+              { player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnMandatory" },
@@ -232,8 +232,8 @@ describe("EDOPro parity missed timing fixtures", () => {
             waitingFor: 0,
             chain: [{ player: 0, effectId: "fixture-mandatory-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "when" }],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301 },
-              { player: 1, effectId: "fixture-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301 },
+              { player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnOptional" },
@@ -268,8 +268,8 @@ describe("EDOPro parity missed timing fixtures", () => {
             waitingFor: 0,
             chain: [{ player: 0, effectId: "fixture-mandatory-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "when" }],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301 },
-              { player: 1, effectId: "fixture-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301 },
+              { player: 0, effectId: "fixture-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5301, eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnOptional" },
@@ -572,8 +572,8 @@ describe("EDOPro parity missed timing fixtures", () => {
             waitingFor: 0,
             pendingTriggers: [
               { player: 0, effectId: "decline-mandatory-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401, eventTriggerTiming: "when" },
-              { player: 0, effectId: "decline-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401 },
-              { player: 1, effectId: "decline-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401 },
+              { player: 0, effectId: "decline-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401, eventTriggerTiming: "if" },
+              { player: 1, effectId: "decline-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401, eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnMandatory" },
@@ -606,8 +606,8 @@ describe("EDOPro parity missed timing fixtures", () => {
             waitingFor: 0,
             pendingTriggers: [
               { player: 0, effectId: "decline-mandatory-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401, eventTriggerTiming: "when" },
-              { player: 0, effectId: "decline-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401 },
-              { player: 1, effectId: "decline-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401 },
+              { player: 0, effectId: "decline-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401, eventTriggerTiming: "if" },
+              { player: 1, effectId: "decline-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401, eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnMandatory" },
@@ -638,8 +638,8 @@ describe("EDOPro parity missed timing fixtures", () => {
             waitingFor: 0,
             chain: [{ player: 0, effectId: "decline-mandatory-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401, eventTriggerTiming: "when" }],
             pendingTriggers: [
-              { player: 0, effectId: "decline-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401 },
-              { player: 1, effectId: "decline-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401 },
+              { player: 0, effectId: "decline-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401, eventTriggerTiming: "if" },
+              { player: 1, effectId: "decline-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401, eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnOptional" },
@@ -671,8 +671,8 @@ describe("EDOPro parity missed timing fixtures", () => {
             waitingFor: 0,
             chain: [{ player: 0, effectId: "decline-mandatory-when", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401, eventTriggerTiming: "when" }],
             pendingTriggers: [
-              { player: 0, effectId: "decline-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401 },
-              { player: 1, effectId: "decline-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401 },
+              { player: 0, effectId: "decline-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401, eventTriggerTiming: "if" },
+              { player: 1, effectId: "decline-opponent-optional-if", eventName: "sentToGraveyard", eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 5401, eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnOptional" },

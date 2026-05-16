@@ -133,9 +133,9 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional decline p
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-chain-resolution-turn-optional-decline-handoff-until", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-chain-resolution-first-opponent-optional-decline-handoff-until", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-decline-handoff-until", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
+              { player: 0, effectId: "fixture-chain-resolution-turn-optional-decline-handoff-until", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-optional-decline-handoff-until", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-decline-handoff-until", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnOptional" },
@@ -173,8 +173,8 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional decline p
             waitingFor: 1,
             chain: [],
             pendingTriggers: [
-              { player: 1, effectId: "fixture-chain-resolution-first-opponent-optional-decline-handoff-until", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-decline-handoff-until", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-optional-decline-handoff-until", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-decline-handoff-until", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
             triggerOrderPrompt: { type: "orderTriggers", player: 1, triggerBucket: "opponentOptional" },

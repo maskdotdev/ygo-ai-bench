@@ -173,8 +173,8 @@ describe("EDOPro parity chain-resolution SEGOC pass resolution fixture", () => {
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-chain-pass-resolution-mandatory", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-4" },
-              { player: 0, effectId: "fixture-chain-pass-resolution-optional", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-pass-resolution-mandatory", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-chain-pass-resolution-optional", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnMandatory" },
@@ -218,8 +218,8 @@ describe("EDOPro parity chain-resolution SEGOC pass resolution fixture", () => {
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-chain-pass-resolution-mandatory", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-4" },
-              { player: 0, effectId: "fixture-chain-pass-resolution-optional", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-chain-pass-resolution-mandatory", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-chain-pass-resolution-optional", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnMandatory" },

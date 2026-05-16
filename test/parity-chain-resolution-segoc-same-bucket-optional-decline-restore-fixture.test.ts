@@ -140,9 +140,9 @@ describe("EDOPro parity chain-resolution same-bucket optional decline restore fi
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-chain-resolution-first-turn-optional-decline", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3" },
-              { player: 0, effectId: "fixture-chain-resolution-second-turn-optional-decline", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-chain-resolution-later-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
+              { player: 0, effectId: "fixture-chain-resolution-first-turn-optional-decline", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-chain-resolution-second-turn-optional-decline", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-later-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnOptional" },
@@ -218,8 +218,8 @@ describe("EDOPro parity chain-resolution same-bucket optional decline restore fi
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-chain-resolution-first-turn-optional-decline", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-chain-resolution-later-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
+              { player: 0, effectId: "fixture-chain-resolution-first-turn-optional-decline", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-later-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnOptional" },
@@ -252,8 +252,8 @@ describe("EDOPro parity chain-resolution same-bucket optional decline restore fi
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-chain-resolution-first-turn-optional-decline", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-chain-resolution-later-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
+              { player: 0, effectId: "fixture-chain-resolution-first-turn-optional-decline", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-later-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnOptional" },

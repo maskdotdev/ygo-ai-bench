@@ -182,10 +182,10 @@ describe("EDOPro parity chain-resolution cross-player SEGOC pass handoff fixture
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-cross-handoff-turn-mandatory", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-4" },
-              { player: 1, effectId: "fixture-cross-handoff-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-4" },
-              { player: 0, effectId: "fixture-cross-handoff-turn-optional", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-4" },
-              { player: 1, effectId: "fixture-cross-handoff-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-handoff-turn-mandatory", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-cross-handoff-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-cross-handoff-turn-optional", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-cross-handoff-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-4", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnMandatory" },

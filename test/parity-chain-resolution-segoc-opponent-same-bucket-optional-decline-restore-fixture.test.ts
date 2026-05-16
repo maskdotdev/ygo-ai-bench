@@ -131,9 +131,9 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional decline r
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-chain-resolution-turn-optional-decline-handoff", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-2" },
-              { player: 1, effectId: "fixture-chain-resolution-first-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-2" },
-              { player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-2" },
+              { player: 0, effectId: "fixture-chain-resolution-turn-optional-decline-handoff", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-2", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-2", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-2", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnOptional" },
@@ -167,9 +167,9 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional decline r
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-chain-resolution-turn-optional-decline-handoff", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-2" },
-              { player: 1, effectId: "fixture-chain-resolution-first-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-2" },
-              { player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-2" },
+              { player: 0, effectId: "fixture-chain-resolution-turn-optional-decline-handoff", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-2", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-2", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-2", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnOptional" },
@@ -198,8 +198,8 @@ describe("EDOPro parity chain-resolution opponent same-bucket optional decline r
             waitingFor: 1,
             chain: [],
             pendingTriggers: [
-              { player: 1, effectId: "fixture-chain-resolution-first-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-2" },
-              { player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-2" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-2", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-optional-decline", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-2", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentOptional" }],
             triggerOrderPrompt: { type: "orderTriggers", player: 1, triggerBucket: "opponentOptional" },

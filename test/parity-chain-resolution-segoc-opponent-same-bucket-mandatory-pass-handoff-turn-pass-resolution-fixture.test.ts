@@ -122,9 +122,9 @@ describe("EDOPro parity chain-resolution opponent same-bucket mandatory pass-han
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-opponent-mandatory-turn-pass-turn-mandatory", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-opponent-mandatory-turn-pass-first-opponent", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-opponent-mandatory-turn-pass-second-opponent", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3" },
+              { player: 0, effectId: "fixture-opponent-mandatory-turn-pass-turn-mandatory", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-opponent-mandatory-turn-pass-first-opponent", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-opponent-mandatory-turn-pass-second-opponent", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnMandatory" },
@@ -165,8 +165,8 @@ describe("EDOPro parity chain-resolution opponent same-bucket mandatory pass-han
             waitingFor: 1,
             chain: [{ player: 0, effectId: "fixture-opponent-mandatory-turn-pass-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" }],
             pendingTriggers: [
-              { player: 1, effectId: "fixture-opponent-mandatory-turn-pass-first-opponent", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-opponent-mandatory-turn-pass-second-opponent", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-opponent-mandatory-turn-pass-first-opponent", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-opponent-mandatory-turn-pass-second-opponent", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentMandatory" }],
             triggerOrderPrompt: { type: "orderTriggers", player: 1, triggerBucket: "opponentMandatory" },

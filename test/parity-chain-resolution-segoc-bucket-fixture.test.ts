@@ -156,10 +156,10 @@ describe("EDOPro parity chain-resolution SEGOC bucket fixture", () => {
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-chain-resolution-turn-mandatory", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-chain-resolution-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3" },
-              { player: 0, effectId: "fixture-chain-resolution-turn-optional", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-chain-resolution-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
+              { player: 0, effectId: "fixture-chain-resolution-turn-mandatory", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-chain-resolution-turn-optional", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnMandatory" },
@@ -204,10 +204,10 @@ describe("EDOPro parity chain-resolution SEGOC bucket fixture", () => {
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-chain-resolution-turn-mandatory", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-chain-resolution-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3" },
-              { player: 0, effectId: "fixture-chain-resolution-turn-optional", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-chain-resolution-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3" },
+              { player: 0, effectId: "fixture-chain-resolution-turn-mandatory", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-chain-resolution-turn-optional", eventName: "sentToGraveyard", triggerBucket: "turnOptional", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-opponent-optional", eventName: "sentToGraveyard", triggerBucket: "opponentOptional", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnMandatory" },
@@ -247,9 +247,9 @@ describe("EDOPro parity chain-resolution SEGOC bucket fixture", () => {
             waitingFor: 1,
             chain: [{ player: 0, effectId: "fixture-chain-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" }],
             pendingTriggers: [
-              { player: 1, effectId: "fixture-chain-resolution-opponent-mandatory", triggerBucket: "opponentMandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
-              { player: 0, effectId: "fixture-chain-resolution-turn-optional", triggerBucket: "turnOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-chain-resolution-opponent-optional", triggerBucket: "opponentOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-opponent-mandatory", triggerBucket: "opponentMandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-chain-resolution-turn-optional", triggerBucket: "turnOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-opponent-optional", triggerBucket: "opponentOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 1, triggerBucket: "opponentMandatory" },
@@ -287,9 +287,9 @@ describe("EDOPro parity chain-resolution SEGOC bucket fixture", () => {
             waitingFor: 1,
             chain: [{ player: 0, effectId: "fixture-chain-resolution-turn-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" }],
             pendingTriggers: [
-              { player: 1, effectId: "fixture-chain-resolution-opponent-mandatory", triggerBucket: "opponentMandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
-              { player: 0, effectId: "fixture-chain-resolution-turn-optional", triggerBucket: "turnOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-chain-resolution-opponent-optional", triggerBucket: "opponentOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 1, effectId: "fixture-chain-resolution-opponent-mandatory", triggerBucket: "opponentMandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-chain-resolution-turn-optional", triggerBucket: "turnOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-opponent-optional", triggerBucket: "opponentOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 1, triggerBucket: "opponentMandatory" },
@@ -327,8 +327,8 @@ describe("EDOPro parity chain-resolution SEGOC bucket fixture", () => {
               { player: 1, effectId: "fixture-chain-resolution-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
             ],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-chain-resolution-turn-optional", triggerBucket: "turnOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-chain-resolution-opponent-optional", triggerBucket: "opponentOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 0, effectId: "fixture-chain-resolution-turn-optional", triggerBucket: "turnOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-opponent-optional", triggerBucket: "opponentOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnOptional" },
@@ -361,8 +361,8 @@ describe("EDOPro parity chain-resolution SEGOC bucket fixture", () => {
               { player: 1, effectId: "fixture-chain-resolution-opponent-mandatory", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
             ],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-chain-resolution-turn-optional", triggerBucket: "turnOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
-              { player: 1, effectId: "fixture-chain-resolution-opponent-optional", triggerBucket: "opponentOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3" },
+              { player: 0, effectId: "fixture-chain-resolution-turn-optional", triggerBucket: "turnOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-opponent-optional", triggerBucket: "opponentOptional", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-3", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnOptional" },

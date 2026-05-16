@@ -134,9 +134,9 @@ describe("EDOPro parity chain-resolution opponent same-bucket mandatory restore 
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-chain-resolution-turn-mandatory-handoff", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-2" },
-              { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-2" },
-              { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-2" },
+              { player: 0, effectId: "fixture-chain-resolution-turn-mandatory-handoff", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-2", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-2", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-2", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnMandatory" },
@@ -177,9 +177,9 @@ describe("EDOPro parity chain-resolution opponent same-bucket mandatory restore 
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-chain-resolution-turn-mandatory-handoff", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-2" },
-              { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-2" },
-              { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-2" },
+              { player: 0, effectId: "fixture-chain-resolution-turn-mandatory-handoff", eventName: "sentToGraveyard", triggerBucket: "turnMandatory", eventCardUid: "p0-deck-700-2", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-2", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-2", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnMandatory" },
@@ -215,8 +215,8 @@ describe("EDOPro parity chain-resolution opponent same-bucket mandatory restore 
             waitingFor: 1,
             chain: [{ player: 0, effectId: "fixture-chain-resolution-turn-mandatory-handoff", eventName: "sentToGraveyard", eventCardUid: "p0-deck-700-2" }],
             pendingTriggers: [
-              { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-2" },
-              { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-2" },
+              { player: 1, effectId: "fixture-chain-resolution-first-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-2", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-chain-resolution-second-opponent-mandatory", eventName: "sentToGraveyard", triggerBucket: "opponentMandatory", eventCardUid: "p0-deck-700-2", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentMandatory" }],
             triggerOrderPrompt: { type: "orderTriggers", player: 1, triggerBucket: "opponentMandatory" },
