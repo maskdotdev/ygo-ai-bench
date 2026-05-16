@@ -158,6 +158,19 @@ describe("coverage inventory guards", () => {
     expect(weakHelpers).toEqual([]);
   });
 
+  it("requires chain-limit restored responses to prove returned legal-action surfaces", () => {
+    const calls = chainLimitRestoreResponseCalls();
+    const negative = calls.filter((call) => call.text.includes("ok: false"));
+    const weakPositive = calls
+      .filter((call) => !call.text.includes("ok: false"))
+      .filter((call) => !hasStrongChainLimitRestoreResponse(call))
+      .map((call) => `${call.file}:${call.line}:${call.responseVariable}`);
+
+    expect(calls).toHaveLength(40);
+    expect(negative).toHaveLength(1);
+    expect(weakPositive).toEqual([]);
+  });
+
   it("requires test proof floors to be exact", () => {
     const greaterThanAllowlist = new Set([
       "lua-field-query-helpers.test.ts:59",
@@ -275,6 +288,29 @@ function hasReturnedGroupedLegalActionProof(text: string): boolean {
 
 function hasReturnedLegalActionFlattenProof(text: string): boolean {
   return /\b(\w+)\.legalActionGroups\.flatMap\(\(group\) => group\.actions\)\)\.toEqual\(\s*\1\.legalActions\s*\);/.test(text);
+}
+
+function chainLimitRestoreResponseCalls(): Array<{ file: string; line: number; restoredVariable: string; responseVariable: string; text: string }> {
+  return fs.readdirSync(testRoot)
+    .filter((file) => /^lua-chain-limit-.*restore\.test\.ts$/.test(file))
+    .flatMap((file) => {
+      const text = readTestFile(file);
+      return [...text.matchAll(/const (\w+) = applyLuaRestoreResponse\((\w+),/g)]
+        .map((match) => ({
+          file,
+          line: lineNumber(text, match.index ?? 0),
+          responseVariable: match[1]!,
+          restoredVariable: match[2]!,
+          text: text.slice(match.index ?? 0, (match.index ?? 0) + 900),
+        }));
+    });
+}
+
+function hasStrongChainLimitRestoreResponse(call: { restoredVariable: string; responseVariable: string; text: string }): boolean {
+  return call.text.includes(`expectLuaRestoreResponseLegalActions(${call.restoredVariable}, ${call.responseVariable})`)
+    || (call.text.includes(`${call.responseVariable}.legalActions`)
+      && call.text.includes(`${call.responseVariable}.legalActionGroups`)
+      && call.text.includes(`${call.responseVariable}.legalActionGroups.flatMap((group) => group.actions)).toEqual(${call.responseVariable}.legalActions`));
 }
 
 function hasNearbyRestoredActionEvidence(text: string, variable: string, fileText: string): boolean {

@@ -5,6 +5,7 @@ import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions,
 import { literalFalsePredicate, literalTruePredicate } from "#lua/chain-limit-predicate-descriptors.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { expectLuaRestoreResponseLegalActions } from "./lua-restore-response-helpers.js";
 
 type NamedPredicate = "chlimit" | "chainlm" | "climit" | "chainlimit" | "chlimit2";
 
@@ -218,7 +219,7 @@ describe("Lua named chain-limit predicate restore", () => {
     const restoredAction = getLuaRestoreLegalActions(handoffRestored, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
     expect(restoredAction).toBeDefined();
     const restoredResponse = applyLuaRestoreResponse(handoffRestored, restoredAction!);
-    expect(restoredResponse.ok, restoredResponse.error).toBe(true);
+    expectLuaRestoreResponseLegalActions(handoffRestored, restoredResponse);
   });
 });
 
@@ -259,7 +260,7 @@ function expectNamedPredicateRestore(untilChainEnd: boolean, predicateName: Name
   const restoredAction = getLuaRestoreLegalActions(opponentWindowRestored, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
   expect(restoredAction).toBeDefined();
   const restoredResponse = applyLuaRestoreResponse(opponentWindowRestored, restoredAction!);
-  expect(restoredResponse.ok, restoredResponse.error).toBe(true);
+  expectLuaRestoreResponseLegalActions(opponentWindowRestored, restoredResponse);
 }
 
 function sourceScript(untilChainEnd: boolean, predicateName: NamedPredicate): string {
@@ -371,7 +372,7 @@ function expectNamedLiteralTruePredicateRestore(untilChainEnd: boolean): void {
   const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3");
   expect(restoredAction).toBeDefined();
   const restoredResponse = applyLuaRestoreResponse(restored, restoredAction!);
-  expect(restoredResponse.ok, restoredResponse.error).toBe(true);
+  expectLuaRestoreResponseLegalActions(restored, restoredResponse);
 }
 
 function literalTruePredicateSourceScript(untilChainEnd: boolean): string {

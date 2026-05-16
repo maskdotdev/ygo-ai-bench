@@ -3,6 +3,7 @@ import { createCardReader, normalizeCdbRows } from "#engine/data-loaders.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { expectLuaRestoreResponseLegalActions } from "./lua-restore-response-helpers.js";
 
 describe("Lua source/effect-type chain-limit restore", () => {
   it("restores named active-type activation block predicates from snapshots", () => {
@@ -75,7 +76,7 @@ describe("Lua source/effect-type chain-limit restore", () => {
     const restoredAction = getLuaRestoreLegalActions(opponentWindowRestored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-4");
     expect(restoredAction).toBeDefined();
     const restoredResponse = applyLuaRestoreResponse(opponentWindowRestored, restoredAction!);
-    expect(restoredResponse.ok, restoredResponse.error).toBe(true);
+    expectLuaRestoreResponseLegalActions(opponentWindowRestored, restoredResponse);
   });
 
   it("restores hex literal active-type activation block predicates from snapshots", () => {
@@ -148,7 +149,7 @@ describe("Lua source/effect-type chain-limit restore", () => {
     const restoredAction = getLuaRestoreLegalActions(opponentWindowRestored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-4");
     expect(restoredAction).toBeDefined();
     const restoredResponse = applyLuaRestoreResponse(opponentWindowRestored, restoredAction!);
-    expect(restoredResponse.ok, restoredResponse.error).toBe(true);
+    expectLuaRestoreResponseLegalActions(opponentWindowRestored, restoredResponse);
   });
 
   it("restores reversed hex literal active/effect-type activation block predicates from snapshots", () => {
@@ -221,7 +222,7 @@ describe("Lua source/effect-type chain-limit restore", () => {
     const restoredAction = getLuaRestoreLegalActions(opponentWindowRestored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-4");
     expect(restoredAction).toBeDefined();
     const restoredResponse = applyLuaRestoreResponse(opponentWindowRestored, restoredAction!);
-    expect(restoredResponse.ok, restoredResponse.error).toBe(true);
+    expectLuaRestoreResponseLegalActions(opponentWindowRestored, restoredResponse);
   });
 
   it("restores named trap activation block predicates from snapshots", () => {
@@ -289,7 +290,7 @@ describe("Lua source/effect-type chain-limit restore", () => {
     const restoredAction = getLuaRestoreLegalActions(opponentWindowRestored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3");
     expect(restoredAction).toBeDefined();
     const restoredResponse = applyLuaRestoreResponse(opponentWindowRestored, restoredAction!);
-    expect(restoredResponse.ok, restoredResponse.error).toBe(true);
+    expectLuaRestoreResponseLegalActions(opponentWindowRestored, restoredResponse);
   });
 
   it("restores hex literal source/effect-type activation block predicates from snapshots", () => {
@@ -357,7 +358,7 @@ describe("Lua source/effect-type chain-limit restore", () => {
     const restoredAction = getLuaRestoreLegalActions(opponentWindowRestored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3");
     expect(restoredAction).toBeDefined();
     const restoredResponse = applyLuaRestoreResponse(opponentWindowRestored, restoredAction!);
-    expect(restoredResponse.ok, restoredResponse.error).toBe(true);
+    expectLuaRestoreResponseLegalActions(opponentWindowRestored, restoredResponse);
   });
 
   it("restores named trap activation block predicates with source setcode exclusions", () => {
@@ -498,7 +499,7 @@ describe("Lua source/effect-type chain-limit restore", () => {
     const restoredAction = getLuaRestoreLegalActions(opponentWindowRestored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3");
     expect(restoredAction).toBeDefined();
     const restoredResponse = applyLuaRestoreResponse(opponentWindowRestored, restoredAction!);
-    expect(restoredResponse.ok, restoredResponse.error).toBe(true);
+    expectLuaRestoreResponseLegalActions(opponentWindowRestored, restoredResponse);
   });
 });
 

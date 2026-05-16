@@ -3,6 +3,7 @@ import { createCardReader, normalizeCdbRows } from "#engine/data-loaders.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { expectLuaRestoreResponseLegalActions } from "./lua-restore-response-helpers.js";
 
 describe("Lua captured handler-only chain-limit restore", () => {
   it("executes source-only continuous event effects before trigger windows", () => {
@@ -130,7 +131,7 @@ describe("Lua captured handler-only chain-limit restore", () => {
     const restoredAction = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
     expect(restoredAction).toBeDefined();
     const restoredResponse = applyLuaRestoreResponse(restored, restoredAction!);
-    expect(restoredResponse.ok, restoredResponse.error).toBe(true);
+    expectLuaRestoreResponseLegalActions(restored, restoredResponse);
   });
 });
 

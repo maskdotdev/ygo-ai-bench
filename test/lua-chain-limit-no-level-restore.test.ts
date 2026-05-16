@@ -3,6 +3,7 @@ import { createCardReader, normalizeCdbRows } from "#engine/data-loaders.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { expectLuaRestoreResponseLegalActions } from "./lua-restore-response-helpers.js";
 
 describe("Lua no-Level monster chain-limit restore", () => {
   it("restores official no-Level monster effect chain-limit predicates from snapshots", () => {
@@ -75,7 +76,7 @@ describe("Lua no-Level monster chain-limit restore", () => {
     const restoredAction = getLuaRestoreLegalActions(opponentWindowRestored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-3");
     expect(restoredAction).toBeDefined();
     const restoredResponse = applyLuaRestoreResponse(opponentWindowRestored, restoredAction!);
-    expect(restoredResponse.ok, restoredResponse.error).toBe(true);
+    expectLuaRestoreResponseLegalActions(opponentWindowRestored, restoredResponse);
 
     const opponentPass = getLegalActions(session, 1).find((candidate) => candidate.type === "passChain");
     expect(opponentPass).toBeDefined();

@@ -3,6 +3,7 @@ import { createCardReader, normalizeCdbRows } from "#engine/data-loaders.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { expectLuaRestoreResponseLegalActions } from "./lua-restore-response-helpers.js";
 
 describe("Lua stateless source chain-limit restore", () => {
   it("restores descriptor-backed stateless source predicates without requiring the original script body", () => {
@@ -159,7 +160,7 @@ function runStatelessSourceRestoreCase(untilChainEnd: boolean): void {
   const restoredSpellAction = getLuaRestoreLegalActions(opponentWindowRestored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-4");
   expect(restoredSpellAction).toBeDefined();
   const restoredSpellResponse = applyLuaRestoreResponse(opponentWindowRestored, restoredSpellAction!);
-  expect(restoredSpellResponse.ok, restoredSpellResponse.error).toBe(true);
+  expectLuaRestoreResponseLegalActions(opponentWindowRestored, restoredSpellResponse);
 
   const opponentPass = getLegalActions(session, 1).find((candidate) => candidate.type === "passChain");
   expect(opponentPass).toBeDefined();
@@ -173,7 +174,7 @@ function runStatelessSourceRestoreCase(untilChainEnd: boolean): void {
   const restoredMonsterAction = getLuaRestoreLegalActions(handoffRestored, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
   expect(restoredMonsterAction).toBeDefined();
   const restoredMonsterResponse = applyLuaRestoreResponse(handoffRestored, restoredMonsterAction!);
-  expect(restoredMonsterResponse.ok, restoredMonsterResponse.error).toBe(true);
+  expectLuaRestoreResponseLegalActions(handoffRestored, restoredMonsterResponse);
 }
 
 function quickScript(code: number, message: string): string {

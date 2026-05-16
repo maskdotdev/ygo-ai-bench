@@ -3,6 +3,7 @@ import { createCardReader, normalizeCdbRows } from "#engine/data-loaders.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { expectLuaRestoreResponseLegalActions } from "./lua-restore-response-helpers.js";
 
 describe("Lua action-type chain-player chain-limit restore", () => {
   it("restores captured event-player action-type predicates from snapshots", () => {
@@ -65,7 +66,7 @@ describe("Lua action-type chain-player chain-limit restore", () => {
     const restoredAction = getLuaRestoreLegalActions(handoffRestored, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
     expect(restoredAction).toBeDefined();
     const restoredResponse = applyLuaRestoreResponse(handoffRestored, restoredAction!);
-    expect(restoredResponse.ok, restoredResponse.error).toBe(true);
+    expectLuaRestoreResponseLegalActions(handoffRestored, restoredResponse);
   });
 
   it("restores hex literal captured event-player action-type predicates from snapshots", () => {
@@ -128,7 +129,7 @@ describe("Lua action-type chain-player chain-limit restore", () => {
     const restoredAction = getLuaRestoreLegalActions(handoffRestored, 0).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
     expect(restoredAction).toBeDefined();
     const restoredResponse = applyLuaRestoreResponse(handoffRestored, restoredAction!);
-    expect(restoredResponse.ok, restoredResponse.error).toBe(true);
+    expectLuaRestoreResponseLegalActions(handoffRestored, restoredResponse);
   });
 });
 

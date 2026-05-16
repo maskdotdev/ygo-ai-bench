@@ -3,6 +3,7 @@ import { createCardReader, normalizeCdbRows } from "#engine/data-loaders.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { expectLuaRestoreResponseLegalActions } from "./lua-restore-response-helpers.js";
 
 describe("Lua multi-card chain-limit restore", () => {
   it("restores captured multi-card handler-exclusion predicates from snapshots", () => {
@@ -87,7 +88,7 @@ describe("Lua multi-card chain-limit restore", () => {
     const restoredAction = getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "activateEffect" && candidate.effectId === "lua-2");
     expect(restoredAction).toBeDefined();
     const response = applyLuaRestoreResponse(restored, restoredAction!);
-    expect(response.ok, response.error).toBe(true);
+    expectLuaRestoreResponseLegalActions(restored, response);
   });
 
   it("restores response-player multi-card handler-exclusion predicates from snapshots", () => {
