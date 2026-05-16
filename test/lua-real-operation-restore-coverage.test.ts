@@ -5,7 +5,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const operationFixtureCount = 12;
-const summonTriggerOperationFixtureCount = 8;
+const summonTriggerOperationFixtureCount = 9;
 
 describe("Lua real operation restore coverage", () => {
   it("requires representative simple spell operations to assert clean Lua registry restore and restored operation metadata", () => {
@@ -277,6 +277,27 @@ function summonTriggerOperationFixtureFiles(): Array<{ file: string; required: s
         "category: 256",
         "category: 8",
         "eventName: \"sentToHandConfirmed\"",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-shinobaroness-shade-peacock-search-self-summon.test.ts",
+      required: [
+        "restoredTriggerWindow.missingRegistryKeys).toEqual([])",
+        "restoredTriggerWindow.missingChainLimitRegistryKeys).toEqual([])",
+        "restoredSearchChain.missingRegistryKeys).toEqual([])",
+        "restoredSearchChain.missingChainLimitRegistryKeys).toEqual([])",
+        "restoredDraw.missingRegistryKeys).toEqual([])",
+        "restoredDraw.missingChainLimitRegistryKeys).toEqual([])",
+        "restoredSelfSummonTrigger.missingRegistryKeys).toEqual([])",
+        "restoredSelfSummonTrigger.missingChainLimitRegistryKeys).toEqual([])",
+        "restoredSelfSummonChain.missingRegistryKeys).toEqual([])",
+        "restoredSelfSummonChain.missingChainLimitRegistryKeys).toEqual([])",
+        'eventName: "specialSummoned"',
+        'eventName: "sentToHand"',
+        'eventName: "phaseStandby"',
+        "category: 8",
+        "category: 512",
         "host.messages).not.toContain",
       ],
     },
