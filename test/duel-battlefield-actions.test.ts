@@ -112,6 +112,29 @@ describe("duel battlefield action view", () => {
     expect(result.state.log).toContainEqual(expect.objectContaining({ action: "selectOption", detail: "Selected option 4" }));
   });
 
+  it("matches prompt responses by structured description metadata", () => {
+    const session = directBattleSession();
+    session.state.prompt = {
+      id: "battlefield-description-prompt",
+      type: "selectOption",
+      player: 1,
+      options: [1, 2],
+      descriptions: [300, 400],
+      descriptionLists: [[301], [401, 402]],
+      returnTo: 0,
+    };
+    session.state.waitingFor = 1;
+
+    const result = runDuelBattlefieldScript(session, [
+      { player: 1, type: "selectOption", promptDescription: 400, promptDescriptionList: [402, 401], windowKind: "prompt" },
+    ]);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.prompt).toBeUndefined();
+    expect(result.state.waitingFor).toBe(0);
+    expect(result.state.log).toContainEqual(expect.objectContaining({ action: "selectOption", detail: "Selected option 2" }));
+  });
+
   it("reports trigger-order prompts when visible scripts diverge", () => {
     const session = createDuel({ seed: 997, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
