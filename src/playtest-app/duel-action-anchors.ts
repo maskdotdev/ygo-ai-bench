@@ -147,7 +147,7 @@ export function orphanDuelActionGroups(
       ...(group.windowToken === undefined ? {} : { windowToken: group.windowToken }),
       ...(group.triggerBucket === undefined ? {} : { triggerBucket: { ...group.triggerBucket, triggerIds: [...group.triggerBucket.triggerIds] } }),
       ...(group.triggerOrderPrompt === undefined ? {} : { triggerOrderPrompt: { ...group.triggerOrderPrompt, triggerIds: [...group.triggerOrderPrompt.triggerIds] } }),
-      actions: dedupeDuelActions(group.actions.filter((action) => orphanKeys.has(duelActionUiKey(action)))),
+      actions: dedupeDuelActions(group.actions.filter((action) => orphanKeys.has(duelActionUiKey(action)))).map(copyDuelAction),
     }))
     .filter((group) => group.actions.length > 0);
 }

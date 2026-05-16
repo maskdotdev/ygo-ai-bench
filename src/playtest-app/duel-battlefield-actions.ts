@@ -1,5 +1,6 @@
 import type { DuelAction, PlayerId, PublicDuelState } from "#duel/types.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
+import { copyDuelAction } from "#duel/action-copy.js";
 import { orphanDuelActionGroups, partitionDuelActionsByAnchor, type DuelActionUiGroup } from "./duel-action-anchors.js";
 
 export interface DuelBattlefieldActionView {
@@ -19,7 +20,7 @@ export function duelBattlefieldActionView(
   const interactiveUids = visibleInteractiveUids(state, viewer, opponent, hideOpponentHand);
   const byUid = new Map<string, DuelAction[]>();
   for (const [uid, actions] of raw.byUid) {
-    if (interactiveUids.has(uid)) byUid.set(uid, actions);
+    if (interactiveUids.has(uid)) byUid.set(uid, actions.map(copyDuelAction));
   }
   return {
     byUid,

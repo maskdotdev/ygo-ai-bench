@@ -16,6 +16,7 @@ import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "../src
 import { runDuelBattlefieldScript } from "../src/playtest-app/duel-battlefield-script.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 import type { DuelAction, DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 
 describe("duel battlefield action view", () => {
   it("drives a direct battle fixture through visible battlefield actions", () => {
@@ -241,6 +242,44 @@ describe("duel battlefield action view", () => {
     if (!freshFusion || freshFusion.type !== "fusionSummon") throw new Error("Expected fresh visible Fusion action");
     expect(freshFusion.materialUids).toHaveLength(2);
     expect(freshFusion.materialUids).toEqual(expect.arrayContaining([first!.uid, second!.uid]));
+  });
+
+  it("copies visible battlefield action arrays before browser renderers receive them", () => {
+    const session = createDuel({ seed: 995, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const first = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const second = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    specialSummonDuelCard(session.state, first!.uid, 0);
+    specialSummonDuelCard(session.state, second!.uid, 0);
+
+    const sourceActions = getDuelLegalActions(session, 0);
+    const sourceGroups = getGroupedDuelLegalActions(session, 0);
+    const view = duelBattlefieldActionView(queryPublicState(session), 0, sourceActions, sourceGroups);
+    const visibleFusion = visibleDuelBattlefieldActions(view).find((action) => action.type === "fusionSummon");
+    const sourceFusion = sourceActions.find((action) => action.type === "fusionSummon");
+    if (!visibleFusion || visibleFusion.type !== "fusionSummon") throw new Error("Expected visible Fusion action");
+    if (!sourceFusion || sourceFusion.type !== "fusionSummon") throw new Error("Expected source Fusion action");
+
+    visibleFusion.materialUids.push("mutated-material");
+
+    expect(sourceFusion.materialUids).toHaveLength(2);
+    expect(sourceFusion.materialUids).toEqual(expect.arrayContaining([first!.uid, second!.uid]));
+
+    const passAction: DuelAction = { type: "passChain", player: 0, label: "Pass" };
+    const passGroup: DuelLegalActionGroup = { key: "pass", label: "Pass", actions: [passAction] };
+    const orphanView = duelBattlefieldActionView(queryPublicState(session), 0, [passAction], [passGroup]);
+    const orphanAction = orphanView.orphanGroups[0]?.actions[0];
+    expect(orphanAction).toBeDefined();
+    orphanAction!.label = "Mutated group action";
+
+    expect(passAction.label).toBe("Pass");
+    expect(passGroup.actions[0]?.label).toBe("Pass");
   });
 
   it("matches visible summon scripts by exact tribute selection", () => {
