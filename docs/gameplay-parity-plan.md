@@ -412,7 +412,7 @@ UI work should follow stable engine windows so the app does not grow one-off sta
 
 Current status:
 
-- The PvP battlefield action view can drive a direct battle fixture from visible legal actions, including phase change, attack declaration, attack-response passes, and damage-step passes.
+- The PvP battlefield action view can drive a direct battle fixture from visible legal actions, including phase change, attack declaration, attack-response passes, and damage-step passes; app-facing group labels now distinguish material, Pendulum, Tribute, attack-response, damage-step, and replay choices without changing the underlying engine legal-action groups.
 - The agent bridge can run bounded visible autoplay and fixture-style visible scripts, including a bridge-level visible-script battle fixture. Visible script divergence now reports exact selector fields for action/window mismatches, including `windowId`, `windowKind`, `windowToken`, `phase`, prompt id/option/yes-no choices, effect id, trigger id, trigger bucket, group label, and occurrence. Visible script failures and autoplay stop payloads also include prompt views when a pending prompt owns the current visible actions.
 - The PvP arena now exposes a deterministic visible-script battle fixture through a browser UI control and exported helpers, so the app path can run or timed-autoplay a Normal Summon, Battle Phase entry, direct attack, and battle-window passes one visible legal action at a time without hidden rule decisions.
 - Browser prompt views now expose serialized option description lists alongside option ids and text ids, and mark suspended Lua operation prompts in the visible detail, so richer Lua option prompts have visible metadata instead of losing list context.

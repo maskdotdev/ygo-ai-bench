@@ -132,4 +132,22 @@ describe("duel action anchors", () => {
       actions: [{ type: "passChain", player: 1, label: "Pass", windowKind: "chainResponse" }],
     })).toBe("Pass");
   });
+
+  it("uses app-facing selection labels for summon material choices", () => {
+    expect(duelActionUiGroupLabel({
+      label: "Summons",
+      windowKind: "open",
+      actions: [{ type: "fusionSummon", player: 0, uid: "fusion", materialUids: ["mat-a", "mat-b"], label: "Fusion Summon" }],
+    })).toBe("Material Selection");
+    expect(duelActionUiGroupLabel({
+      label: "Summons",
+      windowKind: "open",
+      actions: [{ type: "pendulumSummon", player: 0, summonUids: ["hand-a"], maxSummons: 1, label: "Pendulum Summon" }],
+    })).toBe("Pendulum Selection");
+    expect(duelActionUiGroupLabel({
+      label: "Summons",
+      windowKind: "open",
+      actions: [{ type: "tributeSummon", player: 0, uid: "tribute", tributeUids: ["mat-a"], label: "Tribute Summon" }],
+    })).toBe("Tribute Selection");
+  });
 });
