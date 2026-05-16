@@ -27,6 +27,7 @@ describe("EDOPro parity damage calculation window fixtures", () => {
         makeScriptedStep(makeResponseSelector("passAttack", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro opens before damage calculation before that timing's first response pass",

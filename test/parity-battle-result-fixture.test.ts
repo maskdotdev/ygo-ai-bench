@@ -25,6 +25,7 @@ describe("EDOPro parity battle result fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro offers targeted attacks against opponent attack-position monsters during Battle Phase",

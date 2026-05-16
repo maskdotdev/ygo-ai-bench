@@ -33,6 +33,7 @@ describe("EDOPro parity end damage step cleanup fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
+          snapshotRestore: "after",
           after: {
             source: "edopro",
             note: "EDOPro opens end damage step before the final pair of battle response passes",
