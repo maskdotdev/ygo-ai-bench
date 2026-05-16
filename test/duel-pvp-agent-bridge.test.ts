@@ -362,10 +362,22 @@ describe("duel pvp agent bridge", () => {
 
     const visible = agent.visibleBattlefield(0, started.sessionId);
     expect(visible.prompt?.luaPrompt).toMatchObject({ api: "SelectCardsFromCodes" });
-    expect(visible.prompt?.choices).toContainEqual(expect.objectContaining({
+    const selectedChoice = visible.prompt?.choices.find((choice) => choice.type === "selectOption" && choice.option === 3);
+    expect(selectedChoice).toEqual(expect.objectContaining({
       type: "selectOption",
       descriptionList: [800, 900],
       luaReturnValues: [800, 900],
+    }));
+    if (selectedChoice?.type !== "selectOption") throw new Error("Expected SelectCardsFromCodes visible prompt choice");
+    selectedChoice.luaReturnValues?.push(1000);
+    selectedChoice.descriptionList?.push(1001);
+    selectedChoice.action.option = 99;
+    const freshChoice = agent.visibleBattlefield(0, started.sessionId).prompt?.choices.find((choice) => choice.type === "selectOption" && choice.option === 3);
+    expect(freshChoice).toEqual(expect.objectContaining({
+      type: "selectOption",
+      descriptionList: [800, 900],
+      luaReturnValues: [800, 900],
+      action: expect.objectContaining({ type: "selectOption", option: 3 }),
     }));
 
     const result = agent.runVisibleScript([

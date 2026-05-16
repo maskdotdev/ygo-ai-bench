@@ -159,13 +159,17 @@ describe("duel battlefield action view", () => {
         descriptions: [700, 800, 900],
         descriptionLists: [[700, 800], [800, 900], [700, 900]],
         returned: 1,
-        returnValues: [[700, 800], [800, 900], [700, 900]],
+        returnValues: [
+          [{ code: 700, index: 1 }, { code: 800, index: 2 }],
+          [{ code: 800, index: 2 }, { code: 900, index: 3 }],
+          [{ code: 700, index: 1 }, { code: 900, index: 3 }],
+        ],
       },
     };
     session.state.waitingFor = 1;
 
     const result = runDuelBattlefieldScript(session, [
-      { player: 1, type: "selectOption", luaPromptApi: "SelectCardsFromCodes", promptReturnValues: [800, 900], windowKind: "prompt" },
+      { player: 1, type: "selectOption", luaPromptApi: "SelectCardsFromCodes", promptReturnValues: [{ code: 800, index: 2 }, { code: 900, index: 3 }], windowKind: "prompt" },
     ], luaPromptSelectorRuntime());
 
     expect(result.ok).toBe(true);

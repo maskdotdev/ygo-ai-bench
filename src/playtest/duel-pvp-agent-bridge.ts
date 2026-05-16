@@ -11,6 +11,7 @@ import {
 } from "#duel/core.js";
 import { copyDuelAction } from "#duel/action-copy.js";
 import type { LuaScriptHost, LuaScriptSource } from "#lua/host.js";
+import type { LuaPromptResumeValue } from "#lua/host-types.js";
 import type { LuaSnapshotRestoreResult } from "#lua/snapshot.js";
 import type { ApplyDuelResponseResult, DuelAction, DuelCardReader, DuelPromptState, DuelResponse, DuelSession, PlayerId, SerializedDuel } from "#duel/types.js";
 import { parseYdk } from "#playtest/ydk.js";
@@ -336,8 +337,21 @@ function copyPromptView(prompt: DuelPromptView): DuelPromptView {
     ...prompt,
     prompt: copyPromptState(prompt.prompt),
     ...(prompt.luaPrompt === undefined ? {} : { luaPrompt: copyLuaPrompt(prompt.luaPrompt) }),
+    choices: prompt.choices.map(copyPromptChoice),
     groups: prompt.groups.map(copyUiGroup),
   };
+}
+
+function copyPromptChoice(choice: DuelPromptView["choices"][number]): DuelPromptView["choices"][number] {
+  if (choice.type === "selectOption") {
+    return {
+      ...choice,
+      action: copyDuelAction(choice.action) as typeof choice.action,
+      ...(choice.descriptionList === undefined ? {} : { descriptionList: [...choice.descriptionList] }),
+      ...(choice.luaReturnValues === undefined ? {} : { luaReturnValues: choice.luaReturnValues.map(copyLuaPromptResumeValue) }),
+    };
+  }
+  return { ...choice, action: copyDuelAction(choice.action) as typeof choice.action };
 }
 
 function copyPromptState(prompt: DuelPromptState): DuelPromptState {
@@ -359,8 +373,12 @@ function copyLuaPrompt(prompt: NonNullable<DuelPromptView["luaPrompt"]>): NonNul
       options: [...prompt.options],
       descriptions: [...prompt.descriptions],
       ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }),
-      ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map((values) => values.map((value) => typeof value === "object" ? { ...value } : value)) }),
+      ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map((values) => values.map(copyLuaPromptResumeValue)) }),
     };
   }
   return { ...prompt };
+}
+
+function copyLuaPromptResumeValue(value: LuaPromptResumeValue): LuaPromptResumeValue {
+  return typeof value === "object" ? { ...value } : value;
 }
