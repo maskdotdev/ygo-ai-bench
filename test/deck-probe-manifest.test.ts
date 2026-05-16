@@ -89,6 +89,12 @@ describe("Lua deck probe manifest", () => {
         .filter(([, codes]) => codes.length > 0)
         .sort(([a], [b]) => a.localeCompare(b)),
     );
+    const fallbackScriptCodes = fs
+      .readdirSync("local-card-scripts/fallbacks/official")
+      .filter((file) => file.endsWith(".lua"))
+      .map((file) => file.replace(/^c/, "").replace(/\.lua$/, ""))
+      .sort();
+    const expectedLocalFallbackScriptCodes = [...new Set(Object.values(expectedLocalFallbackScriptCodesByDeck).flat())].sort();
 
     const uncovered = deckNames.filter((name) => !packageProbeDecks.includes(name));
 
@@ -169,6 +175,7 @@ describe("Lua deck probe manifest", () => {
       "ritual-of-light-and-darkness-apr-2026.ydk": ["2372506", "24088928", "24461358", "24749710", "33599853", "44001993", "50073633", "70405001", "97462632", "98684220"],
       "rokket-2026.ydk": ["101303089"],
     });
+    expect(expectedLocalFallbackScriptCodes).toEqual(fallbackScriptCodes);
     expect(uncovered).toEqual([]);
   });
 });
