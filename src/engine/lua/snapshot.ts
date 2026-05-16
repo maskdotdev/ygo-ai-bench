@@ -15,9 +15,10 @@ import { isKnownSwordsOfRevealingLightPhaseEndEffect, isKnownSwordsOfRevealingLi
 import { isKnownPlayerDamageZeroEffect, isKnownTemporaryActivationLockEffect, isKnownTemporaryArtifactLanceaBanishLockEffect, isKnownTemporaryBattleProtectionEffect, isKnownTemporaryCannotAttackEffect, isKnownTemporaryEarthshatteringDeckGraveLockEffect, isKnownTemporaryMonsterExtraAttackEffect, isKnownTemporaryMonsterNoBattleDamageEffect, isKnownTemporaryOpponentCannotBattlePhaseEffect, isKnownTemporaryOpponentTurnSkipMain1Effect, isKnownTemporaryOpponentTurnSkipMain2Effect, isKnownTemporaryOpponentTurnSkipTurnEffect, isKnownTemporaryPlayerAttackAnnounceLockEffect, isKnownTemporarySameCodeActivationOathEffect, isKnownTemporarySelfTurnCannotEndPhaseEffect, isKnownTemporarySelfTurnSkipBattlePhaseEffect, isKnownTemporarySummonSetLockEffect, temporaryOpponentTurnSkipMain1CanActivate, temporarySelfTurnSkipBattlePhaseCanActivate } from "#lua/snapshot-temporary-effects.js";
 import { isKnownMulcharmyDrawWatcherEffect, isKnownMulcharmyEndPhaseShuffleEffect, mulcharmyDrawWatcherOperation, mulcharmyEndPhaseShuffleOperation } from "#lua/snapshot-mulcharmy.js";
 import { assaultZoneExtraDeckReleaseValueCallbacks, assaultZoneReleaseFlagConditionCallbacks, assaultZoneReleaseFlagOperation, isAssaultZoneExtraDeckReleaseRestoreEffect } from "#lua/snapshot-assault-zone.js";
-import { calledByTheGraveChainSolvingNegateOperation, isKnownCalledByTheGraveChainSolvingNegateEffect, isKnownRareMetalmorphChainSolvingNegateEffect, rareMetalmorphChainSolvingNegateOperation } from "#lua/snapshot-chain-solving-effects.js";
+import { calledByTheGraveChainSolvingNegateOperation, gishkiEmiliaTrapNegateOperation, isKnownCalledByTheGraveChainSolvingNegateEffect, isKnownGishkiEmiliaTrapNegateEffect, isKnownRareMetalmorphChainSolvingNegateEffect, rareMetalmorphChainSolvingNegateOperation } from "#lua/snapshot-chain-solving-effects.js";
 import { luaChainLimitRegistryKeys, luaDenyChainLimitRegistry, restoreKnownLuaChainLimits } from "#lua/snapshot-chain-limits.js";
 import { isKnownSunlitSentinelDelayedStandbyEffect, sunlitSentinelDelayedStandbyOperation } from "#lua/snapshot-sunlit-sentinel.js";
+import { isKnownDoubleSnareValidityEffect, isKnownTrapMonsterDisableEffect, isStaticPlayerPhaseLock } from "#lua/snapshot-static-effects.js";
 import { luaRegistryCardCodes } from "#lua/snapshot-registry-keys.js";
 import { restoredSpecialSummonConditionValueCallbacks } from "#lua/snapshot-special-summon-condition.js";
 import { isLuaOptionPromptDecision, isLuaYesNoPromptDecision } from "#lua/host-types.js";
@@ -78,7 +79,6 @@ const luaResetsStandardPhaseEnd = 0x41fe1200;
 const luaResetEventStandard = luaResetEvent | 0x1fe0000;
 const luaTemporaryRestrictionResetFlags = luaResetsStandardPhaseEnd & ~luaResetTurnSet;
 const luaTemporaryPositionLockResetFlags = luaResetPhase | luaPhaseEnd;
-const luaStaticPlayerPhaseLockCodes = new Set([183, 184, 185, 186, 187, 189]);
 export interface LuaSnapshotRestoreResult {
   session: DuelSession;
   host: LuaScriptHost;
@@ -533,7 +533,9 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownCannotSelectBattleTargetNotHandlerEffect(effect) ||
         isKnownYellowAlertDelayedReturnEffect(effect) ||
         isKnownCalledByTheGraveChainSolvingNegateEffect(effect) ||
+        isKnownGishkiEmiliaTrapNegateEffect(effect) ||
         isKnownRareMetalmorphChainSolvingNegateEffect(effect) ||
+        isKnownTrapMonsterDisableEffect(effect) ||
         isKnownBookOfEclipsePhaseEndEffect(effect) ||
         isKnownSwordsOfRevealingLightPhaseEndEffect(effect) ||
         isKnownSwordsOfRevealingLightResetEffect(effect) ||
@@ -550,6 +552,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownRemainFieldEffect(effect) ||
         isKnownCannotActivateSpecialSummonedMonsterEffect(effect) ||
         isKnownCannotActivateNonSpiritMonsterEffect(effect) ||
+        isKnownDoubleSnareValidityEffect(effect) ||
         isKnownSetcodeOrCodeTypeBattleProtectionEffect(effect) ||
         effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
         isStaticSingleCardLuaRestriction(effect) ||
@@ -843,21 +846,10 @@ function isTemporaryRestrictionReset(flags: number | undefined): boolean {
   return flags === luaTemporaryRestrictionResetFlags || flags === luaResetsStandardPhaseEnd;
 }
 
-function isStaticPlayerPhaseLock(effect: SerializedDuelEffect): boolean {
-  return (
-    effect.code !== undefined &&
-    luaStaticPlayerPhaseLockCodes.has(effect.code) &&
-    effect.targetRange !== undefined &&
-    effect.reset?.flags === luaPhaseEndResetFlags &&
-    effect.value === undefined &&
-    effect.luaValueDescriptor === undefined &&
-    effect.luaTargetDescriptor === undefined
-  );
-}
-
 function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[] = []): DuelEffectDefinition["operation"] {
   if (isKnownYellowAlertDelayedReturnEffect(effect)) return yellowAlertDelayedReturnOperation(effect);
   if (isKnownCalledByTheGraveChainSolvingNegateEffect(effect)) return calledByTheGraveChainSolvingNegateOperation(effect);
+  if (isKnownGishkiEmiliaTrapNegateEffect(effect)) return gishkiEmiliaTrapNegateOperation(effect);
   if (isKnownRareMetalmorphChainSolvingNegateEffect(effect)) return rareMetalmorphChainSolvingNegateOperation(effect);
   if (isKnownBookOfEclipsePhaseEndEffect(effect)) return bookOfEclipsePhaseEndOperation(effect);
   if (isKnownSwordsOfRevealingLightPhaseEndEffect(effect)) return swordsOfRevealingLightPhaseEndOperation();

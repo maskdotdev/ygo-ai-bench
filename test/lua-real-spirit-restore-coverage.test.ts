@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 14;
+const spiritFixtureCount = 15;
 
 describe("Lua real Spirit restore coverage", () => {
   it("requires representative Spirit fixtures to prove clean Lua restore and replayed legal actions", () => {
@@ -194,6 +194,20 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
         'location: "deck", controller: 0',
         'location: "graveyard", controller: 0',
         'host.messages).not.toContain("natalia responder resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-gishki-emilia-trap-disable.test.ts",
+      required: [
+        'action.type === "normalSummon"',
+        'action.type === "activateTrigger"',
+        'action.type === "activateEffect"',
+        'eventName: "normalSummoned"',
+        '"triggerBucket": "turnMandatory"',
+        'location: "graveyard", previousLocation: "spellTrapZone"',
+        'eventName: "chainDisabled"',
+        "gishki emilia trap disabled true",
+        'host.messages).not.toContain("gishki emilia disabled trap resolved")',
       ],
     },
     {

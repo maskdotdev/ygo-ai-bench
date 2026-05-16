@@ -4,6 +4,7 @@ import { resetDuelCardEffects } from "#duel/effect-reset.js";
 import type { DuelEffectDefinition, SerializedDuelEffect } from "#duel/types.js";
 
 const luaRareMetalmorphCode = "12503902";
+const luaGishkiEmiliaCode = "73551138";
 const luaChainSolvingEventCode = 1020;
 const luaResetStandard = 0x01fe0000;
 const luaResetEventStandard = 0x41fe0000;
@@ -14,6 +15,10 @@ export function isKnownRareMetalmorphChainSolvingNegateEffect(effect: Serialized
 
 export function isKnownCalledByTheGraveChainSolvingNegateEffect(effect: SerializedDuelEffect): boolean {
   return Boolean(effect.registryKey?.startsWith("lua:24224830:")) && effect.event === "continuous" && effect.code === luaChainSolvingEventCode && effect.luaConditionDescriptor === "condition:chain-solving-monster-effect-handler-original-code-label" && effect.label !== undefined;
+}
+
+export function isKnownGishkiEmiliaTrapNegateEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaGishkiEmiliaCode}:`)) && effect.event === "continuous" && effect.code === luaChainSolvingEventCode && effect.reset?.flags !== undefined && effect.targetRange === undefined;
 }
 
 export function rareMetalmorphChainSolvingNegateOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
@@ -35,6 +40,20 @@ export function calledByTheGraveChainSolvingNegateOperation(effect: SerializedDu
   };
 }
 
+export function gishkiEmiliaTrapNegateOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const chainLink = ctx.chainLink;
+    if (!chainLink || chainLink.activationLocation !== "spellTrapZone") return;
+    const chainSource = findCard(ctx.duel, chainLink.sourceUid);
+    if (!chainSource || !isTrapCard(chainSource)) return;
+    negateDuelChainLinkObject(ctx.duel, chainLink, effect.controller, ctx.source.name);
+  };
+}
+
 function isSpellCard(card: { kind: string; typeFlags?: number; data?: { typeFlags?: number } }): boolean {
   return card.kind === "spell" || (((card.typeFlags ?? card.data?.typeFlags ?? 0) & 0x2) !== 0);
+}
+
+function isTrapCard(card: { kind: string; typeFlags?: number; data?: { typeFlags?: number } }): boolean {
+  return card.kind === "trap" || (((card.typeFlags ?? card.data?.typeFlags ?? 0) & 0x4) !== 0);
 }
