@@ -123,6 +123,10 @@ describe("parity fixture metadata", () => {
     expect(missingTriggerOrderPromptCoverage()).toEqual([]);
   });
 
+  it("requires scripted trigger effects to declare trigger timing", () => {
+    expect(missingTriggerEffectTimings()).toEqual([]);
+  });
+
   it("requires parity fixtures to exercise snapshot restore coverage", () => {
     expect(parityFixturesWithoutSnapshotRestore()).toEqual([]);
   });
@@ -424,6 +428,45 @@ describe("parity fixture metadata", () => {
         ...lines.slice(4),
       ]),
     ).toEqual([]);
+    expect(
+      missingTriggerEffectTimingsInText(
+        "fixture.ts",
+        [
+          "runScriptedDuelFixture({",
+          "  setup: {",
+          "    effects: [",
+          "      {",
+          '        id: "trigger",',
+          '        event: "trigger",',
+          '        triggerEvent: "sentToGraveyard",',
+          '        range: ["hand"],',
+          "      },",
+          "    ],",
+          "  },",
+          "});",
+        ].join("\n"),
+      ),
+    ).toEqual(["fixture.ts:7"]);
+    expect(
+      missingTriggerEffectTimingsInText(
+        "fixture.ts",
+        [
+          "runScriptedDuelFixture({",
+          "  setup: {",
+          "    effects: [",
+          "      {",
+          '        id: "trigger",',
+          '        event: "trigger",',
+          '        triggerEvent: "sentToGraveyard",',
+          '        triggerTiming: "if",',
+          '        range: ["hand"],',
+          "      },",
+          "    ],",
+          "  },",
+          "});",
+        ].join("\n"),
+      ),
+    ).toEqual([]);
     expect(parityFixtureWithoutSnapshotRestoreInLines("fixture.ts", lines)).toEqual(["fixture.ts"]);
     expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "  it('one', () => {})", "});"])).toEqual([]);
     expect(parityFixtureScenarioCountProblem("fixture.ts", ["describe('fixture', () => {", "});"])).toEqual(["fixture.ts: expected 1 scenario, found 0"]);
@@ -545,6 +588,10 @@ function missingTriggerGroupBucketCoverage(): string[] {
 
 function missingTriggerOrderPromptCoverage(): string[] {
   return parityFixtureFiles().flatMap((file) => missingTriggerOrderPromptCoverageInLines(file, readFixtureLines(file)));
+}
+
+function missingTriggerEffectTimings(): string[] {
+  return scriptedFixtureFiles().flatMap((file) => missingTriggerEffectTimingsInText(file, readFixtureText(file)));
 }
 
 function parityFixturesWithoutSnapshotRestore(): string[] {
@@ -791,6 +838,52 @@ function missingTriggerOrderPromptCoverageInLines(file: string, lines: string[])
   return missingPrompts;
 }
 
+function missingTriggerEffectTimingsInText(file: string, text: string): string[] {
+  const missingTimings: string[] = [];
+  let index = 0;
+  while ((index = text.indexOf("triggerEvent:", index)) !== -1) {
+    const objectStart = findObjectStart(text, index);
+    const objectEnd = objectStart < 0 ? -1 : findObjectEnd(text, objectStart);
+    if (objectStart >= 0 && objectEnd >= 0 && !text.slice(objectStart, objectEnd).includes("triggerTiming:")) missingTimings.push(`${file}:${lineNumberAt(text, index)}`);
+    index += "triggerEvent:".length;
+  }
+  return missingTimings;
+}
+
+function findObjectStart(text: string, sourceIndex: number): number {
+  for (let index = sourceIndex; index >= 0; index -= 1) {
+    if (text[index] === "{") return index;
+  }
+  return -1;
+}
+
+function findObjectEnd(text: string, startIndex: number): number {
+  let depth = 0;
+  let quote: string | undefined;
+  let escaped = false;
+  for (let index = startIndex; index < text.length; index += 1) {
+    const char = text[index] ?? "";
+    if (quote !== undefined) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === quote) quote = undefined;
+      continue;
+    }
+    if (char === '"' || char === "'" || char === "`") {
+      quote = char;
+      continue;
+    }
+    if (char === "{") depth += 1;
+    if (char === "}") depth -= 1;
+    if (depth === 0) return index + 1;
+  }
+  return -1;
+}
+
+function lineNumberAt(text: string, sourceIndex: number): number {
+  return text.slice(0, sourceIndex).split("\n").length;
+}
+
 function activePendingTriggerBucketSize(block: string): number {
   const triggerBuckets = block.match(/pendingTriggerBuckets:\s*\[([\s\S]*?)\]/);
   if (!triggerBuckets) return 0;
@@ -945,7 +1038,11 @@ function scriptedFixtureFiles(): string[] {
 }
 
 function readFixtureLines(file: string): string[] {
-  return fs.readFileSync(path.join(parityFixtureDir, file), "utf8").split("\n");
+  return readFixtureText(file).split("\n");
+}
+
+function readFixtureText(file: string): string {
+  return fs.readFileSync(path.join(parityFixtureDir, file), "utf8");
 }
 
 function expectationBlock(lines: string[], sourceIndex: number): string {

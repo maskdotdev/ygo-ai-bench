@@ -922,6 +922,7 @@ describe("EDOPro compatibility harness response matching", () => {
             code: "300",
             event: "trigger",
             triggerEvent: "normalSummoned",
+            triggerTiming: "if",
             range: ["hand"],
           },
         ],

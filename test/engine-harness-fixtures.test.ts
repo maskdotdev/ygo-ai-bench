@@ -330,7 +330,7 @@ describe("EDOPro compatibility harness fixtures", () => {
       failures: [
         {
           fixture: "malformed setup effect occurrence fixture",
-        message: "Setup effect malformed-source-occurrence effect.occurrence has malformed value -1",
+          message: "Setup effect malformed-source-occurrence effect.occurrence has malformed value -1",
         },
       ],
     });
@@ -401,6 +401,7 @@ describe("EDOPro compatibility harness fixtures", () => {
               location: "hand",
               event: "trigger",
               triggerEvent: "normalSummoned",
+              triggerTiming: "if",
               range: ["hand"],
               logMessage: "Fixture trigger resolved",
             },
@@ -497,6 +498,7 @@ describe("EDOPro compatibility harness fixtures", () => {
               location: "hand",
               event: "trigger",
               triggerEvent: "normalSummoned",
+              triggerTiming: "if",
               range: ["hand"],
               logMessage: "Fixture trigger resolved",
             },

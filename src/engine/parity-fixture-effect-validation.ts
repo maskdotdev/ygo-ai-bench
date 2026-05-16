@@ -66,6 +66,7 @@ function assertEffect(description: string, effect: Partial<ScriptedFixtureEffect
   assertNumberTuple(`${description}.targetRange`, effect.targetRange, failures);
   if (effect.triggerEvent !== undefined && !isDuelEventName(effect.triggerEvent)) failures.push(`${description}.triggerEvent has malformed value ${String(effect.triggerEvent)}`);
   if (effect.triggerCode !== undefined && !Number.isSafeInteger(effect.triggerCode)) failures.push(`${description}.triggerCode has malformed value ${String(effect.triggerCode)}`);
+  if (effect.triggerEvent !== undefined && effect.triggerTiming === undefined) failures.push(`${description}.triggerTiming is required when triggerEvent is set`);
   if (effect.triggerTiming !== undefined && !TRIGGER_TIMINGS.has(effect.triggerTiming)) failures.push(`${description}.triggerTiming has malformed value ${String(effect.triggerTiming)}`);
   if (effect.eventCardCode !== undefined && !isSafeString(effect.eventCardCode)) failures.push(`${description}.eventCardCode has malformed value ${String(effect.eventCardCode)}`);
   if (effect.optional !== undefined && !isSafeBoolean(effect.optional)) failures.push(`${description}.optional has malformed value ${String(effect.optional)}`);
