@@ -81,6 +81,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
       applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
 
+      expect(restoredEquipWindow.session.state.chain).toHaveLength(1);
       expect(restoredEquipWindow.session.state.chain[0]).toMatchInlineSnapshot(`
         {
           "activationLocation": "hand",

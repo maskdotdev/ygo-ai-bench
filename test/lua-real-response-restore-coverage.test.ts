@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 109;
-const chainedResponseFixtureCount = 108;
-const responseOperationInfoFixtureCount = 100;
+const responseFixtureCount = 115;
+const chainedResponseFixtureCount = 114;
+const responseOperationInfoFixtureCount = 106;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -124,8 +124,14 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-draining-shield-battle-window.test.ts",
     "lua-real-script-droll-lock-bird-draw-search-lock.test.ts",
     "lua-real-script-earth-chant-ritual-equal.test.ts",
+    "lua-real-script-equip-procedure-actions-part2.test.ts",
+    "lua-real-script-equip-procedure-actions.test.ts",
+    "lua-real-script-equip-return-actions-part2.test.ts",
+    "lua-real-script-equip-return-actions.test.ts",
+    "lua-real-script-equip-stat-lock-actions.test.ts",
     "lua-real-script-evocator-eveque-gemini-trigger.test.ts",
     "lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
+    "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
     "lua-real-script-fenghuang-set-backrow-destroy.test.ts",
     "lua-real-script-foolish-burial-deck-to-grave.test.ts",
     "lua-real-script-forbidden-arts-gishki-opponent-ritual.test.ts",
