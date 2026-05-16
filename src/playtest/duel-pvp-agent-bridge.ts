@@ -12,7 +12,7 @@ import {
 import { copyDuelAction } from "#duel/action-copy.js";
 import type { LuaScriptHost, LuaScriptSource } from "#lua/host.js";
 import type { LuaSnapshotRestoreResult } from "#lua/snapshot.js";
-import type { ApplyDuelResponseResult, DuelAction, DuelCardReader, DuelResponse, DuelSession, PlayerId, SerializedDuel } from "#duel/types.js";
+import type { ApplyDuelResponseResult, DuelAction, DuelCardReader, DuelPromptState, DuelResponse, DuelSession, PlayerId, SerializedDuel } from "#duel/types.js";
 import { parseYdk } from "#playtest/ydk.js";
 import { getBrowserDuelCardReader } from "../playtest-app/duel-pvp-card-reader.js";
 import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "../playtest-app/duel-battlefield-actions.js";
@@ -334,6 +334,19 @@ function copyUiGroup(group: DuelActionUiGroup): DuelActionUiGroup {
 function copyPromptView(prompt: DuelPromptView): DuelPromptView {
   return {
     ...prompt,
+    prompt: copyPromptState(prompt.prompt),
     groups: prompt.groups.map(copyUiGroup),
   };
+}
+
+function copyPromptState(prompt: DuelPromptState): DuelPromptState {
+  if (prompt.type === "selectOption") {
+    return {
+      ...prompt,
+      options: [...prompt.options],
+      ...(prompt.descriptions === undefined ? {} : { descriptions: [...prompt.descriptions] }),
+      ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }),
+    };
+  }
+  return { ...prompt };
 }

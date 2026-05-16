@@ -83,8 +83,41 @@ describe("duel prompt view", () => {
     expect(duelPromptView(prompt, [promptGroup, globalGroup])).toEqual({
       label: "Option Prompt",
       detail: "P1 · Prompt prompt-a · options 1",
+      prompt,
       groups: [promptGroup],
     });
+  });
+
+  it("deep-copies structured prompt metadata for browser renderers", () => {
+    const prompt: DuelPromptState = {
+      id: "prompt-copy",
+      type: "selectOption",
+      player: 0,
+      returnTo: 1,
+      origin: "luaOperation",
+      options: [1, 2],
+      descriptions: [101, 202],
+      descriptionLists: [[1001], [2002, 2003]],
+    };
+    const promptGroup: DuelActionUiGroup = {
+      key: "prompt-copy",
+      label: "Option Prompt",
+      promptId: "prompt-copy",
+      promptType: "selectOption",
+      actions: [{ type: "selectOption", player: 0, promptId: "prompt-copy", option: 1, label: "Choose 1" }],
+    };
+
+    const view = duelPromptView(prompt, [promptGroup]);
+    expect(view?.prompt).toEqual(prompt);
+    if (view?.prompt.type !== "selectOption") throw new Error("Expected selectOption prompt view");
+
+    view.prompt.options.push(3);
+    view.prompt.descriptions?.push(303);
+    view.prompt.descriptionLists?.[0]?.push(1002);
+
+    expect(prompt.options).toEqual([1, 2]);
+    expect(prompt.descriptions).toEqual([101, 202]);
+    expect(prompt.descriptionLists).toEqual([[1001], [2002, 2003]]);
   });
 
   it("does not steal stale prompt groups for a different pending prompt", () => {

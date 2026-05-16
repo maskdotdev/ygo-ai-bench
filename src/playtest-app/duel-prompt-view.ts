@@ -4,6 +4,7 @@ import type { DuelActionUiGroup } from "./duel-action-anchors.js";
 export interface DuelPromptView {
   label: string;
   detail: string;
+  prompt: DuelPromptState;
   groups: DuelActionUiGroup[];
 }
 
@@ -70,6 +71,19 @@ export function duelPromptView(prompt: DuelPromptState | undefined, groups: read
   return {
     label: promptViewLabel(prompt),
     detail: promptViewDetail(prompt),
+    prompt: copyPrompt(prompt),
     groups: promptGroups,
   };
+}
+
+function copyPrompt(prompt: DuelPromptState): DuelPromptState {
+  if (prompt.type === "selectOption") {
+    return {
+      ...prompt,
+      options: [...prompt.options],
+      ...(prompt.descriptions === undefined ? {} : { descriptions: [...prompt.descriptions] }),
+      ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }),
+    };
+  }
+  return { ...prompt };
 }

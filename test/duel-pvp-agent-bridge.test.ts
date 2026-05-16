@@ -298,6 +298,38 @@ describe("duel pvp agent bridge", () => {
     expect(visible.actions).toContainEqual(expect.objectContaining({ type: "selectOption", player: 1, promptId: "agent-waiting-prompt", option: 5 }));
   });
 
+  it("deep-copies structured prompt metadata at the bridge boundary", () => {
+    const agent = createDuelPvpAgent();
+    const started = agent.start({ player0Ydk: starterYdk, player1Ydk: starterYdk, seed: "pvp-agent-prompt-copy", handSize: 2 });
+    const snapshot = agent.serialize(started.sessionId);
+    snapshot.state.prompt = {
+      id: "agent-copy-prompt",
+      type: "selectOption",
+      player: 0,
+      options: [1, 2],
+      descriptions: [101, 202],
+      descriptionLists: [[1001], [2002]],
+      returnTo: 1,
+    };
+    snapshot.state.waitingFor = 0;
+    agent.restore(snapshot);
+
+    const visible = agent.visibleBattlefield(0, started.sessionId);
+    expect(visible.prompt?.prompt).toMatchObject({ id: "agent-copy-prompt", type: "selectOption", options: [1, 2] });
+    if (visible.prompt?.prompt.type !== "selectOption") throw new Error("Expected selectOption prompt");
+
+    visible.prompt.prompt.options.push(3);
+    visible.prompt.prompt.descriptions?.push(303);
+    visible.prompt.prompt.descriptionLists?.[0]?.push(1002);
+
+    const fresh = agent.visibleBattlefield(0, started.sessionId);
+    expect(fresh.prompt?.prompt).toMatchObject({
+      options: [1, 2],
+      descriptions: [101, 202],
+      descriptionLists: [[1001], [2002]],
+    });
+  });
+
   it("runs visible battlefield scripts and reports divergence through visible actions", () => {
     const agent = createDuelPvpAgent();
     const started = agent.start({ player0Ydk: starterYdk, player1Ydk: starterYdk, seed: "pvp-agent-script", handSize: 2 });
