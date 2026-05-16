@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   bootstrapPvpDuel,
+  bootstrapPvpDuelWithCardData,
   pvpVisibleBattleFixtureScript,
   pvpVisibleBattleFixtureYdk,
   runPvpArenaVisibleScript,
@@ -37,6 +38,32 @@ describe("PvP arena visible scripts", () => {
       code: "90000003",
       name: "Lazy Loaded Duelist",
       data: expect.objectContaining({ attack: 2100 }),
+    }));
+  });
+
+  it("preloads both PvP decks before bootstrapping with browser card data", async () => {
+    const requestedBatches: string[][] = [];
+    const cache = createBrowserDuelCardDataCache(async (codes) => {
+      requestedBatches.push([...codes]);
+      return [
+        { code: "90000003", name: "Lazy Loaded Duelist", kind: "monster", attack: 2100 },
+      ];
+    });
+
+    const result = await bootstrapPvpDuelWithCardData(lazyLoadedYdk, pvpVisibleBattleFixtureYdk, "pvp-arena-card-data-preload", 1, {
+      cardDataCache: cache,
+    });
+
+    expect(requestedBatches).toEqual([["90000003"]]);
+    expect(result.preload).toEqual({ loaded: ["7084129", "90000003"], missing: [] });
+    expect(result.session.state.cards).toContainEqual(expect.objectContaining({
+      code: "90000003",
+      name: "Lazy Loaded Duelist",
+      data: expect.objectContaining({ attack: 2100 }),
+    }));
+    expect(result.session.state.cards).toContainEqual(expect.objectContaining({
+      code: "7084129",
+      name: "Magician's Rod",
     }));
   });
 });

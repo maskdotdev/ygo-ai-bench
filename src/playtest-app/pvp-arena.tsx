@@ -3,6 +3,7 @@ import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions,
 import type { DuelAction, DuelCardReader, DuelSession, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
 import { parseYdk } from "#playtest/ydk.js";
 import { getBrowserDuelCardReader } from "./duel-pvp-card-reader.js";
+import type { BrowserDuelCardDataCache, BrowserDuelCardDataPreloadResult } from "./duel-pvp-card-reader.js";
 import { DuelBattlefield, DuelLogList } from "./duel-battlefield.js";
 import { runDuelBattlefieldScript, type DuelBattlefieldActionSelector, type DuelBattlefieldScriptResult } from "./duel-battlefield-script.js";
 import { CardZoom, ToastStack, readBuilderDeck, starterYdk } from "./ui.js";
@@ -39,6 +40,15 @@ export interface BootstrapPvpDuelOptions {
   cardReader?: DuelCardReader;
 }
 
+export interface BootstrapPvpDuelWithCardDataOptions extends BootstrapPvpDuelOptions {
+  cardDataCache: BrowserDuelCardDataCache;
+}
+
+export interface BootstrapPvpDuelWithCardDataResult {
+  session: DuelSession;
+  preload: BrowserDuelCardDataPreloadResult;
+}
+
 export function bootstrapPvpDuel(
   p0Text: string,
   p1Text: string,
@@ -59,6 +69,22 @@ export function bootstrapPvpDuel(
   });
   startDuel(session);
   return session;
+}
+
+export async function bootstrapPvpDuelWithCardData(
+  p0Text: string,
+  p1Text: string,
+  seed: string | number,
+  handSize: number,
+  options: BootstrapPvpDuelWithCardDataOptions,
+): Promise<BootstrapPvpDuelWithCardDataResult> {
+  const p0 = parseYdk(p0Text);
+  const p1 = parseYdk(p1Text);
+  const preload = await options.cardDataCache.preload([...p0.main, ...p0.extra, ...p1.main, ...p1.extra]);
+  const session = bootstrapPvpDuel(p0Text, p1Text, seed, handSize, {
+    cardReader: options.cardReader ?? options.cardDataCache.reader,
+  });
+  return { session, preload };
 }
 
 export function runPvpArenaVisibleScript(
