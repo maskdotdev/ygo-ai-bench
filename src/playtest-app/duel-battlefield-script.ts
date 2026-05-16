@@ -17,6 +17,9 @@ export interface DuelBattlefieldActionSelector {
   windowKind?: DuelActionWindowKind;
   windowToken?: string;
   phase?: DuelPhase;
+  tributeUids?: readonly string[];
+  materialUids?: readonly string[];
+  summonUids?: readonly string[];
   attackerUid?: string;
   targetUid?: string;
   directAttack?: boolean;
@@ -174,6 +177,15 @@ function selectVisibleBattlefieldAction(
     if (selector.windowToken !== undefined && action.windowToken !== selector.windowToken) return false;
     if (selector.uid !== undefined && !duelActionAnchorUids(action).includes(selector.uid)) return false;
     if (selector.phase !== undefined && (action.type !== "changePhase" || action.phase !== selector.phase)) return false;
+    if (selector.tributeUids !== undefined) {
+      if ((action.type !== "tributeSummon" && action.type !== "tributeSet") || !sameStringMembers(action.tributeUids, selector.tributeUids)) return false;
+    }
+    if (selector.materialUids !== undefined) {
+      if (!isMaterialSelectionAction(action) || !sameStringMembers(action.materialUids, selector.materialUids)) return false;
+    }
+    if (selector.summonUids !== undefined) {
+      if (action.type !== "pendulumSummon" || !sameStringMembers(action.summonUids, selector.summonUids)) return false;
+    }
     if (selector.attackerUid !== undefined) {
       if ((action.type !== "declareAttack" && action.type !== "replayAttack" && action.type !== "cancelAttack") || action.attackerUid !== selector.attackerUid) return false;
     }
@@ -206,6 +218,9 @@ function describeBattlefieldSelector(selector: DuelBattlefieldActionSelector): s
     selector.windowToken !== undefined ? `windowToken=${selector.windowToken}` : undefined,
     selector.uid ? `uid=${selector.uid}` : undefined,
     selector.phase !== undefined ? `phase=${selector.phase}` : undefined,
+    selector.tributeUids !== undefined ? `tributeUids=${selector.tributeUids.join(",")}` : undefined,
+    selector.materialUids !== undefined ? `materialUids=${selector.materialUids.join(",")}` : undefined,
+    selector.summonUids !== undefined ? `summonUids=${selector.summonUids.join(",")}` : undefined,
     selector.attackerUid !== undefined ? `attackerUid=${selector.attackerUid}` : undefined,
     selector.targetUid !== undefined ? `targetUid=${selector.targetUid}` : undefined,
     selector.directAttack !== undefined ? `directAttack=${selector.directAttack}` : undefined,
@@ -219,4 +234,21 @@ function describeBattlefieldSelector(selector: DuelBattlefieldActionSelector): s
     selector.groupLabel ? `groupLabel=${selector.groupLabel}` : undefined,
     selector.occurrence !== undefined ? `occurrence=${selector.occurrence}` : undefined,
   ].filter(Boolean).join(" ");
+}
+
+function isMaterialSelectionAction(action: DuelAction): action is Extract<DuelAction, { materialUids: string[] }> {
+  return action.type === "fusionSummon" || action.type === "synchroSummon" || action.type === "xyzSummon" || action.type === "linkSummon" || action.type === "ritualSummon";
+}
+
+function sameStringMembers(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false;
+  const remaining = new Map<string, number>();
+  for (const value of a) remaining.set(value, (remaining.get(value) ?? 0) + 1);
+  for (const value of b) {
+    const count = remaining.get(value);
+    if (!count) return false;
+    if (count === 1) remaining.delete(value);
+    else remaining.set(value, count - 1);
+  }
+  return remaining.size === 0;
 }

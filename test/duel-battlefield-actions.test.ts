@@ -109,6 +109,58 @@ describe("duel battlefield action view", () => {
     expect(result.state.log).toContainEqual(expect.objectContaining({ action: "selectOption", detail: "Selected option 4" }));
   });
 
+  it("matches visible summon scripts by exact material selection", () => {
+    const session = createDuel({ seed: 992, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const first = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const second = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const fusion = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    expect(fusion).toBeDefined();
+    specialSummonDuelCard(session.state, first!.uid, 0);
+    specialSummonDuelCard(session.state, second!.uid, 0);
+
+    const result = runDuelBattlefieldScript(session, [
+      { player: 0, type: "fusionSummon", uid: fusion!.uid, materialUids: [second!.uid, first!.uid] },
+    ]);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.cards.find((card) => card.uid === fusion!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
+    expect(result.state.cards.find((card) => card.uid === first!.uid)).toMatchObject({ location: "graveyard" });
+    expect(result.state.cards.find((card) => card.uid === second!.uid)).toMatchObject({ location: "graveyard" });
+  });
+
+  it("reports material selector fields when visible summon scripts diverge", () => {
+    const session = createDuel({ seed: 993, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const first = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const second = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const fusion = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "extraDeck" && card.code === "900");
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    expect(fusion).toBeDefined();
+    specialSummonDuelCard(session.state, first!.uid, 0);
+    specialSummonDuelCard(session.state, second!.uid, 0);
+
+    const result = runDuelBattlefieldScript(session, [
+      { player: 0, type: "fusionSummon", uid: fusion!.uid, materialUids: [first!.uid] },
+    ]);
+
+    expect(result.ok).toBe(false);
+    expect(result.failedStep).toBe(0);
+    expect(result.failure).toBe(`No visible battlefield action matched player=0 type=fusionSummon uid=${fusion!.uid} materialUids=${first!.uid}`);
+    expect(result.visibleActions).toContainEqual(expect.objectContaining({ type: "fusionSummon", uid: fusion!.uid, materialUids: expect.arrayContaining([first!.uid, second!.uid]) }));
+  });
+
   it("reports prompt views when a visible prompt script diverges", () => {
     const session = directBattleSession();
     session.state.prompt = { id: "battlefield-diverge-prompt", type: "selectOption", player: 1, options: [2, 4], descriptions: [200, 400], returnTo: 0 };
