@@ -6,6 +6,7 @@ import {
 } from "#duel/core.js";
 import { copyDuelAction } from "#duel/action-copy.js";
 import type { ApplyDuelResponseResult, DuelAction, DuelActionWindowKind, DuelPhase, DuelSession, PlayerId, PublicDuelState, TriggerBucket } from "#duel/types.js";
+import type { LuaPromptDecision } from "#lua/host-types.js";
 import { duelActionAnchorUids, duelActionUiGroupLabel, duelActionUiGroupSelectionKind, type DuelActionUiGroup, type DuelActionUiSelectionKind } from "./duel-action-anchors.js";
 import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "./duel-battlefield-actions.js";
 import { duelPromptView, type DuelPromptView } from "./duel-prompt-view.js";
@@ -26,6 +27,9 @@ export interface DuelBattlefieldActionSelector {
   targetUid?: string;
   directAttack?: boolean;
   promptId?: string;
+  luaPromptApi?: LuaPromptDecision["api"];
+  promptDescription?: number;
+  promptDescriptionList?: readonly number[];
   option?: number;
   yes?: boolean;
   effectId?: string;
@@ -74,7 +78,7 @@ export function runDuelBattlefieldScript(
   for (let index = 0; index < steps.length; index += 1) {
     const selector = steps[index]!;
     const view = battlefieldScriptView(session, selector.player, runtime);
-    const action = selectVisibleBattlefieldAction(selector, view.visibleActions, view.visibleGroups);
+    const action = selectVisibleBattlefieldAction(selector, view.visibleActions, view.visibleGroups, view.prompt);
     if (!action) {
       return battlefieldScriptResult(session, selector.player, runtime, index, `No visible battlefield action matched ${describeBattlefieldSelector(selector)}`);
     }
@@ -111,7 +115,7 @@ export function runDuelBattlefieldScriptStep(
 
   const selector = steps[step]!;
   const view = battlefieldScriptView(session, selector.player, runtime);
-  const action = selectVisibleBattlefieldAction(selector, view.visibleActions, view.visibleGroups);
+  const action = selectVisibleBattlefieldAction(selector, view.visibleActions, view.visibleGroups, view.prompt);
   if (!action) {
     return {
       ...battlefieldScriptResult(session, selector.player, runtime, step, `No visible battlefield action matched ${describeBattlefieldSelector(selector)}`),
@@ -169,7 +173,7 @@ function battlefieldScriptView(
   session: DuelSession,
   player: PlayerId,
   runtime: DuelBattlefieldScriptRuntime,
-): { visibleActions: DuelAction[]; visibleGroups: DuelActionUiGroup[]; legalGroups: ReturnType<typeof getGroupedDuelLegalActions> } {
+): { visibleActions: DuelAction[]; visibleGroups: DuelActionUiGroup[]; legalGroups: ReturnType<typeof getGroupedDuelLegalActions>; prompt?: DuelPromptView } {
   const state = queryPublicState(session);
   const legalGroups = runtime.getGroupedLegalActions(session, player);
   const view = duelBattlefieldActionView(
@@ -178,10 +182,12 @@ function battlefieldScriptView(
     runtime.getLegalActions(session, player),
     legalGroups,
   );
+  const prompt = duelPromptView(state.prompt, view.orphanGroups, state.luaOperationPrompt);
   return {
     visibleActions: visibleDuelBattlefieldActions(view),
     visibleGroups: view.orphanGroups,
     legalGroups,
+    ...(prompt === undefined ? {} : { prompt }),
   };
 }
 
@@ -189,6 +195,7 @@ function selectVisibleBattlefieldAction(
   selector: DuelBattlefieldActionSelector,
   visibleActions: readonly DuelAction[],
   visibleGroups: readonly DuelActionUiGroup[],
+  prompt?: DuelPromptView,
 ): DuelAction | undefined {
   const groupKeys = selector.groupLabel === undefined && selector.groupSelectionKind === undefined
     ? undefined
@@ -223,6 +230,9 @@ function selectVisibleBattlefieldAction(
       if ((action.directAttack === true) !== selector.directAttack) return false;
     }
     if (selector.promptId !== undefined && (!("promptId" in action) || action.promptId !== selector.promptId)) return false;
+    if (selector.luaPromptApi !== undefined && !actionMatchesLuaPromptApi(action, prompt, selector.luaPromptApi)) return false;
+    if (selector.promptDescription !== undefined && !actionMatchesPromptDescription(action, prompt, selector.promptDescription)) return false;
+    if (selector.promptDescriptionList !== undefined && !actionMatchesPromptDescriptionList(action, prompt, selector.promptDescriptionList)) return false;
     if (selector.option !== undefined && (action.type !== "selectOption" || action.option !== selector.option)) return false;
     if (selector.yes !== undefined && (action.type !== "selectYesNo" || action.yes !== selector.yes)) return false;
     if (selector.effectId !== undefined && (!("effectId" in action) || action.effectId !== selector.effectId)) return false;
@@ -254,6 +264,9 @@ function describeBattlefieldSelector(selector: DuelBattlefieldActionSelector): s
     selector.targetUid !== undefined ? `targetUid=${selector.targetUid}` : undefined,
     selector.directAttack !== undefined ? `directAttack=${selector.directAttack}` : undefined,
     selector.promptId !== undefined ? `promptId=${selector.promptId}` : undefined,
+    selector.luaPromptApi !== undefined ? `luaPromptApi=${selector.luaPromptApi}` : undefined,
+    selector.promptDescription !== undefined ? `promptDescription=${selector.promptDescription}` : undefined,
+    selector.promptDescriptionList !== undefined ? `promptDescriptionList=${selector.promptDescriptionList.join(",")}` : undefined,
     selector.option !== undefined ? `option=${selector.option}` : undefined,
     selector.yes !== undefined ? `yes=${selector.yes}` : undefined,
     selector.effectId !== undefined ? `effectId=${selector.effectId}` : undefined,
@@ -274,9 +287,53 @@ function actionSelectionKind(action: DuelAction): DuelActionUiSelectionKind | un
   return duelActionUiGroupSelectionKind({ actions: [action], windowKind: action.windowKind });
 }
 
+function actionMatchesLuaPromptApi(action: DuelAction, prompt: DuelPromptView | undefined, luaPromptApi: LuaPromptDecision["api"]): boolean {
+  if (prompt?.luaPrompt?.api !== luaPromptApi) return false;
+  return promptChoiceForAction(action, prompt) !== undefined;
+}
+
+function actionMatchesPromptDescription(action: DuelAction, prompt: DuelPromptView | undefined, description: number): boolean {
+  const choice = promptChoiceForAction(action, prompt);
+  return choice !== undefined && "description" in choice && choice.description === description;
+}
+
+function actionMatchesPromptDescriptionList(action: DuelAction, prompt: DuelPromptView | undefined, descriptionList: readonly number[]): boolean {
+  const choice = promptChoiceForAction(action, prompt);
+  return choice !== undefined && "descriptionList" in choice && sameNumberMembers(choice.descriptionList ?? [], descriptionList);
+}
+
+function promptChoiceForAction(action: DuelAction, prompt: DuelPromptView | undefined): DuelPromptView["choices"][number] | undefined {
+  if (prompt === undefined) return undefined;
+  return prompt.choices.find((choice) => {
+    if (choice.type === "selectOption") {
+      return action.type === "selectOption" &&
+        action.promptId === choice.action.promptId &&
+        action.player === choice.action.player &&
+        action.option === choice.action.option;
+    }
+    return action.type === "selectYesNo" &&
+      action.promptId === choice.action.promptId &&
+      action.player === choice.action.player &&
+      action.yes === choice.action.yes;
+  });
+}
+
 function sameStringMembers(a: readonly string[], b: readonly string[]): boolean {
   if (a.length !== b.length) return false;
   const remaining = new Map<string, number>();
+  for (const value of a) remaining.set(value, (remaining.get(value) ?? 0) + 1);
+  for (const value of b) {
+    const count = remaining.get(value);
+    if (!count) return false;
+    if (count === 1) remaining.delete(value);
+    else remaining.set(value, count - 1);
+  }
+  return remaining.size === 0;
+}
+
+function sameNumberMembers(a: readonly number[], b: readonly number[]): boolean {
+  if (a.length !== b.length) return false;
+  const remaining = new Map<number, number>();
   for (const value of a) remaining.set(value, (remaining.get(value) ?? 0) + 1);
   for (const value of b) {
     const count = remaining.get(value);

@@ -326,6 +326,47 @@ describe("duel pvp agent bridge", () => {
     expect(agent.visibleBattlefield(0, started.sessionId).prompt?.luaPrompt).toEqual(prompted.state.luaOperationPrompt?.prompt);
   });
 
+  it("runs visible scripts against Lua prompt API and description metadata", () => {
+    const agent = createDuelPvpAgent({
+      cardReader: createCardReader(luaBridgeCards),
+      luaScriptSource: luaBridgeScripts,
+      luaRuntime: luaBridgeRuntime,
+    });
+    const started = agent.start({ player0Ydk: "#main\n729\n#extra\n!side", player1Ydk: "#main\n100\n#extra\n!side", seed: "pvp-agent-lua-prompt-script", handSize: 1 });
+    const activation = started.visibleBattlefield.actions.find((action) => action.type === "activateEffect");
+    expect(activation).toBeDefined();
+    expect(agent.action(activation, started.sessionId).ok).toBe(true);
+
+    const result = agent.runVisibleScript([
+      { player: 0, type: "selectOption", luaPromptApi: "SelectOption", promptDescription: 800 },
+    ], started.sessionId);
+
+    expect(result.ok).toBe(true);
+    expect(result.failedStep).toBeUndefined();
+    expect(result.state.prompt).toBeUndefined();
+    expect(result.state.luaOperationPrompt).toBeUndefined();
+  });
+
+  it("reports Lua prompt selector metadata on visible script divergence", () => {
+    const agent = createDuelPvpAgent({
+      cardReader: createCardReader(luaBridgeCards),
+      luaScriptSource: luaBridgeScripts,
+      luaRuntime: luaBridgeRuntime,
+    });
+    const started = agent.start({ player0Ydk: "#main\n729\n#extra\n!side", player1Ydk: "#main\n100\n#extra\n!side", seed: "pvp-agent-lua-prompt-script-divergence", handSize: 1 });
+    const activation = started.visibleBattlefield.actions.find((action) => action.type === "activateEffect");
+    expect(activation).toBeDefined();
+    expect(agent.action(activation, started.sessionId).ok).toBe(true);
+
+    const result = agent.runVisibleScript([
+      { player: 0, type: "selectOption", luaPromptApi: "SelectEffect", promptDescription: 800 },
+    ], started.sessionId);
+
+    expect(result.ok).toBe(false);
+    expect(result.failure).toBe("No visible battlefield action matched player=0 type=selectOption luaPromptApi=SelectEffect promptDescription=800");
+    expect(result.prompt?.luaPrompt).toMatchObject({ api: "SelectOption", descriptions: [700, 800] });
+  });
+
   it("restores serialized sessions with the same visible action surface", () => {
     const agent = createDuelPvpAgent();
     const started = agent.start({ player0Ydk: starterYdk, player1Ydk: starterYdk, seed: "pvp-agent-restore", handSize: 2 });
