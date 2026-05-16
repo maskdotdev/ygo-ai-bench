@@ -13,6 +13,7 @@ const missedTimingFixtureFileCount = 171;
 const missedTimingActivationFixtureCount = 86;
 const missedTimingDeclineFixtureCount = 85;
 const missedTimingMultiStepFixtureCount = 166;
+const missedTimingOptionalWhenVsIfFixtureCount = 166;
 const missedTimingFullSourceEffectCauseFixtureCount = 126;
 const missedTimingChainEventFixtureCount = 14;
 const missedTimingChainActivatingStateFixtureCount = 2;
@@ -117,6 +118,18 @@ describe("EDOPro parity missed-timing event coverage", () => {
     expect(exceptions).toEqual([...missedTimingSourceEffectCauseExceptions].sort());
   });
 
+  it("pins multi-step optional when versus optional if missed-timing proof", () => {
+    const multiStepFiles = fs.readdirSync(testRoot)
+      .filter((file) => file.startsWith("parity-missed-timing-") && file.endsWith("-fixture.test.ts"))
+      .filter((file) => readTestFile(file).includes("eventIsLast: false"))
+      .sort();
+    const strong = multiStepFiles.filter((file) => hasOptionalWhenVsIfMissedTimingProof(file));
+
+    expect(multiStepFiles).toHaveLength(missedTimingMultiStepFixtureCount);
+    expect(strong).toHaveLength(missedTimingOptionalWhenVsIfFixtureCount);
+    expect(strong).toEqual(multiStepFiles);
+  });
+
   it("pins missed-timing chain event origin metadata coverage", () => {
     const chainFiles = fs.readdirSync(testRoot)
       .filter((file) => /^parity-missed-timing-(?:chain-activating|chaining|chain-solving|chain-solved|chain-negated|chain-disabled|chain-ended)(?:-decline)?-fixture\.test\.ts$/.test(file))
@@ -204,6 +217,25 @@ function hasSourceEffectCauseMetadata(file: string): boolean {
     /eventReasonCardUid:\s*["']p0-deck-100-0["']/.test(text) &&
     /eventReasonEffectId:\s*\d+/.test(text) &&
     /eventTriggerTiming:\s*["']if["']/.test(text)
+  );
+}
+
+function hasOptionalWhenVsIfMissedTimingProof(file: string): boolean {
+  const text = readTestFile(file);
+  return (
+    /source:\s*["']edopro["']/.test(text) &&
+    /snapshotRestore:\s*["']both["']/.test(text) &&
+    /triggerTiming:\s*["']when["']/.test(text) &&
+    /triggerTiming:\s*["']if["']/.test(text) &&
+    /pendingTriggers:\s*\[/.test(text) &&
+    /effectId:\s*["'][^"']*optional-if["']/.test(text) &&
+    /eventTriggerTiming:\s*["']if["']/.test(text) &&
+    /absentLegalActions:\s*\[/.test(text) &&
+    /absentLegalActionGroups:\s*\[/.test(text) &&
+    /effectId:\s*["'][^"']*optional-when["']/.test(text) &&
+    /EDOPro[\s\S]*optional (?:when|if)/.test(text) &&
+    /pendingTriggers:\s*\[\]/.test(text) &&
+    /pendingTriggerBuckets:\s*\[\]/.test(text)
   );
 }
 
