@@ -197,6 +197,7 @@ describe("EDOPro parity Synchro Summon success fixtures", () => {
         note: "EDOPro final fixture state keeps the Synchro monster on field and its materials in the Graveyard",
         phase: "main1",
         windowId: 2,
+        windowKind: "open",
         pendingTriggers: [],
         chain: [],
         chainPasses: [],

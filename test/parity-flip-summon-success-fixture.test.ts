@@ -183,6 +183,7 @@ describe("EDOPro parity Flip Summon success fixtures", () => {
         note: "EDOPro final fixture state keeps the Flip Summoned monster face-up after resolving success triggers",
         phase: "main1",
         windowId: 2,
+        windowKind: "open",
         pendingTriggers: [],
         chain: [],
         chainPasses: [],

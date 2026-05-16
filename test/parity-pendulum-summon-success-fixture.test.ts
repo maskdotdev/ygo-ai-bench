@@ -212,6 +212,7 @@ describe("EDOPro parity Pendulum Summon success fixtures", () => {
         note: "EDOPro final fixture state keeps the Pendulum Summoned monster on field",
         phase: "main1",
         windowId: 2,
+        windowKind: "open",
         pendingTriggers: [],
         chain: [],
         chainPasses: [],

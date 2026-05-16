@@ -197,6 +197,7 @@ describe("EDOPro parity Link Summon success fixtures", () => {
         note: "EDOPro final fixture state keeps the Link monster on field and its materials in the Graveyard",
         phase: "main1",
         windowId: 2,
+        windowKind: "open",
         pendingTriggers: [],
         chain: [],
         chainPasses: [],

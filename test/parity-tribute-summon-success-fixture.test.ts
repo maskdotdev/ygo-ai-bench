@@ -186,6 +186,7 @@ describe("EDOPro parity Tribute Summon success fixtures", () => {
         note: "EDOPro final fixture state keeps the Tribute Summoned monster on field and the released material in the Graveyard",
         phase: "main1",
         windowId: 2,
+        windowKind: "open",
         pendingTriggers: [],
         chain: [],
         chainPasses: [],

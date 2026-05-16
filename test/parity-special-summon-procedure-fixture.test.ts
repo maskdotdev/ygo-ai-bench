@@ -169,6 +169,7 @@ describe("EDOPro parity special summon procedure fixtures", () => {
         note: "EDOPro final fixture state keeps the procedure monster Special Summoned after resolving success triggers",
         phase: "main1",
         windowId: 2,
+        windowKind: "open",
         pendingTriggers: [],
         chain: [],
         locations: { monsterZone: ["100"], hand: ["200"] },

@@ -199,6 +199,7 @@ describe("EDOPro parity Xyz Summon success fixtures", () => {
         note: "EDOPro final fixture state keeps the Xyz monster on field with its materials overlaid",
         phase: "main1",
         windowId: 2,
+        windowKind: "open",
         pendingTriggers: [],
         chain: [],
         chainPasses: [],
