@@ -32,7 +32,7 @@ describe("Lua real summon-negation restore coverage", () => {
     expect(missing).toEqual([]);
   });
 
-  it("requires representative summon-negation fixtures to prove restored summon-attempt chain metadata and cleanup", () => {
+  it("requires representative summon-negation fixtures to prove restored summon-attempt chain metadata and success cleanup", () => {
     const fixtures = realScriptSummonNegationFixtures();
     expect(fixtures).toHaveLength(summonNegationFixtureCount);
 
@@ -97,6 +97,9 @@ function realScriptSummonNegationFixtures(): Array<{ file: string; requiredSnipp
         'eventName: "normalSummonNegated"',
         'eventName: "flipSummonNegated"',
         'eventName: "specialSummonNegated"',
+        'eventName === "normalSummoned" && event.eventCardUid === summoned!.uid)).toEqual([])',
+        'eventName === "flipSummoned" && event.eventCardUid === summoned!.uid)).toEqual([])',
+        'eventName === "specialSummoned" && event.eventCardUid === summoned!.uid)).toEqual([])',
         'eventName: "lifePointCostPaid"',
         "eventValue: 4000",
       ],
@@ -110,6 +113,9 @@ function realScriptSummonNegationFixtures(): Array<{ file: string; requiredSnipp
         'eventName: "normalSummonNegated"',
         'eventName: "flipSummonNegated"',
         'eventName: "specialSummonNegated"',
+        'eventName === "normalSummoned" && event.eventCardUid === summoned!.uid)).toEqual([])',
+        'eventName === "flipSummoned" && event.eventCardUid === summoned!.uid)).toEqual([])',
+        'eventName === "specialSummoned" && event.eventCardUid === summoned!.uid)).toEqual([])',
         'eventName: "lifePointCostPaid"',
         "eventValue: 2000",
       ],
@@ -119,6 +125,7 @@ function realScriptSummonNegationFixtures(): Array<{ file: string; requiredSnipp
       requiredSnippets: [
         'eventName: "specialSummoning"',
         'eventName: "specialSummonNegated"',
+        'eventName === "specialSummoned" && event.eventCardUid === summoned!.uid)).toEqual([])',
         'eventName: "lifePointCostPaid"',
         "eventValue: 1500",
       ],
@@ -128,6 +135,7 @@ function realScriptSummonNegationFixtures(): Array<{ file: string; requiredSnipp
       requiredSnippets: [
         'eventName: "specialSummoning"',
         'eventName: "specialSummonNegated"',
+        'eventName === "specialSummoned" && event.eventCardUid === summoned!.uid)).toEqual([])',
         "eventReasonPlayer: 0",
         "players[1].lifePoints).toBe(8000)",
       ],
@@ -137,6 +145,7 @@ function realScriptSummonNegationFixtures(): Array<{ file: string; requiredSnipp
       requiredSnippets: [
         'eventName: "specialSummoning"',
         'eventName: "specialSummonNegated"',
+        'eventName === "specialSummoned" && event.eventCardUid === summoned!.uid)).toEqual([])',
         'eventName: "cardsDrawn"',
         'skippedPhases).toEqual([{ player: 0, phase: "main1", remaining: 1 }])',
         'type: "changePhase", phase: "battle"',
@@ -147,6 +156,7 @@ function realScriptSummonNegationFixtures(): Array<{ file: string; requiredSnipp
       requiredSnippets: [
         'eventName: "specialSummoning"',
         'eventName: "specialSummonNegated"',
+        'eventName === "specialSummoned" && event.eventCardUid === summoned!.uid)).toEqual([])',
         'eventName: "released"',
         "duelReason.release",
         "duelReason.cost",
