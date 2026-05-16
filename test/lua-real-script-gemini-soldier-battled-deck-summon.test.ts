@@ -180,6 +180,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredPendingTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredPendingTrigger, trigger!);
     expect(restoredPendingTrigger.session.state.pendingTriggers).toEqual([]);
+    expect(restoredPendingTrigger.session.state.chain).toHaveLength(1);
     expect(restoredPendingTrigger.session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "monsterZone",

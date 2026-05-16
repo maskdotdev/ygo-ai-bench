@@ -76,6 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
         eventReasonEffectId: 1,
       },
     ]);
+    expect(restoredActivation.session.state.chain).toHaveLength(1);
     expect(restoredActivation.session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "hand",

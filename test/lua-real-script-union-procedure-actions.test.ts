@@ -279,6 +279,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
       controller: 0,
       previousEquippedToUid: target!.uid,
     });
+    expect(restoredEquippedState.session.state.chain).toHaveLength(1);
     expect(restoredEquippedState.session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "hand",

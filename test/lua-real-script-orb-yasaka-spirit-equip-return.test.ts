@@ -94,6 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
     const equip = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === orb!.uid);
     expect(equip, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredEquipWindow, equip!);
+    expect(restoredEquipWindow.session.state.chain).toHaveLength(1);
     expect(restoredEquipWindow.session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "hand",

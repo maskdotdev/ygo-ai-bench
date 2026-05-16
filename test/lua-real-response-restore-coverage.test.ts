@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 115;
-const chainedResponseFixtureCount = 114;
-const responseOperationInfoFixtureCount = 106;
+const responseFixtureCount = 121;
+const chainedResponseFixtureCount = 120;
+const responseOperationInfoFixtureCount = 112;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -138,6 +138,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-fushi-no-tori-battle-recover.test.ts",
     "lua-real-script-future-samurai-gemini-banish-destroy.test.ts",
     "lua-real-script-gagaga-escape-position-lockout.test.ts",
+    "lua-real-script-gemini-soldier-battled-deck-summon.test.ts",
     "lua-real-script-gemini-spark-release-destroy-draw.test.ts",
     "lua-real-script-ghost-ogre-chain-destroy.test.ts",
     "lua-real-script-gunkan-suship-catch-select-codes.test.ts",
@@ -171,6 +172,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-nekroz-divinemirror-extra-deck-ritual.test.ts",
     "lua-real-script-negate-attack-battle-window.test.ts",
     "lua-real-script-omega-judgment-select-unselect-targets.test.ts",
+    "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
     "lua-real-script-otohime-position-overload.test.ts",
     "lua-real-script-phoenix-wing-wind-blast-discard-cost.test.ts",
     "lua-real-script-pot-of-desires-deck-cost.test.ts",
@@ -178,6 +180,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-pot-of-extravagance-extra-cost.test.ts",
     "lua-real-script-pot-of-prosperity-excavate.test.ts",
     "lua-real-script-polymerization-fusion-summon.test.ts",
+    "lua-real-script-premature-burial-revive-destroy.test.ts",
     "lua-real-script-prayers-ritual-matfilter.test.ts",
     "lua-real-script-prime-material-dragon-reverse-damage.test.ts",
     "lua-real-script-primite-fusion-extra-check.test.ts",
@@ -198,7 +201,9 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-solemn-strike-special-summon-negate.test.ts",
     "lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
     "lua-real-script-solemn-warning-special-summon-effect-negate.test.ts",
+    "lua-real-script-spirits-invitation-return-bounce.test.ts",
     "lua-real-script-super-soldier-synthesis-specific-material.test.ts",
+    "lua-real-script-supervise-gemini-equip-revive.test.ts",
     "lua-real-script-thunder-sea-horse-special-lock.test.ts",
     "lua-real-script-threatening-roar-temporary-attack-lock.test.ts",
     "lua-real-script-totem-pole-change-damage.test.ts",
@@ -206,6 +211,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-trap-hole-summon-success.test.ts",
     "lua-real-script-tsukuyomi-position-trigger.test.ts",
     "lua-real-script-twin-twisters-discard-cost.test.ts",
+    "lua-real-script-union-procedure-actions.test.ts",
     "lua-real-script-upstart-goblin-draw-recover.test.ts",
     "lua-real-script-waboku-temporary-battle-protection.test.ts",
     "lua-real-script-wiretap-trap-negate-to-deck.test.ts",
