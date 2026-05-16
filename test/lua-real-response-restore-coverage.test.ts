@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 19;
-const chainedResponseFixtureCount = 18;
+const responseFixtureCount = 20;
+const chainedResponseFixtureCount = 19;
 const responseOperationInfoFixtureCount = 17;
 
 describe("Lua real response restore coverage", () => {
@@ -40,7 +40,7 @@ describe("Lua real response restore coverage", () => {
         return !text.includes("applyLuaRestoreResponse")
           || !text.includes("eventHistory")
           || !text.includes("host.messages).not.toContain")
-          || !/location:\s*["'](graveyard|hand|banished|monsterZone)["']/.test(text)
+          || !/location:\s*["'](graveyard|hand|banished|monsterZone|spellTrapZone)["']/.test(text)
           || !/eventName:\s*["'](chainDisabled|positionChanged|cardsDrawn|destroyed|sentToDeck|sentToHand|banished|specialSummoned|damageDealt|recoveredLifePoints|attackDisabled|customEvent)["']/.test(text);
       });
 
@@ -113,6 +113,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-phoenix-wing-wind-blast-discard-cost.test.ts",
     "lua-real-script-raigeki-break-discard-cost.test.ts",
     "lua-real-script-sakuretsu-armor-battle-window.test.ts",
+    "lua-real-script-scrap-iron-scarecrow-battle-window.test.ts",
     "lua-real-script-twin-twisters-discard-cost.test.ts",
   ]
     .map((file) => path.join("test", file))
@@ -126,5 +127,8 @@ function realScriptChainedResponseFixtureFiles(): string[] {
 
 function realScriptResponseOperationInfoFixtureFiles(): string[] {
   return realScriptChainedResponseFixtureFiles()
-    .filter((file) => !file.endsWith("lua-real-script-negate-attack-battle-window.test.ts"));
+    .filter((file) =>
+      !file.endsWith("lua-real-script-negate-attack-battle-window.test.ts")
+      && !file.endsWith("lua-real-script-scrap-iron-scarecrow-battle-window.test.ts")
+    );
 }
