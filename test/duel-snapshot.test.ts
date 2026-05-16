@@ -139,20 +139,47 @@ describe("duel snapshot persistence", () => {
     });
     startDuel(session);
     const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
-    session.state.chain = [{ id: "chain-1", player: 0, sourceUid, effectId: "effect", eventUids: [sourceUid] }];
-    session.state.pendingTriggers = [{ id: "trigger-1", player: 0, sourceUid, effectId: "effect", eventName: "customEvent", eventTriggerTiming: "if", triggerBucket: "turnOptional", eventUids: [sourceUid] }];
+    session.state.chain = [{
+      id: "chain-1",
+      player: 0,
+      sourceUid,
+      effectId: "effect",
+      eventUids: [sourceUid],
+      effectLabels: [101, 202],
+      effectLabelObjectUids: [sourceUid],
+    }];
+    session.state.pendingTriggers = [{
+      id: "trigger-1",
+      player: 0,
+      sourceUid,
+      effectId: "effect",
+      eventName: "customEvent",
+      eventTriggerTiming: "if",
+      triggerBucket: "turnOptional",
+      eventUids: [sourceUid],
+      effectLabelObjectUids: [sourceUid],
+    }];
     session.state.eventHistory = [{ eventName: "customEvent", eventUids: [sourceUid] }];
 
     const publicState = queryPublicState(session);
     const serialized = serializeDuel(session);
     publicState.chain[0]!.eventUids!.push("public-mutation");
+    publicState.chain[0]!.effectLabels!.push(303);
+    publicState.chain[0]!.effectLabelObjectUids!.push("public-mutation");
     publicState.pendingTriggers[0]!.eventUids!.push("public-mutation");
+    publicState.pendingTriggers[0]!.effectLabelObjectUids!.push("public-mutation");
     serialized.state.chain[0]!.eventUids!.push("serialized-mutation");
+    serialized.state.chain[0]!.effectLabels!.push(404);
+    serialized.state.chain[0]!.effectLabelObjectUids!.push("serialized-mutation");
     serialized.state.pendingTriggers[0]!.eventUids!.push("serialized-mutation");
+    serialized.state.pendingTriggers[0]!.effectLabelObjectUids!.push("serialized-mutation");
     serialized.state.eventHistory[0]!.eventUids!.push("serialized-mutation");
 
     expect(session.state.chain[0]?.eventUids).toEqual([sourceUid]);
+    expect(session.state.chain[0]?.effectLabels).toEqual([101, 202]);
+    expect(session.state.chain[0]?.effectLabelObjectUids).toEqual([sourceUid]);
     expect(session.state.pendingTriggers[0]?.eventUids).toEqual([sourceUid]);
+    expect(session.state.pendingTriggers[0]?.effectLabelObjectUids).toEqual([sourceUid]);
     expect(session.state.eventHistory[0]?.eventUids).toEqual([sourceUid]);
   });
 

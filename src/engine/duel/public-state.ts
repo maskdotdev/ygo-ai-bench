@@ -79,6 +79,8 @@ function copyPublicChainLink(link: DuelState["chain"][number]): PublicChainLink 
     ...(link.eventUids === undefined ? {} : { eventUids: [...link.eventUids] }),
     ...(link.eventPreviousState === undefined ? {} : { eventPreviousState: { ...link.eventPreviousState } }),
     ...(link.eventCurrentState === undefined ? {} : { eventCurrentState: { ...link.eventCurrentState } }),
+    ...(link.effectLabels === undefined ? {} : { effectLabels: [...link.effectLabels] }),
+    ...(link.effectLabelObjectUids === undefined ? {} : { effectLabelObjectUids: [...link.effectLabelObjectUids] }),
   };
 }
 
@@ -98,6 +100,7 @@ function copyPendingTrigger(trigger: DuelState["pendingTriggers"][number]): Duel
     ...(trigger.eventUids === undefined ? {} : { eventUids: [...trigger.eventUids] }),
     ...(trigger.eventPreviousState === undefined ? {} : { eventPreviousState: { ...trigger.eventPreviousState } }),
     ...(trigger.eventCurrentState === undefined ? {} : { eventCurrentState: { ...trigger.eventCurrentState } }),
+    ...(trigger.effectLabelObjectUids === undefined ? {} : { effectLabelObjectUids: [...trigger.effectLabelObjectUids] }),
   };
 }
 

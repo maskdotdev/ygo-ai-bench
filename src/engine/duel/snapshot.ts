@@ -1043,6 +1043,7 @@ function copyEventPayload<T extends DuelState["chain"][number] | PublicChainLink
   return {
     ...payload,
     ...(payload.eventUids === undefined ? {} : { eventUids: [...payload.eventUids] }),
+    ...("effectLabels" in payload && payload.effectLabels !== undefined ? { effectLabels: [...payload.effectLabels] } : {}),
     ...("effectLabelObjectUids" in payload && payload.effectLabelObjectUids !== undefined ? { effectLabelObjectUids: [...payload.effectLabelObjectUids] } : {}),
     ...(payload.eventPreviousState === undefined ? {} : { eventPreviousState: { ...payload.eventPreviousState } }),
     ...(payload.eventCurrentState === undefined ? {} : { eventCurrentState: { ...payload.eventCurrentState } }),
