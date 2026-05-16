@@ -44,6 +44,13 @@ const openFastWaitingForTurnPlayerProofCount = 1380;
 const openFastWaitingForOpponentProofCount = 823;
 const openFastBattleWindowTurnPlayerResponseProofCount = 127;
 const openFastBattleWindowOpponentResponseProofCount = 188;
+const openFastChainPassesEvidenceFixtureFileCount = 421;
+const openFastPassHandoffFixtureFileCount = 318;
+const openFastPassHandoffChainPassesFixtureFileCount = 318;
+const openFastPassResolutionFixtureFileCount = 62;
+const openFastPassResolutionCleanPassesFixtureFileCount = 62;
+const openFastChainResolutionFixtureFileCount = 49;
+const openFastChainResolutionCleanPassesFixtureFileCount = 49;
 
 const chainEndedOpenFastFiles = [
   "test/parity-chain-ended-open-fast-chain-response-chain-limit-fixture.test.ts",
@@ -188,6 +195,22 @@ describe("EDOPro open fast-effect fixture coverage", () => {
     });
   });
 
+  it("keeps open-fast pass handoff and resolution evidence ratcheted", () => {
+    const files = allOpenFastResponsePlayerFixtureFiles();
+    const evidence = countOpenFastHandoffEvidence(files);
+
+    expect(files).toHaveLength(openFastResponsePlayerFixtureFileCount);
+    expect(evidence).toEqual({
+      chainPassesEvidenceFiles: openFastChainPassesEvidenceFixtureFileCount,
+      passHandoffFiles: openFastPassHandoffFixtureFileCount,
+      passHandoffChainPassesFiles: openFastPassHandoffChainPassesFixtureFileCount,
+      passResolutionFiles: openFastPassResolutionFixtureFileCount,
+      passResolutionCleanPassesFiles: openFastPassResolutionCleanPassesFixtureFileCount,
+      chainResolutionFiles: openFastChainResolutionFixtureFileCount,
+      chainResolutionCleanPassesFiles: openFastChainResolutionCleanPassesFixtureFileCount,
+    });
+  });
+
   it("requires open-fast fixture windows to carry EDOPro provenance notes", () => {
     const weak = allRequiredParityOpenFastFiles().filter((file) => !hasEdoproProvenanceNote(file));
 
@@ -320,6 +343,41 @@ function countResponsePlayerEvidence(files: string[]): {
     waitingForOpponent: 0,
     battleWindowTurnPlayerResponse: 0,
     battleWindowOpponentResponse: 0,
+  });
+}
+
+function countOpenFastHandoffEvidence(files: string[]): {
+  chainPassesEvidenceFiles: number;
+  passHandoffFiles: number;
+  passHandoffChainPassesFiles: number;
+  passResolutionFiles: number;
+  passResolutionCleanPassesFiles: number;
+  chainResolutionFiles: number;
+  chainResolutionCleanPassesFiles: number;
+} {
+  return files.reduce((counts, file) => {
+    const text = fs.readFileSync(path.join(root, file), "utf8");
+    const hasChainPasses = /chainPasses:\s*\[/.test(text);
+    const hasCleanChainPasses = /chainPasses:\s*\[\]/.test(text);
+    const isPassHandoff = file.includes("pass-handoff");
+    const isPassResolution = file.includes("pass-resolution");
+    const isChainResolution = file.includes("chain-resolution");
+    if (hasChainPasses) counts.chainPassesEvidenceFiles += 1;
+    if (isPassHandoff) counts.passHandoffFiles += 1;
+    if (isPassHandoff && hasChainPasses) counts.passHandoffChainPassesFiles += 1;
+    if (isPassResolution) counts.passResolutionFiles += 1;
+    if (isPassResolution && hasCleanChainPasses) counts.passResolutionCleanPassesFiles += 1;
+    if (isChainResolution) counts.chainResolutionFiles += 1;
+    if (isChainResolution && hasCleanChainPasses) counts.chainResolutionCleanPassesFiles += 1;
+    return counts;
+  }, {
+    chainPassesEvidenceFiles: 0,
+    passHandoffFiles: 0,
+    passHandoffChainPassesFiles: 0,
+    passResolutionFiles: 0,
+    passResolutionCleanPassesFiles: 0,
+    chainResolutionFiles: 0,
+    chainResolutionCleanPassesFiles: 0,
   });
 }
 
