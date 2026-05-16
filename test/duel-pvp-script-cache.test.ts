@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createDuel, loadDecks } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { createBrowserLuaScriptCache } from "../src/playtest-app/duel-pvp-script-cache.js";
+import { createBrowserLuaScriptCache, createBrowserLuaScriptFetchLoader } from "../src/playtest-app/duel-pvp-script-cache.js";
 
 describe("browser PvP Lua script cache", () => {
   it("preloads only missing card scripts and exposes a synchronous Lua source", async () => {
@@ -57,5 +57,26 @@ describe("browser PvP Lua script cache", () => {
     expect(loaded).toEqual({ ok: true, name: "c90000011.lua" });
     expect(registered).toContainEqual(expect.objectContaining({ code: "90000011", ok: true }));
     expect(host.messages).toContain("browser script 90000011");
+  });
+
+  it("fetches requested Lua scripts from browser script URLs", async () => {
+    const requestedUrls: string[] = [];
+    const loader = createBrowserLuaScriptFetchLoader({
+      baseUrl: "/card-scripts",
+      fetchText: async (url) => {
+        requestedUrls.push(url);
+        if (url.endsWith("c90000013.lua")) {
+          return { ok: true, status: 200, async text() { return "c90000013={}"; } };
+        }
+        return { ok: false, status: 404, async text() { return ""; } };
+      },
+    });
+    const cache = createBrowserLuaScriptCache(loader);
+
+    const preload = await cache.preloadCardScripts(["90000013", "90000014", "90000013"]);
+
+    expect(requestedUrls).toEqual(["/card-scripts/c90000013.lua", "/card-scripts/c90000014.lua"]);
+    expect(preload).toEqual({ loaded: ["c90000013.lua"], missing: ["c90000014.lua"] });
+    expect(cache.readScript("c90000013.lua")).toBe("c90000013={}");
   });
 });

@@ -3,6 +3,19 @@ import type { LuaScriptSource } from "#lua/host.js";
 
 export type BrowserLuaScriptLoader = (names: readonly string[]) => Promise<Readonly<Record<string, string | undefined>>>;
 
+export interface BrowserLuaScriptFetchResponse {
+  ok: boolean;
+  status: number;
+  text(): Promise<string>;
+}
+
+export type BrowserLuaScriptFetch = (url: string) => Promise<BrowserLuaScriptFetchResponse>;
+
+export interface BrowserLuaScriptFetchLoaderOptions {
+  baseUrl: string;
+  fetchText?: BrowserLuaScriptFetch;
+}
+
 export interface BrowserLuaScriptPreloadResult {
   loaded: string[];
   missing: string[];
@@ -46,4 +59,26 @@ export function createBrowserLuaScriptCache(loader: BrowserLuaScriptLoader): Bro
       return normalizedNames(names).filter((name) => !scripts.has(name));
     },
   };
+}
+
+export function createBrowserLuaScriptFetchLoader(options: BrowserLuaScriptFetchLoaderOptions): BrowserLuaScriptLoader {
+  const fetchText = options.fetchText ?? ((url) => fetch(url));
+  return async (names) => {
+    const loaded: Record<string, string | undefined> = {};
+    await Promise.all(normalizedNames(names).map(async (name) => {
+      const response = await fetchText(scriptUrl(options.baseUrl, name));
+      if (response.status === 404) {
+        loaded[name] = undefined;
+        return;
+      }
+      if (!response.ok) throw new Error(`Lua script fetch failed for ${name} with HTTP ${response.status}`);
+      loaded[name] = await response.text();
+    }));
+    return loaded;
+  };
+}
+
+function scriptUrl(baseUrl: string, name: string): string {
+  const normalizedBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+  return `${normalizedBase}${encodeURIComponent(name)}`;
 }
