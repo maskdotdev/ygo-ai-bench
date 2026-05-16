@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 6;
+const DRAW_RECOVER_FIXTURE_COUNT = 7;
 
 describe("Lua real draw and recover restore coverage", () => {
   it("requires draw/recover fixtures to assert clean Lua registry restore and restored event outcomes", () => {
@@ -47,6 +47,18 @@ function drawRecoverFixtureFiles(): Array<{ file: string; required: string[] }> 
         "category: 0x100000",
         "players[1].lifePoints).toBe(7000)",
         'location: "graveyard"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-dark-bribe-negate-draw.test.ts",
+      required: [
+        'eventName: "cardsDrawn"',
+        'eventName: "chainNegated"',
+        'eventName: "chainDisabled"',
+        "category: 65536",
+        'location: "graveyard"',
+        'location: "hand", controller: 0',
+        'recoveredLifePoints")).toEqual([])',
       ],
     },
     {
