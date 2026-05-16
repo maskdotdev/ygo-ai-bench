@@ -120,6 +120,15 @@ describe("EDOPro open fast-effect fixture coverage", () => {
     expect(missing).toEqual([]);
   });
 
+  it("keeps every chain-ended open fast-effect fixture in the explicit inventory", () => {
+    const scannedFiles = fs.readdirSync(path.join(root, "test"))
+      .filter((file) => /^parity-chain-ended-open-fast-.*\.test\.ts$/.test(file))
+      .map((file) => `test/${file}`)
+      .sort();
+
+    expect(scannedFiles).toEqual([...chainEndedOpenFastFiles].sort());
+  });
+
   it("keeps triggerless action families pinned to base, chain-response, and restored pass-handoff fixtures", () => {
     const missing = triggerlessOpenFastFamilies.flatMap(({ base, post, restore }) =>
       requiredFiles(base, post, restore).filter((file) => !fs.existsSync(path.join(root, file))),
