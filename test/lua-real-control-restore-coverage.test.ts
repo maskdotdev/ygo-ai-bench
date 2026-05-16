@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const controlFixtureCount = 6;
+const controlFixtureCount = 7;
 
 describe("Lua real control restore coverage", () => {
   it("requires representative control-change fixtures to prove clean Lua restore and replayed legal actions", () => {
@@ -75,6 +75,15 @@ function realScriptControlFixtureFiles(): Array<{ file: string; required: string
         "targetUids ?? []).toEqual([])",
         "positionLockCodes(restoredResponseWindow.session, ownMonster!.uid)).toEqual([14])",
         "creature swap position probe false/false",
+      ],
+    },
+    {
+      file: "lua-real-script-mataza-control-extra-attack.test.ts",
+      required: [
+        "code: 5",
+        "mataza control predicate false",
+        "mataza control take 0",
+        "mataza control swap false",
       ],
     },
     {

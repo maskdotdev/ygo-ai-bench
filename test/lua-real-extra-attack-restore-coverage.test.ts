@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const EXTRA_ATTACK_FIXTURE_COUNT = 7;
+const EXTRA_ATTACK_FIXTURE_COUNT = 8;
 
 describe("Lua real extra attack restore coverage", () => {
   it("requires representative multi-attack fixtures to assert clean Lua restore and replayed legal attacks", () => {
@@ -82,6 +82,14 @@ function realScriptExtraAttackFixtureFiles(): Array<{ file: string; required: st
         "code: 200",
         "hasAttack(restoredActions, ur!.uid, secondTarget!.uid)).toBe(true)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-mataza-control-extra-attack.test.ts",
+      required: [
+        "code: 194",
+        "hasAttack(secondActions, mataza!.uid, target!.uid)).toBe(false)",
+        "hasDirectAttack(secondActions, mataza!.uid)).toBe(true)",
       ],
     },
     {
