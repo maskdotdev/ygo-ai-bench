@@ -121,7 +121,7 @@ describe("EDOPro parity trigger-chain response turn-response chain-limit opponen
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "trigger-limit-opponent-pass-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-limit-opponent-pass-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
               { player: 1, effectId: "trigger-limit-opponent-pass-opponent-limiter", sourceUid: "p1-deck-500-0" },
               { player: 0, effectId: "trigger-limit-opponent-pass-first-followup", sourceUid: "p0-deck-300-2" },
               { player: 1, effectId: "trigger-limit-opponent-pass-opponent-followup", sourceUid: "p1-deck-600-1" },

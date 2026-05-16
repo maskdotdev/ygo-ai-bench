@@ -432,7 +432,7 @@ describe("EDOPro compatibility harness fixtures", () => {
               source: "edopro",
               windowId: 2,
               waitingFor: 0,
-              chain: [{ player: 0, effectId: "fixture-normal-summon-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+              chain: [{ player: 0, effectId: "fixture-normal-summon-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
               pendingTriggers: [],
               legalActions: [
                 { type: "activateEffect", player: 0, windowId: 2, windowKind: "chainResponse", effectId: "fixture-self-fast-quick", count: 1 },
@@ -529,7 +529,7 @@ describe("EDOPro compatibility harness fixtures", () => {
               source: "edopro",
               windowId: 2,
               waitingFor: 1,
-              chain: [{ player: 0, effectId: "fixture-normal-summon-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+              chain: [{ player: 0, effectId: "fixture-normal-summon-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
               pendingTriggers: [],
               legalActions: [
                 { type: "activateEffect", player: 1, windowId: 2, windowKind: "chainResponse", effectId: "fixture-opponent-fast-quick", count: 1 },

@@ -90,7 +90,7 @@ describe("EDOPro parity trigger-chain open fast-effect chain response resolution
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "trigger-chain-response-resolution-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-chain-response-resolution-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
               { player: 1, effectId: "trigger-chain-response-resolution-opponent-chain-quick", sourceUid: "p1-deck-500-0" },
             ],
             chainPasses: [],

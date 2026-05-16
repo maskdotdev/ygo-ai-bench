@@ -121,7 +121,7 @@ describe("EDOPro parity trigger-chain pass handoff opponent response turn respon
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "trigger-handoff-opponent-turn-limit-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-handoff-opponent-turn-limit-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
               { player: 0, effectId: "trigger-handoff-opponent-turn-limit-first-turn-chain-quick", sourceUid: "p0-deck-300-2" },
               { player: 1, effectId: "trigger-handoff-opponent-turn-limit-opponent-first", sourceUid: "p1-deck-1100-0" },
             ],
@@ -170,7 +170,7 @@ describe("EDOPro parity trigger-chain pass handoff opponent response turn respon
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "trigger-handoff-opponent-turn-limit-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-handoff-opponent-turn-limit-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
               { player: 0, effectId: "trigger-handoff-opponent-turn-limit-first-turn-chain-quick", sourceUid: "p0-deck-300-2" },
               { player: 1, effectId: "trigger-handoff-opponent-turn-limit-opponent-first", sourceUid: "p1-deck-1100-0" },
               { player: 0, effectId: "trigger-handoff-opponent-turn-limit-chain-limiter", sourceUid: "p0-deck-500-3" },
@@ -204,7 +204,7 @@ describe("EDOPro parity trigger-chain pass handoff opponent response turn respon
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "trigger-handoff-opponent-turn-limit-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-handoff-opponent-turn-limit-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
               { player: 0, effectId: "trigger-handoff-opponent-turn-limit-first-turn-chain-quick", sourceUid: "p0-deck-300-2" },
               { player: 1, effectId: "trigger-handoff-opponent-turn-limit-opponent-first", sourceUid: "p1-deck-1100-0" },
               { player: 0, effectId: "trigger-handoff-opponent-turn-limit-chain-limiter", sourceUid: "p0-deck-500-3" },

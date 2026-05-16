@@ -73,7 +73,7 @@ describe("EDOPro parity SEGOC trigger fixtures", () => {
             windowId: 2,
             windowKind: "triggerBucket",
             waitingFor: 1,
-            chain: [{ player: 0, effectId: "fixture-segoc-turn-mandatory-before-opponent-open", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            chain: [{ player: 0, effectId: "fixture-segoc-turn-mandatory-before-opponent-open", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
             pendingTriggers: [{ player: 1, effectId: "fixture-segoc-opponent-mandatory-open", triggerBucket: "opponentMandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 1, triggerBucket: "opponentMandatory" }],
             legalActionCounts: { 0: 0, 1: 1 },

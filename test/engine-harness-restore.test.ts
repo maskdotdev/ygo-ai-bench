@@ -187,7 +187,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               waitingFor: 1,
               chainPasses: [],
               usedCountKeys: ["turn-1:0:p0-deck-200-1:fixture-normal-summon-trigger"],
-              chain: [{ player: 0, effectId: "fixture-normal-summon-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+              chain: [{ player: 0, effectId: "fixture-normal-summon-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
               pendingTriggers: [],
               legalActions: [
                 { type: "activateEffect", player: 1, windowKind: "chainResponse", effectId: "fixture-opponent-chain-quick", count: 1 },
@@ -205,7 +205,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               source: "edopro",
               waitingFor: 0,
               chainPasses: [1],
-              chain: [{ player: 0, effectId: "fixture-normal-summon-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+              chain: [{ player: 0, effectId: "fixture-normal-summon-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
               legalActions: [
                 { type: "activateEffect", player: 0, windowKind: "chainResponse", effectId: "fixture-chain-quick", count: 1 },
                 { type: "passChain", player: 0, windowKind: "chainResponse", count: 1 },
@@ -223,7 +223,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
           waitingFor: 0,
           chainPasses: [1],
           usedCountKeys: ["turn-1:0:p0-deck-200-1:fixture-normal-summon-trigger"],
-          chain: [{ player: 0, effectId: "fixture-normal-summon-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+          chain: [{ player: 0, effectId: "fixture-normal-summon-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
           pendingTriggers: [],
           legalActions: [
             { type: "activateEffect", player: 0, windowKind: "chainResponse", effectId: "fixture-chain-quick", count: 1 },
@@ -529,7 +529,7 @@ describe("EDOPro compatibility harness snapshot restore", () => {
               triggerOrderPrompt: null,
               pendingTriggers: [{ id: "trigger-9-2", player: 0, effectId: "fixture-second-trigger", triggerBucket: "turnOptional" }],
               pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional", triggerIds: ["trigger-9-2"] }],
-              chain: [{ player: 0, effectId: "fixture-first-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+              chain: [{ player: 0, effectId: "fixture-first-trigger", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
               legalActions: [{ type: "activateTrigger", player: 0, windowId: 2, windowKind: "triggerBucket", effectId: "fixture-second-trigger", triggerBucket: "turnOptional", count: 1 }],
             },
           }),

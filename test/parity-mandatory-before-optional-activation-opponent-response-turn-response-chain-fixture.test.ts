@@ -108,8 +108,8 @@ describe("EDOPro parity mandatory before optional activation opponent-response t
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-opponent-turn-chain-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
-              { player: 0, effectId: "fixture-opponent-turn-chain-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-opponent-turn-chain-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-opponent-turn-chain-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
               { player: 1, effectId: "fixture-opponent-turn-chain-opponent-first", sourceUid: "p1-deck-500-0" },
             ],
             chainPasses: [],
@@ -145,8 +145,8 @@ describe("EDOPro parity mandatory before optional activation opponent-response t
         pendingTriggers: [],
         pendingTriggerBuckets: [],
         chain: [
-          { player: 0, effectId: "fixture-opponent-turn-chain-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
-          { player: 0, effectId: "fixture-opponent-turn-chain-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+          { player: 0, effectId: "fixture-opponent-turn-chain-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
+          { player: 0, effectId: "fixture-opponent-turn-chain-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
           { player: 1, effectId: "fixture-opponent-turn-chain-opponent-first", sourceUid: "p1-deck-500-0" },
           { player: 0, effectId: "fixture-opponent-turn-chain-turn-response", sourceUid: "p0-deck-600-3" },
         ],

@@ -212,7 +212,7 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
             windowId: 2,
             windowKind: "chainResponse",
             waitingFor: 1,
-            chain: [{ player: 0, effectId: "trigger-chain-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            chain: [{ player: 0, effectId: "trigger-chain-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
             legalActionCounts: { 0: 0, 1: 2 },
             legalActionGroupCounts: { 0: 0, 1: 2 },
             legalActions: [
@@ -242,7 +242,7 @@ describe("EDOPro parity trigger-chain open fast-effect fixtures", () => {
             windowId: 2,
             windowKind: "chainResponse",
             waitingFor: 1,
-            chain: [{ player: 0, effectId: "trigger-chain-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            chain: [{ player: 0, effectId: "trigger-chain-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
             chainPasses: [],
             pendingTriggers: [],
             pendingTriggerBuckets: [],

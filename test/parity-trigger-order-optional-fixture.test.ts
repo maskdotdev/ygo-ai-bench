@@ -189,7 +189,7 @@ describe("EDOPro parity optional trigger ordering fixture", () => {
             windowId: 2,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            chain: [{ player: 0, effectId: "fixture-second-optional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            chain: [{ player: 0, effectId: "fixture-second-optional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
             pendingTriggers: [{ player: 0, effectId: "fixture-first-optional", triggerBucket: "turnOptional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             triggerOrderPrompt: null,

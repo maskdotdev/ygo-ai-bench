@@ -121,8 +121,8 @@ describe("EDOPro parity mandatory before optional activation opponent-response t
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "fixture-opponent-turn-opponent-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
-              { player: 0, effectId: "fixture-opponent-turn-opponent-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-opponent-turn-opponent-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-opponent-turn-opponent-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
               { player: 1, effectId: "fixture-opponent-turn-opponent-opponent-first", sourceUid: "p1-deck-500-0" },
               { player: 0, effectId: "fixture-opponent-turn-opponent-turn-first", sourceUid: "p0-deck-600-3" },
             ],
@@ -161,8 +161,8 @@ describe("EDOPro parity mandatory before optional activation opponent-response t
         pendingTriggers: [],
         pendingTriggerBuckets: [],
         chain: [
-          { player: 0, effectId: "fixture-opponent-turn-opponent-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
-          { player: 0, effectId: "fixture-opponent-turn-opponent-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+          { player: 0, effectId: "fixture-opponent-turn-opponent-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
+          { player: 0, effectId: "fixture-opponent-turn-opponent-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
           { player: 1, effectId: "fixture-opponent-turn-opponent-opponent-first", sourceUid: "p1-deck-500-0" },
           { player: 0, effectId: "fixture-opponent-turn-opponent-turn-first", sourceUid: "p0-deck-600-3" },
           { player: 1, effectId: "fixture-opponent-turn-opponent-opponent-second", sourceUid: "p1-deck-800-1" },

@@ -227,7 +227,7 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
             windowId: 2,
             windowKind: "triggerBucket",
             waitingFor: 1,
-            chain: [{ player: 0, effectId: "fixture-turn-mandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            chain: [{ player: 0, effectId: "fixture-turn-mandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
             chainPasses: [],
             pendingTriggers: [
               { player: 1, effectId: "fixture-opponent-mandatory", triggerBucket: "opponentMandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" , eventTriggerTiming: "if"},
@@ -317,8 +317,8 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
             windowKind: "triggerBucket",
             waitingFor: 0,
             chain: [
-              { player: 0, effectId: "fixture-turn-mandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
-              { player: 1, effectId: "fixture-opponent-mandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-turn-mandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-opponent-mandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
             ],
             chainPasses: [],
             pendingTriggers: [

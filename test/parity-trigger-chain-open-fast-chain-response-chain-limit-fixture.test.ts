@@ -103,7 +103,7 @@ describe("EDOPro parity trigger-chain response chain-limit fixture", () => {
             waitingFor: 1,
             pendingTriggers: [],
             pendingTriggerBuckets: [],
-            chain: [{ player: 0, effectId: "trigger-chain-limit-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            chain: [{ player: 0, effectId: "trigger-chain-limit-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
             chainPasses: [],
             legalActionCounts: { 0: 0, 1: 3 },
             legalActionGroupCounts: { 0: 0, 1: 2 },
@@ -146,7 +146,7 @@ describe("EDOPro parity trigger-chain response chain-limit fixture", () => {
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "trigger-chain-limit-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-chain-limit-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
               { player: 1, effectId: "trigger-chain-limit-opponent-limiter" },
             ],
             chainPasses: [],
@@ -184,7 +184,7 @@ describe("EDOPro parity trigger-chain response chain-limit fixture", () => {
             windowKind: "chainResponse",
             waitingFor: 0,
             chain: [
-              { player: 0, effectId: "trigger-chain-limit-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-chain-limit-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
               { player: 1, effectId: "trigger-chain-limit-opponent-limiter" },
             ],
             chainLimits: [{ untilChainEnd: false, expiresAtChainLength: 2 }],

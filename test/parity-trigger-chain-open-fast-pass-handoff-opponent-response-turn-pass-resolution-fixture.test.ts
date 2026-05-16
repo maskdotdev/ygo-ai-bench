@@ -123,7 +123,7 @@ describe("EDOPro parity trigger-chain pass handoff opponent response turn pass r
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
               { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-first-turn-chain-quick", sourceUid: "p0-deck-300-2" },
               { player: 1, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-opponent-first-chain-quick", sourceUid: "p1-deck-500-0" },
             ],
@@ -171,7 +171,7 @@ describe("EDOPro parity trigger-chain pass handoff opponent response turn pass r
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
               { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-first-turn-chain-quick", sourceUid: "p0-deck-300-2" },
               { player: 1, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-opponent-first-chain-quick", sourceUid: "p1-deck-500-0" },
               { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-second-turn-chain-quick", sourceUid: "p0-deck-900-3" },
@@ -212,7 +212,7 @@ describe("EDOPro parity trigger-chain pass handoff opponent response turn pass r
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
               { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-first-turn-chain-quick", sourceUid: "p0-deck-300-2" },
               { player: 1, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-opponent-first-chain-quick", sourceUid: "p1-deck-500-0" },
               { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-second-turn-chain-quick", sourceUid: "p0-deck-900-3" },
@@ -252,7 +252,7 @@ describe("EDOPro parity trigger-chain pass handoff opponent response turn pass r
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
               { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-first-turn-chain-quick", sourceUid: "p0-deck-300-2" },
               { player: 1, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-opponent-first-chain-quick", sourceUid: "p1-deck-500-0" },
               { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-second-turn-chain-quick", sourceUid: "p0-deck-900-3" },
@@ -296,7 +296,7 @@ describe("EDOPro parity trigger-chain pass handoff opponent response turn pass r
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
               { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-first-turn-chain-quick", sourceUid: "p0-deck-300-2" },
               { player: 1, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-opponent-first-chain-quick", sourceUid: "p1-deck-500-0" },
               { player: 0, effectId: "trigger-pass-handoff-opponent-turn-pass-resolution-second-turn-chain-quick", sourceUid: "p0-deck-900-3" },

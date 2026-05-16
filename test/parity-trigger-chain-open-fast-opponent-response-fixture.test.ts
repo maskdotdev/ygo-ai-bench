@@ -71,7 +71,7 @@ describe("EDOPro parity trigger-chain open fast-effect opponent response fixture
             waitingFor: 0,
             pendingTriggers: [],
             pendingTriggerBuckets: [],
-            chain: [{ player: 0, effectId: "trigger-pass-opponent-response-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            chain: [{ player: 0, effectId: "trigger-pass-opponent-response-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
             chainPasses: [1],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
@@ -95,7 +95,7 @@ describe("EDOPro parity trigger-chain open fast-effect opponent response fixture
             windowKind: "chainResponse",
             waitingFor: 1,
             chain: [
-              { player: 0, effectId: "trigger-pass-opponent-response-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-pass-opponent-response-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
               { player: 0, effectId: "trigger-pass-opponent-response-turn-chain-quick", sourceUid: "p0-deck-300-2" },
             ],
             chainPasses: [],
@@ -120,7 +120,7 @@ describe("EDOPro parity trigger-chain open fast-effect opponent response fixture
             pendingTriggers: [],
             pendingTriggerBuckets: [],
             chain: [
-              { player: 0, effectId: "trigger-pass-opponent-response-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "trigger-pass-opponent-response-success", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" },
               { player: 0, effectId: "trigger-pass-opponent-response-turn-chain-quick", sourceUid: "p0-deck-300-2" },
             ],
             chainPasses: [],

@@ -96,7 +96,7 @@ describe("EDOPro parity SEGOC opponent optional chain fixture", () => {
             waitingFor: 0,
             pendingTriggers: [],
             pendingTriggerBuckets: [],
-            chain: [{ player: 1, effectId: "fixture-segoc-opponent-optional-chain", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            chain: [{ player: 1, effectId: "fixture-segoc-opponent-optional-chain", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
@@ -116,7 +116,7 @@ describe("EDOPro parity SEGOC opponent optional chain fixture", () => {
             waitingFor: 0,
             pendingTriggers: [],
             pendingTriggerBuckets: [],
-            chain: [{ player: 1, effectId: "fixture-segoc-opponent-optional-chain", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" }],
+            chain: [{ player: 1, effectId: "fixture-segoc-opponent-optional-chain", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0", eventTriggerTiming: "if" }],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
