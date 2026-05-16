@@ -30,7 +30,17 @@ describe("EDOPro parity battle-started missed timing fixture", () => {
             location: "hand",
             event: "ignition",
             range: ["hand"],
-            collectEventsOnResolve: [{ collectEvent: "battleStarted", eventCode: 1132, eventIsLast: false }],
+            collectEventsOnResolve: [
+              {
+                collectEvent: "battleStarted",
+                eventCode: 1132,
+                eventIsLast: false,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 33001,
+              },
+            ],
             moveCardsOnResolve: [{ player: 0, code: "700", from: "monsterZone", to: "graveyard" }],
             logMessage: "Battle-started activation multi step resolved",
           },
@@ -95,7 +105,18 @@ describe("EDOPro parity battle-started missed timing fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "battle-started-activation-optional-if", eventName: "battleStarted", eventCode: 1132 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "battle-started-activation-optional-if",
+                eventName: "battleStarted",
+                eventCode: 1132,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 33001,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-started-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
@@ -126,7 +147,18 @@ describe("EDOPro parity battle-started missed timing fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "battle-started-activation-optional-if", eventName: "battleStarted", eventCode: 1132 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "battle-started-activation-optional-if",
+                eventName: "battleStarted",
+                eventCode: 1132,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 33001,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-started-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
