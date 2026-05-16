@@ -434,6 +434,7 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro keeps mandatory turn-player triggers in the turn mandatory bucket, so this intentionally wrong optional-bucket expectation must fail",
