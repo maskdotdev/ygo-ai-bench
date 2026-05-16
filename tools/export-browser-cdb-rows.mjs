@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 
 const options = parseArgs(process.argv.slice(2));
@@ -24,6 +25,15 @@ const payload = `${JSON.stringify({ datas, texts }, null, 2)}\n`;
 if (options.out) {
   fs.mkdirSync(path.dirname(options.out), { recursive: true });
   fs.writeFileSync(options.out, payload, "utf8");
+  fs.writeFileSync(path.join(path.dirname(options.out), "manifest.json"), `${JSON.stringify({
+    schemaVersion: 1,
+    kind: "browser-cdb-rows",
+    payload: path.basename(options.out),
+    selectedCodes: options.codes,
+    datasRows: datas.length,
+    textsRows: texts.length,
+    sha256: sha256(payload),
+  }, null, 2)}\n`, "utf8");
 } else {
   process.stdout.write(payload);
 }
@@ -65,6 +75,10 @@ function readSqliteJson(databasePath, query) {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to export CDB rows from ${databasePath}: ${detail}`);
   }
+}
+
+function sha256(value) {
+  return crypto.createHash("sha256").update(value).digest("hex");
 }
 
 function fail(message) {

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -41,6 +42,19 @@ describe("browser Lua script exporter", () => {
     expect(fs.readFileSync(path.join(outDir, "c100.lua"), "utf8")).toBe("official 100");
     expect(fs.readFileSync(path.join(outDir, "c300.lua"), "utf8")).toBe("pre 300");
     expect(fs.existsSync(path.join(outDir, "c200.lua"))).toBe(false);
+    expect(JSON.parse(fs.readFileSync(path.join(outDir, "manifest.json"), "utf8"))).toEqual({
+      schemaVersion: 1,
+      kind: "browser-lua-scripts",
+      selectedCodes: ["100", "300", "999"],
+      copiedCount: 2,
+      missingCount: 1,
+      copied: ["c100.lua", "c300.lua"],
+      missing: ["c999.lua"],
+      files: [
+        { name: "c100.lua", bytes: Buffer.byteLength("official 100"), sha256: sha256("official 100") },
+        { name: "c300.lua", bytes: Buffer.byteLength("pre 300"), sha256: sha256("pre 300") },
+      ],
+    });
   });
 
   it("exports discovered scripts when no passcodes are selected", () => {
@@ -59,7 +73,7 @@ describe("browser Lua script exporter", () => {
       copied: ["c100.lua", "c200.lua"],
       missing: [],
     });
-    expect(fs.readdirSync(outDir).sort()).toEqual(["c100.lua", "c200.lua"]);
+    expect(fs.readdirSync(outDir).sort()).toEqual(["c100.lua", "c200.lua", "manifest.json"]);
   });
 
   it("prefers local overrides and falls back to local fallback scripts", () => {
@@ -93,5 +107,15 @@ describe("browser Lua script exporter", () => {
     });
     expect(fs.readFileSync(path.join(outDir, "c100.lua"), "utf8")).toBe("override 100");
     expect(fs.readFileSync(path.join(outDir, "c400.lua"), "utf8")).toBe("fallback 400");
+    expect(JSON.parse(fs.readFileSync(path.join(outDir, "manifest.json"), "utf8"))).toMatchObject({
+      copiedCount: 2,
+      missingCount: 0,
+      copied: ["c100.lua", "c400.lua"],
+      missing: [],
+    });
   });
 });
+
+function sha256(value: string): string {
+  return crypto.createHash("sha256").update(value).digest("hex");
+}

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 
 const options = parseArgs(process.argv.slice(2));
 if (options.help) {
@@ -13,6 +14,7 @@ if (!options.out) fail("Missing --out <path>");
 const names = options.codes.length ? options.codes.map((code) => `c${code}.lua`) : discoverScriptNames(options.scripts);
 const copied = [];
 const missing = [];
+const files = [];
 
 fs.mkdirSync(options.out, { recursive: true });
 for (const name of names) {
@@ -21,11 +23,23 @@ for (const name of names) {
     missing.push(name);
     continue;
   }
-  fs.copyFileSync(source, path.join(options.out, name));
+  const text = fs.readFileSync(source, "utf8");
+  fs.writeFileSync(path.join(options.out, name), text, "utf8");
   copied.push(name);
+  files.push({ name, bytes: Buffer.byteLength(text), sha256: sha256(text) });
 }
 
 const summary = { copied, missing };
+fs.writeFileSync(path.join(options.out, "manifest.json"), `${JSON.stringify({
+  schemaVersion: 1,
+  kind: "browser-lua-scripts",
+  selectedCodes: options.codes,
+  copiedCount: copied.length,
+  missingCount: missing.length,
+  copied,
+  missing,
+  files,
+}, null, 2)}\n`, "utf8");
 process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
 if (missing.length && !options.allowMissing) process.exit(1);
 
@@ -83,6 +97,10 @@ function scriptSearchDirs(scriptRoot, localScriptRoot) {
     path.join(scriptRoot, "pre-release"),
     ...(localScriptRoot ? [path.join(localScriptRoot, "fallbacks", "official"), path.join(localScriptRoot, "fallbacks")] : []),
   ];
+}
+
+function sha256(value) {
+  return crypto.createHash("sha256").update(value).digest("hex");
 }
 
 function fail(message) {

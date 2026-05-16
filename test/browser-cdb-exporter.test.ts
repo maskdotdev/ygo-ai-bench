@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -30,7 +31,8 @@ describe("browser CDB row exporter", () => {
 
     execFileSync("node", [exporterPath, "--database", databasePath, "--out", outPath, "--codes", "300,100"]);
 
-    expect(JSON.parse(fs.readFileSync(outPath, "utf8"))).toEqual({
+    const payload = fs.readFileSync(outPath, "utf8");
+    expect(JSON.parse(payload)).toEqual({
       datas: [
         { id: 100, alias: 0, setcode: 4660, type: 33, atk: 2500, def: 2100, level: 7, race: 2, attribute: 32 },
         { id: 300, alias: 0, setcode: 0, type: 4, atk: 0, def: 0, level: 0, race: 0, attribute: 0 },
@@ -39,6 +41,15 @@ describe("browser CDB row exporter", () => {
         { id: 100, name: "Exported Monster" },
         { id: 300, name: "Exported Trap" },
       ],
+    });
+    expect(JSON.parse(fs.readFileSync(path.join(root, "public", "card-data", "manifest.json"), "utf8"))).toEqual({
+      schemaVersion: 1,
+      kind: "browser-cdb-rows",
+      payload: "cdb-rows.json",
+      selectedCodes: ["100", "300"],
+      datasRows: 2,
+      textsRows: 2,
+      sha256: crypto.createHash("sha256").update(payload).digest("hex"),
     });
   });
 });
