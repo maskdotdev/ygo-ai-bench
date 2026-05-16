@@ -111,6 +111,16 @@ describe("coverage inventory guards", () => {
     expect(missingRestoreEvidence).toEqual([]);
   });
 
+  it("requires restored legal-action helper definitions to keep raw, grouped, and flattened proof", () => {
+    const helpers = restoredLegalActionHelpers();
+    const weak = helpers
+      .filter((helper) => !hasStrongRestoreHelper(readTestFile(helper.file), helper.name))
+      .map((helper) => `${helper.file}:${helper.line}:${helper.name}`);
+
+    expect(helpers).toHaveLength(256);
+    expect(weak).toEqual([]);
+  });
+
   it("requires chain-limit restore helpers to prove raw, grouped, and flattened restored actions", () => {
     const chainLimitRestoreFiles = fs.readdirSync(testRoot)
       .filter((file) => /^lua-chain-limit-.*restore\.test\.ts$/.test(file));
@@ -175,6 +185,16 @@ function restoreBranchesIn(file: string, window = 1500): Array<{ file: string; l
 
 function readTestFile(file: string): string {
   return fs.readFileSync(path.join(testRoot, file), "utf8");
+}
+
+function restoredLegalActionHelpers(): Array<{ file: string; line: number; name: string }> {
+  return fs.readdirSync(testRoot)
+    .filter((file) => file.endsWith(".test.ts"))
+    .flatMap((file) => {
+      const text = readTestFile(file);
+      return [...text.matchAll(/function (expectRestoredLegal(?:Action|Actions|ActionGroups))\b/g)]
+        .map((match) => ({ file, line: lineNumber(text, match.index ?? 0), name: match[1]! }));
+    });
 }
 
 function hasNearbyRestoredActionEvidence(text: string, variable: string, fileText: string): boolean {
