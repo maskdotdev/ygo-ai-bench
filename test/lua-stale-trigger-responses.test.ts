@@ -176,6 +176,9 @@ describe("Lua stale trigger responses", () => {
     const stalePreapply = applyLuaRestoreResponse(restored, staleDecline!);
     expect(stalePreapply.ok).toBe(false);
     expect(stalePreapply.error).toContain("Response is not currently legal");
+    expect(stalePreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(stalePreapply.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(stalePreapply.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePreapply.legalActions);
     applyLuaRestoreAndAssert(restored, restoredDecline!);
     const replay = applyLuaRestoreResponse(restored, staleDecline!);
 
@@ -242,6 +245,9 @@ describe("Lua stale trigger responses", () => {
     const stalePreapply = applyLuaRestoreResponse(restored, staleTrigger!);
     expect(stalePreapply.ok).toBe(false);
     expect(stalePreapply.error).toContain("Response is not currently legal");
+    expect(stalePreapply.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
+    expect(stalePreapply.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(stalePreapply.legalActionGroups.flatMap((group) => group.actions)).toEqual(stalePreapply.legalActions);
     const restoredActivation = applyLuaRestoreAndAssert(restored, restoredTrigger!);
     expect(restoredActivation.state).toMatchObject({ waitingFor: 0, windowKind: "open" });
     expect(restored.session.state.chainPasses).toEqual([]);

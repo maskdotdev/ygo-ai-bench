@@ -171,6 +171,16 @@ describe("coverage inventory guards", () => {
     expect(weakPositive).toEqual([]);
   });
 
+  it("requires stale rejected responses to prove returned legal-action surfaces", () => {
+    const calls = staleRejectedResponseCalls();
+    const weak = calls
+      .filter((call) => !hasReturnedLegalActionSurfaceProof(call.text, call.responseVariable))
+      .map((call) => `${call.file}:${call.line}:${call.responseVariable}`);
+
+    expect(calls).toHaveLength(31);
+    expect(weak).toEqual([]);
+  });
+
   it("requires test proof floors to be exact", () => {
     const greaterThanAllowlist = new Set([
       "lua-field-query-helpers.test.ts:59",
@@ -308,9 +318,29 @@ function chainLimitRestoreResponseCalls(): Array<{ file: string; line: number; r
 
 function hasStrongChainLimitRestoreResponse(call: { restoredVariable: string; responseVariable: string; text: string }): boolean {
   return call.text.includes(`expectLuaRestoreResponseLegalActions(${call.restoredVariable}, ${call.responseVariable})`)
-    || (call.text.includes(`${call.responseVariable}.legalActions`)
-      && call.text.includes(`${call.responseVariable}.legalActionGroups`)
-      && call.text.includes(`${call.responseVariable}.legalActionGroups.flatMap((group) => group.actions)).toEqual(${call.responseVariable}.legalActions`));
+    || hasReturnedLegalActionSurfaceProof(call.text, call.responseVariable);
+}
+
+function staleRejectedResponseCalls(): Array<{ file: string; line: number; responseVariable: string; text: string }> {
+  return fs.readdirSync(testRoot)
+    .filter((file) => /^(?:lua|duel)-stale-.*responses\.test\.ts$/.test(file))
+    .flatMap((file) => {
+      const text = readTestFile(file);
+      return [...text.matchAll(/const (\w+) = apply(?:LuaRestore)?Response\(/g)]
+        .map((match) => ({
+          file,
+          line: lineNumber(text, match.index ?? 0),
+          responseVariable: match[1]!,
+          text: text.slice(match.index ?? 0, (match.index ?? 0) + 900),
+        }))
+        .filter((call) => call.text.includes("Response is not currently legal"));
+    });
+}
+
+function hasReturnedLegalActionSurfaceProof(text: string, responseVariable: string): boolean {
+  return text.includes(`${responseVariable}.legalActions`)
+    && text.includes(`${responseVariable}.legalActionGroups`)
+    && text.includes(`${responseVariable}.legalActionGroups.flatMap((group) => group.actions)).toEqual(${responseVariable}.legalActions`);
 }
 
 function hasNearbyRestoredActionEvidence(text: string, variable: string, fileText: string): boolean {
