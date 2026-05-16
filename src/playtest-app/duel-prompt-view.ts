@@ -31,6 +31,7 @@ export function promptViewDetail(prompt: DuelPromptState): string {
     case "selectOption": {
       parts.push(`options ${prompt.options.join(", ")}`);
       if (prompt.descriptions?.length) parts.push(`text ${prompt.descriptions.join(", ")}`);
+      if (prompt.descriptionLists?.length) parts.push(`lists ${formatDescriptionLists(prompt.descriptionLists)}`);
       break;
     }
     case "selectYesNo": {
@@ -40,6 +41,10 @@ export function promptViewDetail(prompt: DuelPromptState): string {
   }
 
   return parts.join(" · ");
+}
+
+function formatDescriptionLists(descriptionLists: readonly (readonly number[])[]): string {
+  return descriptionLists.map((descriptions) => `[${descriptions.join(", ")}]`).join(", ");
 }
 
 export function splitPromptGroups(prompt: DuelPromptState | undefined, groups: readonly DuelActionUiGroup[]): SplitPromptGroups {

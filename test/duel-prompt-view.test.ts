@@ -18,6 +18,19 @@ describe("duel prompt view", () => {
     expect(promptViewDetail(prompt)).toBe("P1 · Prompt prompt-a · returns P2 · options 1, 3 · text 101, 303");
   });
 
+  it("surfaces option prompt description lists", () => {
+    const prompt: DuelPromptState = {
+      id: "prompt-list",
+      type: "selectOption",
+      player: 0,
+      options: [0, 1],
+      descriptions: [10, 20],
+      descriptionLists: [[101, 102], [201]],
+    };
+
+    expect(promptViewDetail(prompt)).toBe("P1 · Prompt prompt-list · options 0, 1 · text 10, 20 · lists [101, 102], [201]");
+  });
+
   it("labels yes/no prompts with description text id when present", () => {
     const prompt: DuelPromptState = {
       id: "prompt-b",
