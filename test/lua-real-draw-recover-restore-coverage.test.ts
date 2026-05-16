@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 3;
+const DRAW_RECOVER_FIXTURE_COUNT = 4;
 
 describe("Lua real draw and recover restore coverage", () => {
   it("requires draw/recover fixtures to assert clean Lua registry restore and restored event outcomes", () => {
@@ -37,6 +37,18 @@ describe("Lua real draw and recover restore coverage", () => {
 
 function drawRecoverFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-bad-reaction-reverse-recover.test.ts",
+      required: [
+        'eventName: "cardsDrawn"',
+        'eventName: "damageDealt"',
+        "targetPlayer: 0",
+        "targetParam: 1",
+        "category: 0x100000",
+        "players[1].lifePoints).toBe(7000)",
+        'location: "graveyard"',
+      ],
+    },
     {
       file: "test/lua-real-script-naturia-ragweed-event-draw-trigger.test.ts",
       required: [
