@@ -233,6 +233,7 @@ describe("EDOPro parity battle direct replay fixtures", () => {
             pendingBattle: false,
             currentAttack: false,
             windowId: 29,
+            windowKind: "open",
             battleWindow: null,
             lifePoints: { 1: 6200 },
             battleDamage: { 1: 1800 },
@@ -264,6 +265,7 @@ describe("EDOPro parity battle direct replay fixtures", () => {
         battleDamage: { 1: 1800 },
         locations: { monsterZone: ["100"], graveyard: ["200"] },
         windowId: 29,
+        windowKind: "open",
         legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },
         legalActions: [

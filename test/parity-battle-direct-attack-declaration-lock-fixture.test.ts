@@ -71,6 +71,7 @@ describe("EDOPro parity battle direct attack declaration lock fixtures", () => {
             pendingBattle: false,
             currentAttack: false,
             windowId: 1,
+            windowKind: "open",
             battleWindow: null,
             attacksDeclared: [],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", windowId: 1, windowKind: "open" }],
