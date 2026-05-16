@@ -179,6 +179,7 @@ function hasDeclineOpenFastRestoreProof(file: string): boolean {
     /triggerTiming:\s*["']if["']/.test(text) &&
     /eventTriggerTiming:\s*["']if["']/.test(text) &&
     /after:\s*\{[\s\S]*?windowKind:\s*["']open["']/.test(text) &&
+    hasPublicWindowEvidence(text) &&
     /pendingTriggers:\s*\[\]/.test(text) &&
     /pendingTriggerBuckets:\s*\[\]/.test(text) &&
     /legalActions:\s*\[/.test(text) &&
@@ -199,6 +200,7 @@ function hasActivationRestoreProof(file: string): boolean {
     /triggerTiming:\s*["']if["']/.test(text) &&
     /eventTriggerTiming:\s*["']if["']/.test(text) &&
     /after:\s*\{[\s\S]*?windowKind:\s*["']open["']/.test(text) &&
+    hasPublicWindowEvidence(text) &&
     /pendingTriggers:\s*\[\]/.test(text) &&
     /pendingTriggerBuckets:\s*\[\]/.test(text) &&
     /legalActions:\s*\[/.test(text) &&
@@ -206,6 +208,15 @@ function hasActivationRestoreProof(file: string): boolean {
     /absentLegalActions:\s*\[/.test(text) &&
     /absentLegalActionGroups:\s*\[/.test(text) &&
     /optional-when/.test(text)
+  );
+}
+
+function hasPublicWindowEvidence(text: string): boolean {
+  return (
+    /windowId:\s*\d+/.test(text) &&
+    /windowKind:\s*["'](?:open|triggerBucket)["']/.test(text) &&
+    /legalActionCounts:\s*\{/.test(text) &&
+    /legalActionGroupCounts:\s*\{/.test(text)
   );
 }
 
