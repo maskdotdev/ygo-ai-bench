@@ -121,7 +121,7 @@ describe("coverage inventory guards", () => {
     expect(weak).toEqual([]);
   });
 
-  it("requires Lua restore response helpers to prove flattened returned legal-action groups", () => {
+  it("requires Lua restore response helpers to prove raw, grouped, and flattened returned legal actions", () => {
     const helpers = luaRestoreResponseHelpers();
     const helpersByKey = new Map(helpers.map((helper) => [helperKey(helper), helper]));
     const weak = helpers
@@ -253,12 +253,24 @@ function hasStrongLuaRestoreResponseHelper(
   const key = helperKey(helper);
   if (seen.has(key)) return false;
   seen.add(key);
-  if (hasReturnedLegalActionFlattenProof(helper.text)) return true;
+  if (hasReturnedRawLegalActionProof(helper.text)
+    && hasReturnedGroupedLegalActionProof(helper.text)
+    && hasReturnedLegalActionFlattenProof(helper.text)) {
+    return true;
+  }
   return [...helper.text.matchAll(/\b(assertLuaRestoreLegalWindow)\(/g)]
     .some((match) => {
       const callee = helpersByKey.get(`${helper.file}:${match[1]!}`);
       return callee !== undefined && hasStrongLuaRestoreResponseHelper(callee, helpersByKey, seen);
     });
+}
+
+function hasReturnedRawLegalActionProof(text: string): boolean {
+  return /\b(\w+)\.legalActions\)\.toEqual\([\s\S]{0,180}\b(?:getDuelLegalActions|getLegalActions|getLuaRestoreLegalActions)\(/.test(text);
+}
+
+function hasReturnedGroupedLegalActionProof(text: string): boolean {
+  return /\b(\w+)\.legalActionGroups\)\.toEqual\([\s\S]{0,220}\b(?:getGroupedDuelLegalActions|getLuaRestoreLegalActionGroups)\(/.test(text);
 }
 
 function hasReturnedLegalActionFlattenProof(text: string): boolean {

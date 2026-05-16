@@ -251,6 +251,8 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(response.ok, response.error).toBe(true);
   const waitingFor = response.state.waitingFor;
   if (waitingFor !== undefined) {
+    expect(response.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+    expect(response.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
     expect(getLuaRestoreLegalActions(restored, waitingFor)).toEqual(getLegalActions(restored.session, waitingFor));
     expect(getLuaRestoreLegalActionGroups(restored, waitingFor).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
   }
