@@ -409,7 +409,7 @@ export function PvpArena() {
             Decks
           </button>
           <button type="button" className="rounded-md bg-black/40 px-2 py-1 text-[11px] font-semibold text-slate-400 hover:bg-cyan-500/15 hover:text-cyan-200" onClick={runVisibleFixture}>
-            Fixture
+            {visibleFixtureRun?.running ? `Fixture ${Math.min(visibleFixtureRun.nextStep + 1, pvpVisibleBattleFixtureScript.length)}/${pvpVisibleBattleFixtureScript.length}` : "Fixture"}
           </button>
         </div>
       </header>
