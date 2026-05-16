@@ -89,6 +89,7 @@ describe("EDOPro parity tribute summon lock fixtures", () => {
         note: "EDOPro final fixture state preserves the high-level monster in hand when Tribute Summon is locked",
         phase: "battle",
         windowId: 1,
+        windowKind: "open",
         locations: { hand: ["100"], monsterZone: ["200"] },
         legalActionCounts: { 0: 3, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },

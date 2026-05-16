@@ -67,6 +67,7 @@ describe("EDOPro parity only-attack-monster lock fixtures", () => {
             pendingBattle: false,
             currentAttack: false,
             windowId: 1,
+            windowKind: "open",
             battleWindow: null,
             attacksDeclared: [],
             absentLegalActions: [{ type: "declareAttack", player: 0, attackerUid: "p0-deck-100-0", directAttack: true, windowId: 1, windowKind: "open" }],

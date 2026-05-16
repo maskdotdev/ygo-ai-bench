@@ -68,6 +68,7 @@ describe("EDOPro parity Pendulum extra deck fixtures", () => {
         note: "EDOPro final fixture state keeps the Pendulum monster face-up in the Extra Deck",
         phase: "battle",
         windowId: 1,
+        windowKind: "open",
         locations: { extraDeck: ["100"] },
         cards: [{ uid: "p0-deck-100-0", code: "100", location: "extraDeck", faceUp: true, position: "faceDown" }],
         legalActionCounts: { 0: 2, 1: 0 },

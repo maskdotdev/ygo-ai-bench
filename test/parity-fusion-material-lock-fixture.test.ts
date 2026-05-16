@@ -76,6 +76,7 @@ describe("EDOPro parity Fusion material lock fixtures", () => {
         note: "EDOPro final fixture state preserves the Fusion monster in the Extra Deck when material use is locked",
         phase: "battle",
         windowId: 1,
+        windowKind: "open",
         locations: { extraDeck: ["900"], hand: ["100", "200"] },
         legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },

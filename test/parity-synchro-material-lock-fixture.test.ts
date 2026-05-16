@@ -88,6 +88,7 @@ describe("EDOPro parity Synchro material lock fixtures", () => {
         note: "EDOPro final fixture state preserves the Synchro monster in the Extra Deck when material use is locked",
         phase: "battle",
         windowId: 1,
+        windowKind: "open",
         locations: { extraDeck: ["900"], monsterZone: ["100", "200"] },
         legalActionCounts: { 0: 4, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },

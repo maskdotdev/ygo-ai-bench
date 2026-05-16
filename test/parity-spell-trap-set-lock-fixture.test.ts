@@ -80,6 +80,7 @@ describe("EDOPro parity spell/trap set lock fixtures", () => {
         note: "EDOPro final fixture state preserves the Spell/Trap card in hand when SSet is locked",
         phase: "battle",
         windowId: 1,
+        windowKind: "open",
         locations: { hand: ["100"] },
         legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },

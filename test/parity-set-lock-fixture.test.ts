@@ -74,6 +74,7 @@ describe("EDOPro parity set lock fixtures", () => {
         note: "EDOPro final fixture state contains the legally Normal Summoned monster",
         phase: "main1",
         windowId: 1,
+        windowKind: "open",
         locations: { monsterZone: ["100"] },
         legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },

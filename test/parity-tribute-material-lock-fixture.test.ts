@@ -85,6 +85,7 @@ describe("EDOPro parity tribute material lock fixtures", () => {
         note: "EDOPro final fixture state preserves the Tribute Summon target in hand when release use is locked",
         phase: "battle",
         windowId: 1,
+        windowKind: "open",
         locations: { hand: ["100"], monsterZone: ["200"] },
         legalActionCounts: { 0: 3, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },

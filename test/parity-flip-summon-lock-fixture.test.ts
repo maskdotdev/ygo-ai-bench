@@ -37,6 +37,8 @@ describe("EDOPro parity flip summon lock fixtures", () => {
             note: "EDOPro resolves an eligible Flip Summon by turning the monster face-up Attack and recording flip summon events",
             phase: "main1",
             waitingFor: 0,
+            windowId: 1,
+            windowKind: "open",
             cards: [{ uid: "p0-deck-100-0", position: "faceUpAttack", faceUp: true }],
             eventHistory: [
               { eventName: "flipSummoning", eventCardUid: "p0-deck-100-0" },
@@ -58,6 +60,7 @@ describe("EDOPro parity flip summon lock fixtures", () => {
         phase: "main1",
         waitingFor: 0,
         windowId: 1,
+        windowKind: "open",
         cards: [{ uid: "p0-deck-100-0", position: "faceUpAttack", faceUp: true }],
         legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },

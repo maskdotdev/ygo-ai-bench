@@ -86,6 +86,7 @@ describe("EDOPro parity position lock fixtures", () => {
         note: "EDOPro final fixture state preserves the locked monster's unchanged position",
         phase: "battle",
         windowId: 1,
+        windowKind: "open",
         locations: { monsterZone: ["100"] },
         positionsChanged: [],
         legalActionCounts: { 0: 3, 1: 0 },

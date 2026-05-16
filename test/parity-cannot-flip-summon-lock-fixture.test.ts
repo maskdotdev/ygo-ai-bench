@@ -76,6 +76,7 @@ describe("EDOPro parity cannot-flip-summon lock fixtures", () => {
         note: "EDOPro final fixture state preserves the locked monster's face-down position",
         phase: "battle",
         windowId: 1,
+        windowKind: "open",
         cards: [{ uid: "p0-deck-100-0", position: "faceDownDefense" }],
         legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },
