@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const chainResponseFixtureCount = 6;
+const chainResponseFixtureCount = 8;
 
 describe("Lua real chain response restore coverage", () => {
   it("requires chain response fixtures to assert clean restore and restored response outcomes", () => {
@@ -56,6 +56,17 @@ function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }
       ],
     },
     {
+      file: "test/lua-real-script-house-adhesive-tape-flip-summon.test.ts",
+      required: [
+        'action.type === "activateEffect" && action.uid === trap.uid',
+        'windowKind).toBe("chainResponse")',
+        "restored.session.state.chain).toHaveLength(0)",
+        'eventName: "destroyed"',
+        'location: "graveyard"',
+        "house tape flip chain starter resolved",
+      ],
+    },
+    {
       file: "test/lua-real-script-wiretap-trap-negate-to-deck.test.ts",
       required: [
         'action.type === "activateEffect" && action.uid === wiretap!.uid',
@@ -87,6 +98,17 @@ function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }
         'eventName: "cardsDrawn"',
         '["chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([])',
         'location: "graveyard"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-trap-hole-flip-summon.test.ts",
+      required: [
+        'action.type === "activateEffect" && action.uid === trap.uid',
+        'windowKind).toBe("chainResponse")',
+        "restored.session.state.chain).toHaveLength(0)",
+        'eventName: "destroyed"',
+        'location: "graveyard"',
+        "trap hole flip chain starter resolved",
       ],
     },
     {
