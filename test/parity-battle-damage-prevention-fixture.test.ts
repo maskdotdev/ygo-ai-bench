@@ -94,6 +94,8 @@ describe("EDOPro parity battle damage prevention fixtures", () => {
             lifePoints: { 0: 8000, 1: 8000 },
             battleDamage: { 0: 0, 1: 0 },
             attacksDeclared: ["p0-deck-100-0"],
+            windowId: 14,
+            windowKind: "open",
             legalActionCounts: { 0: 3, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
@@ -119,6 +121,8 @@ describe("EDOPro parity battle damage prevention fixtures", () => {
         lifePoints: { 0: 8000, 1: 8000 },
         battleDamage: { 0: 0, 1: 0 },
         attacksDeclared: ["p0-deck-100-0"],
+        windowId: 14,
+        windowKind: "open",
         legalActionCounts: { 0: 3, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
         legalActions: [

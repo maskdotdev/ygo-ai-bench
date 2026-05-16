@@ -105,6 +105,8 @@ describe("EDOPro parity battle damage modifier order fixtures", () => {
             attacksDeclared: ["p0-deck-100-0"],
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
             locations: { monsterZone: ["100"], graveyard: ["200"] },
+            windowId: 14,
+            windowKind: "open",
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [
@@ -131,6 +133,8 @@ describe("EDOPro parity battle damage modifier order fixtures", () => {
         attacksDeclared: ["p0-deck-100-0"],
         battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
         locations: { monsterZone: ["100"], graveyard: ["200"] },
+        windowId: 14,
+        windowKind: "open",
         legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },
         legalActions: [
