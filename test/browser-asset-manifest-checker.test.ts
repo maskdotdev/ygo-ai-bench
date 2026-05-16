@@ -74,15 +74,19 @@ describe("browser asset manifest checker", () => {
     expect(result.stderr).toContain("CDB rows manifest selectedCodes 100,200 does not match payload datas ids 100");
   });
 
-  it("fails when CDB datas and texts rows are not paired for selected passcodes", () => {
+  it("fails when CDB datas and texts rows are not paired", () => {
     const root = makeTempRoot();
     const cardDataDir = path.join(root, "card-data");
     writeCardDataExport(cardDataDir, { datas: [{ id: 100, type: 1 }], texts: [{ id: 200, name: "Wrong Text" }] });
+    const manifestPath = path.join(cardDataDir, "manifest.json");
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as { selectedCodes: string[] };
+    manifest.selectedCodes = [];
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 
     const result = spawnSync(process.execPath, [checkerPath, "--card-data", cardDataDir], { encoding: "utf8" });
 
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain("CDB rows manifest selectedCodes 100 does not match payload texts ids 200");
+    expect(result.stderr).toContain("CDB rows payload datas ids 100 do not match texts ids 200");
   });
 
   it("fails when an exported Lua script hash differs from its manifest", () => {

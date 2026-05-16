@@ -49,11 +49,14 @@ function checkCardDataManifest(dir) {
   }
   if (payload.datas.length !== manifest.datasRows) fail(`CDB rows manifest datasRows ${manifest.datasRows} does not match payload ${payload.datas.length}`);
   if (payload.texts.length !== manifest.textsRows) fail(`CDB rows manifest textsRows ${manifest.textsRows} does not match payload ${payload.texts.length}`);
+  const dataCodes = rowIds(payload.datas, "datas");
+  const textCodes = rowIds(payload.texts, "texts");
+  if (!sameStrings(dataCodes, textCodes)) {
+    fail(`CDB rows payload datas ids ${dataCodes.join(",")} do not match texts ids ${textCodes.join(",")}`);
+  }
   if (manifest.selectedCodes.length) {
     const selected = normalizedUniqueStrings(manifest.selectedCodes);
     if (selected.length !== manifest.selectedCodes.length) fail("CDB rows manifest selectedCodes contains duplicate passcodes");
-    const dataCodes = rowIds(payload.datas, "datas");
-    const textCodes = rowIds(payload.texts, "texts");
     if (!sameStrings(selected, dataCodes)) {
       fail(`CDB rows manifest selectedCodes ${selected.join(",")} does not match payload datas ids ${dataCodes.join(",")}`);
     }
