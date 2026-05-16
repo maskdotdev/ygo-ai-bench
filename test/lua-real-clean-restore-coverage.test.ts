@@ -63,7 +63,7 @@ describe("Lua real-script clean restore coverage", () => {
         return !text.includes("getLuaRestoreLegalActions")
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
-          || !text.includes("flatMap((group) => group.actions)");
+          || !hasRestoredLegalActionFlattenAssertion(text);
       });
 
     expect(missing).toEqual([]);
@@ -149,6 +149,30 @@ describe("Lua real-script clean restore coverage", () => {
     expect(result.stderr).toContain("lua-real-script-small.test.ts");
   });
 
+  it("fails the scanner when restored legal-action evidence lacks a flatten equality assertion", () => {
+    const testRoot = fs.mkdtempSync(path.join(fs.realpathSync("/tmp"), "lua-clean-restore-cli-"));
+    fs.writeFileSync(path.join(testRoot, "lua-real-script-small.test.ts"), [
+      "expect(restored.restoreComplete, restored.incompleteReasons.join(\"; \")).toBe(true);",
+      "expect(missingRegistryKeys).toEqual([]);",
+      "expect(missingChainLimitRegistryKeys).toEqual([]);",
+      "expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getLegalActions(restored.session, 0));",
+      "expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));",
+      "expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toHaveLength(1);",
+    ].join("\n"));
+
+    const result = spawnSync(process.execPath, [
+      scannerPath,
+      "--test-root",
+      testRoot,
+      "--fail-on-missing-legal-actions",
+    ], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("legal-actions 0/1");
+    expect(result.stderr).toContain("Fixtures missing restored legal-action evidence:");
+    expect(result.stderr).toContain("lua-real-script-small.test.ts");
+  });
+
   it("fails the scanner when the restore coverage-file corpus is below the required floor", () => {
     const testRoot = fs.mkdtempSync(path.join(fs.realpathSync("/tmp"), "lua-clean-restore-cli-"));
     fs.writeFileSync(path.join(testRoot, "lua-real-script-small.test.ts"), "expect(missingRegistryKeys).toEqual([]);");
@@ -218,4 +242,8 @@ function restoreCoverageFiles(): string[] {
 
 function readTestFile(file: string): string {
   return fs.readFileSync(path.join(root, file), "utf8");
+}
+
+function hasRestoredLegalActionFlattenAssertion(text: string): boolean {
+  return /flatMap\(\(group\) => group\.actions\)\)\.toEqual\([\s\S]*?(?:getLuaRestoreLegalActions|\b(?:actions|response|result|changed|summoned)\.legalActions|\bactions\b)[\s\S]*?\);/.test(text);
 }

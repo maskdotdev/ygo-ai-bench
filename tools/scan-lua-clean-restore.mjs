@@ -21,10 +21,7 @@ function main(argv) {
   });
   const legalActionEvidence = realScriptFiles.filter((file) => {
     const text = readTestFile(file);
-    return text.includes("getLuaRestoreLegalActions")
-      && text.includes("getLuaRestoreLegalActionGroups")
-      && text.includes("getGroupedDuelLegalActions")
-      && text.includes("flatMap((group) => group.actions)");
+    return hasRestoredLegalActionEvidence(text);
   });
   const cleanRestored = realScriptFiles.filter((file) => readTestFile(file).includes("missingRegistryKeys).toEqual([])"));
   const chainLimitCleanRestored = realScriptFiles.filter((file) => readTestFile(file).includes("missingChainLimitRegistryKeys).toEqual([])"));
@@ -134,6 +131,13 @@ function restoreCoverageFiles(testRoot) {
 
 function readTestFile(file) {
   return fs.readFileSync(file, "utf8");
+}
+
+function hasRestoredLegalActionEvidence(text) {
+  return text.includes("getLuaRestoreLegalActions")
+    && text.includes("getLuaRestoreLegalActionGroups")
+    && text.includes("getGroupedDuelLegalActions")
+    && /flatMap\(\(group\) => group\.actions\)\)\.toEqual\([\s\S]*?(?:getLuaRestoreLegalActions|\b(?:actions|response|result|changed|summoned)\.legalActions|\bactions\b)[\s\S]*?\);/.test(text);
 }
 
 function toRepoPath(file) {
