@@ -108,6 +108,7 @@ describe("browser Lua script exporter", () => {
       copied: ["c100.lua", "c400.lua"],
       missing: [],
     });
+    expect(execFileSync("node", [checkerPath, "--card-scripts", outDir], { encoding: "utf8" })).toContain("Browser asset manifest check passed");
     expect(fs.readFileSync(path.join(outDir, "c100.lua"), "utf8")).toBe("override 100");
     expect(fs.readFileSync(path.join(outDir, "c400.lua"), "utf8")).toBe("fallback 400");
     expect(JSON.parse(fs.readFileSync(path.join(outDir, "manifest.json"), "utf8"))).toMatchObject({
