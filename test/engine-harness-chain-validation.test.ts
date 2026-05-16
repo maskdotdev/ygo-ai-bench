@@ -1,8 +1,33 @@
 import { describe, expect, it } from "vitest";
+import type { ChainLink } from "#duel/types.js";
 import { createCardReader, normalizeCdbRows } from "#engine/data-loaders.js";
+import { assertChainExpectations } from "#engine/parity-chain-validation.js";
 import { runScriptedDuelFixture } from "#engine/parity.js";
 
 describe("EDOPro compatibility harness chain validation", () => {
+  it("matches chain effect label expectations", () => {
+    const actual: ChainLink[] = [
+      {
+        id: "chain-1",
+        player: 0,
+        sourceUid: "card-1",
+        effectId: "fixture-effect",
+        effectLabels: [7, 11],
+      },
+    ];
+    const failures: string[] = [];
+
+    assertChainExpectations(actual, [{ effectId: "fixture-effect", effectLabels: [7, 11] }], (message) => failures.push(message));
+
+    expect(failures).toEqual([]);
+
+    assertChainExpectations(actual, [{ effectId: "fixture-effect", effectLabels: [7, 12] }], (message) => failures.push(message));
+
+    expect(failures).toEqual([
+      'Expected chain[0] {"effectId":"fixture-effect","effectLabels":[7,12]}, got {"id":"chain-1","player":0,"sourceUid":"card-1","effectId":"fixture-effect","effectLabels":[7,11]}',
+    ]);
+  });
+
   it("rejects malformed chain expectations", () => {
     const cards = normalizeCdbRows([{ id: 100, type: 1 }, { id: 200, type: 1 }], []);
     const result = runScriptedDuelFixture(
