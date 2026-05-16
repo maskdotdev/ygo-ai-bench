@@ -113,6 +113,60 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
     expect(restored.session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.material | duelReason.ritual });
     expect(restored.session.state.cards.find((card) => card.uid === stage2Target!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.destroy | duelReason.effect });
     expect(restored.session.state.cards.find((card) => card.uid === rebirth!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === ritualTarget!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-23452-2",
+          "eventCode": 1102,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "specialSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 1050640,
+          "eventReasonCardUid": "p0-deck-23459650-1",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === stage2Target!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-23451-0",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p0-deck-23459650-1",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     expect(restored.host.messages).not.toContain("rebirth of nephthys responder resolved");
   });
 });

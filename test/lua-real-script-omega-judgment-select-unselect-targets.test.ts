@@ -152,6 +152,134 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Om
     expect(restored.session.state.cards.find((card) => card.uid === opponentSpell!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.cards.find((card) => card.uid === ownTrapMonster!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.cards.find((card) => card.uid === omegaJudgment!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && targetUids.includes(event.eventCardUid ?? ""))).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p1-deck-907-1",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p1-deck-53923690-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 1,
+        },
+        {
+          "eventCardUid": "p0-deck-908-1",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p1-deck-53923690-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 1,
+        },
+        {
+          "eventCardUid": "p0-deck-909-2",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 1,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p1-deck-53923690-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 1,
+        },
+        {
+          "eventCardUid": "p1-deck-907-1",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p1-deck-53923690-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 1,
+          "eventUids": [
+            "p1-deck-907-1",
+            "p0-deck-908-1",
+            "p0-deck-909-2",
+          ],
+        },
+      ]
+    `);
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard" && event.eventCardUid === opponentMonster!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-908-1",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p1-deck-53923690-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 1,
+        },
+      ]
+    `);
     expect(restored.host.messages).not.toContain("omega judgment chain responder resolved");
   });
 });

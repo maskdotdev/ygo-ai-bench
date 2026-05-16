@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 97;
-const chainedResponseFixtureCount = 96;
-const responseOperationInfoFixtureCount = 88;
+const responseFixtureCount = 101;
+const chainedResponseFixtureCount = 100;
+const responseOperationInfoFixtureCount = 92;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -148,6 +148,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-megalith-bethor-ritual-procedure.test.ts",
     "lua-real-script-megalith-unformed-deck-ritual.test.ts",
     "lua-real-script-miracle-fusion-extra-material.test.ts",
+    "lua-real-script-miracle-raven-self-ritual.test.ts",
     "lua-real-script-mirror-force-battle-window.test.ts",
     "lua-real-script-mitsurugi-mirror-grave-ritual.test.ts",
     "lua-real-script-monster-reborn-free-chain.test.ts",
@@ -156,6 +157,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-naturia-ragweed-event-draw-trigger.test.ts",
     "lua-real-script-nekroz-divinemirror-extra-deck-ritual.test.ts",
     "lua-real-script-negate-attack-battle-window.test.ts",
+    "lua-real-script-omega-judgment-select-unselect-targets.test.ts",
     "lua-real-script-otohime-position-overload.test.ts",
     "lua-real-script-phoenix-wing-wind-blast-discard-cost.test.ts",
     "lua-real-script-pot-of-desires-deck-cost.test.ts",
@@ -169,9 +171,11 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-raigeki-group-destroy.test.ts",
     "lua-real-script-raigeki-break-discard-cost.test.ts",
     "lua-real-script-rasetsu-spirit-cost-return.test.ts",
+    "lua-real-script-rebirth-nephthys-stage2.test.ts",
     "lua-real-script-reinforcement-of-the-army-search.test.ts",
     "lua-real-script-sakuretsu-armor-battle-window.test.ts",
     "lua-real-script-scrap-iron-scarecrow-battle-window.test.ts",
+    "lua-real-script-secrets-dark-magic-fusion-matcheck.test.ts",
     "lua-real-script-seven-tools-trap-negate.test.ts",
     "lua-real-script-shinobird-crow-damage-step-stat.test.ts",
     "lua-real-script-shinobird-crane-spirit-summon-draw.test.ts",

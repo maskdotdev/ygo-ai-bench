@@ -101,6 +101,60 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
       summonMaterialUids: [material!.uid],
     });
     expect(restored.session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.material | duelReason.ritual });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === raven!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-18988396-0",
+          "eventCode": 1102,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "specialSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 1050640,
+          "eventReasonCardUid": "p0-deck-18988396-0",
+          "eventReasonEffectId": 5,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard" && event.eventCardUid === material!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-1891-1",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 1048584,
+          "eventReasonCardUid": "p0-deck-18988396-0",
+          "eventReasonEffectId": 5,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     expect(restored.host.messages).not.toContain("miracle raven responder resolved");
   });
 });

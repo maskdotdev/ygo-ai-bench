@@ -112,6 +112,60 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Se
       reason: duelReason.effect | duelReason.material | duelReason.fusion,
     });
     expect(restored.session.state.cards.find((card) => card.uid === secrets!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === fusion!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-extraDeck-59514118-0",
+          "eventCode": 1102,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "specialSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "extraDeck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 264208,
+          "eventReasonCardUid": "p0-deck-59514116-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard" && event.eventCardUid === darkMagician!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-46986414-1",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 262216,
+          "eventReasonCardUid": "p0-deck-59514116-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     expect(restored.host.messages).not.toContain("secrets responder resolved");
   });
 
