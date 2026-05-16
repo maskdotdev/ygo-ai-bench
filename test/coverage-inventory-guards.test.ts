@@ -82,33 +82,33 @@ describe("coverage inventory guards", () => {
     expect(missingRestoreEvidence).toEqual([]);
   });
 
-  it("requires source-only event restore branches to prove grouped restored actions before consumption", () => {
+  it("requires source-only event restore branches to prove raw, grouped, and flattened restored actions before consumption", () => {
     const sourceOnlyFiles = fs.readdirSync(testRoot)
       .filter((file) => /^lua-.*source-only-event\.test\.ts$/.test(file));
     const restoreBranches = sourceOnlyFiles
       .flatMap((file) => sourceOnlyRestoreBranches(file));
-    const missingGroupedRestoreEvidence = restoreBranches
-      .filter((branch) => !hasNearbyGroupedRestoreEvidence(branch.text, branch.variable))
+    const missingRestoreEvidence = restoreBranches
+      .filter((branch) => !hasNearbyRestoredActionEvidence(branch.text, branch.variable, readTestFile(branch.file)))
       .map((branch) => `${branch.file}:${branch.line}`);
 
     expect(sourceOnlyFiles).toHaveLength(14);
     expect(restoreBranches).toHaveLength(15);
-    expect(missingGroupedRestoreEvidence).toEqual([]);
+    expect(missingRestoreEvidence).toEqual([]);
   });
 
-  it("requires event restore branches to prove grouped restored actions before consumption", () => {
+  it("requires event restore branches to prove raw, grouped, and flattened restored actions before consumption", () => {
     const eventFiles = fs.readdirSync(testRoot)
       .filter((file) => /^lua-.*(?:grouped-event|event)\.test\.ts$/.test(file))
       .filter((file) => !file.includes("source-only"));
     const restoreBranches = eventFiles
       .flatMap((file) => restoreBranchesIn(file));
-    const missingGroupedRestoreEvidence = restoreBranches
-      .filter((branch) => !hasNearbyGroupedRestoreEvidence(branch.text, branch.variable))
+    const missingRestoreEvidence = restoreBranches
+      .filter((branch) => !hasNearbyRestoredActionEvidence(branch.text, branch.variable, readTestFile(branch.file)))
       .map((branch) => `${branch.file}:${branch.line}`);
 
     expect(eventFiles).toHaveLength(40);
     expect(restoreBranches).toHaveLength(58);
-    expect(missingGroupedRestoreEvidence).toEqual([]);
+    expect(missingRestoreEvidence).toEqual([]);
   });
 
   it("requires chain-limit restore helpers to prove restored actions and groups", () => {
@@ -161,8 +161,8 @@ function sourceOnlyRestoreBranches(file: string): Array<{ file: string; line: nu
   return restoreBranchesIn(file, 550);
 }
 
-function restoreBranchesIn(file: string, window = 650): Array<{ file: string; line: number; text: string; variable: string }> {
-  const text = fs.readFileSync(path.join(testRoot, file), "utf8");
+function restoreBranchesIn(file: string, window = 1500): Array<{ file: string; line: number; text: string; variable: string }> {
+  const text = readTestFile(file);
   return [...text.matchAll(/const (\w+) = restoreDuelWithLuaScripts\(/g)]
     .map((match) => ({
       file,
@@ -172,9 +172,34 @@ function restoreBranchesIn(file: string, window = 650): Array<{ file: string; li
     }));
 }
 
-function hasNearbyGroupedRestoreEvidence(text: string, variable: string): boolean {
-  return new RegExp(`expectRestoredLegal(?:Action|Actions|ActionGroups)\\(${variable}(?:\\)|,)`).test(text)
-    || text.includes(`getLuaRestoreLegalActionGroups(${variable},`);
+function readTestFile(file: string): string {
+  return fs.readFileSync(path.join(testRoot, file), "utf8");
+}
+
+function hasNearbyRestoredActionEvidence(text: string, variable: string, fileText: string): boolean {
+  if (hasDirectRestoredActionEvidence(text, variable)) return true;
+  return calledStrongRestoreHelpers(text, variable)
+    .some((helper) => hasStrongRestoreHelper(fileText, helper));
+}
+
+function hasDirectRestoredActionEvidence(text: string, variable: string): boolean {
+  return text.includes(`getLuaRestoreLegalActions(${variable},`)
+    && text.includes(`getLuaRestoreLegalActionGroups(${variable},`)
+    && hasFlattenedGroupedRestoreEvidence(text);
+}
+
+function calledStrongRestoreHelpers(text: string, variable: string): string[] {
+  return [...text.matchAll(new RegExp(`\\b(expectRestoredLegal(?:Action|Actions|ActionGroups))\\(${variable}(?:\\)|,)`, "g"))]
+    .map((match) => match[1]!);
+}
+
+function hasStrongRestoreHelper(text: string, helper: string): boolean {
+  const helperStart = text.indexOf(`function ${helper}`);
+  if (helperStart < 0) return false;
+  const helperText = text.slice(helperStart, helperStart + 1200);
+  return helperText.includes("getLuaRestoreLegalActions")
+    && helperText.includes("getLuaRestoreLegalActionGroups")
+    && hasFlattenedGroupedRestoreEvidence(helperText);
 }
 
 function hasFlattenedGroupedRestoreEvidence(text: string): boolean {
