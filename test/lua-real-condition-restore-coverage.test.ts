@@ -5,7 +5,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const conditionFixtureCount = 7;
-const sourceConditionFixtureCount = 60;
+const sourceConditionFixtureCount = 63;
 
 describe("Lua real condition restore coverage", () => {
   it("requires representative phase and turn-player condition fixtures to assert clean Lua registry restore", () => {
@@ -138,6 +138,25 @@ function realScriptSourceConditionFixtureFiles(): Array<{ file: string; required
       ],
     },
     {
+      file: "test/lua-real-script-checksum-dragon-position-indestructible.test.ts",
+      requiredSnippets: [
+        "condition:source-attack-position",
+        "condition:source-defense-position",
+        "checksum-dragon-official-local-position-indestructible.lua",
+        "restoredDragon!.position = \"faceUpDefense\"",
+        "restoredDragon!.position = \"faceDownDefense\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-core-of-chaos-faceup-redirect.test.ts",
+      requiredSnippets: [
+        "condition:source-faceup",
+        "core-of-chaos-official-faceup-redirect.lua",
+        "restoredCore!.faceUp = false",
+        'location: "banished"',
+      ],
+    },
+    {
       file: "test/lua-real-script-newbee-summon-location-condition.test.ts",
       requiredSnippets: [
         "condition:source-summon-location:2",
@@ -244,6 +263,15 @@ function realScriptSourceConditionFixtureFiles(): Array<{ file: string; required
         "cursed-copycat-official-local-handler-equipped-target-race.lua",
         "restoredCopycat!.equippedToUid = restoredMachine!.uid",
         "delete restoredCopycat!.equippedToUid",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dragon-buster-equipped-lizard-lock.test.ts",
+      requiredSnippets: [
+        "condition:source-equipped",
+        "dragon-buster-official-equipped-lizard.lua",
+        "dragonBuster!.equippedToUid = busterBlader!.uid",
+        "delete restoredDragonBuster!.equippedToUid",
       ],
     },
     {
