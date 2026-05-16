@@ -25,6 +25,8 @@ describe("Lua real summon-success trap restore coverage", () => {
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)")
           || !text.includes("operationInfos")
+          || !text.includes("eventPreviousState")
+          || !text.includes("eventCurrentState")
           || !text.includes('type === "passChain"')
           || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
@@ -45,6 +47,11 @@ function summonSuccessTrapFixtureFiles(): Array<{ file: string; required: string
         "category: 0x4",
         'location: "banished"',
         'location: "graveyard"',
+        "eventUids",
+        "bottomless chain starter resolved",
+        "bottomless special trigger starter resolved",
+        "not.toContain(\"bottomless special summon starter resolved 2\")",
+        "not.toContain(\"bottomless chain responder resolved\")",
       ],
     },
     {
@@ -54,6 +61,7 @@ function summonSuccessTrapFixtureFiles(): Array<{ file: string; required: string
         "assertDestroyOperationInfo",
         "destroyedUids",
         'location: "graveyard"',
+        "destroyedEvents",
       ],
     },
     {
@@ -63,6 +71,7 @@ function summonSuccessTrapFixtureFiles(): Array<{ file: string; required: string
         "category: 0x1",
         "targetUids: [summoned!.uid]",
         'location: "graveyard"',
+        "destroyedEvents",
       ],
     },
   ].sort((a, b) => a.file.localeCompare(b.file));
