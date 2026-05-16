@@ -101,7 +101,7 @@ describe("Lua deck probe manifest", () => {
     expect(malformedProbeCommands).toEqual([]);
     expect(looseProbeCommands).toEqual([]);
     expect(unbudgetedProbeCommands).toEqual([]);
-    expect(activateEffectFloorOmissions).toEqual(["marincess-2026.ydk"]);
+    expect(activateEffectFloorOmissions).toEqual([]);
     expect(expectedMissingBudgetMismatches).toEqual([]);
     expect(localFallbackBudgetDecks).toEqual([
       "magician-pendulum-mar-2026.ydk",
