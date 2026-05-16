@@ -105,11 +105,17 @@ describe("duel prompt view", () => {
       label: "Option Prompt",
       promptId: "prompt-copy",
       promptType: "selectOption",
+      windowId: 44,
+      windowKind: "prompt",
+      windowToken: "prompt-copy-token",
       actions: [{ type: "selectOption", player: 0, promptId: "prompt-copy", option: 1, label: "Choose 1" }],
     };
 
     const view = duelPromptView(prompt, [promptGroup]);
     expect(view?.prompt).toEqual(prompt);
+    expect(view?.groups).toEqual([
+      expect.objectContaining({ windowId: 44, windowKind: "prompt", windowToken: "prompt-copy-token" }),
+    ]);
     expect(view?.choices).toEqual([
       { type: "selectOption", option: 1, description: 101, descriptionList: [1001], action: promptGroup.actions[0] },
     ]);
