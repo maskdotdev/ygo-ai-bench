@@ -31,6 +31,7 @@ describe("EDOPro parity trigger-chain response until-chain-end limit fixture", (
             location: "hand",
             event: "trigger",
             triggerEvent: "normalSummoned",
+            triggerTiming: "if",
             optional: false,
             range: ["hand"],
             logMessage: "Trigger until limit success resolved",

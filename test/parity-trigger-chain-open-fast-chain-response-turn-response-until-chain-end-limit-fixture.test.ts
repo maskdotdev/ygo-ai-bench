@@ -33,6 +33,7 @@ describe("EDOPro parity trigger-chain response turn-response until-chain-end lim
             location: "hand",
             event: "trigger",
             triggerEvent: "normalSummoned",
+            triggerTiming: "if",
             optional: false,
             range: ["hand"],
             logMessage: "Trigger until turn response success resolved",

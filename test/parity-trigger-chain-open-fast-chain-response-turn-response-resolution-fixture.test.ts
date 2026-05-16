@@ -36,6 +36,7 @@ describe("EDOPro parity trigger-chain open fast-effect chain response turn respo
             location: "hand",
             event: "trigger",
             triggerEvent: "normalSummoned",
+            triggerTiming: "if",
             optional: false,
             range: ["hand"],
             logMessage: "Trigger chain turn response resolution success resolved",

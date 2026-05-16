@@ -38,6 +38,7 @@ describe("EDOPro parity trigger-chain open fast-effect chain response opponent r
             location: "hand",
             event: "trigger",
             triggerEvent: "normalSummoned",
+            triggerTiming: "if",
             optional: false,
             range: ["hand"],
             logMessage: "Trigger chain opponent response resolution success resolved",

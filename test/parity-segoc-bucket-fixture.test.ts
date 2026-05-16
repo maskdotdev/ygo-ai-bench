@@ -27,10 +27,10 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
       },
       setup: {
         effects: [
-          { id: "fixture-opponent-optional", player: 1, code: "500", location: "hand", event: "trigger", triggerEvent: "normalSummoned", range: ["hand"], logMessage: "Fixture opponent optional resolved" },
-          { id: "fixture-turn-optional", player: 0, code: "500", location: "hand", event: "trigger", triggerEvent: "normalSummoned", range: ["hand"], logMessage: "Fixture turn optional resolved" },
-          { id: "fixture-opponent-mandatory", player: 1, code: "400", location: "hand", event: "trigger", triggerEvent: "normalSummoned", optional: false, range: ["hand"], logMessage: "Fixture opponent mandatory resolved" },
-          { id: "fixture-turn-mandatory", player: 0, code: "300", location: "hand", event: "trigger", triggerEvent: "normalSummoned", optional: false, range: ["hand"], logMessage: "Fixture turn mandatory resolved" },
+          { id: "fixture-opponent-optional", player: 1, code: "500", location: "hand", event: "trigger", triggerEvent: "normalSummoned", triggerTiming: "if", range: ["hand"], logMessage: "Fixture opponent optional resolved" },
+          { id: "fixture-turn-optional", player: 0, code: "500", location: "hand", event: "trigger", triggerEvent: "normalSummoned", triggerTiming: "if", range: ["hand"], logMessage: "Fixture turn optional resolved" },
+          { id: "fixture-opponent-mandatory", player: 1, code: "400", location: "hand", event: "trigger", triggerEvent: "normalSummoned", triggerTiming: "if", optional: false, range: ["hand"], logMessage: "Fixture opponent mandatory resolved" },
+          { id: "fixture-turn-mandatory", player: 0, code: "300", location: "hand", event: "trigger", triggerEvent: "normalSummoned", triggerTiming: "if", optional: false, range: ["hand"], logMessage: "Fixture turn mandatory resolved" },
         ],
       },
       responses: [
@@ -429,7 +429,7 @@ describe("EDOPro parity SEGOC bucket fixtures", () => {
       },
       setup: {
         effects: [
-          { id: "fixture-turn-mandatory", player: 0, code: "300", location: "hand", event: "trigger", triggerEvent: "normalSummoned", optional: false, range: ["hand"], logMessage: "Fixture turn mandatory resolved" },
+          { id: "fixture-turn-mandatory", player: 0, code: "300", location: "hand", event: "trigger", triggerEvent: "normalSummoned", triggerTiming: "if", optional: false, range: ["hand"], logMessage: "Fixture turn mandatory resolved" },
         ],
       },
       responses: [

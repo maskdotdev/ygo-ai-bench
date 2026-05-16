@@ -33,6 +33,7 @@ describe("EDOPro parity trigger-chain pass handoff opponent response turn respon
             location: "hand",
             event: "trigger",
             triggerEvent: "normalSummoned",
+            triggerTiming: "if",
             optional: false,
             range: ["hand"],
             logMessage: "Trigger pass handoff opponent response resolution success resolved",

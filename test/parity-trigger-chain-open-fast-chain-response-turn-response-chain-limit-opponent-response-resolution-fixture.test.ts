@@ -39,6 +39,7 @@ describe("EDOPro parity trigger-chain response turn-response chain-limit opponen
             location: "hand",
             event: "trigger",
             triggerEvent: "normalSummoned",
+            triggerTiming: "if",
             optional: false,
             range: ["hand"],
             logMessage: "Trigger limit opponent resolution success resolved",

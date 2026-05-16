@@ -31,6 +31,7 @@ describe("EDOPro parity trigger-chain open fast-effect pass handoff turn respons
             location: "hand",
             event: "trigger",
             triggerEvent: "normalSummoned",
+            triggerTiming: "if",
             optional: false,
             range: ["hand"],
             logMessage: "Trigger pass handoff turn response success resolved",
