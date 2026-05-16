@@ -190,6 +190,53 @@ describe("parity scanner CLIs", () => {
     expect(result.stderr).toContain("Restored window blocks 3 is below required 4");
   });
 
+  it("bounds unrestored EDOPro after blocks to documented exceptions", () => {
+    const testRoot = makeTestRoot({
+      "parity-unrestored-after-blocks.test.ts": `
+        runScriptedDuelFixture({
+          responses: [
+            makeScriptedStep(makeResponseSelector("pass", 0), {
+              after: {
+                source: "edopro",
+                note: "EDOPro observed this ordinary unrestored post-action window.",
+              },
+            }),
+            makeScriptedStep(makeResponseSelector("pass", 1), {
+              after: {
+                source: "edopro",
+                note: "EDOPro observed this intentionally wrong exception.",
+              },
+            }),
+          ],
+        });
+      `,
+    });
+
+    const tooMany = spawnSync(process.execPath, [
+      provenanceScannerPath,
+      "--test-root",
+      testRoot,
+      "--max-unrestored-after-blocks",
+      "1",
+    ], { encoding: "utf8" });
+    const missingExceptionNote = spawnSync(process.execPath, [
+      provenanceScannerPath,
+      "--test-root",
+      testRoot,
+      "--require-unrestored-after-note",
+      "intentionally wrong",
+    ], { encoding: "utf8" });
+
+    expect(tooMany.status).toBe(1);
+    expect(tooMany.stderr).toContain("Unrestored EDOPro after blocks 2 exceeds allowed 1");
+    expect(tooMany.stderr).toContain("parity-unrestored-after-blocks.test.ts:5");
+    expect(tooMany.stderr).toContain("parity-unrestored-after-blocks.test.ts:11");
+    expect(missingExceptionNote.status).toBe(1);
+    expect(missingExceptionNote.stderr).toContain('Unrestored EDOPro after blocks must include note text "intentionally wrong"');
+    expect(missingExceptionNote.stderr).toContain("parity-unrestored-after-blocks.test.ts:5");
+    expect(missingExceptionNote.stderr).not.toContain("parity-unrestored-after-blocks.test.ts:11");
+  });
+
   it("scans non-fixture parity test files for legal-action evidence", () => {
     const testRoot = makeTestRoot({
       "parity-non-fixture.test.ts": `
