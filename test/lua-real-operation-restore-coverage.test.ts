@@ -5,7 +5,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const operationFixtureCount = 12;
-const summonTriggerOperationFixtureCount = 7;
+const summonTriggerOperationFixtureCount = 8;
 
 describe("Lua real operation restore coverage", () => {
   it("requires representative simple spell operations to assert clean Lua registry restore and restored operation metadata", () => {
@@ -256,6 +256,25 @@ function summonTriggerOperationFixtureFiles(): Array<{ file: string; required: s
         'eventName": "normalSummoned"',
         'eventName: "discarded"',
         'eventName: "sentToHand"',
+        "category: 8",
+        "eventName: \"sentToHandConfirmed\"",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ichiki-sayori-hime-effect-summon-search.test.ts",
+      required: [
+        "restoredOpenWindow.missingRegistryKeys).toEqual([])",
+        "restoredOpenWindow.missingChainLimitRegistryKeys).toEqual([])",
+        "restoredSummonChain.missingRegistryKeys).toEqual([])",
+        "restoredSummonChain.missingChainLimitRegistryKeys).toEqual([])",
+        "restoredTriggerWindow.missingRegistryKeys).toEqual([])",
+        "restoredTriggerWindow.missingChainLimitRegistryKeys).toEqual([])",
+        "restoredSearchChain.missingRegistryKeys).toEqual([])",
+        "restoredSearchChain.missingChainLimitRegistryKeys).toEqual([])",
+        'eventName: "normalSummoned"',
+        'eventName: "sentToHand"',
+        "category: 256",
         "category: 8",
         "eventName: \"sentToHandConfirmed\"",
         "host.messages).not.toContain",

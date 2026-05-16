@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 11;
+const spiritFixtureCount = 12;
 
 describe("Lua real Spirit restore coverage", () => {
   it("requires representative Spirit fixtures to prove clean Lua restore and replayed legal actions", () => {
@@ -86,6 +86,22 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
         'eventName: "normalSummoned"',
         'eventName: "sentToHand"',
         'eventName: "sentToHandConfirmed"',
+      ],
+    },
+    {
+      file: "lua-real-script-ichiki-sayori-hime-effect-summon-search.test.ts",
+      required: [
+        'action.type === "activateEffect"',
+        'action.type === "activateTrigger"',
+        'action.type === "passChain"',
+        'eventName: "normalSummoned"',
+        'eventName: "sentToHand"',
+        'eventName: "sentToHandConfirmed"',
+        'summonType: "normal"',
+        "category: 256",
+        "category: 8",
+        'location: "hand", controller: 0',
+        'host.messages).not.toContain("ichiki responder resolved")',
       ],
     },
     {
