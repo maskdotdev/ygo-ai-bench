@@ -30,7 +30,17 @@ describe("EDOPro parity battle-destroyed missed timing fixture", () => {
             location: "hand",
             event: "ignition",
             range: ["hand"],
-            collectEventsOnResolve: [{ collectEvent: "battleDestroyed", eventCode: 1140, eventIsLast: false }],
+            collectEventsOnResolve: [
+              {
+                collectEvent: "battleDestroyed",
+                eventCode: 1140,
+                eventIsLast: false,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 35101,
+              },
+            ],
             moveCardsOnResolve: [{ player: 0, code: "700", from: "monsterZone", to: "graveyard" }],
             logMessage: "Battle-destroyed activation multi step resolved",
           },
@@ -95,7 +105,18 @@ describe("EDOPro parity battle-destroyed missed timing fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "battle-destroyed-activation-optional-if", eventName: "battleDestroyed", eventCode: 1140 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "battle-destroyed-activation-optional-if",
+                eventName: "battleDestroyed",
+                eventCode: 1140,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 35101,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-destroyed-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
@@ -126,7 +147,18 @@ describe("EDOPro parity battle-destroyed missed timing fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "battle-destroyed-activation-optional-if", eventName: "battleDestroyed", eventCode: 1140 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "battle-destroyed-activation-optional-if",
+                eventName: "battleDestroyed",
+                eventCode: 1140,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 35101,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "battle-destroyed-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
