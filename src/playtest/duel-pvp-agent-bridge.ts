@@ -51,6 +51,7 @@ export interface DuelPvpVisibleAutoRunResult {
   failure?: string;
   visibleActions: DuelAction[];
   visibleGroups: DuelActionUiGroup[];
+  prompt?: DuelPromptView;
 }
 
 export interface DuelPvpAgent {
@@ -215,6 +216,7 @@ function visibleAutoRunResult(
     ...(failure === undefined ? {} : { failure }),
     visibleActions: view.actions,
     visibleGroups: view.groups,
+    ...(view.prompt === undefined ? {} : { prompt: copyPromptView(view.prompt) }),
   };
 }
 

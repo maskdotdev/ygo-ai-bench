@@ -109,6 +109,21 @@ describe("duel battlefield action view", () => {
     expect(result.state.log).toContainEqual(expect.objectContaining({ action: "selectOption", detail: "Selected option 4" }));
   });
 
+  it("reports prompt views when a visible prompt script diverges", () => {
+    const session = directBattleSession();
+    session.state.prompt = { id: "battlefield-diverge-prompt", type: "selectOption", player: 1, options: [2, 4], descriptions: [200, 400], returnTo: 0 };
+    session.state.waitingFor = 1;
+
+    const result = runDuelBattlefieldScript(session, [
+      { player: 1, type: "selectOption", promptId: "battlefield-diverge-prompt", option: 6, windowKind: "prompt" },
+    ]);
+
+    expect(result.ok).toBe(false);
+    expect(result.prompt).toMatchObject({ label: "Option Prompt", detail: "P2 · Prompt battlefield-diverge-prompt · returns P1 · options 2, 4 · text 200, 400" });
+    expect(result.prompt?.groups.flatMap((group) => group.actions)).toEqual(result.visibleActions);
+    expect(result.visibleActions).toContainEqual(expect.objectContaining({ type: "selectOption", promptId: "battlefield-diverge-prompt", option: 4 }));
+  });
+
   it("reports visible group labels when a battlefield script diverges", () => {
     const session = directBattleSession();
     const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "monsterZone" && card.code === "100");

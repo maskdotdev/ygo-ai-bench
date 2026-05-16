@@ -7,6 +7,7 @@ import {
 import type { DuelAction, DuelActionWindowKind, DuelPhase, DuelSession, PlayerId, PublicDuelState, TriggerBucket } from "#duel/types.js";
 import { duelActionAnchorUids, duelActionUiGroupLabel, type DuelActionUiGroup } from "./duel-action-anchors.js";
 import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "./duel-battlefield-actions.js";
+import { duelPromptView, type DuelPromptView } from "./duel-prompt-view.js";
 
 export interface DuelBattlefieldActionSelector {
   player: PlayerId;
@@ -37,6 +38,7 @@ export interface DuelBattlefieldScriptResult {
   failure?: string;
   visibleActions: DuelAction[];
   visibleGroups: DuelActionUiGroup[];
+  prompt?: DuelPromptView;
 }
 
 export function runDuelBattlefieldScript(
@@ -65,18 +67,22 @@ function battlefieldScriptResult(
   failedStep?: number,
   failure?: string,
 ): DuelBattlefieldScriptResult {
+  const state = queryPublicState(session);
   const view = battlefieldScriptView(session, player);
+  const visibleGroups = view.visibleGroups.map((group) => ({
+    ...group,
+    label: duelActionUiGroupLabel(group),
+    actions: group.actions.map((action) => ({ ...action })),
+  }));
+  const prompt = duelPromptView(state.prompt, visibleGroups);
   return {
     ok: failedStep === undefined,
-    state: queryPublicState(session),
+    state,
     ...(failedStep === undefined ? {} : { failedStep }),
     ...(failure === undefined ? {} : { failure }),
     visibleActions: view.visibleActions.map((action) => ({ ...action })),
-    visibleGroups: view.visibleGroups.map((group) => ({
-      ...group,
-      label: duelActionUiGroupLabel(group),
-      actions: group.actions.map((action) => ({ ...action })),
-    })),
+    visibleGroups,
+    ...(prompt === undefined ? {} : { prompt }),
   };
 }
 

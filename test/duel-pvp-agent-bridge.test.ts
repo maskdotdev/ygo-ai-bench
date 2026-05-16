@@ -94,4 +94,21 @@ describe("duel pvp agent bridge", () => {
     expect(result.steps).toEqual([]);
     expect(result.state.id).toBe(started.sessionId);
   });
+
+  it("returns prompt views with visible autoplay stop payloads", () => {
+    const agent = createDuelPvpAgent();
+    const started = agent.start({ player0Ydk: starterYdk, player1Ydk: starterYdk, seed: "pvp-agent-auto-prompt", handSize: 2 });
+    const snapshot = agent.serialize(started.sessionId);
+    snapshot.state.prompt = { id: "agent-auto-prompt", type: "selectYesNo", player: 0, description: 901, returnTo: 1 };
+    snapshot.state.waitingFor = 0;
+    agent.restore(snapshot);
+
+    const result = agent.autoRunVisible({ sessionId: started.sessionId, maxActions: 0 });
+
+    expect(result.ok).toBe(true);
+    expect(result.reason).toBe("maxActions");
+    expect(result.prompt).toMatchObject({ label: "Yes / No Prompt", detail: "P1 · Prompt agent-auto-prompt · returns P2 · text 901" });
+    expect(result.prompt?.groups.flatMap((group) => group.actions)).toEqual(result.visibleActions);
+    expect(result.visibleActions).toContainEqual(expect.objectContaining({ type: "selectYesNo", promptId: "agent-auto-prompt", yes: true }));
+  });
 });
