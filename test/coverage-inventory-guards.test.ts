@@ -37,7 +37,7 @@ describe("coverage inventory guards", () => {
       }, 0);
 
     expect(loose).toEqual([]);
-    expect(exactCount).toBe(650);
+    expect(exactCount).toBe(651);
   });
 
   it("requires Lua registration proof counts to be exact", () => {
@@ -59,7 +59,7 @@ describe("coverage inventory guards", () => {
       }, 0);
 
     expect(loose).toEqual([]);
-    expect(exactCount).toBe(1284);
+    expect(exactCount).toBe(1285);
   });
 
   it("requires non-coverage Lua restore tests to prove grouped restored actions", () => {
@@ -76,7 +76,7 @@ describe("coverage inventory guards", () => {
         return !text.includes("getLuaRestoreLegalActionGroups");
       });
 
-    expect(restoreFiles).toHaveLength(717);
+    expect(restoreFiles).toHaveLength(718);
     expect(missingGroupedRestoreEvidence).toEqual([]);
   });
 

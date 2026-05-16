@@ -6,7 +6,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const battleKeywords = ["battle", "attack", "damage"];
-const realScriptBattleFixtureCount = 134;
+const realScriptBattleFixtureCount = 135;
 const battleLegalActionFixtureCount = 4;
 const attackDeclarationTrapFixtureCount = 6;
 const battleRoutingFixtureCount = 6;
