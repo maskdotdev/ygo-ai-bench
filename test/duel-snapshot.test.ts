@@ -140,7 +140,7 @@ describe("duel snapshot persistence", () => {
     startDuel(session);
     const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
     session.state.chain = [{ id: "chain-1", player: 0, sourceUid, effectId: "effect", eventUids: [sourceUid] }];
-    session.state.pendingTriggers = [{ id: "trigger-1", player: 0, sourceUid, effectId: "effect", eventName: "customEvent", triggerBucket: "turnOptional", eventUids: [sourceUid] }];
+    session.state.pendingTriggers = [{ id: "trigger-1", player: 0, sourceUid, effectId: "effect", eventName: "customEvent", eventTriggerTiming: "if", triggerBucket: "turnOptional", eventUids: [sourceUid] }];
     session.state.eventHistory = [{ eventName: "customEvent", eventUids: [sourceUid] }];
 
     const publicState = queryPublicState(session);
@@ -165,9 +165,9 @@ describe("duel snapshot persistence", () => {
     startDuel(session);
     const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
     session.state.pendingTriggers = [
-      { id: "turn-mandatory", player: 0, sourceUid, effectId: "effect-a", eventName: "customEvent", triggerBucket: "turnMandatory" },
-      { id: "turn-optional", player: 0, sourceUid, effectId: "effect-b", eventName: "customEvent", triggerBucket: "turnOptional" },
-      { id: "opponent-optional", player: 1, sourceUid, effectId: "effect-c", eventName: "customEvent", triggerBucket: "opponentOptional" },
+      { id: "turn-mandatory", player: 0, sourceUid, effectId: "effect-a", eventName: "customEvent", eventTriggerTiming: "if", triggerBucket: "turnMandatory" },
+      { id: "turn-optional", player: 0, sourceUid, effectId: "effect-b", eventName: "customEvent", eventTriggerTiming: "if", triggerBucket: "turnOptional" },
+      { id: "opponent-optional", player: 1, sourceUid, effectId: "effect-c", eventName: "customEvent", eventTriggerTiming: "if", triggerBucket: "opponentOptional" },
     ];
 
     const publicState = queryPublicState(session);
@@ -198,9 +198,9 @@ describe("duel snapshot persistence", () => {
     session.state.status = "awaiting";
     session.state.waitingFor = 0;
     session.state.pendingTriggers = [
-      { id: "turn-optional-a", player: 0, sourceUid, effectId: "effect-a", eventName: "customEvent", triggerBucket: "turnOptional" },
-      { id: "turn-optional-b", player: 0, sourceUid, effectId: "effect-b", eventName: "customEvent", triggerBucket: "turnOptional" },
-      { id: "opponent-optional", player: 1, sourceUid, effectId: "effect-c", eventName: "customEvent", triggerBucket: "opponentOptional" },
+      { id: "turn-optional-a", player: 0, sourceUid, effectId: "effect-a", eventName: "customEvent", eventTriggerTiming: "if", triggerBucket: "turnOptional" },
+      { id: "turn-optional-b", player: 0, sourceUid, effectId: "effect-b", eventName: "customEvent", eventTriggerTiming: "if", triggerBucket: "turnOptional" },
+      { id: "opponent-optional", player: 1, sourceUid, effectId: "effect-c", eventName: "customEvent", eventTriggerTiming: "if", triggerBucket: "opponentOptional" },
     ];
 
     const publicState = queryPublicState(session);
@@ -228,8 +228,8 @@ describe("duel snapshot persistence", () => {
     startDuel(session);
     const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
     session.state.pendingTriggers = [
-      { id: "duplicate-trigger", player: 0, sourceUid, effectId: "effect-a", eventName: "customEvent", triggerBucket: "turnOptional" },
-      { id: "duplicate-trigger", player: 0, sourceUid, effectId: "effect-b", eventName: "customEvent", triggerBucket: "turnOptional" },
+      { id: "duplicate-trigger", player: 0, sourceUid, effectId: "effect-a", eventName: "customEvent", eventTriggerTiming: "if", triggerBucket: "turnOptional" },
+      { id: "duplicate-trigger", player: 0, sourceUid, effectId: "effect-b", eventName: "customEvent", eventTriggerTiming: "if", triggerBucket: "turnOptional" },
     ];
 
     expect(() => restoreDuel(serializeDuel(session), createCardReader(cards), {}, {}, { pruneUnrestoredPendingTriggers: false })).toThrow(
@@ -245,7 +245,7 @@ describe("duel snapshot persistence", () => {
     });
     startDuel(session);
     const sourceUid = session.state.cards.find((card) => card.code === "100")!.uid;
-    session.state.pendingTriggers = [{ id: "pending-trigger", player: 0, sourceUid, effectId: "effect", eventName: "customEvent", triggerBucket: "turnOptional" }];
+    session.state.pendingTriggers = [{ id: "pending-trigger", player: 0, sourceUid, effectId: "effect", eventName: "customEvent", eventTriggerTiming: "if", triggerBucket: "turnOptional" }];
     const snapshot = serializeDuel(session);
     snapshot.state.status = "resolving";
 
@@ -895,6 +895,7 @@ describe("duel snapshot persistence", () => {
     expect(summon).toBeTruthy();
     expect(applyResponse(session, summon!).ok).toBe(true);
     expect(session.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["non-registry-pending-trigger"]);
+    expect(session.state.pendingTriggers[0]?.eventTriggerTiming).toBe("if");
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
 
@@ -922,7 +923,7 @@ describe("duel snapshot persistence", () => {
       operation() {},
     });
     session.state.chain = [{ id: "chain-1", player: 0, sourceUid, effectId: "active-chain-link" }];
-    session.state.pendingTriggers = [{ id: "held-trigger", player: 0, sourceUid, effectId: "unrestored-held-trigger", eventName: "customEvent", triggerBucket: "turnOptional" }];
+    session.state.pendingTriggers = [{ id: "held-trigger", player: 0, sourceUid, effectId: "unrestored-held-trigger", eventName: "customEvent", eventTriggerTiming: "if", triggerBucket: "turnOptional" }];
     session.state.waitingFor = 1;
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
