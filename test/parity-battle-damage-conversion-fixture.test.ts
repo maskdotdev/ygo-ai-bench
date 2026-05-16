@@ -89,6 +89,8 @@ describe("EDOPro parity battle damage conversion fixtures", () => {
             lifePoints: { 0: 8000, 1: 6200 },
             battleDamage: { 0: 0, 1: 1800 },
             attacksDeclared: ["p0-deck-100-0"],
+            windowId: 14,
+            windowKind: "open",
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [
@@ -113,6 +115,8 @@ describe("EDOPro parity battle damage conversion fixtures", () => {
         lifePoints: { 0: 8000, 1: 6200 },
         battleDamage: { 0: 0, 1: 1800 },
         attacksDeclared: ["p0-deck-100-0"],
+        windowId: 14,
+        windowKind: "open",
         legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },
         legalActions: [
