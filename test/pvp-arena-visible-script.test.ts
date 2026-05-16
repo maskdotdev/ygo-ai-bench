@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   bootstrapPvpDuel,
+  bootstrapPvpDuelWithBrowserData,
   bootstrapPvpDuelWithCardData,
   bootstrapPvpDuelWithLuaScripts,
   pvpVisibleBattleFixtureScript,
@@ -93,5 +94,44 @@ describe("PvP arena visible scripts", () => {
     expect(result.scriptLoads).toContainEqual(expect.objectContaining({ ok: false, name: "c7084129.lua" }));
     expect(result.scriptRegistrations).toContainEqual(expect.objectContaining({ code: "90000003", ok: true }));
     expect(result.luaHost.messages).toContain("pvp script loaded 90000003");
+  });
+
+  it("preloads PvP card data and Lua scripts before browser bootstrap", async () => {
+    const cardBatches: string[][] = [];
+    const scriptBatches: string[][] = [];
+    const cardDataCache = createBrowserDuelCardDataCache(async (codes) => {
+      cardBatches.push([...codes]);
+      return [
+        { code: "90000003", name: "Browser Scripted Duelist", kind: "monster", attack: 2300 },
+      ];
+    });
+    const luaScriptCache = createBrowserLuaScriptCache(async (names) => {
+      scriptBatches.push([...names]);
+      return {
+        "c90000003.lua": `
+          c90000003={}
+          function c90000003.initial_effect(c)
+            Debug.Message("browser bootstrap " .. c:GetAttack())
+          end
+        `,
+      };
+    });
+
+    const result = await bootstrapPvpDuelWithBrowserData(lazyLoadedYdk, pvpVisibleBattleFixtureYdk, "pvp-browser-data-bootstrap", 1, {
+      cardDataCache,
+      luaScriptCache,
+    });
+
+    expect(cardBatches).toEqual([["90000003"]]);
+    expect(scriptBatches).toEqual([["c7084129.lua", "c90000003.lua"]]);
+    expect(result.cardPreload).toEqual({ loaded: ["7084129", "90000003"], missing: [] });
+    expect(result.scriptPreload).toEqual({ loaded: ["c90000003.lua"], missing: ["c7084129.lua"] });
+    expect(result.session.state.cards).toContainEqual(expect.objectContaining({
+      code: "90000003",
+      name: "Browser Scripted Duelist",
+      data: expect.objectContaining({ attack: 2300 }),
+    }));
+    expect(result.scriptRegistrations).toContainEqual(expect.objectContaining({ code: "90000003", ok: true }));
+    expect(result.luaHost.messages).toContain("browser bootstrap 2300");
   });
 });

@@ -64,6 +64,15 @@ export interface BootstrapPvpDuelWithLuaScriptsResult {
   startupEffectCount: number;
 }
 
+export interface BootstrapPvpDuelWithBrowserDataOptions extends BootstrapPvpDuelOptions {
+  cardDataCache: BrowserDuelCardDataCache;
+  luaScriptCache: BrowserLuaScriptCache;
+}
+
+export interface BootstrapPvpDuelWithBrowserDataResult extends BootstrapPvpDuelWithLuaScriptsResult {
+  cardPreload: BrowserDuelCardDataPreloadResult;
+}
+
 export function bootstrapPvpDuel(
   p0Text: string,
   p1Text: string,
@@ -118,6 +127,29 @@ export async function bootstrapPvpDuelWithLuaScripts(
   const scriptRegistrations = luaHost.registerInitialEffectsDetailed();
   const startupEffectCount = luaHost.runStartupEffects();
   return { session, luaHost, scriptPreload, scriptLoads, scriptRegistrations, startupEffectCount };
+}
+
+export async function bootstrapPvpDuelWithBrowserData(
+  p0Text: string,
+  p1Text: string,
+  seed: string | number,
+  handSize: number,
+  options: BootstrapPvpDuelWithBrowserDataOptions,
+): Promise<BootstrapPvpDuelWithBrowserDataResult> {
+  const codes = pvpDeckCodes(p0Text, p1Text);
+  const [cardPreload, scriptPreload] = await Promise.all([
+    options.cardDataCache.preload(codes),
+    options.luaScriptCache.preloadCardScripts(codes),
+  ]);
+  const session = bootstrapPvpDuel(p0Text, p1Text, seed, handSize, {
+    cardReader: options.cardReader ?? options.cardDataCache.reader,
+  });
+  const { createLuaScriptHost } = await import("#lua/host.js");
+  const luaHost = createLuaScriptHost(session, options.luaScriptCache);
+  const scriptLoads = codes.map((code) => luaHost.loadCardScript(code, options.luaScriptCache));
+  const scriptRegistrations = luaHost.registerInitialEffectsDetailed();
+  const startupEffectCount = luaHost.runStartupEffects();
+  return { session, luaHost, cardPreload, scriptPreload, scriptLoads, scriptRegistrations, startupEffectCount };
 }
 
 function pvpDeckCodes(p0Text: string, p1Text: string): string[] {
