@@ -132,6 +132,23 @@ describe("coverage inventory guards", () => {
     expect(weak).toEqual([]);
   });
 
+  it("requires restore legal-window helpers to prove raw, grouped, and flattened returned legal actions", () => {
+    const helpers = restoreLegalWindowHelpers();
+    const weak = helpers
+      .filter((helper) => !hasReturnedRawLegalActionProof(helper.text)
+        || !hasReturnedGroupedLegalActionProof(helper.text)
+        || !hasReturnedLegalActionFlattenProof(helper.text))
+      .map((helper) => `${helper.file}:${helper.line}`);
+    const helperReferences = fs.readdirSync(testRoot)
+      .filter((file) => file.endsWith(".test.ts"))
+      .filter((file) => file !== "coverage-inventory-guards.test.ts")
+      .reduce((count, file) => count + (readTestFile(file).match(/assertRestoreLegalWindow\(/g)?.length ?? 0), 0);
+
+    expect(helpers).toHaveLength(7);
+    expect(helperReferences).toBe(95);
+    expect(weak).toEqual([]);
+  });
+
   it("requires chain-limit restore helpers to prove raw, grouped, and flattened restored actions", () => {
     const chainLimitRestoreFiles = fs.readdirSync(testRoot)
       .filter((file) => /^lua-chain-limit-.*restore\.test\.ts$/.test(file));
@@ -224,6 +241,7 @@ function readTestFile(file: string): string {
 function restoredLegalActionHelpers(): Array<{ file: string; line: number; name: string }> {
   return fs.readdirSync(testRoot)
     .filter((file) => file.endsWith(".test.ts"))
+    .filter((file) => file !== "coverage-inventory-guards.test.ts")
     .flatMap((file) => {
       const text = readTestFile(file);
       return [...text.matchAll(/function (expectRestoredLegal(?:Action|Actions|ActionGroups))\b/g)]
@@ -253,6 +271,26 @@ function luaRestoreResponseHelpers(): LuaRestoreResponseHelper[] {
 
 function helperKey(helper: Pick<LuaRestoreResponseHelper, "file" | "name">): string {
   return `${helper.file}:${helper.name}`;
+}
+
+type RestoreLegalWindowHelper = { file: string; line: number; text: string };
+
+function restoreLegalWindowHelpers(): RestoreLegalWindowHelper[] {
+  return fs.readdirSync(testRoot)
+    .filter((file) => file.endsWith(".test.ts"))
+    .filter((file) => file !== "coverage-inventory-guards.test.ts")
+    .flatMap((file) => {
+      const text = readTestFile(file);
+      return [...text.matchAll(/function assertRestoreLegalWindow\b/g)]
+        .map((match) => {
+          const start = match.index ?? 0;
+          return {
+            file,
+            line: lineNumber(text, start),
+            text: text.slice(start, functionBodyEnd(text, start)),
+          };
+        });
+    });
 }
 
 function functionBodyEnd(text: string, start: number): number {
