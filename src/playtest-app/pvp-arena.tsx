@@ -4,12 +4,38 @@ import type { DuelAction, DuelSession, PlayerId, PublicDuelCard, PublicDuelState
 import { parseYdk } from "#playtest/ydk.js";
 import { getBrowserDuelCardReader } from "./duel-pvp-card-reader.js";
 import { DuelBattlefield, DuelLogList } from "./duel-battlefield.js";
+import { runDuelBattlefieldScript, type DuelBattlefieldActionSelector, type DuelBattlefieldScriptResult } from "./duel-battlefield-script.js";
 import { CardZoom, ToastStack, readBuilderDeck, starterYdk } from "./ui.js";
 import type { CardImageInfo, ToastMessage } from "./ui.js";
 
 const NO_LEGAL_ACTIONS: DuelAction[] = [];
 
-function bootstrapDuel(p0Text: string, p1Text: string, seed: string | number, handSize: number): DuelSession {
+export const pvpVisibleBattleFixtureYdk = `#created by Duel Deck Studio
+#deck Visible Battle Fixture
+#main
+7084129
+#extra
+!side`;
+
+export const pvpVisibleBattleFixtureScript: readonly DuelBattlefieldActionSelector[] = [
+  { player: 0, type: "normalSummon", labelIncludes: "Magician's Rod" },
+  { player: 0, type: "changePhase", phase: "battle", windowKind: "open" },
+  { player: 0, type: "declareAttack", labelIncludes: "Direct attack", directAttack: true },
+  { player: 1, type: "passAttack", groupLabel: "Attack Response" },
+  { player: 0, type: "passAttack", groupLabel: "Attack Response" },
+  { player: 1, type: "passDamage", groupLabel: "Damage Step Response" },
+  { player: 0, type: "passDamage", groupLabel: "Damage Step Response" },
+  { player: 1, type: "passDamage", groupLabel: "Damage Step Response" },
+  { player: 0, type: "passDamage", groupLabel: "Damage Step Response" },
+  { player: 1, type: "passDamage", groupLabel: "Damage Step Response" },
+  { player: 0, type: "passDamage", groupLabel: "Damage Step Response" },
+  { player: 1, type: "passDamage", groupLabel: "Damage Step Response" },
+  { player: 0, type: "passDamage", groupLabel: "Damage Step Response" },
+  { player: 1, type: "passDamage", groupLabel: "Damage Step Response" },
+  { player: 0, type: "passDamage", groupLabel: "Damage Step Response" },
+];
+
+export function bootstrapPvpDuel(p0Text: string, p1Text: string, seed: string | number, handSize: number): DuelSession {
   const p0 = parseYdk(p0Text);
   const p1 = parseYdk(p1Text);
   const session = createDuel({
@@ -25,8 +51,15 @@ function bootstrapDuel(p0Text: string, p1Text: string, seed: string | number, ha
   return session;
 }
 
+export function runPvpArenaVisibleScript(
+  session: DuelSession,
+  steps: readonly DuelBattlefieldActionSelector[],
+): DuelBattlefieldScriptResult {
+  return runDuelBattlefieldScript(session, steps);
+}
+
 export function PvpArena() {
-  const [session] = useState<DuelSession>(() => bootstrapDuel(starterYdk, starterYdk, Date.now(), 5));
+  const [session] = useState<DuelSession>(() => bootstrapPvpDuel(starterYdk, starterYdk, Date.now(), 5));
   const [revision, setRevision] = useState(0);
   const publicState = useMemo((): PublicDuelState => queryPublicState(session), [session, revision]);
 
@@ -99,7 +132,7 @@ export function PvpArena() {
   const restartDuel = useCallback(() => {
     try {
       const seed = seedDraft.trim().toLowerCase() === "random" || !seedDraft.trim() ? Date.now() : seedDraft;
-      const next = bootstrapDuel(deckP0, deckP1, seed, handSizeDraft);
+      const next = bootstrapPvpDuel(deckP0, deckP1, seed, handSizeDraft);
       session.state = next.state;
       session.cardReader = next.cardReader;
       setRevision((current) => current + 1);
@@ -109,6 +142,24 @@ export function PvpArena() {
       notify("Could not start", error instanceof Error ? error.message : "Invalid deck", "error");
     }
   }, [deckP0, deckP1, handSizeDraft, notify, seedDraft, session]);
+
+  const runVisibleFixture = useCallback(() => {
+    try {
+      const next = bootstrapPvpDuel(pvpVisibleBattleFixtureYdk, pvpVisibleBattleFixtureYdk, "pvp-visible-fixture", 1);
+      session.state = next.state;
+      session.cardReader = next.cardReader;
+      const result = runPvpArenaVisibleScript(session, pvpVisibleBattleFixtureScript);
+      setViewer(0);
+      setRevision((current) => current + 1);
+      if (!result.ok) {
+        notify("Fixture diverged", result.failure ?? `Step ${result.failedStep ?? "?"}`, "error");
+        return;
+      }
+      notify("Fixture complete", "Visible battle script resolved.", "success");
+    } catch (error) {
+      notify("Fixture failed", error instanceof Error ? error.message : "Visible script failed.", "error");
+    }
+  }, [notify, session]);
 
   const apply = useCallback(
     (action: DuelAction) => {
@@ -178,6 +229,9 @@ export function PvpArena() {
           </button>
           <button type="button" className="rounded-md bg-black/40 px-2 py-1 text-[11px] font-semibold text-slate-400 hover:bg-cyan-500/15 hover:text-cyan-200" onClick={() => setMenuOpen(true)}>
             Decks
+          </button>
+          <button type="button" className="rounded-md bg-black/40 px-2 py-1 text-[11px] font-semibold text-slate-400 hover:bg-cyan-500/15 hover:text-cyan-200" onClick={runVisibleFixture}>
+            Fixture
           </button>
         </div>
       </header>
