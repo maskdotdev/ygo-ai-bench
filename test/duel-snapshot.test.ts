@@ -376,6 +376,26 @@ describe("duel snapshot persistence", () => {
         returned: index + 1,
       })),
       { id: "lua-prompt-select-codes-index-table", api: "SelectCardsFromCodes", player: 0, options: [1, 2], descriptions: [700, 800], returned: 1, returnKind: "codeIndexTable" },
+      {
+        id: "lua-prompt-select-codes-multi",
+        api: "SelectCardsFromCodes",
+        player: 0,
+        options: [1, 2],
+        descriptions: [700, 700],
+        descriptionLists: [[700, 800], [700, 900]],
+        returned: 1,
+        returnValues: [[700, 800], [700, 900]],
+      },
+      {
+        id: "lua-prompt-select-codes-index-table-multi",
+        api: "SelectCardsFromCodes",
+        player: 0,
+        options: [1, 2],
+        descriptions: [700, 700],
+        descriptionLists: [[700, 800], [700, 900]],
+        returned: 1,
+        returnValues: [[{ code: 700, index: 1 }, { code: 800, index: 2 }], [{ code: 700, index: 1 }, { code: 900, index: 3 }]],
+      },
       ...luaYesNoPromptApis.map((api, index): LuaPromptDecision => ({
         id: `lua-prompt-yes-no-${index + 1}`,
         api,
@@ -396,7 +416,7 @@ describe("duel snapshot persistence", () => {
       session.state.status = "awaiting";
       session.state.waitingFor = 0;
       session.state.prompt = "options" in luaPrompt
-        ? { id: luaPrompt.id, type: "selectOption", player: 0, options: [...luaPrompt.options], descriptions: [...luaPrompt.descriptions], returnTo: 0, origin: "luaOperation" }
+        ? { id: luaPrompt.id, type: "selectOption", player: 0, options: [...luaPrompt.options], descriptions: [...luaPrompt.descriptions], ...(luaPrompt.descriptionLists === undefined ? {} : { descriptionLists: luaPrompt.descriptionLists.map((descriptions) => [...descriptions]) }), returnTo: 0, origin: "luaOperation" }
         : { id: luaPrompt.id, type: "selectYesNo", player: 0, ...(luaPrompt.description === undefined ? {} : { description: luaPrompt.description }), returnTo: 0, origin: "luaOperation" };
       session.state.luaOperationPrompt = {
         chainLink: { id: `chain-${index + 1}`, player: 0, sourceUid, effectId: "effect-a" },
@@ -448,6 +468,13 @@ describe("duel snapshot persistence", () => {
     };
     malformedState.luaOperationPrompt = yesNoPromptWithReturnKind;
     expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.luaOperationPrompt.prompt.returnKind is only valid for SelectCardsFromCodes");
+
+    const optionPromptWithMismatchedReturnValues: unknown = {
+      chainLink: { id: "chain-1", player: 0, sourceUid, effectId: "effect-a" },
+      prompt: { id: "lua-prompt-1", api: "SelectCardsFromCodes", player: 0, options: [1, 2], descriptions: [700, 700], returned: 1, returnValues: [[700, 800]] },
+    };
+    malformedState.luaOperationPrompt = optionPromptWithMismatchedReturnValues;
+    expect(() => restoreDuel(snapshot, createCardReader(cards))).toThrow("Malformed duel snapshot: state.luaOperationPrompt.prompt.returnValues must match options length");
   });
 
   it("copies battle response collections out of public and serialized state", () => {

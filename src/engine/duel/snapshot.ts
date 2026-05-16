@@ -237,7 +237,7 @@ const duelSnapshotStateKeys = new Set(["actionWindowId", "actionWindowToken", "a
 const duelSnapshotCardKeys = new Set(["assumedProperties", "attackModifier", "battlePosition", "cancelToGrave", "cardTargetUids", "code", "controller", "counterBuckets", "counters", "customStatusMask", "data", "defenseModifier", "effectRelationIds", "equippedToUid", "faceUp", "fieldId", "kind", "levelModifier", "linkModifier", "location", "name", "overlayUids", "owner", "position", "previousAttack", "previousAttribute", "previousCodes", "previousController", "previousDefense", "previousEquippedToUid", "previousFaceUp", "previousLevel", "previousLink", "previousLocation", "previousPosition", "previousRace", "previousRank", "previousSequence", "previousSetcodes", "previousTypeFlags", "rankModifier", "reason", "reasonCardUid", "reasonEffectId", "reasonPlayer", "scaleModifier", "sequence", "summonMaterialUids", "summonPhase", "summonPlayer", "summonType", "summonTypeCode", "turnCounter", "turnId", "uid", "uniqueOnField"]);
 const duelSnapshotCardDataKeys = new Set(["alias", "attack", "attribute", "code", "defense", "fitMonster", "fusionMaterials", "kind", "leftScale", "level", "linkMarkers", "linkMaterialAttribute", "linkMaterialLevel", "linkMaterialMax", "linkMaterialMin", "linkMaterialMinLevel", "linkMaterialRace", "linkMaterialSetcode", "linkMaterialSummonType", "linkMaterialType", "linkMaterials", "listedNames", "materialSetcodes", "name", "normalTributeMax", "normalTributeMin", "normalTributes", "race", "rightScale", "ritualMaterials", "setcodes", "synchroMaterials", "synchroNonTunerAttribute", "synchroNonTunerMax", "synchroNonTunerMin", "synchroNonTunerRace", "synchroNonTunerSetcode", "synchroNonTunerType", "synchroTunerAttribute", "synchroTunerLevel", "synchroTunerMax", "synchroTunerMin", "synchroTunerRace", "synchroTunerSetcode", "synchroTunerType", "typeFlags", "xyzMaterialAttribute", "xyzMaterialCount", "xyzMaterialMax", "xyzMaterialRace", "xyzMaterialRank", "xyzMaterialSetcode", "xyzMaterialType", "xyzMaterials"]);
 const duelSnapshotEffectKeys = new Set(["category", "code", "controller", "copyId", "countLimit", "countLimitCode", "description", "event", "hintTiming", "id", "label", "labelObjectUid", "labelObjectUids", "luaConditionDescriptor", "luaCostDescriptor", "luaTargetDescriptor", "luaValueDescriptor", "oncePerTurn", "optional", "ownerPlayer", "property", "range", "registryKey", "reset", "sourceUid", "targetRange", "triggerCode", "triggerEvent", "triggerSourceOnly", "triggerTiming", "value"]);
-const duelSnapshotNestedKeys = { activityHistory: new Set(["activity", "cardUid", "effectId", "player"]), battle: new Set(["attackerUid", "battleDamageOverrides", "deferredBattleDestroyed", "replayTargetCount", "replayTargetUids", "resultApplied", "targetUid"]), battlePair: new Set(["attackerUid", "targetUid"]), battleWindow: new Set(["attackNegated", "attackerUid", "id", "kind", "responsePlayer", "step", "targetUid"]), chainLink: new Set(["activationLocation", "activationSequence", "chainIndex", "disablePlayer", "disableReason", "effectId", "effectLabel", "effectLabelObjectUid", "effectLabelObjectUids", "effectLabels", "eventCardUid", "eventChainDepth", "eventChainLinkId", "eventCode", "eventCurrentState", "eventName", "eventPlayer", "eventPreviousState", "eventReason", "eventReasonCardUid", "eventReasonEffectId", "eventReasonPlayer", "eventTriggerTiming", "eventUids", "eventValue", "id", "negated", "operationInfos", "player", "possibleOperationInfos", "relatedEffectId", "sourceUid", "targetParam", "targetPlayer", "targetUids"]), chainLimit: new Set(["expiresAtChainLength", "registryKey", "untilChainEnd"]), effectReset: new Set(["count", "flags"]), eventCardState: new Set(["controller", "faceUp", "location", "position", "sequence"]), eventHistory: new Set(["eventCardUid", "eventChainDepth", "eventChainLinkId", "eventCode", "eventCurrentState", "eventName", "eventPlayer", "eventPreviousState", "eventReason", "eventReasonCardUid", "eventReasonEffectId", "eventReasonPlayer", "eventUids", "eventValue", "relatedEffectId"]), flagEffect: new Set(["code", "ownerId", "ownerType", "property", "reset", "resetCount", "turn", "value"]), log: new Set(["action", "card", "detail", "player", "step"]), luaOperationPrompt: new Set(["chainLink", "prompt"]), luaPromptDecision: new Set(["api", "description", "descriptions", "id", "options", "player", "returned", "returnKind"]), operationInfo: new Set(["category", "count", "parameter", "player", "targetUids"]), pendingTrigger: new Set(["effectId", "effectLabelObjectUid", "effectLabelObjectUids", "eventCardUid", "eventChainDepth", "eventChainLinkId", "eventCode", "eventCurrentState", "eventName", "eventPlayer", "eventPreviousState", "eventReason", "eventReasonCardUid", "eventReasonEffectId", "eventReasonPlayer", "eventTriggerTiming", "eventUids", "eventValue", "id", "player", "relatedEffectId", "sourceUid", "triggerBucket"]), pendingTriggerBucket: new Set(["player", "triggerBucket", "triggerIds"]), prompt: new Set(["description", "descriptions", "id", "options", "origin", "player", "returnTo", "type"]), skippedPhase: new Set(["phase", "player", "remaining"]), synchroMaterials: new Set(["nonTuners", "tuner"]), uniqueOnField: new Set(["code", "locationMask", "opponent", "self"]) };
+const duelSnapshotNestedKeys = { activityHistory: new Set(["activity", "cardUid", "effectId", "player"]), battle: new Set(["attackerUid", "battleDamageOverrides", "deferredBattleDestroyed", "replayTargetCount", "replayTargetUids", "resultApplied", "targetUid"]), battlePair: new Set(["attackerUid", "targetUid"]), battleWindow: new Set(["attackNegated", "attackerUid", "id", "kind", "responsePlayer", "step", "targetUid"]), chainLink: new Set(["activationLocation", "activationSequence", "chainIndex", "disablePlayer", "disableReason", "effectId", "effectLabel", "effectLabelObjectUid", "effectLabelObjectUids", "effectLabels", "eventCardUid", "eventChainDepth", "eventChainLinkId", "eventCode", "eventCurrentState", "eventName", "eventPlayer", "eventPreviousState", "eventReason", "eventReasonCardUid", "eventReasonEffectId", "eventReasonPlayer", "eventTriggerTiming", "eventUids", "eventValue", "id", "negated", "operationInfos", "player", "possibleOperationInfos", "relatedEffectId", "sourceUid", "targetParam", "targetPlayer", "targetUids"]), chainLimit: new Set(["expiresAtChainLength", "registryKey", "untilChainEnd"]), effectReset: new Set(["count", "flags"]), eventCardState: new Set(["controller", "faceUp", "location", "position", "sequence"]), eventHistory: new Set(["eventCardUid", "eventChainDepth", "eventChainLinkId", "eventCode", "eventCurrentState", "eventName", "eventPlayer", "eventPreviousState", "eventReason", "eventReasonCardUid", "eventReasonEffectId", "eventReasonPlayer", "eventUids", "eventValue", "relatedEffectId"]), flagEffect: new Set(["code", "ownerId", "ownerType", "property", "reset", "resetCount", "turn", "value"]), log: new Set(["action", "card", "detail", "player", "step"]), luaOperationPrompt: new Set(["chainLink", "prompt"]), luaPromptDecision: new Set(["api", "description", "descriptionLists", "descriptions", "id", "options", "player", "returned", "returnKind", "returnValues"]), operationInfo: new Set(["category", "count", "parameter", "player", "targetUids"]), pendingTrigger: new Set(["effectId", "effectLabelObjectUid", "effectLabelObjectUids", "eventCardUid", "eventChainDepth", "eventChainLinkId", "eventCode", "eventCurrentState", "eventName", "eventPlayer", "eventPreviousState", "eventReason", "eventReasonCardUid", "eventReasonEffectId", "eventReasonPlayer", "eventTriggerTiming", "eventUids", "eventValue", "id", "player", "relatedEffectId", "sourceUid", "triggerBucket"]), pendingTriggerBucket: new Set(["player", "triggerBucket", "triggerIds"]), prompt: new Set(["description", "descriptionLists", "descriptions", "id", "options", "origin", "player", "returnTo", "type"]), skippedPhase: new Set(["phase", "player", "remaining"]), synchroMaterials: new Set(["nonTuners", "tuner"]), uniqueOnField: new Set(["code", "locationMask", "opponent", "self"]) };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -791,11 +791,17 @@ function assertSnapshotPrompt(prompt: unknown): asserts prompt is DuelPromptStat
       if (prompt.descriptions.some((description) => !Number.isSafeInteger(description))) throw new Error("Malformed duel snapshot: state.prompt.descriptions must contain safe integers");
       if (prompt.descriptions.length !== prompt.options.length) throw new Error("Malformed duel snapshot: state.prompt.descriptions must match options length");
     }
+    if (prompt.descriptionLists !== undefined) {
+      if (!Array.isArray(prompt.descriptionLists)) throw new Error("Malformed duel snapshot: state.prompt.descriptionLists must be an array");
+      if (prompt.descriptionLists.length !== prompt.options.length) throw new Error("Malformed duel snapshot: state.prompt.descriptionLists must match options length");
+      prompt.descriptionLists.forEach((descriptions, index) => assertSnapshotSafeIntegerArray(descriptions, `state.prompt.descriptionLists.${index}`));
+    }
     return;
   }
   if (prompt.type === "selectYesNo") {
     if (prompt.description !== undefined && !Number.isSafeInteger(prompt.description)) throw new Error("Malformed duel snapshot: state.prompt.description must be a safe integer");
     if (prompt.descriptions !== undefined) throw new Error("Malformed duel snapshot: state.prompt.descriptions is only valid for selectOption");
+    if (prompt.descriptionLists !== undefined) throw new Error("Malformed duel snapshot: state.prompt.descriptionLists is only valid for selectOption");
     return;
   }
 }
@@ -820,8 +826,14 @@ function assertSnapshotLuaPromptDecision(prompt: unknown): void {
     if (!Array.isArray(prompt.descriptions)) throw new Error("Malformed duel snapshot: state.luaOperationPrompt.prompt.descriptions must be an array");
     if (prompt.descriptions.some((description) => !Number.isSafeInteger(description))) throw new Error("Malformed duel snapshot: state.luaOperationPrompt.prompt.descriptions must contain safe integers");
     if (prompt.descriptions.length !== prompt.options.length) throw new Error("Malformed duel snapshot: state.luaOperationPrompt.prompt.descriptions must match options length");
+    if (prompt.descriptionLists !== undefined) {
+      if (!Array.isArray(prompt.descriptionLists)) throw new Error("Malformed duel snapshot: state.luaOperationPrompt.prompt.descriptionLists must be an array");
+      if (prompt.descriptionLists.length !== prompt.options.length) throw new Error("Malformed duel snapshot: state.luaOperationPrompt.prompt.descriptionLists must match options length");
+      prompt.descriptionLists.forEach((descriptions, index) => assertSnapshotSafeIntegerArray(descriptions, `state.luaOperationPrompt.prompt.descriptionLists.${index}`));
+    }
     if (!Number.isSafeInteger(prompt.returned)) throw new Error("Malformed duel snapshot: state.luaOperationPrompt.prompt.returned must be a safe integer");
     if (prompt.returnKind !== undefined && !(prompt.api === "SelectCardsFromCodes" && prompt.returnKind === "codeIndexTable")) throw new Error("Malformed duel snapshot: state.luaOperationPrompt.prompt.returnKind must match the Lua prompt api");
+    if (prompt.returnValues !== undefined) assertSnapshotLuaPromptReturnValues(prompt.returnValues, prompt.options.length);
     if (prompt.description !== undefined) throw new Error("Malformed duel snapshot: state.luaOperationPrompt.prompt.description is only valid for yes/no prompt APIs");
     return;
   }
@@ -830,10 +842,28 @@ function assertSnapshotLuaPromptDecision(prompt: unknown): void {
     if (prompt.description !== undefined && !Number.isSafeInteger(prompt.description)) throw new Error("Malformed duel snapshot: state.luaOperationPrompt.prompt.description must be a safe integer");
     if (prompt.options !== undefined) throw new Error("Malformed duel snapshot: state.luaOperationPrompt.prompt.options is only valid for option-like prompt APIs");
     if (prompt.descriptions !== undefined) throw new Error("Malformed duel snapshot: state.luaOperationPrompt.prompt.descriptions is only valid for option-like prompt APIs");
+    if (prompt.descriptionLists !== undefined) throw new Error("Malformed duel snapshot: state.luaOperationPrompt.prompt.descriptionLists is only valid for option-like prompt APIs");
     if (prompt.returnKind !== undefined) throw new Error("Malformed duel snapshot: state.luaOperationPrompt.prompt.returnKind is only valid for SelectCardsFromCodes");
+    if (prompt.returnValues !== undefined) throw new Error("Malformed duel snapshot: state.luaOperationPrompt.prompt.returnValues is only valid for option-like prompt APIs");
     return;
   }
   throw new Error("Malformed duel snapshot: state.luaOperationPrompt.prompt.api must be a Lua prompt api");
+}
+
+function assertSnapshotSafeIntegerArray(value: unknown, path: string): void { if (!Array.isArray(value)) throw new Error(`Malformed duel snapshot: ${path} must be an array`); if (value.some((entry) => !Number.isSafeInteger(entry))) throw new Error(`Malformed duel snapshot: ${path} must contain safe integers`); }
+
+function assertSnapshotLuaPromptReturnValues(value: unknown, optionCount: number): void {
+  if (!Array.isArray(value)) throw new Error("Malformed duel snapshot: state.luaOperationPrompt.prompt.returnValues must be an array");
+  if (value.length !== optionCount) throw new Error("Malformed duel snapshot: state.luaOperationPrompt.prompt.returnValues must match options length");
+  value.forEach((values, index) => { if (!Array.isArray(values)) throw new Error(`Malformed duel snapshot: state.luaOperationPrompt.prompt.returnValues.${index} must be an array`); values.forEach((resumeValue, valueIndex) => assertSnapshotLuaPromptReturnValue(resumeValue, `state.luaOperationPrompt.prompt.returnValues.${index}.${valueIndex}`)); });
+}
+
+function assertSnapshotLuaPromptReturnValue(value: unknown, path: string): void {
+  if (typeof value === "boolean" || Number.isSafeInteger(value)) return;
+  if (!isRecord(value)) throw new Error(`Malformed duel snapshot: ${path} must be a Lua prompt resume value`);
+  for (const key of Object.keys(value)) if (key !== "code" && key !== "index") throw new Error(`Malformed duel snapshot: ${path}.${key} is not a known field`);
+  if (!Number.isSafeInteger(value.code)) throw new Error(`Malformed duel snapshot: ${path}.code must be a safe integer`);
+  if (!Number.isSafeInteger(value.index)) throw new Error(`Malformed duel snapshot: ${path}.index must be a safe integer`);
 }
 
 function assertSnapshotBattleWindow(window: unknown, cardUids: ReadonlySet<string>): void {
@@ -989,7 +1019,7 @@ function copyPublicChainLink(link: DuelState["chain"][number]): PublicChainLink 
 function copyOperationInfos(infos: NonNullable<DuelState["chain"][number]["operationInfos"]>): NonNullable<DuelState["chain"][number]["operationInfos"]> { return infos.map((info) => ({ category: typeof info.category === "number" && Number.isFinite(info.category) ? info.category : 0, targetUids: Array.isArray(info.targetUids) ? [...info.targetUids] : [], count: typeof info.count === "number" && Number.isFinite(info.count) ? info.count : 0, player: info.player === 1 ? 1 : 0, parameter: typeof info.parameter === "number" && Number.isFinite(info.parameter) ? info.parameter : 0 })); }
 
 function copyLuaOperationPromptDecision(prompt: NonNullable<DuelState["luaOperationPrompt"]>["prompt"]): NonNullable<DuelState["luaOperationPrompt"]>["prompt"] {
-  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions] };
+  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map((values) => values.map((value) => typeof value === "object" ? { ...value } : value)) }) };
   return { ...prompt };
 }
 
@@ -1041,6 +1071,6 @@ function copyCardData(data: DuelCardData): DuelCardData {
 }
 
 function copyPrompt(prompt: DuelPromptState): DuelPromptState {
-  if (prompt.type === "selectOption") return { ...prompt, options: [...prompt.options], ...(prompt.descriptions === undefined ? {} : { descriptions: [...prompt.descriptions] }) };
+  if (prompt.type === "selectOption") return { ...prompt, options: [...prompt.options], ...(prompt.descriptions === undefined ? {} : { descriptions: [...prompt.descriptions] }), ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }) };
   return { ...prompt };
 }

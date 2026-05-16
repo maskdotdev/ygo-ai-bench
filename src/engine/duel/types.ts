@@ -526,7 +526,7 @@ export interface DuelFlagEffect {
 }
 
 export type DuelPromptState =
-  | { id: string; type: "selectOption"; player: PlayerId; options: number[]; descriptions?: number[]; returnTo?: PlayerId; origin?: "luaOperation" }
+  | { id: string; type: "selectOption"; player: PlayerId; options: number[]; descriptions?: number[]; descriptionLists?: number[][]; returnTo?: PlayerId; origin?: "luaOperation" }
   | { id: string; type: "selectYesNo"; player: PlayerId; description?: number; returnTo?: PlayerId; origin?: "luaOperation" };
 
 export type BattleStep = "attack" | "damage" | "damageCalculation";

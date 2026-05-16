@@ -182,6 +182,33 @@ export function assertPromptForWindow(actual: DuelPromptState | undefined, expec
           }
         });
       }
+    } else if (key === "descriptionLists") {
+      if (expected.type === "selectYesNo") {
+        fail("Expected prompt.descriptionLists has malformed field for selectYesNo");
+        malformed = true;
+        continue;
+      }
+      if (!Array.isArray(value)) {
+        fail(`Expected prompt.descriptionLists has malformed value ${String(value)}`);
+        malformed = true;
+      } else if (Array.isArray("options" in expected ? expected.options : undefined) && value.length !== ("options" in expected ? expected.options : undefined)?.length) {
+        fail("Expected prompt.descriptionLists must match options length");
+        malformed = true;
+      } else {
+        value.forEach((descriptions, index) => {
+          if (!Array.isArray(descriptions)) {
+            fail(`Expected prompt.descriptionLists[${index}] has malformed value ${String(descriptions)}`);
+            malformed = true;
+          } else {
+            descriptions.forEach((description, descriptionIndex) => {
+              if (!isSafeCount(description)) {
+                fail(`Expected prompt.descriptionLists[${index}][${descriptionIndex}] has malformed value ${String(description)}`);
+                malformed = true;
+              }
+            });
+          }
+        });
+      }
     } else if (key === "options") {
       if (expected.type === "selectYesNo") {
         fail("Expected prompt.options has malformed field for selectYesNo");
@@ -199,7 +226,7 @@ export function assertPromptForWindow(actual: DuelPromptState | undefined, expec
           }
         });
       }
-    } else if (!["id", "type", "player", "options", "description", "descriptions", "returnTo", "origin"].includes(key)) {
+    } else if (!["id", "type", "player", "options", "description", "descriptions", "descriptionLists", "returnTo", "origin"].includes(key)) {
       fail(`Expected prompt has malformed key ${key}`);
       malformed = true;
     }

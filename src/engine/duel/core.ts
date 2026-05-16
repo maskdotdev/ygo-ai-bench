@@ -1033,7 +1033,7 @@ function copyLuaOperationPromptChainLink(link: ChainLink): ChainLink {
 }
 
 function copyLuaOperationPromptDecision(prompt: Extract<LuaPromptCoroutineResult, { status: "yielded" }>["prompt"]): Extract<LuaPromptCoroutineResult, { status: "yielded" }>["prompt"] {
-  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions] };
+  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map((values) => values.map((value) => typeof value === "object" ? { ...value } : value)) }) };
   return { ...prompt };
 }
 

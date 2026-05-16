@@ -929,7 +929,7 @@ function fixtureEventPayload(event: ScriptedFixtureMove | ScriptedFixtureEvent) 
 
 function applyFixturePrompt(session: DuelSession, prompt: DuelSession["state"]["prompt"] | undefined): void {
   if (!prompt) return;
-  session.state.prompt = prompt.type === "selectOption" ? { ...prompt, options: [...prompt.options], ...(prompt.descriptions === undefined ? {} : { descriptions: [...prompt.descriptions] }) } : { ...prompt };
+  session.state.prompt = prompt.type === "selectOption" ? { ...prompt, options: [...prompt.options], ...(prompt.descriptions === undefined ? {} : { descriptions: [...prompt.descriptions] }), ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }) } : { ...prompt };
   session.state.waitingFor = prompt.player;
 }
 

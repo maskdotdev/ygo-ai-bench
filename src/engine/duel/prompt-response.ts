@@ -7,7 +7,9 @@ export function getPromptResponseActions(prompt: DuelPromptState, player: Player
   if (prompt.type === "selectOption") {
     return prompt.options.map((option, index) => {
       const description = prompt.descriptions?.[index];
-      return { type: "selectOption", player, promptId: prompt.id, option, label: description === undefined ? `Select option ${option}` : `Select option ${option} (${description})` };
+      const descriptionList = prompt.descriptionLists?.[index];
+      const labelDescription = descriptionList === undefined ? description : descriptionList.join(", ");
+      return { type: "selectOption", player, promptId: prompt.id, option, label: labelDescription === undefined ? `Select option ${option}` : `Select option ${option} (${labelDescription})` };
     });
   }
   return [

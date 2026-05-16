@@ -227,12 +227,49 @@ function pushSelectCardsFromCodes(L: unknown, hostState: LuaDuelPromptApiHostSta
     };
     hostState.promptDecisions?.push(decision);
     if (hostState.promptBehavior === "yield") return lua.lua_yield(L, 0);
+  } else if (count > 1 && choices.length > 0) {
+    const combinations = collectCodeChoiceCombinations(choices, count);
+    if (combinations.length > 0) {
+      const options = combinations.map((_combination, index) => index + 1);
+      const decision: LuaPromptDecision = {
+        id: nextLuaPromptId(hostState),
+        api: "SelectCardsFromCodes",
+        ...(player === undefined ? {} : { player }),
+        options,
+        descriptions: combinations.map((combination) => combination[0]?.code ?? 0),
+        descriptionLists: combinations.map((combination) => combination.map((choice) => choice.code)),
+        returned: options[0] ?? 0,
+        returnValues: includeIndexes
+          ? combinations.map((combination) => combination.map((choice) => ({ code: choice.code, index: choice.index })))
+          : combinations.map((combination) => combination.map((choice) => choice.code)),
+      };
+      hostState.promptDecisions?.push(decision);
+      if (hostState.promptBehavior === "yield") return lua.lua_yield(L, 0);
+    }
   }
   for (const choice of choices.slice(0, count)) {
     if (includeIndexes) pushCodeIndexTable(L, choice.code, choice.index);
     else lua.lua_pushinteger(L, choice.code);
   }
   return count;
+}
+
+function collectCodeChoiceCombinations<T>(choices: T[], count: number): T[][] {
+  const combinations: T[][] = [];
+  const selected: T[] = [];
+  const visit = (start: number): void => {
+    if (selected.length === count) {
+      combinations.push([...selected]);
+      return;
+    }
+    for (let index = start; index <= choices.length - (count - selected.length); index += 1) {
+      selected.push(choices[index]!);
+      visit(index + 1);
+      selected.pop();
+    }
+  };
+  visit(0);
+  return combinations;
 }
 
 function readCodeChoices(L: unknown, startIndex: number): Array<{ code: number; index: number }> {

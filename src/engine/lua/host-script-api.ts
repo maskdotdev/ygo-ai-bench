@@ -140,8 +140,9 @@ function resumeLuaPromptCoroutine(L: unknown, thread: unknown, hostState: LuaHos
         status: "yielded",
         prompt,
         resume(value) {
-          pushLuaResumeValue(thread, value);
-          return resumeLuaPromptCoroutine(L, thread, hostState, 1);
+          const values = Array.isArray(value) ? value : [value];
+          for (const resumeValue of values) pushLuaResumeValue(thread, resumeValue);
+          return resumeLuaPromptCoroutine(L, thread, hostState, values.length);
         },
       };
     }
