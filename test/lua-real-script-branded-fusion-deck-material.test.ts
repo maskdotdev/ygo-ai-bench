@@ -141,6 +141,23 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Br
       reason: duelReason.effect | duelReason.material | duelReason.fusion,
     });
     expect(restored.session.state.cards.find((card) => card.uid === brandedFusion!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
+    const fusionSummonEvents = restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === fusion!.uid);
+    expect(fusionSummonEvents).toHaveLength(1);
+    expect(fusionSummonEvents[0]).toMatchObject({
+      eventName: "specialSummoned",
+      eventCurrentState: { location: "monsterZone" },
+    });
+    const materialGraveEvents = restored.session.state.eventHistory.filter((event) =>
+      event.eventName === "sentToGraveyard"
+      && (event.eventCardUid === albaz!.uid || event.eventCardUid === material!.uid)
+    );
+    expect(materialGraveEvents.map((event) => event.eventCardUid).sort()).toEqual([albaz!.uid, material!.uid].sort());
+    for (const event of materialGraveEvents) {
+      expect(event).toMatchObject({
+        eventName: "sentToGraveyard",
+        eventCurrentState: { location: "graveyard" },
+      });
+    }
     expect(restored.host.messages).not.toContain("branded fusion responder resolved");
   });
 });

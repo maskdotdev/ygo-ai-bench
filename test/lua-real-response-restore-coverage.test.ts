@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 80;
-const chainedResponseFixtureCount = 79;
-const responseOperationInfoFixtureCount = 71;
+const responseFixtureCount = 82;
+const chainedResponseFixtureCount = 81;
+const responseOperationInfoFixtureCount = 73;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -104,6 +104,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-black-horn-special-summon-negate.test.ts",
     "lua-real-script-book-of-moon-free-chain.test.ts",
     "lua-real-script-bottomless-trap-hole-summon-success.test.ts",
+    "lua-real-script-branded-fusion-deck-material.test.ts",
     "lua-real-script-called-by-the-grave.test.ts",
     "lua-real-script-castle-gate-release-cost-damage.test.ts",
     "lua-real-script-compulsory-evacuation-device-free-chain.test.ts",
@@ -129,6 +130,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-hebo-spirit-grant-return.test.ts",
     "lua-real-script-grand-horn-special-summon-negate.test.ts",
     "lua-real-script-horn-of-heaven-release-cost-negate.test.ts",
+    "lua-real-script-high-ritual-art-deck-stage2.test.ts",
     "lua-real-script-izanami-spirit-grave-return.test.ts",
     "lua-real-script-kinka-byo-relation-banish.test.ts",
     "lua-real-script-lightning-storm-select-effect.test.ts",

@@ -110,6 +110,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
     expect(restored.session.state.cards.find((card) => card.uid === normalMaterial!.uid)).toMatchObject({ location: "graveyard", reason: duelReason.material | duelReason.ritual });
     expect(restored.session.state.cards.find((card) => card.uid === effectDecoy!.uid)).toMatchObject({ location: "hand" });
     expect(restored.session.state.cards.find((card) => card.uid === highRitualArt!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
+    const ritualSummonEvents = restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === ritualTarget!.uid);
+    expect(ritualSummonEvents).toHaveLength(1);
+    expect(ritualSummonEvents[0]).toMatchObject({
+      eventName: "specialSummoned",
+      eventCurrentState: { location: "monsterZone" },
+    });
+    const materialGraveEvents = restored.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard" && event.eventCardUid === normalMaterial!.uid);
+    expect(materialGraveEvents).toHaveLength(1);
+    expect(materialGraveEvents[0]).toMatchObject({
+      eventName: "sentToGraveyard",
+      eventCurrentState: { location: "graveyard" },
+    });
     expect(restored.session.state.flagEffects).toContainEqual(expect.objectContaining({ ownerType: "card", ownerId: ritualTarget!.uid, code: Number(highRitualArtCode) }));
     expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 0x1200)).toMatchInlineSnapshot(`
       {
