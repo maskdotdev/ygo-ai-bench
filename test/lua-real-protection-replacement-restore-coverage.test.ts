@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const protectionReplacementFixtureCount = 9;
+const protectionReplacementFixtureCount = 10;
 
 describe("Lua real protection and replacement restore coverage", () => {
   it("requires representative protection/replacement fixtures to assert Lua-aware restore", () => {
@@ -127,6 +127,16 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
         "expect(restoredProtection.session.state.battleDamage).toEqual({ 0: 0, 1: 0 })",
         'eventName: "battleDamageDealt", eventPlayer: 0',
         "effect.code === effectAvoidBattleDamage || effect.code === effectIndestructibleBattle",
+      ],
+    },
+    {
+      file: "lua-real-script-checksum-dragon-position-indestructible.test.ts",
+      required: [
+        'luaValueDescriptor: "cannot-be-effect-target:opponent"',
+        'luaConditionDescriptor: "condition:source-attack-position"',
+        "const attackPositionDestroy = destroyDuelCard(restored.session.state, restoredDragon!.uid, 0, duelReason.battle | duelReason.destroy, 1)",
+        "expect(attackPositionDestroy).toMatchObject({ uid: restoredDragon!.uid, location: \"monsterZone\" })",
+        "expect(defensePositionDestroy).toMatchObject({ uid: restoredDragon!.uid, location: \"graveyard\", reason: duelReason.battle | duelReason.destroy })",
       ],
     },
   ].map(({ file, required }) => ({ file: path.join("test", file), required }));
