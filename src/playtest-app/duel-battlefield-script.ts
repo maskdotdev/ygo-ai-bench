@@ -150,7 +150,7 @@ function battlefieldScriptResult(
     label: duelActionUiGroupLabel(group),
     actions: group.actions.map(copyDuelAction),
   }));
-  const prompt = duelPromptView(state.prompt, visibleGroups);
+  const prompt = duelPromptView(state.prompt, visibleGroups, state.luaOperationPrompt);
   const triggerOrder = duelTriggerOrderView(state.triggerOrderPrompt, view.legalGroups);
   return {
     ok: failedStep === undefined,

@@ -20,6 +20,7 @@ const luaBridgeCards: DuelCardData[] = [
   { code: "100", name: "Lua Bridge Summon", kind: "monster", level: 4 },
   { code: "200", name: "Lua Bridge First Trigger", kind: "monster", level: 4 },
   { code: "300", name: "Lua Bridge Second Trigger", kind: "monster", level: 4 },
+  { code: "729", name: "Lua Bridge Prompt Source", kind: "monster", level: 4 },
 ];
 
 const luaBridgeYdk = `#created by test
@@ -35,6 +36,7 @@ const luaBridgeScripts: LuaScriptSource = {
     return {
       "c200.lua": luaMandatoryTriggerScript("200"),
       "c300.lua": luaMandatoryTriggerScript("300"),
+      "c729.lua": luaOptionPromptScript(),
     }[name];
   },
 };
@@ -268,6 +270,35 @@ describe("duel pvp agent bridge", () => {
     expect(result.state.id).toBe(restored.sessionId);
   });
 
+  it("exposes Lua operation prompt metadata through visible bridge payloads", () => {
+    const agent = createDuelPvpAgent({
+      cardReader: createCardReader(luaBridgeCards),
+      luaScriptSource: luaBridgeScripts,
+      luaRuntime: luaBridgeRuntime,
+    });
+    const started = agent.start({ player0Ydk: "#main\n729\n#extra\n!side", player1Ydk: "#main\n100\n#extra\n!side", seed: "pvp-agent-lua-prompt", handSize: 1 });
+    const activation = started.visibleBattlefield.actions.find((action) => action.type === "activateEffect");
+    expect(activation).toBeDefined();
+
+    const prompted = agent.action(activation, started.sessionId);
+
+    expect(prompted.ok).toBe(true);
+    expect(prompted.state.luaOperationPrompt?.prompt).toMatchObject({
+      api: "SelectOption",
+      options: [0, 1],
+      descriptions: [700, 800],
+      returned: 0,
+    });
+    const visible = agent.visibleBattlefield(0, started.sessionId);
+    expect(visible.prompt?.detail).toBe("P1 · Prompt lua-prompt-1 · Lua operation · returns P1 · SelectOption · options 0, 1 · text 700, 800");
+    expect(visible.prompt?.luaPrompt).toEqual(prompted.state.luaOperationPrompt?.prompt);
+    if (!visible.prompt?.luaPrompt || !("options" in visible.prompt.luaPrompt)) throw new Error("Expected Lua option prompt");
+    visible.prompt.luaPrompt.options.push(9);
+    visible.prompt.luaPrompt.descriptions.push(900);
+
+    expect(agent.visibleBattlefield(0, started.sessionId).prompt?.luaPrompt).toEqual(prompted.state.luaOperationPrompt?.prompt);
+  });
+
   it("restores serialized sessions with the same visible action surface", () => {
     const agent = createDuelPvpAgent();
     const started = agent.start({ player0Ydk: starterYdk, player1Ydk: starterYdk, seed: "pvp-agent-restore", handSize: 2 });
@@ -444,6 +475,22 @@ function luaMandatoryTriggerScript(code: "200" | "300"): string {
     e:SetRange(LOCATION_HAND)
     e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
       Debug.Message("lua bridge trigger ${code}")
+    end)
+    c:RegisterEffect(e)
+  end
+  `;
+}
+
+function luaOptionPromptScript(): string {
+  return `
+  c729={}
+  function c729.initial_effect(c)
+    local e=Effect.CreateEffect(c)
+    e:SetType(EFFECT_TYPE_IGNITION)
+    e:SetRange(LOCATION_HAND)
+    e:SetOperation(function(e,tp)
+      local selected = Duel.SelectOption(tp, 700, 800)
+      Debug.Message("lua bridge code prompt " .. selected)
     end)
     c:RegisterEffect(e)
   end

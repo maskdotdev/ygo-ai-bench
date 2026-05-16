@@ -260,7 +260,7 @@ function visibleBattlefieldView(record: DuelPvpSessionRecord, player: PlayerId):
     legalGroups,
   );
   const groups = view.orphanGroups.map(copyUiGroup);
-  const prompt = duelPromptView(state.prompt, groups);
+  const prompt = duelPromptView(state.prompt, groups, state.luaOperationPrompt);
   const triggerOrder = duelTriggerOrderView(state.triggerOrderPrompt, legalGroups);
   return {
     player,
@@ -335,6 +335,7 @@ function copyPromptView(prompt: DuelPromptView): DuelPromptView {
   return {
     ...prompt,
     prompt: copyPromptState(prompt.prompt),
+    ...(prompt.luaPrompt === undefined ? {} : { luaPrompt: copyLuaPrompt(prompt.luaPrompt) }),
     groups: prompt.groups.map(copyUiGroup),
   };
 }
@@ -346,6 +347,19 @@ function copyPromptState(prompt: DuelPromptState): DuelPromptState {
       options: [...prompt.options],
       ...(prompt.descriptions === undefined ? {} : { descriptions: [...prompt.descriptions] }),
       ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }),
+    };
+  }
+  return { ...prompt };
+}
+
+function copyLuaPrompt(prompt: NonNullable<DuelPromptView["luaPrompt"]>): NonNullable<DuelPromptView["luaPrompt"]> {
+  if ("options" in prompt) {
+    return {
+      ...prompt,
+      options: [...prompt.options],
+      descriptions: [...prompt.descriptions],
+      ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }),
+      ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map((values) => values.map((value) => typeof value === "object" ? { ...value } : value)) }),
     };
   }
   return { ...prompt };

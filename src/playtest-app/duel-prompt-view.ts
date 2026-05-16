@@ -1,5 +1,6 @@
 import { copyDuelAction } from "#duel/action-copy.js";
-import type { DuelAction, DuelPromptState } from "#duel/types.js";
+import type { DuelAction, DuelPromptState, LuaOperationPromptState } from "#duel/types.js";
+import { isLuaOptionPromptDecision, type LuaPromptResumeValue } from "#lua/host-types.js";
 import { copyDuelActionUiGroup, type DuelActionUiGroup } from "./duel-action-anchors.js";
 
 export type DuelPromptChoice =
@@ -24,6 +25,7 @@ export interface DuelPromptView {
   label: string;
   detail: string;
   prompt: DuelPromptState;
+  luaPrompt?: LuaOperationPromptState["prompt"];
   choices: DuelPromptChoice[];
   groups: DuelActionUiGroup[];
 }
@@ -44,10 +46,17 @@ export function promptViewLabel(prompt: DuelPromptState): string {
   return exhaustive;
 }
 
-export function promptViewDetail(prompt: DuelPromptState): string {
+export function promptViewDetail(prompt: DuelPromptState, luaPrompt?: LuaOperationPromptState["prompt"]): string {
   const parts = [`P${prompt.player + 1}`, `Prompt ${prompt.id}`];
   if (prompt.origin === "luaOperation") parts.push("Lua operation");
   if (prompt.returnTo !== undefined) parts.push(`returns P${prompt.returnTo + 1}`);
+  if (luaPrompt !== undefined) {
+    parts.push(luaPrompt.api);
+    if (isLuaOptionPromptDecision(luaPrompt)) {
+      if (luaPrompt.returnKind !== undefined) parts.push(`return ${luaPrompt.returnKind}`);
+      if (luaPrompt.returnValues !== undefined) parts.push(`values ${formatLuaPromptReturnValues(luaPrompt.returnValues)}`);
+    }
+  }
 
   switch (prompt.type) {
     case "selectOption": {
@@ -69,6 +78,16 @@ function formatDescriptionLists(descriptionLists: readonly (readonly number[])[]
   return descriptionLists.map((descriptions) => `[${descriptions.join(", ")}]`).join(", ");
 }
 
+function formatLuaPromptReturnValues(returnValues: readonly (readonly unknown[])[]): string {
+  return returnValues.map((values) => `[${values.map(formatLuaPromptReturnValue).join(", ")}]`).join(", ");
+}
+
+function formatLuaPromptReturnValue(value: unknown): string {
+  if (typeof value !== "object" || value === null) return String(value);
+  if ("code" in value && "index" in value) return `${String(value.code)}#${String(value.index)}`;
+  return JSON.stringify(value);
+}
+
 export function splitPromptGroups(prompt: DuelPromptState | undefined, groups: readonly DuelActionUiGroup[]): SplitPromptGroups {
   if (!prompt) return { promptGroups: [], globalGroups: [...groups] };
 
@@ -84,17 +103,29 @@ export function splitPromptGroups(prompt: DuelPromptState | undefined, groups: r
   return { promptGroups, globalGroups };
 }
 
-export function duelPromptView(prompt: DuelPromptState | undefined, groups: readonly DuelActionUiGroup[]): DuelPromptView | undefined {
+export function duelPromptView(
+  prompt: DuelPromptState | undefined,
+  groups: readonly DuelActionUiGroup[],
+  luaOperationPrompt?: LuaOperationPromptState,
+): DuelPromptView | undefined {
   if (!prompt) return undefined;
   const { promptGroups } = splitPromptGroups(prompt, groups);
   if (!promptGroups.length) return undefined;
+  const luaPrompt = matchingLuaPrompt(prompt, luaOperationPrompt);
   return {
     label: promptViewLabel(prompt),
-    detail: promptViewDetail(prompt),
+    detail: promptViewDetail(prompt, luaPrompt),
     prompt: copyPrompt(prompt),
+    ...(luaPrompt === undefined ? {} : { luaPrompt: copyLuaPrompt(luaPrompt) }),
     choices: promptChoices(prompt, promptGroups),
     groups: promptGroups.map(copyDuelActionUiGroup),
   };
+}
+
+function matchingLuaPrompt(prompt: DuelPromptState, luaOperationPrompt: LuaOperationPromptState | undefined): LuaOperationPromptState["prompt"] | undefined {
+  if (prompt.origin !== "luaOperation") return undefined;
+  if (luaOperationPrompt?.prompt.id !== prompt.id) return undefined;
+  return luaOperationPrompt.prompt;
 }
 
 function promptChoices(prompt: DuelPromptState, groups: readonly DuelActionUiGroup[]): DuelPromptChoice[] {
@@ -153,4 +184,22 @@ function copyPrompt(prompt: DuelPromptState): DuelPromptState {
     };
   }
   return { ...prompt };
+}
+
+function copyLuaPrompt(prompt: LuaOperationPromptState["prompt"]): LuaOperationPromptState["prompt"] {
+  if (isLuaOptionPromptDecision(prompt)) {
+    return {
+      ...prompt,
+      options: [...prompt.options],
+      descriptions: [...prompt.descriptions],
+      ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }),
+      ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map((values) => values.map(copyLuaPromptReturnValue)) }),
+    };
+  }
+  return { ...prompt };
+}
+
+function copyLuaPromptReturnValue(value: LuaPromptResumeValue): LuaPromptResumeValue {
+  if (typeof value === "object" && value !== null) return { ...value };
+  return value;
 }

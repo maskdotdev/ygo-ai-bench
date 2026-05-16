@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { duelPromptView, promptViewDetail, promptViewLabel, splitPromptGroups } from "../src/playtest-app/duel-prompt-view.js";
-import type { DuelPromptState } from "#duel/types.js";
+import type { DuelPromptState, LuaOperationPromptState } from "#duel/types.js";
 import type { DuelActionUiGroup } from "../src/playtest-app/duel-action-anchors.js";
 
 describe("duel prompt view", () => {
@@ -132,6 +132,55 @@ describe("duel prompt view", () => {
       label: "Option Prompt",
       actions: [{ type: "selectOption", option: 1, label: "Choose 1" }],
     });
+  });
+
+  it("surfaces matching Lua operation prompt return metadata for browser renderers", () => {
+    const prompt: DuelPromptState = {
+      id: "lua-code-choice",
+      type: "selectOption",
+      player: 0,
+      origin: "luaOperation",
+      options: [1, 2],
+      descriptions: [700, 800],
+    };
+    const luaOperationPrompt: LuaOperationPromptState = {
+      chainLink: { id: "lua-chain", player: 0, sourceUid: "source-1", effectId: "effect-1" },
+      prompt: {
+        id: "lua-code-choice",
+        api: "SelectCardsFromCodes",
+        player: 0,
+        options: [1, 2],
+        descriptions: [700, 800],
+        returned: 1,
+        returnKind: "codeIndexTable",
+        returnValues: [
+          [{ code: 700, index: 1 }],
+          [{ code: 800, index: 2 }],
+        ],
+      },
+    };
+    const promptGroup: DuelActionUiGroup = {
+      key: "lua-code-choice",
+      label: "Option Prompt",
+      promptId: "lua-code-choice",
+      promptType: "selectOption",
+      actions: [
+        { type: "selectOption", player: 0, promptId: "lua-code-choice", option: 1, label: "Choose 700" },
+        { type: "selectOption", player: 0, promptId: "lua-code-choice", option: 2, label: "Choose 800" },
+      ],
+    };
+
+    const view = duelPromptView(prompt, [promptGroup], luaOperationPrompt);
+
+    expect(view?.detail).toBe("P1 · Prompt lua-code-choice · Lua operation · SelectCardsFromCodes · return codeIndexTable · values [700#1], [800#2] · options 1, 2 · text 700, 800");
+    expect(view?.luaPrompt).toEqual(luaOperationPrompt.prompt);
+    if (!view?.luaPrompt || !("returnValues" in view.luaPrompt) || view.luaPrompt.returnValues === undefined) throw new Error("Expected Lua prompt return values");
+    const returned = view.luaPrompt.returnValues[0]![0]!;
+    if (typeof returned !== "object" || returned === null) throw new Error("Expected copied code/index return value");
+    returned.index = 99;
+
+    if (!("returnValues" in luaOperationPrompt.prompt)) throw new Error("Expected source Lua prompt return values");
+    expect(luaOperationPrompt.prompt.returnValues?.[0]?.[0]).toEqual({ code: 700, index: 1 });
   });
 
   it("surfaces yes/no prompt choices with shared description metadata", () => {

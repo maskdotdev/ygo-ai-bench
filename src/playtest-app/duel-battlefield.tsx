@@ -314,7 +314,7 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
 
   const triggerOrderLabel = triggerOrderPromptLabel(state);
   const splitOrphanGroups = splitPromptGroups(state.prompt, orphanGroups);
-  const promptView = duelPromptView(state.prompt, splitOrphanGroups.promptGroups);
+  const promptView = duelPromptView(state.prompt, splitOrphanGroups.promptGroups, state.luaOperationPrompt);
   const globalOrphanGroups = splitOrphanGroups.globalGroups;
   const triggerOrderView = duelTriggerOrderView(state.triggerOrderPrompt, props.legalActionGroups);
 
