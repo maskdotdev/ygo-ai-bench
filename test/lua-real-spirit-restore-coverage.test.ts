@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 10;
+const spiritFixtureCount = 11;
 
 describe("Lua real Spirit restore coverage", () => {
   it("requires representative Spirit fixtures to prove clean Lua restore and replayed legal actions", () => {
@@ -127,6 +127,21 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
         'eventName: "specialSummoned"',
         'location: "hand", controller: 0',
         'summonType: "pendulum"',
+      ],
+    },
+    {
+      file: "lua-real-script-gishki-natalia-spirit-to-deck.test.ts",
+      required: [
+        'action.type === "normalSummon"',
+        'action.type === "activateTrigger"',
+        'action.type === "passChain"',
+        'eventName: "normalSummoned"',
+        'eventName: "sentToDeck"',
+        "category: 16",
+        "targetUids",
+        'location: "deck", controller: 0',
+        'location: "graveyard", controller: 0',
+        'host.messages).not.toContain("natalia responder resolved")',
       ],
     },
     {
