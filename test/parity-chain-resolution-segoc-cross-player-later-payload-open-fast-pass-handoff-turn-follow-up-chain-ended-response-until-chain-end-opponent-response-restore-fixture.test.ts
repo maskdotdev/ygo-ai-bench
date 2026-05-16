@@ -244,8 +244,8 @@ describe("EDOPro parity restored follow-up chainEnded response until-chain-end o
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-cross-payload-follow-up-ended-until-response-turn-trigger", eventName: "customEvent", eventCode: firstEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-500-2" },
-              { player: 1, effectId: "fixture-cross-payload-follow-up-ended-until-response-opponent-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "opponentOptional", eventCardUid: "p1-deck-700-4" },
+              { player: 0, effectId: "fixture-cross-payload-follow-up-ended-until-response-turn-trigger", eventName: "customEvent", eventCode: firstEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-500-2", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-cross-payload-follow-up-ended-until-response-opponent-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "opponentOptional", eventCardUid: "p1-deck-700-4", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnOptional" },

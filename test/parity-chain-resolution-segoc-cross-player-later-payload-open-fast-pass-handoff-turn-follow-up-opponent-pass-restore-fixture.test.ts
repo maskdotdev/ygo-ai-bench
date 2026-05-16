@@ -214,8 +214,8 @@ describe("EDOPro parity chain-resolution cross-player later-payload open-fast pa
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-cross-payload-open-fast-follow-up-pass-turn-trigger", eventName: "customEvent", eventCode: firstEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-500-2" },
-              { player: 1, effectId: "fixture-cross-payload-open-fast-follow-up-pass-opponent-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "opponentOptional", eventCardUid: "p1-deck-700-3" },
+              { player: 0, effectId: "fixture-cross-payload-open-fast-follow-up-pass-turn-trigger", eventName: "customEvent", eventCode: firstEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-500-2", eventTriggerTiming: "if" },
+              { player: 1, effectId: "fixture-cross-payload-open-fast-follow-up-pass-opponent-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "opponentOptional", eventCardUid: "p1-deck-700-3", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnOptional" },

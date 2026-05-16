@@ -158,8 +158,8 @@ describe("EDOPro parity chain-resolution SEGOC later-payload decline restore fix
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-first-payload-decline-trigger", eventName: "customEvent", eventCode: firstEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-500-3" },
-              { player: 0, effectId: "fixture-second-payload-decline-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-600-4" },
+              { player: 0, effectId: "fixture-first-payload-decline-trigger", eventName: "customEvent", eventCode: firstEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-500-3", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-second-payload-decline-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-600-4", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             triggerOrderPrompt: { type: "orderTriggers", player: 0, triggerBucket: "turnOptional" },
@@ -192,8 +192,8 @@ describe("EDOPro parity chain-resolution SEGOC later-payload decline restore fix
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-first-payload-decline-trigger", eventName: "customEvent", eventCode: firstEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-500-3" },
-              { player: 0, effectId: "fixture-second-payload-decline-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-600-4" },
+              { player: 0, effectId: "fixture-first-payload-decline-trigger", eventName: "customEvent", eventCode: firstEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-500-3", eventTriggerTiming: "if" },
+              { player: 0, effectId: "fixture-second-payload-decline-trigger", eventName: "customEvent", eventCode: secondEventCode, triggerBucket: "turnOptional", eventCardUid: "p0-deck-600-4", eventTriggerTiming: "if" },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             triggerOrderPrompt: { type: "orderTriggers", player: 0, triggerBucket: "turnOptional" },
