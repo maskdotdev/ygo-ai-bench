@@ -39,13 +39,72 @@ const phaseOpenFastFamilies = [
   { base: "end-turn-open-fast", restore: "end-turn" },
 ] as const;
 
+const chainEndedOpenFastFiles = [
+  "test/parity-chain-ended-open-fast-chain-response-chain-limit-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-opponent-response-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-chain-limit-opponent-response-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-chain-limit-opponent-response-pass-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-chain-limit-opponent-response-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-opponent-response-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-opponent-response-pass-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-opponent-response-turn-response-opponent-response-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-opponent-response-turn-response-opponent-response-pass-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-opponent-response-turn-response-opponent-response-turn-response-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-opponent-response-turn-response-opponent-response-turn-response-opponent-response-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-opponent-response-turn-response-opponent-response-turn-response-opponent-response-pass-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-opponent-response-turn-response-opponent-response-turn-response-opponent-response-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-opponent-response-turn-response-opponent-response-turn-response-opponent-response-turn-response-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-opponent-response-turn-response-opponent-response-turn-response-opponent-response-turn-response-pass-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-opponent-response-turn-response-opponent-response-turn-response-opponent-response-turn-response-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-opponent-response-turn-response-opponent-response-turn-response-pass-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-opponent-response-turn-response-opponent-response-turn-response-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-opponent-response-turn-response-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-until-chain-end-limit-followup-pass-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-until-chain-end-limit-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-until-chain-end-limit-followup-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-no-response-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-chain-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-chain-limit-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-chain-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-chain-limit-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-chain-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-chain-limit-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-chain-pass-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-chain-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-opponent-response-chain-limit-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-opponent-response-chain-limit-opponent-response-pass-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-opponent-response-chain-limit-opponent-response-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-opponent-response-chain-limit-turn-response-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-opponent-response-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-opponent-response-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-opponent-response-turn-response-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-opponent-response-until-chain-end-limit-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-opponent-response-until-chain-end-limit-followup-pass-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-opponent-response-until-chain-end-limit-followup-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-until-chain-end-limit-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-until-chain-end-limit-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-until-chain-end-limit-fixture.test.ts",
+] as const;
+
 describe("EDOPro open fast-effect fixture coverage", () => {
   it("keeps the open-fast parity fixture inventory ratcheted", () => {
-    expect(allRequiredParityOpenFastFiles()).toHaveLength(192);
+    expect(allRequiredParityOpenFastFiles()).toHaveLength(240);
   });
 
   it("keeps the open-fast lower-level restore test inventory ratcheted", () => {
-    expect(allRequiredOpenFastRestoreFiles()).toHaveLength(16);
+    expect(allRequiredOpenFastRestoreFiles()).toHaveLength(18);
+  });
+
+  it("keeps chain-ended open fast-effect windows pinned to chain-response and handoff fixtures", () => {
+    expect(chainEndedOpenFastFiles).toHaveLength(48);
+
+    const missing = chainEndedOpenFastFiles.filter((file) => !fs.existsSync(path.join(root, file)));
+
+    expect(missing).toEqual([]);
   });
 
   it("keeps triggerless action families pinned to base, chain-response, and restored pass-handoff fixtures", () => {
@@ -203,6 +262,7 @@ function allRequiredParityOpenFastFiles(): string[] {
     ]),
     ...battleQuickEffectFamilies.flatMap(({ base, kind }) => requiredBattleQuickFiles(base, kind)),
     ...phaseOpenFastFamilies.flatMap(({ base, restore }) => requiredPhaseOpenFastFiles(base, restore)),
+    ...chainEndedOpenFastFiles,
   ])].filter((file) => path.basename(file).startsWith("parity-"));
 }
 
@@ -210,6 +270,8 @@ function allRequiredOpenFastRestoreFiles(): string[] {
   return [
     ...triggerlessOpenFastFamilies.map(({ restore }) => `test/duel-post-${restore}-open-fast-pass-handoff-restore.test.ts`),
     ...phaseOpenFastFamilies.map(({ restore }) => `test/duel-${restore}-open-fast-pass-handoff-restore.test.ts`),
+    "test/duel-chain-ended-open-fast-handoff-restore.test.ts",
+    "test/duel-chain-ended-open-fast-handoff-limit-restore.test.ts",
   ];
 }
 
