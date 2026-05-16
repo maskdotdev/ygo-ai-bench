@@ -30,7 +30,17 @@ describe("EDOPro parity break-effect missed timing decline fixture", () => {
             location: "hand",
             event: "ignition",
             range: ["hand"],
-            collectEventsOnResolve: [{ collectEvent: "breakEffect", eventCode: 1050, eventIsLast: false, eventReason: 0x40, eventReasonPlayer: 0 }],
+            collectEventsOnResolve: [
+              {
+                collectEvent: "breakEffect",
+                eventCode: 1050,
+                eventIsLast: false,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 32501,
+              },
+            ],
             moveCardsOnResolve: [{ player: 0, code: "700", from: "monsterZone", to: "graveyard" }],
             logMessage: "Break-effect decline multi step resolved",
           },
@@ -95,7 +105,18 @@ describe("EDOPro parity break-effect missed timing decline fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "break-effect-decline-optional-if", eventName: "breakEffect", eventCode: 1050, eventReason: 0x40, eventReasonPlayer: 0 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "break-effect-decline-optional-if",
+                eventName: "breakEffect",
+                eventCode: 1050,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 32501,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "break-effect-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
@@ -126,7 +147,18 @@ describe("EDOPro parity break-effect missed timing decline fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "break-effect-decline-optional-if", eventName: "breakEffect", eventCode: 1050, eventReason: 0x40, eventReasonPlayer: 0 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "break-effect-decline-optional-if",
+                eventName: "breakEffect",
+                eventCode: 1050,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 32501,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "break-effect-decline-optional-if", triggerBucket: "turnOptional", count: 1 },

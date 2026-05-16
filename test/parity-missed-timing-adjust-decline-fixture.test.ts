@@ -30,7 +30,17 @@ describe("EDOPro parity adjust missed timing decline fixture", () => {
             location: "hand",
             event: "ignition",
             range: ["hand"],
-            collectEventsOnResolve: [{ collectEvent: "adjust", eventCode: 1040, eventIsLast: false, eventReason: 0x40, eventReasonPlayer: 0 }],
+            collectEventsOnResolve: [
+              {
+                collectEvent: "adjust",
+                eventCode: 1040,
+                eventIsLast: false,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 32901,
+              },
+            ],
             moveCardsOnResolve: [{ player: 0, code: "700", from: "monsterZone", to: "graveyard" }],
             logMessage: "Adjust decline multi step resolved",
           },
@@ -95,7 +105,18 @@ describe("EDOPro parity adjust missed timing decline fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "adjust-decline-optional-if", eventName: "adjust", eventCode: 1040, eventReason: 0x40, eventReasonPlayer: 0 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "adjust-decline-optional-if",
+                eventName: "adjust",
+                eventCode: 1040,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 32901,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "adjust-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
@@ -126,7 +147,18 @@ describe("EDOPro parity adjust missed timing decline fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "adjust-decline-optional-if", eventName: "adjust", eventCode: 1040, eventReason: 0x40, eventReasonPlayer: 0 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "adjust-decline-optional-if",
+                eventName: "adjust",
+                eventCode: 1040,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 32901,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "adjust-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
