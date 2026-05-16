@@ -4,6 +4,7 @@ import {
   getLegalActions as getDuelLegalActions,
   queryPublicState,
 } from "#duel/core.js";
+import { copyDuelAction } from "#duel/action-copy.js";
 import type { DuelAction, DuelActionWindowKind, DuelPhase, DuelSession, PlayerId, PublicDuelState, TriggerBucket } from "#duel/types.js";
 import { duelActionAnchorUids, duelActionUiGroupLabel, type DuelActionUiGroup } from "./duel-action-anchors.js";
 import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "./duel-battlefield-actions.js";
@@ -115,7 +116,7 @@ export function runDuelBattlefieldScriptStep(
     ...battlefieldScriptResult(session, selector.player),
     nextStep,
     done: nextStep >= steps.length,
-    appliedAction: { ...action },
+    appliedAction: copyDuelAction(action),
   };
 }
 
@@ -138,7 +139,7 @@ function battlefieldScriptResult(
     state,
     ...(failedStep === undefined ? {} : { failedStep }),
     ...(failure === undefined ? {} : { failure }),
-    visibleActions: view.visibleActions.map((action) => ({ ...action })),
+    visibleActions: view.visibleActions.map(copyDuelAction),
     visibleGroups,
     ...(prompt === undefined ? {} : { prompt }),
   };

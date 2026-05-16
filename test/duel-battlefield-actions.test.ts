@@ -162,6 +162,37 @@ describe("duel battlefield action view", () => {
     expect(result.visibleActions).toContainEqual(expect.objectContaining({ type: "fusionSummon", uid: fusion!.uid, materialUids: expect.arrayContaining([first!.uid, second!.uid]) }));
   });
 
+  it("deep-copies visible script selection arrays in result payloads", () => {
+    const session = createDuel({ seed: 996, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const first = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const second = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    specialSummonDuelCard(session.state, first!.uid, 0);
+    specialSummonDuelCard(session.state, second!.uid, 0);
+    const result = runDuelBattlefieldScript(session, [
+      { player: 0, type: "fusionSummon", materialUids: [first!.uid] },
+    ]);
+    const leaked = result.visibleActions.find((action) => action.type === "fusionSummon");
+    expect(leaked?.type).toBe("fusionSummon");
+    if (!leaked || leaked.type !== "fusionSummon") throw new Error("Expected visible Fusion action");
+
+    leaked.materialUids.push("mutated-material");
+    const fresh = runDuelBattlefieldScript(session, [
+      { player: 0, type: "fusionSummon", materialUids: [first!.uid] },
+    ]);
+
+    const freshFusion = fresh.visibleActions.find((action) => action.type === "fusionSummon");
+    if (!freshFusion || freshFusion.type !== "fusionSummon") throw new Error("Expected fresh visible Fusion action");
+    expect(freshFusion.materialUids).toHaveLength(2);
+    expect(freshFusion.materialUids).toEqual(expect.arrayContaining([first!.uid, second!.uid]));
+  });
+
   it("matches visible summon scripts by exact tribute selection", () => {
     const session = createDuel({ seed: 994, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

@@ -9,6 +9,7 @@ import {
   serializeDuel,
   startDuel,
 } from "#duel/core.js";
+import { copyDuelAction } from "#duel/action-copy.js";
 import type { DuelAction, DuelSession, PlayerId, SerializedDuel } from "#duel/types.js";
 import { parseYdk } from "#playtest/ydk.js";
 import { getBrowserDuelCardReader } from "../playtest-app/duel-pvp-card-reader.js";
@@ -234,8 +235,4 @@ function copyPromptView(prompt: DuelPromptView): DuelPromptView {
     ...prompt,
     groups: prompt.groups.map(copyUiGroup),
   };
-}
-
-function copyDuelAction(action: DuelAction): DuelAction {
-  return { ...action };
 }

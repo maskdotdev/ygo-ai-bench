@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { createDuel, loadDecks, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { createCardReader } from "#engine/data-loaders.js";
 import { createDuelPvpAgent } from "#playtest/duel-pvp-agent-bridge.js";
 import { starterYdk } from "../src/playtest-app/ui.js";
+import { cards } from "./full-duel-engine-fixtures.js";
 
 const rodOnlyYdk = `#created by test
 #main
@@ -40,6 +43,35 @@ describe("duel pvp agent bridge", () => {
     const fresh = agent.visibleBattlefield(0, started.sessionId);
     expect(fresh.actions[0]?.label).not.toBe("Mutated visible action");
     expect(fresh.groups.flatMap((group) => group.actions)[0]?.label).not.toBe("Mutated visible grouped action");
+  });
+
+  it("deep-copies visible battlefield selection arrays at the bridge boundary", () => {
+    const session = createDuel({ seed: 481, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"], extra: ["900"] },
+      1: { main: ["400"] },
+    });
+    startDuel(session);
+    const first = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const second = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    specialSummonDuelCard(session.state, first!.uid, 0);
+    specialSummonDuelCard(session.state, second!.uid, 0);
+    const agent = createDuelPvpAgent();
+    const restored = agent.restore(serializeDuel(session));
+    const visible = agent.visibleBattlefield(0, restored.sessionId);
+    const fusion = visible.actions.find((action) => action.type === "fusionSummon");
+    expect(fusion?.type).toBe("fusionSummon");
+    if (!fusion || fusion.type !== "fusionSummon") throw new Error("Expected visible Fusion action");
+
+    fusion.materialUids.push("mutated-material");
+
+    const fresh = agent.visibleBattlefield(0, restored.sessionId);
+    const freshFusion = fresh.actions.find((action) => action.type === "fusionSummon");
+    if (!freshFusion || freshFusion.type !== "fusionSummon") throw new Error("Expected fresh visible Fusion action");
+    expect(freshFusion.materialUids).toHaveLength(2);
+    expect(freshFusion.materialUids).toEqual(expect.arrayContaining([first!.uid, second!.uid]));
   });
 
   it("restores serialized sessions with the same visible action surface", () => {
