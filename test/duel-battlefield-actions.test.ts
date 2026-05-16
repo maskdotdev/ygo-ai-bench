@@ -103,9 +103,11 @@ describe("duel battlefield action view", () => {
     const session = directBattleSession();
     session.state.prompt = { id: "battlefield-option-prompt", type: "selectOption", player: 1, options: [2, 4], descriptions: [200, 400], returnTo: 0 };
     session.state.waitingFor = 1;
+    const option = getDuelLegalActions(session, 1).find((action) => action.type === "selectOption" && action.promptId === "battlefield-option-prompt" && action.option === 4);
+    expect(option).toBeDefined();
 
     const result = runDuelBattlefieldScript(session, [
-      { player: 1, type: "selectOption", promptId: "battlefield-option-prompt", option: 4, windowKind: "prompt" },
+      { player: 1, type: "selectOption", promptId: "battlefield-option-prompt", option: 4, windowId: option!.windowId, windowKind: "prompt", windowToken: option!.windowToken },
     ]);
 
     expect(result.ok).toBe(true);
