@@ -5,8 +5,19 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const damagePreventionFixtureCount = 11;
+const damagePreventionKindCounts: Record<DamagePreventionKind, number> = {
+  allDamageZero: 1,
+  battleDamageZero: 1,
+  effectDamageHalf: 1,
+  effectDamageZero: 7,
+  noBattleDamage: 1,
+};
 
 describe("Lua real damage-prevention restore coverage", () => {
+  it("keeps damage-prevention fixture kinds explicit", () => {
+    expect(countDamagePreventionKinds(realScriptDamagePreventionFixtureFiles())).toEqual(damagePreventionKindCounts);
+  });
+
   it("requires representative real-script damage prevention fixtures to assert restore and response replay", () => {
     const files = realScriptDamagePreventionFixtureFiles();
     expect(files).toHaveLength(damagePreventionFixtureCount);
@@ -48,10 +59,20 @@ describe("Lua real damage-prevention restore coverage", () => {
   });
 });
 
-function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+type DamagePreventionKind = "allDamageZero" | "battleDamageZero" | "effectDamageHalf" | "effectDamageZero" | "noBattleDamage";
+
+function countDamagePreventionKinds(fixtures: Array<{ kind: DamagePreventionKind }>): Record<DamagePreventionKind, number> {
+  return fixtures.reduce<Record<DamagePreventionKind, number>>(
+    (counts, { kind }) => ({ ...counts, [kind]: counts[kind] + 1 }),
+    { allDamageZero: 0, battleDamageZero: 0, effectDamageHalf: 0, effectDamageZero: 0, noBattleDamage: 0 },
+  );
+}
+
+function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; kind: DamagePreventionKind; required: string[] }> {
+  return ([
     {
       file: "lua-real-script-hanewata-effect-damage-zero.test.ts",
+      kind: "effectDamageZero",
       required: [
         "expect(restoredFire.session.state.players[0].lifePoints).toBe(8000)",
         "expect(restoredFire.session.state.players[1].lifePoints).toBe(7500)",
@@ -62,6 +83,7 @@ function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; require
     },
     {
       file: "lua-real-script-cyber-kirin-effect-damage-zero.test.ts",
+      kind: "effectDamageZero",
       required: [
         "expect(restoredFire.session.state.players[0].lifePoints).toBe(8000)",
         "expect(restoredFire.session.state.players[1].lifePoints).toBe(7500)",
@@ -71,6 +93,7 @@ function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; require
     },
     {
       file: "lua-real-script-dragon-revival-rhapsody-damage-zero.test.ts",
+      kind: "effectDamageZero",
       required: [
         "expect(restoredFire.session.state.players[0].lifePoints).toBe(7000)",
         "expect(restoredFire.session.state.players[1].lifePoints).toBe(8000)",
@@ -81,6 +104,7 @@ function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; require
     },
     {
       file: "lua-real-script-shiranui-samsara-damage-zero.test.ts",
+      kind: "effectDamageZero",
       required: [
         "expect(restoredFire.session.state.players[0].lifePoints).toBe(8000)",
         "expect(restoredFire.session.state.players[1].lifePoints).toBe(7500)",
@@ -90,6 +114,7 @@ function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; require
     },
     {
       file: "lua-real-script-cyberse-magician-half-damage.test.ts",
+      kind: "effectDamageHalf",
       required: [
         "expect(restoredFire.session.state.players[0].lifePoints).toBe(7500)",
         "expect(restoredFire.session.state.players[1].lifePoints).toBe(7500)",
@@ -100,6 +125,7 @@ function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; require
     },
     {
       file: "lua-real-script-supreme-king-gate-zero-damage-zero.test.ts",
+      kind: "effectDamageZero",
       required: [
         "expect(restoredFire.session.state.players[0].lifePoints).toBe(8000)",
         "expect(restoredFire.session.state.players[1].lifePoints).toBe(7500)",
@@ -109,6 +135,7 @@ function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; require
     },
     {
       file: "lua-real-script-cocoon-veil-damage-zero.test.ts",
+      kind: "effectDamageZero",
       required: [
         "expect(restoredFire.session.state.players[0].lifePoints).toBe(8000)",
         "expect(restoredFire.session.state.players[1].lifePoints).toBe(7500)",
@@ -118,6 +145,7 @@ function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; require
     },
     {
       file: "lua-real-script-trapeze-magician-atk-damage-zero.test.ts",
+      kind: "effectDamageZero",
       required: [
         "expect(restoredFire.session.state.players[0].lifePoints).toBe(8000)",
         "expect(restoredFire.session.state.players[1].lifePoints).toBe(7500)",
@@ -127,6 +155,7 @@ function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; require
     },
     {
       file: "lua-real-script-one-day-peace-damage-zero.test.ts",
+      kind: "allDamageZero",
       required: [
         "expect(restoredFire.session.state.players[0].lifePoints).toBe(8000)",
         "expect(restoredFire.session.state.players[1].lifePoints).toBe(8000)",
@@ -137,6 +166,7 @@ function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; require
     },
     {
       file: "lua-real-script-kuriboh-pre-damage-prevent.test.ts",
+      kind: "battleDamageZero",
       required: [
         "expect(restored.session.state.players[0].lifePoints).toBe(8000)",
         "expect(restored.session.state.players[1].lifePoints).toBe(8000)",
@@ -146,6 +176,7 @@ function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; require
     },
     {
       file: "lua-real-script-miracle-locus-temporary-no-battle-damage.test.ts",
+      kind: "noBattleDamage",
       required: [
         "expect(restoredEffects.session.state.players[0].lifePoints).toBe(7200)",
         "expect(restoredEffects.session.state.players[1].lifePoints).toBe(8000)",
@@ -157,5 +188,5 @@ function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; require
         'event.eventName === "battleDamageDealt" && event.eventPlayer === 1)).toEqual([])',
       ],
     },
-  ].map(({ file, required }) => ({ file: path.join("test", file), required }));
+  ] satisfies Array<{ file: string; kind: DamagePreventionKind; required: string[] }>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
 }
