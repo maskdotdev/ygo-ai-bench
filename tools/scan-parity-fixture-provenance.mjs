@@ -24,6 +24,8 @@ function main(argv) {
   let edoproBlocks = 0;
   let backlogBlocks = 0;
   let restoredFixtures = 0;
+  let restoredBeforeBlocks = 0;
+  let restoredAfterBlocks = 0;
 
   for (const file of files) {
     const text = fs.readFileSync(path.join(testRoot, file), "utf8");
@@ -44,18 +46,24 @@ function main(argv) {
       if (!validSources.has(source)) invalidSource.push(`${file}:${block.line}`);
       if (source === "edopro") edoproBlocks += 1;
       if (source === "parity-backlog") backlogBlocks += 1;
+      if (source === "edopro" && block.kind === "before" && (block.snapshotRestore === "before" || block.snapshotRestore === "both")) restoredBeforeBlocks += 1;
+      if (source === "edopro" && block.kind === "after" && (block.snapshotRestore === "after" || block.snapshotRestore === "both")) restoredAfterBlocks += 1;
       if (note === undefined || note.length === 0) missingNote.push(`${file}:${block.line}`);
       else if (!/EDOPro/.test(note)) weakNote.push(`${file}:${block.line}`);
     }
   }
 
-  console.log(`Parity fixture provenance: ${files.length} files, ${blocks} expectation blocks, ${edoproBlocks} EDOPro, ${backlogBlocks} backlog, ${restoredFixtures} restored scripted fixtures`);
+  const restoredWindowBlocks = restoredBeforeBlocks + restoredAfterBlocks;
+  console.log(`Parity fixture provenance: ${files.length} files, ${blocks} expectation blocks, ${edoproBlocks} EDOPro, ${backlogBlocks} backlog, ${restoredFixtures} restored scripted fixtures, ${restoredBeforeBlocks} restored before blocks, ${restoredAfterBlocks} restored after blocks, ${restoredWindowBlocks} restored window blocks`);
 
   const failures = [];
   if (options.minFiles !== undefined && files.length < options.minFiles) failures.push(`Parity fixture files ${files.length} is below required ${options.minFiles}`);
   if (options.minExpectationBlocks !== undefined && blocks < options.minExpectationBlocks) failures.push(`Expectation blocks ${blocks} is below required ${options.minExpectationBlocks}`);
   if (options.minEdoproBlocks !== undefined && edoproBlocks < options.minEdoproBlocks) failures.push(`EDOPro expectation blocks ${edoproBlocks} is below required ${options.minEdoproBlocks}`);
   if (options.minRestoredFixtures !== undefined && restoredFixtures < options.minRestoredFixtures) failures.push(`Restored scripted fixtures ${restoredFixtures} is below required ${options.minRestoredFixtures}`);
+  if (options.minRestoredBeforeBlocks !== undefined && restoredBeforeBlocks < options.minRestoredBeforeBlocks) failures.push(`Restored before blocks ${restoredBeforeBlocks} is below required ${options.minRestoredBeforeBlocks}`);
+  if (options.minRestoredAfterBlocks !== undefined && restoredAfterBlocks < options.minRestoredAfterBlocks) failures.push(`Restored after blocks ${restoredAfterBlocks} is below required ${options.minRestoredAfterBlocks}`);
+  if (options.minRestoredWindowBlocks !== undefined && restoredWindowBlocks < options.minRestoredWindowBlocks) failures.push(`Restored window blocks ${restoredWindowBlocks} is below required ${options.minRestoredWindowBlocks}`);
   if (options.failOnMissingSource && missingSource.length > 0) failures.push(`Expectation blocks missing source:\n${formatList(missingSource)}`);
   if (options.failOnInvalidSource && invalidSource.length > 0) failures.push(`Expectation blocks with invalid source:\n${formatList(invalidSource)}`);
   if (options.failOnMissingNote && missingNote.length > 0) failures.push(`Sourced expectation blocks missing observation note:\n${formatList(missingNote)}`);
@@ -92,6 +100,9 @@ function parseArgs(argv) {
     else if (arg === "--min-expectation-blocks") options.minExpectationBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-edopro-blocks") options.minEdoproBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-restored-fixtures") options.minRestoredFixtures = readMinimum(argv, ++index, arg);
+    else if (arg === "--min-restored-before-blocks") options.minRestoredBeforeBlocks = readMinimum(argv, ++index, arg);
+    else if (arg === "--min-restored-after-blocks") options.minRestoredAfterBlocks = readMinimum(argv, ++index, arg);
+    else if (arg === "--min-restored-window-blocks") options.minRestoredWindowBlocks = readMinimum(argv, ++index, arg);
     else throw new Error(`Unknown argument: ${arg}`);
   }
   return options;
@@ -118,10 +129,40 @@ function parityFixtureFiles(testRoot) {
 function expectationBlocks(lines) {
   const blocks = [];
   lines.forEach((line, index) => {
-    if (!/^\s*(before|after|expected): \{/.test(line)) return;
-    blocks.push({ line: index + 1, text: expectationBlock(lines, index) });
+    const kind = line.match(/^\s*(before|after|expected): \{/)?.[1];
+    if (kind === undefined) return;
+    blocks.push({ kind, line: index + 1, snapshotRestore: snapshotRestoreMode(lines, index), text: expectationBlock(lines, index) });
   });
   return blocks;
+}
+
+function snapshotRestoreMode(lines, sourceIndex) {
+  const stepOptions = containingStepOptions(lines, sourceIndex);
+  return stepOptions?.match(/\bsnapshotRestore:\s*["']([^"']+)["']/)?.[1];
+}
+
+function containingStepOptions(lines, sourceIndex) {
+  for (let index = sourceIndex; index >= 0 && index > sourceIndex - 120; index -= 1) {
+    const line = lines[index] ?? "";
+    const callIndex = line.indexOf("makeScriptedStep(");
+    if (callIndex < 0) continue;
+    const optionsStart = line.lastIndexOf("{");
+    if (optionsStart < callIndex) return undefined;
+    return blockFrom(lines, index, optionsStart);
+  }
+  return undefined;
+}
+
+function blockFrom(lines, sourceIndex, columnIndex) {
+  let depth = 0;
+  const block = [];
+  for (let index = sourceIndex; index < lines.length; index += 1) {
+    const line = index === sourceIndex ? (lines[index] ?? "").slice(columnIndex) : (lines[index] ?? "");
+    block.push(line);
+    depth += braceDelta(line);
+    if (depth === 0) break;
+  }
+  return block.join("\n");
 }
 
 function expectationBlock(lines, sourceIndex) {
@@ -169,6 +210,12 @@ Options:
   --min-edopro-blocks <count>  Fail unless at least this many EDOPro blocks are scanned
   --min-restored-fixtures <count>
                                Fail unless at least this many scripted fixtures have snapshotRestore
+  --min-restored-before-blocks <count>
+                               Fail unless at least this many EDOPro before blocks restore snapshots
+  --min-restored-after-blocks <count>
+                               Fail unless at least this many EDOPro after blocks restore snapshots
+  --min-restored-window-blocks <count>
+                               Fail unless at least this many EDOPro before/after blocks restore snapshots
 `);
 }
 

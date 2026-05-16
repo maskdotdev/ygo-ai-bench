@@ -121,14 +121,73 @@ describe("parity scanner CLIs", () => {
       "2",
       "--min-restored-fixtures",
       "2",
+      "--min-restored-before-blocks",
+      "1",
+      "--min-restored-after-blocks",
+      "1",
+      "--min-restored-window-blocks",
+      "2",
     ], { encoding: "utf8" });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("Parity fixture provenance: 1 files, 1 expectation blocks, 1 EDOPro, 0 backlog, 0 restored scripted fixtures");
+    expect(result.stdout).toContain("Parity fixture provenance: 1 files, 1 expectation blocks, 1 EDOPro, 0 backlog, 0 restored scripted fixtures, 0 restored before blocks, 0 restored after blocks, 0 restored window blocks");
     expect(result.stderr).toContain("Parity fixture files 1 is below required 2");
     expect(result.stderr).toContain("Expectation blocks 1 is below required 2");
     expect(result.stderr).toContain("EDOPro expectation blocks 1 is below required 2");
     expect(result.stderr).toContain("Restored scripted fixtures 0 is below required 2");
+    expect(result.stderr).toContain("Restored before blocks 0 is below required 1");
+    expect(result.stderr).toContain("Restored after blocks 0 is below required 1");
+    expect(result.stderr).toContain("Restored window blocks 0 is below required 2");
+  });
+
+  it("counts before and after EDOPro blocks with matching snapshot restore coverage", () => {
+    const testRoot = makeTestRoot({
+      "parity-restored-window-blocks.test.ts": `
+        runScriptedDuelFixture({
+          responses: [
+            makeScriptedStep(makeResponseSelector("pass", 0), {
+              snapshotRestore: "both",
+              before: {
+                source: "edopro",
+                note: "EDOPro observed the pre-action window.",
+              },
+              after: {
+                source: "edopro",
+                note: "EDOPro observed the post-action window.",
+              },
+            }),
+            makeScriptedStep(makeResponseSelector("pass", 1), {
+              snapshotRestore: "before",
+              before: {
+                source: "edopro",
+                note: "EDOPro observed the second pre-action window.",
+              },
+              after: {
+                source: "edopro",
+                note: "EDOPro observed the unrestored post-action window.",
+              },
+            }),
+          ],
+        });
+      `,
+    });
+
+    const result = spawnSync(process.execPath, [
+      provenanceScannerPath,
+      "--test-root",
+      testRoot,
+      "--min-restored-before-blocks",
+      "2",
+      "--min-restored-after-blocks",
+      "2",
+      "--min-restored-window-blocks",
+      "4",
+    ], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("2 restored before blocks, 1 restored after blocks, 3 restored window blocks");
+    expect(result.stderr).toContain("Restored after blocks 1 is below required 2");
+    expect(result.stderr).toContain("Restored window blocks 3 is below required 4");
   });
 
   it("scans non-fixture parity test files for legal-action evidence", () => {
