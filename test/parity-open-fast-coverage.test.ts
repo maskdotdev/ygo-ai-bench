@@ -137,6 +137,20 @@ describe("EDOPro open fast-effect fixture coverage", () => {
     expect(missing).toEqual([]);
   });
 
+  it("keeps every triggerless post-action open fast-effect fixture in its explicit family inventory", () => {
+    const mismatched = triggerlessOpenFastFamilies.flatMap(({ post }) => {
+      const scannedFiles = fs.readdirSync(path.join(root, "test"))
+        .filter((file) => file.startsWith(`parity-post-${post}-open-fast-`) && file.endsWith(".test.ts"))
+        .map((file) => `test/${file}`)
+        .sort();
+      const expectedFiles = requiredPostHandoffFiles(post).sort();
+
+      return JSON.stringify(scannedFiles) === JSON.stringify(expectedFiles) ? [] : [post];
+    });
+
+    expect(mismatched).toEqual([]);
+  });
+
   it("keeps battle sub-window quick-effect families pinned to chain, handoff, and limit fixtures", () => {
     const missing = battleQuickEffectFamilies.flatMap(({ base, kind }) =>
       requiredBattleQuickFiles(base, kind).filter((file) => !fs.existsSync(path.join(root, file))),
