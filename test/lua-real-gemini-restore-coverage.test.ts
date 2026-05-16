@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const geminiFixtureCount = 15;
-const geminiStatusFixtureCount = 13;
+const geminiFixtureCount = 16;
+const geminiStatusFixtureCount = 14;
 const geminiOperationFixtureCount = 10;
 const geminiStateFixtureCount = 4;
 
@@ -96,6 +96,7 @@ function geminiFixtureFiles(): string[] {
     "lua-real-script-chemicritter-oxy-ox-gemini-level-change.test.ts",
     "lua-real-script-dark-valkyria-gemini-counter-destroy.test.ts",
     "lua-real-script-future-samurai-gemini-banish-destroy.test.ts",
+    "lua-real-script-gem-knight-sardonyx-battle-search.test.ts",
     "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
     "lua-real-script-gemini-soldier-battled-deck-summon.test.ts",
     "lua-real-script-gemini-spark-release-destroy-draw.test.ts",
@@ -118,6 +119,7 @@ function geminiStatusFixtureFiles(): string[] {
     "lua-real-script-chemicritter-oxy-ox-gemini-level-change.test.ts",
     "lua-real-script-dark-valkyria-gemini-counter-destroy.test.ts",
     "lua-real-script-future-samurai-gemini-banish-destroy.test.ts",
+    "lua-real-script-gem-knight-sardonyx-battle-search.test.ts",
     "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
     "lua-real-script-gemini-soldier-battled-deck-summon.test.ts",
     "lua-real-script-grasschopper-gemini-attack-all.test.ts",
