@@ -39,7 +39,7 @@ describe("EDOPro parity battle destroy attacker deck-bottom redirect fixtures", 
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-1", targetUid: "p1-deck-200-0" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro opens the attack-response window before destroyer-carried attacker battle-destroy deck-bottom redirects can apply",

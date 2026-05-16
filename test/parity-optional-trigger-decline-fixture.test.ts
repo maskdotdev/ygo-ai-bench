@@ -46,7 +46,7 @@ describe("EDOPro parity optional trigger decline fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("normalSummon", 0, { code: "100", location: "hand" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro lets the trigger player activate or decline each same-bucket optional trigger",

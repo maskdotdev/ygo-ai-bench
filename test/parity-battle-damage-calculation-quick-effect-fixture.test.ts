@@ -46,7 +46,7 @@ describe("EDOPro parity battle damage-calculation quick-effect fixtures", () => 
         makeScriptedStep(makeResponseSelector("passAttack", 1)),
         makeScriptedStep(makeResponseSelector("passAttack", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro does not expose damage-calculation-only fast effects during start damage step",
@@ -66,7 +66,7 @@ describe("EDOPro parity battle damage-calculation quick-effect fixtures", () => 
         }),
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro still keeps damage-calculation-only effects unavailable before damage calculation",

@@ -276,6 +276,45 @@ describe("parity scanner CLIs", () => {
     expect(result.stderr).not.toContain("parity-unrestored-before-blocks.test.ts:12");
   });
 
+  it("bounds after-only restore steps", () => {
+    const testRoot = makeTestRoot({
+      "parity-after-only-restore.test.ts": `
+        runScriptedDuelFixture({
+          responses: [
+            makeScriptedStep(makeResponseSelector("pass", 0), {
+              snapshotRestore: "after",
+              after: {
+                source: "edopro",
+                note: "EDOPro observed this after-only restored window.",
+              },
+            }),
+            makeScriptedStep(makeResponseSelector("pass", 1), {
+              snapshotRestore: "both",
+              after: {
+                source: "edopro",
+                note: "EDOPro observed this fully restored window.",
+              },
+            }),
+          ],
+        });
+      `,
+    });
+
+    const result = spawnSync(process.execPath, [
+      provenanceScannerPath,
+      "--test-root",
+      testRoot,
+      "--max-after-only-restore-steps",
+      "0",
+    ], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("2 restored after blocks, 2 restored window blocks, 1 after-only restore steps");
+    expect(result.stderr).toContain("After-only restore steps 1 exceeds allowed 0");
+    expect(result.stderr).toContain("parity-after-only-restore.test.ts:5");
+    expect(result.stderr).not.toContain("parity-after-only-restore.test.ts:12");
+  });
+
   it("scans non-fixture parity test files for legal-action evidence", () => {
     const testRoot = makeTestRoot({
       "parity-non-fixture.test.ts": `
@@ -462,6 +501,7 @@ describe("parity scanner CLIs", () => {
     const missingProvenanceValue = spawnSync(process.execPath, [provenanceScannerPath, "--min-files"], { encoding: "utf8" });
     const badProvenanceMinimum = spawnSync(process.execPath, [provenanceScannerPath, "--min-files", "-1"], { encoding: "utf8" });
     const missingProvenanceBeforeValue = spawnSync(process.execPath, [provenanceScannerPath, "--max-unrestored-before-blocks"], { encoding: "utf8" });
+    const missingProvenanceAfterOnlyValue = spawnSync(process.execPath, [provenanceScannerPath, "--max-after-only-restore-steps"], { encoding: "utf8" });
     const unknownProvenanceFlag = spawnSync(process.execPath, [provenanceScannerPath, "--unknown"], { encoding: "utf8" });
     const missingLegalActionRoot = spawnSync(process.execPath, [legalActionScannerPath, "--test-root"], { encoding: "utf8" });
     const missingLegalActionPercent = spawnSync(process.execPath, [legalActionScannerPath, "--min-action-evidence-percent"], { encoding: "utf8" });
@@ -476,6 +516,8 @@ describe("parity scanner CLIs", () => {
     expect(badProvenanceMinimum.stderr).toContain("--min-files must be a non-negative integer");
     expect(missingProvenanceBeforeValue.status).toBe(1);
     expect(missingProvenanceBeforeValue.stderr).toContain("Missing value for --max-unrestored-before-blocks");
+    expect(missingProvenanceAfterOnlyValue.status).toBe(1);
+    expect(missingProvenanceAfterOnlyValue.stderr).toContain("Missing value for --max-after-only-restore-steps");
     expect(unknownProvenanceFlag.status).toBe(1);
     expect(unknownProvenanceFlag.stderr).toContain("Unknown argument: --unknown");
     expect(missingLegalActionRoot.status).toBe(1);

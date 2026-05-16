@@ -59,7 +59,7 @@ describe("EDOPro parity battle until-chain-end limit fixtures", () => {
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0" })),
         makeScriptedStep(makeResponseSelector("passAttack", 1), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro lets the turn player respond after the opponent passes the attack-response window",
@@ -283,7 +283,7 @@ describe("EDOPro parity battle until-chain-end limit fixtures", () => {
         makeScriptedStep(makeResponseSelector("passDamage", 0)),
         makeScriptedStep(makeResponseSelector("passDamage", 1)),
         makeScriptedStep(makeResponseSelector("passDamage", 0), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro continues direct battle resolution after until-chain-end limits clear",

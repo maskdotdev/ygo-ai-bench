@@ -59,7 +59,7 @@ describe("EDOPro parity field battle destroy attacker redirect priority unselect
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro opens the attack-response window before mixed attacker redirect selection and priority are tested",

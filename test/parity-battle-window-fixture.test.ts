@@ -26,7 +26,7 @@ describe("EDOPro parity battle window fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro exposes battle-phase direct attack declarations only after entering Battle Phase",
@@ -81,7 +81,7 @@ describe("EDOPro parity battle window fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("passAttack", 1), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro passes the attack-response window back to the turn player after the opponent passes",

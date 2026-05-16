@@ -87,7 +87,7 @@ describe("EDOPro parity cross-player chain negated/disabled lifecycle decline fi
       },
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-cross-negated-disabled-starter" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro opens a chain-response window before the opponent negates the turn player's chain link",

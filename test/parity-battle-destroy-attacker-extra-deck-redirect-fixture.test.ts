@@ -38,7 +38,7 @@ describe("EDOPro parity battle destroy attacker extra deck redirect fixtures", (
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("declareAttack", 0, { attackerUid: "p0-extraDeck-100-0", targetUid: "p1-deck-200-0" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro opens the attack-response window before destroyer-carried attacker battle-destroy extra deck redirects can apply",

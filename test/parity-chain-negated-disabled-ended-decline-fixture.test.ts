@@ -83,7 +83,7 @@ describe("EDOPro parity chain negated/disabled lifecycle decline fixture", () =>
       },
       responses: [
         makeScriptedStep(makeResponseSelector("activateEffect", 0, { effectId: "fixture-negated-lifecycle-starter" }), {
-          snapshotRestore: "after",
+          snapshotRestore: "both",
           after: {
             source: "edopro",
             note: "EDOPro opens a chain-response window after the turn player starts a chain",

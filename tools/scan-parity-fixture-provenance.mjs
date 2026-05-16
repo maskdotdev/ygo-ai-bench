@@ -22,6 +22,7 @@ function main(argv) {
   const missingRestore = [];
   const unrestoredBeforeBlocks = [];
   const unrestoredAfterBlocks = [];
+  const afterOnlyRestoreSteps = [];
   let blocks = 0;
   let edoproBlocks = 0;
   let backlogBlocks = 0;
@@ -33,6 +34,7 @@ function main(argv) {
     const text = fs.readFileSync(path.join(testRoot, file), "utf8");
     const lines = text.split("\n");
     const fileBlocks = expectationBlocks(lines);
+    for (const line of afterOnlySnapshotRestoreStepLines(lines)) afterOnlyRestoreSteps.push(`${file}:${line}`);
     blocks += fileBlocks.length;
     if (text.includes("runScriptedDuelFixture")) {
       if (text.includes("snapshotRestore")) restoredFixtures += 1;
@@ -62,7 +64,7 @@ function main(argv) {
   }
 
   const restoredWindowBlocks = restoredBeforeBlocks + restoredAfterBlocks;
-  console.log(`Parity fixture provenance: ${files.length} files, ${blocks} expectation blocks, ${edoproBlocks} EDOPro, ${backlogBlocks} backlog, ${restoredFixtures} restored scripted fixtures, ${restoredBeforeBlocks} restored before blocks, ${restoredAfterBlocks} restored after blocks, ${restoredWindowBlocks} restored window blocks`);
+  console.log(`Parity fixture provenance: ${files.length} files, ${blocks} expectation blocks, ${edoproBlocks} EDOPro, ${backlogBlocks} backlog, ${restoredFixtures} restored scripted fixtures, ${restoredBeforeBlocks} restored before blocks, ${restoredAfterBlocks} restored after blocks, ${restoredWindowBlocks} restored window blocks, ${afterOnlyRestoreSteps.length} after-only restore steps`);
 
   const failures = [];
   if (options.minFiles !== undefined && files.length < options.minFiles) failures.push(`Parity fixture files ${files.length} is below required ${options.minFiles}`);
@@ -77,6 +79,9 @@ function main(argv) {
   }
   if (options.maxUnrestoredAfterBlocks !== undefined && unrestoredAfterBlocks.length > options.maxUnrestoredAfterBlocks) {
     failures.push(`Unrestored EDOPro after blocks ${unrestoredAfterBlocks.length} exceeds allowed ${options.maxUnrestoredAfterBlocks}:\n${formatList(unrestoredAfterBlocks.map(({ location }) => location))}`);
+  }
+  if (options.maxAfterOnlyRestoreSteps !== undefined && afterOnlyRestoreSteps.length > options.maxAfterOnlyRestoreSteps) {
+    failures.push(`After-only restore steps ${afterOnlyRestoreSteps.length} exceeds allowed ${options.maxAfterOnlyRestoreSteps}:\n${formatList(afterOnlyRestoreSteps)}`);
   }
   if (options.requireUnrestoredAfterNote !== undefined) {
     const invalidUnrestoredNotes = unrestoredAfterBlocks
@@ -127,6 +132,7 @@ function parseArgs(argv) {
     else if (arg === "--min-restored-window-blocks") options.minRestoredWindowBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--max-unrestored-before-blocks") options.maxUnrestoredBeforeBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--max-unrestored-after-blocks") options.maxUnrestoredAfterBlocks = readMinimum(argv, ++index, arg);
+    else if (arg === "--max-after-only-restore-steps") options.maxAfterOnlyRestoreSteps = readMinimum(argv, ++index, arg);
     else if (arg === "--require-unrestored-after-note") options.requireUnrestoredAfterNote = requireOptionValue(argv, ++index, arg);
     else throw new Error(`Unknown argument: ${arg}`);
   }
@@ -159,6 +165,10 @@ function expectationBlocks(lines) {
     blocks.push({ kind, line: index + 1, snapshotRestore: snapshotRestoreMode(lines, index), text: expectationBlock(lines, index) });
   });
   return blocks;
+}
+
+function afterOnlySnapshotRestoreStepLines(lines) {
+  return lines.flatMap((line, index) => /\bsnapshotRestore:\s*["']after["']/.test(line) ? [index + 1] : []);
 }
 
 function snapshotRestoreMode(lines, sourceIndex) {
@@ -245,6 +255,8 @@ Options:
                                Fail when more than this many EDOPro before blocks lack before/both restore
   --max-unrestored-after-blocks <count>
                                Fail when more than this many EDOPro after blocks lack after/both restore
+  --max-after-only-restore-steps <count>
+                               Fail when more than this many scripted steps restore only after the response
   --require-unrestored-after-note <text>
                                Fail when allowed unrestored EDOPro after blocks omit this note substring
 `);
