@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, queryPublicState, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -162,6 +163,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
         ],
       }
     `);
+    expect(restored.session.state.chain[0]?.operationInfos).toEqual([
+      { category: 0x80000, targetUids: [], count: 0, player: 0, parameter: 1800 },
+    ]);
 
     const pass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
@@ -172,6 +176,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     expect(restored.session.state.attackCanceledUids).toEqual([attacker!.uid]);
     expect(restored.session.state.players[0].lifePoints).toBe(6200);
     expect(restored.session.state.cards.find((card) => card.uid === magicCylinder!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "damageDealt")).toEqual([
+      {
+        eventName: "damageDealt",
+        eventCode: 1111,
+        eventPlayer: 0,
+        eventValue: 1800,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: magicCylinder!.uid,
+        eventReasonEffectId: 2,
+      },
+    ]);
     expect(restored.host.messages).not.toContain("magic cylinder responder resolved");
   });
 });

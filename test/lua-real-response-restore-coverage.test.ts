@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 15;
-const chainedResponseFixtureCount = 14;
-const responseOperationInfoFixtureCount = 14;
+const responseFixtureCount = 16;
+const chainedResponseFixtureCount = 15;
+const responseOperationInfoFixtureCount = 15;
 
 describe("Lua real response restore coverage", () => {
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -41,7 +41,7 @@ describe("Lua real response restore coverage", () => {
           || !text.includes("eventHistory")
           || !text.includes("host.messages).not.toContain")
           || !/location:\s*["'](graveyard|hand|banished|monsterZone)["']/.test(text)
-          || !/eventName:\s*["'](chainDisabled|positionChanged|cardsDrawn|destroyed|sentToDeck|sentToHand|banished|specialSummoned|customEvent)["']/.test(text);
+          || !/eventName:\s*["'](chainDisabled|positionChanged|cardsDrawn|destroyed|sentToDeck|sentToHand|banished|specialSummoned|damageDealt|customEvent)["']/.test(text);
       });
 
     expect(missing).toEqual([]);
@@ -104,6 +104,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-dimensional-prison-battle-window.test.ts",
     "lua-real-script-droll-lock-bird-draw-search-lock.test.ts",
     "lua-real-script-ghost-ogre-chain-destroy.test.ts",
+    "lua-real-script-magic-cylinder-battle-window.test.ts",
     "lua-real-script-monster-reborn-free-chain.test.ts",
     "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
     "lua-real-script-phoenix-wing-wind-blast-discard-cost.test.ts",
