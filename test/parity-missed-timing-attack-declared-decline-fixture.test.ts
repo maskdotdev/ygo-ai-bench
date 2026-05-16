@@ -30,7 +30,17 @@ describe("EDOPro parity attack-declared missed timing decline fixture", () => {
             location: "hand",
             event: "ignition",
             range: ["hand"],
-            collectEventsOnResolve: [{ collectEvent: "attackDeclared", eventCode: 1130, eventIsLast: false }],
+            collectEventsOnResolve: [
+              {
+                collectEvent: "attackDeclared",
+                eventCode: 1130,
+                eventIsLast: false,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 33501,
+              },
+            ],
             moveCardsOnResolve: [{ player: 0, code: "700", from: "monsterZone", to: "graveyard" }],
             logMessage: "Attack-declared decline multi step resolved",
           },
@@ -95,7 +105,18 @@ describe("EDOPro parity attack-declared missed timing decline fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "attack-declared-decline-optional-if", eventName: "attackDeclared", eventCode: 1130 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "attack-declared-decline-optional-if",
+                eventName: "attackDeclared",
+                eventCode: 1130,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 33501,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "attack-declared-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
@@ -126,7 +147,18 @@ describe("EDOPro parity attack-declared missed timing decline fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "attack-declared-decline-optional-if", eventName: "attackDeclared", eventCode: 1130 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "attack-declared-decline-optional-if",
+                eventName: "attackDeclared",
+                eventCode: 1130,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 33501,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "attack-declared-decline-optional-if", triggerBucket: "turnOptional", count: 1 },

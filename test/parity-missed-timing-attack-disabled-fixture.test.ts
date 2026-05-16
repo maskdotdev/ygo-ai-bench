@@ -30,7 +30,17 @@ describe("EDOPro parity attack-disabled missed timing fixture", () => {
             location: "hand",
             event: "ignition",
             range: ["hand"],
-            collectEventsOnResolve: [{ collectEvent: "attackDisabled", eventCode: 1142, eventIsLast: false }],
+            collectEventsOnResolve: [
+              {
+                collectEvent: "attackDisabled",
+                eventCode: 1142,
+                eventIsLast: false,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 34701,
+              },
+            ],
             moveCardsOnResolve: [{ player: 0, code: "700", from: "monsterZone", to: "graveyard" }],
             logMessage: "Attack-disabled activation multi step resolved",
           },
@@ -95,7 +105,18 @@ describe("EDOPro parity attack-disabled missed timing fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "attack-disabled-activation-optional-if", eventName: "attackDisabled", eventCode: 1142 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "attack-disabled-activation-optional-if",
+                eventName: "attackDisabled",
+                eventCode: 1142,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 34701,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "attack-disabled-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
@@ -126,7 +147,18 @@ describe("EDOPro parity attack-disabled missed timing fixture", () => {
             windowId: 1,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "attack-disabled-activation-optional-if", eventName: "attackDisabled", eventCode: 1142 }],
+            pendingTriggers: [
+              {
+                player: 0,
+                effectId: "attack-disabled-activation-optional-if",
+                eventName: "attackDisabled",
+                eventCode: 1142,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-100-0",
+                eventReasonEffectId: 34701,
+              },
+            ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "attack-disabled-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
