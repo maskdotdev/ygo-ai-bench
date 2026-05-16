@@ -23,6 +23,7 @@ function main(argv) {
   let groupEvidenceBlocks = 0;
   let absentActionEvidenceBlocks = 0;
   let absentGroupEvidenceBlocks = 0;
+  let pairedAbsentEvidenceBlocks = 0;
 
   for (const file of fixtureFiles) {
     const lines = readFixtureLines(testRoot, file);
@@ -33,6 +34,7 @@ function main(argv) {
       if (block.text.includes("legalActionGroups:")) groupEvidenceBlocks += 1;
       if (block.text.includes("absentLegalActions:")) absentActionEvidenceBlocks += 1;
       if (block.text.includes("absentLegalActionGroups:")) absentGroupEvidenceBlocks += 1;
+      if (block.text.includes("absentLegalActions:") && block.text.includes("absentLegalActionGroups:")) pairedAbsentEvidenceBlocks += 1;
       missing.push(...missingAggregateEvidence(file, block));
       empty.push(...emptyAggregateEvidence(file, block));
       zeroOnly.push(...zeroOnlyAggregateEvidence(file, block));
@@ -40,7 +42,7 @@ function main(argv) {
     }
   }
 
-  console.log(`EDOPro legal-action evidence: ${fixtureFiles.length} parity files, ${edoproBlocks} EDOPro expectation blocks, ${actionEvidenceBlocks} action evidence blocks, ${groupEvidenceBlocks} group evidence blocks, ${absentActionEvidenceBlocks} absent action evidence blocks, ${absentGroupEvidenceBlocks} absent group evidence blocks`);
+  console.log(`EDOPro legal-action evidence: ${fixtureFiles.length} parity files, ${edoproBlocks} EDOPro expectation blocks, ${actionEvidenceBlocks} action evidence blocks, ${groupEvidenceBlocks} group evidence blocks, ${absentActionEvidenceBlocks} absent action evidence blocks, ${absentGroupEvidenceBlocks} absent group evidence blocks, ${pairedAbsentEvidenceBlocks} paired absent evidence blocks`);
 
   const failures = [];
   if (options.minFiles !== undefined && fixtureFiles.length < options.minFiles) failures.push(`Parity fixture files ${fixtureFiles.length} is below required ${options.minFiles}`);
@@ -49,6 +51,7 @@ function main(argv) {
   if (options.minGroupEvidenceBlocks !== undefined && groupEvidenceBlocks < options.minGroupEvidenceBlocks) failures.push(`Group evidence blocks ${groupEvidenceBlocks} is below required ${options.minGroupEvidenceBlocks}`);
   if (options.minAbsentActionEvidenceBlocks !== undefined && absentActionEvidenceBlocks < options.minAbsentActionEvidenceBlocks) failures.push(`Absent action evidence blocks ${absentActionEvidenceBlocks} is below required ${options.minAbsentActionEvidenceBlocks}`);
   if (options.minAbsentGroupEvidenceBlocks !== undefined && absentGroupEvidenceBlocks < options.minAbsentGroupEvidenceBlocks) failures.push(`Absent group evidence blocks ${absentGroupEvidenceBlocks} is below required ${options.minAbsentGroupEvidenceBlocks}`);
+  if (options.minPairedAbsentEvidenceBlocks !== undefined && pairedAbsentEvidenceBlocks < options.minPairedAbsentEvidenceBlocks) failures.push(`Paired absent evidence blocks ${pairedAbsentEvidenceBlocks} is below required ${options.minPairedAbsentEvidenceBlocks}`);
   const actionEvidencePercent = percentage(actionEvidenceBlocks, edoproBlocks);
   const groupEvidencePercent = percentage(groupEvidenceBlocks, edoproBlocks);
   if (options.minActionEvidencePercent !== undefined && actionEvidencePercent < options.minActionEvidencePercent) failures.push(`Action evidence coverage ${actionEvidencePercent.toFixed(1)}% is below required ${options.minActionEvidencePercent.toFixed(1)}%`);
@@ -85,6 +88,7 @@ function parseArgs(argv) {
     else if (arg === "--min-group-evidence-blocks") options.minGroupEvidenceBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-absent-action-evidence-blocks") options.minAbsentActionEvidenceBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-absent-group-evidence-blocks") options.minAbsentGroupEvidenceBlocks = readMinimum(argv, ++index, arg);
+    else if (arg === "--min-paired-absent-evidence-blocks") options.minPairedAbsentEvidenceBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-action-evidence-percent") options.minActionEvidencePercent = readPercent(argv, ++index, arg);
     else if (arg === "--min-group-evidence-percent") options.minGroupEvidencePercent = readPercent(argv, ++index, arg);
     else throw new Error(`Unknown argument: ${arg}`);
@@ -221,6 +225,8 @@ Options:
                               Fail unless at least this many absent-action evidence blocks are scanned
   --min-absent-group-evidence-blocks <count>
                               Fail unless at least this many absent-group evidence blocks are scanned
+  --min-paired-absent-evidence-blocks <count>
+                              Fail unless at least this many blocks have both raw and grouped absent evidence
   --min-action-evidence-percent <percent>
                               Fail unless this percentage of EDOPro blocks has action evidence
   --min-group-evidence-percent <percent>

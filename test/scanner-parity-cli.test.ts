@@ -184,6 +184,8 @@ describe("parity scanner CLIs", () => {
       "1",
       "--min-absent-group-evidence-blocks",
       "1",
+      "--min-paired-absent-evidence-blocks",
+      "1",
       "--min-action-evidence-percent",
       "100",
       "--min-group-evidence-percent",
@@ -198,6 +200,7 @@ describe("parity scanner CLIs", () => {
     expect(result.stderr).toContain("Group evidence blocks 1 is below required 2");
     expect(result.stderr).toContain("Absent action evidence blocks 0 is below required 1");
     expect(result.stderr).toContain("Absent group evidence blocks 0 is below required 1");
+    expect(result.stderr).toContain("Paired absent evidence blocks 0 is below required 1");
   });
 
   it("fails when legal-action evidence is below required coverage percentages", () => {
