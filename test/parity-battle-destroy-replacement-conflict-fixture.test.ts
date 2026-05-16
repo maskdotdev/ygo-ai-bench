@@ -125,6 +125,8 @@ describe("EDOPro parity battle destroy replacement conflict fixtures", () => {
               { uid: "p0-deck-401-2", location: "graveyard", reason: 0x1000040, reasonPlayer: 0 },
               { uid: "p1-deck-301-2", location: "hand" },
             ],
+            windowId: 14,
+            windowKind: "open",
             legalActionCounts: { 0: 4, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [
@@ -168,6 +170,8 @@ describe("EDOPro parity battle destroy replacement conflict fixtures", () => {
           { uid: "p0-deck-401-2", location: "graveyard", reason: 0x1000040, reasonPlayer: 0 },
           { uid: "p1-deck-301-2", location: "hand" },
         ],
+        windowId: 14,
+        windowKind: "open",
         legalActionCounts: { 0: 4, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
         legalActions: [

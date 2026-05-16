@@ -97,6 +97,8 @@ describe("EDOPro parity battle destroy attacker graveyard redirect fixtures", ()
             battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
             locations: { monsterZone: ["200"], graveyard: ["100"] },
             cards: [{ uid: "p0-deck-100-0", location: "graveyard", reason: 0x21, reasonPlayer: 1, reasonCardUid: "p1-deck-200-0" }],
+            windowId: 14,
+            windowKind: "open",
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },
             legalActions: [
@@ -123,6 +125,8 @@ describe("EDOPro parity battle destroy attacker graveyard redirect fixtures", ()
         battlePairs: [{ attackerUid: "p0-deck-100-0", targetUid: "p1-deck-200-0" }],
         locations: { monsterZone: ["200"], graveyard: ["100"] },
         cards: [{ uid: "p0-deck-100-0", location: "graveyard", reason: 0x21, reasonPlayer: 1, reasonCardUid: "p1-deck-200-0" }],
+        windowId: 14,
+        windowKind: "open",
         legalActionCounts: { 0: 2, 1: 0 },
         legalActionGroupCounts: { 0: 1, 1: 0 },
         legalActions: [
