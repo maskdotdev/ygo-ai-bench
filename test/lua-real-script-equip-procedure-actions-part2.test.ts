@@ -604,6 +604,157 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
         },
       ]);
     });
+
+    it("restores Shooting Star Bow equip attack loss and direct attack permission", () => {
+      const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+      const bowCode = "95638658";
+      const targetCode = "601041";
+      const battleTargetCode = "601042";
+      const responderCode = "601043";
+      const cards = [
+        ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === bowCode),
+        { code: targetCode, name: "Shooting Star Bow Target", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1800, defense: 1000 },
+        { code: battleTargetCode, name: "Shooting Star Bow Battle Target", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+        { code: responderCode, name: "Shooting Star Bow Chain Responder", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      ];
+      const reader = createCardReader(cards);
+      const session = createDuel({ seed: 318, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+      loadDecks(session, { 0: { main: [bowCode, targetCode] }, 1: { main: [battleTargetCode, responderCode] } });
+      startDuel(session);
+
+      const bow = session.state.cards.find((card) => card.code === bowCode);
+      const target = session.state.cards.find((card) => card.code === targetCode);
+      const battleTarget = session.state.cards.find((card) => card.code === battleTargetCode);
+      const responder = session.state.cards.find((card) => card.code === responderCode);
+      expect(bow).toBeDefined();
+      expect(target).toBeDefined();
+      expect(battleTarget).toBeDefined();
+      expect(responder).toBeDefined();
+      moveDuelCard(session.state, bow!.uid, "hand", 0);
+      moveDuelCard(session.state, target!.uid, "monsterZone", 0).position = "faceUpAttack";
+      moveDuelCard(session.state, battleTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
+      moveDuelCard(session.state, responder!.uid, "hand", 1);
+      session.state.phase = "main1";
+      session.state.waitingFor = 0;
+
+      const source = {
+        readScript(name: string) {
+          if (name === `c${responderCode}.lua`) return chainResponderScript();
+          return workspace.readScript(name);
+        },
+      };
+      const host = createLuaScriptHost(session, source);
+      expect(host.loadCardScript(Number(bowCode), source).ok).toBe(true);
+      expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+      expect(host.registerInitialEffects()).toBe(2);
+
+      const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+      expectCleanRestore(restoredEquipWindow);
+      expectRestoredLegalActions(restoredEquipWindow, restoredEquipWindow.session.state.waitingFor ?? restoredEquipWindow.session.state.turnPlayer);
+      const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === bow!.uid);
+      expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
+      applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
+
+      expect(restoredEquipWindow.session.state.chain[0]).toMatchInlineSnapshot(`
+        {
+          "activationLocation": "hand",
+          "activationSequence": 0,
+          "chainIndex": 1,
+          "effectId": "lua-1-1002",
+          "id": "chain-2",
+          "operationInfos": [
+            {
+              "category": 262144,
+              "count": 1,
+              "parameter": 0,
+              "player": 0,
+              "targetUids": [
+                "p0-deck-95638658-0",
+              ],
+            },
+          ],
+          "player": 0,
+          "sourceUid": "p0-deck-95638658-0",
+          "targetUids": [
+            "p0-deck-601041-1",
+          ],
+        }
+      `);
+
+      const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
+      expectCleanRestore(restoredChain);
+      expectRestoredLegalActions(restoredChain, restoredChain.session.state.waitingFor ?? restoredChain.session.state.turnPlayer);
+      expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+      resolveRestoredChain(restoredChain);
+
+      expect(restoredChain.host.messages).not.toContain("equip responder resolved");
+      expect(restoredChain.session.state.cards.find((card) => card.uid === bow!.uid)).toMatchObject({
+        location: "spellTrapZone",
+        equippedToUid: target!.uid,
+        faceUp: true,
+      });
+
+      const restoredEquipState = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
+      expectCleanRestore(restoredEquipState);
+      expectRestoredLegalActions(restoredEquipState, restoredEquipState.session.state.waitingFor ?? restoredEquipState.session.state.turnPlayer);
+      expect(restoredEquipState.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === bow!.uid && [74, 100].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
+        [
+          {
+            "canActivate": [Function],
+            "code": 100,
+            "controller": 0,
+            "cost": [Function],
+            "event": "continuous",
+            "id": "lua-3-100",
+            "luaTypeFlags": 4,
+            "oncePerTurn": false,
+            "operation": [Function],
+            "range": [
+              "spellTrapZone",
+            ],
+            "registryKey": "lua:95638658:lua-3-100",
+            "sourceUid": "p0-deck-95638658-0",
+            "target": [Function],
+            "value": -1000,
+          },
+          {
+            "canActivate": [Function],
+            "code": 74,
+            "controller": 0,
+            "cost": [Function],
+            "event": "continuous",
+            "id": "lua-4-74",
+            "luaTypeFlags": 4,
+            "oncePerTurn": false,
+            "operation": [Function],
+            "range": [
+              "spellTrapZone",
+            ],
+            "registryKey": "lua:95638658:lua-4-74",
+            "sourceUid": "p0-deck-95638658-0",
+            "target": [Function],
+          },
+        ]
+      `);
+      expectLuaEquipProbe(restoredEquipState, targetCode, bowCode, "equip probe 95638658/800");
+
+      restoredEquipState.session.state.turnPlayer = 0;
+      restoredEquipState.session.state.phase = "battle";
+      restoredEquipState.session.state.waitingFor = 0;
+      const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredEquipState.session), source, reader);
+      expectCleanRestore(restoredBattle);
+      expectRestoredLegalActions(restoredBattle, restoredBattle.session.state.waitingFor ?? restoredBattle.session.state.turnPlayer);
+      expect(getLuaRestoreLegalActions(restoredBattle, 0).some((action) => action.type === "declareAttack" && action.attackerUid === target!.uid && action.targetUid === battleTarget!.uid)).toBe(true);
+      const directAttack = getLuaRestoreLegalActions(restoredBattle, 0).find(
+        (action) => action.type === "declareAttack" && action.attackerUid === target!.uid && action.directAttack === true,
+      );
+      expect(directAttack, JSON.stringify(getLuaRestoreLegalActions(restoredBattle, 0), null, 2)).toBeDefined();
+      applyLuaRestoreAndAssert(restoredBattle, directAttack!);
+      passRestoredBattleResponsesUntilTrigger(restoredBattle);
+
+      expect(restoredBattle.session.state.cards.find((card) => card.uid === battleTarget!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
+      expect(restoredBattle.session.state.players[1].lifePoints).toBe(7200);
+    });
 });
 
 function chainResponderScript(): string {
