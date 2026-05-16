@@ -79,6 +79,36 @@ describe("duel battlefield action view", () => {
     expect(result.state.attacksDeclared).toContain(attacker!.uid);
   });
 
+  it("matches visible scripts by exact window and action fields", () => {
+    const session = directBattleSession();
+    const battle = visibleAction(session, 0, (action) => action.type === "changePhase" && action.phase === "battle");
+    const windowId = battle.windowId;
+    const windowToken = battle.windowToken;
+    if (windowId === undefined || windowToken === undefined) throw new Error("Expected visible battle action to be stamped with a window");
+
+    const result = runDuelBattlefieldScript(session, [
+      { player: 0, type: "changePhase", phase: "battle", windowId, windowKind: "open", windowToken },
+    ]);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.phase).toBe("battle");
+  });
+
+  it("matches prompt responses by exact prompt id and option", () => {
+    const session = directBattleSession();
+    session.state.prompt = { id: "battlefield-option-prompt", type: "selectOption", player: 1, options: [2, 4], descriptions: [200, 400], returnTo: 0 };
+    session.state.waitingFor = 1;
+
+    const result = runDuelBattlefieldScript(session, [
+      { player: 1, type: "selectOption", promptId: "battlefield-option-prompt", option: 4, windowKind: "prompt" },
+    ]);
+
+    expect(result.ok).toBe(true);
+    expect(result.state.prompt).toBeUndefined();
+    expect(result.state.waitingFor).toBe(0);
+    expect(result.state.log).toContainEqual(expect.objectContaining({ action: "selectOption", detail: "Selected option 4" }));
+  });
+
   it("reports visible group labels when a battlefield script diverges", () => {
     const session = directBattleSession();
     const attacker = queryPublicState(session).cards.find((card) => card.controller === 0 && card.location === "monsterZone" && card.code === "100");
@@ -95,6 +125,21 @@ describe("duel battlefield action view", () => {
     expect(result.failure).toBe("No visible battlefield action matched player=1 type=passDamage groupLabel=Damage Step Response");
     expect(result.visibleGroups).toContainEqual(expect.objectContaining({ label: "Attack Response" }));
     expect(result.visibleActions).toContainEqual(expect.objectContaining({ type: "passAttack" }));
+  });
+
+  it("reports exact selector fields when a visible script diverges", () => {
+    const session = directBattleSession();
+    const battle = visibleAction(session, 0, (action) => action.type === "changePhase" && action.phase === "battle");
+    const wrongWindowId = (battle.windowId ?? 0) + 1;
+
+    const result = runDuelBattlefieldScript(session, [
+      { player: 0, type: "changePhase", phase: "battle", windowId: wrongWindowId, windowKind: "open", occurrence: 0 },
+    ]);
+
+    expect(result.ok).toBe(false);
+    expect(result.failedStep).toBe(0);
+    expect(result.failure).toBe(`No visible battlefield action matched player=0 type=changePhase windowId=${wrongWindowId} windowKind=open phase=battle occurrence=0`);
+    expect(result.visibleActions).toContainEqual(expect.objectContaining({ type: "changePhase", phase: "battle", windowId: battle.windowId, windowKind: "open" }));
   });
 });
 
