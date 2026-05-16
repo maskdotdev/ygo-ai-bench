@@ -495,6 +495,14 @@ describe("duel battlefield action view", () => {
     expect(result.failedStep).toBe(0);
     expect(result.failure).toBe(`No visible battlefield action matched player=0 type=changePhase windowId=${wrongWindowId} windowKind=open phase=battle occurrence=0`);
     expect(result.visibleActions).toContainEqual(expect.objectContaining({ type: "changePhase", phase: "battle", windowId: battle.windowId, windowKind: "open" }));
+    expect(result.visibleGroups).toContainEqual(expect.objectContaining({
+      windowId: battle.windowId,
+      windowKind: "open",
+      windowToken: battle.windowToken,
+      actions: expect.arrayContaining([
+        expect.objectContaining({ type: "changePhase", phase: "battle", windowId: battle.windowId, windowKind: "open", windowToken: battle.windowToken }),
+      ]),
+    }));
   });
 });
 
