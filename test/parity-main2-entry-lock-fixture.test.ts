@@ -30,7 +30,7 @@ describe("EDOPro parity Main Phase 2 entry lock fixtures", () => {
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" })),
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "end" }), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro omits Main Phase 2 and exposes End Phase when CANNOT_M2 prevents entering Main Phase 2",
@@ -104,7 +104,7 @@ describe("EDOPro parity Main Phase 2 entry lock fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("endTurn", 0), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro lets the turn player end the turn from End Phase after CANNOT_M2 blocked Main Phase 2 entry",

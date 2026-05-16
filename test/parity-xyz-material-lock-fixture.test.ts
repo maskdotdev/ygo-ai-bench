@@ -34,7 +34,7 @@ describe("EDOPro parity Xyz material lock fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro omits Xyz Summon actions when a required material is affected by EFFECT_CANNOT_BE_XYZ_MATERIAL",

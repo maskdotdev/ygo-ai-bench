@@ -34,7 +34,7 @@ describe("EDOPro parity Synchro material lock fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro omits Synchro Summon actions when a required material is affected by EFFECT_CANNOT_BE_SYNCHRO_MATERIAL",

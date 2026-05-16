@@ -26,7 +26,7 @@ describe("EDOPro parity spell/trap set lock fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro omits Set actions for Spell/Trap cards affected by CANNOT_SSET",

@@ -30,7 +30,7 @@ describe("EDOPro parity phase lock fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "main2" }), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro omits Battle Phase and exposes Main Phase 2 when SKIP_BP applies to the turn player",
@@ -111,7 +111,7 @@ describe("EDOPro parity phase lock fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("endTurn", 0), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro lets the turn player end the turn from Main Phase 2 after SKIP_BP skipped Battle Phase",

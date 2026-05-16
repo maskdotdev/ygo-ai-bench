@@ -98,7 +98,7 @@ describe("EDOPro parity battle extra monster attack lock fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("endTurn", 0), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro lets the turn player end the turn after monster-only extra attacks have no legal attack targets",

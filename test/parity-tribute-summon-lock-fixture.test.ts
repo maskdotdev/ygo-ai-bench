@@ -30,7 +30,7 @@ describe("EDOPro parity tribute summon lock fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro omits Tribute Summon actions for high-level monsters affected by CANNOT_SUMMON",

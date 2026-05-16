@@ -16,7 +16,7 @@ describe("EDOPro parity summon and set lock fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("setMonster", 0, { code: "100", location: "hand" }), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro omits Normal Summon actions for monsters affected by CANNOT_SUMMON while still allowing legal Sets",

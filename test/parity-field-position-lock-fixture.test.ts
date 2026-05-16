@@ -37,7 +37,7 @@ describe("EDOPro parity field position lock fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro field-scoped CANNOT_CHANGE_POSITION effects suppress affected monsters' manual position-change actions",

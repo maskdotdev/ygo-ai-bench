@@ -85,7 +85,7 @@ describe("EDOPro parity battle direct attack declaration lock fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("endTurn", 0), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro lets the turn player end the turn from Battle Phase when direct attacks are blocked by CANNOT_DIRECT_ATTACK",

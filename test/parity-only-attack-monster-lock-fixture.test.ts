@@ -81,7 +81,7 @@ describe("EDOPro parity only-attack-monster lock fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("endTurn", 0), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro lets the turn player end the turn from Battle Phase when ONLY_ATTACK_MONSTER leaves no legal attack targets",

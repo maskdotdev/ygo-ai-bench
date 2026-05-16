@@ -92,7 +92,7 @@ describe("EDOPro parity battle attack announce lock fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("endTurn", 0), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro lets the turn player end the turn from Battle Phase when attack announcement is blocked by CANNOT_ATTACK_ANNOUNCE",

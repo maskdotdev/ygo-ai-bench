@@ -29,7 +29,7 @@ describe("EDOPro parity Battle Phase entry lock fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "main2" }), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro omits Battle Phase and exposes Main Phase 2 when CANNOT_BP prevents entering Battle Phase",
@@ -122,7 +122,7 @@ describe("EDOPro parity Battle Phase entry lock fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("endTurn", 0), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro lets the turn player end the turn from Main Phase 2 after CANNOT_BP blocked Battle Phase entry",

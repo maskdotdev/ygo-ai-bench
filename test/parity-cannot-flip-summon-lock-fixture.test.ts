@@ -30,7 +30,7 @@ describe("EDOPro parity cannot-flip-summon lock fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro omits Flip Summon actions for monsters affected by CANNOT_FLIP_SUMMON",

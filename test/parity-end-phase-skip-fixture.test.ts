@@ -105,7 +105,7 @@ describe("EDOPro parity End Phase skip fixtures", () => {
           },
         }),
         makeScriptedStep(makeResponseSelector("endTurn", 0), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro lets the turn player end the turn from Main Phase 2 when SKIP_EP removed explicit End Phase entry",

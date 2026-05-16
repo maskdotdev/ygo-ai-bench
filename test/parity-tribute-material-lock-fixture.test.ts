@@ -30,7 +30,7 @@ describe("EDOPro parity tribute material lock fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro omits Tribute Summon actions when the only required tribute is affected by EFFECT_UNRELEASABLE_SUM",

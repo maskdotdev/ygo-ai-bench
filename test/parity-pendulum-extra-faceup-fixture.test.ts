@@ -21,7 +21,7 @@ describe("EDOPro parity Pendulum extra deck fixtures", () => {
       },
       responses: [
         makeScriptedStep(makeResponseSelector("changePhase", 0, { phase: "battle" }), {
-          snapshotRestore: "before",
+          snapshotRestore: "both",
           before: {
             source: "edopro",
             note: "EDOPro keeps Pendulum monsters face-up in the Extra Deck after they leave the field for the Extra Deck",
