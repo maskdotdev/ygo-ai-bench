@@ -46,6 +46,14 @@ describe("Lua deck probe manifest", () => {
       })
       .map((command) => command.match(/-- (\S+\.ydk) /)?.[1] ?? command)
       .sort();
+    const localFallbackBudgetMismatches = packageProbeCommands
+      .filter((command) => {
+        const maximum = Number(command.match(/--max-local-fallbacks (\d+)/)?.[1] ?? -1);
+        const codes = [...command.matchAll(/--expected-local-fallback-script-code \d+/g)];
+        return maximum !== codes.length;
+      })
+      .map((command) => command.match(/-- (\S+\.ydk) /)?.[1] ?? command)
+      .sort();
     const localFallbackBudgetDecks = packageProbeCommands
       .filter((command) => Number(command.match(/--max-local-fallbacks (\d+)/)?.[1] ?? 0) > 0)
       .map((command) => command.match(/-- (\S+\.ydk) /)?.[1] ?? command)
@@ -63,6 +71,15 @@ describe("Lua deck probe manifest", () => {
         .map((command) => [
           command.match(/-- (\S+\.ydk) /)?.[1] ?? command,
           [...command.matchAll(/--expected-missing-script-code (\d+)/g)].map((match) => match[1]).sort(),
+        ] as const)
+        .filter(([, codes]) => codes.length > 0)
+        .sort(([a], [b]) => a.localeCompare(b)),
+    );
+    const expectedLocalFallbackScriptCodesByDeck = Object.fromEntries(
+      packageProbeCommands
+        .map((command) => [
+          command.match(/-- (\S+\.ydk) /)?.[1] ?? command,
+          [...command.matchAll(/--expected-local-fallback-script-code (\d+)/g)].map((match) => match[1]).sort(),
         ] as const)
         .filter(([, codes]) => codes.length > 0)
         .sort(([a], [b]) => a.localeCompare(b)),
@@ -103,6 +120,7 @@ describe("Lua deck probe manifest", () => {
     expect(unbudgetedProbeCommands).toEqual([]);
     expect(activateEffectFloorOmissions).toEqual([]);
     expect(expectedMissingBudgetMismatches).toEqual([]);
+    expect(localFallbackBudgetMismatches).toEqual([]);
     expect(localFallbackBudgetDecks).toEqual([
       "magician-pendulum-mar-2026.ydk",
       "phantom-knights-mar-2026-v4.ydk",
@@ -139,6 +157,12 @@ describe("Lua deck probe manifest", () => {
       "rikka-sunavalon-2026.ydk": ["27520594"],
       "ritual-of-light-and-darkness-apr-2026.ydk": ["46986414"],
       "top_tier_dark_magician_primite_azamina.ydk": ["46986414", "89631139"],
+    });
+    expect(expectedLocalFallbackScriptCodesByDeck).toEqual({
+      "magician-pendulum-mar-2026.ydk": ["100452013"],
+      "phantom-knights-mar-2026-v4.ydk": ["100452015"],
+      "ritual-of-light-and-darkness-apr-2026.ydk": ["2372506", "24088928", "24461358", "24749710", "33599853", "44001993", "50073633", "70405001", "97462632", "98684220"],
+      "rokket-2026.ydk": ["101303089"],
     });
     expect(uncovered).toEqual([]);
   });

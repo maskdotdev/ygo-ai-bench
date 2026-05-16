@@ -21,6 +21,8 @@ describe("Lua deck probe CLI", () => {
       ["dark-magical-blast-master-duel-day1.ydk", "--unknown"],
       ["dark-magical-blast-master-duel-day1.ydk", "--min-actions"],
       ["dark-magical-blast-master-duel-day1.ydk", "--min-actions", "-1"],
+      ["dark-magical-blast-master-duel-day1.ydk", "--expected-local-fallback-script-code"],
+      ["dark-magical-blast-master-duel-day1.ydk", "--expected-local-fallback-script-code", "abc"],
       ["dark-magical-blast-master-duel-day1.ydk", "--expected-missing-script-code"],
       ["dark-magical-blast-master-duel-day1.ydk", "--expected-missing-script-code", "abc"],
     ];
@@ -252,6 +254,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
     expect(result.stdout).toContain("Local fallback scripts: 1");
     expect(result.stderr).toContain("Lua deck probe failed:");
     expect(result.stderr).toContain("Local fallback scripts 1 is above allowed 0");
+  }, deckProbeTimeoutMs);
+
+  it("fails strict probes when local fallback script identities change", () => {
+    const result = spawnSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "phantom-knights-mar-2026-v4.ydk",
+        "--upstream",
+        ".upstream/ignis",
+        "--fail-on-errors",
+        "--max-local-fallbacks",
+        "1",
+        "--expected-local-fallback-script-code",
+        "12345678",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("Local fallback scripts: 1");
+    expect(result.stdout).toContain("Expected local fallback codes: 12345678");
+    expect(result.stderr).toContain("Lua deck probe failed:");
+    expect(result.stderr).toContain("Unexpected local fallback scripts: c100452015.lua");
+    expect(result.stderr).toContain("Expected local fallback script codes were not used: c12345678.lua");
   }, deckProbeTimeoutMs);
 
   it("accepts strict probes when scripts load and legal actions are present", () => {
