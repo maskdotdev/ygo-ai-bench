@@ -9,6 +9,7 @@ import {
 } from "#duel/continuous-effects.js";
 import {
   applyResponse,
+  banishDuelCard,
   canMoveDuelCardToLocation,
   canPlayerSpecialSummon,
   canSpecialSummonDuelCard,
@@ -581,7 +582,8 @@ export function ritualSummonSelectedMaterials(
     for (const uid of materialUids) {
       const material = session.state.cards.find((candidate) => candidate.uid === uid);
       if (!material) continue;
-      sendDuelCardToGraveyard(session.state, uid, target.controller, materialReason, reasonPlayer, materialPayload);
+      if (material.location === "graveyard") banishDuelCard(session.state, uid, target.controller, materialReason, reasonPlayer, materialPayload);
+      else sendDuelCardToGraveyard(session.state, uid, target.controller, materialReason, reasonPlayer, materialPayload);
       pushDuelLog(session.state, "ritualMaterial", target.controller, material.name, `Used for ${target.name}`);
     }
   }
@@ -653,8 +655,10 @@ function pushReleaseRitualMaterial(L: unknown, session: DuelSession, hostState: 
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
     try {
-      const result = sendDuelCardToGraveyard(session.state, uid, card.controller, reason, reasonPlayer, payload);
-      if (result.location === "graveyard") moved.push(uid);
+      const result = card.location === "graveyard"
+        ? banishDuelCard(session.state, uid, card.controller, reason, reasonPlayer, payload)
+        : sendDuelCardToGraveyard(session.state, uid, card.controller, reason, reasonPlayer, payload);
+      if (result.location === "graveyard" || result.location === "banished") moved.push(uid);
     } catch {
       // EDOPro-style helpers report successful material releases only.
     }

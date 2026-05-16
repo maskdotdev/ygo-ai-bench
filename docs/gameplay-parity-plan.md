@@ -140,6 +140,7 @@ The engine already has useful surfaces to build on:
 - Ritual helper coverage also restores real Project Ignis `requirementfunc` material-value callbacks through Meteonis Drytron using ATK as the Ritual requirement and material value.
 - Ritual helper coverage also restores real Project Ignis `specificmatfilter` material-pool pruning through Super Soldier Synthesis requiring a hand-plus-Deck LIGHT/DARK material pair.
 - Ritual helper coverage also restores real Project Ignis `self=true` Ritual procedures through Miracle Raven Ritual Summoning itself from the Pendulum Zone.
+- Ritual helper coverage also restores real Project Ignis Chaos Form selecting Blue-Eyes White Dragon from the Graveyard through `extrafil` and banishing that material during the restored Ritual Summon.
 - Ritual helper coverage also restores real Project Ignis `stage2` post-summon operations after normal material sends through Rebirth of Nephthys.
 - Ritual helper coverage also restores real Project Ignis target-time `e:SetOperation(Ritual.Operation(...))` reassignment through Megalith Unformed's Deck Ritual Summon, including doubled target-level requirements and face-up Defense Position after snapshot restore.
 - Ritual helper coverage also restores real Project Ignis Deck Ritual targets, hand Normal Monster material filters, and delayed opponent End Phase `stage2` returns through High Ritual Art.

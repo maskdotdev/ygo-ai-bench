@@ -47,6 +47,36 @@ describe("Lua release summon helpers", () => {
     expect(session.state.cards.filter((card) => card.location === "graveyard" && (card.code === "100" || card.code === "300"))).toHaveLength(2);
   });
 
+  it("banishes Graveyard cards released as Ritual materials", () => {
+    const cards: DuelCardData[] = [
+      { code: "200", name: "Grave Ritual Material", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 2109, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["200"] }, 1: { main: [] } });
+    startDuel(session);
+    const material = session.state.cards.find((card) => card.code === "200");
+    expect(material).toBeTruthy();
+    moveDuelCard(session.state, material!.uid, "graveyard", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local grave_mat = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_GRAVE, 0, 1, 1, nil):GetFirst()
+      Debug.Message("release grave ritual material " .. Duel.ReleaseRitualMaterial(Group.FromCards(grave_mat)))
+      Debug.Message("release grave ritual operated " .. Duel.GetOperatedGroup():GetCount())
+      local banished_mat = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 200), 0, LOCATION_REMOVED, 0, 1, 1, nil):GetFirst()
+      Debug.Message("release grave ritual reason " .. tostring(banished_mat:IsReason(REASON_RELEASE)) .. "/" .. tostring(banished_mat:IsReason(REASON_MATERIAL)) .. "/" .. tostring(banished_mat:IsReason(REASON_RITUAL)))
+      `,
+      "release-grave-ritual-material.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("release grave ritual material 1");
+    expect(host.messages).toContain("release grave ritual operated 1");
+    expect(host.messages).toContain("release grave ritual reason true/true/true");
+    expect(material).toMatchObject({ location: "banished" });
+  });
+
   it("preserves active Lua reason source metadata when releasing ritual materials", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Ritual Release Source", kind: "monster", typeFlags: 0x21 },

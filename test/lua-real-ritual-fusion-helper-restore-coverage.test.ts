@@ -7,7 +7,7 @@ const root = process.cwd();
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(30);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(31);
   });
 
   it("requires representative Ritual/Fusion helper fixtures to assert clean Lua restore", () => {
@@ -48,6 +48,18 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; requi
         "reason: duelReason.release | duelReason.material | duelReason.ritual",
         "reason: duelReason.effect | duelReason.material | duelReason.ritual",
         'expect(restored.host.messages).not.toContain("machine angel absolute responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-chaos-form-grave-ritual.test.ts",
+      required: [
+        "restores a Ritual procedure that banishes a Graveyard Blue-Eyes material",
+        "operationInfos).toEqual([",
+        "{ category: 0x4, targetUids: [], count: 1, player: 0, parameter: 0x10 }",
+        "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }",
+        'summonType: "ritual"',
+        "summonMaterialUids).toEqual([blueEyes!.uid])",
+        "location: \"banished\", reason: duelReason.material | duelReason.ritual",
       ],
     },
     {
