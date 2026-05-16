@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { applyResponse, createDuel, getLegalActions, loadDecks, queryPublicState, registerEffect, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
 import { createCardReader } from "#engine/data-loaders.js";
+import type { DuelCardData } from "#duel/types.js";
+import { createLuaScriptHost } from "#lua/host.js";
+import type { LuaScriptSource } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 import { createDuelPvpAgent } from "#playtest/duel-pvp-agent-bridge.js";
+import type { DuelPvpAgentLuaRuntime } from "#playtest/duel-pvp-agent-bridge.js";
 import { starterYdk } from "../src/playtest-app/ui.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
@@ -10,6 +15,37 @@ const rodOnlyYdk = `#created by test
 7084129
 #extra
 !side`;
+
+const luaBridgeCards: DuelCardData[] = [
+  { code: "100", name: "Lua Bridge Summon", kind: "monster", level: 4 },
+  { code: "200", name: "Lua Bridge First Trigger", kind: "monster", level: 4 },
+  { code: "300", name: "Lua Bridge Second Trigger", kind: "monster", level: 4 },
+];
+
+const luaBridgeYdk = `#created by test
+#main
+100
+200
+300
+#extra
+!side`;
+
+const luaBridgeScripts: LuaScriptSource = {
+  readScript(name) {
+    return {
+      "c200.lua": luaMandatoryTriggerScript("200"),
+      "c300.lua": luaMandatoryTriggerScript("300"),
+    }[name];
+  },
+};
+
+const luaBridgeRuntime: DuelPvpAgentLuaRuntime = {
+  createLuaScriptHost,
+  restoreDuelWithLuaScripts,
+  getLuaRestoreLegalActions,
+  getLuaRestoreLegalActionGroups,
+  applyLuaRestoreResponse,
+};
 
 describe("duel pvp agent bridge", () => {
   it("starts a two-player DuelSession and exposes visible battlefield actions", () => {
@@ -173,6 +209,44 @@ describe("duel pvp agent bridge", () => {
     ))).toEqual(["agent-first-mandatory", "agent-second-mandatory"]);
   });
 
+  it("starts sessions with preloaded Lua scripts and exposes their legal actions", () => {
+    const agent = createDuelPvpAgent({
+      cardReader: createCardReader(luaBridgeCards),
+      luaScriptSource: luaBridgeScripts,
+      luaRuntime: luaBridgeRuntime,
+    });
+    const started = agent.start({ player0Ydk: luaBridgeYdk, player1Ydk: "#main\n100\n#extra\n!side", seed: "pvp-agent-lua-start", handSize: 3 });
+    const summon = started.visibleBattlefield.actions.find((action) => action.type === "normalSummon" && action.label.includes("Lua Bridge Summon"));
+    expect(summon).toBeDefined();
+
+    const summoned = agent.action(summon, started.sessionId);
+
+    expect(summoned.ok).toBe(true);
+    expect(summoned.state.triggerOrderPrompt).toMatchObject({ player: 0, triggerBucket: "turnMandatory" });
+    expect(summoned.legalActions.filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toHaveLength(2);
+    const visible = agent.visibleBattlefield(0, started.sessionId);
+    expect(visible.triggerOrder).toMatchObject({ label: "Trigger Order", detail: "P1 · turnMandatory · 2 triggers" });
+  });
+
+  it("restores pending Lua trigger-order windows through the bridge", () => {
+    const agent = createDuelPvpAgent({
+      cardReader: createCardReader(luaBridgeCards),
+      luaScriptSource: luaBridgeScripts,
+      luaRuntime: luaBridgeRuntime,
+    });
+    const started = agent.start({ player0Ydk: luaBridgeYdk, player1Ydk: "#main\n100\n#extra\n!side", seed: "pvp-agent-lua-restore", handSize: 3 });
+    const summon = started.visibleBattlefield.actions.find((action) => action.type === "normalSummon" && action.label.includes("Lua Bridge Summon"));
+    expect(summon).toBeDefined();
+    expect(agent.action(summon, started.sessionId).ok).toBe(true);
+    const snapshot = agent.serialize(started.sessionId);
+
+    const restored = agent.restore(snapshot);
+
+    expect(restored.state.triggerOrderPrompt).toMatchObject({ player: 0, triggerBucket: "turnMandatory" });
+    expect(restored.legalActions.filter((action) => action.type === "activateTrigger").map((action) => action.effectId)).toHaveLength(2);
+    expect(restored.visibleBattlefield.triggerOrder).toMatchObject({ label: "Trigger Order", detail: "P1 · turnMandatory · 2 triggers" });
+  });
+
   it("restores serialized sessions with the same visible action surface", () => {
     const agent = createDuelPvpAgent();
     const started = agent.start({ player0Ydk: starterYdk, player1Ydk: starterYdk, seed: "pvp-agent-restore", handSize: 2 });
@@ -292,3 +366,19 @@ describe("duel pvp agent bridge", () => {
     expect(result.visibleActions).toContainEqual(expect.objectContaining({ type: "selectYesNo", promptId: "agent-auto-prompt", yes: true }));
   });
 });
+
+function luaMandatoryTriggerScript(code: "200" | "300"): string {
+  return `
+  c${code}={}
+  function c${code}.initial_effect(c)
+    local e=Effect.CreateEffect(c)
+    e:SetType(EFFECT_TYPE_TRIGGER_F)
+    e:SetCode(EVENT_SUMMON_SUCCESS)
+    e:SetRange(LOCATION_HAND)
+    e:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+      Debug.Message("lua bridge trigger ${code}")
+    end)
+    c:RegisterEffect(e)
+  end
+  `;
+}

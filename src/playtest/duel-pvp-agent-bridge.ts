@@ -10,7 +10,9 @@ import {
   startDuel,
 } from "#duel/core.js";
 import { copyDuelAction } from "#duel/action-copy.js";
-import type { ApplyDuelResponseResult, DuelAction, DuelSession, PlayerId, SerializedDuel } from "#duel/types.js";
+import type { LuaScriptHost, LuaScriptSource } from "#lua/host.js";
+import type { LuaSnapshotRestoreResult } from "#lua/snapshot.js";
+import type { ApplyDuelResponseResult, DuelAction, DuelCardReader, DuelResponse, DuelSession, PlayerId, SerializedDuel } from "#duel/types.js";
 import { parseYdk } from "#playtest/ydk.js";
 import { getBrowserDuelCardReader } from "../playtest-app/duel-pvp-card-reader.js";
 import { duelBattlefieldActionView, visibleDuelBattlefieldActions } from "../playtest-app/duel-battlefield-actions.js";
@@ -24,6 +26,20 @@ export interface DuelPvpAgentStartOptions {
   player1Ydk: string;
   seed?: string | number;
   handSize?: number;
+}
+
+export interface DuelPvpAgentOptions {
+  cardReader?: DuelCardReader;
+  luaScriptSource?: LuaScriptSource;
+  luaRuntime?: DuelPvpAgentLuaRuntime;
+}
+
+export interface DuelPvpAgentLuaRuntime {
+  createLuaScriptHost(session: DuelSession, source: LuaScriptSource): LuaScriptHost;
+  restoreDuelWithLuaScripts(snapshot: SerializedDuel, source: LuaScriptSource, cardReader: DuelCardReader): LuaSnapshotRestoreResult;
+  getLuaRestoreLegalActions(restored: LuaSnapshotRestoreResult, player: PlayerId): DuelAction[];
+  getLuaRestoreLegalActionGroups(restored: LuaSnapshotRestoreResult, player: PlayerId): ReturnType<typeof getGroupedDuelLegalActions>;
+  applyLuaRestoreResponse(restored: LuaSnapshotRestoreResult, response: DuelResponse): ApplyDuelResponseResult;
 }
 
 export interface DuelPvpVisibleAutoRunOptions {
@@ -72,22 +88,33 @@ export interface DuelPvpAgent {
   clear(sessionId?: string): { ok: boolean; sessions: number; activeSessionId: string | null };
 }
 
-export function createDuelPvpAgent(): DuelPvpAgent {
-  const sessions = new Map<string, DuelSession>();
-  let activeSessionId: string | null = null;
+interface DuelPvpSessionRecord {
+  session: DuelSession;
+  luaRestore?: {
+    restore: LuaSnapshotRestoreResult;
+    runtime: DuelPvpAgentLuaRuntime;
+  };
+}
 
-  const getSession = (sessionId = activeSessionId): DuelSession => {
+export function createDuelPvpAgent(agentOptions: DuelPvpAgentOptions = {}): DuelPvpAgent {
+  const sessions = new Map<string, DuelPvpSessionRecord>();
+  let activeSessionId: string | null = null;
+  const cardReader = agentOptions.cardReader ?? getBrowserDuelCardReader();
+
+  const getRecord = (sessionId = activeSessionId): DuelPvpSessionRecord => {
     if (!sessionId) throw new Error("No active duel session");
-    const session = sessions.get(sessionId);
-    if (!session) throw new Error(`Unknown duel session ${sessionId}`);
-    return session;
+    const record = sessions.get(sessionId);
+    if (!record) throw new Error(`Unknown duel session ${sessionId}`);
+    return record;
   };
 
-  const remember = (session: DuelSession) => {
-    const id = session.state.id;
-    sessions.set(id, session);
+  const getSession = (sessionId = activeSessionId): DuelSession => getRecord(sessionId).session;
+
+  const remember = (record: DuelPvpSessionRecord) => {
+    const id = record.session.state.id;
+    sessions.set(id, record);
     activeSessionId = id;
-    return duelSnapshot(session);
+    return duelSnapshot(record);
   };
 
   return {
@@ -95,30 +122,30 @@ export function createDuelPvpAgent(): DuelPvpAgent {
       return { version: 1, sessions: sessions.size, activeSessionId };
     },
     start(options) {
-      return remember(startAgentDuel(options));
+      return remember(startAgentDuel(options, cardReader, agentOptions.luaScriptSource, agentOptions.luaRuntime));
     },
     state(sessionId) {
-      return duelSnapshot(getSession(sessionId));
+      return duelSnapshot(getRecord(sessionId));
     },
     serialize(sessionId) {
       return serializeDuel(getSession(sessionId));
     },
     restore(snapshot) {
-      return remember(restoreDuel(snapshot, getBrowserDuelCardReader()));
+      return remember(restoreAgentDuel(snapshot, cardReader, agentOptions.luaScriptSource, agentOptions.luaRuntime));
     },
     legalActions(player, sessionId) {
-      const session = getSession(sessionId);
-      return getLegalActions(session, player ?? queryPublicState(session).waitingFor ?? 0).map(copyDuelAction);
+      const record = getRecord(sessionId);
+      return recordLegalActions(record, player ?? queryPublicState(record.session).waitingFor ?? 0).map(copyDuelAction);
     },
     visibleBattlefield(player, sessionId) {
-      const session = getSession(sessionId);
-      return visibleBattlefieldView(session, player ?? queryPublicState(session).waitingFor ?? 0);
+      const record = getRecord(sessionId);
+      return visibleBattlefieldView(record, player ?? queryPublicState(record.session).waitingFor ?? 0);
     },
     action(action, sessionId) {
-      return copyApplyResponseResult(applyResponse(getSession(sessionId), action));
+      return copyApplyResponseResult(applyAgentResponse(getRecord(sessionId), action));
     },
     autoRunVisible(options = {}) {
-      return autoRunVisibleBattlefield(getSession(options.sessionId), options);
+      return autoRunVisibleBattlefield(getRecord(options.sessionId), options);
     },
     runVisibleScript(steps, sessionId) {
       return runDuelBattlefieldScript(getSession(sessionId), steps);
@@ -136,40 +163,81 @@ export function createDuelPvpAgent(): DuelPvpAgent {
   };
 }
 
-function startAgentDuel(options: DuelPvpAgentStartOptions): DuelSession {
+function startAgentDuel(
+  options: DuelPvpAgentStartOptions,
+  cardReader: DuelCardReader,
+  luaScriptSource: LuaScriptSource | undefined,
+  luaRuntime: DuelPvpAgentLuaRuntime | undefined,
+): DuelPvpSessionRecord {
   const player0 = parseYdk(options.player0Ydk);
   const player1 = parseYdk(options.player1Ydk);
   const session = createDuel({
     seed: options.seed ?? Date.now(),
     startingHandSize: options.handSize ?? 5,
-    cardReader: getBrowserDuelCardReader(),
+    cardReader,
   });
   loadDecks(session, {
     0: { main: player0.main, extra: player0.extra },
     1: { main: player1.main, extra: player1.extra },
   });
   startDuel(session);
-  return session;
+  if (luaScriptSource && luaRuntime) registerAgentLuaScripts(session, [...player0.main, ...player0.extra, ...player1.main, ...player1.extra], luaScriptSource, luaRuntime);
+  return { session };
 }
 
-function duelSnapshot(session: DuelSession) {
+function restoreAgentDuel(
+  snapshot: unknown,
+  cardReader: DuelCardReader,
+  luaScriptSource: LuaScriptSource | undefined,
+  luaRuntime: DuelPvpAgentLuaRuntime | undefined,
+): DuelPvpSessionRecord {
+  if (!luaScriptSource || !luaRuntime) return { session: restoreDuel(snapshot, cardReader) };
+  const restored = luaRuntime.restoreDuelWithLuaScripts(snapshot as SerializedDuel, luaScriptSource, cardReader);
+  return { session: restored.session, luaRestore: { restore: restored, runtime: luaRuntime } };
+}
+
+function registerAgentLuaScripts(session: DuelSession, codes: readonly string[], source: LuaScriptSource, luaRuntime: DuelPvpAgentLuaRuntime): void {
+  const host = luaRuntime.createLuaScriptHost(session, source);
+  for (const code of [...new Set(codes.map(String).filter(Boolean))].sort()) host.loadCardScript(code, source);
+  host.registerInitialEffectsDetailed();
+  host.runStartupEffects();
+}
+
+function applyAgentResponse(record: DuelPvpSessionRecord, action: unknown): ApplyDuelResponseResult {
+  if (record.luaRestore?.runtime) return record.luaRestore.runtime.applyLuaRestoreResponse(record.luaRestore.restore, action as DuelResponse);
+  return applyResponse(record.session, action);
+}
+
+function recordLegalActions(record: DuelPvpSessionRecord, player: PlayerId): DuelAction[] {
+  if (record.luaRestore?.runtime) return record.luaRestore.runtime.getLuaRestoreLegalActions(record.luaRestore.restore, player);
+  return getLegalActions(record.session, player);
+}
+
+function recordLegalActionGroups(record: DuelPvpSessionRecord, player: PlayerId) {
+  if (record.luaRestore?.runtime) return record.luaRestore.runtime.getLuaRestoreLegalActionGroups(record.luaRestore.restore, player);
+  return getGroupedDuelLegalActions(record.session, player);
+}
+
+function duelSnapshot(record: DuelPvpSessionRecord) {
+  const session = record.session;
   const state = queryPublicState(session);
   const player = state.waitingFor ?? 0;
-  const legalActions = getLegalActions(session, player).map(copyDuelAction);
+  const legalActions = recordLegalActions(record, player).map(copyDuelAction);
   return {
     ok: true,
     sessionId: state.id,
     state,
     legalActions,
-    legalActionGroups: getGroupedDuelLegalActions(session, player).map(copyUiGroup),
-    visibleBattlefield: visibleBattlefieldView(session, player),
+    legalActionGroups: recordLegalActionGroups(record, player).map(copyUiGroup),
+    visibleBattlefield: visibleBattlefieldView(record, player),
   };
 }
 
-function visibleBattlefieldView(session: DuelSession, player: PlayerId): DuelPvpVisibleView {
+function visibleBattlefieldView(record: DuelPvpSessionRecord, player: PlayerId): DuelPvpVisibleView {
+  const session = record.session;
   const state = queryPublicState(session);
-  const legalActions = getLegalActions(session, player);
-  const legalGroups = getGroupedDuelLegalActions(session, player);
+  const legalActions = recordLegalActions(record, player);
+  const legalGroups = recordLegalActionGroups(record, player);
   const view = duelBattlefieldActionView(
     state,
     player,
@@ -189,34 +257,36 @@ function visibleBattlefieldView(session: DuelSession, player: PlayerId): DuelPvp
 }
 
 function autoRunVisibleBattlefield(
-  session: DuelSession,
+  record: DuelPvpSessionRecord,
   options: DuelPvpVisibleAutoRunOptions,
 ): DuelPvpVisibleAutoRunResult {
+  const session = record.session;
   const maxActions = Math.max(0, Math.floor(options.maxActions ?? 20));
   const steps: DuelPvpVisibleAutoRunStep[] = [];
   for (let index = 0; index < maxActions; index += 1) {
     const state = queryPublicState(session);
-    if (state.status !== "awaiting") return visibleAutoRunResult(session, options.player ?? state.waitingFor ?? 0, steps, "finished");
+    if (state.status !== "awaiting") return visibleAutoRunResult(record, options.player ?? state.waitingFor ?? 0, steps, "finished");
     const player = options.player ?? state.waitingFor ?? 0;
-    const view = visibleBattlefieldView(session, player);
+    const view = visibleBattlefieldView(record, player);
     const action = view.actions[0];
-    if (!action) return visibleAutoRunResult(session, player, steps, "noVisibleActions");
-    const result = applyResponse(session, action);
+    if (!action) return visibleAutoRunResult(record, player, steps, "noVisibleActions");
+    const result = applyAgentResponse(record, action);
     steps.push({ index, player, action: copyDuelAction(action) });
-    if (!result.ok) return visibleAutoRunResult(session, player, steps, "rejected", result.error);
+    if (!result.ok) return visibleAutoRunResult(record, player, steps, "rejected", result.error);
   }
   const state = queryPublicState(session);
-  return visibleAutoRunResult(session, options.player ?? state.waitingFor ?? 0, steps, "maxActions");
+  return visibleAutoRunResult(record, options.player ?? state.waitingFor ?? 0, steps, "maxActions");
 }
 
 function visibleAutoRunResult(
-  session: DuelSession,
+  record: DuelPvpSessionRecord,
   player: PlayerId,
   steps: DuelPvpVisibleAutoRunStep[],
   reason: DuelPvpVisibleAutoRunResult["reason"],
   failure?: string,
 ): DuelPvpVisibleAutoRunResult {
-  const view = visibleBattlefieldView(session, player);
+  const session = record.session;
+  const view = visibleBattlefieldView(record, player);
   return {
     ok: reason !== "rejected",
     reason,
