@@ -405,6 +405,8 @@ describe("parity scanner CLIs", () => {
       "2",
       "--min-top-level-window-evidence-blocks",
       "1",
+      "--min-action-window-evidence-blocks",
+      "1",
       "--min-absent-action-evidence-blocks",
       "1",
       "--min-absent-group-evidence-blocks",
@@ -429,6 +431,7 @@ describe("parity scanner CLIs", () => {
     expect(result.stderr).toContain("Group evidence blocks 1 is below required 2");
     expect(result.stderr).toContain("Window evidence blocks 0 is below required 2");
     expect(result.stderr).toContain("Top-level window evidence blocks 0 is below required 1");
+    expect(result.stderr).toContain("Action window evidence blocks 0 is below required 1");
     expect(result.stderr).toContain("Absent action evidence blocks 0 is below required 1");
     expect(result.stderr).toContain("Absent group evidence blocks 0 is below required 1");
     expect(result.stderr).toContain("Paired absent evidence blocks 0 is below required 1");
@@ -513,6 +516,47 @@ describe("parity scanner CLIs", () => {
     expect(result.stderr).toContain("EDOPro blocks missing windowId/windowKind evidence");
     expect(result.stderr).toContain("parity-missing-window-evidence.test.ts:3");
     expect(result.stderr).not.toContain("parity-missing-window-evidence.test.ts:11");
+  });
+
+  it("fails when legal-action evidence omits action window evidence", () => {
+    const testRoot = makeTestRoot({
+      "parity-action-evidence-missing-window.test.ts": `
+        runScriptedDuelFixture({
+          before: {
+            source: "edopro",
+            note: "EDOPro observed action evidence without per-action window fields.",
+            windowId: 1,
+            windowKind: "open",
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "normalSummon", player: 0, count: 1 }],
+          },
+          after: {
+            source: "edopro",
+            note: "EDOPro observed action evidence with per-action window fields.",
+            windowId: 2,
+            windowKind: "open",
+            legalActionCounts: { 0: 1, 1: 0 },
+            legalActions: [{ type: "endTurn", player: 0, windowId: 2, windowKind: "open", count: 1 }],
+          },
+        });
+      `,
+    });
+
+    const result = spawnSync(process.execPath, [
+      legalActionScannerPath,
+      "--test-root",
+      testRoot,
+      "--min-action-window-evidence-blocks",
+      "2",
+      "--fail-on-missing-action-window-evidence",
+    ], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("2 top-level window evidence blocks, 1 action window evidence blocks");
+    expect(result.stderr).toContain("Action window evidence blocks 1 is below required 2");
+    expect(result.stderr).toContain("Legal-action evidence must include windowId/windowKind");
+    expect(result.stderr).toContain("parity-action-evidence-missing-window.test.ts:3");
+    expect(result.stderr).not.toContain("parity-action-evidence-missing-window.test.ts:11");
   });
 
   it("counts top-level window evidence separately from nested action evidence", () => {
@@ -761,6 +805,7 @@ describe("parity scanner CLIs", () => {
     const missingLegalActionPercent = spawnSync(process.execPath, [legalActionScannerPath, "--min-action-evidence-percent"], { encoding: "utf8" });
     const missingLegalActionWindowValue = spawnSync(process.execPath, [legalActionScannerPath, "--min-window-evidence-blocks"], { encoding: "utf8" });
     const missingLegalActionTopLevelWindowValue = spawnSync(process.execPath, [legalActionScannerPath, "--min-top-level-window-evidence-blocks"], { encoding: "utf8" });
+    const missingLegalActionActionWindowValue = spawnSync(process.execPath, [legalActionScannerPath, "--min-action-window-evidence-blocks"], { encoding: "utf8" });
     const missingLegalActionAbsentWindowValue = spawnSync(process.execPath, [legalActionScannerPath, "--min-absent-action-window-evidence-blocks"], { encoding: "utf8" });
     const missingLegalActionAbsentGroupWindowValue = spawnSync(process.execPath, [legalActionScannerPath, "--min-absent-group-window-evidence-blocks"], { encoding: "utf8" });
     const badLegalActionPercent = spawnSync(process.execPath, [legalActionScannerPath, "--min-action-evidence-percent", "101"], { encoding: "utf8" });
@@ -788,6 +833,8 @@ describe("parity scanner CLIs", () => {
     expect(missingLegalActionWindowValue.stderr).toContain("Missing value for --min-window-evidence-blocks");
     expect(missingLegalActionTopLevelWindowValue.status).toBe(1);
     expect(missingLegalActionTopLevelWindowValue.stderr).toContain("Missing value for --min-top-level-window-evidence-blocks");
+    expect(missingLegalActionActionWindowValue.status).toBe(1);
+    expect(missingLegalActionActionWindowValue.stderr).toContain("Missing value for --min-action-window-evidence-blocks");
     expect(missingLegalActionAbsentWindowValue.status).toBe(1);
     expect(missingLegalActionAbsentWindowValue.stderr).toContain("Missing value for --min-absent-action-window-evidence-blocks");
     expect(missingLegalActionAbsentGroupWindowValue.status).toBe(1);
