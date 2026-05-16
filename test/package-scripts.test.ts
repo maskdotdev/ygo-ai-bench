@@ -35,6 +35,8 @@ describe("package scripts", () => {
     expect(pkg.scripts?.["check:bridge-bundle"]).toContain("tools/check-bridge-bundle.mjs");
     expect(pkg.scripts?.["check:pvp-bridge-bundle"]).toContain("tools/check-bridge-bundle.mjs --bridge dist/duel-pvp-engine.js");
     expect(pkg.scripts?.["check:pvp-bridge-bundle"]).toContain("--required autoRunVisible");
+    expect(pkg.scripts?.["export:browser-cdb"]).toContain("tools/export-browser-cdb-rows.mjs");
+    expect(pkg.scripts?.["export:browser-cdb"]).toContain("--out public/card-data/cdb-rows.json");
     expect(pkg.scripts?.check?.split(" && ")).toEqual([
       "bun run check:loc",
       "bun run scan:lua-parity",
