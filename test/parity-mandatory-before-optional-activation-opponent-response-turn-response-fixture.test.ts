@@ -112,8 +112,8 @@ describe("EDOPro parity mandatory before optional activation opponent-response t
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-opponent-turn-response-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
-              { player: 0, effectId: "fixture-opponent-turn-response-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-opponent-turn-response-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" , eventTriggerTiming: "if"},
+              { player: 0, effectId: "fixture-opponent-turn-response-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" , eventTriggerTiming: "if"},
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnMandatory" },

@@ -76,8 +76,8 @@ describe("EDOPro parity mandatory before optional decline fixture", () => {
             chain: [],
             chainPasses: [],
             pendingTriggers: [
-              { player: 0, effectId: "fixture-open-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
-              { player: 0, effectId: "fixture-open-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-open-mandatory-first", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" , eventTriggerTiming: "if"},
+              { player: 0, effectId: "fixture-open-optional-second", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" , eventTriggerTiming: "if"},
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnMandatory" },

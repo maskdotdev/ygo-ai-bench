@@ -102,8 +102,8 @@ describe("EDOPro parity trigger chain-window mandatory held fixture", () => {
             windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [
-              { player: 0, effectId: "fixture-first-mandatory-chain-window-trigger", triggerBucket: "turnMandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
-              { player: 0, effectId: "fixture-second-mandatory-held-trigger", triggerBucket: "turnMandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-first-mandatory-chain-window-trigger", triggerBucket: "turnMandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" , eventTriggerTiming: "if"},
+              { player: 0, effectId: "fixture-second-mandatory-held-trigger", triggerBucket: "turnMandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" , eventTriggerTiming: "if"},
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
             triggerOrderPrompt: { type: "orderTriggers", player: 0, triggerBucket: "turnMandatory" },
@@ -163,8 +163,8 @@ describe("EDOPro parity trigger chain-window mandatory held fixture", () => {
             windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [
-              { player: 0, effectId: "fixture-first-mandatory-chain-window-trigger", triggerBucket: "turnMandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
-              { player: 0, effectId: "fixture-second-mandatory-held-trigger", triggerBucket: "turnMandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-first-mandatory-chain-window-trigger", triggerBucket: "turnMandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" , eventTriggerTiming: "if"},
+              { player: 0, effectId: "fixture-second-mandatory-held-trigger", triggerBucket: "turnMandatory", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" , eventTriggerTiming: "if"},
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnMandatory" }],
             triggerOrderPrompt: { type: "orderTriggers", player: 0, triggerBucket: "turnMandatory" },

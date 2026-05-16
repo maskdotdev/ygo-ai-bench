@@ -72,8 +72,8 @@ describe("EDOPro parity SEGOC opponent optional direct fixture", () => {
             windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [
-              { player: 0, effectId: "fixture-segoc-turn-optional-before-opponent-activation", triggerBucket: "turnOptional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
-              { player: 1, effectId: "fixture-segoc-opponent-optional-activation", triggerBucket: "opponentOptional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-segoc-turn-optional-before-opponent-activation", triggerBucket: "turnOptional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" , eventTriggerTiming: "if"},
+              { player: 1, effectId: "fixture-segoc-opponent-optional-activation", triggerBucket: "opponentOptional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" , eventTriggerTiming: "if"},
             ],
             pendingTriggerBuckets: [
               { player: 0, triggerBucket: "turnOptional" },

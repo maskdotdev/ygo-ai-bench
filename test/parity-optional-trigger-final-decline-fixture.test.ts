@@ -66,8 +66,8 @@ describe("EDOPro parity optional trigger final decline fixture", () => {
             windowKind: "triggerBucket",
             waitingFor: 0,
             pendingTriggers: [
-              { player: 0, effectId: "fixture-final-decline-first-optional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
-              { player: 0, effectId: "fixture-final-decline-second-optional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" },
+              { player: 0, effectId: "fixture-final-decline-first-optional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" , eventTriggerTiming: "if"},
+              { player: 0, effectId: "fixture-final-decline-second-optional", eventName: "normalSummoned", eventCardUid: "p0-deck-100-0" , eventTriggerTiming: "if"},
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
             triggerOrderPrompt: { type: "orderTriggers", player: 0, triggerBucket: "turnOptional" },
