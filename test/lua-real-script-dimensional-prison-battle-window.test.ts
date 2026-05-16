@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -165,6 +166,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
         ],
       }
     `);
+    expect(restored.session.state.chain[0]?.operationInfos).toEqual([
+      { category: 0x4, targetUids: [attacker!.uid], count: 1, player: 0, parameter: 0 },
+    ]);
 
     const pass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
@@ -178,6 +182,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     expect(restored.session.state.players[0].lifePoints).toBe(8000);
     expect(restored.session.state.players[1].lifePoints).toBe(8000);
     expect(restored.session.state.cards.find((card) => card.uid === dimensionalPrison!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "banished" && event.eventCardUid === attacker!.uid)).toEqual([
+      {
+        eventName: "banished",
+        eventCode: 1011,
+        eventCardUid: attacker!.uid,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "banished",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: dimensionalPrison!.uid,
+        eventReasonEffectId: 2,
+      },
+    ]);
     expect(restored.host.messages).not.toContain("dimensional prison responder resolved");
   });
 });
