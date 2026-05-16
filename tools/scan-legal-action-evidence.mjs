@@ -20,6 +20,7 @@ function main(argv) {
   const zeroEvidence = [];
   const unpairedAbsent = [];
   const missingWindowEvidence = [];
+  const missingTopLevelWindowEvidence = [];
   let edoproBlocks = 0;
   let actionEvidenceBlocks = 0;
   let groupEvidenceBlocks = 0;
@@ -41,6 +42,7 @@ function main(argv) {
       if (hasWindowEvidence(block.text)) windowEvidenceBlocks += 1;
       else missingWindowEvidence.push(`${file}:${block.line}`);
       if (hasTopLevelWindowEvidence(block.text)) topLevelWindowEvidenceBlocks += 1;
+      else missingTopLevelWindowEvidence.push(`${file}:${block.line}`);
       if (hasAbsentActions) absentActionEvidenceBlocks += 1;
       if (hasAbsentGroups) absentGroupEvidenceBlocks += 1;
       if (hasAbsentActions && hasAbsentGroups) pairedAbsentEvidenceBlocks += 1;
@@ -74,6 +76,7 @@ function main(argv) {
   if (options.failOnZeroEvidence && zeroEvidence.length > 0) failures.push(`Zero-count legal-action evidence must move to absent expectations:\n${formatList(zeroEvidence)}`);
   if (options.failOnUnpairedAbsent && unpairedAbsent.length > 0) failures.push(`Absent legal-action evidence must include both raw and grouped assertions:\n${formatList(unpairedAbsent)}`);
   if (options.failOnMissingWindowEvidence && missingWindowEvidence.length > 0) failures.push(`EDOPro blocks missing windowId/windowKind evidence:\n${formatList(missingWindowEvidence)}`);
+  if (options.failOnMissingTopLevelWindowEvidence && missingTopLevelWindowEvidence.length > 0) failures.push(`EDOPro blocks missing top-level windowId/windowKind evidence:\n${formatList(missingTopLevelWindowEvidence)}`);
 
   if (failures.length === 0) return 0;
   console.error(failures.join("\n\n"));
@@ -98,6 +101,7 @@ function parseArgs(argv) {
     else if (arg === "--fail-on-zero-evidence") options.failOnZeroEvidence = true;
     else if (arg === "--fail-on-unpaired-absent") options.failOnUnpairedAbsent = true;
     else if (arg === "--fail-on-missing-window-evidence") options.failOnMissingWindowEvidence = true;
+    else if (arg === "--fail-on-missing-top-level-window-evidence") options.failOnMissingTopLevelWindowEvidence = true;
     else if (arg === "--min-files") options.minFiles = readMinimum(argv, ++index, arg);
     else if (arg === "--min-edopro-blocks") options.minEdoproBlocks = readMinimum(argv, ++index, arg);
     else if (arg === "--min-action-evidence-blocks") options.minActionEvidenceBlocks = readMinimum(argv, ++index, arg);
@@ -244,6 +248,8 @@ Options:
   --fail-on-unpaired-absent   Fail when absent raw/grouped legal-action evidence is not paired
   --fail-on-missing-window-evidence
                               Fail when EDOPro blocks omit windowId/windowKind evidence
+  --fail-on-missing-top-level-window-evidence
+                              Fail when EDOPro blocks omit top-level windowId/windowKind evidence
   --min-files <count>         Fail unless at least this many parity fixture files are scanned
   --min-edopro-blocks <count> Fail unless at least this many EDOPro blocks are scanned
   --min-action-evidence-blocks <count>

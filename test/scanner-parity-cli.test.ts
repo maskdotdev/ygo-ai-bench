@@ -543,12 +543,16 @@ describe("parity scanner CLIs", () => {
       "2",
       "--min-top-level-window-evidence-blocks",
       "2",
+      "--fail-on-missing-top-level-window-evidence",
     ], { encoding: "utf8" });
 
     expect(result.status).toBe(1);
     expect(result.stdout).toContain("2 window evidence blocks, 1 top-level window evidence blocks");
     expect(result.stderr).not.toContain("Window evidence blocks 2 is below required 2");
     expect(result.stderr).toContain("Top-level window evidence blocks 1 is below required 2");
+    expect(result.stderr).toContain("EDOPro blocks missing top-level windowId/windowKind evidence");
+    expect(result.stderr).toContain("parity-top-level-window-evidence.test.ts:3");
+    expect(result.stderr).not.toContain("parity-top-level-window-evidence.test.ts:11");
   });
 
   it("fails when positive aggregate counts have empty or zero-only evidence", () => {
