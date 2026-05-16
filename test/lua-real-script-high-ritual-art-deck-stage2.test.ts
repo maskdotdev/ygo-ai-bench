@@ -111,17 +111,61 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
     expect(restored.session.state.cards.find((card) => card.uid === effectDecoy!.uid)).toMatchObject({ location: "hand" });
     expect(restored.session.state.cards.find((card) => card.uid === highRitualArt!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     const ritualSummonEvents = restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === ritualTarget!.uid);
-    expect(ritualSummonEvents).toHaveLength(1);
-    expect(ritualSummonEvents[0]).toMatchObject({
-      eventName: "specialSummoned",
-      eventCurrentState: { location: "monsterZone" },
-    });
+    expect(ritualSummonEvents).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-36351-1",
+          "eventCode": 1102,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "specialSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 3,
+          },
+          "eventReason": 1050640,
+          "eventReasonCardUid": "p0-deck-36350300-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     const materialGraveEvents = restored.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard" && event.eventCardUid === normalMaterial!.uid);
-    expect(materialGraveEvents).toHaveLength(1);
-    expect(materialGraveEvents[0]).toMatchObject({
-      eventName: "sentToGraveyard",
-      eventCurrentState: { location: "graveyard" },
-    });
+    expect(materialGraveEvents).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-36352-2",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 1048584,
+          "eventReasonCardUid": "p0-deck-36350300-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     expect(restored.session.state.flagEffects).toContainEqual(expect.objectContaining({ ownerType: "card", ownerId: ritualTarget!.uid, code: Number(highRitualArtCode) }));
     expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 0x1200)).toMatchInlineSnapshot(`
       {

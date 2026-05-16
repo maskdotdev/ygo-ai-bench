@@ -241,13 +241,131 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
       (event) => event.eventName === "destroyed" && event.eventCardUid !== undefined && destroyedUids.includes(event.eventCardUid),
     );
     expect([...new Set(destroyedEvents.map((event) => event.eventCardUid))].sort()).toEqual([...destroyedUids].sort());
-    for (const event of destroyedEvents) {
-      expect(event).toMatchObject({
-        eventName: "destroyed",
-        eventReasonCardUid: torrential!.uid,
-        eventCurrentState: { location: "graveyard" },
-      });
-    }
+    expect(destroyedEvents).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p1-deck-886-1",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p1-deck-53582587-0",
+          "eventReasonEffectId": 3,
+          "eventReasonPlayer": 1,
+        },
+        {
+          "eventCardUid": "p1-deck-887-2",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpDefense",
+            "sequence": 1,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpDefense",
+            "sequence": 1,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p1-deck-53582587-0",
+          "eventReasonEffectId": 3,
+          "eventReasonPlayer": 1,
+        },
+        {
+          "eventCardUid": "p0-deck-885-3",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p1-deck-53582587-0",
+          "eventReasonEffectId": 3,
+          "eventReasonPlayer": 1,
+        },
+        {
+          "eventCardUid": "p0-deck-884-0",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 1,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 1,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p1-deck-53582587-0",
+          "eventReasonEffectId": 3,
+          "eventReasonPlayer": 1,
+        },
+        {
+          "eventCardUid": "p1-deck-886-1",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p1-deck-53582587-0",
+          "eventReasonEffectId": 3,
+          "eventReasonPlayer": 1,
+          "eventUids": [
+            "p1-deck-886-1",
+            "p1-deck-887-2",
+            "p0-deck-885-3",
+            "p0-deck-884-0",
+          ],
+        },
+      ]
+    `);
     expect(restored.host.messages).toContain("torrential chain starter resolved");
     expect(restored.host.messages).not.toContain("torrential chain responder resolved");
   });

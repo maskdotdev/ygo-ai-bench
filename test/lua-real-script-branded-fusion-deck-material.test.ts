@@ -142,22 +142,88 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Br
     });
     expect(restored.session.state.cards.find((card) => card.uid === brandedFusion!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     const fusionSummonEvents = restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === fusion!.uid);
-    expect(fusionSummonEvents).toHaveLength(1);
-    expect(fusionSummonEvents[0]).toMatchObject({
-      eventName: "specialSummoned",
-      eventCurrentState: { location: "monsterZone" },
-    });
+    expect(fusionSummonEvents).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-extraDeck-4437-0",
+          "eventCode": 1102,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "specialSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "extraDeck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 264208,
+          "eventReasonCardUid": "p0-deck-44362883-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     const materialGraveEvents = restored.session.state.eventHistory.filter((event) =>
       event.eventName === "sentToGraveyard"
       && (event.eventCardUid === albaz!.uid || event.eventCardUid === material!.uid)
     );
     expect(materialGraveEvents.map((event) => event.eventCardUid).sort()).toEqual([albaz!.uid, material!.uid].sort());
-    for (const event of materialGraveEvents) {
-      expect(event).toMatchObject({
-        eventName: "sentToGraveyard",
-        eventCurrentState: { location: "graveyard" },
-      });
-    }
+    expect(materialGraveEvents).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-68468459-1",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 2,
+          },
+          "eventReason": 262216,
+          "eventReasonCardUid": "p0-deck-44362883-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-4436-2",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 262216,
+          "eventReasonCardUid": "p0-deck-44362883-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     expect(restored.host.messages).not.toContain("branded fusion responder resolved");
   });
 });

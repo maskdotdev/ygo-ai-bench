@@ -213,13 +213,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tr
     expect(restored.session.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.cards.find((card) => card.uid === trapHole!.uid)).toMatchObject({ location: "graveyard" });
     const destroyedEvents = restored.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === summoned!.uid);
-    expect(destroyedEvents).toHaveLength(1);
-    expect(destroyedEvents[0]).toMatchObject({
-      eventName: "destroyed",
-      eventCardUid: summoned!.uid,
-      eventReasonCardUid: trapHole!.uid,
-      eventCurrentState: { location: "graveyard" },
-    });
+    expect(destroyedEvents).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-100-0",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p1-deck-4206964-0",
+          "eventReasonEffectId": 3,
+          "eventReasonPlayer": 1,
+        },
+      ]
+    `);
     expect(restored.host.messages).toContain("trap hole chain starter resolved");
     expect(restored.host.messages).not.toContain("trap hole responder resolved");
   });
