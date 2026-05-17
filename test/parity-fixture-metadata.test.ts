@@ -5,7 +5,15 @@ import { assertFixtureMetadataScannerExamples } from "./parity-fixture-metadata-
 
 const parityFixtureDir = path.resolve("test");
 const parityDocFiles = ["readme.md", path.join("docs", "gameplay-parity-plan.md")];
-const pairedScenarioFixtureFiles = new Set(["parity-battle-direct-attack-lock-fixture.test.ts", "parity-missed-timing-event-coverage.test.ts", "parity-missed-timing-fixture.test.ts", "parity-open-fast-coverage.test.ts", "parity-segoc-bucket-fixture.test.ts"]);
+const pairedScenarioFixtureFiles = new Set([
+  "parity-battle-direct-attack-lock-fixture.test.ts",
+  "parity-missed-timing-event-coverage.test.ts",
+  "parity-missed-timing-fixture.test.ts",
+  "parity-open-fast-coverage.test.ts",
+  "parity-segoc-bucket-fixture.test.ts",
+  "parity-summon-negation-coverage.test.ts",
+  "parity-summon-negation-protection-coverage.test.ts",
+]);
 
 describe("parity fixture metadata", () => {
   it("scans existing parity documentation files", () => {
@@ -38,6 +46,10 @@ describe("parity fixture metadata", () => {
 
   it("requires backlog expectation notes to reference EDOPro behavior", () => {
     expect(backlogNotesWithoutEdopro()).toEqual([]);
+  });
+
+  it("requires parity fixture expectations to be cleared from backlog", () => {
+    expect(parityBacklogExpectationSources()).toEqual([]);
   });
 
   it("requires UI-facing grouped legal-action expectations to track raw positive legal-action expectations", () => {
@@ -209,6 +221,10 @@ function backlogNotesWithoutEdopro(): string[] {
   return scriptedFixtureFiles().flatMap((file) => backlogNotesWithoutEdoproInLines(file, readFixtureLines(file)));
 }
 
+function parityBacklogExpectationSources(): string[] {
+  return parityFixtureFiles().flatMap((file) => parityBacklogExpectationSourcesInLines(file, readFixtureLines(file)));
+}
+
 function edoproNotesWithoutEdopro(): string[] {
   return parityFixtureFiles().flatMap((file) => edoproNotesWithoutEdoproInLines(file, readFixtureLines(file)));
 }
@@ -362,6 +378,14 @@ function backlogNotesWithoutEdoproInLines(file: string, lines: string[]): string
     if (noteLine !== undefined && !/edopro/i.test(noteLine)) missingEdopro.push(`${file}:${index + 1}`);
   });
   return missingEdopro;
+}
+
+function parityBacklogExpectationSourcesInLines(file: string, lines: string[]): string[] {
+  const backlogSources: string[] = [];
+  lines.forEach((line, index) => {
+    if (hasParityBacklogSource(line)) backlogSources.push(`${file}:${findExpectationHeader(lines, index) + 1}`);
+  });
+  return backlogSources;
 }
 
 function edoproNotesWithoutEdoproInLines(file: string, lines: string[]): string[] {
