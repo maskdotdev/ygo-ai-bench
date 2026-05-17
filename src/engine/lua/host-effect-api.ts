@@ -12,12 +12,12 @@ import { knownLuaEffectTargetDescriptor } from "#lua/effect-target-descriptor.js
 import { knownLuaEffectValueDescriptor } from "#lua/effect-value-descriptor.js";
 import { locationMaskFromLocation, locationMaskFromLocations } from "#lua/effect-location-mask.js";
 import { installEffectCompatibilityApi } from "#lua/effect-compatibility-api.js";
-import { cardTypeFlags } from "#lua/card-stat-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { triggerEventFromCode } from "#lua/event-code.js";
 import { readLuaError, runLuaPromptCoroutineFromStack } from "#lua/host-script-api.js";
 import { normalizeLuaDamageModifier, normalizeLuaUnsignedInteger, toLuaSigned32 } from "#lua/numeric-utils.js";
 import { materializeSkipDrawPhaseEffect } from "#lua/phase-skip-effects.js";
+import { activeTypeFlags, canUseLuaEffectCount, clearLuaEffectCountUsage, effectController, firstFiniteNumber, markLuaEffectCountUsed, normalizeLuaPlayer, normalizePlayer, relatedEffectIdFromChainLink, relatedEffectIdFromEventHistory, sourceCard } from "#lua/host-effect-state-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaEffectRecord, LuaHostState, LuaPromptCoroutineResult } from "#lua/host-types.js";
 const { lua, lauxlib, to_luastring } = fengari;
@@ -434,56 +434,6 @@ function hasEffectNumberField(field: "typeFlags" | "category" | "property") {
   };
 }
 
-function effectController(session: DuelSession, effect: LuaEffectRecord): PlayerId {
-  const source = sourceCard(session, effect);
-  return source?.controller ?? 0;
-}
-
-function normalizePlayer(value: number): PlayerId {
-  return value === 1 ? 1 : 0;
-}
-
-function normalizeLuaPlayer(value: number): PlayerId {
-  return normalizePlayer(value);
-}
-
-function canUseLuaEffectCount(hostState: LuaHostState, effect: LuaEffectRecord, player: PlayerId): boolean {
-  const limit = luaEffectCountLimit(effect);
-  if (limit <= 0) return true;
-  return (hostState.usedEffectCounts.get(luaEffectCountKey(effect, player)) ?? 0) < limit;
-}
-
-function markLuaEffectCountUsed(hostState: LuaHostState, effect: LuaEffectRecord, player: PlayerId, count: number): void {
-  const limit = luaEffectCountLimit(effect);
-  if (limit <= 0) return;
-  const key = luaEffectCountKey(effect, player);
-  hostState.usedEffectCounts.set(key, (hostState.usedEffectCounts.get(key) ?? 0) + count);
-}
-
-function clearLuaEffectCountUsage(hostState: LuaHostState, effect: LuaEffectRecord): void {
-  const prefix = `effect:${effect.id}:`;
-  const codePrefix = effect.countLimitCode === undefined ? undefined : `code:${effect.countLimitCode}:`;
-  for (const key of [...hostState.usedEffectCounts.keys()]) {
-    if (key.startsWith(prefix) || (codePrefix && key.startsWith(codePrefix))) hostState.usedEffectCounts.delete(key);
-  }
-}
-
-function luaEffectCountLimit(effect: LuaEffectRecord): number {
-  return effect.countLimit ?? 0;
-}
-
-function luaEffectCountKey(effect: LuaEffectRecord, player: PlayerId): string {
-  return effect.countLimitCode === undefined ? `effect:${effect.id}:${player}` : `code:${effect.countLimitCode}:${player}`;
-}
-
-function sourceCard(session: DuelSession, effect: LuaEffectRecord): DuelCardInstance | undefined {
-  return effect.sourceUid ? session.state.cards.find((candidate) => candidate.uid === effect.sourceUid) : undefined;
-}
-
-function activeTypeFlags(card: DuelCardInstance | undefined, session: DuelSession): number {
-  return cardTypeFlags(card, session.state) & 0x7;
-}
-
 function setEffectFunctionField(field: "conditionRef" | "costRef" | "targetRef", hostState: LuaHostState) {
   return (state: unknown, effect: LuaEffectRecord): number => {
     if (!lua.lua_isfunction(state, 2)) return 0;
@@ -845,36 +795,6 @@ function pushRelatedEffectTable(L: unknown, hostState: LuaHostState, relatedEffe
   const id = Number(link?.effectId.match(/^lua-(\d+)/)?.[1]);
   if (Number.isFinite(id)) pushLuaEffectTable(L, id, hostState);
   else lua.lua_pushnil(L);
-}
-
-function firstFiniteNumber(...values: Array<number | undefined>): number | undefined {
-  return values.find((value): value is number => value !== undefined && Number.isFinite(value));
-}
-
-function relatedEffectIdFromEventHistory(hostState: LuaHostState, ctx?: DuelEffectContext): number | undefined {
-  if (!ctx?.eventName) return latestRelatedEffectId(hostState);
-  for (let index = hostState.session.state.eventHistory.length - 1; index >= 0; index -= 1) {
-    const event = hostState.session.state.eventHistory[index];
-    if (!event || event.eventName !== ctx.eventName) continue;
-    if (ctx.eventCode !== undefined && event.eventCode !== ctx.eventCode) continue;
-    if (ctx.eventCard?.uid !== undefined && event.eventCardUid !== ctx.eventCard.uid) continue;
-    return event.relatedEffectId;
-  }
-  return latestRelatedEffectId(hostState);
-}
-
-function relatedEffectIdFromChainLink(link: DuelSession["state"]["chain"][number] | undefined): number | undefined {
-  if (!link) return undefined;
-  const relatedEffectId = Number(link.effectId.match(/^lua-(\d+)/)?.[1]);
-  return Number.isFinite(relatedEffectId) ? relatedEffectId : undefined;
-}
-
-function latestRelatedEffectId(hostState: LuaHostState): number | undefined {
-  for (let index = hostState.session.state.eventHistory.length - 1; index >= 0; index -= 1) {
-    const relatedEffectId = hostState.session.state.eventHistory[index]?.relatedEffectId;
-    if (relatedEffectId !== undefined) return relatedEffectId;
-  }
-  return undefined;
 }
 
 type LuaEffectCallbackKind = "condition" | "cost" | "target" | "operation" | "value";
