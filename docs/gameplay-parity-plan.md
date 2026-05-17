@@ -222,7 +222,7 @@ The engine already has useful surfaces to build on:
 
 A fixture should be able to express a real duel sequence, run it through this engine, and compare the final state, action windows, chain contents, prompts, trigger ordering, reset behavior, and serialized restore behavior against an EDOPro-observed outcome.
 
-Deck probes remain useful smoke tests, but fixture-authored duel sequences are the main quality bar. Every fixture expectation that claims parity should be tied to an EDOPro-observed behavior, a Project Ignis script requirement, or a parity-backlog note that points back to the missing EDOPro behavior.
+Deck probes remain useful smoke tests, but fixture-authored duel sequences are the main quality bar. Every committed fixture expectation that claims parity should be tied to an EDOPro-observed behavior or a Project Ignis script requirement; temporary `source: "parity-backlog"` expectations are gated out of committed parity fixtures once the missing behavior is understood.
 
 ## Phase 0: Parity Fixture Harness
 
@@ -259,7 +259,7 @@ Acceptance gates:
 - Fixtures fail with useful messages that name the expected window/action/state difference.
 - A fixture can assert raw legal actions and grouped UI-facing legal actions before and after an action is applied, including actions/groups that must be absent.
 - A fixture can snapshot/restore mid-chain, mid-trigger-bucket, and mid-battle-window.
-- Fixture expectations can distinguish "matches observed EDOPro" from "known parity backlog" through `source`, and backlog expectations can carry a `note` that points to the missing EDOPro behavior.
+- Fixture expectations distinguish "matches observed EDOPro" through `source: "edopro"`, and the committed parity suite is gated to zero `source: "parity-backlog"` expectation blocks; backlog-sourced expectations remain available only for scanner diagnostics or temporary local investigation.
 
 ## Phase 1: Battle Pipeline Depth
 
