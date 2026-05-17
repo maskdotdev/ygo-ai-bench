@@ -11,8 +11,27 @@ const extraAttackKindCounts = {
   extraAttack: 2,
   monsterOnlyExtraAttack: 1,
 } satisfies Record<ExtraAttackKind, number>;
+const extraAttackSemanticVariantCounts = {
+  alienHunterBattleDestroyChainAttack: 1,
+  asuraPriestSpiritAttackAllMonsters: 1,
+  elementDoomAttributeGatedChainAttack: 1,
+  ghostBirdSequenceGatedMonsterOnlyExtraAttack: 1,
+  hayabusaKnightStaticSecondDirectAttack: 1,
+  machineLordUrAttackAllNoDirectAttack: 1,
+  matazaControlLockStaticExtraAttack: 1,
+  nitroWarriorPositionChangedChainAttack: 1,
+} satisfies Record<ExtraAttackSemanticVariant, number>;
 
 type ExtraAttackKind = "attackAll" | "chainAttack" | "extraAttack" | "monsterOnlyExtraAttack";
+type ExtraAttackSemanticVariant =
+  | "alienHunterBattleDestroyChainAttack"
+  | "asuraPriestSpiritAttackAllMonsters"
+  | "elementDoomAttributeGatedChainAttack"
+  | "ghostBirdSequenceGatedMonsterOnlyExtraAttack"
+  | "hayabusaKnightStaticSecondDirectAttack"
+  | "machineLordUrAttackAllNoDirectAttack"
+  | "matazaControlLockStaticExtraAttack"
+  | "nitroWarriorPositionChangedChainAttack";
 
 describe("Lua real extra attack restore coverage", () => {
   it("requires representative multi-attack fixtures to assert clean Lua restore and replayed legal attacks", () => {
@@ -38,6 +57,19 @@ describe("Lua real extra attack restore coverage", () => {
 
   it("keeps extra-attack fixture kinds explicit", () => {
     expect(countExtraAttackKinds(realScriptExtraAttackFixtureFiles())).toEqual(extraAttackKindCounts);
+  });
+
+  it("keeps named extra-attack semantic variants explicit", () => {
+    expect(countExtraAttackSemanticVariants(extraAttackSemanticVariants())).toEqual(extraAttackSemanticVariantCounts);
+
+    const weak = extraAttackSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -142,6 +174,120 @@ function countExtraAttackKinds(fixtures: Array<{ kind: ExtraAttackKind }>): Reco
       chainAttack: 0,
       extraAttack: 0,
       monsterOnlyExtraAttack: 0,
+    },
+  );
+}
+
+function extraAttackSemanticVariants(): Array<{
+  file: string;
+  kind: ExtraAttackSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-alien-hunter-chain-attack.test.ts",
+      kind: "alienHunterBattleDestroyChainAttack",
+      required: [
+        'const alienHunterCode = "62315111"',
+        "restores Alien Hunter's battle-destroying trigger and reopens its attack with Duel.ChainAttack",
+        "Duel.ChainAttack",
+        'eventName: "battleDestroyed"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-asura-priest-attack-all.test.ts",
+      kind: "asuraPriestSpiritAttackAllMonsters",
+      required: [
+        'const asuraCode = "2134346"',
+        "restores its Spirit attack-all effect and lets it attack each monster with battle damage",
+        "hasDirectAttack(openingActions, asura!.uid)).toBe(false)",
+        "hasAttack(secondActions, asura!.uid, secondTarget!.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-element-doom-chain-attack.test.ts",
+      kind: "elementDoomAttributeGatedChainAttack",
+      required: [
+        'const elementDoomCode = "23118924"',
+        "restores its attribute-gated battled trigger and reopens its attack with Duel.ChainAttack",
+        "attributeEarth",
+        "attributeWind",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ghost-bird-extra-monster-attack.test.ts",
+      kind: "ghostBirdSequenceGatedMonsterOnlyExtraAttack",
+      required: [
+        'const ghostBirdCode = "15419596"',
+        "restores sequence-gated monster-only extra attacks without allowing direct attacks",
+        "hasAttack(actions, ghostBird.uid, target.uid)).toBe(true)",
+        "hasDirectAttack(noTargetActions, ghostBird.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-hayabusa-knight-extra-attack.test.ts",
+      kind: "hayabusaKnightStaticSecondDirectAttack",
+      required: [
+        'const hayabusaCode = "21015833"',
+        "restores official static extra attack and allows the second attack to become direct",
+        "hasAttack(secondActions, hayabusa!.uid, target!.uid)).toBe(false)",
+        "hasDirectAttack(secondActions, hayabusa!.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-machine-lord-ur-attack-all.test.ts",
+      kind: "machineLordUrAttackAllNoDirectAttack",
+      required: [
+        'const urCode = "96938777"',
+        "restores Machine Lord Ur and lets it attack each opponent monster once without granting a direct attack",
+        "hasAttack(restoredActions, ur!.uid, secondTarget!.uid)).toBe(true)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-mataza-control-extra-attack.test.ts",
+      kind: "matazaControlLockStaticExtraAttack",
+      required: [
+        'const matazaCode = "22609617"',
+        "restores official control-change lock and static extra attack",
+        "hasAttack(secondActions, mataza!.uid, target!.uid)).toBe(false)",
+        "hasDirectAttack(secondActions, mataza!.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-nitro-warrior-chain-attack-target.test.ts",
+      kind: "nitroWarriorPositionChangedChainAttack",
+      required: [
+        'const nitroCode = "18013090"',
+        "restores its battled trigger and chain-attacks the selected position-changed monster",
+        'effectId.endsWith("-1138")',
+        "battleDamage).toMatchObject({ 1: 1800 })",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: ExtraAttackSemanticVariant;
+    required: string[];
+  }>);
+}
+
+function countExtraAttackSemanticVariants(
+  fixtures: Array<{ kind: ExtraAttackSemanticVariant }>,
+): Record<ExtraAttackSemanticVariant, number> {
+  return fixtures.reduce<Record<ExtraAttackSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      alienHunterBattleDestroyChainAttack: 0,
+      asuraPriestSpiritAttackAllMonsters: 0,
+      elementDoomAttributeGatedChainAttack: 0,
+      ghostBirdSequenceGatedMonsterOnlyExtraAttack: 0,
+      hayabusaKnightStaticSecondDirectAttack: 0,
+      machineLordUrAttackAllNoDirectAttack: 0,
+      matazaControlLockStaticExtraAttack: 0,
+      nitroWarriorPositionChangedChainAttack: 0,
     },
   );
 }
