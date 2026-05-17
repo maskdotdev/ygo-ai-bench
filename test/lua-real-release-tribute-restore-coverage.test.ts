@@ -15,6 +15,15 @@ const releaseAndTributeKindCounts = {
   setcodeTributeLimit: 1,
   unreleasableTributeLock: 1,
 } satisfies Record<ReleaseAndTributeKind, number>;
+const releaseAndTributeSemanticVariantCounts = {
+  amorphageWrathConditionalCannotRelease: 1,
+  apoqliphortSetcodeTributeLimit: 1,
+  assaultZoneExtraDeckReleaseCost: 1,
+  diabolosAttributeTributeLimit: 1,
+  maskOfRestrictGlobalCannotRelease: 1,
+  troposphereRaceTributeLimit: 1,
+  yellowDustonUnreleasableTributeLock: 1,
+} satisfies Record<ReleaseAndTributeSemanticVariant, number>;
 
 type ReleaseAndTributeKind =
   | "archetypeCannotRelease"
@@ -24,6 +33,14 @@ type ReleaseAndTributeKind =
   | "raceTributeLimit"
   | "setcodeTributeLimit"
   | "unreleasableTributeLock";
+type ReleaseAndTributeSemanticVariant =
+  | "amorphageWrathConditionalCannotRelease"
+  | "apoqliphortSetcodeTributeLimit"
+  | "assaultZoneExtraDeckReleaseCost"
+  | "diabolosAttributeTributeLimit"
+  | "maskOfRestrictGlobalCannotRelease"
+  | "troposphereRaceTributeLimit"
+  | "yellowDustonUnreleasableTributeLock";
 
 describe("Lua real release and tribute restore coverage", () => {
   it("requires release and tribute restriction fixtures to assert clean Lua registry restore", () => {
@@ -67,6 +84,21 @@ describe("Lua real release and tribute restore coverage", () => {
 
   it("keeps release and tribute fixture kinds explicit", () => {
     expect(countReleaseAndTributeKinds(releaseAndTributeFixtureFiles())).toEqual(releaseAndTributeKindCounts);
+  });
+
+  it("keeps named release and tribute semantic variants explicit", () => {
+    expect(countReleaseAndTributeSemanticVariants(releaseAndTributeSemanticVariants())).toEqual(
+      releaseAndTributeSemanticVariantCounts,
+    );
+
+    const weak = releaseAndTributeSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -173,6 +205,84 @@ function legalActionFixtureFiles(): string[] {
     .sort();
 }
 
+function releaseAndTributeSemanticVariants(): Array<{
+  file: string;
+  kind: ReleaseAndTributeSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "lua-real-script-amorphage-wrath-release-lock.test.ts",
+      kind: "amorphageWrathConditionalCannotRelease",
+      required: [
+        'const wrathCode = "79794767"',
+        "restores official conditional EFFECT_CANNOT_RELEASE with its non-Amorphage target filter",
+        "amorphage releasable true/false/false",
+      ],
+    },
+    {
+      file: "lua-real-script-apoqliphort-tribute-limit.test.ts",
+      kind: "apoqliphortSetcodeTributeLimit",
+      required: [
+        'const skybaseCode = "40061558"',
+        "restores target-owned EFFECT_TRIBUTE_LIMIT material setcode checks",
+        "cannot-material:target-not-setcode:170",
+      ],
+    },
+    {
+      file: "lua-real-script-assault-zone-extra-deck-release-cost.test.ts",
+      kind: "assaultZoneExtraDeckReleaseCost",
+      required: [
+        'const assaultZoneCode = "91002901"',
+        "activates Assault Mode Activate by releasing a Synchro Monster from the Extra Deck after restore",
+        "effectExtraReleaseNonsum",
+      ],
+    },
+    {
+      file: "lua-real-script-diabolos-tribute-limit.test.ts",
+      kind: "diabolosAttributeTributeLimit",
+      required: [
+        'const diabolosCode = "29424328"',
+        "restores official EFFECT_TRIBUTE_LIMIT target attribute checks",
+        "cannot-material:target-not-attribute:32",
+      ],
+    },
+    {
+      file: "lua-real-script-mask-of-restrict-cannot-release.test.ts",
+      kind: "maskOfRestrictGlobalCannotRelease",
+      required: [
+        'const maskCode = "29549364"',
+        "restores official EFFECT_CANNOT_RELEASE and blocks release queries and movement",
+        "mask release predicates false/false/false",
+      ],
+    },
+    {
+      file: "lua-real-script-troposphere-tribute-limit.test.ts",
+      kind: "troposphereRaceTributeLimit",
+      required: [
+        'const troposphereCode = "72144675"',
+        "restores target-owned EFFECT_TRIBUTE_LIMIT material race checks",
+        "cannot-material:target-not-race:512",
+      ],
+    },
+    {
+      file: "lua-real-script-yellow-duston-unreleasable-tribute-lock.test.ts",
+      kind: "yellowDustonUnreleasableTributeLock",
+      required: [
+        'const dustonCode = "16366810"',
+        "restores official unreleasable summon lock and removes Tribute Summon actions",
+        "cannot be released",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: ReleaseAndTributeSemanticVariant;
+    required: string[];
+  }>)
+    .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }))
+    .sort((a, b) => a.file.localeCompare(b.file));
+}
+
 function countReleaseAndTributeKinds(
   fixtures: Array<{ kind: ReleaseAndTributeKind }>,
 ): Record<ReleaseAndTributeKind, number> {
@@ -189,6 +299,26 @@ function countReleaseAndTributeKinds(
       raceTributeLimit: 0,
       setcodeTributeLimit: 0,
       unreleasableTributeLock: 0,
+    },
+  );
+}
+
+function countReleaseAndTributeSemanticVariants(
+  fixtures: Array<{ kind: ReleaseAndTributeSemanticVariant }>,
+): Record<ReleaseAndTributeSemanticVariant, number> {
+  return fixtures.reduce<Record<ReleaseAndTributeSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      amorphageWrathConditionalCannotRelease: 0,
+      apoqliphortSetcodeTributeLimit: 0,
+      assaultZoneExtraDeckReleaseCost: 0,
+      diabolosAttributeTributeLimit: 0,
+      maskOfRestrictGlobalCannotRelease: 0,
+      troposphereRaceTributeLimit: 0,
+      yellowDustonUnreleasableTributeLock: 0,
     },
   );
 }
