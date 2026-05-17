@@ -186,6 +186,61 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script He
         },
       ]
     `);
+    const materialGraveEvents = restored.session.state.eventHistory.filter((event) =>
+      event.eventName === "sentToGraveyard"
+      && (event.eventCardUid === handMaterialA!.uid || event.eventCardUid === handMaterialB!.uid)
+    );
+    expect(materialGraveEvents.map((event) => event.eventCardUid).sort()).toEqual([handMaterialA!.uid, handMaterialB!.uid].sort());
+    expect(materialGraveEvents).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-58570207-1",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 262152,
+          "eventReasonCardUid": "p0-deck-58570206-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-58570208-2",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 262152,
+          "eventReasonCardUid": "p0-deck-58570206-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     expect(restored.host.messages).not.toContain("heavy polymerization responder resolved");
   });
 

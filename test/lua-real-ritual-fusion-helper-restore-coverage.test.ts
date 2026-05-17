@@ -442,10 +442,17 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
       required: [
         "expect(chainLink.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }])",
         "expect(chainLink.possibleOperationInfos).toEqual([{ category: 0x4, targetUids: [], count: 1, player: 0, parameter: 0x40 }])",
+        "expect(restoredChainLink.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }])",
+        "expect(restoredChainLink.possibleOperationInfos).toEqual([{ category: 0x4, targetUids: [], count: 1, player: 0, parameter: 0x40 }])",
         'summonType: "fusion"',
         "summonMaterialUids: [handMaterialA!.uid, handMaterialB!.uid, extraMaterial!.uid]",
         "reason: duelReason.effect | duelReason.material | duelReason.fusion",
         "reason: duelReason.material | duelReason.fusion",
+        'eventName === "specialSummoned"',
+        'eventName === "banished"',
+        'eventName === "sentToGraveyard"',
+        "event.eventCardUid === handMaterialB!.uid",
+        'expect(restored.host.messages).not.toContain("heavy polymerization responder resolved")',
       ],
     },
     {
