@@ -16,6 +16,8 @@ export function installCardRelationApi<EffectRecord extends LuaCardApiEffectReco
   lua.lua_setfield(L, -2, to_luastring("CreateEffectRelation"));
   lua.lua_pushcfunction(L, (state: unknown) => pushReleaseEffectRelation(state, session));
   lua.lua_setfield(L, -2, to_luastring("ReleaseEffectRelation"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushClearEffectRelation(state, session));
+  lua.lua_setfield(L, -2, to_luastring("ClearEffectRelation"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSetCardTarget(state, session));
   lua.lua_setfield(L, -2, to_luastring("SetCardTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCancelCardTarget(state, session));
@@ -66,6 +68,13 @@ function pushReleaseEffectRelation(L: unknown, session: DuelSession): number {
   const card = readCard(L, session);
   const effectId = readTableNumberField(L, 2, "__effect_id");
   if (card && effectId !== undefined) card.effectRelationIds = (card.effectRelationIds ?? []).filter((id) => id !== effectId);
+  return 0;
+}
+
+function pushClearEffectRelation(L: unknown, session: DuelSession): number {
+  if (session.state.status === "ended") return 0;
+  const card = readCard(L, session);
+  if (card) card.effectRelationIds = [];
   return 0;
 }
 

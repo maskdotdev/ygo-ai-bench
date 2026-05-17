@@ -186,13 +186,13 @@ describe("Lua API usage scanner", () => {
       "--min-used-apis",
       "0",
       "--min-implemented-apis",
-      "1217",
+      "1218",
     ], { encoding: "utf8" });
 
     expect(output).toContain("scripts: ");
     expect(output).toContain("local-card-scripts");
     expect(output).toContain("used APIs: 0");
-    expect(output).toContain("implemented APIs found: 1217");
+    expect(output).toContain("implemented APIs found: 1218");
     expect(output).toContain("No missing API usages found.");
   });
 

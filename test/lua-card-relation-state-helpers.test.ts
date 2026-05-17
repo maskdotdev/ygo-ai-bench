@@ -173,12 +173,23 @@ describe("Lua card relation state helpers", () => {
       Debug.Message("effect relation created " .. tostring(c:IsRelateToEffect(e)))
       c:ReleaseEffectRelation(e)
       Debug.Message("effect relation released " .. tostring(c:IsRelateToEffect(e)))
+      local e2=Effect.CreateEffect(c)
+      c:CreateEffectRelation(e)
+      c:CreateEffectRelation(e2)
+      Debug.Message("effect relation before clear " .. tostring(c:IsRelateToEffect(e)) .. "/" .. tostring(c:IsRelateToEffect(e2)))
+      c:ClearEffectRelation()
+      Debug.Message("effect relation cleared " .. tostring(c:IsRelateToEffect(e)) .. "/" .. tostring(c:IsRelateToEffect(e2)))
       `,
       "effect-relation.lua",
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toEqual(["effect relation created true", "effect relation released false"]);
+    expect(host.messages).toEqual([
+      "effect relation created true",
+      "effect relation released false",
+      "effect relation before clear true/true",
+      "effect relation cleared false/false",
+    ]);
     expect(session.state.cards.find((card) => card.code === "100")?.effectRelationIds).toEqual([]);
   });
 
@@ -263,6 +274,7 @@ describe("Lua card relation state helpers", () => {
       source:CancelToGrave()
       Duel.Win(0,WIN_REASON_EXODIA)
       source:ReleaseEffectRelation(e)
+      source:ClearEffectRelation()
       source:CancelCardTarget(first)
       source:CancelToGrave(false)
       Debug.Message("set ended " .. result_count(source:SetCardTarget(second)))

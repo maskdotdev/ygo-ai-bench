@@ -776,7 +776,7 @@ describe("Lua card script movement helpers", () => {
     });
   });
 
-  it("loads Chaos Hats from the pre-release script without a local fallback", () => {
+  it("resolves Chaos Hats from the pre-release script without a local fallback", () => {
     const cards: DuelCardData[] = [
       { code: "2372506", name: "Chaos Hats", kind: "trap", typeFlags: 0x4 },
       { code: "100", name: "Listed Faceup Monster", kind: "monster", listedNames: ["101305044"] },
@@ -785,7 +785,7 @@ describe("Lua card script movement helpers", () => {
       { code: "400", name: "Listed Decoy Quick-Play", kind: "spell", typeFlags: 0x10002 },
       { code: "900", name: "Opponent Chain Source", kind: "spell", typeFlags: 0x2 },
     ];
-    const session = createDuel({ seed: 116, startingHandSize: 1, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 116, startingHandSize: 0, cardReader: createCardReader(cards) });
     loadDecks(session, {
       0: { main: ["900"] },
       1: { main: ["2372506", "100", "200", "300", "400"] },
@@ -794,8 +794,11 @@ describe("Lua card script movement helpers", () => {
 
     const trap = session.state.cards.find((card) => card.code === "2372506");
     const listedMonster = session.state.cards.find((card) => card.code === "100");
+    const source = session.state.cards.find((card) => card.code === "900");
     expect(trap).toBeDefined();
     expect(listedMonster).toBeDefined();
+    expect(source).toBeDefined();
+    moveDuelCard(session.state, source!.uid, "hand", 0);
     moveDuelCard(session.state, trap!.uid, "spellTrapZone", 1);
     trap!.faceUp = false;
     moveDuelCard(session.state, listedMonster!.uid, "monsterZone", 1);
@@ -822,13 +825,21 @@ describe("Lua card script movement helpers", () => {
     expect(hats.ok, hats.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
 
-    const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect");
+    const sourceAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
     expect(sourceAction).toBeDefined();
     applyAndAssert(session, sourceAction!);
     const hatsAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect" && candidate.uid === trap!.uid);
-    expect(hatsAction).toBeUndefined();
-    expect(host.messages).toContain("opponent original operation");
-    expect(session.state.cards.find((card) => card.uid === listedMonster!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
+    expect(hatsAction).toBeDefined();
+    applyAndAssert(session, hatsAction!);
+    expect(host.messages).toContain("confirmed 0: 400,200,300");
+    expect(host.messages).not.toContain("opponent original operation");
+    expect(session.state.chain).toHaveLength(0);
+    expect(session.state.waitingFor).toBe(0);
+    expect(host.messages).not.toContain("opponent original operation");
+    const hatsCards = ["100", "200", "300", "400"].map((code) => session.state.cards.find((card) => card.code === code));
+    expect(hatsCards.every(Boolean)).toBe(true);
+    expect(hatsCards.filter((card) => card?.location === "monsterZone" && card.controller === 1 && card.position === "faceDownDefense" && card.faceUp === false)).toHaveLength(3);
+    expect(hatsCards.filter((card) => card?.location === "graveyard")).toHaveLength(1);
   });
 
 });

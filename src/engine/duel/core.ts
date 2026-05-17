@@ -471,7 +471,7 @@ export function negateDuelSummon(state: DuelState, uid: string, reasonPlayer: Pl
 
 export function canSpecialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId, summonTypeCode?: number, relatedEffectId?: number, allowUnconditionalSpecialSummonCondition = false, summonPosition?: CardPosition): boolean {
   const card = findCard(state, uid);
-  if (!card || !isDuelMonsterLike(card)) return false;
+  if (!card || !isDuelMonsterLike(card, state)) return false;
   const summonController = controller ?? card.controller;
   if (isSpecialSummonPrevented(state, summonController, createContinuousEffectContext(state), card, summonTypeCode, relatedEffectId, allowUnconditionalSpecialSummonCondition, summonPosition)) return false;
   if (!hasZoneSpace(state, summonController, "monsterZone")) return false;
@@ -481,7 +481,7 @@ export function canSpecialSummonDuelCard(state: DuelState, uid: string, controll
 
 function canAttemptSpecialSummonProcedure(state: DuelState, uid: string, summonTypeCode?: number, relatedEffectId?: number): boolean {
   const card = findCard(state, uid);
-  if (!card || !isDuelMonsterLike(card)) return false;
+  if (!card || !isDuelMonsterLike(card, state)) return false;
   if (isSpecialSummonPrevented(state, card.controller, createContinuousEffectContext(state), card, summonTypeCode, relatedEffectId, true)) return false;
   if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card) && !isFaceDownExtraDeckSummonTypeCode(summonTypeCode)) return false;
   return canMoveDuelCardToLocation(state, uid, "monsterZone");

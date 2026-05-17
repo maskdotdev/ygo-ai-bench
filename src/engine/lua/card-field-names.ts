@@ -481,6 +481,7 @@ export const cardFieldNames = [
   "IsRelateToChain",
   "CreateEffectRelation",
   "ReleaseEffectRelation",
+  "ClearEffectRelation",
   "IsRelateToCard",
   "IsRelateToBattle",
   "IsCanBeEffectTarget",
