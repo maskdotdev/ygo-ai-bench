@@ -15,6 +15,7 @@ const missedTimingDeclineFixtureCount = 85;
 const missedTimingMultiStepFixtureCount = 166;
 const missedTimingOptionalWhenVsIfFixtureCount = 166;
 const missedTimingFullSourceEffectCauseFixtureCount = 126;
+const missedTimingSourceEffectCauseEventCodeFixtureCount = 82;
 const missedTimingChainEventFixtureCount = 14;
 const missedTimingChainActivatingStateFixtureCount = 2;
 const missedTimingChainLifecycleOriginFixtureCount = 12;
@@ -131,6 +132,18 @@ describe("EDOPro parity missed-timing event coverage", () => {
     expect(multiStepFiles).toHaveLength(missedTimingMultiStepFixtureCount);
     expect(fullSourceEffectCauseFiles).toHaveLength(missedTimingFullSourceEffectCauseFixtureCount);
     expect(exceptions).toEqual([...missedTimingSourceEffectCauseExceptions].sort());
+  });
+
+  it("pins canonical event-code metadata on source-effect cause fixtures", () => {
+    const multiStepFiles = fs.readdirSync(testRoot)
+      .filter((file) => file.startsWith("parity-missed-timing-") && file.endsWith("-fixture.test.ts"))
+      .filter((file) => readTestFile(file).includes("eventIsLast: false"))
+      .sort();
+    const sourceEffectCauseEventCodeFiles = multiStepFiles
+      .filter((file) => hasSourceEffectCauseMetadata(file) && hasEventCodeMetadata(file));
+
+    expect(multiStepFiles).toHaveLength(missedTimingMultiStepFixtureCount);
+    expect(sourceEffectCauseEventCodeFiles).toHaveLength(missedTimingSourceEffectCauseEventCodeFixtureCount);
   });
 
   it("pins multi-step optional when versus optional if missed-timing proof", () => {
@@ -330,6 +343,10 @@ function hasSourceEffectCauseMetadata(file: string): boolean {
     /eventReasonEffectId:\s*\d+/.test(text) &&
     /eventTriggerTiming:\s*["']if["']/.test(text)
   );
+}
+
+function hasEventCodeMetadata(file: string): boolean {
+  return /eventCode:\s*(?:0x[0-9a-fA-F]+|\d+)/.test(readTestFile(file));
 }
 
 function hasOptionalWhenVsIfMissedTimingProof(file: string): boolean {
