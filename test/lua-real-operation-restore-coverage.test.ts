@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 34;
+const operationFixtureCount = 35;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -17,6 +17,7 @@ const operationKindCounts = {
   handDiscardDraw: 1,
   handToDeckDraw: 1,
   lpCostHandDiscard: 1,
+  opponentHandToDeck: 1,
   releaseDamage: 1,
   searchOrExcavate: 3,
   spellDraw: 1,
@@ -51,6 +52,7 @@ type OperationKind =
   | "handDiscardDraw"
   | "handToDeckDraw"
   | "lpCostHandDiscard"
+  | "opponentHandToDeck"
   | "releaseDamage"
   | "searchOrExcavate"
   | "spellDraw"
@@ -257,6 +259,18 @@ function operationFixtureFiles(): Array<{
         'eventName: "cardsDrawn"',
         'eventName: "discarded"',
         "duelReason.effect | duelReason.discard",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-forceful-sentry-hand-to-deck.test.ts",
+      kind: "opponentHandToDeck",
+      required: [
+        "category: 0x10",
+        "parameter: 2",
+        'eventName: "confirmed"',
+        'eventName: "sentToHandConfirmed"',
+        'eventName: "sentToDeck"',
         "host.messages).not.toContain",
       ],
     },
@@ -740,6 +754,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       handDiscardDraw: 0,
       handToDeckDraw: 0,
       lpCostHandDiscard: 0,
+      opponentHandToDeck: 0,
       releaseDamage: 0,
       searchOrExcavate: 0,
       spellDraw: 0,
