@@ -151,6 +151,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
         "sourceUid": "p1-deck-77414722-0",
       }
     `);
+    expect(restoredOpenChain.session.state.chain[1]?.operationInfos).toEqual([
+      { category: 0x10000000, targetUids: [upstart!.uid], count: 1, player: 0, parameter: 0 },
+      { category: 0x1, targetUids: [upstart!.uid], count: 1, player: 0, parameter: 0 },
+    ]);
 
     const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredOpenChain.session), source, reader);
     expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
