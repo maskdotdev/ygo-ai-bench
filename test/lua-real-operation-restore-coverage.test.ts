@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 23;
+const operationFixtureCount = 24;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
   deckToGrave: 1,
   directDamage: 1,
+  directRecover: 1,
   groupDestroy: 9,
   releaseDamage: 1,
   searchOrExcavate: 3,
@@ -33,6 +34,7 @@ type OperationKind =
   | "costBanishDraw"
   | "deckToGrave"
   | "directDamage"
+  | "directRecover"
   | "groupDestroy"
   | "releaseDamage"
   | "searchOrExcavate"
@@ -162,6 +164,18 @@ function operationFixtureFiles(): Array<{
         'eventName: "discarded"',
         'eventName: "banished"',
         'location: "banished"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dian-keto-direct-recover.test.ts",
+      kind: "directRecover",
+      required: [
+        "category: 0x100000",
+        "targetParam: 1000",
+        "targetPlayer: 0",
+        'eventName: "recoveredLifePoints"',
+        "lifePoints).toBe(7500)",
         "host.messages).not.toContain",
       ],
     },
@@ -580,6 +594,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       costBanishDraw: 0,
       deckToGrave: 0,
       directDamage: 0,
+      directRecover: 0,
       groupDestroy: 0,
       releaseDamage: 0,
       searchOrExcavate: 0,
