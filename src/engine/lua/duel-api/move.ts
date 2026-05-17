@@ -1,7 +1,7 @@
 import fengari from "fengari";
 import { recordSpecialSummonActivity } from "#duel/activity.js";
 import { getCards, hasZoneSpace, pushDuelLog, resequence } from "#duel/card-state.js";
-import { firstOpenFieldZoneSequence } from "#duel/disabled-field-zones.js";
+import { firstOpenFieldZoneSequence, isFieldZoneDisabled } from "#duel/disabled-field-zones.js";
 import { eventCardReasonPayload, type DuelEventPayload } from "#duel/event-history.js";
 import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import {
@@ -772,8 +772,20 @@ function pushMoveSequence(L: unknown, session: DuelSession, hostState: LuaDuelMo
     lua.lua_pushinteger(L, 0);
     return 1;
   }
-  const cards = getCards(session.state, card.controller, card.location);
-  if (sequence < 0 || sequence >= cards.length || card.sequence === sequence) {
+  const location = card.location === "monsterZone" || card.location === "spellTrapZone" ? card.location : undefined;
+  if (!location || sequence < 0 || sequence >= 5 || card.sequence === sequence || isFieldZoneDisabled(session.state, card.controller, location, sequence)) {
+    setOperatedUids(hostState, []);
+    lua.lua_pushinteger(L, 0);
+    return 1;
+  }
+  const cards = getCards(session.state, card.controller, location);
+  if (!cards.some((candidate) => candidate.uid !== card.uid && candidate.sequence === sequence)) {
+    card.sequence = sequence;
+    setOperatedUids(hostState, [card.uid]);
+    lua.lua_pushinteger(L, 1);
+    return 1;
+  }
+  if (sequence >= cards.length) {
     setOperatedUids(hostState, []);
     lua.lua_pushinteger(L, 0);
     return 1;

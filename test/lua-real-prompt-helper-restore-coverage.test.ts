@@ -72,7 +72,7 @@ const promptHelperKindCounts: Record<PromptHelperKind, number> = {
   selectCardsFromCodesSearch: 1,
   selectDisableFieldCount: 1,
   selectDisableFieldLoop: 1,
-  selectDisableFieldMovement: 2,
+  selectDisableFieldMovement: 3,
   selectEffectModeChoice: 4,
   selectEffectYesNoReplacement: 1,
   selectFieldZoneLoop: 1,
@@ -122,7 +122,7 @@ describe("Lua real prompt helper restore coverage", () => {
   });
 
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(23);
+    expect(representativePromptHelperFixtures()).toHaveLength(24);
   });
 
   it("keeps every officially-used prompt API represented by restore fixtures", () => {
@@ -464,6 +464,19 @@ function representativePromptHelperFixtures(): Array<{ file: string; kind: Promp
         "options: [16]",
         "getDuelCardCounter(restoredSpring, counterSeason)).toBe(5)",
         'expect(restored.host.messages).not.toContain("spring responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-parallel-panzer-zone-move.test.ts",
+      kind: "selectDisableFieldMovement",
+      apis: ["SelectDisableField"],
+      required: [
+        "restores GetLinkedZone SelectDisableField movement into an absolute open linked zone",
+        'api: "SelectDisableField"',
+        "options: [8]",
+        "returned: 8",
+        "sequence: 3",
+        'expect(restored.host.messages).not.toContain("parallel panzer responder resolved")',
       ],
     },
     {
