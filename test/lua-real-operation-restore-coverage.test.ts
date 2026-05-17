@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 36;
+const operationFixtureCount = 37;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
   deckToGrave: 1,
+  deckSplit: 1,
   directDamage: 1,
   directRecover: 1,
   drawThenDiscard: 1,
@@ -45,6 +46,7 @@ const summonTriggerOperationKindCounts = {
 type OperationKind =
   | "costBanishDraw"
   | "deckToGrave"
+  | "deckSplit"
   | "directDamage"
   | "directRecover"
   | "drawThenDiscard"
@@ -417,6 +419,18 @@ function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-painful-choice-deck-split.test.ts",
+      kind: "deckSplit",
+      required: [
+        "category: 0x8",
+        "category: 0x20",
+        'eventName: "confirmed"',
+        'eventName: "sentToHand"',
+        'eventName: "sentToGraveyard"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-pot-of-desires-deck-cost.test.ts",
       kind: "costBanishDraw",
       required: [
@@ -760,6 +774,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
     {
       costBanishDraw: 0,
       deckToGrave: 0,
+      deckSplit: 0,
       directDamage: 0,
       directRecover: 0,
       drawThenDiscard: 0,
