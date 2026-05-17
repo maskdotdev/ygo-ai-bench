@@ -6,6 +6,24 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const attackCostAndStatFixtureCount = 7;
 const legalActionFixtureCount = 4;
+const attackCostAndStatKindCounts = {
+  attackCostLp: 1,
+  attackCostRelease: 1,
+  baseAttackExtraDeckLock: 1,
+  currentAttackExtraDeckLock: 1,
+  dynamicFieldStat: 1,
+  fieldSetAttack: 1,
+  targetAttackPredicate: 1,
+} satisfies Record<AttackCostAndStatKind, number>;
+
+type AttackCostAndStatKind =
+  | "attackCostLp"
+  | "attackCostRelease"
+  | "baseAttackExtraDeckLock"
+  | "currentAttackExtraDeckLock"
+  | "dynamicFieldStat"
+  | "fieldSetAttack"
+  | "targetAttackPredicate";
 
 describe("Lua real attack cost and attack-stat restore coverage", () => {
   it("requires attack-cost and ATK-threshold restore fixtures to assert clean Lua registry restore", () => {
@@ -42,12 +60,21 @@ describe("Lua real attack cost and attack-stat restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps attack-cost and attack-stat fixture kinds explicit", () => {
+    expect(countAttackCostAndStatKinds(attackCostAndStatFixtureFiles())).toEqual(attackCostAndStatKindCounts);
+  });
 });
 
-function attackCostAndStatFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function attackCostAndStatFixtureFiles(): Array<{
+  file: string;
+  kind: AttackCostAndStatKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "lua-real-script-burden-mighty-dynamic-stat.test.ts",
+      kind: "dynamicFieldStat",
       required: [
         "burden of the mighty attack 1000/1300/1800",
         "getLuaRestoreLegalActionGroups(restoredChain, 1)",
@@ -57,6 +84,7 @@ function attackCostAndStatFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-fusion-devourer-field-stat.test.ts",
+      kind: "fieldSetAttack",
       required: [
         "code: 102",
         "targetRange: [0, 0x04]",
@@ -66,6 +94,7 @@ function attackCostAndStatFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-panther-warrior-attack-cost.test.ts",
+      kind: "attackCostRelease",
       required: [
         "attackCostPaid).toBe(1)",
         'eventName: "released"',
@@ -75,6 +104,7 @@ function attackCostAndStatFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-dark-elf-attack-cost.test.ts",
+      kind: "attackCostLp",
       required: [
         "attackCostPaid).toBe(1)",
         'eventName: "lifePointCostPaid"',
@@ -84,6 +114,7 @@ function attackCostAndStatFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-rb-last-stand-extra-machine-current-attack-lock.test.ts",
+      kind: "currentAttackExtraDeckLock",
       required: [
         "special-summon-limit:not-race-attack-lte-extra:32:1500",
         "rb last high machine special 0",
@@ -93,6 +124,7 @@ function attackCostAndStatFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-rb-stage-landing-extra-machine-low-attack-lock.test.ts",
+      kind: "baseAttackExtraDeckLock",
       required: [
         "special-summon-limit:not-race-base-attack-lte-extra:32:1500",
         "rb stage high machine special 0",
@@ -102,6 +134,7 @@ function attackCostAndStatFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-valcan-booster-lizard-attack-lock.test.ts",
+      kind: "targetAttackPredicate",
       required: [
         "target:not-original-race-text-attack-lte:32:1500",
         "targetCardPredicate",
@@ -109,8 +142,12 @@ function attackCostAndStatFixtureFiles(): Array<{ file: string; required: string
         "effect!.targetCardPredicate!(ctx, machine1000!)).toBe(true)",
       ],
     },
-  ]
-    .map(({ file, required }) => ({ file: path.join("test", file), required }))
+  ] satisfies Array<{
+    file: string;
+    kind: AttackCostAndStatKind;
+    required: string[];
+  }>)
+    .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }))
     .sort((a, b) => a.file.localeCompare(b.file));
 }
 
@@ -123,4 +160,24 @@ function legalActionFixtureFiles(): string[] {
   ]
     .map((file) => path.join("test", file))
     .sort();
+}
+
+function countAttackCostAndStatKinds(
+  fixtures: Array<{ kind: AttackCostAndStatKind }>,
+): Record<AttackCostAndStatKind, number> {
+  return fixtures.reduce<Record<AttackCostAndStatKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      attackCostLp: 0,
+      attackCostRelease: 0,
+      baseAttackExtraDeckLock: 0,
+      currentAttackExtraDeckLock: 0,
+      dynamicFieldStat: 0,
+      fieldSetAttack: 0,
+      targetAttackPredicate: 0,
+    },
+  );
 }
