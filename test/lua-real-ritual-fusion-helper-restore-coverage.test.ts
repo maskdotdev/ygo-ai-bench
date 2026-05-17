@@ -459,6 +459,8 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         "summonMaterialUids: [materialA!.uid, materialB!.uid]",
         "summonMaterialUids: [goddess!.uid, materialB!.uid]",
         "reason: duelReason.effect | duelReason.material | duelReason.fusion",
+        'eventName === "usedAsMaterial"',
+        "event.eventCardUid === goddess!.uid",
         'expect(restored.host.messages).not.toContain("polymerization responder resolved")',
       ],
     },

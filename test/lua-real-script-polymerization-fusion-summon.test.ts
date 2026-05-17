@@ -357,6 +357,88 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Po
       controller: 0,
       reason: duelReason.effect | duelReason.material | duelReason.fusion,
     });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === fusion!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-extraDeck-2422-0",
+          "eventCode": 1102,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "specialSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "extraDeck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 264208,
+          "eventReasonCardUid": "p0-deck-24094653-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
+    const substituteMaterialEvents = restored.session.state.eventHistory.filter((event) =>
+      event.eventName === "usedAsMaterial"
+      && (event.eventCardUid === goddess!.uid || event.eventCardUid === materialB!.uid)
+    );
+    expect(substituteMaterialEvents.map((event) => event.eventCardUid).sort()).toEqual([goddess!.uid, materialB!.uid].sort());
+    expect(substituteMaterialEvents).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-53493204-1",
+          "eventCode": 1108,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "usedAsMaterial",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 262216,
+          "eventReasonCardUid": "p0-deck-24094653-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-2421-2",
+          "eventCode": 1108,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "usedAsMaterial",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 2,
+          },
+          "eventReason": 262216,
+          "eventReasonCardUid": "p0-deck-24094653-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     expect(restored.host.messages).not.toContain("polymerization responder resolved");
   });
 
