@@ -12,6 +12,8 @@ const TYPE_CONSTANT_EXPRESSION = String.raw`TYPE_[A-Z0-9_]+(?:\s*\|\s*TYPE_[A-Z0
 const XYZ_INFINITE_MATERIAL_MAX = 99;
 
 export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardInstance, source?: string): void {
+  const fusionMaterials = readFusionAddProcMixMaterials(L, card, source);
+  if (fusionMaterials.length > 0) card.data.fusionMaterials = fusionMaterials;
   const synchroTunerMin = readProcedureNumberField(L, card, "synchro_materials", 2);
   const synchroTunerMax = readProcedureNumberField(L, card, "synchro_materials", 3);
   const synchroNonTunerMin = readProcedureNumberField(L, card, "synchro_materials", 5);
@@ -70,6 +72,12 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
   if (linkLevel !== undefined) card.data.linkMaterialLevel = linkLevel;
   const linkMinLevel = readLinkProcedureMinLevelFilter(source);
   if (linkMinLevel !== undefined) card.data.linkMaterialMinLevel = linkMinLevel;
+}
+
+function readFusionAddProcMixMaterials(L: unknown, card: DuelCardInstance, source: string | undefined): string[] {
+  if (!source || !/\bFusion\.AddProcMix\(/.test(source)) return [];
+  const values = readProcedureNumberListField(L, card, "fusion_materials", 3);
+  return values.length >= 2 ? values.map(String) : [];
 }
 
 function readXyzProcedureRaceFilter(source: string | undefined): number | undefined {
@@ -206,4 +214,27 @@ function readProcedureNumberField(L: unknown, card: DuelCardInstance, fieldName:
   const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
   lua.lua_pop(L, 3);
   return value !== undefined && value > 0 ? value : undefined;
+}
+
+function readProcedureNumberListField(L: unknown, card: DuelCardInstance, fieldName: string, startIndex: number): number[] {
+  lua.lua_getglobal(L, to_luastring(`c${card.code}`));
+  if (!lua.lua_istable(L, -1)) {
+    lua.lua_pop(L, 1);
+    return [];
+  }
+  lua.lua_getfield(L, -1, to_luastring(fieldName));
+  if (!lua.lua_istable(L, -1)) {
+    lua.lua_pop(L, 2);
+    return [];
+  }
+  const values: number[] = [];
+  for (let index = startIndex; ; index += 1) {
+    lua.lua_rawgeti(L, -1, index);
+    const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
+    lua.lua_pop(L, 1);
+    if (value === undefined || value <= 0) break;
+    values.push(value);
+  }
+  lua.lua_pop(L, 2);
+  return values;
 }

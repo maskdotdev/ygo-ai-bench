@@ -5,7 +5,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = {
-  fusion: 15,
+  fusion: 16,
   ritual: 17,
 };
 const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind, number> = {
@@ -14,6 +14,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   contactFusionOpponentMaterial: 1,
   contactFusionSendCost: 1,
   customRitualOperation: 1,
+  fusionAddProcMixMaterialMetadata: 1,
   fusionDeckMaterialOath: 1,
   fusionForcedHandler: 1,
   fusionFcheck: 1,
@@ -42,6 +43,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   ritualStage2: 2,
 };
 const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemanticVariant, number> = {
+  blackSkullDragonAddProcMix: 1,
   doubleSubstituteSuppression: 1,
   dynaForcedHandler: 1,
   dynaForcedHandlerSuppression: 1,
@@ -64,7 +66,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(32);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(33);
   });
 
   it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
@@ -122,6 +124,7 @@ type RitualFusionHelperKind =
   | "contactFusionOpponentMaterial"
   | "contactFusionSendCost"
   | "customRitualOperation"
+  | "fusionAddProcMixMaterialMetadata"
   | "fusionDeckMaterialOath"
   | "fusionForcedHandler"
   | "fusionFcheck"
@@ -149,6 +152,7 @@ type RitualFusionHelperKind =
   | "ritualSpecificMaterial"
   | "ritualStage2";
 type RitualFusionHelperSemanticVariant =
+  | "blackSkullDragonAddProcMix"
   | "doubleSubstituteSuppression"
   | "dynaForcedHandler"
   | "dynaForcedHandlerSuppression"
@@ -199,6 +203,16 @@ function countSemanticVariants(fixtures: Array<{ kind: RitualFusionHelperSemanti
 
 function ritualFusionHelperSemanticVariants(): Array<{ file: string; kind: RitualFusionHelperSemanticVariant; required: string[] }> {
   return ([
+    {
+      file: "test/lua-real-script-black-skull-dragon-addprocmix-fusion.test.ts",
+      kind: "blackSkullDragonAddProcMix",
+      required: [
+        "restores Fusion.AddProcMix material metadata and lets Polymerization summon Black Skull Dragon",
+        "const blackSkullCode = \"11901678\"",
+        "expect(blackSkull!.data.fusionMaterials).toEqual([summonedSkullCode, redEyesCode])",
+        "summonMaterialUids: [summonedSkull!.uid, redEyes!.uid]",
+      ],
+    },
     {
       file: "test/lua-real-script-polymerization-fusion-summon.test.ts",
       kind: "doubleSubstituteSuppression",
@@ -776,6 +790,24 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         "eventCardUid: materialB!.uid",
         'expect(restored.host.messages).not.toContain("miracle fusion responder resolved")',
         "restores graveyard Fusion materials and banishes them through Fusion.BanishMaterial",
+      ],
+    },
+    {
+      file: "test/lua-real-script-black-skull-dragon-addprocmix-fusion.test.ts",
+      kind: "fusionAddProcMixMaterialMetadata",
+      families: ["fusion"],
+      required: [
+        "Fusion.AddProcMix material metadata",
+        "expect(blackSkull!.data.fusionMaterials).toEqual([summonedSkullCode, redEyesCode])",
+        "expect(restored.session.state.cards.find((card) => card.uid === blackSkull!.uid)?.data.fusionMaterials).toEqual([summonedSkullCode, redEyesCode])",
+        "operationInfos).toEqual([",
+        "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }",
+        'summonType: "fusion"',
+        "summonMaterialUids: [summonedSkull!.uid, redEyes!.uid]",
+        "reason: duelReason.effect | duelReason.material | duelReason.fusion",
+        'eventName === "usedAsMaterial"',
+        'eventName === "specialSummoned"',
+        'expect(restored.host.messages).not.toContain("black skull dragon responder resolved")',
       ],
     },
     {
