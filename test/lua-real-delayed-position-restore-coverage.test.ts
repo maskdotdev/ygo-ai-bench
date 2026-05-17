@@ -5,6 +5,14 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const delayedPositionFixtureCount = 4;
+const delayedPositionKindCounts = {
+  battlePhaseCleanup: 1,
+  damageStepPositionChange: 1,
+  endPhaseFlipDraw: 1,
+  endPhaseSetGroup: 1,
+} satisfies Record<DelayedPositionKind, number>;
+
+type DelayedPositionKind = "battlePhaseCleanup" | "damageStepPositionChange" | "endPhaseFlipDraw" | "endPhaseSetGroup";
 
 describe("Lua real delayed position restore coverage", () => {
   it("requires delayed position fixtures to assert clean restore and restored delayed outcomes", () => {
@@ -29,12 +37,21 @@ describe("Lua real delayed position restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps delayed position fixture kinds explicit", () => {
+    expect(countDelayedPositionKinds(delayedPositionFixtureFiles())).toEqual(delayedPositionKindCounts);
+  });
 });
 
-function delayedPositionFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function delayedPositionFixtureFiles(): Array<{
+  file: string;
+  kind: DelayedPositionKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-big-shield-gardna-damage-step-position.test.ts",
+      kind: "damageStepPositionChange",
       required: [
         'battleWindow?.kind).toBe("endDamageStep")',
         'eventName: "damageStepEnded"',
@@ -45,6 +62,7 @@ function delayedPositionFixtureFiles(): Array<{ file: string; required: string[]
     },
     {
       file: "test/lua-real-script-unleash-your-power-gemini-delayed-set.test.ts",
+      kind: "endPhaseSetGroup",
       required: [
         "restores group-wide Gemini status and delayed End Phase position change",
         "restoredActivation.missingRegistryKeys).toEqual([])",
@@ -65,6 +83,7 @@ function delayedPositionFixtureFiles(): Array<{ file: string; required: string[]
     },
     {
       file: "test/lua-real-script-book-eclipse-delayed-flip-draw.test.ts",
+      kind: "endPhaseFlipDraw",
       required: [
         "restoredActivation.missingRegistryKeys).toEqual([])",
         "restoredActivation.missingChainLimitRegistryKeys).toEqual([])",
@@ -82,6 +101,7 @@ function delayedPositionFixtureFiles(): Array<{ file: string; required: string[]
     },
     {
       file: "test/lua-real-script-giant-orc-battle-phase-position.test.ts",
+      kind: "battlePhaseCleanup",
       required: [
         "restored.missingRegistryKeys).toEqual([])",
         "restored.missingChainLimitRegistryKeys).toEqual([])",
@@ -92,5 +112,26 @@ function delayedPositionFixtureFiles(): Array<{ file: string; required: string[]
         "battlePairs",
       ],
     },
-  ];
+  ] satisfies Array<{
+    file: string;
+    kind: DelayedPositionKind;
+    required: string[];
+  }>);
+}
+
+function countDelayedPositionKinds(
+  fixtures: Array<{ kind: DelayedPositionKind }>,
+): Record<DelayedPositionKind, number> {
+  return fixtures.reduce<Record<DelayedPositionKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      battlePhaseCleanup: 0,
+      damageStepPositionChange: 0,
+      endPhaseFlipDraw: 0,
+      endPhaseSetGroup: 0,
+    },
+  );
 }
