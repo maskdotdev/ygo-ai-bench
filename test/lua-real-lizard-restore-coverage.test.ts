@@ -25,6 +25,27 @@ const lizardDescriptorKindCounts = {
 const lizardAllCardKindCounts = {
   allCardAuxTrue: 1,
 } satisfies Record<LizardAllCardKind, number>;
+const lizardSemanticVariantCounts = {
+  amorphageGoliathAllLocationOriginalSetcodeLock: 1,
+  amorphageSlothBothPlayerOriginalSetcodeLock: 1,
+  continuousOriginalRankXyzLock: 1,
+  continuousPositiveOriginalSetcodeLock: 1,
+  continuousPositiveOriginalTypeLock: 1,
+  icejadeRanCurrentAttributeLock: 1,
+  mixedOriginalTraitDescriptorLocks: 1,
+  originalAttributeRaceLock: 1,
+  originalAttributeTypeLock: 1,
+  originalRaceTypeLock: 1,
+  originalTraitOrLock: 1,
+  originalTripleTraitLock: 1,
+  orichalcosDescriptorlessFieldLock: 1,
+  repairGenexAllCardAuxTrueLock: 1,
+  scatterFusionCurrentSetcodeLock: 1,
+  singleArgOriginalTypeLock: 1,
+  sunvineShrineOriginalRaceLock: 1,
+  whiteKnightDescriptorlessContinuousLock: 1,
+  wildwindOriginalSynchroLock: 1,
+} satisfies Record<LizardSemanticVariant, number>;
 
 type LizardDescriptorKind =
   | "currentAttribute"
@@ -43,6 +64,26 @@ type LizardDescriptorKind =
   | "positiveOriginalType";
 
 type LizardAllCardKind = "allCardAuxTrue";
+type LizardSemanticVariant =
+  | "amorphageGoliathAllLocationOriginalSetcodeLock"
+  | "amorphageSlothBothPlayerOriginalSetcodeLock"
+  | "continuousOriginalRankXyzLock"
+  | "continuousPositiveOriginalSetcodeLock"
+  | "continuousPositiveOriginalTypeLock"
+  | "icejadeRanCurrentAttributeLock"
+  | "mixedOriginalTraitDescriptorLocks"
+  | "originalAttributeRaceLock"
+  | "originalAttributeTypeLock"
+  | "originalRaceTypeLock"
+  | "originalTraitOrLock"
+  | "originalTripleTraitLock"
+  | "orichalcosDescriptorlessFieldLock"
+  | "repairGenexAllCardAuxTrueLock"
+  | "scatterFusionCurrentSetcodeLock"
+  | "singleArgOriginalTypeLock"
+  | "sunvineShrineOriginalRaceLock"
+  | "whiteKnightDescriptorlessContinuousLock"
+  | "wildwindOriginalSynchroLock";
 
 describe("Lua real Clock Lizard restore coverage", () => {
   it("requires representative Clock Lizard target descriptor fixtures to assert clean Lua registry restore", () => {
@@ -101,6 +142,19 @@ describe("Lua real Clock Lizard restore coverage", () => {
 
   it("keeps all-card Clock Lizard fixture kinds explicit", () => {
     expect(countLizardAllCardKinds(allCardLizardFixtures())).toEqual(lizardAllCardKindCounts);
+  });
+
+  it("keeps named Clock Lizard semantic variants explicit", () => {
+    expect(countLizardSemanticVariants(lizardSemanticVariants())).toEqual(lizardSemanticVariantCounts);
+
+    const weak = lizardSemanticVariants()
+      .filter(({ file, requiredSnippets }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return requiredSnippets.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -302,6 +356,190 @@ function allCardLizardFixtures(): Array<{
   ];
 }
 
+function lizardSemanticVariants(): Array<{
+  file: string;
+  kind: LizardSemanticVariant;
+  requiredSnippets: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-amorphage-goliath-continuous-lizard-lock.test.ts",
+      kind: "amorphageGoliathAllLocationOriginalSetcodeLock",
+      requiredSnippets: [
+        'const goliathCode = "69072185"',
+        "restores its all-location original Amorphage Clock Lizard check",
+        'luaTargetDescriptor: `target:not-original-setcode:${setAmorphage}`',
+      ],
+    },
+    {
+      file: "test/lua-real-script-amorphage-sloth-target-range-lizard-lock.test.ts",
+      kind: "amorphageSlothBothPlayerOriginalSetcodeLock",
+      requiredSnippets: [
+        'const slothCode = "32687071"',
+        "restores its both-player 0xff original Amorphage Clock Lizard check",
+        "targetRange: [0xff, 0xff]",
+      ],
+    },
+    {
+      file: "test/lua-real-script-continuous-original-rank-lizard-lock.test.ts",
+      kind: "continuousOriginalRankXyzLock",
+      requiredSnippets: [
+        'const palmCode = "61116514"',
+        "restores Palm Ryzeal's continuous original Rank 4 Xyz Clock Lizard check",
+        'luaTargetDescriptor: "target:not-original-type-rank:8388608:4"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-continuous-positive-original-setcode-lizard-lock.test.ts",
+      kind: "continuousPositiveOriginalSetcodeLock",
+      requiredSnippets: [
+        'const sourceCode = "7320132"',
+        "restores original Aesir continuous Clock Lizard checks",
+        'luaTargetDescriptor: `target:original-setcode:${setAesir}`',
+      ],
+    },
+    {
+      file: "test/lua-real-script-continuous-positive-original-type-lizard-lock.test.ts",
+      kind: "continuousPositiveOriginalTypeLock",
+      requiredSnippets: [
+        'const sourceCode = "86993168"',
+        "restores original Link continuous Clock Lizard checks",
+        'luaTargetDescriptor: "target:original-type:67108864"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-icejade-ran-continuous-lizard-lock.test.ts",
+      kind: "icejadeRanCurrentAttributeLock",
+      requiredSnippets: [
+        'const icejadeCode = "18494511"',
+        "restores its continuous non-WATER Clock Lizard check",
+        'luaTargetDescriptor: "target:not-attribute:2"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-original-trait-lizard-locks.test.ts",
+      kind: "mixedOriginalTraitDescriptorLocks",
+      requiredSnippets: [
+        'const roarCode = "17725109"',
+        "restores Blue-Eyes Roar's original Dragon Clock Lizard check",
+        'luaTargetDescriptor: "target:not-original-race:8192"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-original-attribute-race-lizard-lock.test.ts",
+      kind: "originalAttributeRaceLock",
+      requiredSnippets: [
+        'const sourceCode = "49296203"',
+        "restores original EARTH Machine Clock Lizard checks",
+        'luaTargetDescriptor: "target:not-original-attribute-race:1:32"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-original-attribute-type-lizard-lock.test.ts",
+      kind: "originalAttributeTypeLock",
+      requiredSnippets: [
+        'const sourceCode = "19434243"',
+        "restores original DARK Synchro Clock Lizard checks",
+        'luaTargetDescriptor: "target:not-original-type-attribute:8192:32"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-original-race-type-lizard-lock.test.ts",
+      kind: "originalRaceTypeLock",
+      requiredSnippets: [
+        'const sourceCode = "55326322"',
+        "restores original Machine Synchro Clock Lizard checks",
+        'luaTargetDescriptor: "target:not-original-type-race:8192:32"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-original-trait-or-lizard-lock.test.ts",
+      kind: "originalTraitOrLock",
+      requiredSnippets: [
+        'const sourceCode = "9396662"',
+        "restores equivalent not-type-or-not-attribute original trait checks",
+        'luaTargetDescriptor: "target:not-original-type-attribute:8192:2"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-original-triple-trait-lizard-locks.test.ts",
+      kind: "originalTripleTraitLock",
+      requiredSnippets: [
+        'const gaiaCode = "66141736"',
+        "restores Crimson Gaia's original DARK Dragon Synchro Clock Lizard check",
+        'luaTargetDescriptor: "target:not-original-type-attribute-race:8192:32:8192"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-orichalcos-field-lizard-lock.test.ts",
+      kind: "orichalcosDescriptorlessFieldLock",
+      requiredSnippets: [
+        'const orichalcosCode = "48179391"',
+        "restores its default Field Zone Clock Lizard check",
+        "expect(restoredEffect?.luaTargetDescriptor).toBeUndefined()",
+      ],
+    },
+    {
+      file: "test/lua-real-script-repair-genex-controller-lizard-true-lock.test.ts",
+      kind: "repairGenexAllCardAuxTrueLock",
+      requiredSnippets: [
+        'const repairGenexCode = "8173184"',
+        "restores its all-card Clock Lizard check",
+        "aux.addTempLizardCheck(c,0,aux.TRUE)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-scatter-fusion-lizard-setcode-lock.test.ts",
+      kind: "scatterFusionCurrentSetcodeLock",
+      requiredSnippets: [
+        'const scatterFusionCode = "40597694"',
+        "restores its current Gem-Knight Clock Lizard check",
+        'luaTargetDescriptor: `target:not-setcode:${setGemKnight}`',
+      ],
+    },
+    {
+      file: "test/lua-real-script-single-arg-lizard-lock.test.ts",
+      kind: "singleArgOriginalTypeLock",
+      requiredSnippets: [
+        'const sourceCode = "7375867"',
+        "restores original Fusion checks declared with one target parameter",
+        'luaTargetDescriptor: "target:not-original-type:64"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-sunvine-shrine-continuous-lizard-lock.test.ts",
+      kind: "sunvineShrineOriginalRaceLock",
+      requiredSnippets: [
+        'const shrineCode = "27946124"',
+        "restores its Spell/Trap Zone original Plant Clock Lizard check",
+        'luaTargetDescriptor: "target:not-original-race:1024"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-white-knight-continuous-true-lizard.test.ts",
+      kind: "whiteKnightDescriptorlessContinuousLock",
+      requiredSnippets: [
+        'const whiteKnightCode = "40352445"',
+        "restores its default continuous Clock Lizard check",
+        "expect(restoredEffect?.luaTargetDescriptor).toBeUndefined()",
+      ],
+    },
+    {
+      file: "test/lua-real-script-wildwind-lizard-original-synchro-lock.test.ts",
+      kind: "wildwindOriginalSynchroLock",
+      requiredSnippets: [
+        'const wildwindCode = "52589809"',
+        "restores its original-type Clock Lizard check",
+        'luaTargetDescriptor: "target:not-original-type:8192"',
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: LizardSemanticVariant;
+    requiredSnippets: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
 function countLizardDescriptorKinds(
   fixtures: Array<{ kind: LizardDescriptorKind }>,
 ): Record<LizardDescriptorKind, number> {
@@ -337,6 +575,38 @@ function countLizardAllCardKinds(fixtures: Array<{ kind: LizardAllCardKind }>): 
     },
     {
       allCardAuxTrue: 0,
+    },
+  );
+}
+
+function countLizardSemanticVariants(
+  fixtures: Array<{ kind: LizardSemanticVariant }>,
+): Record<LizardSemanticVariant, number> {
+  return fixtures.reduce<Record<LizardSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      amorphageGoliathAllLocationOriginalSetcodeLock: 0,
+      amorphageSlothBothPlayerOriginalSetcodeLock: 0,
+      continuousOriginalRankXyzLock: 0,
+      continuousPositiveOriginalSetcodeLock: 0,
+      continuousPositiveOriginalTypeLock: 0,
+      icejadeRanCurrentAttributeLock: 0,
+      mixedOriginalTraitDescriptorLocks: 0,
+      originalAttributeRaceLock: 0,
+      originalAttributeTypeLock: 0,
+      originalRaceTypeLock: 0,
+      originalTraitOrLock: 0,
+      originalTripleTraitLock: 0,
+      orichalcosDescriptorlessFieldLock: 0,
+      repairGenexAllCardAuxTrueLock: 0,
+      scatterFusionCurrentSetcodeLock: 0,
+      singleArgOriginalTypeLock: 0,
+      sunvineShrineOriginalRaceLock: 0,
+      whiteKnightDescriptorlessContinuousLock: 0,
+      wildwindOriginalSynchroLock: 0,
     },
   );
 }
