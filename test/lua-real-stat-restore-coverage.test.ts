@@ -4,22 +4,25 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 4;
+const statFixtureCount = 5;
 const statKindCounts = {
   battleTargetAttackBoost: 1,
+  fieldAttributeAttackUpdate: 1,
   setAttack: 1,
   setBaseAttack: 1,
   staticAttackAndExtraAttack: 1,
 } satisfies Record<StatKind, number>;
 const statSemanticVariantCounts = {
+  bladeflyFieldAttributeAttackUpdate: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
   mirageKnightBattleTargetAtkEndPhaseBanish: 1,
   shrinkTargetBaseAtkHalving: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleTargetAttackBoost" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack";
+type StatKind = "battleTargetAttackBoost" | "fieldAttributeAttackUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack";
 type StatSemanticVariant =
+  | "bladeflyFieldAttributeAttackUpdate"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
   | "fortuneLadyPastCallbackSetAtkDef"
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
@@ -74,6 +77,18 @@ function statFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-bladefly-field-attribute-stat.test.ts",
+      kind: "fieldAttributeAttackUpdate",
+      required: [
+        "luaTargetDescriptor",
+        "target:attribute:8",
+        "target:attribute:1",
+        "currentAttack(restoredBladefly, restored.session.state)).toBe((bladefly!.data.attack ?? 0) + 500)",
+        "currentAttack(restoredEarthTarget, restored.session.state)).toBe(1200)",
+        "battleDamage[1]).toBe(300)",
+      ],
+    },
     {
       file: "test/lua-real-script-d-force-plasma-stat-extra-attack.test.ts",
       kind: "staticAttackAndExtraAttack",
@@ -136,6 +151,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
     },
     {
       battleTargetAttackBoost: 0,
+      fieldAttributeAttackUpdate: 0,
       setAttack: 0,
       setBaseAttack: 0,
       staticAttackAndExtraAttack: 0,
@@ -149,6 +165,16 @@ function statSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-bladefly-field-attribute-stat.test.ts",
+      kind: "bladeflyFieldAttributeAttackUpdate",
+      required: [
+        'const bladeflyCode = "28470714"',
+        "restores cloned field ATK updates for WIND boost and EARTH loss into battle damage",
+        "target:attribute:8",
+        "target:attribute:1",
+      ],
+    },
     {
       file: "test/lua-real-script-d-force-plasma-stat-extra-attack.test.ts",
       kind: "dForcePlasmaGraveyardCountAtkExtraAttack",
@@ -199,6 +225,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       return counts;
     },
     {
+      bladeflyFieldAttributeAttackUpdate: 0,
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,

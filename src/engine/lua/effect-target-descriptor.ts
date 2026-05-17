@@ -172,6 +172,9 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notAttributeRaceExtraAttribute = notAttributeRaceExtraAttributeToken ? luaNumberExpressionValue(L, index, notAttributeRaceExtraAttributeToken) : undefined;
   const notAttributeRaceExtraRace = notAttributeRaceExtraRaceToken ? luaNumberExpressionValue(L, index, notAttributeRaceExtraRaceToken) : undefined;
   if (notAttributeRaceExtraAttribute !== undefined && notAttributeRaceExtraRace !== undefined) return `special-summon-limit:not-attribute-race-extra:${notAttributeRaceExtraAttribute}:${notAttributeRaceExtraRace}`;
+  const attribute = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)(?!\\s+(?:and|or)\\b)`));
+  const attributeValue = attribute?.[1] ? luaNumberExpressionValue(L, index, attribute[1]) : undefined;
+  if (attributeValue !== undefined) return `target:attribute:${attributeValue}`;
   const type = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)(?!\\s+(?:and|or)\\b)`));
   const typeValue = type?.[1] ? luaNumberExpressionValue(L, index, type[1]) : undefined;
   if (typeValue !== undefined) return `target:type:${typeValue}`;
