@@ -8,11 +8,37 @@ const FREE_CHAIN_FIXTURE_COUNT = 11;
 const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 10;
 const CHAINED_FREE_CHAIN_FIXTURE_COUNT = 6;
 const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 11;
+const freeChainKindCounts = {
+  banishRemoval: 1,
+  graveyardRevive: 1,
+  multiTargetDestroy: 2,
+  positionChange: 1,
+  selectUnselectTargets: 1,
+  singleDestroy: 2,
+  targetNegation: 1,
+  toDeckDiscard: 1,
+  toHand: 1,
+} satisfies Record<FreeChainKind, number>;
+
+type FreeChainKind =
+  | "banishRemoval"
+  | "graveyardRevive"
+  | "multiTargetDestroy"
+  | "positionChange"
+  | "selectUnselectTargets"
+  | "singleDestroy"
+  | "targetNegation"
+  | "toDeckDiscard"
+  | "toHand";
 
 describe("Lua real free-chain restore coverage", () => {
   it("keeps the combined free-chain restore fixture inventory explicit", () => {
     expect(combinedFreeChainFixtureFiles()).toHaveLength(FREE_CHAIN_INVENTORY_FIXTURE_COUNT);
     expect(combinedFreeChainFixtureFiles()).toEqual(realScriptFreeChainInventoryFiles());
+  });
+
+  it("keeps free-chain fixture kinds explicit", () => {
+    expect(countFreeChainKinds(realScriptFreeChainFixtures())).toEqual(freeChainKindCounts);
   });
 
   it("requires representative free-chain fixtures to assert grouped actions and clean Lua registry restore", () => {
@@ -96,39 +122,11 @@ function combinedFreeChainFixtureFiles(): string[] {
 }
 
 function realScriptFreeChainInventoryFiles(): string[] {
-  return [
-    "lua-real-script-armor-blast-multi-target-free-chain.test.ts",
-    "lua-real-script-book-of-moon-free-chain.test.ts",
-    "lua-real-script-compulsory-evacuation-device-free-chain.test.ts",
-    "lua-real-script-cosmic-cyclone-free-chain.test.ts",
-    "lua-real-script-infinite-impermanence-target-param.test.ts",
-    "lua-real-script-monster-reborn-free-chain.test.ts",
-    "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
-    "lua-real-script-omega-judgment-select-unselect-targets.test.ts",
-    "lua-real-script-phoenix-wing-wind-blast-discard-cost.test.ts",
-    "lua-real-script-raigeki-break-discard-cost.test.ts",
-    "lua-real-script-twin-twisters-discard-cost.test.ts",
-  ]
-    .map((file) => path.join("test", file))
-    .sort();
+  return realScriptFreeChainFixtureFiles();
 }
 
 function realScriptFreeChainFixtureFiles(): string[] {
-  return [
-    "lua-real-script-armor-blast-multi-target-free-chain.test.ts",
-    "lua-real-script-book-of-moon-free-chain.test.ts",
-    "lua-real-script-compulsory-evacuation-device-free-chain.test.ts",
-    "lua-real-script-cosmic-cyclone-free-chain.test.ts",
-    "lua-real-script-infinite-impermanence-target-param.test.ts",
-    "lua-real-script-monster-reborn-free-chain.test.ts",
-    "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
-    "lua-real-script-omega-judgment-select-unselect-targets.test.ts",
-    "lua-real-script-phoenix-wing-wind-blast-discard-cost.test.ts",
-    "lua-real-script-raigeki-break-discard-cost.test.ts",
-    "lua-real-script-twin-twisters-discard-cost.test.ts",
-  ]
-    .map((file) => path.join("test", file))
-    .sort();
+  return realScriptFreeChainFixtures().map(({ file }) => file);
 }
 
 function realScriptFreeChainOperationInfoFixtureFiles(): string[] {
@@ -143,4 +141,75 @@ function realScriptChainedFreeChainFixtureFiles(): string[] {
     .filter((file) => !file.endsWith("lua-real-script-infinite-impermanence-target-param.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-monster-reborn-free-chain.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-omega-judgment-select-unselect-targets.test.ts"));
+}
+
+function realScriptFreeChainFixtures(): Array<{ file: string; kind: FreeChainKind }> {
+  return ([
+    {
+      file: "lua-real-script-armor-blast-multi-target-free-chain.test.ts",
+      kind: "multiTargetDestroy",
+    },
+    {
+      file: "lua-real-script-book-of-moon-free-chain.test.ts",
+      kind: "positionChange",
+    },
+    {
+      file: "lua-real-script-compulsory-evacuation-device-free-chain.test.ts",
+      kind: "toHand",
+    },
+    {
+      file: "lua-real-script-cosmic-cyclone-free-chain.test.ts",
+      kind: "banishRemoval",
+    },
+    {
+      file: "lua-real-script-infinite-impermanence-target-param.test.ts",
+      kind: "targetNegation",
+    },
+    {
+      file: "lua-real-script-monster-reborn-free-chain.test.ts",
+      kind: "graveyardRevive",
+    },
+    {
+      file: "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
+      kind: "singleDestroy",
+    },
+    {
+      file: "lua-real-script-omega-judgment-select-unselect-targets.test.ts",
+      kind: "selectUnselectTargets",
+    },
+    {
+      file: "lua-real-script-phoenix-wing-wind-blast-discard-cost.test.ts",
+      kind: "toDeckDiscard",
+    },
+    {
+      file: "lua-real-script-raigeki-break-discard-cost.test.ts",
+      kind: "singleDestroy",
+    },
+    {
+      file: "lua-real-script-twin-twisters-discard-cost.test.ts",
+      kind: "multiTargetDestroy",
+    },
+  ] satisfies Array<{ file: string; kind: FreeChainKind }>)
+    .map(({ file, kind }) => ({ file: path.join("test", file), kind }))
+    .sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countFreeChainKinds(fixtures: Array<{ kind: FreeChainKind }>): Record<FreeChainKind, number> {
+  return fixtures.reduce<Record<FreeChainKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      banishRemoval: 0,
+      graveyardRevive: 0,
+      multiTargetDestroy: 0,
+      positionChange: 0,
+      selectUnselectTargets: 0,
+      singleDestroy: 0,
+      targetNegation: 0,
+      toDeckDiscard: 0,
+      toHand: 0,
+    },
+  );
 }
