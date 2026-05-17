@@ -7,7 +7,7 @@ const root = process.cwd();
 const geminiFixtureCount = 17;
 const geminiStatusFixtureCount = 14;
 const geminiOperationFixtureCount = 10;
-const geminiStateFixtureCount = 4;
+const geminiStateFixtureCount = 5;
 const geminiKindCounts = {
   attackAllStatus: 1,
   battleTriggeredOperation: 3,
@@ -226,6 +226,15 @@ function geminiStateFixtureFiles(): Array<{ file: string; required: string[] }> 
         'eventName: "phaseEnd"',
         'eventName: "sentToHand"',
         "super double gemini status",
+      ],
+    },
+    {
+      file: "test/lua-real-script-supervise-gemini-equip-revive.test.ts",
+      required: [
+        "previousEquippedToUid: gemini!.uid",
+        'eventName: "sentToGraveyard"',
+        'eventName: "specialSummoned"',
+        "supervise gemini status",
       ],
     },
     {
