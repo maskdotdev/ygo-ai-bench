@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 35;
+const operationFixtureCount = 36;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -17,6 +17,7 @@ const operationKindCounts = {
   handDiscardDraw: 1,
   handToDeckDraw: 1,
   lpCostHandDiscard: 1,
+  lpCostRandomHandDiscard: 1,
   opponentHandToDeck: 1,
   releaseDamage: 1,
   searchOrExcavate: 3,
@@ -52,6 +53,7 @@ type OperationKind =
   | "handDiscardDraw"
   | "handToDeckDraw"
   | "lpCostHandDiscard"
+  | "lpCostRandomHandDiscard"
   | "opponentHandToDeck"
   | "releaseDamage"
   | "searchOrExcavate"
@@ -224,6 +226,18 @@ function operationFixtureFiles(): Array<{
         "targetPlayer: 0",
         'eventName: "recoveredLifePoints"',
         "lifePoints).toBe(7500)",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-delinquent-duo-random-discard.test.ts",
+      kind: "lpCostRandomHandDiscard",
+      required: [
+        "category: 0x80",
+        "lifePointCostPaid",
+        "randomCounter).toBe(1)",
+        'eventName: "discarded"',
+        "duelReason.effect | duelReason.discard",
         "host.messages).not.toContain",
       ],
     },
@@ -754,6 +768,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       handDiscardDraw: 0,
       handToDeckDraw: 0,
       lpCostHandDiscard: 0,
+      lpCostRandomHandDiscard: 0,
       opponentHandToDeck: 0,
       releaseDamage: 0,
       searchOrExcavate: 0,
