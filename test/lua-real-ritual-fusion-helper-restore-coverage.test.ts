@@ -406,6 +406,10 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         'eventName: "specialSummoned"',
         'eventName === "sentToDeck"',
         "event.eventCardUid === gladiatorMaterialB!.uid",
+        "expect(materialDeckEvents.map((event) => event.eventCardUid).sort()).toEqual([",
+        "expect(restored.session.state.pendingTriggers.some((trigger) => trigger.sourceUid === andabata!.uid && trigger.eventName === \"specialSummoned\")).toBe(true)",
+        "expect(getLegalActions(restored.session, 0).some((action) => action.type === \"activateTrigger\" && action.uid === andabata!.uid)).toBe(true)",
+        "expect(getLegalActions(restored.session, 0).some((action) => action.type === \"specialSummonProcedure\" && action.uid === andabata!.uid)).toBe(false)",
       ],
     },
     {
