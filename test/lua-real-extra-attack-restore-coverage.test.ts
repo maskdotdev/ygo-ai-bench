@@ -5,6 +5,14 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const EXTRA_ATTACK_FIXTURE_COUNT = 8;
+const extraAttackKindCounts = {
+  attackAll: 2,
+  chainAttack: 3,
+  extraAttack: 2,
+  monsterOnlyExtraAttack: 1,
+} satisfies Record<ExtraAttackKind, number>;
+
+type ExtraAttackKind = "attackAll" | "chainAttack" | "extraAttack" | "monsterOnlyExtraAttack";
 
 describe("Lua real extra attack restore coverage", () => {
   it("requires representative multi-attack fixtures to assert clean Lua restore and replayed legal attacks", () => {
@@ -27,12 +35,21 @@ describe("Lua real extra attack restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps extra-attack fixture kinds explicit", () => {
+    expect(countExtraAttackKinds(realScriptExtraAttackFixtureFiles())).toEqual(extraAttackKindCounts);
+  });
 });
 
-function realScriptExtraAttackFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function realScriptExtraAttackFixtureFiles(): Array<{
+  file: string;
+  kind: ExtraAttackKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-alien-hunter-chain-attack.test.ts",
+      kind: "chainAttack",
       required: [
         "Duel.ChainAttack",
         'eventName: "battleDestroyed"',
@@ -42,6 +59,7 @@ function realScriptExtraAttackFixtureFiles(): Array<{ file: string; required: st
     },
     {
       file: "test/lua-real-script-element-doom-chain-attack.test.ts",
+      kind: "chainAttack",
       required: [
         "attributeEarth",
         "attributeWind",
@@ -53,6 +71,7 @@ function realScriptExtraAttackFixtureFiles(): Array<{ file: string; required: st
     },
     {
       file: "test/lua-real-script-asura-priest-attack-all.test.ts",
+      kind: "attackAll",
       required: [
         "code: 193",
         "hasDirectAttack(openingActions, asura!.uid)).toBe(false)",
@@ -61,6 +80,7 @@ function realScriptExtraAttackFixtureFiles(): Array<{ file: string; required: st
     },
     {
       file: "test/lua-real-script-ghost-bird-extra-monster-attack.test.ts",
+      kind: "monsterOnlyExtraAttack",
       required: [
         "code: 346",
         "hasAttack(actions, ghostBird.uid, target.uid)).toBe(true)",
@@ -69,6 +89,7 @@ function realScriptExtraAttackFixtureFiles(): Array<{ file: string; required: st
     },
     {
       file: "test/lua-real-script-hayabusa-knight-extra-attack.test.ts",
+      kind: "extraAttack",
       required: [
         "code: 194",
         "hasAttack(secondActions, hayabusa!.uid, target!.uid)).toBe(false)",
@@ -77,6 +98,7 @@ function realScriptExtraAttackFixtureFiles(): Array<{ file: string; required: st
     },
     {
       file: "test/lua-real-script-machine-lord-ur-attack-all.test.ts",
+      kind: "attackAll",
       required: [
         "code: 193",
         "code: 200",
@@ -86,6 +108,7 @@ function realScriptExtraAttackFixtureFiles(): Array<{ file: string; required: st
     },
     {
       file: "test/lua-real-script-mataza-control-extra-attack.test.ts",
+      kind: "extraAttack",
       required: [
         "code: 194",
         "hasAttack(secondActions, mataza!.uid, target!.uid)).toBe(false)",
@@ -94,11 +117,31 @@ function realScriptExtraAttackFixtureFiles(): Array<{ file: string; required: st
     },
     {
       file: "test/lua-real-script-nitro-warrior-chain-attack-target.test.ts",
+      kind: "chainAttack",
       required: [
         "effectId.endsWith(\"-1138\")",
         "targetUid: followupTarget!.uid",
         "battleDamage).toMatchObject({ 1: 1800 })",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: ExtraAttackKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countExtraAttackKinds(fixtures: Array<{ kind: ExtraAttackKind }>): Record<ExtraAttackKind, number> {
+  return fixtures.reduce<Record<ExtraAttackKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      attackAll: 0,
+      chainAttack: 0,
+      extraAttack: 0,
+      monsterOnlyExtraAttack: 0,
+    },
+  );
 }
