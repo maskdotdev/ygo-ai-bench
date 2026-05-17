@@ -5,6 +5,14 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const battleDamageTriggerFixtureCount = 4;
+const battleDamageTriggerKindCounts = {
+  drawUntilFive: 1,
+  predrawDiscard: 1,
+  recoverLifePoints: 1,
+  skipBattlePhase: 1,
+} satisfies Record<BattleDamageTriggerKind, number>;
+
+type BattleDamageTriggerKind = "drawUntilFive" | "predrawDiscard" | "recoverLifePoints" | "skipBattlePhase";
 
 describe("Lua real battle-damage trigger restore coverage", () => {
   it("requires battle-damage trigger fixtures to assert clean Lua registry restore and carried event payloads", () => {
@@ -42,12 +50,21 @@ describe("Lua real battle-damage trigger restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps battle-damage trigger fixture kinds explicit", () => {
+    expect(countBattleDamageTriggerKinds(battleDamageTriggerFixtureFiles())).toEqual(battleDamageTriggerKindCounts);
+  });
 });
 
-function battleDamageTriggerFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function battleDamageTriggerFixtureFiles(): Array<{
+  file: string;
+  kind: BattleDamageTriggerKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "lua-real-script-fushi-no-tori-battle-recover.test.ts",
+      kind: "recoverLifePoints",
       required: [
         "Fushi No Tori battle recover",
         "eventName: \"battleDamageDealt\"",
@@ -63,6 +80,7 @@ function battleDamageTriggerFixtureFiles(): Array<{ file: string; required: stri
     },
     {
       file: "lua-real-script-great-long-nose-skip-battle.test.ts",
+      kind: "skipBattlePhase",
       required: [
         "Great Long Nose battle skip",
         "eventName: \"battleDamageDealt\"",
@@ -76,6 +94,7 @@ function battleDamageTriggerFixtureFiles(): Array<{ file: string; required: stri
     },
     {
       file: "lua-real-script-hino-kagu-tsuchi-predraw-discard.test.ts",
+      kind: "predrawDiscard",
       required: [
         "Hino-Kagu-Tsuchi predraw discard",
         "eventName: \"battleDamageDealt\"",
@@ -88,6 +107,7 @@ function battleDamageTriggerFixtureFiles(): Array<{ file: string; required: stri
     },
     {
       file: "lua-real-script-yamata-dragon-battle-damage-draw.test.ts",
+      kind: "drawUntilFive",
       required: [
         "Yamata Dragon battle-damage draw",
         "eventName: \"battleDamageDealt\"",
@@ -98,7 +118,28 @@ function battleDamageTriggerFixtureFiles(): Array<{ file: string; required: stri
         "eventUids: [drawA!.uid, drawB!.uid, drawC!.uid]",
       ],
     },
-  ]
-    .map(({ file, required }) => ({ file: path.join("test", file), required }))
+  ] satisfies Array<{
+    file: string;
+    kind: BattleDamageTriggerKind;
+    required: string[];
+  }>)
+    .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }))
     .sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countBattleDamageTriggerKinds(
+  fixtures: Array<{ kind: BattleDamageTriggerKind }>,
+): Record<BattleDamageTriggerKind, number> {
+  return fixtures.reduce<Record<BattleDamageTriggerKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      drawUntilFive: 0,
+      predrawDiscard: 0,
+      recoverLifePoints: 0,
+      skipBattlePhase: 0,
+    },
+  );
 }
