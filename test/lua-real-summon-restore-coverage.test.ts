@@ -46,6 +46,12 @@ const pendulumHelperKindCounts = {
   pendulumSummonLock: 3,
   procedureAction: 1,
 } satisfies Record<PendulumHelperKind, number>;
+const pendulumGrantKindCounts = {
+  extraDeckLocationGrant: 1,
+  extraSummonCountGrant: 1,
+  opponentScaleGrant: 1,
+  opponentScaleSelectionGrant: 1,
+} satisfies Record<PendulumGrantKind, number>;
 const unionProcedureKindCounts = {
   battleTriggerSummonBack: 1,
   deckEquipBanish: 1,
@@ -105,6 +111,11 @@ type PendulumHelperKind =
   | "handGrant"
   | "pendulumSummonLock"
   | "procedureAction";
+type PendulumGrantKind =
+  | "extraDeckLocationGrant"
+  | "extraSummonCountGrant"
+  | "opponentScaleGrant"
+  | "opponentScaleSelectionGrant";
 
 describe("Lua real summon restore coverage", () => {
   it("requires real-script summon and procedure fixtures to assert Lua-aware complete restore with diagnostics", () => {
@@ -200,6 +211,10 @@ describe("Lua real summon restore coverage", () => {
       });
 
     expect(missing).toEqual([]);
+  });
+
+  it("keeps Pendulum grant fixture kinds explicit", () => {
+    expect(countPendulumGrantKinds(realScriptPendulumGrantFixtureFiles())).toEqual(pendulumGrantKindCounts);
   });
 
   it("requires representative Pendulum helper fixtures to pin restored grant filters and count limits", () => {
@@ -490,6 +505,30 @@ function realScriptPendulumGrantFixtureFiles(): string[] {
     "lua-real-script-harmonic-oscillation-pendulum-grant.test.ts",
     "lua-real-script-soul-pendulum-extra-summon.test.ts",
   ].map((file) => path.join("test", file));
+}
+
+function countPendulumGrantKinds(files: string[]): Record<PendulumGrantKind, number> {
+  return files.reduce<Record<PendulumGrantKind, number>>(
+    (counts, file) => {
+      counts[classifyPendulumGrantKind(file)] += 1;
+      return counts;
+    },
+    {
+      extraDeckLocationGrant: 0,
+      extraSummonCountGrant: 0,
+      opponentScaleGrant: 0,
+      opponentScaleSelectionGrant: 0,
+    },
+  );
+}
+
+function classifyPendulumGrantKind(file: string): PendulumGrantKind {
+  const basename = path.basename(file);
+  if (basename === "lua-real-script-extra-pendulum-location-grant.test.ts") return "extraDeckLocationGrant";
+  if (basename === "lua-real-script-extra-pendulum-opponent-scale-grant.test.ts") return "opponentScaleSelectionGrant";
+  if (basename === "lua-real-script-harmonic-oscillation-pendulum-grant.test.ts") return "opponentScaleGrant";
+  if (basename === "lua-real-script-soul-pendulum-extra-summon.test.ts") return "extraSummonCountGrant";
+  throw new Error(`Unclassified Pendulum grant fixture: ${file}`);
 }
 
 function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; kind: PendulumHelperKind; required: string[] }> {
