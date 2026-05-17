@@ -15,7 +15,7 @@ const missedTimingDeclineFixtureCount = 85;
 const missedTimingMultiStepFixtureCount = 166;
 const missedTimingOptionalWhenVsIfFixtureCount = 166;
 const missedTimingFullSourceEffectCauseFixtureCount = 126;
-const missedTimingSourceEffectCauseEventCodeFixtureCount = 120;
+const missedTimingSourceEffectCauseEventCodeFixtureCount = 122;
 const missedTimingChainEventFixtureCount = 14;
 const missedTimingChainActivatingStateFixtureCount = 2;
 const missedTimingChainLifecycleOriginFixtureCount = 12;
@@ -346,7 +346,8 @@ function hasSourceEffectCauseMetadata(file: string): boolean {
 }
 
 function hasEventCodeMetadata(file: string): boolean {
-  return /eventCode:\s*(?:0x[0-9a-fA-F]+|\d+)/.test(readTestFile(file));
+  const text = readTestFile(file);
+  return /eventCode:\s*(?:0x[0-9a-fA-F]+|\d+)/.test(text) || /\beventCode\s*,/.test(text);
 }
 
 function hasOptionalWhenVsIfMissedTimingProof(file: string): boolean {
