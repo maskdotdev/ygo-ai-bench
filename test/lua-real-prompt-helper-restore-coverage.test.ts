@@ -63,6 +63,23 @@ const officialPromptPatternCounts: Record<string, number> = {
   "SelectOption:leading-boolean-table-unpack": 1,
 };
 
+const promptHelperKindCounts: Record<PromptHelperKind, number> = {
+  announceCardSummonLock: 1,
+  announceLevelStatChange: 1,
+  announceNumberCost: 1,
+  announceNumberRangeToken: 1,
+  announceTraitHandShuffle: 1,
+  selectCardsFromCodesSearch: 1,
+  selectDisableFieldMovement: 1,
+  selectEffectModeChoice: 4,
+  selectEffectYesNoReplacement: 1,
+  selectFieldZoneTarget: 1,
+  selectOptionFieldZone: 1,
+  selectOptionRitualBranch: 2,
+  selectOptionTurnEffect: 1,
+  selectYesNoActivationLock: 1,
+};
+
 describe("Lua real prompt helper restore coverage", () => {
   it.skipIf(!fs.existsSync(upstreamOfficialScriptRoot))("pins the official prompt helper scanner corpus", () => {
     const report = JSON.parse(execFileSync(process.execPath, [scannerPath, "--scripts", upstreamOfficialScriptRoot, "--json"], { encoding: "utf8" }));
@@ -102,6 +119,10 @@ describe("Lua real prompt helper restore coverage", () => {
     const representedApis = [...new Set(representativePromptHelperFixtures().flatMap(({ apis }) => apis))].sort();
 
     expect(representedApis).toEqual(officialPromptApisWithOfficialUsage);
+  });
+
+  it("keeps representative prompt helper fixture kinds explicit", () => {
+    expect(countPromptHelperKinds(representativePromptHelperFixtures())).toEqual(promptHelperKindCounts);
   });
 
   it("requires representative prompt helper fixtures to assert clean Lua restore", () => {
@@ -146,11 +167,27 @@ describe("Lua real prompt helper restore coverage", () => {
 });
 
 type OfficialPromptApi = keyof typeof officialPromptApiCounts;
+type PromptHelperKind =
+  | "announceCardSummonLock"
+  | "announceLevelStatChange"
+  | "announceNumberCost"
+  | "announceNumberRangeToken"
+  | "announceTraitHandShuffle"
+  | "selectCardsFromCodesSearch"
+  | "selectDisableFieldMovement"
+  | "selectEffectModeChoice"
+  | "selectEffectYesNoReplacement"
+  | "selectFieldZoneTarget"
+  | "selectOptionFieldZone"
+  | "selectOptionRitualBranch"
+  | "selectOptionTurnEffect"
+  | "selectYesNoActivationLock";
 
-function representativePromptHelperFixtures(): Array<{ file: string; apis: OfficialPromptApi[]; required: string[] }> {
-  return [
+function representativePromptHelperFixtures(): Array<{ file: string; kind: PromptHelperKind; apis: OfficialPromptApi[]; required: string[] }> {
+  return ([
     {
       file: "test/lua-real-script-gunkan-suship-catch-select-codes.test.ts",
+      kind: "selectCardsFromCodesSearch",
       apis: ["SelectCardsFromCodes"],
       required: [
         "restores the opponent code-selection prompt into the chosen Suship search",
@@ -164,6 +201,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
     },
     {
       file: "test/lua-real-script-gishki-psychelone-announce-traits.test.ts",
+      kind: "announceTraitHandShuffle",
       apis: ["AnnounceAttribute", "AnnounceRace"],
       required: [
         "restores announced race and attribute labels into the opponent hand shuffle",
@@ -177,6 +215,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
     },
     {
       file: "test/lua-real-script-gagaga-magician-announce-level.test.ts",
+      kind: "announceLevelStatChange",
       apis: ["AnnounceLevel"],
       required: [
         "restores announced level label into the temporary level change",
@@ -189,6 +228,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
     },
     {
       file: "test/lua-real-script-gachi-gachi-select-effect-yes-no.test.ts",
+      kind: "selectEffectYesNoReplacement",
       apis: ["SelectEffectYesNo"],
       required: [
         "restores SelectEffectYesNo destroy replacement into Xyz material detach",
@@ -200,6 +240,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
     },
     {
       file: "test/lua-real-script-inferno-ashened-field-zone-option.test.ts",
+      kind: "selectOptionFieldZone",
       apis: ["SelectOption"],
       required: [
         "restores a leading-false SelectOption branch that places Obsidim in the opponent Field Zone",
@@ -211,6 +252,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
     },
     {
       file: "test/lua-real-script-primite-lordly-lode.test.ts",
+      kind: "announceCardSummonLock",
       apis: ["AnnounceCard"],
       required: [
         "restores dynamic AnnounceCard into the declared Normal Monster summon and effect lock",
@@ -221,6 +263,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
     },
     {
       file: "test/lua-real-script-pyro-clock-select-option-table-unpack.test.ts",
+      kind: "selectOptionTurnEffect",
       apis: ["SelectOption"],
       required: [
         "restores table-unpacked SelectOption into the selected turn-count effect operation",
@@ -233,6 +276,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
     },
     {
       file: "test/lua-real-script-primathmech-laplacian-dynamic-select-effect.test.ts",
+      kind: "selectEffectModeChoice",
       apis: ["SelectEffect"],
       required: [
         "restores table-unpacked SelectEffect choices from its Xyz Summon trigger",
@@ -245,6 +289,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
     },
     {
       file: "test/lua-real-script-laval-blaster-announce-number.test.ts",
+      kind: "announceNumberCost",
       apis: ["AnnounceNumber"],
       required: [
         "restores dynamic AnnounceNumber deck-discard cost into its ATK boost",
@@ -254,6 +299,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
     },
     {
       file: "test/lua-real-script-lightning-storm-select-effect.test.ts",
+      kind: "selectEffectModeChoice",
       apis: ["SelectEffect"],
       required: [
         "restores Lightning Storm's selected attack-position monster destroy mode",
@@ -265,6 +311,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
     },
     {
       file: "test/lua-real-script-magikey-duo-defense-ritual.test.ts",
+      kind: "selectOptionRitualBranch",
       apis: ["SelectOption"],
       required: [
         "restores a target-returning Ritual.Operation branch with sumpos face-up Defense",
@@ -276,6 +323,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
     },
     {
       file: "test/lua-real-script-magikey-maftea-deck-ritual.test.ts",
+      kind: "selectOptionRitualBranch",
       apis: ["SelectOption"],
       required: [
         "restores non-sentinel SelectOption into Ritual extra material extraop",
@@ -287,6 +335,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
     },
     {
       file: "test/lua-real-script-magia-magic-select-effect.test.ts",
+      kind: "selectEffectModeChoice",
       apis: ["SelectEffect"],
       required: [
         "restores multi-option SelectEffect into Magia Magic's Special Summon branch",
@@ -299,6 +348,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
     },
     {
       file: "test/lua-real-script-mirror-mage-announce-number-range.test.ts",
+      kind: "announceNumberRangeToken",
       apis: ["AnnounceNumberRange"],
       required: [
         "restores announced token count into token summons and level update",
@@ -311,6 +361,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
     },
     {
       file: "test/lua-real-script-naturia-blessing-select-effect.test.ts",
+      kind: "selectEffectModeChoice",
       apis: ["SelectEffect"],
       required: [
         "restores selected SelectEffect branch into the Naturia Special Summon operation",
@@ -322,6 +373,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
     },
     {
       file: "test/lua-real-script-springans-ship-select-field-zone.test.ts",
+      kind: "selectFieldZoneTarget",
       apis: ["SelectFieldZone"],
       required: [
         "restores Exblowrer's selected opponent field zone chain label",
@@ -334,6 +386,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
     },
     {
       file: "test/lua-real-script-sprind-select-disable-field.test.ts",
+      kind: "selectDisableFieldMovement",
       apis: ["SelectDisableField"],
       required: [
         "restores the selected disabled-field zone into the column movement operation",
@@ -345,6 +398,7 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
     },
     {
       file: "test/lua-real-script-vernusylph-attribute-activation-lock.test.ts",
+      kind: "selectYesNoActivationLock",
       apis: ["SelectYesNo"],
       required: [
         "restores the shared helper's non-EARTH monster effect activation lock",
@@ -353,5 +407,15 @@ function representativePromptHelperFixtures(): Array<{ file: string; apis: Offic
         "expect(getLuaRestoreLegalActions(restoredLock, 0).some((action) => action.type === \"activateEffect\" && action.uid === fireResponder.uid)).toBe(false)",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{ file: string; kind: PromptHelperKind; apis: OfficialPromptApi[]; required: string[] }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countPromptHelperKinds(fixtures: Array<{ kind: PromptHelperKind }>): Record<PromptHelperKind, number> {
+  return fixtures.reduce(
+    (counts, { kind }) => {
+      counts[kind] += 1;
+      return counts;
+    },
+    Object.fromEntries(Object.keys(promptHelperKindCounts).map((kind) => [kind, 0])) as Record<PromptHelperKind, number>,
+  );
 }
