@@ -5,8 +5,26 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const protectionReplacementFixtureCount = 14;
+const protectionReplacementKindCounts = {
+  activatedImmunity: 1,
+  battleTargetRelationProtection: 1,
+  continuousBattleIndestructible: 1,
+  countLimitedBattleIndestructible: 2,
+  effectTargetProtection: 2,
+  equipBattleProtectionSelfDestroy: 1,
+  equipDestroySubstitute: 1,
+  handGrantedIndestructible: 1,
+  linkedTargetProtection: 1,
+  persistentDestroyReplace: 1,
+  positionConditionProtection: 1,
+  temporaryBattleProtection: 1,
+} satisfies Record<ProtectionReplacementKind, number>;
 
 describe("Lua real protection and replacement restore coverage", () => {
+  it("keeps protection/replacement fixture kinds explicit", () => {
+    expect(countProtectionReplacementKinds(realScriptProtectionReplacementFixtureFiles())).toEqual(protectionReplacementKindCounts);
+  });
+
   it("requires representative protection/replacement fixtures to assert Lua-aware restore", () => {
     const files = realScriptProtectionReplacementFixtureFiles();
     expect(files).toHaveLength(protectionReplacementFixtureCount);
@@ -44,10 +62,25 @@ describe("Lua real protection and replacement restore coverage", () => {
   });
 });
 
-function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+type ProtectionReplacementKind =
+  | "activatedImmunity"
+  | "battleTargetRelationProtection"
+  | "continuousBattleIndestructible"
+  | "countLimitedBattleIndestructible"
+  | "effectTargetProtection"
+  | "equipBattleProtectionSelfDestroy"
+  | "equipDestroySubstitute"
+  | "handGrantedIndestructible"
+  | "linkedTargetProtection"
+  | "persistentDestroyReplace"
+  | "positionConditionProtection"
+  | "temporaryBattleProtection";
+
+function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; kind: ProtectionReplacementKind; required: string[] }> {
+  return ([
     {
       file: "lua-real-script-phantom-knights-sword-persistent-replace.test.ts",
+      kind: "persistentDestroyReplace",
       required: [
         "phantom sword persistent true/true/1/2600",
         "destroyDuelCard(restoredPersistent.session.state, target!.uid, 1, duelReason.effect | duelReason.destroy, 0)",
@@ -57,6 +90,7 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
+      kind: "equipDestroySubstitute",
       required: [
         "rider equip probe true/14239",
         "destroyDuelCard(restoredEquippedState.session.state, normalDragon!.uid, 0, duelReason.effect | duelReason.destroy, 1)",
@@ -66,6 +100,7 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-safe-zone-persistent-protection.test.ts",
+      kind: "linkedTargetProtection",
       required: [
         "safe zone protection true/true/1/1/0/false/true/false/true",
         "sendDuelCardToGraveyard(restoredTargetLeaves.session.state, target!.uid, 0, duelReason.effect, 0)",
@@ -75,6 +110,7 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
+      kind: "equipBattleProtectionSelfDestroy",
       required: [
         "restores battle indestructible equip protection and self-destroys when the equipped monster reaches 1300 ATK",
         "expect(battleIndestructible?.event).toBe(\"continuous\")",
@@ -87,6 +123,7 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-red-gardna-indestructible-restore.test.ts",
+      kind: "handGrantedIndestructible",
       required: [
         'luaValueDescriptor: "indestructible:opponent"',
         "category: 0x1",
@@ -98,6 +135,7 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-dark-fusion-stage2-protection.test.ts",
+      kind: "effectTargetProtection",
       required: [
         "restores opponent targeting protection granted to the summoned Fusion monster",
         'summonType: "fusion"',
@@ -110,6 +148,7 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-d-force-target-protection.test.ts",
+      kind: "effectTargetProtection",
       required: [
         'luaValueDescriptor: "cannot-be-effect-target:opponent"',
         "d-force-target-protection-probe.lua",
@@ -118,6 +157,7 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-runick-slumber-indestructible-count-restore.test.ts",
+      kind: "countLimitedBattleIndestructible",
       required: [
         'luaValueDescriptor: "value-predicate:reason-mask:96"',
         "const battleDestroy = destroyDuelCard(restoredProtection.session.state, target!.uid, 0, duelReason.battle | duelReason.destroy, 1)",
@@ -127,6 +167,7 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-gemini-soldier-battled-deck-summon.test.ts",
+      kind: "countLimitedBattleIndestructible",
       required: [
         "restores battled trigger, Deck Special Summon, and battle indestructible count",
         '"luaValueDescriptor": "value-predicate:reason-mask:32"',
@@ -138,6 +179,7 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-forbidden-lance-stat-immunity.test.ts",
+      kind: "activatedImmunity",
       required: [
         "expect.objectContaining({ event: \"continuous\", code: 100, sourceUid: attacker!.uid, value: -800 })",
         "expect.objectContaining({ event: \"continuous\", code: 1, sourceUid: attacker!.uid })",
@@ -147,6 +189,7 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-battle-protection.test.ts",
+      kind: "continuousBattleIndestructible",
       required: [
         "expect.objectContaining({ event: \"continuous\", code: 42, sourceUid: pilgrim!.uid })",
         "expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 500 })",
@@ -156,6 +199,7 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-waboku-temporary-battle-protection.test.ts",
+      kind: "temporaryBattleProtection",
       required: [
         "code: effectAvoidBattleDamage",
         "code: effectIndestructibleBattle",
@@ -166,6 +210,7 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-checksum-dragon-position-indestructible.test.ts",
+      kind: "positionConditionProtection",
       required: [
         'luaValueDescriptor: "cannot-be-effect-target:opponent"',
         'luaConditionDescriptor: "condition:source-attack-position"',
@@ -176,6 +221,7 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-nightmare-magician-battle-control.test.ts",
+      kind: "battleTargetRelationProtection",
       required: [
         'luaTargetDescriptor: "target:source-or-battle-target"',
         "expect(session.state.battleDamage).toEqual({ 0: 0, 1: 500 })",
@@ -183,5 +229,28 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; re
         "previousController: 1",
       ],
     },
-  ].map(({ file, required }) => ({ file: path.join("test", file), required }));
+  ] satisfies Array<{ file: string; kind: ProtectionReplacementKind; required: string[] }>)
+    .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
+}
+
+function countProtectionReplacementKinds(
+  fixtures: Array<{ kind: ProtectionReplacementKind }>,
+): Record<ProtectionReplacementKind, number> {
+  return fixtures.reduce<Record<ProtectionReplacementKind, number>>(
+    (counts, { kind }) => ({ ...counts, [kind]: counts[kind] + 1 }),
+    {
+      activatedImmunity: 0,
+      battleTargetRelationProtection: 0,
+      continuousBattleIndestructible: 0,
+      countLimitedBattleIndestructible: 0,
+      effectTargetProtection: 0,
+      equipBattleProtectionSelfDestroy: 0,
+      equipDestroySubstitute: 0,
+      handGrantedIndestructible: 0,
+      linkedTargetProtection: 0,
+      persistentDestroyReplace: 0,
+      positionConditionProtection: 0,
+      temporaryBattleProtection: 0,
+    },
+  );
 }
