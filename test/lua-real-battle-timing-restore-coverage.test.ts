@@ -5,6 +5,11 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const battleTimingFixtureCount = 21;
+const battleTimingEventCodeFixtureCount = 19;
+const battleTimingEventCodeExceptions = [
+  "test/lua-real-script-kuriboh-pre-damage-prevent.test.ts",
+  "test/lua-real-script-shadow-spell-goat-damage-calculation-persistent.test.ts",
+];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 10,
   beforeDamageCalculation: 3,
@@ -16,6 +21,19 @@ const battleTimingKindCounts: Record<BattleTimingKind, number> = {
 describe("Lua real battle timing restore coverage", () => {
   it("keeps battle timing fixture kinds explicit", () => {
     expect(countBattleTimingKinds(battleTimingFixtureFiles())).toEqual(battleTimingKindCounts);
+  });
+
+  it("keeps battle timing event-code assertions explicit", () => {
+    const eventCodeFiles = battleTimingFixtureFiles()
+      .filter(({ file }) => fs.readFileSync(path.join(root, file), "utf8").includes("eventCode:"))
+      .map(({ file }) => file);
+    const exceptions = battleTimingFixtureFiles()
+      .filter(({ file }) => !fs.readFileSync(path.join(root, file), "utf8").includes("eventCode:"))
+      .map(({ file }) => file)
+      .sort();
+
+    expect(eventCodeFiles).toHaveLength(battleTimingEventCodeFixtureCount);
+    expect(exceptions).toEqual([...battleTimingEventCodeExceptions].sort());
   });
 
   it("requires battle timing fixtures to assert clean Lua restore and restored trigger outcomes", () => {
