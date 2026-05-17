@@ -260,20 +260,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
       [
         "--experimental-transform-types",
         "tools/probe-lua-deck.ts",
-        "phantom-knights-mar-2026-v4.ydk",
+        "ritual-of-light-and-darkness-apr-2026.ydk",
         "--upstream",
         ".upstream/ignis",
         "--fail-on-errors",
         "--max-local-fallbacks",
-        "0",
+        "9",
       ],
       { encoding: "utf8" },
     );
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("Local fallback scripts: 1");
+    expect(result.stdout).toContain("Local fallback scripts: 10");
     expect(result.stderr).toContain("Lua deck probe failed:");
-    expect(result.stderr).toContain("Local fallback scripts 1 is above allowed 0");
+    expect(result.stderr).toContain("Local fallback scripts 10 is above allowed 9");
   }, deckProbeTimeoutMs);
 
   it("fails strict probes when local fallback script identities change", () => {
@@ -282,12 +282,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
       [
         "--experimental-transform-types",
         "tools/probe-lua-deck.ts",
-        "phantom-knights-mar-2026-v4.ydk",
+        "ritual-of-light-and-darkness-apr-2026.ydk",
         "--upstream",
         ".upstream/ignis",
         "--fail-on-errors",
         "--max-local-fallbacks",
-        "1",
+        "10",
         "--expected-local-fallback-script-code",
         "12345678",
       ],
@@ -295,32 +295,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
     );
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("Local fallback scripts: 1");
+    expect(result.stdout).toContain("Local fallback scripts: 10");
     expect(result.stdout).toContain("Expected local fallback codes: 12345678");
     expect(result.stderr).toContain("Lua deck probe failed:");
-    expect(result.stderr).toContain("Unexpected local fallback scripts: c100452015.lua");
+    expect(result.stderr).toContain("Unexpected local fallback scripts:");
     expect(result.stderr).toContain("Expected local fallback script codes were not used: c12345678.lua");
   }, deckProbeTimeoutMs);
 
   it("fails strict probes when local fallback kind budgets are exceeded", () => {
-    const aliasResult = spawnSync(
-      "node",
-      [
-        "--experimental-transform-types",
-        "tools/probe-lua-deck.ts",
-        "phantom-knights-mar-2026-v4.ydk",
-        "--upstream",
-        ".upstream/ignis",
-        "--fail-on-errors",
-        "--max-local-fallbacks",
-        "1",
-        "--max-local-alias-fallbacks",
-        "0",
-        "--expected-local-fallback-script-code",
-        "100452015",
-      ],
-      { encoding: "utf8" },
-    );
     const provisionalResult = spawnSync(
       "node",
       [
@@ -358,9 +340,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
       { encoding: "utf8" },
     );
 
-    expect(aliasResult.status).toBe(1);
-    expect(aliasResult.stdout).toContain("Local alias fallback scripts: 1");
-    expect(aliasResult.stderr).toContain("Local alias fallback scripts 1 is above allowed 0");
     expect(provisionalResult.status).toBe(1);
     expect(provisionalResult.stdout).toContain("Local provisional fallback scripts: 10");
     expect(provisionalResult.stderr).toContain("Local provisional fallback scripts 10 is above allowed 9");
@@ -468,11 +447,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Magician Pendulum 
     );
 
     expect(output).toContain("Metadata source: cards.cdb");
-    expect(output).toContain("Local fallback scripts: 1");
-    expect(output).toContain("Local alias fallback scripts: 1");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("Local alias fallback scripts: 0");
     expect(output).toContain("Local provisional fallback scripts: 0");
     expect(output).toContain("Local other fallback scripts: 0");
-    expect(output).toContain("FALLBACK c100452013.lua");
+    expect(output).toContain("OK c100452013.lua -> script/official/c27118421.lua");
     expect(output).toContain("Local fallback stubs: 0");
     expect(output).toContain("Scripts missing: 0");
     expect(output).toContain("Script load errors: 0");
@@ -621,11 +600,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Rokket Lua deck pr
     );
 
     expect(output).toContain("Metadata source: cards.cdb");
-    expect(output).toContain("Local fallback scripts: 1");
-    expect(output).toContain("Local alias fallback scripts: 1");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("Local alias fallback scripts: 0");
     expect(output).toContain("Local provisional fallback scripts: 0");
     expect(output).toContain("Local other fallback scripts: 0");
-    expect(output).toContain("FALLBACK c101303089.lua");
+    expect(output).toContain("OK c101303089.lua -> script/official/c94641726.lua");
     expect(output).toContain("Local fallback stubs: 0");
     expect(output).toContain("Scripts missing: 0");
     expect(output).toContain("Script load errors: 0");
@@ -731,11 +710,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Phantom Knights Lu
     );
 
     expect(output).toContain("Metadata source: cards.cdb");
-    expect(output).toContain("Local fallback scripts: 1");
-    expect(output).toContain("Local alias fallback scripts: 1");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("Local alias fallback scripts: 0");
     expect(output).toContain("Local provisional fallback scripts: 0");
     expect(output).toContain("Local other fallback scripts: 0");
-    expect(output).toContain("FALLBACK c100452015.lua");
+    expect(output).toContain("OK c100452015.lua -> script/official/c90091224.lua");
     expect(output).toContain("OK c101305018.lua -> script/pre-release/c101305018.lua");
     expect(output).toContain("OK c101305019.lua -> script/pre-release/c101305019.lua");
     expect(output).toContain("OK c101305037.lua -> script/pre-release/c101305037.lua");

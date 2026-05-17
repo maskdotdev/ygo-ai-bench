@@ -39,7 +39,7 @@ describe("Node upstream workspace loader", () => {
     });
     startDuel(session);
 
-    const host = createLuaScriptHost(session);
+    const host = createLuaScriptHost(session, workspace);
     const result = host.loadCardScript(100, workspace);
 
     expect(result).toEqual({ ok: true, name: "c100.lua" });
@@ -71,6 +71,27 @@ describe("Node upstream workspace loader", () => {
       ["local-fallback", path.join("local-card-scripts", "fallbacks", "official", "c100.lua")],
       ["local-fallback", path.join("local-card-scripts", "fallbacks", "c100.lua")],
     ]);
+  });
+
+  it("synthesizes configured local script aliases without fallback files", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "script", "official"), { recursive: true });
+    fs.mkdirSync(path.join(root, "local-card-scripts"), { recursive: true });
+    fs.writeFileSync(path.join(root, "script", "official", "c100.lua"), "c100={}; loaded_name = 'canonical alias script'\n", "utf8");
+    fs.writeFileSync(path.join(root, "local-card-scripts", "script-aliases.json"), `${JSON.stringify({ "999": "100" }, null, 2)}\n`, "utf8");
+
+    const workspace = createUpstreamNodeWorkspace({ ...createUpstreamSourceConfig(root), localScriptPath: path.join(root, "local-card-scripts") });
+    const cards = normalizeCdbRows([{ id: 999, type: 1 }], []);
+    const session = createDuel({ seed: 1, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["999"] }, 1: { main: [] } });
+    startDuel(session);
+    const host = createLuaScriptHost(session, workspace);
+
+    expect(workspace.scriptAlias(999)).toBe("100");
+    expect(workspace.readCardScript(999)).toBe("Duel.LoadCardScriptAlias(100)\n");
+    expect(host.loadCardScript(999, workspace)).toEqual({ ok: true, name: "c999.lua" });
+    expect(host.getGlobalString("loaded_name")).toBe("canonical alias script");
   });
 
   it("loads card metadata from a local CDB database", () => {

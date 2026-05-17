@@ -91,4 +91,35 @@ describe("browser CDB row exporter", () => {
     });
     expect(checked).toContain("Browser asset manifest check passed");
   });
+
+  it("adds local alternate-art aliases from canonical CDB rows", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "browser-cdb-export-"));
+    tempRoots.push(root);
+    const databasePath = path.join(root, "cards.cdb");
+    const aliasesPath = path.join(root, "script-aliases.json");
+    const outPath = path.join(root, "public", "card-data", "cdb-rows.json");
+    writeFixtureDatabase(databasePath);
+    fs.writeFileSync(aliasesPath, `${JSON.stringify({ "999": "100" }, null, 2)}\n`, "utf8");
+
+    execFileSync("node", [exporterPath, "--database", databasePath, "--local-aliases", aliasesPath, "--out", outPath, "--codes", "999"]);
+    const checked = execFileSync("node", [checkerPath, "--card-data", path.dirname(outPath)], { encoding: "utf8" });
+
+    const payload = fs.readFileSync(outPath, "utf8");
+    expect(JSON.parse(payload)).toEqual({
+      datas: [
+        { id: 999, alias: 100, setcode: 4660, type: 33, atk: 2500, def: 2100, level: 7, race: 2, attribute: 32 },
+      ],
+      texts: [
+        { id: 999, name: "Exported Monster" },
+      ],
+    });
+    expect(JSON.parse(fs.readFileSync(path.join(root, "public", "card-data", "manifest.json"), "utf8"))).toMatchObject({
+      selectedCodes: ["999"],
+      datasRows: 1,
+      textsRows: 1,
+      supplementalAliasRows: ["999"],
+      sha256: crypto.createHash("sha256").update(payload).digest("hex"),
+    });
+    expect(checked).toContain("Browser asset manifest check passed");
+  });
 });

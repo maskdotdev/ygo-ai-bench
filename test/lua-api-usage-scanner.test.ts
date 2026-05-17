@@ -6,9 +6,6 @@ import { describe, expect, it } from "vitest";
 
 const scannerPath = path.resolve("tools/scan-lua-api-usage.mjs");
 const expectedFallbackScripts = [
-  "c100452013.lua",
-  "c100452015.lua",
-  "c101303089.lua",
   "c2372506.lua",
   "c24088928.lua",
   "c24461358.lua",
@@ -20,11 +17,12 @@ const expectedFallbackScripts = [
   "c97462632.lua",
   "c98684220.lua",
 ];
-const expectedAliasFallbackScripts = [
-  "c100452013.lua",
-  "c100452015.lua",
-  "c101303089.lua",
-];
+const expectedLocalScriptAliases = {
+  "100452013": "27118421",
+  "100452015": "90091224",
+  "101303089": "94641726",
+};
+const expectedAliasFallbackScripts: string[] = [];
 const expectedProvisionalFallbackScripts = [
   "c2372506.lua",
   "c24088928.lua",
@@ -98,6 +96,22 @@ describe("Lua API usage scanner", () => {
         return candidates.some((candidate) => fs.existsSync(candidate)) ? [] : [`${file}: missing upstream alias c${alias}.lua`];
       });
 
+    expect(broken).toEqual([]);
+  });
+
+  it("keeps local script aliases explicit and pointed at existing upstream scripts", () => {
+    const aliases = JSON.parse(fs.readFileSync("local-card-scripts/script-aliases.json", "utf8")) as Record<string, string>;
+    const broken = Object.entries(aliases).flatMap(([code, alias]) => {
+      if (!/^\d+$/.test(code) || !/^\d+$/.test(alias)) return [`${code}: malformed alias ${alias}`];
+      const candidates = [
+        path.join(".upstream/ignis/script/official", `c${alias}.lua`),
+        path.join(".upstream/ignis/script", `c${alias}.lua`),
+        path.join(".upstream/ignis/script/pre-release", `c${alias}.lua`),
+      ];
+      return candidates.some((candidate) => fs.existsSync(candidate)) ? [] : [`${code}: missing upstream alias c${alias}.lua`];
+    });
+
+    expect(aliases).toEqual(expectedLocalScriptAliases);
     expect(broken).toEqual([]);
   });
 
@@ -193,14 +207,14 @@ describe("Lua API usage scanner", () => {
       "local-card-scripts",
       "--fail-on-missing",
       "--min-used-apis",
-      "37",
+      "36",
       "--min-implemented-apis",
       "1214",
     ], { encoding: "utf8" });
 
     expect(output).toContain("scripts: ");
     expect(output).toContain("local-card-scripts");
-    expect(output).toContain("used APIs: 37");
+    expect(output).toContain("used APIs: 36");
     expect(output).toContain("implemented APIs found: 1214");
     expect(output).toContain("No missing API usages found.");
   });

@@ -33,7 +33,8 @@ const deck = parseYdk(ydkText);
 const deckCodes = unique([...deck.main, ...deck.extra]);
 const upstream = createUpstreamNodeWorkspace(createUpstreamSourceConfig(args.upstreamRoot));
 const databaseCards = upstream.readDatabaseCards("cards.cdb");
-const cards = mergeProbeCards(deck.main, deck.extra, databaseCards);
+const localScriptAliases = readLocalScriptAliases("local-card-scripts/script-aliases.json");
+const cards = mergeProbeCards(deck.main, deck.extra, databaseCards, localScriptAliases);
 const session = createDuel({ seed: 1, startingHandSize: 5, cardReader: createCardReader(cards) });
 
 loadDecks(session, {
@@ -184,14 +185,20 @@ function malformedCodeValues(rawValues: string[], values: string[]): boolean {
   return rawValues.some((code) => !code.trim()) || values.some((code) => !/^\d+$/.test(code));
 }
 
-function mergeProbeCards(main: string[], extra: string[], databaseCards: DuelCardData[]): DuelCardData[] {
+function mergeProbeCards(main: string[], extra: string[], databaseCards: DuelCardData[], localScriptAliases: ReadonlyMap<string, string>): DuelCardData[] {
   if (!databaseCards.length) return createPlaceholderCards(main, extra);
   const extraCodes = new Set(extra);
   const byCode = new Map(databaseCards.map((card) => [card.code, card]));
   return unique([...main, ...extra]).map((code) => {
     const card = byCode.get(code);
-    if (!card) return createPlaceholderCard(code, extraCodes);
-    return extraCodes.has(code) ? { ...card, kind: "extra" } : card;
+    const alias = localScriptAliases.get(code);
+    if (!card) {
+      const aliasCard = alias ? byCode.get(alias) : undefined;
+      if (!aliasCard) return createPlaceholderCard(code, extraCodes);
+      return { ...aliasCard, code, alias, kind: extraCodes.has(code) ? "extra" : aliasCard.kind };
+    }
+    const kind = extraCodes.has(code) ? "extra" : card.kind;
+    return alias && !card.alias ? { ...card, alias, kind } : { ...card, kind };
   });
 }
 
@@ -206,6 +213,18 @@ function createPlaceholderCard(code: string, extraCodes: Set<string>): DuelCardD
     name: `Card ${code}`,
     kind: extraCodes.has(code) ? "extra" : "monster",
   };
+}
+
+function readLocalScriptAliases(filePath: string): ReadonlyMap<string, string> {
+  if (!fs.existsSync(filePath)) return new Map();
+  const parsed = JSON.parse(fs.readFileSync(filePath, "utf8")) as unknown;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error(`Local script aliases ${filePath} must be a JSON object`);
+  return new Map(Object.entries(parsed).map(([code, alias]) => {
+    if (!/^\d+$/.test(code) || typeof alias !== "string" || !/^\d+$/.test(alias)) {
+      throw new Error(`Local script aliases ${filePath} must map passcode strings to passcode strings`);
+    }
+    return [code, alias];
+  }));
 }
 
 function findScript(upstream: ReturnType<typeof createUpstreamNodeWorkspace>, name: string, card: DuelCardData | undefined): { path: string; source: string; isStub: boolean; fallbackKind?: "alias" | "provisional" | "other" } | undefined {

@@ -10,6 +10,7 @@ export interface UpstreamNodeWorkspace extends LuaScriptSource {
   scriptPath(code: string | number): string;
   scriptCandidates(name: string): ScriptCandidatePath[];
   scriptPaths(name: string): string[];
+  scriptAlias(code: string | number): string | undefined;
   databasePath(filename: string): string;
   banlistPath(filename: string): string;
   readCardScript(code: string | number): string | undefined;
@@ -23,6 +24,7 @@ export interface ScriptCandidatePath {
 }
 
 export function createUpstreamNodeWorkspace(config: UpstreamSourceConfig): UpstreamNodeWorkspace {
+  const scriptAliases = readLocalScriptAliases(config);
   return {
     config,
     scriptPath(code) {
@@ -33,6 +35,9 @@ export function createUpstreamNodeWorkspace(config: UpstreamSourceConfig): Upstr
     },
     scriptPaths(name) {
       return scriptCandidatePaths(config, name).map((candidate) => candidate.path);
+    },
+    scriptAlias(code) {
+      return scriptAliases.get(String(code));
     },
     databasePath(filename) {
       return resolveWorkspacePath(upstreamDatabasePath(config, filename));
@@ -45,6 +50,8 @@ export function createUpstreamNodeWorkspace(config: UpstreamSourceConfig): Upstr
         const text = readTextIfExists(candidate.path);
         if (text !== undefined) return text;
       }
+      const alias = scriptAliases.get(scriptCodeFromFilename(name) ?? "");
+      if (alias) return `Duel.LoadCardScriptAlias(${alias})\n`;
       return undefined;
     },
     readCardScript(code) {
@@ -62,6 +69,20 @@ export function createUpstreamNodeWorkspace(config: UpstreamSourceConfig): Upstr
       return text === undefined ? [] : parseBanlistConf(text);
     },
   };
+}
+
+function readLocalScriptAliases(config: UpstreamSourceConfig): ReadonlyMap<string, string> {
+  const aliasesPath = resolveWorkspacePath(config.localScriptPath ?? "local-card-scripts", "script-aliases.json");
+  const text = readTextIfExists(aliasesPath);
+  if (text === undefined) return new Map();
+  const parsed = JSON.parse(text) as unknown;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error(`Local script aliases ${aliasesPath} must be a JSON object`);
+  return new Map(Object.entries(parsed).map(([code, alias]) => {
+    if (!/^\d+$/.test(code) || typeof alias !== "string" || !/^\d+$/.test(alias)) {
+      throw new Error(`Local script aliases ${aliasesPath} must map passcode strings to passcode strings`);
+    }
+    return [code, alias];
+  }));
 }
 
 function scriptCandidatePaths(config: UpstreamSourceConfig, name: string): ScriptCandidatePath[] {
@@ -88,6 +109,10 @@ function scriptCandidatePaths(config: UpstreamSourceConfig, name: string): Scrip
 
 function scriptFilenameForCode(code: string | number): string {
   return `c${String(code)}.lua`;
+}
+
+function scriptCodeFromFilename(name: string): string | undefined {
+  return /^c(\d+)\.lua$/.exec(path.basename(name))?.[1];
 }
 
 function readTextIfExists(filePath: string): string | undefined {

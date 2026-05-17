@@ -20,6 +20,27 @@ const texts = readSqliteJson(
   options.database,
   `select id, name from texts${where} order by id`,
 );
+const localAliases = options.localAliases ? readLocalAliases(options.localAliases) : {};
+const selectedCodes = new Set(options.codes);
+const supplementalAliasRows = [];
+for (const [code, alias] of Object.entries(localAliases)) {
+  if (selectedCodes.size && !selectedCodes.has(code)) continue;
+  if (datas.some((row) => String(row.id) === code)) continue;
+  const aliasData = readSingleSqliteJson(
+    options.database,
+    `select id, alias, setcode, type, atk, def, level, race, attribute from datas where id = ${alias} limit 1`,
+  );
+  const aliasText = readSingleSqliteJson(
+    options.database,
+    `select id, name from texts where id = ${alias} limit 1`,
+  );
+  if (!aliasData) fail(`Local alias ${code} points at missing CDB row ${alias}`);
+  datas.push({ ...aliasData, id: Number(code), alias: Number(alias) });
+  texts.push({ id: Number(code), name: aliasText?.name ?? `Card ${code}` });
+  supplementalAliasRows.push(code);
+}
+datas.sort((left, right) => Number(left.id) - Number(right.id));
+texts.sort((left, right) => Number(left.id) - Number(right.id));
 const payload = `${JSON.stringify({ datas, texts }, null, 2)}\n`;
 
 if (options.out) {
@@ -32,6 +53,7 @@ if (options.out) {
     selectedCodes: options.codes,
     datasRows: datas.length,
     textsRows: texts.length,
+    ...(supplementalAliasRows.length ? { supplementalAliasRows } : {}),
     sha256: sha256(payload),
   }, null, 2)}\n`, "utf8");
 } else {
@@ -39,12 +61,13 @@ if (options.out) {
 }
 
 function parseArgs(argv) {
-  const parsed = { database: undefined, out: undefined, codes: [], help: false };
+  const parsed = { database: undefined, out: undefined, codes: [], localAliases: undefined, help: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--help" || arg === "-h") parsed.help = true;
     else if (arg === "--database") parsed.database = requireValue(argv, ++index, arg);
     else if (arg === "--out") parsed.out = requireValue(argv, ++index, arg);
+    else if (arg === "--local-aliases") parsed.localAliases = requireValue(argv, ++index, arg);
     else if (arg === "--codes") parsed.codes.push(...parseCodes(requireValue(argv, ++index, arg)));
     else if (arg === "--code") parsed.codes.push(...parseCodes(requireValue(argv, ++index, arg)));
     else fail(`Unknown argument ${arg}`);
@@ -77,6 +100,23 @@ function readSqliteJson(databasePath, query) {
   }
 }
 
+function readSingleSqliteJson(databasePath, query) {
+  return readSqliteJson(databasePath, query)[0];
+}
+
+function readLocalAliases(filePath) {
+  const value = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  if (!value || typeof value !== "object" || Array.isArray(value)) fail(`Local aliases file ${filePath} must be a JSON object`);
+  const aliases = {};
+  for (const [code, alias] of Object.entries(value)) {
+    if (!/^\d+$/.test(code) || typeof alias !== "string" || !/^\d+$/.test(alias)) {
+      fail(`Local aliases file ${filePath} must map passcode strings to passcode strings`);
+    }
+    aliases[code] = alias;
+  }
+  return aliases;
+}
+
 function sha256(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
@@ -92,6 +132,8 @@ function printUsage() {
 
 Options:
   --out <path>        Write JSON payload to a file. Defaults to stdout.
+  --local-aliases <path>
+                      JSON object of local alternate-art passcode aliases to add to the payload.
   --codes <list>      Comma-separated passcodes to export. Defaults to every row.
   --code <passcode>   Add one passcode to export. Can be repeated.
   --help              Show this help.

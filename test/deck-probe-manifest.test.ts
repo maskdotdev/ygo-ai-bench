@@ -170,10 +170,7 @@ describe("Lua deck probe manifest", () => {
     expect(localFallbackSplitBudgetOmissions).toEqual([]);
     expect(localFallbackSplitBudgetMismatches).toEqual([]);
     expect(localFallbackBudgetDecks).toEqual([
-      "magician-pendulum-mar-2026.ydk",
-      "phantom-knights-mar-2026-v4.ydk",
       "ritual-of-light-and-darkness-apr-2026.ydk",
-      "rokket-2026.ydk",
     ]);
     expect(localFallbackBudgets).toEqual({
       "ancient-gear-legend-anthology-2026.ydk": 0,
@@ -185,31 +182,25 @@ describe("Lua deck probe manifest", () => {
       "kashtira-2026.ydk": 0,
       "kewl-tune-may-2026.ydk": 0,
       "labrynth-2026.ydk": 0,
-      "magician-pendulum-mar-2026.ydk": 1,
+      "magician-pendulum-mar-2026.ydk": 0,
       "marincess-2026.ydk": 0,
       "mikanko-2026.ydk": 0,
       "monarch-genesys-proto-ycs-dortmund-2026.ydk": 0,
       "onomat-ryzeal-ycs-guatemala-2026.ydk": 0,
-      "phantom-knights-mar-2026-v4.ydk": 1,
+      "phantom-knights-mar-2026-v4.ydk": 0,
       "rikka-sunavalon-2026.ydk": 0,
       "ritual-of-light-and-darkness-apr-2026.ydk": 10,
-      "rokket-2026.ydk": 1,
+      "rokket-2026.ydk": 0,
       "solfachord-2026.ydk": 0,
       "top_tier_dark_magician_primite_azamina.ydk": 0,
       "voiceless-voice-2026.ydk": 0,
     });
     expect(localFallbackKindBudgets).toEqual({
-      "magician-pendulum-mar-2026.ydk": { alias: 1, provisional: 0, other: 0 },
-      "phantom-knights-mar-2026-v4.ydk": { alias: 1, provisional: 0, other: 0 },
       "ritual-of-light-and-darkness-apr-2026.ydk": { alias: 0, provisional: 10, other: 0 },
-      "rokket-2026.ydk": { alias: 1, provisional: 0, other: 0 },
     });
     expect(expectedMissingScriptCodesByDeck).toEqual({});
     expect(expectedLocalFallbackScriptCodesByDeck).toEqual({
-      "magician-pendulum-mar-2026.ydk": ["100452013"],
-      "phantom-knights-mar-2026-v4.ydk": ["100452015"],
       "ritual-of-light-and-darkness-apr-2026.ydk": ["2372506", "24088928", "24461358", "24749710", "33599853", "44001993", "50073633", "70405001", "97462632", "98684220"],
-      "rokket-2026.ydk": ["101303089"],
     });
     expect(expectedLocalFallbackScriptCodes).toEqual(fallbackScriptCodes);
     expect(uncovered).toEqual([]);
