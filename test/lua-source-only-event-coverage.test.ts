@@ -23,6 +23,13 @@ const sourceOnlyEventFixtures = [
   "lua-summon-material-source-only-event.test.ts",
   "lua-summon-negated-source-only-event.test.ts",
 ] as const;
+const sourceOnlyEventKindCounts = {
+  battle: 5,
+  equipmentTarget: 2,
+  movementGrouped: 2,
+  set: 1,
+  summon: 6,
+} satisfies Record<SourceOnlyEventKind, number>;
 
 describe("Lua source-only event coverage", () => {
   it("keeps the source-only event fixture inventory explicit", () => {
@@ -45,11 +52,69 @@ describe("Lua source-only event coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps source-only event fixture kinds explicit", () => {
+    expect(countSourceOnlyEventKinds(sourceOnlyEventFixtures)).toEqual(sourceOnlyEventKindCounts);
+  });
 });
+
+type SourceOnlyEventKind = "battle" | "equipmentTarget" | "movementGrouped" | "set" | "summon";
 
 function discoveredSourceOnlyEventFixtures(): string[] {
   return fs.readdirSync(testRoot)
     .filter((file) => /source-only.*event\.test\.ts$/.test(file))
     .map((file) => path.join("test", file))
     .sort();
+}
+
+function countSourceOnlyEventKinds(files: readonly string[]): Record<SourceOnlyEventKind, number> {
+  return files.reduce<Record<SourceOnlyEventKind, number>>(
+    (counts, file) => {
+      counts[classifySourceOnlyEventKind(file)] += 1;
+      return counts;
+    },
+    {
+      battle: 0,
+      equipmentTarget: 0,
+      movementGrouped: 0,
+      set: 0,
+      summon: 0,
+    },
+  );
+}
+
+function classifySourceOnlyEventKind(file: string): SourceOnlyEventKind {
+  if (
+    file === "lua-attack-disabled-source-only-event.test.ts" ||
+    file === "lua-battle-damage-source-only-event.test.ts" ||
+    file === "lua-battle-destroyed-source-only-event.test.ts" ||
+    file === "lua-battle-source-only-event.test.ts" ||
+    file === "lua-battle-timing-source-only-event.test.ts"
+  ) {
+    return "battle";
+  }
+  if (
+    file === "lua-become-target-source-only-event.test.ts" ||
+    file === "lua-equip-source-only-event.test.ts"
+  ) {
+    return "equipmentTarget";
+  }
+  if (
+    file === "lua-leave-field-source-only-grouped-event.test.ts" ||
+    file === "lua-move-source-only-grouped-event.test.ts"
+  ) {
+    return "movementGrouped";
+  }
+  if (file === "lua-set-source-only-event.test.ts") return "set";
+  if (
+    file === "lua-flip-summon-source-only-event.test.ts" ||
+    file === "lua-pre-battle-damage-source-only-event.test.ts" ||
+    file === "lua-pre-material-source-only-event.test.ts" ||
+    file === "lua-summon-attempt-source-only-event.test.ts" ||
+    file === "lua-summon-material-source-only-event.test.ts" ||
+    file === "lua-summon-negated-source-only-event.test.ts"
+  ) {
+    return "summon";
+  }
+  throw new Error(`Unclassified source-only event fixture: ${file}`);
 }
