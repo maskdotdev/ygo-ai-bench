@@ -195,9 +195,14 @@ describe("Lua card script movement helpers", () => {
     host.registerInitialEffects();
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
-    expect(action).toBeUndefined();
-    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
-    for (const card of [ritualSpell, grave, banished]) expect(session.state.cards.find((candidate) => candidate.uid === card!.uid)).not.toMatchObject({ location: "deck" });
+    expect(action).toBeDefined();
+    applyAndAssert(session, action!);
+    while (session.state.chain.length > 0) {
+      expect(passCurrentChain(session)).toBe(true);
+    }
+
+    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
+    for (const card of [ritualSpell, grave, banished]) expect(session.state.cards.find((candidate) => candidate.uid === card!.uid)).toMatchObject({ location: "deck", reason: 0x40 });
   });
 
   it("loads Skull Archfiend of Chaos and searches after being sent to the GY", () => {

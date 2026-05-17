@@ -109,10 +109,7 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetTargetCards"));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    pushGroupTable(state, effectiveTargetUids(session, hostState));
-    return 1;
-  });
+  lua.lua_pushcfunction(L, (state: unknown) => pushTargetGroup(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetTargetGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     if (hostState.activeTargetUids) hostState.activeTargetUids.splice(0, hostState.activeTargetUids.length, ...uniqueUids(readCardOrGroupUids(state, 1)));
@@ -188,6 +185,18 @@ function pushMatchingGroupCount(L: unknown, session: DuelSession): number {
   const count = matchingCardUidsWithFilter(L, session, query).length;
   releaseOptionalFunctionRef(L, query.filterRef);
   lua.lua_pushinteger(L, count);
+  return 1;
+}
+
+function pushTargetGroup(L: unknown, session: DuelSession, hostState: LuaDuelQueryApiHostState): number {
+  if (lua.lua_gettop(L) === 0) {
+    pushGroupTable(L, effectiveTargetUids(session, hostState));
+    return 1;
+  }
+  const query = readMatchingQuery(L, session, 1, 2, 3, 4, 5, 6);
+  const uids = matchingCardUidsWithFilter(L, session, query);
+  releaseOptionalFunctionRef(L, query.filterRef);
+  pushGroupTable(L, uids);
   return 1;
 }
 
