@@ -100,11 +100,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(activate).toBeDefined();
     applyAndAssert(session, activate!);
     expect(session.state.chain).toHaveLength(1);
+    expect(session.state.chain[0]!.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restored.session.state.chain[0]!.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 
@@ -138,6 +140,88 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
       controller: 0,
       reason: duelReason.effect | duelReason.material | duelReason.fusion,
     });
+    expect(postResolutionRestored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === fusion!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-extraDeck-79059101-0",
+          "eventCode": 1102,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "specialSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "extraDeck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 264208,
+          "eventReasonCardUid": "p0-deck-79059098-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
+    const materialGraveEvents = postResolutionRestored.session.state.eventHistory.filter((event) =>
+      event.eventName === "sentToGraveyard"
+      && (event.eventCardUid === materialA!.uid || event.eventCardUid === materialB!.uid)
+    );
+    expect(materialGraveEvents.map((event) => event.eventCardUid).sort()).toEqual([materialA!.uid, materialB!.uid].sort());
+    expect(materialGraveEvents).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-79059099-1",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 262216,
+          "eventReasonCardUid": "p0-deck-79059098-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-79059100-2",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 2,
+          },
+          "eventReason": 262216,
+          "eventReasonCardUid": "p0-deck-79059098-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
 
     expect(postResolutionRestored.session.state.effects.find((effect) => effect.sourceUid === pandemonium!.uid && effect.code === 22)).toMatchObject({
       event: "continuous",
