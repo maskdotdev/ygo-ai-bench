@@ -79,6 +79,7 @@ const linkedZoneSpecialSummonKindCounts = {
 } satisfies Record<LinkedZoneSpecialSummonKind, number>;
 const forceMonsterZoneSummonLockKindCounts = {
   controlReason: 1,
+  extraLocationRange: 1,
   linkedZoneSummonSetLock: 1,
 } satisfies Record<ForceMonsterZoneSummonLockKind, number>;
 
@@ -101,7 +102,7 @@ type LinkedZoneSpecialSummonKind =
   | "opponentFieldLinkedZoneSummon"
   | "releaseCostDeckSummon"
   | "toBeLinkedZoneRevive";
-type ForceMonsterZoneSummonLockKind = "controlReason" | "linkedZoneSummonSetLock";
+type ForceMonsterZoneSummonLockKind = "controlReason" | "extraLocationRange" | "linkedZoneSummonSetLock";
 type RealScriptSummonKeywordFamily =
   | "fusion"
   | "link"
@@ -606,6 +607,16 @@ function realScriptForceMonsterZoneSummonLockFixtureSnippets(): Array<{
         "gorgon force mzone control result 0/3",
       ],
     },
+    {
+      file: "test/lua-real-script-steelswarm-origin-force-mzone-extra-range.test.ts",
+      kind: "extraLocationRange",
+      required: [
+        "targetRange: [0x40, 0x40]",
+        'action.type === "linkSummon"',
+        "origin force mzone linked 16",
+        "origin force mzone generic material 1",
+      ],
+    },
   ];
 }
 
@@ -617,6 +628,7 @@ function countForceMonsterZoneSummonLockKinds(files: Array<{ kind: ForceMonsterZ
     },
     {
       controlReason: 0,
+      extraLocationRange: 0,
       linkedZoneSummonSetLock: 0,
     },
   );
