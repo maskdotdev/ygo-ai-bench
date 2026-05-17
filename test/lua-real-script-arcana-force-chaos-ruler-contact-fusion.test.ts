@@ -93,6 +93,135 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ar
       controller: 1,
       reason: duelReason.cost | duelReason.material,
     });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned")).toEqual([
+      {
+        eventName: "specialSummoned",
+        eventCode: 1102,
+        eventCardUid: chaosRuler!.uid,
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "extraDeck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
+    const materialGraveEvents = restored.session.state.eventHistory.filter((event) =>
+      event.eventName === "sentToGraveyard"
+      && (event.eventCardUid === ownMaterialA!.uid || event.eventCardUid === ownMaterialB!.uid || event.eventCardUid === opponentMaterial!.uid)
+    );
+    expect(materialGraveEvents.map((event) => event.eventCardUid).sort()).toEqual([ownMaterialA!.uid, ownMaterialA!.uid, ownMaterialB!.uid, opponentMaterial!.uid].sort());
+    expect(materialGraveEvents).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-12686297-0",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 136,
+          "eventReasonCardUid": "p0-extraDeck-12686296-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-12686298-1",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 136,
+          "eventReasonCardUid": "p0-extraDeck-12686296-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p1-deck-12686299-0",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 136,
+          "eventReasonCardUid": "p0-extraDeck-12686296-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-12686297-0",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 136,
+          "eventReasonCardUid": "p0-extraDeck-12686296-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
+          "eventUids": [
+            "p0-deck-12686297-0",
+            "p0-deck-12686298-1",
+            "p1-deck-12686299-0",
+          ],
+        },
+      ]
+    `);
     expect(getLegalActions(restored.session, 0).some((action) => action.type === "specialSummonProcedure" && action.uid === chaosRuler!.uid)).toBe(false);
   });
 });
