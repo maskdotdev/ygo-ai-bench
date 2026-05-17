@@ -9,6 +9,26 @@ const TARGETED_PERSISTENT_FIXTURE_COUNT = 13;
 const REVIVE_DESTROY_PERSISTENT_FIXTURE_COUNT = 2;
 const SPIRITS_INVITATION_PERSISTENT_FIXTURE_COUNT = 1;
 const ATTACK_LOCK_PERSISTENT_FIXTURE_COUNT = 9;
+const persistentKindCounts = {
+  chainSolvingNegate: 1,
+  fieldAttackOrPositionLock: 4,
+  persistentDamage: 3,
+  protection: 1,
+  ritualOverlay: 1,
+  specialSummonLock: 1,
+  statModifier: 3,
+  targetedDisableOrLock: 3,
+} satisfies Record<PersistentKind, number>;
+
+type PersistentKind =
+  | "chainSolvingNegate"
+  | "fieldAttackOrPositionLock"
+  | "persistentDamage"
+  | "protection"
+  | "ritualOverlay"
+  | "specialSummonLock"
+  | "statModifier"
+  | "targetedDisableOrLock";
 
 describe("Lua real persistent restore coverage", () => {
   it("requires representative persistent/remaining-field fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -31,6 +51,10 @@ describe("Lua real persistent restore coverage", () => {
       });
 
     expect(missing).toEqual([]);
+  });
+
+  it("keeps persistent fixture kinds explicit", () => {
+    expect(countPersistentKinds(realScriptPersistentFixtures())).toEqual(persistentKindCounts);
   });
 
   it("requires representative persistent/remaining-field fixtures to prove restored field state and response suppression", () => {
@@ -117,27 +141,7 @@ describe("Lua real persistent restore coverage", () => {
 });
 
 function realScriptPersistentFixtureFiles(): string[] {
-  return [
-    "lua-real-script-dimension-sphinx-persistent-battle-damage.test.ts",
-    "lua-real-script-fiendish-chain-persistent-disable.test.ts",
-    "lua-real-script-dragons-bind-persistent-special-lock.test.ts",
-    "lua-real-script-gravity-bind-persistent-attack-lock.test.ts",
-    "lua-real-script-level-limit-area-b-position-lock.test.ts",
-    "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
-    "lua-real-script-messenger-peace-maintenance-attack-lock.test.ts",
-    "lua-real-script-miniaturize-persistent-damage-step-stat.test.ts",
-    "lua-real-script-moon-dance-ritual-persistent-overlay.test.ts",
-    "lua-real-script-nightmare-wheel-persistent-damage.test.ts",
-    "lua-real-script-phantom-knights-fog-blade-persistent-battle-target.test.ts",
-    "lua-real-script-rare-metalmorph-persistent-chain-solving-negate.test.ts",
-    "lua-real-script-safe-zone-persistent-protection.test.ts",
-    "lua-real-script-shadow-spell-goat-damage-calculation-persistent.test.ts",
-    "lua-real-script-shattered-axe-persistent-standby-atk.test.ts",
-    "lua-real-script-spellbinding-circle-persistent-lock.test.ts",
-    "lua-real-script-swords-revealing-light-remain-lock.test.ts",
-  ]
-    .map((file) => path.join("test", file))
-    .sort();
+  return realScriptPersistentFixtures().map(({ file }) => file);
 }
 
 function realScriptTargetedPersistentFixtureFiles(): string[] {
@@ -208,4 +212,98 @@ function realScriptAttackLockPersistentFixtureFiles(): string[] {
   ]
     .map((file) => path.join("test", file))
     .sort();
+}
+
+function realScriptPersistentFixtures(): Array<{ file: string; kind: PersistentKind }> {
+  return ([
+    {
+      file: "lua-real-script-dimension-sphinx-persistent-battle-damage.test.ts",
+      kind: "persistentDamage",
+    },
+    {
+      file: "lua-real-script-fiendish-chain-persistent-disable.test.ts",
+      kind: "targetedDisableOrLock",
+    },
+    {
+      file: "lua-real-script-dragons-bind-persistent-special-lock.test.ts",
+      kind: "specialSummonLock",
+    },
+    {
+      file: "lua-real-script-gravity-bind-persistent-attack-lock.test.ts",
+      kind: "fieldAttackOrPositionLock",
+    },
+    {
+      file: "lua-real-script-level-limit-area-b-position-lock.test.ts",
+      kind: "fieldAttackOrPositionLock",
+    },
+    {
+      file: "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
+      kind: "persistentDamage",
+    },
+    {
+      file: "lua-real-script-messenger-peace-maintenance-attack-lock.test.ts",
+      kind: "fieldAttackOrPositionLock",
+    },
+    {
+      file: "lua-real-script-miniaturize-persistent-damage-step-stat.test.ts",
+      kind: "statModifier",
+    },
+    {
+      file: "lua-real-script-moon-dance-ritual-persistent-overlay.test.ts",
+      kind: "ritualOverlay",
+    },
+    {
+      file: "lua-real-script-nightmare-wheel-persistent-damage.test.ts",
+      kind: "persistentDamage",
+    },
+    {
+      file: "lua-real-script-phantom-knights-fog-blade-persistent-battle-target.test.ts",
+      kind: "targetedDisableOrLock",
+    },
+    {
+      file: "lua-real-script-rare-metalmorph-persistent-chain-solving-negate.test.ts",
+      kind: "chainSolvingNegate",
+    },
+    {
+      file: "lua-real-script-safe-zone-persistent-protection.test.ts",
+      kind: "protection",
+    },
+    {
+      file: "lua-real-script-shadow-spell-goat-damage-calculation-persistent.test.ts",
+      kind: "statModifier",
+    },
+    {
+      file: "lua-real-script-shattered-axe-persistent-standby-atk.test.ts",
+      kind: "statModifier",
+    },
+    {
+      file: "lua-real-script-spellbinding-circle-persistent-lock.test.ts",
+      kind: "targetedDisableOrLock",
+    },
+    {
+      file: "lua-real-script-swords-revealing-light-remain-lock.test.ts",
+      kind: "fieldAttackOrPositionLock",
+    },
+  ] satisfies Array<{ file: string; kind: PersistentKind }>)
+    .map(({ file, kind }) => ({ file: path.join("test", file), kind }))
+    .sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countPersistentKinds(fixtures: Array<{ kind: PersistentKind }>): Record<PersistentKind, number> {
+  return fixtures.reduce<Record<PersistentKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      chainSolvingNegate: 0,
+      fieldAttackOrPositionLock: 0,
+      persistentDamage: 0,
+      protection: 0,
+      ritualOverlay: 0,
+      specialSummonLock: 0,
+      statModifier: 0,
+      targetedDisableOrLock: 0,
+    },
+  );
 }
