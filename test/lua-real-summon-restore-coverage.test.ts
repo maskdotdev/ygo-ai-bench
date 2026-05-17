@@ -14,6 +14,21 @@ const pendulumHelperFixtureCount = 13;
 const unionProcedureFixtureCount = 4;
 const materialLockFixtureCount = 4;
 const flipSummonSuccessTrapFixtureCount = 4;
+const summonProcedureFamilyCounts = {
+  fusionProcedure: 1,
+  genericSpecialSummonProcedure: 10,
+  pendulumProcedure: 1,
+  ritualProcedure: 3,
+  tributeProcedure: 2,
+  typedProcedureFilter: 3,
+} satisfies Record<SummonProcedureFamily, number>;
+const typedSummonProcedureKindCounts = {
+  fusionProcedure: 1,
+  linkProcedure: 1,
+  ritualProcedure: 2,
+  synchroProcedure: 1,
+  xyzProcedure: 1,
+} satisfies Record<TypedSummonProcedureKind, number>;
 const unionProcedureKindCounts = {
   battleTriggerSummonBack: 1,
   deckEquipBanish: 1,
@@ -45,6 +60,19 @@ type SummonMaterialLockKind =
   | "xyzMaterialLock";
 
 type FlipSummonSuccessTrapKind = "flipBanishTrap" | "flipDestroyTrap" | "flipStatTrap";
+type SummonProcedureFamily =
+  | "fusionProcedure"
+  | "genericSpecialSummonProcedure"
+  | "pendulumProcedure"
+  | "ritualProcedure"
+  | "tributeProcedure"
+  | "typedProcedureFilter";
+type TypedSummonProcedureKind =
+  | "fusionProcedure"
+  | "linkProcedure"
+  | "ritualProcedure"
+  | "synchroProcedure"
+  | "xyzProcedure";
 
 describe("Lua real summon restore coverage", () => {
   it("requires real-script summon and procedure fixtures to assert Lua-aware complete restore with diagnostics", () => {
@@ -82,6 +110,10 @@ describe("Lua real summon restore coverage", () => {
     expect(missing).toEqual([]);
   });
 
+  it("keeps summon procedure fixture families explicit", () => {
+    expect(countSummonProcedureFamilies(realScriptSummonProcedureFixtureFiles())).toEqual(summonProcedureFamilyCounts);
+  });
+
   it("requires real-script typed summon procedure fixtures to prove restored summon type and Monster Zone placement", () => {
     const files = realScriptTypedSummonProcedureFixtureFiles();
     expect(files).toHaveLength(typedSummonProcedureFixtureCount);
@@ -104,6 +136,10 @@ describe("Lua real summon restore coverage", () => {
       });
 
     expect(missing).toEqual([]);
+  });
+
+  it("keeps typed summon procedure fixture kinds explicit", () => {
+    expect(countTypedSummonProcedureKinds(realScriptTypedSummonProcedureFixtureFiles())).toEqual(typedSummonProcedureKindCounts);
   });
 
   it("requires real-script Pendulum grant fixtures to prove restored summon selection and consumption", () => {
@@ -321,6 +357,60 @@ function realScriptTypedSummonProcedureFixtureFiles(): string[] {
     "lua-real-script-synchro-procedure-filters.test.ts",
     "lua-real-script-xyz-procedure-filters.test.ts",
   ].map((file) => path.join("test", file));
+}
+
+function countSummonProcedureFamilies(files: string[]): Record<SummonProcedureFamily, number> {
+  return files.reduce<Record<SummonProcedureFamily, number>>(
+    (counts, file) => {
+      counts[classifySummonProcedureFamily(file)] += 1;
+      return counts;
+    },
+    {
+      fusionProcedure: 0,
+      genericSpecialSummonProcedure: 0,
+      pendulumProcedure: 0,
+      ritualProcedure: 0,
+      tributeProcedure: 0,
+      typedProcedureFilter: 0,
+    },
+  );
+}
+
+function classifySummonProcedureFamily(file: string): SummonProcedureFamily {
+  const basename = path.basename(file);
+  if (/^(lua-real-script-link-procedure-filters|lua-real-script-synchro-procedure-filters|lua-real-script-xyz-procedure-filters)\.test\.ts$/.test(basename)) return "typedProcedureFilter";
+  if (basename === "lua-real-script-polymerization-fusion-summon.test.ts") return "fusionProcedure";
+  if (/ritual/.test(basename)) return "ritualProcedure";
+  if (basename === "lua-real-script-pendulum-procedure-actions.test.ts") return "pendulumProcedure";
+  if (basename === "lua-real-script-emissary-select-tribute-summon-procedure.test.ts" || basename === "lua-real-script-morganite-field-summon-procedure.test.ts") return "tributeProcedure";
+  if (basename.endsWith("-special-summon-procedure.test.ts") || basename === "lua-real-script-depth-shark-no-tribute-summon-procedure.test.ts" || basename === "lua-real-script-leo-wizard-opponent-summon-procedure.test.ts") return "genericSpecialSummonProcedure";
+  throw new Error(`Unclassified summon procedure fixture: ${file}`);
+}
+
+function countTypedSummonProcedureKinds(files: string[]): Record<TypedSummonProcedureKind, number> {
+  return files.reduce<Record<TypedSummonProcedureKind, number>>(
+    (counts, file) => {
+      counts[classifyTypedSummonProcedureKind(file)] += 1;
+      return counts;
+    },
+    {
+      fusionProcedure: 0,
+      linkProcedure: 0,
+      ritualProcedure: 0,
+      synchroProcedure: 0,
+      xyzProcedure: 0,
+    },
+  );
+}
+
+function classifyTypedSummonProcedureKind(file: string): TypedSummonProcedureKind {
+  const basename = path.basename(file);
+  if (basename === "lua-real-script-polymerization-fusion-summon.test.ts") return "fusionProcedure";
+  if (basename === "lua-real-script-link-procedure-filters.test.ts") return "linkProcedure";
+  if (basename === "lua-real-script-megalith-bethor-ritual-procedure.test.ts" || basename === "lua-real-script-mitsurugi-mirror-grave-ritual.test.ts") return "ritualProcedure";
+  if (basename === "lua-real-script-synchro-procedure-filters.test.ts") return "synchroProcedure";
+  if (basename === "lua-real-script-xyz-procedure-filters.test.ts") return "xyzProcedure";
+  throw new Error(`Unclassified typed summon procedure fixture: ${file}`);
 }
 
 function realScriptPendulumGrantFixtureFiles(): string[] {
