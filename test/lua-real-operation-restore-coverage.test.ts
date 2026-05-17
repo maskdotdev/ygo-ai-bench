@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 18;
+const operationFixtureCount = 19;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -12,6 +12,7 @@ const operationKindCounts = {
   groupDestroy: 9,
   releaseDamage: 1,
   searchOrExcavate: 3,
+  targetDestroyRecover: 1,
   tossCoin: 1,
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
@@ -30,6 +31,7 @@ type OperationKind =
   | "groupDestroy"
   | "releaseDamage"
   | "searchOrExcavate"
+  | "targetDestroyRecover"
   | "tossCoin"
   | "tossDiceHandDiscard";
 
@@ -310,6 +312,18 @@ function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-soul-taker-destroy-recover.test.ts",
+      kind: "targetDestroyRecover",
+      required: [
+        "category: 0x1",
+        "category: 0x100000",
+        'eventName: "destroyed"',
+        'eventName: "recoveredLifePoints"',
+        "lifePoints).toBe(9000)",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
       kind: "searchOrExcavate",
       required: [
@@ -514,6 +528,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       groupDestroy: 0,
       releaseDamage: 0,
       searchOrExcavate: 0,
+      targetDestroyRecover: 0,
       tossCoin: 0,
       tossDiceHandDiscard: 0,
     },
