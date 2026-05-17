@@ -105,7 +105,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
             "category": 16,
             "count": 1,
             "parameter": 0,
-            "player": 0,
+            "player": 1,
             "targetUids": [
               "p0-deck-909-2",
             ],
@@ -140,7 +140,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
             "category": 16,
             "count": 1,
             "parameter": 0,
-            "player": 0,
+            "player": 1,
             "targetUids": [
               "p0-deck-909-2",
             ],
@@ -154,7 +154,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
       }
     `);
     expect(restored.session.state.chain[1]?.operationInfos).toEqual([
-      { category: 0x10, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 },
+      { category: 0x10, targetUids: [target!.uid], count: 1, player: 1, parameter: 0 },
     ]);
 
     const pass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
