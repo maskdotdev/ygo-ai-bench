@@ -5,10 +5,23 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const SUMMON_PROCEDURE_FIXTURE_COUNT = 4;
+const summonProcedureKindCounts = {
+  broadTypedProcedure: 1,
+  graveBanishCostStatProcedure: 1,
+  handOpponentCountProcedure: 1,
+  handSendCostProcedure: 1,
+} satisfies Record<SummonProcedureKind, number>;
 
-const summonProcedureFixtures: Array<{ file: string; required: string[] }> = [
+type SummonProcedureKind =
+  | "broadTypedProcedure"
+  | "graveBanishCostStatProcedure"
+  | "handOpponentCountProcedure"
+  | "handSendCostProcedure";
+
+const summonProcedureFixtures = [
   {
     file: "test/lua-real-script-summon-procedure.test.ts",
+    kind: "broadTypedProcedure",
     required: [
       'action.type === "specialSummonProcedure"',
       'action.type === "xyzSummon"',
@@ -26,6 +39,7 @@ const summonProcedureFixtures: Array<{ file: string; required: string[] }> = [
   },
   {
     file: "test/lua-real-script-pankratops-special-summon-procedure.test.ts",
+    kind: "handOpponentCountProcedure",
     required: [
       "opponent-controls-more-monsters hand Special Summon procedure",
       'action.type === "specialSummonProcedure"',
@@ -38,6 +52,7 @@ const summonProcedureFixtures: Array<{ file: string; required: string[] }> = [
   },
   {
     file: "test/lua-real-script-gigarays-gandora-special-summon-procedure.test.ts",
+    kind: "handSendCostProcedure",
     required: [
       "two-monster send-to-Graveyard hand Special Summon procedure cost",
       'action.type === "specialSummonProcedure"',
@@ -50,6 +65,7 @@ const summonProcedureFixtures: Array<{ file: string; required: string[] }> = [
   },
   {
     file: "test/lua-real-script-megarock-dragon-special-summon-procedure.test.ts",
+    kind: "graveBanishCostStatProcedure",
     required: [
       "Rock graveyard banish-cost procedure and selected-count base stats",
       'action.type === "specialSummonProcedure"',
@@ -61,7 +77,11 @@ const summonProcedureFixtures: Array<{ file: string; required: string[] }> = [
       "currentAttack(restoredMegarock, restored.session.state)).toBe(700)",
     ],
   },
-];
+] satisfies Array<{
+  file: string;
+  kind: SummonProcedureKind;
+  required: string[];
+}>;
 
 describe("Lua real summon procedure restore coverage", () => {
   it("requires the broad summon procedure fixture to assert clean restore and restored legal actions", () => {
@@ -80,4 +100,25 @@ describe("Lua real summon procedure restore coverage", () => {
       }
     }
   });
+
+  it("keeps summon procedure fixture kinds explicit", () => {
+    expect(countSummonProcedureKinds(summonProcedureFixtures)).toEqual(summonProcedureKindCounts);
+  });
 });
+
+function countSummonProcedureKinds(
+  fixtures: Array<{ kind: SummonProcedureKind }>,
+): Record<SummonProcedureKind, number> {
+  return fixtures.reduce<Record<SummonProcedureKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      broadTypedProcedure: 0,
+      graveBanishCostStatProcedure: 0,
+      handOpponentCountProcedure: 0,
+      handSendCostProcedure: 0,
+    },
+  );
+}
