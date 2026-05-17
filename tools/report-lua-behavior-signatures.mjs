@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const defaultScriptsRoot = ".upstream/ignis/script/official";
+const defaultTestRoot = "test";
 
 function main(argv) {
   const options = parseArgs(argv);
@@ -21,6 +22,7 @@ function main(argv) {
 function parseArgs(argv) {
   const options = {
     scriptsRoot: defaultScriptsRoot,
+    testRoot: defaultTestRoot,
     json: false,
     help: false,
     top: 20,
@@ -31,6 +33,7 @@ function parseArgs(argv) {
     if (arg === "--help" || arg === "-h") options.help = true;
     else if (arg === "--json") options.json = true;
     else if (arg === "--scripts") options.scriptsRoot = requireOptionValue(argv, ++index, arg);
+    else if (arg === "--test-root") options.testRoot = requireOptionValue(argv, ++index, arg);
     else if (arg === "--top") options.top = requirePositiveInt(requireOptionValue(argv, ++index, arg), arg);
     else throw new Error(`Unknown argument: ${arg}`);
   }
@@ -52,10 +55,16 @@ function requirePositiveInt(value, option) {
 
 function buildReport(options) {
   const scriptsRoot = path.resolve(process.cwd(), options.scriptsRoot);
+  const testRoot = path.resolve(process.cwd(), options.testRoot);
   const scriptFiles = listFiles(scriptsRoot, (file) => /^c\d+\.lua$/.test(path.basename(file)));
+  const realScriptFixtureFiles = listFiles(testRoot, (file) => /^lua-real-script-.*\.test\.ts$/.test(path.basename(file)));
+  const scriptCodes = new Set(scriptFiles.map(scriptCodeFromFile));
+  const fixtureCodes = collectFixtureScriptCodes(realScriptFixtureFiles, scriptCodes);
   const buckets = new Map();
+  const codeToSignatureKey = new Map();
 
   for (const file of scriptFiles) {
+    const code = scriptCodeFromFile(file);
     const source = fs.readFileSync(file, "utf8");
     const analysis = analyzeScript(source);
     const key = [
@@ -67,6 +76,7 @@ function buildReport(options) {
       `helpers=${analysis.helpers.join("+") || "none"}`,
       `prompts=${analysis.prompts.join("+") || "none"}`,
     ].join("|");
+    codeToSignatureKey.set(code, key);
 
     const relativeFile = path.relative(process.cwd(), file);
     const bucket = buckets.get(key) ?? {
@@ -80,23 +90,53 @@ function buildReport(options) {
       cardApis: analysis.cardApis,
       helpers: analysis.helpers,
       prompts: analysis.prompts,
+      scriptCodes: [],
     };
     bucket.count += 1;
+    bucket.scriptCodes.push(code);
     if (bucket.examples.length < 5) bucket.examples.push(relativeFile);
     buckets.set(key, bucket);
   }
 
   const signatures = [...buckets.values()].sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
+  const coveredSignatureKeys = new Set([...fixtureCodes].map((code) => codeToSignatureKey.get(code)).filter(Boolean));
+  const uncoveredSignatures = signatures.filter((signature) => !coveredSignatureKeys.has(signature.key));
 
   return {
     scriptsRoot: path.relative(process.cwd(), scriptsRoot) || ".",
+    testRoot: path.relative(process.cwd(), testRoot) || ".",
     totalScripts: scriptFiles.length,
     uniqueSignatures: signatures.length,
     largestSignatureSize: signatures[0]?.count ?? 0,
     singletonSignatures: signatures.filter((signature) => signature.count === 1).length,
+    fixtureCoverage: {
+      realScriptFixtureFiles: realScriptFixtureFiles.length,
+      coveredScripts: fixtureCodes.size,
+      coveredSignatures: coveredSignatureKeys.size,
+      signatureCoveragePercent: percent(coveredSignatureKeys.size, signatures.length),
+      uncoveredSignatures: uncoveredSignatures.length,
+      topUncoveredSignatures: uncoveredSignatures.slice(0, 10).map(publicSignature),
+      note: "A signature is covered when at least one official script in that signature has a real-script fixture. This does not prove every card in the signature is equivalent.",
+    },
     signatures,
     note: "Behavior signatures group scripts by coarse Lua categories, effect types, event codes, Duel/Card APIs, helpers, and prompt APIs. They guide fixture selection; they are not a proof of full EDOPro parity.",
   };
+}
+
+function scriptCodeFromFile(file) {
+  return path.basename(file).match(/^c(\d+)\.lua$/)?.[1] ?? "";
+}
+
+function collectFixtureScriptCodes(files, validScriptCodes) {
+  const codes = new Set();
+  for (const file of files) {
+    const source = fs.readFileSync(file, "utf8");
+    for (const match of source.matchAll(/\b(?:const|let|var)\s+[A-Za-z0-9_]*Code\s*=\s*["'](\d+)["']/g)) {
+      const code = match[1];
+      if (validScriptCodes.has(code)) codes.add(code);
+    }
+  }
+  return codes;
 }
 
 function analyzeScript(source) {
@@ -139,12 +179,33 @@ function listFiles(dir, predicate) {
   return files;
 }
 
+function percent(part, total) {
+  if (total === 0) return 0;
+  return Number(((part / total) * 100).toFixed(1));
+}
+
+function publicSignature(signature) {
+  return {
+    count: signature.count,
+    examples: signature.examples,
+    categories: signature.categories,
+    effectTypes: signature.effectTypes,
+    eventCodes: signature.eventCodes,
+    duelApis: signature.duelApis,
+    cardApis: signature.cardApis,
+    helpers: signature.helpers,
+    prompts: signature.prompts,
+  };
+}
+
 function printReport(report, options) {
   console.log("Lua behavior signature report");
   console.log(`Scripts: ${report.totalScripts}`);
   console.log(`Unique signatures: ${report.uniqueSignatures}`);
   console.log(`Largest signature: ${report.largestSignatureSize} scripts`);
   console.log(`Singleton signatures: ${report.singletonSignatures}`);
+  console.log(`Fixture-covered signatures: ${report.fixtureCoverage.coveredSignatures}/${report.uniqueSignatures} (${report.fixtureCoverage.signatureCoveragePercent.toFixed(1)}%)`);
+  console.log(`Fixture-covered scripts: ${report.fixtureCoverage.coveredScripts}/${report.totalScripts}`);
   console.log(`Top signatures: ${Math.min(options.top, report.signatures.length)}`);
   for (const signature of report.signatures.slice(0, options.top)) {
     console.log(`- ${signature.count} scripts`);
@@ -158,6 +219,7 @@ function printReport(report, options) {
     console.log(`  examples: ${signature.examples.join(", ")}`);
   }
   console.log(report.note);
+  console.log(report.fixtureCoverage.note);
 }
 
 function printHelp() {
@@ -166,6 +228,7 @@ function printHelp() {
 Options:
   --json             Print machine-readable JSON
   --scripts <path>   Project Ignis script root. Default: ${defaultScriptsRoot}
+  --test-root <path> Test root for real-script fixture coverage. Default: ${defaultTestRoot}
   --top <count>      Number of largest signatures to print. Default: 20
 `);
 }

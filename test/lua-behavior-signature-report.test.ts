@@ -14,7 +14,7 @@ describe("Lua behavior signature report", () => {
   });
 
   it("groups scripts by coarse behavior signatures instead of one-card expectations", () => {
-    const scriptsRoot = makeTempScripts({
+    const scriptsRoot = makeTempFiles("lua-behavior-signatures-scripts-", {
       "c1.lua": `
         local s,id=GetID()
         function s.initial_effect(c)
@@ -71,8 +71,14 @@ describe("Lua behavior signature report", () => {
         end
       `,
     });
+    const testRoot = makeTempFiles("lua-behavior-signatures-tests-", {
+      "lua-real-script-damage.test.ts": `
+        const damageCode = "1";
+        const responderCode = "1001";
+      `,
+    });
 
-    const result = spawnSync(process.execPath, ["tools/report-lua-behavior-signatures.mjs", "--scripts", scriptsRoot, "--json"], {
+    const result = spawnSync(process.execPath, ["tools/report-lua-behavior-signatures.mjs", "--scripts", scriptsRoot, "--test-root", testRoot, "--json"], {
       cwd: process.cwd(),
       encoding: "utf8",
     });
@@ -83,6 +89,13 @@ describe("Lua behavior signature report", () => {
       uniqueSignatures: number;
       largestSignatureSize: number;
       singletonSignatures: number;
+      fixtureCoverage: {
+        realScriptFixtureFiles: number;
+        coveredScripts: number;
+        coveredSignatures: number;
+        signatureCoveragePercent: number;
+        uncoveredSignatures: number;
+      };
       signatures: Array<{ count: number; categories: string[]; effectTypes: string[]; eventCodes: string[]; duelApis: string[]; examples: string[] }>;
     };
 
@@ -90,6 +103,13 @@ describe("Lua behavior signature report", () => {
     expect(report.uniqueSignatures).toBe(2);
     expect(report.largestSignatureSize).toBe(2);
     expect(report.singletonSignatures).toBe(1);
+    expect(report.fixtureCoverage).toMatchObject({
+      realScriptFixtureFiles: 1,
+      coveredScripts: 1,
+      coveredSignatures: 1,
+      signatureCoveragePercent: 50,
+      uncoveredSignatures: 1,
+    });
     const topSignature = report.signatures[0];
     expect(topSignature).toBeDefined();
     expect(topSignature).toMatchObject({
@@ -103,8 +123,8 @@ describe("Lua behavior signature report", () => {
   });
 });
 
-function makeTempScripts(files: Record<string, string>): string {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "lua-behavior-signatures-"));
+function makeTempFiles(prefix: string, files: Record<string, string>): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   tempRoots.push(root);
   for (const [file, source] of Object.entries(files)) {
     fs.writeFileSync(path.join(root, file), source);
