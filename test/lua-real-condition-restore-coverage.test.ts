@@ -6,15 +6,33 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const conditionFixtureCount = 7;
 const sourceConditionFixtureCount = 63;
+const conditionKindCounts = {
+  genericPhaseCondition: 1,
+  mainOrBattlePhaseCondition: 1,
+  namedPhaseCondition: 1,
+  turnPlayerBattlePhaseCondition: 1,
+  turnPlayerCondition: 1,
+  turnPlayerMainPhaseCondition: 1,
+  turnPlayerPhaseCondition: 1,
+} satisfies Record<ConditionKind, number>;
+
+type ConditionKind =
+  | "genericPhaseCondition"
+  | "mainOrBattlePhaseCondition"
+  | "namedPhaseCondition"
+  | "turnPlayerBattlePhaseCondition"
+  | "turnPlayerCondition"
+  | "turnPlayerMainPhaseCondition"
+  | "turnPlayerPhaseCondition";
 
 describe("Lua real condition restore coverage", () => {
   it("requires representative phase and turn-player condition fixtures to assert clean Lua registry restore", () => {
-    const files = realScriptConditionFixtureFiles();
-    expect(files).toHaveLength(conditionFixtureCount);
+    const fixtures = realScriptConditionFixtures();
+    expect(fixtures).toHaveLength(conditionFixtureCount);
 
-    const missing = files
-      .filter((file) => {
-        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+    const missing = fixtures
+      .filter((fixture) => {
+        const text = coverageText(fs.readFileSync(path.join(root, fixture.file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
           || !text.includes('incompleteReasons.join("; ")')
@@ -25,26 +43,28 @@ describe("Lua real condition restore coverage", () => {
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)");
-      });
+      })
+      .map((fixture) => fixture.file);
 
     expect(missing).toEqual([]);
   });
 
   it("requires restored condition fixtures to prove descriptor-backed truth tables", () => {
-    const files = realScriptConditionFixtureFiles();
-    expect(files).toHaveLength(conditionFixtureCount);
+    const fixtures = realScriptConditionFixtures();
+    expect(fixtures).toHaveLength(conditionFixtureCount);
 
-    const missing = files
-      .filter((file) => {
-        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+    const missing = fixtures
+      .filter((fixture) => {
+        const text = coverageText(fs.readFileSync(path.join(root, fixture.file), "utf8"));
         return !text.includes("luaConditionDescriptor")
           || !text.includes("canActivate")
           || !text.includes("targetContext(restored.session.state")
           || !text.includes("toBe(true)")
           || !text.includes("toBe(false)")
-          || (!file.endsWith("lua-real-script-turn-player-condition.test.ts") && !text.includes("restored.session.state.phase"))
-          || (file.includes("turn-player") && !text.includes("restored.session.state.turnPlayer"));
-      });
+          || (!fixture.file.endsWith("lua-real-script-turn-player-condition.test.ts") && !text.includes("restored.session.state.phase"))
+          || (fixture.file.includes("turn-player") && !text.includes("restored.session.state.turnPlayer"));
+      })
+      .map((fixture) => fixture.file);
 
     expect(missing).toEqual([]);
   });
@@ -77,20 +97,24 @@ describe("Lua real condition restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps phase and turn-player condition fixture kinds explicit", () => {
+    expect(countConditionKinds(realScriptConditionFixtures())).toEqual(conditionKindCounts);
+  });
 });
 
-function realScriptConditionFixtureFiles(): string[] {
-  return [
-    "lua-real-script-main-or-battle-phase-condition.test.ts",
-    "lua-real-script-named-phase-condition.test.ts",
-    "lua-real-script-phase-condition.test.ts",
-    "lua-real-script-turn-player-battle-phase-condition.test.ts",
-    "lua-real-script-turn-player-condition.test.ts",
-    "lua-real-script-turn-player-main-phase-condition.test.ts",
-    "lua-real-script-turn-player-phase-condition.test.ts",
-  ]
-    .map((file) => path.join("test", file))
-    .sort();
+function realScriptConditionFixtures(): Array<{ file: string; kind: ConditionKind }> {
+  return ([
+    { file: "lua-real-script-main-or-battle-phase-condition.test.ts", kind: "mainOrBattlePhaseCondition" },
+    { file: "lua-real-script-named-phase-condition.test.ts", kind: "namedPhaseCondition" },
+    { file: "lua-real-script-phase-condition.test.ts", kind: "genericPhaseCondition" },
+    { file: "lua-real-script-turn-player-battle-phase-condition.test.ts", kind: "turnPlayerBattlePhaseCondition" },
+    { file: "lua-real-script-turn-player-condition.test.ts", kind: "turnPlayerCondition" },
+    { file: "lua-real-script-turn-player-main-phase-condition.test.ts", kind: "turnPlayerMainPhaseCondition" },
+    { file: "lua-real-script-turn-player-phase-condition.test.ts", kind: "turnPlayerPhaseCondition" },
+  ] satisfies Array<{ file: string; kind: ConditionKind }>)
+    .map(({ file, kind }) => ({ file: path.join("test", file), kind }))
+    .sort((a, b) => a.file.localeCompare(b.file));
 }
 
 function realScriptSourceConditionFixtureFiles(): Array<{ file: string; requiredSnippets: string[] }> {
@@ -655,4 +679,22 @@ function realScriptSourceConditionFixtureFiles(): Array<{ file: string; required
       ],
     },
   ].sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countConditionKinds(fixtures: Array<{ kind: ConditionKind }>): Record<ConditionKind, number> {
+  return fixtures.reduce<Record<ConditionKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      genericPhaseCondition: 0,
+      mainOrBattlePhaseCondition: 0,
+      namedPhaseCondition: 0,
+      turnPlayerBattlePhaseCondition: 0,
+      turnPlayerCondition: 0,
+      turnPlayerMainPhaseCondition: 0,
+      turnPlayerPhaseCondition: 0,
+    },
+  );
 }
