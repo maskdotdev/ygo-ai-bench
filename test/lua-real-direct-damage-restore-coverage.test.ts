@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const directDamageFixtureCount = 4;
+const directDamageFixtureCount = 5;
 const directDamageKindCounts = {
-  targetParamDamage: 3,
+  targetParamDamage: 4,
   lpConditionTargetParamDamage: 1,
 } satisfies Record<DirectDamageKind, number>;
 const directDamageSemanticVariantCounts = {
+  finalFlameTargetParamDamage: 1,
   hinotamaTargetParamDamage: 1,
   meteorOfDestructionOpponentLpCondition: 1,
   ookaziTargetParamDamage: 1,
@@ -18,6 +19,7 @@ const directDamageSemanticVariantCounts = {
 
 type DirectDamageKind = "lpConditionTargetParamDamage" | "targetParamDamage";
 type DirectDamageSemanticVariant =
+  | "finalFlameTargetParamDamage"
   | "hinotamaTargetParamDamage"
   | "meteorOfDestructionOpponentLpCondition"
   | "ookaziTargetParamDamage"
@@ -87,6 +89,17 @@ describe("Lua real direct damage restore coverage", () => {
 function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKind; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-final-flame-direct-damage.test.ts",
+      kind: "targetParamDamage",
+      required: [
+        'const finalFlameCode = "73134081"',
+        "restores Final Flame's target-param damage operation",
+        "targetParam: 600",
+        "targetPlayer: 1",
+        "players[1].lifePoints).toBe(7400)",
+      ],
+    },
+    {
       file: "test/lua-real-script-hinotama-direct-damage.test.ts",
       kind: "targetParamDamage",
       required: [
@@ -137,6 +150,16 @@ function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKin
 
 function directDamageSemanticVariants(): Array<{ file: string; kind: DirectDamageSemanticVariant; required: string[] }> {
   const variants: Array<{ file: string; kind: DirectDamageSemanticVariant; required: string[] }> = [
+    {
+      file: "test/lua-real-script-final-flame-direct-damage.test.ts",
+      kind: "finalFlameTargetParamDamage",
+      required: [
+        "Final Flame Chain Responder",
+        "eventValue: 600",
+        "eventReasonCardUid: finalFlame!.uid",
+        "final flame responder resolved",
+      ],
+    },
     {
       file: "test/lua-real-script-hinotama-direct-damage.test.ts",
       kind: "hinotamaTargetParamDamage",
@@ -209,6 +232,7 @@ function countDirectDamageSemanticVariants(fixtures: Array<{ kind: DirectDamageS
       return counts;
     },
     {
+      finalFlameTargetParamDamage: 0,
       hinotamaTargetParamDamage: 0,
       meteorOfDestructionOpponentLpCondition: 0,
       ookaziTargetParamDamage: 0,
