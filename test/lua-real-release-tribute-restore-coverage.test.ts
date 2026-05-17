@@ -6,6 +6,24 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const releaseAndTributeFixtureCount = 7;
 const legalActionFixtureCount = 5;
+const releaseAndTributeKindCounts = {
+  archetypeCannotRelease: 1,
+  attributeTributeLimit: 1,
+  extraDeckReleaseCost: 1,
+  globalCannotRelease: 1,
+  raceTributeLimit: 1,
+  setcodeTributeLimit: 1,
+  unreleasableTributeLock: 1,
+} satisfies Record<ReleaseAndTributeKind, number>;
+
+type ReleaseAndTributeKind =
+  | "archetypeCannotRelease"
+  | "attributeTributeLimit"
+  | "extraDeckReleaseCost"
+  | "globalCannotRelease"
+  | "raceTributeLimit"
+  | "setcodeTributeLimit"
+  | "unreleasableTributeLock";
 
 describe("Lua real release and tribute restore coverage", () => {
   it("requires release and tribute restriction fixtures to assert clean Lua registry restore", () => {
@@ -46,12 +64,21 @@ describe("Lua real release and tribute restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps release and tribute fixture kinds explicit", () => {
+    expect(countReleaseAndTributeKinds(releaseAndTributeFixtureFiles())).toEqual(releaseAndTributeKindCounts);
+  });
 });
 
-function releaseAndTributeFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function releaseAndTributeFixtureFiles(): Array<{
+  file: string;
+  kind: ReleaseAndTributeKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "lua-real-script-amorphage-wrath-release-lock.test.ts",
+      kind: "archetypeCannotRelease",
       required: [
         "EFFECT_CANNOT_RELEASE",
         "target:not-setcode:",
@@ -62,6 +89,7 @@ function releaseAndTributeFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-apoqliphort-tribute-limit.test.ts",
+      kind: "setcodeTributeLimit",
       required: [
         "EFFECT_TRIBUTE_LIMIT",
         "cannot-material:target-not-setcode:170",
@@ -72,6 +100,7 @@ function releaseAndTributeFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-assault-zone-extra-deck-release-cost.test.ts",
+      kind: "extraDeckReleaseCost",
       required: [
         "effectExtraReleaseNonsum",
         "targetRange: [locationExtra, 0]",
@@ -82,6 +111,7 @@ function releaseAndTributeFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-diabolos-tribute-limit.test.ts",
+      kind: "attributeTributeLimit",
       required: [
         "EFFECT_TRIBUTE_LIMIT",
         "cannot-material:target-not-attribute:32",
@@ -92,6 +122,7 @@ function releaseAndTributeFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-mask-of-restrict-cannot-release.test.ts",
+      kind: "globalCannotRelease",
       required: [
         "EFFECT_CANNOT_RELEASE",
         "targetRange: [1, 1]",
@@ -101,6 +132,7 @@ function releaseAndTributeFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-troposphere-tribute-limit.test.ts",
+      kind: "raceTributeLimit",
       required: [
         "EFFECT_TRIBUTE_LIMIT",
         "cannot-material:target-not-race:512",
@@ -111,6 +143,7 @@ function releaseAndTributeFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-yellow-duston-unreleasable-tribute-lock.test.ts",
+      kind: "unreleasableTributeLock",
       required: [
         "Yellow Duston unreleasable tribute lock",
         "code: 43",
@@ -119,8 +152,12 @@ function releaseAndTributeFixtureFiles(): Array<{ file: string; required: string
         "cannot be released",
       ],
     },
-  ]
-    .map(({ file, required }) => ({ file: path.join("test", file), required }))
+  ] satisfies Array<{
+    file: string;
+    kind: ReleaseAndTributeKind;
+    required: string[];
+  }>)
+    .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }))
     .sort((a, b) => a.file.localeCompare(b.file));
 }
 
@@ -134,4 +171,24 @@ function legalActionFixtureFiles(): string[] {
   ]
     .map((file) => path.join("test", file))
     .sort();
+}
+
+function countReleaseAndTributeKinds(
+  fixtures: Array<{ kind: ReleaseAndTributeKind }>,
+): Record<ReleaseAndTributeKind, number> {
+  return fixtures.reduce<Record<ReleaseAndTributeKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      archetypeCannotRelease: 0,
+      attributeTributeLimit: 0,
+      extraDeckReleaseCost: 0,
+      globalCannotRelease: 0,
+      raceTributeLimit: 0,
+      setcodeTributeLimit: 0,
+      unreleasableTributeLock: 0,
+    },
+  );
 }
