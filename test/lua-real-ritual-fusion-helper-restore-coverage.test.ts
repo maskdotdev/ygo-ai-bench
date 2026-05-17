@@ -41,6 +41,26 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   ritualSpecificMaterial: 1,
   ritualStage2: 2,
 };
+const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemanticVariant, number> = {
+  doubleSubstituteSuppression: 1,
+  dynaForcedHandler: 1,
+  dynaForcedHandlerSuppression: 1,
+  earthChantEqualLevel: 1,
+  fallenAlbazNoTrigger: 1,
+  fallenAlbazOpponentMaterial: 1,
+  goddessFusionSubstitute: 1,
+  heavyExtraMaterialCountSuppression: 1,
+  heavyPartialExtraop: 1,
+  luminousEqualCode: 1,
+  luaPredicateFusionSubstitute: 1,
+  meteonisRequirementFunc: 1,
+  polymerizationHandMaterials: 1,
+  primiteFcheck: 1,
+  primiteFcheckSuppression: 1,
+  secretsDarkMagicMatcheck: 1,
+  secretsDarkMagicSuppression: 1,
+  secretsForcedSelection: 1,
+};
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
@@ -53,6 +73,19 @@ describe("Lua real Ritual and Fusion helper restore coverage", () => {
 
   it("keeps representative Ritual/Fusion helper fixture kinds explicit", () => {
     expect(countFixtureKinds(representativeRitualFusionHelperFixtures())).toEqual(representativeRitualFusionHelperKindCounts);
+  });
+
+  it("keeps multi-branch Ritual/Fusion helper semantic variants explicit", () => {
+    expect(countSemanticVariants(ritualFusionHelperSemanticVariants())).toEqual(ritualFusionHelperSemanticVariantCounts);
+
+    const weak = ritualFusionHelperSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 
   it("requires representative Ritual/Fusion helper fixtures to assert clean Lua restore", () => {
@@ -115,6 +148,25 @@ type RitualFusionHelperKind =
   | "ritualSelfProcedure"
   | "ritualSpecificMaterial"
   | "ritualStage2";
+type RitualFusionHelperSemanticVariant =
+  | "doubleSubstituteSuppression"
+  | "dynaForcedHandler"
+  | "dynaForcedHandlerSuppression"
+  | "earthChantEqualLevel"
+  | "fallenAlbazNoTrigger"
+  | "fallenAlbazOpponentMaterial"
+  | "goddessFusionSubstitute"
+  | "heavyExtraMaterialCountSuppression"
+  | "heavyPartialExtraop"
+  | "luminousEqualCode"
+  | "luaPredicateFusionSubstitute"
+  | "meteonisRequirementFunc"
+  | "polymerizationHandMaterials"
+  | "primiteFcheck"
+  | "primiteFcheckSuppression"
+  | "secretsDarkMagicMatcheck"
+  | "secretsDarkMagicSuppression"
+  | "secretsForcedSelection";
 
 function countFixtureFamilies(fixtures: Array<{ families: RitualFusionHelperFamily[] }>): Record<RitualFusionHelperFamily, number> {
   return fixtures
@@ -133,6 +185,183 @@ function countFixtureKinds(fixtures: Array<{ kind: RitualFusionHelperKind }>): R
     },
     Object.fromEntries(Object.keys(representativeRitualFusionHelperKindCounts).map((kind) => [kind, 0])) as Record<RitualFusionHelperKind, number>,
   );
+}
+
+function countSemanticVariants(fixtures: Array<{ kind: RitualFusionHelperSemanticVariant }>): Record<RitualFusionHelperSemanticVariant, number> {
+  return fixtures.reduce(
+    (counts, { kind }) => {
+      counts[kind] += 1;
+      return counts;
+    },
+    Object.fromEntries(Object.keys(ritualFusionHelperSemanticVariantCounts).map((kind) => [kind, 0])) as Record<RitualFusionHelperSemanticVariant, number>,
+  );
+}
+
+function ritualFusionHelperSemanticVariants(): Array<{ file: string; kind: RitualFusionHelperSemanticVariant; required: string[] }> {
+  return ([
+    {
+      file: "test/lua-real-script-polymerization-fusion-summon.test.ts",
+      kind: "doubleSubstituteSuppression",
+      required: [
+        "does not allow two Fusion substitutes to replace both listed materials",
+        "const goddessCode = \"53493204\"",
+        "expect(getLegalActions(session, 0).some((action) => action.type === \"activateEffect\" && action.uid === polymerization!.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dyna-base-forced-handler-fusion.test.ts",
+      kind: "dynaForcedHandler",
+      required: [
+        "restores a Fusion Summon that must use the activating handler as material",
+        "const dynaBaseCode = \"39396763\"",
+        "summonMaterialUids: [dynaBase!.uid, material!.uid]",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dyna-base-forced-handler-fusion.test.ts",
+      kind: "dynaForcedHandlerSuppression",
+      required: [
+        "does not expose the Fusion action when the target cannot use Dyna Base",
+        "const materialACode = \"39396768\"",
+        "getLegalActions(session, 0).find((action) => action.type === \"activateEffect\" && action.uid === dynaBase!.uid)).toBeUndefined()",
+      ],
+    },
+    {
+      file: "test/lua-real-script-earth-chant-ritual-equal.test.ts",
+      kind: "earthChantEqualLevel",
+      required: [
+        "restores AddProcEqual and selects exact-level Ritual materials",
+        "const earthChantCode = \"59820352\"",
+        "summonMaterialUids: [materialA!.uid, materialC!.uid]",
+      ],
+    },
+    {
+      file: "test/lua-real-script-fallen-of-albaz-opponent-fusion.test.ts",
+      kind: "fallenAlbazNoTrigger",
+      required: [
+        "does not expose the summon-success trigger when the Fusion target cannot use Albaz",
+        "const ownMaterialCode = \"68468464\"",
+        "cannot use Albaz",
+      ],
+    },
+    {
+      file: "test/lua-real-script-fallen-of-albaz-opponent-fusion.test.ts",
+      kind: "fallenAlbazOpponentMaterial",
+      required: [
+        "restores a Fusion Summon using Albaz and an opponent monster as material",
+        "const albazCode = \"68468459\"",
+        "summonMaterialUids: [albaz!.uid, opponentMaterial!.uid]",
+      ],
+    },
+    {
+      file: "test/lua-real-script-polymerization-fusion-summon.test.ts",
+      kind: "goddessFusionSubstitute",
+      required: [
+        "uses a real Fusion substitute monster for one specifically listed material",
+        "const goddessCode = \"53493204\"",
+        "summonMaterialUids: [goddess!.uid, materialB!.uid]",
+      ],
+    },
+    {
+      file: "test/lua-real-script-heavy-polymerization-partial-extraop.test.ts",
+      kind: "heavyExtraMaterialCountSuppression",
+      required: [
+        "does not expose Heavy Polymerization when the Extra Deck material count exceeds the opponent's monsters",
+        "const heavyPolymerizationCode = \"58570206\"",
+        "count exceeds the opponent's monsters",
+      ],
+    },
+    {
+      file: "test/lua-real-script-heavy-polymerization-partial-extraop.test.ts",
+      kind: "heavyPartialExtraop",
+      required: [
+        "restores Extra Deck material fcheck, banishes only Extra Deck materials, then sends remaining Fusion materials to the Graveyard",
+        "const heavyPolymerizationCode = \"58570206\"",
+        "expect(chainLink.possibleOperationInfos).toEqual([{ category: 0x4, targetUids: [], count: 1, player: 0, parameter: 0x40 }])",
+      ],
+    },
+    {
+      file: "test/lua-real-script-earth-chant-ritual-equal.test.ts",
+      kind: "luminousEqualCode",
+      required: [
+        "restores AddProcEqualCode into an exact-code Ritual Summon",
+        "const luminousDragonRitualCode = \"34834619\"",
+        "summonMaterialUids: [exactMaterial!.uid]",
+      ],
+    },
+    {
+      file: "test/lua-real-script-polymerization-fusion-summon.test.ts",
+      kind: "luaPredicateFusionSubstitute",
+      required: [
+        "honors Lua Fusion substitute value predicates against the Fusion target",
+        "const substituteCode = \"2440\"",
+        "summonMaterialUids: [substitute!.uid, materialB!.uid]",
+      ],
+    },
+    {
+      file: "test/lua-real-script-earth-chant-ritual-equal.test.ts",
+      kind: "meteonisRequirementFunc",
+      required: [
+        "restores Ritual requirementfunc material value callbacks",
+        "const meteonisCode = \"22398665\"",
+        "summonMaterialUids: [validMaterial!.uid]",
+      ],
+    },
+    {
+      file: "test/lua-real-script-polymerization-fusion-summon.test.ts",
+      kind: "polymerizationHandMaterials",
+      required: [
+        "restores Polymerization's registered Fusion Summon effect and resolves selected hand materials",
+        "const polymerizationCode = \"24094653\"",
+        "summonMaterialUids: [materialA!.uid, materialB!.uid]",
+      ],
+    },
+    {
+      file: "test/lua-real-script-primite-fusion-extra-check.test.ts",
+      kind: "primiteFcheck",
+      required: [
+        "restores extra material fcheck and shuffles a Normal Monster material into the Deck",
+        "const primiteFusionCode = \"99161253\"",
+        "summonMaterialUids: [normalMaterial!.uid, effectMaterial!.uid]",
+      ],
+    },
+    {
+      file: "test/lua-real-script-primite-fusion-extra-check.test.ts",
+      kind: "primiteFcheckSuppression",
+      required: [
+        "does not expose Primite Fusion when the selected material set has no Normal Monster",
+        "const materialACode = \"9920\"",
+        "no Normal Monster",
+      ],
+    },
+    {
+      file: "test/lua-real-script-secrets-dark-magic-fusion-matcheck.test.ts",
+      kind: "secretsDarkMagicMatcheck",
+      required: [
+        "restores the Fusion material check that requires Dark Magician or Dark Magician Girl",
+        "const secretsCode = \"59514116\"",
+        "summonMaterialUids: [darkMagician!.uid, material!.uid]",
+      ],
+    },
+    {
+      file: "test/lua-real-script-secrets-dark-magic-fusion-matcheck.test.ts",
+      kind: "secretsDarkMagicSuppression",
+      required: [
+        "does not expose the Fusion activation when no selected material is Dark Magician or Dark Magician Girl",
+        "const materialACode = \"59514120\"",
+        "no selected material is Dark Magician or Dark Magician Girl",
+      ],
+    },
+    {
+      file: "test/lua-real-script-earth-chant-ritual-equal.test.ts",
+      kind: "secretsForcedSelection",
+      required: [
+        "restores Ritual forcedselection material requirements",
+        "const secretsCode = \"59514116\"",
+        "summonMaterialUids: [darkMagician!.uid]",
+      ],
+    },
+  ] satisfies Array<{ file: string; kind: RitualFusionHelperSemanticVariant; required: string[] }>).sort((a, b) => a.kind.localeCompare(b.kind));
 }
 
 function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind: RitualFusionHelperKind; families: RitualFusionHelperFamily[]; required: string[] }> {
