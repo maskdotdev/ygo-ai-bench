@@ -292,10 +292,13 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
       families: ["ritual"],
       required: [
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x1 }]',
+        "expect(restored.session.state.chain[0]?.operationInfos).toEqual([",
         'position: "faceUpDefense"',
         'summonType: "ritual"',
         "summonMaterialUids: [material!.uid]",
         "reason: duelReason.material | duelReason.ritual",
+        'eventName === "specialSummoned"',
+        'eventName === "sentToGraveyard"',
         'expect(restored.host.messages).not.toContain("megalith unformed responder resolved")',
       ],
     },
