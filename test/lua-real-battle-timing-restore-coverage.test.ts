@@ -14,6 +14,29 @@ const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   endDamageStep: 4,
   startDamageStep: 2,
 };
+const battleTimingSemanticVariantCounts = {
+  allyOfJusticeNullfierAfterDamageDisable: 1,
+  cipherSoldierBeforeDamageCalculationBoost: 1,
+  ddAssailantAfterDamageBanishBoth: 1,
+  ddWarriorWallMandatoryBattledSegoc: 1,
+  desKangarooEndDamageDestroy: 1,
+  destructionPunchEndDamageTrapDestroy: 1,
+  divineKnightIshzarkAfterDamageBanish: 1,
+  fabledAshenveilPreDamageBoost: 1,
+  geminiSoldierAfterDamageDeckSummon: 1,
+  getsuFuhmaEndDamageTargetDestroy: 1,
+  gundariStartDamageSynchroBounce: 1,
+  hayateAfterDamageDeckSend: 1,
+  kuribohBeforeDamagePrevent: 1,
+  mirageKnightDuringDamageAtkBanish: 1,
+  nightmareMagicianEndDamageControl: 1,
+  predaplantSarraceniantAfterDamageDestroy: 1,
+  reflectBounderStartAndAfterDamageDestroy: 1,
+  shadowSpellDuringDamagePersistentStat: 1,
+  shinobirdCrowStartDamageStatBoost: 1,
+  topologicBomberAfterDamageBurn: 1,
+  wallOfIllusionAfterDamageBounce: 1,
+} satisfies Record<BattleTimingSemanticVariant, number>;
 
 describe("Lua real battle timing restore coverage", () => {
   it("keeps battle timing fixture kinds explicit", () => {
@@ -57,9 +80,196 @@ describe("Lua real battle timing restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps named battle timing semantic variants explicit", () => {
+    expect(countBattleTimingSemanticVariants(battleTimingSemanticVariants())).toEqual(battleTimingSemanticVariantCounts);
+
+    const weak = battleTimingSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
+  });
 });
 
 type BattleTimingKind = "afterDamageCalculation" | "beforeDamageCalculation" | "duringDamageCalculation" | "endDamageStep" | "startDamageStep";
+type BattleTimingSemanticVariant =
+  | "allyOfJusticeNullfierAfterDamageDisable"
+  | "cipherSoldierBeforeDamageCalculationBoost"
+  | "ddAssailantAfterDamageBanishBoth"
+  | "ddWarriorWallMandatoryBattledSegoc"
+  | "desKangarooEndDamageDestroy"
+  | "destructionPunchEndDamageTrapDestroy"
+  | "divineKnightIshzarkAfterDamageBanish"
+  | "fabledAshenveilPreDamageBoost"
+  | "geminiSoldierAfterDamageDeckSummon"
+  | "getsuFuhmaEndDamageTargetDestroy"
+  | "gundariStartDamageSynchroBounce"
+  | "hayateAfterDamageDeckSend"
+  | "kuribohBeforeDamagePrevent"
+  | "mirageKnightDuringDamageAtkBanish"
+  | "nightmareMagicianEndDamageControl"
+  | "predaplantSarraceniantAfterDamageDestroy"
+  | "reflectBounderStartAndAfterDamageDestroy"
+  | "shadowSpellDuringDamagePersistentStat"
+  | "shinobirdCrowStartDamageStatBoost"
+  | "topologicBomberAfterDamageBurn"
+  | "wallOfIllusionAfterDamageBounce";
+
+function battleTimingSemanticVariants(): Array<{
+  file: string;
+  kind: BattleTimingSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-ally-of-justice-nullfier-battled-disable.test.ts",
+      kind: "allyOfJusticeNullfierAfterDamageDisable",
+      required: ["restores its EVENT_BATTLED label-object trigger and disables the LIGHT battle target", "eventName: \"afterDamageCalculation\"", "target disabled true"],
+    },
+    {
+      file: "test/lua-real-script-cipher-soldier-pre-damage-calculate.test.ts",
+      kind: "cipherSoldierBeforeDamageCalculationBoost",
+      required: ["restores its EVENT_PRE_DAMAGE_CALCULATE trigger and applies the Warrior battle stat boost", "eventCode: 1134", "currentAttack(restored.session.state.cards.find"],
+    },
+    {
+      file: "test/lua-real-script-dd-assailant-battled-remove.test.ts",
+      kind: "ddAssailantAfterDamageBanishBoth",
+      required: ["restores D.D. Assailant after damage calculation and banishes both battle participants", "triggerBucket: \"opponentMandatory\"", "eventName: \"banished\""],
+    },
+    {
+      file: "test/lua-real-script-dd-warrior-wall-battled-segoc.test.ts",
+      kind: "ddWarriorWallMandatoryBattledSegoc",
+      required: ["restores simultaneous EVENT_BATTLED mandatory triggers and respects chain order battle relation", "triggerBucket: \"turnMandatory\"", "triggerBucket: \"opponentMandatory\""],
+    },
+    {
+      file: "test/lua-real-script-des-kangaroo-damage-step-end.test.ts",
+      kind: "desKangarooEndDamageDestroy",
+      required: ["restores Des Kangaroo's end Damage Step trigger and destroys the lower-ATK attacker", "eventName: \"damageStepEnded\"", "eventName: \"destroyed\""],
+    },
+    {
+      file: "test/lua-real-script-destruction-punch-damage-step-end.test.ts",
+      kind: "destructionPunchEndDamageTrapDestroy",
+      required: ["restores its end-Damage-Step Trap activation and destroys the battle attacker", "eventName: \"damageStepEnded\"", "location: \"graveyard\""],
+    },
+    {
+      file: "test/lua-real-script-divine-knight-ishzark-battled-remove.test.ts",
+      kind: "divineKnightIshzarkAfterDamageBanish",
+      required: ["restores Divine Knight Ishzark after damage calculation and banishes the battle-destroyed target", "triggerBucket: \"turnMandatory\"", "eventName: \"banished\""],
+    },
+    {
+      file: "test/lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
+      kind: "fabledAshenveilPreDamageBoost",
+      required: ["restores its hand cost and pre-damage calculation ATK boost", "battleWindow?.kind).toBe(\"beforeDamageCalculation\")", "eventReasonEffectId: 1"],
+    },
+    {
+      file: "test/lua-real-script-gemini-soldier-battled-deck-summon.test.ts",
+      kind: "geminiSoldierAfterDamageDeckSummon",
+      required: ["restores battled trigger, Deck Special Summon, and battle indestructible count", "triggerBucket: \"turnOptional\"", "eventName: \"specialSummoned\""],
+    },
+    {
+      file: "test/lua-real-script-getsu-fuhma-damage-step-end.test.ts",
+      kind: "getsuFuhmaEndDamageTargetDestroy",
+      required: ["restores Getsu Fuhma's stored battle target and destroys it at the end of the Damage Step", "battleWindow?.kind).toBe(\"endDamageStep\")", "effectLabelObjectUid"],
+    },
+    {
+      file: "test/lua-real-script-gundari-battle-start-synchro-bounce.test.ts",
+      kind: "gundariStartDamageSynchroBounce",
+      required: ["restores its battle-start trigger and returns both battling monsters to hand", "eventName: \"battleStarted\"", "eventName: \"sentToHand\""],
+    },
+    {
+      file: "test/lua-real-script-hayate-battled-send.test.ts",
+      kind: "hayateAfterDamageDeckSend",
+      required: ["restores its direct-attack EVENT_BATTLED trigger and sends a Sky Striker card from Deck to Graveyard", "triggerBucket: \"turnOptional\"", "eventReasonEffectId: 3"],
+    },
+    {
+      file: "test/lua-real-script-kuriboh-pre-damage-prevent.test.ts",
+      kind: "kuribohBeforeDamagePrevent",
+      required: ["restores its before-damage hand Quick Effect and prevents battle damage after self-discard cost", "triggerEvent: \"beforeDamageCalculation\"", "battleDamage).toEqual({ 0: 0, 1: 0 })"],
+    },
+    {
+      file: "test/lua-real-script-mirage-knight-battle-target-atk.test.ts",
+      kind: "mirageKnightDuringDamageAtkBanish",
+      required: ["restores GetBattleTarget damage-calculation ATK and End Phase self-banish after battle", "battleWindow?.kind).toBe(\"duringDamageCalculation\")", "eventName: \"banished\""],
+    },
+    {
+      file: "test/lua-real-script-nightmare-magician-battle-control.test.ts",
+      kind: "nightmareMagicianEndDamageControl",
+      required: ["restores battle-target indestructibility and controls the battled monster at Damage Step end", "triggerBucket: \"turnOptional\"", "previousController: 1"],
+    },
+    {
+      file: "test/lua-real-script-predaplant-sarraceniant-battled-destroy.test.ts",
+      kind: "predaplantSarraceniantAfterDamageDestroy",
+      required: ["restores its EVENT_BATTLED trigger and destroys the monster it battled", "eventCode: 1138", "reasonEffectId: 2"],
+    },
+    {
+      file: "test/lua-real-script-reflect-bounder-battle-confirm-destroy.test.ts",
+      kind: "reflectBounderStartAndAfterDamageDestroy",
+      required: ["restores battle-confirm damage into a later battled self-destruction trigger", "eventName: \"battleConfirmed\"", "eventName: \"afterDamageCalculation\""],
+    },
+    {
+      file: "test/lua-real-script-shadow-spell-goat-damage-calculation-persistent.test.ts",
+      kind: "shadowSpellDuringDamagePersistentStat",
+      required: ["restores a damage-calculation persistent target into ATK loss before battle damage", "battleWindow?.kind).toBe(\"duringDamageCalculation\")", "shadow spell persistent true/true/1/1500"],
+    },
+    {
+      file: "test/lua-real-script-shinobird-crow-damage-step-stat.test.ts",
+      kind: "shinobirdCrowStartDamageStatBoost",
+      required: ["restores its Damage Step discard label object and applies the ATK/DEF boost", "battleWindow?.kind).toBe(\"startDamageStep\")", "effectLabelObjectUid"],
+    },
+    {
+      file: "test/lua-real-script-topologic-bomber-battled-damage.test.ts",
+      kind: "topologicBomberAfterDamageBurn",
+      required: ["restores its EVENT_BATTLED trigger and deals effect damage from the battle target's base ATK", "eventName: \"damageDealt\"", "eventValue: 1200"],
+    },
+    {
+      file: "test/lua-real-script-wall-of-illusion-battled.test.ts",
+      kind: "wallOfIllusionAfterDamageBounce",
+      required: ["restores Wall of Illusion after damage calculation and returns its attacker to hand", "triggerBucket: \"opponentMandatory\"", "eventName: \"sentToHand\""],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: BattleTimingSemanticVariant;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countBattleTimingSemanticVariants(
+  fixtures: Array<{ kind: BattleTimingSemanticVariant }>,
+): Record<BattleTimingSemanticVariant, number> {
+  return fixtures.reduce<Record<BattleTimingSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      allyOfJusticeNullfierAfterDamageDisable: 0,
+      cipherSoldierBeforeDamageCalculationBoost: 0,
+      ddAssailantAfterDamageBanishBoth: 0,
+      ddWarriorWallMandatoryBattledSegoc: 0,
+      desKangarooEndDamageDestroy: 0,
+      destructionPunchEndDamageTrapDestroy: 0,
+      divineKnightIshzarkAfterDamageBanish: 0,
+      fabledAshenveilPreDamageBoost: 0,
+      geminiSoldierAfterDamageDeckSummon: 0,
+      getsuFuhmaEndDamageTargetDestroy: 0,
+      gundariStartDamageSynchroBounce: 0,
+      hayateAfterDamageDeckSend: 0,
+      kuribohBeforeDamagePrevent: 0,
+      mirageKnightDuringDamageAtkBanish: 0,
+      nightmareMagicianEndDamageControl: 0,
+      predaplantSarraceniantAfterDamageDestroy: 0,
+      reflectBounderStartAndAfterDamageDestroy: 0,
+      shadowSpellDuringDamagePersistentStat: 0,
+      shinobirdCrowStartDamageStatBoost: 0,
+      topologicBomberAfterDamageBurn: 0,
+      wallOfIllusionAfterDamageBounce: 0,
+    },
+  );
+}
 
 function countBattleTimingKinds(fixtures: Array<{ kind: BattleTimingKind }>): Record<BattleTimingKind, number> {
   return fixtures.reduce<Record<BattleTimingKind, number>>(
