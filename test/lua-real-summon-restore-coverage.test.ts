@@ -85,6 +85,18 @@ const forceMonsterZoneSummonLockKindCounts = {
   linkedZoneSummonSetLock: 1,
   temporarySelectedZone: 1,
 } satisfies Record<ForceMonsterZoneSummonLockKind, number>;
+const summonSemanticVariantCounts = {
+  realScriptSummonKeywordCorpus: realScriptSummonFixtureCount,
+  summonProcedureLegalWindows: summonProcedureFixtureCount,
+  typedSummonProcedurePlacement: typedSummonProcedureFixtureCount,
+  pendulumGrantConsumption: pendulumGrantFixtureCount,
+  pendulumHelperGrantFilters: pendulumHelperFixtureCount,
+  unionEquipAndSummonBackProcedures: unionProcedureFixtureCount,
+  summonMaterialLockSuppression: materialLockFixtureCount,
+  flipSummonSuccessTrapResponses: flipSummonSuccessTrapFixtureCount,
+  linkedZoneSpecialSummons: linkedZoneSpecialSummonFixtureCount,
+  forceMonsterZoneSummonLocks: 4,
+} satisfies Record<SummonSemanticVariant, number>;
 
 type SummonUnionProcedureKind =
   | "battleTriggerSummonBack"
@@ -110,6 +122,17 @@ type ForceMonsterZoneSummonLockKind =
   | "extraLocationRange"
   | "linkedZoneSummonSetLock"
   | "temporarySelectedZone";
+type SummonSemanticVariant =
+  | "realScriptSummonKeywordCorpus"
+  | "summonProcedureLegalWindows"
+  | "typedSummonProcedurePlacement"
+  | "pendulumGrantConsumption"
+  | "pendulumHelperGrantFilters"
+  | "unionEquipAndSummonBackProcedures"
+  | "summonMaterialLockSuppression"
+  | "flipSummonSuccessTrapResponses"
+  | "linkedZoneSpecialSummons"
+  | "forceMonsterZoneSummonLocks";
 type RealScriptSummonKeywordFamily =
   | "fusion"
   | "link"
@@ -392,6 +415,16 @@ describe("Lua real summon restore coverage", () => {
 
   it("keeps force-Monster-Zone summon lock fixture kinds explicit", () => {
     expect(countForceMonsterZoneSummonLockKinds(realScriptForceMonsterZoneSummonLockFixtureSnippets())).toEqual(forceMonsterZoneSummonLockKindCounts);
+  });
+
+  it("keeps named summon semantic variants explicit", () => {
+    expect(countSummonSemanticVariants(summonSemanticVariants())).toEqual(summonSemanticVariantCounts);
+
+    const empty = Object.entries(groupSummonSemanticVariantFiles(summonSemanticVariants()))
+      .filter(([, files]) => files.length === 0)
+      .map(([kind]) => kind);
+
+    expect(empty).toEqual([]);
   });
 });
 
@@ -1131,6 +1164,67 @@ function countFlipSummonSuccessTrapKinds(
       flipBanishTrap: 0,
       flipDestroyTrap: 0,
       flipStatTrap: 0,
+    },
+  );
+}
+
+function summonSemanticVariants(): Array<{ file: string; kind: SummonSemanticVariant }> {
+  return [
+    ...realScriptSummonFixtureFiles().map((file) => ({ file, kind: "realScriptSummonKeywordCorpus" as const })),
+    ...realScriptSummonProcedureFixtureFiles().map((file) => ({ file, kind: "summonProcedureLegalWindows" as const })),
+    ...realScriptTypedSummonProcedureFixtureFiles().map((file) => ({ file, kind: "typedSummonProcedurePlacement" as const })),
+    ...realScriptPendulumGrantFixtureFiles().map((file) => ({ file, kind: "pendulumGrantConsumption" as const })),
+    ...realScriptPendulumHelperFixtureSnippets().map(({ file }) => ({ file, kind: "pendulumHelperGrantFilters" as const })),
+    ...realScriptUnionProcedureFixtureSnippets().map(({ file }) => ({ file, kind: "unionEquipAndSummonBackProcedures" as const })),
+    ...realScriptMaterialLockFixtureSnippets().map(({ file }) => ({ file, kind: "summonMaterialLockSuppression" as const })),
+    ...realScriptFlipSummonSuccessTrapFixtureSnippets().map(({ file }) => ({ file, kind: "flipSummonSuccessTrapResponses" as const })),
+    ...realScriptLinkedZoneSpecialSummonFixtureSnippets().map(({ file }) => ({ file, kind: "linkedZoneSpecialSummons" as const })),
+    ...realScriptForceMonsterZoneSummonLockFixtureSnippets().map(({ file }) => ({ file, kind: "forceMonsterZoneSummonLocks" as const })),
+  ];
+}
+
+function countSummonSemanticVariants(
+  fixtures: Array<{ kind: SummonSemanticVariant }>,
+): Record<SummonSemanticVariant, number> {
+  return fixtures.reduce<Record<SummonSemanticVariant, number>>(
+    (counts, { kind }) => {
+      counts[kind] += 1;
+      return counts;
+    },
+    {
+      realScriptSummonKeywordCorpus: 0,
+      summonProcedureLegalWindows: 0,
+      typedSummonProcedurePlacement: 0,
+      pendulumGrantConsumption: 0,
+      pendulumHelperGrantFilters: 0,
+      unionEquipAndSummonBackProcedures: 0,
+      summonMaterialLockSuppression: 0,
+      flipSummonSuccessTrapResponses: 0,
+      linkedZoneSpecialSummons: 0,
+      forceMonsterZoneSummonLocks: 0,
+    },
+  );
+}
+
+function groupSummonSemanticVariantFiles(
+  fixtures: Array<{ file: string; kind: SummonSemanticVariant }>,
+): Record<SummonSemanticVariant, string[]> {
+  return fixtures.reduce<Record<SummonSemanticVariant, string[]>>(
+    (groups, { file, kind }) => {
+      groups[kind].push(file);
+      return groups;
+    },
+    {
+      realScriptSummonKeywordCorpus: [],
+      summonProcedureLegalWindows: [],
+      typedSummonProcedurePlacement: [],
+      pendulumGrantConsumption: [],
+      pendulumHelperGrantFilters: [],
+      unionEquipAndSummonBackProcedures: [],
+      summonMaterialLockSuppression: [],
+      flipSummonSuccessTrapResponses: [],
+      linkedZoneSpecialSummons: [],
+      forceMonsterZoneSummonLocks: [],
     },
   );
 }
