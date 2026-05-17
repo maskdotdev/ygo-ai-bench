@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 13;
+const operationFixtureCount = 14;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
   deckToGrave: 1,
-  groupDestroy: 4,
+  groupDestroy: 5,
   releaseDamage: 1,
   searchOrExcavate: 3,
   tossCoin: 1,
@@ -162,6 +162,17 @@ function operationFixtureFiles(): Array<{
         "sortedUids([opponentTrap!.uid, opponentSpell!.uid])",
         'eventName: "destroyed"',
         'location: "spellTrapZone"',
+        'location: "graveyard"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-heavy-storm-group-destroy.test.ts",
+      kind: "groupDestroy",
+      required: [
+        "category: 0x1",
+        "sortedUids([ownBackrow!.uid, opponentTrap!.uid, opponentSpell!.uid])",
+        'eventName: "destroyed"',
         'location: "graveyard"',
         "host.messages).not.toContain",
       ],
