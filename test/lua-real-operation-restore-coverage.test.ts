@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 16;
+const operationFixtureCount = 17;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
   deckToGrave: 1,
-  groupDestroy: 7,
+  groupDestroy: 8,
   releaseDamage: 1,
   searchOrExcavate: 3,
   tossCoin: 1,
@@ -282,6 +282,18 @@ function operationFixtureFiles(): Array<{
         "lastCoinResults).toEqual([])",
         'eventName: "coinTossed"',
         "saion disabled true",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-smashing-ground-max-defense-destroy.test.ts",
+      kind: "groupDestroy",
+      required: [
+        "category: 0x1",
+        "opponentHighDefense!.uid",
+        "Smashing Ground High Defense Target",
+        'eventName: "destroyed"',
+        'location: "graveyard"',
         "host.messages).not.toContain",
       ],
     },
