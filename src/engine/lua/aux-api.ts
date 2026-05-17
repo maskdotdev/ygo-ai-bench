@@ -586,6 +586,7 @@ function knownFixedFilterDescriptor(L: unknown, requireFaceup: boolean): string 
   if (!lua.lua_isnumber(L, 2)) return undefined;
   const value = lua.lua_tointeger(L, 2);
   if (isNamedTableFunction(L, 1, "Card", "IsType")) return `${requireFaceup ? "target:faceup-type" : "target:type"}:${value}`;
+  if (isNamedTableFunction(L, 1, "Card", "IsAttribute")) return `${requireFaceup ? "target:faceup-attribute" : "target:attribute"}:${value}`;
   if (!requireFaceup && isNamedTableFunction(L, 1, "Card", "IsCode")) return `target:code:${value}`;
   return undefined;
 }

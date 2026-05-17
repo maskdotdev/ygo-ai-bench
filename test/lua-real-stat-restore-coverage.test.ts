@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 5;
+const statFixtureCount = 6;
 const statKindCounts = {
   battleTargetAttackBoost: 1,
-  fieldAttributeAttackUpdate: 1,
+  fieldAttributeAttackUpdate: 2,
   setAttack: 1,
   setBaseAttack: 1,
   staticAttackAndExtraAttack: 1,
@@ -17,6 +17,7 @@ const statSemanticVariantCounts = {
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
   mirageKnightBattleTargetAtkEndPhaseBanish: 1,
+  mysticPlasmaZoneTargetBoolFunctionAttributeStat: 1,
   shrinkTargetBaseAtkHalving: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
@@ -26,6 +27,7 @@ type StatSemanticVariant =
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
   | "fortuneLadyPastCallbackSetAtkDef"
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
+  | "mysticPlasmaZoneTargetBoolFunctionAttributeStat"
   | "shrinkTargetBaseAtkHalving";
 
 describe("Lua real stat restore coverage", () => {
@@ -86,6 +88,18 @@ function statFixtureFiles(): Array<{
         "target:attribute:1",
         "currentAttack(restoredBladefly, restored.session.state)).toBe((bladefly!.data.attack ?? 0) + 500)",
         "currentAttack(restoredEarthTarget, restored.session.state)).toBe(1200)",
+        "battleDamage[1]).toBe(300)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-mystic-plasma-zone-attribute-stat.test.ts",
+      kind: "fieldAttributeAttackUpdate",
+      required: [
+        "aux.TargetBoolFunction Card.IsAttribute ATK and DEF field updates",
+        "luaTargetDescriptor",
+        "target:attribute:32",
+        "currentAttack(restoredDarkAttacker, restored.session.state)).toBe(1500)",
+        "currentDefense(restoredDarkDefender, restored.session.state)).toBe(1200)",
         "battleDamage[1]).toBe(300)",
       ],
     },
@@ -203,6 +217,16 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-mystic-plasma-zone-attribute-stat.test.ts",
+      kind: "mysticPlasmaZoneTargetBoolFunctionAttributeStat",
+      required: [
+        'const zoneCode = "18161786"',
+        "restores aux.TargetBoolFunction Card.IsAttribute ATK and DEF field updates into battle damage",
+        "target:attribute:32",
+        "currentDefense(restoredDarkAttacker, restored.session.state)).toBe(600)",
+      ],
+    },
+    {
       file: "test/lua-real-script-shrink-set-base-attack.test.ts",
       kind: "shrinkTargetBaseAtkHalving",
       required: [
@@ -229,6 +253,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
+      mysticPlasmaZoneTargetBoolFunctionAttributeStat: 0,
       shrinkTargetBaseAtkHalving: 0,
     },
   );
