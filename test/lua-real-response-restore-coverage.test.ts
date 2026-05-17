@@ -7,6 +7,16 @@ const root = process.cwd();
 const responseFixtureCount = 121;
 const chainedResponseFixtureCount = 120;
 const responseOperationInfoFixtureCount = 112;
+const responseWithoutOperationInfoFixtureFiles = [
+  "test/lua-real-script-angineer-overlay-position.test.ts",
+  "test/lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
+  "test/lua-real-script-hebo-spirit-grant-return.test.ts",
+  "test/lua-real-script-negate-attack-battle-window.test.ts",
+  "test/lua-real-script-scrap-iron-scarecrow-battle-window.test.ts",
+  "test/lua-real-script-shinobird-crow-damage-step-stat.test.ts",
+  "test/lua-real-script-threatening-roar-temporary-attack-lock.test.ts",
+  "test/lua-real-script-waboku-temporary-battle-protection.test.ts",
+];
 const responseFixtureKindCounts = {
   chainedResponseWithOperationInfo: 112,
   chainedResponseWithoutOperationInfo: 8,
@@ -82,6 +92,14 @@ describe("Lua real response restore coverage", () => {
       });
 
     expect(missing).toEqual([]);
+  });
+
+  it("keeps chained response fixtures without operation-info assertions explicit", () => {
+    const operationInfoFiles = new Set(realScriptResponseOperationInfoFixtureFiles());
+    const files = realScriptChainedResponseFixtureFiles()
+      .filter((file) => !operationInfoFiles.has(file));
+
+    expect(files).toEqual(responseWithoutOperationInfoFixtureFiles);
   });
 
   it("requires operation-info assertions for chained response fixtures that announce categories", () => {
@@ -238,17 +256,9 @@ function realScriptChainedResponseFixtureFiles(): string[] {
 }
 
 function realScriptResponseOperationInfoFixtureFiles(): string[] {
+  const responseWithoutOperationInfoFiles = new Set(responseWithoutOperationInfoFixtureFiles);
   return realScriptChainedResponseFixtureFiles()
-    .filter((file) =>
-      !file.endsWith("lua-real-script-angineer-overlay-position.test.ts")
-      && !file.endsWith("lua-real-script-fabled-ashenveil-damage-step-boost.test.ts")
-      && !file.endsWith("lua-real-script-hebo-spirit-grant-return.test.ts")
-      && !file.endsWith("lua-real-script-negate-attack-battle-window.test.ts")
-      && !file.endsWith("lua-real-script-scrap-iron-scarecrow-battle-window.test.ts")
-      && !file.endsWith("lua-real-script-shinobird-crow-damage-step-stat.test.ts")
-      && !file.endsWith("lua-real-script-threatening-roar-temporary-attack-lock.test.ts")
-      && !file.endsWith("lua-real-script-waboku-temporary-battle-protection.test.ts")
-    );
+    .filter((file) => !responseWithoutOperationInfoFiles.has(file));
 }
 
 function countResponseFixtureKinds(files: string[]): Record<ResponseFixtureKind, number> {
