@@ -248,6 +248,79 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fl
     expect(probe.ok, probe.error).toBe(true);
     expect(restored.host.messages).toContain("flash charge force mzone tribute material 0");
   });
+
+  it("restores EFFECT_FORCE_MZONE for control-change placement", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const flashCode = "95372220";
+    const targetCode = "95372235";
+    const blockerCodes = ["95372236", "95372237", "95372238"];
+    const flashCard = workspace.readDatabaseCards("cards.cdb").find((card) => card.code === flashCode);
+    expect(flashCard).toBeDefined();
+    const cards: DuelCardData[] = [
+      { ...flashCard!, linkMarkers: 0x20 },
+      { code: targetCode, name: "Flash Charge Control Target", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1000, defense: 1000 },
+      ...blockerCodes.map((code, index) => ({
+        code,
+        name: `Flash Charge Control Blocker ${index + 1}`,
+        kind: "monster" as const,
+        typeFlags: typeMonster | typeEffect,
+        race: raceDragon,
+        level: 4,
+        attack: 1000,
+        defense: 1000,
+      })),
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 9540, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [...blockerCodes], extra: [flashCode] }, 1: { main: [targetCode] } });
+    startDuel(session);
+
+    const flash = requireCard(session, flashCode);
+    const target = requireCard(session, targetCode);
+    const blockers = blockerCodes.map((code) => requireCard(session, code));
+    moveDuelCard(session.state, flash.uid, "monsterZone", 0);
+    flash.sequence = 2;
+    flash.faceUp = true;
+    flash.position = "faceUpAttack";
+    for (const [index, blocker] of blockers.entries()) {
+      moveDuelCard(session.state, blocker.uid, "monsterZone", 0);
+      blocker.sequence = [0, 1, 4][index]!;
+      blocker.faceUp = true;
+      blocker.position = "faceUpAttack";
+    }
+    moveDuelCard(session.state, target.uid, "monsterZone", 1);
+    target.faceUp = true;
+    target.position = "faceUpAttack";
+    session.state.phase = "main1";
+    session.state.turnPlayer = 0;
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(flashCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const forceZoneEffect = session.state.effects.find((effect) => effect.code === 265 && effect.sourceUid === flash.uid);
+    expect(forceZoneEffect).toMatchObject({ code: 265, sourceUid: flash.uid });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restored, 0);
+
+    const probe = restored.host.loadScript(
+      `
+      local target=Duel.GetFirstMatchingCard(aux.FilterBoolFunction(Card.IsCode,${targetCode}),0,0,LOCATION_MZONE,nil)
+      Debug.Message("flash charge force mzone control count " .. tostring(Duel.GetLocationCount(0,LOCATION_MZONE,0,LOCATION_REASON_CONTROL)))
+      Debug.Message("flash charge force mzone control predicate " .. tostring(target:IsAbleToChangeControler()))
+      Debug.Message("flash charge force mzone control take " .. tostring(Duel.GetControl(target,0,0,0,LOCATION_MZONE)))
+      `,
+      "flash-charge-force-mzone-control-probe.lua",
+    );
+    expect(probe.ok, probe.error).toBe(true);
+    expect(restored.host.messages).toContain("flash charge force mzone control count 0");
+    expect(restored.host.messages).toContain("flash charge force mzone control predicate false");
+    expect(restored.host.messages).toContain("flash charge force mzone control take 0");
+  });
 });
 
 function requireCard(session: DuelSession, code: string) {

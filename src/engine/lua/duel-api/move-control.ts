@@ -1,5 +1,6 @@
 import { getCards, hasZoneSpace, moveDuelCard, pushDuelLog, recordPreviousDuelCardState, resequence } from "#duel/card-state.js";
 import { isControlChangePrevented, setControlPlayerForCard } from "#duel/continuous-effects.js";
+import { availableForcedMonsterZoneCount, firstOpenForcedMonsterZoneSequence } from "#duel/forced-monster-zones.js";
 import { phaseMask } from "#duel/phase-mask.js";
 import { duelReason } from "#duel/reasons.js";
 import { resetEvent, resetLeave, resetPhase } from "#duel/reset-flags.js";
@@ -8,11 +9,23 @@ import type { DuelEventPayload } from "#duel/event-history.js";
 import type { DuelCardInstance, DuelEffectDefinition, DuelLocation, DuelPhase, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
 export const luaTemporaryControlReturnDescriptor = "temporary-control-return";
+const locationReasonControl = 0x2;
+type MonsterZoneSequenceSnapshot = Array<{ uid: string; sequence: number }>;
 
-export function canLuaChangeControl(state: DuelState, card: DuelCardInstance, allowedLocations: DuelLocation[] | undefined): boolean {
+export function canLuaChangeControl(state: DuelState, card: DuelCardInstance, allowedLocations: DuelLocation[] | undefined, targetPlayer?: PlayerId, excludedUids: readonly string[] = [card.uid]): boolean {
   if (card.location !== "monsterZone" && card.location !== "spellTrapZone") return false;
   if (isControlChangePrevented(state, card, createLuaMaterialCheckContext(state))) return false;
-  return !allowedLocations || allowedLocations.includes(card.location);
+  if (allowedLocations && !allowedLocations.includes(card.location)) return false;
+  return targetPlayer === undefined || hasLuaControlZoneSpace(state, targetPlayer, card, excludedUids);
+}
+
+export function hasLuaControlZoneSpace(state: DuelState, targetPlayer: PlayerId, card: DuelCardInstance, excludedUids: readonly string[] = [card.uid]): boolean {
+  if (card.location === "monsterZone") return availableForcedMonsterZoneCount(state, targetPlayer, excludedUids, 0, locationReasonControl, card) > 0;
+  return hasZoneSpace(state, targetPlayer, card.location);
+}
+
+export function firstLuaControlMonsterZoneSequence(state: DuelState, targetPlayer: PlayerId, card: DuelCardInstance, excludedUids: readonly string[] = [card.uid]): number | undefined {
+  return firstOpenForcedMonsterZoneSequence(state, targetPlayer, excludedUids, 0, locationReasonControl, card);
 }
 
 export function canLuaSwapControlPair(state: DuelState, left: DuelCardInstance, right: DuelCardInstance): boolean {
@@ -25,9 +38,13 @@ export function applyLuaContinuousSetControl(session: DuelSession, target: DuelC
   if (target.location !== "monsterZone" && target.location !== "spellTrapZone") return false;
   const targetPlayer = setControlPlayerForCard(session.state, target, createLuaMaterialCheckContext(session.state));
   if (targetPlayer === undefined || target.controller === targetPlayer) return false;
-  if (!hasZoneSpace(session.state, targetPlayer, target.location)) return false;
+  if (!hasLuaControlZoneSpace(session.state, targetPlayer, target)) return false;
+  const sequence = target.location === "monsterZone" ? firstLuaControlMonsterZoneSequence(session.state, targetPlayer, target) : undefined;
+  const snapshot = target.location === "monsterZone" ? monsterZoneSequenceSnapshot(session.state, targetPlayer, [target.uid]) : undefined;
   const previousController = target.controller;
   moveDuelCard(session.state, target.uid, target.location, targetPlayer, duelReason.effect, reasonPlayer);
+  if (snapshot) restoreMonsterZoneSequenceSnapshot(session.state, snapshot);
+  if (sequence !== undefined) target.sequence = sequence;
   if (payload.eventReasonCardUid !== undefined) target.reasonCardUid = payload.eventReasonCardUid;
   if (payload.eventReasonEffectId !== undefined) target.reasonEffectId = payload.eventReasonEffectId;
   resequence(session.state, previousController, target.location);
@@ -38,12 +55,25 @@ export function applyLuaContinuousSetControl(session: DuelSession, target: DuelC
 export function swapLuaCardControl(session: DuelSession, left: DuelCardInstance, right: DuelCardInstance, reasonPlayer: PlayerId): void {
   const leftController = left.controller;
   const rightController = right.controller;
+  const excludedUids = [left.uid, right.uid];
+  const leftSequence = left.location === "monsterZone" ? firstLuaControlMonsterZoneSequence(session.state, rightController, left, excludedUids) : undefined;
+  const rightSequence = right.location === "monsterZone" ? firstLuaControlMonsterZoneSequence(session.state, leftController, right, excludedUids) : undefined;
+  const leftTargetSnapshot = left.location === "monsterZone" ? monsterZoneSequenceSnapshot(session.state, rightController, excludedUids) : undefined;
+  const rightTargetSnapshot = right.location === "monsterZone" ? monsterZoneSequenceSnapshot(session.state, leftController, excludedUids) : undefined;
   applyControlSwapCardState(session.state, left, rightController, reasonPlayer);
   applyControlSwapCardState(session.state, right, leftController, reasonPlayer);
-  resequence(session.state, leftController, left.location);
-  resequence(session.state, rightController, left.location);
-  resequence(session.state, leftController, right.location);
-  resequence(session.state, rightController, right.location);
+  if (leftTargetSnapshot) restoreMonsterZoneSequenceSnapshot(session.state, leftTargetSnapshot);
+  if (rightTargetSnapshot) restoreMonsterZoneSequenceSnapshot(session.state, rightTargetSnapshot);
+  if (leftSequence !== undefined) left.sequence = leftSequence;
+  if (rightSequence !== undefined) right.sequence = rightSequence;
+  if (left.location !== "monsterZone") {
+    resequence(session.state, leftController, left.location);
+    resequence(session.state, rightController, left.location);
+  }
+  if (right.location !== "monsterZone") {
+    resequence(session.state, leftController, right.location);
+    resequence(session.state, rightController, right.location);
+  }
   pushDuelLog(session.state, "control", rightController, left.name, `Swapped control with ${right.name}`);
   pushDuelLog(session.state, "control", leftController, right.name, `Swapped control with ${left.name}`);
 }
@@ -77,9 +107,13 @@ export function luaTemporaryControlReturnOperation(returnPlayer: PlayerId | unde
     if (targetPlayer !== 0 && targetPlayer !== 1) return;
     if (card.controller === targetPlayer) return;
     if (card.location !== "monsterZone" && card.location !== "spellTrapZone") return;
-    if (!hasZoneSpace(ctx.duel, targetPlayer, card.location)) return;
+    if (!hasLuaControlZoneSpace(ctx.duel, targetPlayer, card)) return;
+    const sequence = card.location === "monsterZone" ? firstLuaControlMonsterZoneSequence(ctx.duel, targetPlayer, card) : undefined;
+    const snapshot = card.location === "monsterZone" ? monsterZoneSequenceSnapshot(ctx.duel, targetPlayer, [card.uid]) : undefined;
     const previousController = card.controller;
     moveDuelCard(ctx.duel, card.uid, card.location, targetPlayer, duelReason.return, previousController);
+    if (snapshot) restoreMonsterZoneSequenceSnapshot(ctx.duel, snapshot);
+    if (sequence !== undefined) card.sequence = sequence;
     resequence(ctx.duel, previousController, card.location);
     pushDuelLog(ctx.duel, "control", targetPlayer, card.name, `Returned control to player ${targetPlayer}`);
   };
@@ -96,14 +130,21 @@ function luaControlReturnPhase(mask: number): DuelPhase | undefined {
 }
 
 function hasControlSwapSpace(state: DuelState, left: DuelCardInstance, right: DuelCardInstance): boolean {
-  return [left.controller, right.controller].every((player) =>
-    (["monsterZone", "spellTrapZone"] as const).every((location) => {
+  const cards = [left, right];
+  const excludedUids = cards.map((card) => card.uid);
+  return [left.controller, right.controller].every((player) => {
+    for (const location of ["monsterZone", "spellTrapZone"] as const) {
+      const outgoing = cards.filter((card) => card.controller === player && card.location === location);
+      const incoming = cards.filter((card) => card.controller !== player && card.location === location);
       const current = getCards(state, player, location).length;
-      const outgoing = [left, right].filter((card) => card.controller === player && card.location === location).length;
-      const incoming = [left, right].filter((card) => card.controller !== player && card.location === location).length;
-      return current - outgoing + incoming <= 5;
-    }),
-  );
+      if (current - outgoing.length + incoming.length > 5) return false;
+      if (location === "monsterZone" && incoming.length > 0) {
+        const available = availableForcedMonsterZoneCount(state, player, excludedUids, 0, locationReasonControl, incoming[0]);
+        if (available < incoming.length) return false;
+      }
+    }
+    return true;
+  });
 }
 
 function applyControlSwapCardState(state: DuelState, card: DuelCardInstance, controller: PlayerId, reasonPlayer: PlayerId): void {
@@ -111,4 +152,17 @@ function applyControlSwapCardState(state: DuelState, card: DuelCardInstance, con
   card.reason = duelReason.effect;
   card.reasonPlayer = reasonPlayer;
   card.controller = controller;
+}
+
+function monsterZoneSequenceSnapshot(state: DuelState, player: PlayerId, excludedUids: readonly string[]): MonsterZoneSequenceSnapshot {
+  return state.cards
+    .filter((card) => card.controller === player && card.location === "monsterZone" && !excludedUids.includes(card.uid))
+    .map((card) => ({ uid: card.uid, sequence: card.sequence }));
+}
+
+function restoreMonsterZoneSequenceSnapshot(state: DuelState, snapshot: MonsterZoneSequenceSnapshot): void {
+  for (const { uid, sequence } of snapshot) {
+    const card = state.cards.find((candidate) => candidate.uid === uid && candidate.location === "monsterZone");
+    if (card) card.sequence = sequence;
+  }
 }

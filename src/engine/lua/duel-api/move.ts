@@ -23,7 +23,7 @@ import { locationsFromMask, positionFromMask, readCardUid } from "#lua/api-utils
 import { moveDeckCardToBottom, moveDeckCardToTop } from "#lua/duel-api/deck-order.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { activeFieldSpell, isDuelType, isFieldSpell } from "#lua/duel-api/field-spell-state.js";
-import { applyLuaContinuousSetControl, canLuaChangeControl, canLuaSwapControlPair, registerLuaTemporaryControlReturnEffect, swapLuaCardControl } from "#lua/duel-api/move-control.js";
+import { applyLuaContinuousSetControl, canLuaChangeControl, canLuaSwapControlPair, firstLuaControlMonsterZoneSequence, registerLuaTemporaryControlReturnEffect, swapLuaCardControl } from "#lua/duel-api/move-control.js";
 import { luaMoveBlockedByImmunity, type LuaMoveImmunityHostState } from "#lua/duel-api/move-immunity.js";
 import { applyLuaMovePosition, bindLuaEquipTarget, changeSpellTrapPosition, didMove, faceupAttackOrFacedownDefensePosition, movementSnapshot } from "#lua/duel-api/move-card-state.js";
 import { pushDestroyHelper } from "#lua/duel-api/move-destroy.js";
@@ -313,11 +313,14 @@ function pushGetControl(L: unknown, session: DuelSession, hostState: LuaDuelMove
   const triggerStart = session.state.pendingTriggers.length;
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
-    if (!card || card.controller === targetPlayer || !canLuaChangeControl(session.state, card, allowedLocations) || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) continue;
-    if (!hasZoneSpace(session.state, targetPlayer, card.location)) continue;
+    if (!card || card.controller === targetPlayer || !canLuaChangeControl(session.state, card, allowedLocations, targetPlayer) || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) continue;
+    const sequence = card.location === "monsterZone" ? firstLuaControlMonsterZoneSequence(session.state, targetPlayer, card) : undefined;
+    const existingMonsterSequences = card.location === "monsterZone" ? monsterZoneSequenceSnapshot(session, targetPlayer, uid) : undefined;
     const previousController = card.controller;
     try {
       moveDuelCard(session.state, uid, card.location, targetPlayer, duelReason.effect, hostState.activeContext?.player ?? session.state.turnPlayer);
+      if (existingMonsterSequences) restoreMonsterZoneSequenceSnapshot(session, existingMonsterSequences);
+      if (sequence !== undefined) card.sequence = sequence;
       assignReasonCard(card, hostState);
       resequence(session.state, previousController, card.location);
       pushDuelLog(session.state, "control", targetPlayer, card.name, `Took control from player ${previousController}`);

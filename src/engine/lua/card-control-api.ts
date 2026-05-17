@@ -1,12 +1,14 @@
 import fengari from "fengari";
 import { hasZoneSpace } from "#duel/card-state.js";
 import { isControlChangePrevented } from "#duel/continuous-effects.js";
+import { availableForcedMonsterZoneCount } from "#duel/forced-monster-zones.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
 import type { DuelCardInstance, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
+const locationReasonControl = 0x2;
 
 export function installCardControlApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -34,6 +36,7 @@ function canChangeControl(state: DuelState, card: DuelCardInstance, targetPlayer
   if (card.controller === targetPlayer) return false;
   if (card.location !== "monsterZone" && card.location !== "spellTrapZone") return false;
   if (isControlChangePrevented(state, card, createLuaMaterialCheckContext(state))) return false;
+  if (card.location === "monsterZone") return availableForcedMonsterZoneCount(state, targetPlayer, [card.uid], 0, locationReasonControl, card) > 0;
   return hasZoneSpace(state, targetPlayer, card.location);
 }
 
