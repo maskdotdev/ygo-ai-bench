@@ -45,7 +45,7 @@ const scriptResults = deckCodes.map((code) => {
   const found = findScript(upstream, name, card);
   const scriptlessNormal = !found && isScriptlessNormalMonster(card);
   const load = found ? host.loadCardScript(code, upstream) : { ok: true };
-  return { code, name, foundAt: found?.path, source: found?.source, isStub: found?.isStub ?? false, scriptlessNormal, load };
+  return { code, name, foundAt: found?.path, source: found?.source, isStub: found?.isStub ?? false, fallbackKind: found?.fallbackKind, scriptlessNormal, load };
 });
 
 const initialEffectResults = host.registerInitialEffectsDetailed();
@@ -186,7 +186,7 @@ function createPlaceholderCard(code: string, extraCodes: Set<string>): DuelCardD
   };
 }
 
-function findScript(upstream: ReturnType<typeof createUpstreamNodeWorkspace>, name: string, card: DuelCardData | undefined): { path: string; source: string; isStub: boolean } | undefined {
+function findScript(upstream: ReturnType<typeof createUpstreamNodeWorkspace>, name: string, card: DuelCardData | undefined): { path: string; source: string; isStub: boolean; fallbackKind?: "alias" | "provisional" | "other" } | undefined {
   const exactFallbacks: ReturnType<typeof scriptMatch>[] = [];
   for (const candidate of upstream.scriptCandidates(name)) {
     if (fs.existsSync(candidate.path)) {
@@ -206,19 +206,27 @@ function findScript(upstream: ReturnType<typeof createUpstreamNodeWorkspace>, na
   return undefined;
 }
 
-function scriptMatch(candidate: ReturnType<ReturnType<typeof createUpstreamNodeWorkspace>["scriptCandidates"]>[number]): { path: string; source: string; isStub: boolean } {
+function scriptMatch(candidate: ReturnType<ReturnType<typeof createUpstreamNodeWorkspace>["scriptCandidates"]>[number]): { path: string; source: string; isStub: boolean; fallbackKind?: "alias" | "provisional" | "other" } {
+  const sourceText = candidate.source === "local-fallback" ? fs.readFileSync(candidate.path, "utf8") : "";
   return {
     path: candidate.path,
     source: candidate.source,
-    isStub: candidate.source === "local-fallback" && fs.readFileSync(candidate.path, "utf8").includes("local-fallback-stub"),
+    isStub: candidate.source === "local-fallback" && sourceText.includes("local-fallback-stub"),
+    fallbackKind: candidate.source === "local-fallback" ? localFallbackKind(sourceText) : undefined,
   };
+}
+
+function localFallbackKind(source: string): "alias" | "provisional" | "other" {
+  if (source.includes("local-fallback-provisional")) return "provisional";
+  if (/Duel\.LoadCardScriptAlias\(\d+\)/.test(source)) return "alias";
+  return "other";
 }
 
 function printReport(report: {
   ydkPath: string;
   upstreamRoot: string;
   metadataSource: string;
-  scriptResults: Array<{ code: string; name: string; foundAt: string | undefined; source: string | undefined; isStub: boolean; scriptlessNormal: boolean; load: { ok: boolean; error?: string } }>;
+  scriptResults: Array<{ code: string; name: string; foundAt: string | undefined; source: string | undefined; isStub: boolean; fallbackKind?: "alias" | "provisional" | "other"; scriptlessNormal: boolean; load: { ok: boolean; error?: string } }>;
   initialEffectResults: LuaInitialEffectRegistrationResult[];
   startupResult: { count: number; error?: string };
   registeredEffectCount: number;
@@ -239,6 +247,9 @@ function printReport(report: {
   const upstreamFound = found.filter((result) => result.source !== "local-fallback" && result.source !== "local-override");
   const localOverrides = found.filter((result) => result.source === "local-override");
   const localFallbacks = found.filter((result) => result.source === "local-fallback");
+  const localAliasFallbacks = localFallbacks.filter((result) => result.fallbackKind === "alias");
+  const localProvisionalFallbacks = localFallbacks.filter((result) => result.fallbackKind === "provisional");
+  const localOtherFallbacks = localFallbacks.filter((result) => result.fallbackKind === "other");
   const localFallbackStubs = localFallbacks.filter((result) => result.isStub);
   const scriptlessNormals = report.scriptResults.filter((result) => !result.foundAt && result.scriptlessNormal);
   const missing = report.scriptResults.filter((result) => !result.foundAt && !result.scriptlessNormal);
@@ -272,9 +283,13 @@ function printReport(report: {
   console.log(`Local overrides: ${localOverrides.length}`);
   for (const result of localOverrides) console.log(`  OVERRIDE ${result.name} -> ${path.relative(process.cwd(), result.foundAt!)}`);
   console.log(`Local fallback scripts: ${localFallbacks.length}`);
+  console.log(`Local alias fallback scripts: ${localAliasFallbacks.length}`);
+  console.log(`Local provisional fallback scripts: ${localProvisionalFallbacks.length}`);
+  console.log(`Local other fallback scripts: ${localOtherFallbacks.length}`);
   for (const result of localFallbacks) {
     const status = result.isStub ? "STUB" : "FALLBACK";
-    console.log(`  ${status} ${result.name} -> ${path.relative(process.cwd(), result.foundAt!)}`);
+    const kind = result.fallbackKind ? ` (${result.fallbackKind})` : "";
+    console.log(`  ${status} ${result.name}${kind} -> ${path.relative(process.cwd(), result.foundAt!)}`);
   }
   if (expectedLocalFallbackCodes.size) console.log(`Expected local fallback codes: ${[...expectedLocalFallbackCodes].sort().join(", ")}`);
   console.log(`Local fallback stubs: ${localFallbackStubs.length}`);

@@ -380,6 +380,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Magician Pendulum 
 
     expect(output).toContain("Metadata source: cards.cdb");
     expect(output).toContain("Local fallback scripts: 1");
+    expect(output).toContain("Local alias fallback scripts: 1");
+    expect(output).toContain("Local provisional fallback scripts: 0");
+    expect(output).toContain("Local other fallback scripts: 0");
     expect(output).toContain("FALLBACK c100452013.lua");
     expect(output).toContain("Local fallback stubs: 0");
     expect(output).toContain("Scripts missing: 0");
@@ -405,6 +408,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Ritual of Light an
 
     expect(output).toContain("Metadata source: cards.cdb");
     expect(output).toContain("Local fallback scripts: 10");
+    expect(output).toContain("Local alias fallback scripts: 0");
+    expect(output).toContain("Local provisional fallback scripts: 10");
+    expect(output).toContain("Local other fallback scripts: 0");
     expect(output).toContain("Local fallback stubs: 0");
     expect(output).toContain("Scripts missing: 0");
     expect(output).toContain("Scriptless Normal Monsters: 1");
@@ -527,6 +533,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Rokket Lua deck pr
 
     expect(output).toContain("Metadata source: cards.cdb");
     expect(output).toContain("Local fallback scripts: 1");
+    expect(output).toContain("Local alias fallback scripts: 1");
+    expect(output).toContain("Local provisional fallback scripts: 0");
+    expect(output).toContain("Local other fallback scripts: 0");
     expect(output).toContain("FALLBACK c101303089.lua");
     expect(output).toContain("Local fallback stubs: 0");
     expect(output).toContain("Scripts missing: 0");
@@ -634,6 +643,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Phantom Knights Lu
 
     expect(output).toContain("Metadata source: cards.cdb");
     expect(output).toContain("Local fallback scripts: 1");
+    expect(output).toContain("Local alias fallback scripts: 1");
+    expect(output).toContain("Local provisional fallback scripts: 0");
+    expect(output).toContain("Local other fallback scripts: 0");
     expect(output).toContain("FALLBACK c100452015.lua");
     expect(output).toContain("OK c101305018.lua -> script/pre-release/c101305018.lua");
     expect(output).toContain("OK c101305019.lua -> script/pre-release/c101305019.lua");
