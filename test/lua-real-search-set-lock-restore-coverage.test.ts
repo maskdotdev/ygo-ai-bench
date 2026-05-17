@@ -13,6 +13,14 @@ const searchSetLockKindCounts = {
   searchCreatedMultiSetLock: 1,
   searchedCodeActivationLock: 1,
 } satisfies Record<SearchSetLockKind, number>;
+const searchSetLockSemanticVariantCounts = {
+  ancientGearWyvernFaceDownSpecialSummonLock: 1,
+  ancientGearWyvernPostSearchMultiSetLocks: 1,
+  darkSimorghOpponentSetLocks: 1,
+  fusionConscriptionSearchedCodeLocks: 1,
+  hiddenArmorySearchCreatedSummonSetOath: 1,
+  lightInterventionPlayerTargetedSetLocks: 1,
+} satisfies Record<SearchSetLockSemanticVariant, number>;
 
 type SearchSetLockKind =
   | "continuousMonsterSetLock"
@@ -21,6 +29,13 @@ type SearchSetLockKind =
   | "searchCreatedSummonSetLock"
   | "searchCreatedMultiSetLock"
   | "searchedCodeActivationLock";
+type SearchSetLockSemanticVariant =
+  | "ancientGearWyvernFaceDownSpecialSummonLock"
+  | "ancientGearWyvernPostSearchMultiSetLocks"
+  | "darkSimorghOpponentSetLocks"
+  | "fusionConscriptionSearchedCodeLocks"
+  | "hiddenArmorySearchCreatedSummonSetOath"
+  | "lightInterventionPlayerTargetedSetLocks";
 
 describe("Lua real search and set-lock restore coverage", () => {
   it("requires representative search-created set locks to assert clean Lua registry restore", () => {
@@ -48,6 +63,19 @@ describe("Lua real search and set-lock restore coverage", () => {
 
   it("keeps search and set-lock fixture kinds explicit", () => {
     expect(countSearchSetLockKinds(searchSetLockFixtureFiles())).toEqual(searchSetLockKindCounts);
+  });
+
+  it("keeps named search and set-lock semantic variants explicit", () => {
+    expect(countSearchSetLockSemanticVariants(searchSetLockSemanticVariants())).toEqual(searchSetLockSemanticVariantCounts);
+
+    const weak = searchSetLockSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -142,6 +170,92 @@ function countSearchSetLockKinds(
       searchCreatedSummonSetLock: 0,
       searchCreatedMultiSetLock: 0,
       searchedCodeActivationLock: 0,
+    },
+  );
+}
+
+function searchSetLockSemanticVariants(): Array<{
+  file: string;
+  kind: SearchSetLockSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-ancient-gear-wyvern-facedown-summon-lock.test.ts",
+      kind: "ancientGearWyvernFaceDownSpecialSummonLock",
+      required: [
+        'const wyvernCode = "17663375"',
+        "restores its face-down special summon lock",
+        "wyvern facedown special 0",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ancient-gear-wyvern-set-locks.test.ts",
+      kind: "ancientGearWyvernPostSearchMultiSetLocks",
+      required: [
+        'const wyvernCode = "17663375"',
+        "restores its post-search monster and Spell/Trap Set locks while leaving Normal Summons legal",
+        "lockCodes(restored.session.state, wyvern.uid)).toEqual([22, 23, 24, 69])",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dark-simorgh-set-lock.test.ts",
+      kind: "darkSimorghOpponentSetLocks",
+      required: [
+        'const simorghCode = "11366199"',
+        "restores its opponent monster and Spell/Trap Set locks from a monster source",
+        "dark simorgh turn set false/false/true",
+      ],
+    },
+    {
+      file: "test/lua-real-script-fusion-conscription-monster-effect-lock.test.ts",
+      kind: "fusionConscriptionSearchedCodeLocks",
+      required: [
+        'const conscriptionCode = "17194258"',
+        "restores searched-code summon, set, and monster-effect activation locks",
+        "cannot-activate:same-code-monster-effect",
+      ],
+    },
+    {
+      file: "test/lua-real-script-hidden-armory-summon-set-lock.test.ts",
+      kind: "hiddenArmorySearchCreatedSummonSetOath",
+      required: [
+        'const hiddenArmoryCode = "52105192"',
+        "restores its Deck discard cost, Equip search, and Normal Summon/Set oath locks",
+        "lockCodes(restored.session, hiddenArmory.uid)).toEqual([20, 23])",
+      ],
+    },
+    {
+      file: "test/lua-real-script-light-intervention-set-lock.test.ts",
+      kind: "lightInterventionPlayerTargetedSetLocks",
+      required: [
+        'const lightCode = "62867251"',
+        "restores official player-targeted monster Set and turn-Set restrictions",
+        'type: "normalSummon", uid: playerHandMonster!.uid',
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: SearchSetLockSemanticVariant;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countSearchSetLockSemanticVariants(
+  fixtures: Array<{ kind: SearchSetLockSemanticVariant }>,
+): Record<SearchSetLockSemanticVariant, number> {
+  return fixtures.reduce<Record<SearchSetLockSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      ancientGearWyvernFaceDownSpecialSummonLock: 0,
+      ancientGearWyvernPostSearchMultiSetLocks: 0,
+      darkSimorghOpponentSetLocks: 0,
+      fusionConscriptionSearchedCodeLocks: 0,
+      hiddenArmorySearchCreatedSummonSetOath: 0,
+      lightInterventionPlayerTargetedSetLocks: 0,
     },
   );
 }
