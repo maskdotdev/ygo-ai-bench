@@ -7,6 +7,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const scannerPath = path.join(root, "tools/scan-lua-clean-restore.mjs");
 const realScriptFixtureCount = 588;
+const restoreCoverageKindRatchetFileCount = 62;
 
 describe("Lua real-script clean restore coverage", () => {
   it("requires every real-script fixture to assert complete Lua restore diagnostics", () => {
@@ -50,6 +51,19 @@ describe("Lua real-script clean restore coverage", () => {
       .filter((file) => !referenced.has(file));
 
     expect(unreferenced).toEqual([]);
+  });
+
+  it("requires every non-aggregate restore coverage guard to ratchet fixture kinds", () => {
+    const files = restoreCoverageKindRatchetFiles();
+    expect(files).toHaveLength(restoreCoverageKindRatchetFileCount);
+
+    const missing = files.filter((file) => {
+      const text = readTestFile(`test/${file}`);
+      return !text.includes("Kind")
+        || !/kindCounts|KindCounts/.test(text);
+    });
+
+    expect(missing).toEqual([]);
   });
 
   it("requires every Lua-restored real-script fixture to assert raw and grouped legal-action restore evidence", () => {
@@ -238,6 +252,16 @@ function restoreCoverageFiles(): string[] {
     || file === "lua-source-only-event-coverage.test.ts"
     || file === "lua-event-reason-source-coverage.test.ts",
   );
+}
+
+function restoreCoverageKindRatchetFiles(): string[] {
+  return restoreCoverageFiles()
+    .filter((file) =>
+      /^lua-real-.*restore-coverage\.test\.ts$/.test(file)
+      && file !== "lua-real-clean-restore-coverage.test.ts"
+      && file !== "lua-real-response-restore-coverage.test.ts"
+    )
+    .sort();
 }
 
 function readTestFile(file: string): string {
