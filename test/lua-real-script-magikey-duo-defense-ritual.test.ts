@@ -126,6 +126,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
         ],
       }
     `);
+    expect(restored.session.state.chain[0]?.operationInfos).toEqual([{ category: 0x8, targetUids: [graveTarget!.uid], count: 1, player: 0, parameter: 0 }]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 
