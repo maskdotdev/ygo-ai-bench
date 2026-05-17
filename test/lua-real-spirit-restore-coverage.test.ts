@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 28;
+const spiritFixtureCount = 29;
 const spiritKindCounts = {
   columnSendPendulum: 3,
   costReturnBounce: 1,
   delayedShuffleDraw: 1,
+  equipRecoveryReturn: 1,
   effectExtraNormalSummon: 2,
   graveyardDiscardReturn: 1,
   grantedTypeReturn: 1,
@@ -60,6 +61,7 @@ type SpiritKind =
   | "columnSendPendulum"
   | "costReturnBounce"
   | "delayedShuffleDraw"
+  | "equipRecoveryReturn"
   | "effectExtraNormalSummon"
   | "graveyardDiscardReturn"
   | "grantedTypeReturn"
@@ -84,6 +86,7 @@ function countSpiritKinds(fixtures: Array<{ kind: SpiritKind }>): Record<SpiritK
       columnSendPendulum: 0,
       costReturnBounce: 0,
       delayedShuffleDraw: 0,
+      equipRecoveryReturn: 0,
       effectExtraNormalSummon: 0,
       graveyardDiscardReturn: 0,
       grantedTypeReturn: 0,
@@ -526,6 +529,24 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; kind: SpiritKind;
         "confirmed 1:",
         "category: 8",
         'host.messages).not.toContain("izanami responder resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
+      kind: "equipRecoveryReturn",
+      required: [
+        'action.type === "normalSummon"',
+        'action.type === "activateEffect"',
+        'action.type === "activateTrigger"',
+        'action.type === "passChain"',
+        "equippedToUid: susa!.uid",
+        "condition:source-equipped",
+        "orb equip probe true/40473581",
+        'eventName: "battleDamageDealt"',
+        'eventName: "recoveredLifePoints"',
+        'eventName: "sentToHand"',
+        'eventName: "sentToGraveyard"',
+        'host.messages).not.toContain("orb responder resolved")',
       ],
     },
     {
