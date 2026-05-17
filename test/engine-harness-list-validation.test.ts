@@ -712,6 +712,8 @@ describe("EDOPro compatibility harness list validation", () => {
               eventReasonCardUid: 9,
               eventReasonEffectId: Number.POSITIVE_INFINITY,
               relatedEffectId: Number.NaN,
+              eventChainDepth: -0.5,
+              eventChainLinkId: 9,
               typo: true,
             } as never,
           ],
@@ -735,6 +737,8 @@ describe("EDOPro compatibility harness list validation", () => {
       { fixture: "malformed setup effect draw fixture", message: "Setup effect effect drawCardsOnResolve[1].eventReasonCardUid has malformed value 9" },
       { fixture: "malformed setup effect draw fixture", message: "Setup effect effect drawCardsOnResolve[1].eventReasonEffectId has malformed value Infinity" },
       { fixture: "malformed setup effect draw fixture", message: "Setup effect effect drawCardsOnResolve[1].relatedEffectId has malformed value NaN" },
+      { fixture: "malformed setup effect draw fixture", message: "Setup effect effect drawCardsOnResolve[1].eventChainDepth has malformed value -0.5" },
+      { fixture: "malformed setup effect draw fixture", message: "Setup effect effect drawCardsOnResolve[1].eventChainLinkId has malformed value 9" },
       { fixture: "malformed setup effect draw fixture", message: "Setup effect effect drawCardsOnResolve[1] has malformed key typo" },
     ]);
   });

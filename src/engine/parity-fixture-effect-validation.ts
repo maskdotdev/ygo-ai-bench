@@ -14,8 +14,8 @@ const EFFECT_KEYS = [
 const CARD_SELECTOR_KEYS = ["player", "code", "location", "occurrence"];
 const EVENT_KEYS = ["collectEvent", "eventCard", "eventCode", "eventIsLast", "eventPlayer", "eventValue", "eventReason", "eventReasonPlayer", "eventReasonCardUid", "eventReasonEffectId", "relatedEffectId", "eventChainDepth", "eventChainLinkId", "eventUids", "eventPreviousState", "eventCurrentState"];
 const EVENT_CARD_STATE_KEYS = new Set(["controller", "location", "sequence", "position", "faceUp"]);
-const DRAW_KEYS = ["player", "count", "detail", "eventIsLast", "eventReason", "eventReasonPlayer", "eventReasonCardUid", "eventReasonEffectId", "relatedEffectId"];
-const LIFE_POINT_KEYS = ["player", "amount", "eventIsLast", "eventReason", "eventReasonPlayer", "eventReasonCardUid", "eventReasonEffectId", "relatedEffectId"];
+const DRAW_KEYS = ["player", "count", "detail", "eventIsLast", "eventReason", "eventReasonPlayer", "eventReasonCardUid", "eventReasonEffectId", "relatedEffectId", "eventChainDepth", "eventChainLinkId"];
+const LIFE_POINT_KEYS = ["player", "amount", "eventIsLast", "eventReason", "eventReasonPlayer", "eventReasonCardUid", "eventReasonEffectId", "relatedEffectId", "eventChainDepth", "eventChainLinkId"];
 const MOVE_KEYS = ["player", "code", "from", "to", "controller", "position", "occurrence", "moveReason", "moveReasonPlayer", "collectEvent", ...EVENT_KEYS.slice(2)];
 const CHAIN_LIMIT_KEYS = ["untilChainEnd", "allowPlayer"];
 
@@ -190,6 +190,8 @@ function assertDraw(description: string, draw: Partial<ScriptedFixtureDraw>, fai
   if (draw.eventReasonCardUid !== undefined && !isSafeString(draw.eventReasonCardUid)) failures.push(`${description}.eventReasonCardUid has malformed value ${String(draw.eventReasonCardUid)}`);
   if (draw.eventReasonEffectId !== undefined && !Number.isSafeInteger(draw.eventReasonEffectId)) failures.push(`${description}.eventReasonEffectId has malformed value ${String(draw.eventReasonEffectId)}`);
   if (draw.relatedEffectId !== undefined && !Number.isSafeInteger(draw.relatedEffectId)) failures.push(`${description}.relatedEffectId has malformed value ${String(draw.relatedEffectId)}`);
+  if (draw.eventChainDepth !== undefined && !Number.isSafeInteger(draw.eventChainDepth)) failures.push(`${description}.eventChainDepth has malformed value ${String(draw.eventChainDepth)}`);
+  if (draw.eventChainLinkId !== undefined && !isSafeString(draw.eventChainLinkId)) failures.push(`${description}.eventChainLinkId has malformed value ${String(draw.eventChainLinkId)}`);
   for (const key of Object.keys(draw)) if (!DRAW_KEYS.includes(key)) failures.push(`${description} has malformed key ${key}`);
 }
 
@@ -214,6 +216,8 @@ function assertLifePointChange(description: string, change: Partial<ScriptedFixt
   if (change.eventReasonCardUid !== undefined && !isSafeString(change.eventReasonCardUid)) failures.push(`${description}.eventReasonCardUid has malformed value ${String(change.eventReasonCardUid)}`);
   if (change.eventReasonEffectId !== undefined && !Number.isSafeInteger(change.eventReasonEffectId)) failures.push(`${description}.eventReasonEffectId has malformed value ${String(change.eventReasonEffectId)}`);
   if (change.relatedEffectId !== undefined && !Number.isSafeInteger(change.relatedEffectId)) failures.push(`${description}.relatedEffectId has malformed value ${String(change.relatedEffectId)}`);
+  if (change.eventChainDepth !== undefined && !Number.isSafeInteger(change.eventChainDepth)) failures.push(`${description}.eventChainDepth has malformed value ${String(change.eventChainDepth)}`);
+  if (change.eventChainLinkId !== undefined && !isSafeString(change.eventChainLinkId)) failures.push(`${description}.eventChainLinkId has malformed value ${String(change.eventChainLinkId)}`);
   for (const key of Object.keys(change)) if (!LIFE_POINT_KEYS.includes(key)) failures.push(`${description} has malformed key ${key}`);
 }
 

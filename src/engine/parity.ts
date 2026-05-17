@@ -931,6 +931,8 @@ function fixtureDrawEventPayload(draw: ScriptedFixtureDraw) {
     ...(draw.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: draw.eventReasonCardUid }),
     ...(draw.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: draw.eventReasonEffectId }),
     ...(draw.relatedEffectId === undefined ? {} : { relatedEffectId: draw.relatedEffectId }),
+    ...(draw.eventChainDepth === undefined ? {} : { eventChainDepth: draw.eventChainDepth }),
+    ...(draw.eventChainLinkId === undefined ? {} : { eventChainLinkId: draw.eventChainLinkId }),
   };
 }
 
@@ -942,6 +944,8 @@ function fixtureLifePointEventPayload(change: ScriptedFixtureLifePointChange) {
     ...(change.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: change.eventReasonCardUid }),
     ...(change.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: change.eventReasonEffectId }),
     ...(change.relatedEffectId === undefined ? {} : { relatedEffectId: change.relatedEffectId }),
+    ...(change.eventChainDepth === undefined ? {} : { eventChainDepth: change.eventChainDepth }),
+    ...(change.eventChainLinkId === undefined ? {} : { eventChainLinkId: change.eventChainLinkId }),
   };
 }
 

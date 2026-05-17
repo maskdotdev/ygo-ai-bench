@@ -902,6 +902,8 @@ export interface ScriptedFixtureDraw {
   eventReasonCardUid?: string;
   eventReasonEffectId?: number;
   relatedEffectId?: number;
+  eventChainDepth?: number;
+  eventChainLinkId?: string;
 }
 
 export interface ScriptedFixtureLifePointChange {
@@ -913,6 +915,8 @@ export interface ScriptedFixtureLifePointChange {
   eventReasonCardUid?: string;
   eventReasonEffectId?: number;
   relatedEffectId?: number;
+  eventChainDepth?: number;
+  eventChainLinkId?: string;
 }
 
 export interface ScriptedFixtureCardSelector {
