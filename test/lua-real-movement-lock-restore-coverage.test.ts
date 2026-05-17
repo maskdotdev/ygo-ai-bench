@@ -5,6 +5,13 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const MOVEMENT_LOCK_FIXTURE_COUNT = 3;
+const movementLockKindCounts = {
+  banishLock: 1,
+  deckToGraveLock: 1,
+  searchLock: 1,
+} satisfies Record<MovementLockKind, number>;
+
+type MovementLockKind = "banishLock" | "deckToGraveLock" | "searchLock";
 
 describe("Lua real movement-lock restore coverage", () => {
   it("requires representative movement locks to assert clean Lua restore and blocked movement probes", () => {
@@ -29,12 +36,21 @@ describe("Lua real movement-lock restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps movement-lock fixture kinds explicit", () => {
+    expect(countMovementLockKinds(movementLockFixtureFiles())).toEqual(movementLockKindCounts);
+  });
 });
 
-function movementLockFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function movementLockFixtureFiles(): Array<{
+  file: string;
+  kind: MovementLockKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-artifact-lancea-banish-lock.test.ts",
+      kind: "banishLock",
       required: [
         "EFFECT_CANNOT_REMOVE",
         "lancea self able remove locked false",
@@ -47,6 +63,7 @@ function movementLockFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-dimension-fortress-deck-grave-lock.test.ts",
+      kind: "deckToGraveLock",
       required: [
         "code: 68",
         "targetRange: [1, 1]",
@@ -58,6 +75,7 @@ function movementLockFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-thunder-king-search-lock.test.ts",
+      kind: "searchLock",
       required: [
         "code: 65",
         "targetRange: [1, 1]",
@@ -67,5 +85,23 @@ function movementLockFixtureFiles(): Array<{ file: string; required: string[] }>
         "thunder opp hand result 0/0",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: MovementLockKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countMovementLockKinds(fixtures: Array<{ kind: MovementLockKind }>): Record<MovementLockKind, number> {
+  return fixtures.reduce<Record<MovementLockKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      banishLock: 0,
+      deckToGraveLock: 0,
+      searchLock: 0,
+    },
+  );
 }
