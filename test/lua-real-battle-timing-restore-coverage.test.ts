@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 13;
+const battleTimingFixtureCount = 14;
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 5,
   beforeDamageCalculation: 2,
   duringDamageCalculation: 2,
-  endDamageStep: 3,
+  endDamageStep: 4,
   startDamageStep: 1,
 };
 
@@ -154,6 +154,18 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'battleWindow?.kind).toBe("duringDamageCalculation")',
         'eventName: "battleDamageDealt"',
         'eventName: "banished"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-nightmare-magician-battle-control.test.ts",
+      kind: "endDamageStep",
+      required: [
+        'battleWindow?.kind).toBe("endDamageStep")',
+        'eventName: "damageStepEnded"',
+        'triggerBucket: "turnOptional"',
+        'luaTargetDescriptor: "target:source-or-battle-target"',
+        "targetCardPredicate).toBeDefined()",
+        "previousController: 1",
       ],
     },
     {
