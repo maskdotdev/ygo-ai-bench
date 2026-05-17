@@ -11,12 +11,23 @@ const materialRestrictionKindCounts = {
   specialSummonTunerLock: 1,
   synchroMaterialSetcodeLock: 1,
 } satisfies Record<MaterialRestrictionKind, number>;
+const materialRestrictionSemanticVariantCounts = {
+  concoursOwnPlayerFusionMaterialSetcodeLock: 1,
+  kewlTuneTunerOnlySpecialSummonLock: 1,
+  necroVultureRankUpMagicRelatedXyzLock: 1,
+  rGenexOracleTargetFilteredSynchroMaterialLock: 1,
+} satisfies Record<MaterialRestrictionSemanticVariant, number>;
 
 type MaterialRestrictionKind =
   | "fusionMaterialSetcodeLock"
   | "rankUpMagicXyzTargetLock"
   | "specialSummonTunerLock"
   | "synchroMaterialSetcodeLock";
+type MaterialRestrictionSemanticVariant =
+  | "concoursOwnPlayerFusionMaterialSetcodeLock"
+  | "kewlTuneTunerOnlySpecialSummonLock"
+  | "necroVultureRankUpMagicRelatedXyzLock"
+  | "rGenexOracleTargetFilteredSynchroMaterialLock";
 
 describe("Lua real material restriction restore coverage", () => {
   it("requires material and special-summon restriction fixtures to assert clean restore and restored gates", () => {
@@ -44,6 +55,21 @@ describe("Lua real material restriction restore coverage", () => {
 
   it("keeps material restriction fixture kinds explicit", () => {
     expect(countMaterialRestrictionKinds(restrictionFixtureFiles())).toEqual(materialRestrictionKindCounts);
+  });
+
+  it("keeps named material restriction semantic variants explicit", () => {
+    expect(countMaterialRestrictionSemanticVariants(materialRestrictionSemanticVariants())).toEqual(
+      materialRestrictionSemanticVariantCounts,
+    );
+
+    const weak = materialRestrictionSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -124,6 +150,76 @@ function countMaterialRestrictionKinds(
       rankUpMagicXyzTargetLock: 0,
       specialSummonTunerLock: 0,
       synchroMaterialSetcodeLock: 0,
+    },
+  );
+}
+
+function materialRestrictionSemanticVariants(): Array<{
+  file: string;
+  kind: MaterialRestrictionSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-concours-material-lock.test.ts",
+      kind: "concoursOwnPlayerFusionMaterialSetcodeLock",
+      required: [
+        'const concoursCode = "14283055"',
+        "restores its own-player non-Nouvelles/non-Patissciel material lock",
+        "cannot-material:controller-summon-types:",
+        "fusionSummonDuelCard(restored.session.state, 0, blockedFusion!.uid",
+      ],
+    },
+    {
+      file: "test/lua-real-script-kewl-tune-synchro-tuner-lock.test.ts",
+      kind: "kewlTuneTunerOnlySpecialSummonLock",
+      required: [
+        'const kewlTuneCode = "78058681"',
+        "restores official temporary EFFECT_CANNOT_SPECIAL_SUMMON that allows only Tuners",
+        "kewl tune can special true/false",
+        "kewl tune tuner special 1",
+      ],
+    },
+    {
+      file: "test/lua-real-script-necro-vulture-rank-up-magic-xyz-lock.test.ts",
+      kind: "necroVultureRankUpMagicRelatedXyzLock",
+      required: [
+        'const necroVultureCode = "51814159"',
+        "restores its related-effect Rank-Up-Magic Xyz special summon lock",
+        "target:xyz-summon-not-related-setcode:149",
+        "luaBaseEffectId(rumEffectId!)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-r-genex-oracle-synchro-material-lock.test.ts",
+      kind: "rGenexOracleTargetFilteredSynchroMaterialLock",
+      required: [
+        'const oracleCode = "10178757"',
+        "restores official target-filtered EFFECT_CANNOT_BE_SYNCHRO_MATERIAL",
+        "cannot-material:target-not-setcode:2",
+        "cannot be used as synchro material",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: MaterialRestrictionSemanticVariant;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countMaterialRestrictionSemanticVariants(
+  fixtures: Array<{ kind: MaterialRestrictionSemanticVariant }>,
+): Record<MaterialRestrictionSemanticVariant, number> {
+  return fixtures.reduce<Record<MaterialRestrictionSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      concoursOwnPlayerFusionMaterialSetcodeLock: 0,
+      kewlTuneTunerOnlySpecialSummonLock: 0,
+      necroVultureRankUpMagicRelatedXyzLock: 0,
+      rGenexOracleTargetFilteredSynchroMaterialLock: 0,
     },
   );
 }
