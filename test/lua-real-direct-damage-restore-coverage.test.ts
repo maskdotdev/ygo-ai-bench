@@ -4,16 +4,22 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const directDamageFixtureCount = 1;
+const directDamageFixtureCount = 3;
 const directDamageKindCounts = {
+  targetParamDamage: 2,
   lpConditionTargetParamDamage: 1,
 } satisfies Record<DirectDamageKind, number>;
 const directDamageSemanticVariantCounts = {
+  hinotamaTargetParamDamage: 1,
   meteorOfDestructionOpponentLpCondition: 1,
+  ookaziTargetParamDamage: 1,
 } satisfies Record<DirectDamageSemanticVariant, number>;
 
-type DirectDamageKind = "lpConditionTargetParamDamage";
-type DirectDamageSemanticVariant = "meteorOfDestructionOpponentLpCondition";
+type DirectDamageKind = "lpConditionTargetParamDamage" | "targetParamDamage";
+type DirectDamageSemanticVariant =
+  | "hinotamaTargetParamDamage"
+  | "meteorOfDestructionOpponentLpCondition"
+  | "ookaziTargetParamDamage";
 
 describe("Lua real direct damage restore coverage", () => {
   it("requires direct damage fixtures to assert clean Lua registry restore and restored legal actions", () => {
@@ -79,6 +85,17 @@ describe("Lua real direct damage restore coverage", () => {
 function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKind; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-hinotama-direct-damage.test.ts",
+      kind: "targetParamDamage",
+      required: [
+        'const hinotamaCode = "46130346"',
+        "restores Hinotama's target-param damage operation",
+        "targetParam: 500",
+        "targetPlayer: 1",
+        "players[1].lifePoints).toBe(7500)",
+      ],
+    },
+    {
       file: "test/lua-real-script-meteor-destruction-lp-condition-damage.test.ts",
       kind: "lpConditionTargetParamDamage",
       required: [
@@ -91,19 +108,58 @@ function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKin
         "players[1].lifePoints).toBe(7000)",
       ],
     },
+    {
+      file: "test/lua-real-script-ookazi-direct-damage.test.ts",
+      kind: "targetParamDamage",
+      required: [
+        'const ookaziCode = "19523799"',
+        "restores Ookazi's player-targeted damage operation",
+        "targetParam: 800",
+        "targetPlayer: 1",
+        "players[1].lifePoints).toBe(7200)",
+      ],
+    },
   ];
 }
 
 function directDamageSemanticVariants(): Array<{ file: string; kind: DirectDamageSemanticVariant; required: string[] }> {
-  return directDamageFixtureFiles().map(({ file, required }) => ({
+  return [
+    {
+      file: "test/lua-real-script-hinotama-direct-damage.test.ts",
+      kind: "hinotamaTargetParamDamage",
+      required: [
+        "Hinotama Chain Responder",
+        "eventValue: 500",
+        "eventReasonCardUid: hinotama!.uid",
+        "hinotama responder resolved",
+      ],
+    },
+    {
+      file: "test/lua-real-script-meteor-destruction-lp-condition-damage.test.ts",
+      kind: "meteorOfDestructionOpponentLpCondition",
+      required: [
+        "Meteor of Destruction Chain Responder",
+        "eventValue: 1000",
+        "eventReasonCardUid: meteor!.uid",
+        "meteor responder resolved",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ookazi-direct-damage.test.ts",
+      kind: "ookaziTargetParamDamage",
+      required: [
+        "Ookazi Chain Responder",
+        "eventValue: 800",
+        "eventReasonCardUid: ookazi!.uid",
+        "ookazi responder resolved",
+      ],
+    },
+  ].map(({ file, kind, required }) => ({
     file,
-    kind: "meteorOfDestructionOpponentLpCondition",
+    kind,
     required: [
+      ...directDamageFixtureFiles().find((fixture) => fixture.file === file)!.required,
       ...required,
-      "Meteor of Destruction Chain Responder",
-      "eventValue: 1000",
-      "eventReasonCardUid: meteor!.uid",
-      "meteor responder resolved",
     ],
   }));
 }
@@ -115,6 +171,7 @@ function countDirectDamageKinds(fixtures: Array<{ kind: DirectDamageKind }>): Re
       return counts;
     },
     {
+      targetParamDamage: 0,
       lpConditionTargetParamDamage: 0,
     },
   );
@@ -127,7 +184,9 @@ function countDirectDamageSemanticVariants(fixtures: Array<{ kind: DirectDamageS
       return counts;
     },
     {
+      hinotamaTargetParamDamage: 0,
       meteorOfDestructionOpponentLpCondition: 0,
+      ookaziTargetParamDamage: 0,
     },
   );
 }
