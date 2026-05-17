@@ -37,7 +37,7 @@ describe("Lua deck probe CLI", () => {
       expect(result.status, args.join(" ")).toBe(1);
       expect(result.stderr).toContain("Usage: bun run probe:lua-deck");
     }
-  });
+  }, deckProbeTimeoutMs);
 
   it("fails strict metadata probes when Project Ignis cards.cdb is unavailable", () => {
     fs.mkdirSync(os.tmpdir(), { recursive: true });
