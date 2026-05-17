@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 22;
+const operationFixtureCount = 23;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
   deckToGrave: 1,
+  directDamage: 1,
   groupDestroy: 9,
   releaseDamage: 1,
   searchOrExcavate: 3,
@@ -31,6 +32,7 @@ const summonTriggerOperationKindCounts = {
 type OperationKind =
   | "costBanishDraw"
   | "deckToGrave"
+  | "directDamage"
   | "groupDestroy"
   | "releaseDamage"
   | "searchOrExcavate"
@@ -265,6 +267,18 @@ function operationFixtureFiles(): Array<{
         'eventName: "destroyed"',
         'skippedPhases).toEqual([{ player: 0, phase: "draw", remaining: 1 }])',
         "restoredSkip.restoreComplete",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ookazi-direct-damage.test.ts",
+      kind: "directDamage",
+      required: [
+        "category: 0x80000",
+        "targetParam: 800",
+        "targetPlayer: 1",
+        'eventName: "damageDealt"',
+        "lifePoints).toBe(7200)",
         "host.messages).not.toContain",
       ],
     },
@@ -565,6 +579,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
     {
       costBanishDraw: 0,
       deckToGrave: 0,
+      directDamage: 0,
       groupDestroy: 0,
       releaseDamage: 0,
       searchOrExcavate: 0,
