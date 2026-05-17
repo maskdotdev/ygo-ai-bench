@@ -12,6 +12,13 @@ const spiritReturnKindCounts = {
   graveyardDiscardReturn: 1,
   targetedSpiritBounce: 1,
 } satisfies Record<SpiritReturnKind, number>;
+const spiritReturnSemanticVariantCounts = {
+  heboTargetGrantedEndPhaseReturn: 1,
+  izanamiDiscardCostGraveyardSpiritReturn: 1,
+  rasetsuRevealCostTemporaryLockBounce: 1,
+  shinobirdPigeonFieldIgnitionSpiritBounce: 1,
+  spiritualEnergySettleMachineReturnSuppressionCleanup: 1,
+} satisfies Record<SpiritReturnSemanticVariant, number>;
 
 type SpiritReturnKind =
   | "costReturnBounce"
@@ -19,6 +26,12 @@ type SpiritReturnKind =
   | "grantedEndPhaseReturn"
   | "graveyardDiscardReturn"
   | "targetedSpiritBounce";
+type SpiritReturnSemanticVariant =
+  | "heboTargetGrantedEndPhaseReturn"
+  | "izanamiDiscardCostGraveyardSpiritReturn"
+  | "rasetsuRevealCostTemporaryLockBounce"
+  | "shinobirdPigeonFieldIgnitionSpiritBounce"
+  | "spiritualEnergySettleMachineReturnSuppressionCleanup";
 
 describe("Lua real Spirit return restore coverage", () => {
   it("requires Spirit return and bounce fixtures to assert clean Lua registry restore and payload outcomes", () => {
@@ -60,6 +73,19 @@ describe("Lua real Spirit return restore coverage", () => {
 
   it("keeps Spirit return fixture kinds explicit", () => {
     expect(countSpiritReturnKinds(spiritReturnFixtureFiles())).toEqual(spiritReturnKindCounts);
+  });
+
+  it("keeps named Spirit return semantic variants explicit", () => {
+    expect(countSpiritReturnSemanticVariants(spiritReturnSemanticVariants())).toEqual(spiritReturnSemanticVariantCounts);
+
+    const weak = spiritReturnSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -150,6 +176,82 @@ function countSpiritReturnKinds(fixtures: Array<{ kind: SpiritReturnKind }>): Re
       grantedEndPhaseReturn: 0,
       graveyardDiscardReturn: 0,
       targetedSpiritBounce: 0,
+    },
+  );
+}
+
+function spiritReturnSemanticVariants(): Array<{
+  file: string;
+  kind: SpiritReturnSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-hebo-spirit-grant-return.test.ts",
+      kind: "heboTargetGrantedEndPhaseReturn",
+      required: [
+        'const heboCode = "90365482"',
+        "restores target-granted Spirit type and the target-owned End Phase return",
+        "target-granted Spirit type",
+      ],
+    },
+    {
+      file: "test/lua-real-script-izanami-spirit-grave-return.test.ts",
+      kind: "izanamiDiscardCostGraveyardSpiritReturn",
+      required: [
+        'const izanamiCode = "43543777"',
+        "restores its summon trigger discard cost, Graveyard Spirit target, and confirm-to-hand resolution",
+        "eventName: \"sentToHandConfirmed\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-rasetsu-spirit-cost-return.test.ts",
+      kind: "rasetsuRevealCostTemporaryLockBounce",
+      required: [
+        'const rasetsuCode = "43378076"',
+        "restores its reveal cost, temporary Special Summon lock, and targeted monster return",
+        "rasetsu can special false",
+      ],
+    },
+    {
+      file: "test/lua-real-script-shinobird-pigeon-spirit-return.test.ts",
+      kind: "shinobirdPigeonFieldIgnitionSpiritBounce",
+      required: [
+        'const pigeonCode = "92200612"',
+        "restores its field ignition target and returns another Spirit monster to the hand",
+        "targetUids).not.toContain(pigeon!.uid)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-spiritual-energy-settle-machine-return-lock.test.ts",
+      kind: "spiritualEnergySettleMachineReturnSuppressionCleanup",
+      required: [
+        'const settleMachineCode = "99173029"',
+        "restores its Spirit return suppression and leave-field return-all cleanup",
+        "settle leaves 1",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: SpiritReturnSemanticVariant;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countSpiritReturnSemanticVariants(
+  fixtures: Array<{ kind: SpiritReturnSemanticVariant }>,
+): Record<SpiritReturnSemanticVariant, number> {
+  return fixtures.reduce<Record<SpiritReturnSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      heboTargetGrantedEndPhaseReturn: 0,
+      izanamiDiscardCostGraveyardSpiritReturn: 0,
+      rasetsuRevealCostTemporaryLockBounce: 0,
+      shinobirdPigeonFieldIgnitionSpiritBounce: 0,
+      spiritualEnergySettleMachineReturnSuppressionCleanup: 0,
     },
   );
 }
