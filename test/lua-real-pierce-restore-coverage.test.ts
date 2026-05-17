@@ -5,6 +5,13 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const PIERCING_FIXTURE_COUNT = 3;
+const piercingKindCounts = {
+  equipPierce: 1,
+  fieldPierce: 1,
+  raceTargetedFieldPierce: 1,
+} satisfies Record<PiercingKind, number>;
+
+type PiercingKind = "equipPierce" | "fieldPierce" | "raceTargetedFieldPierce";
 
 describe("Lua real piercing damage restore coverage", () => {
   it("requires piercing damage fixtures to assert clean Lua registry restore and restored damage semantics", () => {
@@ -33,12 +40,21 @@ describe("Lua real piercing damage restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps piercing fixture kinds explicit", () => {
+    expect(countPiercingKinds(piercingFixtureFiles())).toEqual(piercingKindCounts);
+  });
 });
 
-function piercingFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function piercingFixtureFiles(): Array<{
+  file: string;
+  kind: PiercingKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-ancient-gear-golem-pierce-battle-damage.test.ts",
+      kind: "fieldPierce",
       required: [
         "code: 203",
         '"range": [',
@@ -51,6 +67,7 @@ function piercingFixtureFiles(): Array<{ file: string; required: string[] }> {
     },
     {
       file: "test/lua-real-script-enraged-battle-ox-pierce.test.ts",
+      kind: "raceTargetedFieldPierce",
       required: [
         "code: 203",
         "targetRange: [4, 0]",
@@ -61,6 +78,7 @@ function piercingFixtureFiles(): Array<{ file: string; required: string[] }> {
     },
     {
       file: "test/lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
+      kind: "equipPierce",
       required: [
         "operationInfos: [{ category: 0x40000",
         "equippedToUid: equippedAttacker!.uid",
@@ -69,5 +87,23 @@ function piercingFixtureFiles(): Array<{ file: string; required: string[] }> {
         'eventName === "battleDamageDealt" && event.eventPlayer === 1)).toEqual([])',
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: PiercingKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countPiercingKinds(fixtures: Array<{ kind: PiercingKind }>): Record<PiercingKind, number> {
+  return fixtures.reduce<Record<PiercingKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      equipPierce: 0,
+      fieldPierce: 0,
+      raceTargetedFieldPierce: 0,
+    },
+  );
 }
