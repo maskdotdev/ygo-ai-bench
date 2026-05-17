@@ -155,10 +155,13 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
       required: [
         "restores a Ritual procedure that banishes a Graveyard Blue-Eyes material",
         "operationInfos).toEqual([",
+        "expect(restored.session.state.chain[0]?.operationInfos).toEqual([",
         "{ category: 0x4, targetUids: [], count: 1, player: 0, parameter: 0x10 }",
         "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }",
         'summonType: "ritual"',
         "summonMaterialUids).toEqual([blueEyes!.uid])",
+        'eventName === "specialSummoned"',
+        'eventName === "banished"',
         "location: \"banished\", reason: duelReason.material | duelReason.ritual",
       ],
     },
