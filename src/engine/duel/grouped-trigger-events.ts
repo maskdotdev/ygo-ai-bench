@@ -74,5 +74,7 @@ function eventRecordPayload(eventCard: DuelCardInstance | undefined, options: Du
     ...(options.eventChainDepth === undefined ? {} : { eventChainDepth: options.eventChainDepth }),
     ...(options.eventChainLinkId === undefined ? {} : { eventChainLinkId: options.eventChainLinkId }),
     ...(options.eventUids === undefined || options.eventUids.length === 0 ? {} : { eventUids: [...options.eventUids] }),
+    ...(options.eventPreviousState === undefined ? {} : { eventPreviousState: { ...options.eventPreviousState } }),
+    ...(options.eventCurrentState === undefined ? {} : { eventCurrentState: { ...options.eventCurrentState } }),
   };
 }

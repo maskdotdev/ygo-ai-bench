@@ -1,6 +1,6 @@
 import { isCardPosition, isDuelEffectEvent } from "#duel/card-kinds.js";
 import { isDuelEventName } from "#duel/event-names.js";
-import type { DuelEffectDefinition, ScriptedFixtureCardSelector, ScriptedFixtureDraw, ScriptedFixtureEffect, ScriptedFixtureEvent, ScriptedFixtureMove } from "#duel/types.js";
+import type { DuelEffectDefinition, DuelEventCardState, ScriptedFixtureCardSelector, ScriptedFixtureDraw, ScriptedFixtureEffect, ScriptedFixtureEvent, ScriptedFixtureMove } from "#duel/types.js";
 import type { ParityFailure } from "./parity.js";
 import { isRecord, isSafeBoolean, isSafeCount, isSafeLocationKey, isSafePlayerId, isSafeString } from "./parity-validation.js";
 
@@ -12,7 +12,8 @@ const EFFECT_KEYS = [
   "chainLimitOnTarget", "targetCardsOnActivation", "collectEventsOnResolve", "drawCardsOnResolve", "moveCardsOnResolve", "occurrence",
 ];
 const CARD_SELECTOR_KEYS = ["player", "code", "location", "occurrence"];
-const EVENT_KEYS = ["collectEvent", "eventCard", "eventCode", "eventIsLast", "eventPlayer", "eventValue", "eventReason", "eventReasonPlayer", "eventReasonCardUid", "eventReasonEffectId", "relatedEffectId", "eventChainDepth", "eventChainLinkId", "eventUids"];
+const EVENT_KEYS = ["collectEvent", "eventCard", "eventCode", "eventIsLast", "eventPlayer", "eventValue", "eventReason", "eventReasonPlayer", "eventReasonCardUid", "eventReasonEffectId", "relatedEffectId", "eventChainDepth", "eventChainLinkId", "eventUids", "eventPreviousState", "eventCurrentState"];
+const EVENT_CARD_STATE_KEYS = new Set(["controller", "location", "sequence", "position", "faceUp"]);
 const DRAW_KEYS = ["player", "count", "detail", "eventIsLast", "eventReason", "eventReasonPlayer", "eventReasonCardUid", "eventReasonEffectId"];
 const MOVE_KEYS = ["player", "code", "from", "to", "controller", "position", "occurrence", "moveReason", "moveReasonPlayer", "collectEvent", ...EVENT_KEYS.slice(2)];
 const CHAIN_LIMIT_KEYS = ["untilChainEnd", "allowPlayer"];
@@ -225,6 +226,8 @@ function assertEventPayload(description: string, event: Partial<ScriptedFixtureE
   if (event.relatedEffectId !== undefined && !Number.isSafeInteger(event.relatedEffectId)) failures.push(`${description}.relatedEffectId has malformed value ${String(event.relatedEffectId)}`);
   if (event.eventChainDepth !== undefined && !Number.isSafeInteger(event.eventChainDepth)) failures.push(`${description}.eventChainDepth has malformed value ${String(event.eventChainDepth)}`);
   if (event.eventChainLinkId !== undefined && !isSafeString(event.eventChainLinkId)) failures.push(`${description}.eventChainLinkId has malformed value ${String(event.eventChainLinkId)}`);
+  failures.push(...malformedEventCardStatePayload(event.eventPreviousState, `${description}.eventPreviousState`));
+  failures.push(...malformedEventCardStatePayload(event.eventCurrentState, `${description}.eventCurrentState`));
   if (event.eventUids !== undefined) {
     if (!Array.isArray(event.eventUids)) {
       failures.push(`${description}.eventUids has malformed value ${String(event.eventUids)}`);
@@ -234,4 +237,17 @@ function assertEventPayload(description: string, event: Partial<ScriptedFixtureE
       }
     }
   }
+}
+
+function malformedEventCardStatePayload(value: Partial<DuelEventCardState> | undefined, description: string): string[] {
+  if (value === undefined) return [];
+  if (!isRecord(value)) return [`${description} has malformed value ${String(value)}`];
+  const failures: string[] = [];
+  for (const key of Object.keys(value)) if (!EVENT_CARD_STATE_KEYS.has(key)) failures.push(`${description} has malformed key ${key}`);
+  if (value.controller !== undefined && !isSafePlayerId(value.controller)) failures.push(`${description}.controller has malformed player ${String(value.controller)}`);
+  if (value.location !== undefined && !isSafeLocationKey(value.location)) failures.push(`${description}.location has malformed value ${String(value.location)}`);
+  if (value.sequence !== undefined && !isSafeCount(value.sequence)) failures.push(`${description}.sequence has malformed value ${String(value.sequence)}`);
+  if (value.position !== undefined && !isCardPosition(value.position)) failures.push(`${description}.position has malformed value ${String(value.position)}`);
+  if (value.faceUp !== undefined && typeof value.faceUp !== "boolean") failures.push(`${description}.faceUp has malformed value ${String(value.faceUp)}`);
+  return failures;
 }

@@ -928,6 +928,8 @@ function fixtureEventPayload(event: ScriptedFixtureMove | ScriptedFixtureEvent) 
     ...(event.eventChainDepth === undefined ? {} : { eventChainDepth: event.eventChainDepth }),
     ...(event.eventChainLinkId === undefined ? {} : { eventChainLinkId: event.eventChainLinkId }),
     ...(event.eventUids === undefined || event.eventUids.length === 0 ? {} : { eventUids: [...event.eventUids] }),
+    ...(event.eventPreviousState === undefined ? {} : { eventPreviousState: { ...event.eventPreviousState } }),
+    ...(event.eventCurrentState === undefined ? {} : { eventCurrentState: { ...event.eventCurrentState } }),
   };
 }
 

@@ -888,6 +888,8 @@ export interface ScriptedFixtureMove {
   eventChainDepth?: number;
   eventChainLinkId?: string;
   eventUids?: string[];
+  eventPreviousState?: DuelEventCardState;
+  eventCurrentState?: DuelEventCardState;
 }
 
 export interface ScriptedFixtureDraw {
@@ -923,6 +925,8 @@ export interface ScriptedFixtureEvent {
   eventChainDepth?: number;
   eventChainLinkId?: string;
   eventUids?: string[];
+  eventPreviousState?: DuelEventCardState;
+  eventCurrentState?: DuelEventCardState;
 }
 
 export interface ScriptedFixtureEffect {
