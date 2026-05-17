@@ -247,6 +247,7 @@ function restoreCoverageReferences(): Set<string> {
 function restoreCoverageFiles(): string[] {
   return fs.readdirSync(path.join(root, "test")).filter((file) =>
     /^lua-real-.*restore-coverage\.test\.ts$/.test(file)
+    || /^lua-real-.*restore-(?:fixtures|variants)\.ts$/.test(file)
     || file === "lua-chain-limit-restore-coverage.test.ts"
     || file === "lua-grouped-event-restore-coverage.test.ts"
     || file === "lua-source-only-event-coverage.test.ts"
