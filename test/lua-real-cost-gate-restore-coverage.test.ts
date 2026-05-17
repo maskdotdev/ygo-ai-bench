@@ -5,6 +5,14 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const costGateFixtureCount = 4;
+const costGateKindCounts = {
+  actionCostGate: 1,
+  costCreatedSpecialOath: 1,
+  ritualExtraDeckLock: 1,
+  summonTypeCostPredicate: 1,
+} satisfies Record<CostGateKind, number>;
+
+type CostGateKind = "actionCostGate" | "costCreatedSpecialOath" | "ritualExtraDeckLock" | "summonTypeCostPredicate";
 
 describe("Lua real cost gate restore coverage", () => {
   it("requires summon and action cost fixtures to assert clean Lua registry restore and restored gates", () => {
@@ -28,12 +36,21 @@ describe("Lua real cost gate restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps cost-gate fixture kinds explicit", () => {
+    expect(countCostGateKinds(costGateFixtureFiles())).toEqual(costGateKindCounts);
+  });
 });
 
-function costGateFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function costGateFixtureFiles(): Array<{
+  file: string;
+  kind: CostGateKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-spsummon-cost.test.ts",
+      kind: "summonTypeCostPredicate",
       required: [
         "cost:special-summon-type-not:",
         "cost:special-summon-type-is:",
@@ -46,6 +63,7 @@ function costGateFixtureFiles(): Array<{ file: string; required: string[] }> {
     },
     {
       file: "test/lua-real-script-summon-set-cost.test.ts",
+      kind: "actionCostGate",
       required: [
         "restoredBlocked.missingRegistryKeys).toEqual([])",
         "restoredBlocked.missingChainLimitRegistryKeys).toEqual([])",
@@ -62,6 +80,7 @@ function costGateFixtureFiles(): Array<{ file: string; required: string[] }> {
     },
     {
       file: "test/lua-real-script-dogmatikalamity-extra-ritual-lock.test.ts",
+      kind: "ritualExtraDeckLock",
       required: [
         "restored.missingRegistryKeys).toEqual([])",
         "restored.missingChainLimitRegistryKeys).toEqual([])",
@@ -74,6 +93,7 @@ function costGateFixtureFiles(): Array<{ file: string; required: string[] }> {
     },
     {
       file: "test/lua-real-script-thunder-sea-horse-special-oath.test.ts",
+      kind: "costCreatedSpecialOath",
       required: [
         "cost-created temporary EFFECT_CANNOT_SPECIAL_SUMMON",
         "restoredLock.missingRegistryKeys).toEqual([])",
@@ -85,5 +105,24 @@ function costGateFixtureFiles(): Array<{ file: string; required: string[] }> {
         "sea horse special after end 1",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: CostGateKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countCostGateKinds(fixtures: Array<{ kind: CostGateKind }>): Record<CostGateKind, number> {
+  return fixtures.reduce<Record<CostGateKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      actionCostGate: 0,
+      costCreatedSpecialOath: 0,
+      ritualExtraDeckLock: 0,
+      summonTypeCostPredicate: 0,
+    },
+  );
 }
