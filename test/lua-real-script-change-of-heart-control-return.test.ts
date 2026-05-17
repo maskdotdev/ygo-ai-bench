@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -88,6 +89,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
         ],
       }
     `);
+    expect(openedSnapshot.state.chain[0]?.operationInfos).toEqual([
+      { category: 0x2000, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 },
+    ]);
 
     const restoredResponseWindow = restoreDuelWithLuaScripts(openedSnapshot, source, reader);
     expect(restoredResponseWindow.restoreComplete, restoredResponseWindow.incompleteReasons.join("; ")).toBe(true);
@@ -107,6 +111,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
       location: "monsterZone",
     });
     expect(restoredResponseWindow.session.state.cards.find((card) => card.uid === changeOfHeart!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restoredResponseWindow.session.state.eventHistory.filter((event) => event.eventName === "controlChanged" && event.eventCardUid === target!.uid)).toEqual([
+      {
+        eventName: "controlChanged",
+        eventCode: 1120,
+        eventCardUid: target!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: changeOfHeart!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredResponseWindow.session.state.effects.find((effect) => effect.registryKey === `lua:${targetCode}:temporary-control-return:${target!.uid}`)).toMatchInlineSnapshot(`
       {
         "code": 4608,
@@ -146,6 +175,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
       previousController: 0,
       location: "monsterZone",
     });
+    expect(restoredReturnWindow.session.state.eventHistory.filter((event) => event.eventName === "controlChanged" && event.eventCardUid === target!.uid)).toEqual([
+      {
+        eventName: "controlChanged",
+        eventCode: 1120,
+        eventCardUid: target!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: changeOfHeart!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredReturnWindow.session.state.effects.map((effect) => effect.registryKey)).not.toContain(`lua:${targetCode}:temporary-control-return:${target!.uid}`);
   });
 });

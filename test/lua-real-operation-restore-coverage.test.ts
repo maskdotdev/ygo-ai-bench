@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 48;
+const operationFixtureCount = 49;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
   crossPlayerGraveToDeckTrap: 1,
+  controlReturn: 1,
   banishedToGraveReturn: 1,
   banishedToHand: 1,
   banishedToDeckSelfSummon: 1,
@@ -57,6 +58,7 @@ const summonTriggerOperationKindCounts = {
 type OperationKind =
   | "costBanishDraw"
   | "crossPlayerGraveToDeckTrap"
+  | "controlReturn"
   | "banishedToGraveReturn"
   | "banishedToHand"
   | "banishedToDeckSelfSummon"
@@ -178,6 +180,18 @@ function operationFixtureFiles(): Array<{
         'eventName: "sentToGraveyard"',
         "eventUids: [ownBanishedA!.uid, ownBanishedB!.uid, opponentBanished!.uid]",
         'location: "banished"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-change-of-heart-control-return.test.ts",
+      kind: "controlReturn",
+      required: [
+        "category: 0x2000",
+        'eventName: "controlChanged"',
+        "controller: 0",
+        "controller: 1",
+        "temporary-control-return",
         "host.messages).not.toContain",
       ],
     },
@@ -937,6 +951,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
     {
       costBanishDraw: 0,
       crossPlayerGraveToDeckTrap: 0,
+      controlReturn: 0,
       banishedToGraveReturn: 0,
       banishedToHand: 0,
       banishedToDeckSelfSummon: 0,
