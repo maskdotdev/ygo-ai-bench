@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 14;
+const operationFixtureCount = 15;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
   deckToGrave: 1,
-  groupDestroy: 5,
+  groupDestroy: 6,
   releaseDamage: 1,
   searchOrExcavate: 3,
   tossCoin: 1,
@@ -187,6 +187,18 @@ function operationFixtureFiles(): Array<{
         "sortedUids([opponentAttacker!.uid, opponentSecondAttacker!.uid])",
         "sortedUids([opponentTrap!.uid, opponentSpell!.uid])",
         'eventName: "destroyed"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-lightning-vortex-discard-group-destroy.test.ts",
+      kind: "groupDestroy",
+      required: [
+        "category: 0x1",
+        "sortedUids([opponentFaceupAttack!.uid, opponentFaceupDefense!.uid])",
+        'eventName: "discarded"',
+        'eventName: "destroyed"',
+        'location: "graveyard"',
         "host.messages).not.toContain",
       ],
     },
