@@ -11,12 +11,23 @@ const summonProcedureKindCounts = {
   handOpponentCountProcedure: 1,
   handSendCostProcedure: 1,
 } satisfies Record<SummonProcedureKind, number>;
+const summonProcedureSemanticVariantCounts = {
+  broadTypedExtraDeckSpiritGeminiProcedures: 1,
+  gigaraysGandoraTwoMonsterSendCostProcedure: 1,
+  megarockDragonGraveBanishStatProcedure: 1,
+  pankratopsOpponentControlsMoreHandProcedure: 1,
+} satisfies Record<SummonProcedureSemanticVariant, number>;
 
 type SummonProcedureKind =
   | "broadTypedProcedure"
   | "graveBanishCostStatProcedure"
   | "handOpponentCountProcedure"
   | "handSendCostProcedure";
+type SummonProcedureSemanticVariant =
+  | "broadTypedExtraDeckSpiritGeminiProcedures"
+  | "gigaraysGandoraTwoMonsterSendCostProcedure"
+  | "megarockDragonGraveBanishStatProcedure"
+  | "pankratopsOpponentControlsMoreHandProcedure";
 
 const summonProcedureFixtures = [
   {
@@ -104,6 +115,21 @@ describe("Lua real summon procedure restore coverage", () => {
   it("keeps summon procedure fixture kinds explicit", () => {
     expect(countSummonProcedureKinds(summonProcedureFixtures)).toEqual(summonProcedureKindCounts);
   });
+
+  it("keeps named summon procedure semantic variants explicit", () => {
+    expect(countSummonProcedureSemanticVariants(summonProcedureSemanticVariants())).toEqual(
+      summonProcedureSemanticVariantCounts,
+    );
+
+    const weak = summonProcedureSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
+  });
 });
 
 function countSummonProcedureKinds(
@@ -119,6 +145,73 @@ function countSummonProcedureKinds(
       graveBanishCostStatProcedure: 0,
       handOpponentCountProcedure: 0,
       handSendCostProcedure: 0,
+    },
+  );
+}
+
+function summonProcedureSemanticVariants(): Array<{
+  file: string;
+  kind: SummonProcedureSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-summon-procedure.test.ts",
+      kind: "broadTypedExtraDeckSpiritGeminiProcedures",
+      required: [
+        'const diabellstarCode = "72270339"',
+        "restores official Xyz.AddProcedure material counts for real extra deck summons",
+        "restores official Synchro.AddProcedure tuner and non-tuner count ranges for real extra deck summons",
+        "restores Spirit procedure End Phase return after a real Normal Summon",
+      ],
+    },
+    {
+      file: "test/lua-real-script-gigarays-gandora-special-summon-procedure.test.ts",
+      kind: "gigaraysGandoraTwoMonsterSendCostProcedure",
+      required: [
+        'const gandoraCode = "58330108"',
+        "restores its two-monster send-to-Graveyard hand Special Summon procedure cost",
+        'eventName: "sentToGraveyard"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-megarock-dragon-special-summon-procedure.test.ts",
+      kind: "megarockDragonGraveBanishStatProcedure",
+      required: [
+        'const megarockCode = "71544954"',
+        "restores its Rock graveyard banish-cost procedure and selected-count base stats",
+        "currentAttack(restoredMegarock, restored.session.state)).toBe(700)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-pankratops-special-summon-procedure.test.ts",
+      kind: "pankratopsOpponentControlsMoreHandProcedure",
+      required: [
+        'const pankratopsCode = "82385847"',
+        "restores its opponent-controls-more-monsters hand Special Summon procedure",
+        'eventName: "specialSummoned"',
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: SummonProcedureSemanticVariant;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countSummonProcedureSemanticVariants(
+  fixtures: Array<{ kind: SummonProcedureSemanticVariant }>,
+): Record<SummonProcedureSemanticVariant, number> {
+  return fixtures.reduce<Record<SummonProcedureSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      broadTypedExtraDeckSpiritGeminiProcedures: 0,
+      gigaraysGandoraTwoMonsterSendCostProcedure: 0,
+      megarockDragonGraveBanishStatProcedure: 0,
+      pankratopsOpponentControlsMoreHandProcedure: 0,
     },
   );
 }
