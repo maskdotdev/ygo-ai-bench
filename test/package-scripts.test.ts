@@ -41,6 +41,7 @@ describe("package scripts", () => {
     expect(pkg.scripts?.["export:browser-cdb"]).toContain("--out public/card-data/cdb-rows.json");
     expect(pkg.scripts?.["export:browser-scripts"]).toContain("tools/export-browser-lua-scripts.mjs");
     expect(pkg.scripts?.["export:browser-scripts"]).toContain("--local-scripts local-card-scripts");
+    expect(pkg.scripts?.["export:browser-scripts"]).toContain("--max-local-fallbacks 13 --max-local-alias-fallbacks 3 --max-local-provisional-fallbacks 10 --max-local-other-fallbacks 0");
     expect(pkg.scripts?.["export:browser-scripts"]).toContain("--out public/card-scripts");
     expect(pkg.scripts?.["export:browser-data"]).toBe("bun run export:browser-cdb && bun run export:browser-scripts && bun run check:browser-assets");
     expect(pkg.scripts?.check?.split(" && ")).toEqual([

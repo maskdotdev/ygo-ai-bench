@@ -224,9 +224,11 @@ describe("PvP arena visible scripts", () => {
               selectedCodes: ["90000003"],
               copiedCount: 1,
               missingCount: 0,
+              sourceCounts: { "upstream-official": 1 },
+              fallbackKindCounts: {},
               copied: ["c90000003.lua"],
               missing: [],
-              files: [{ name: "c90000003.lua", bytes: 91, sha256: scriptManifestHash }],
+              files: [{ name: "c90000003.lua", source: "upstream-official", bytes: 91, sha256: scriptManifestHash }],
             };
           },
           async text() { return ""; },
@@ -250,7 +252,7 @@ describe("PvP arena visible scripts", () => {
         "/card-scripts/c90000003.lua",
       ]);
       expect(result.cardDataManifest).toMatchObject({ kind: "browser-cdb-rows", datasRows: 1, textsRows: 1, sha256: cardManifestHash });
-      expect(result.luaScriptManifest).toMatchObject({ kind: "browser-lua-scripts", copiedCount: 1, files: [{ name: "c90000003.lua", bytes: 91, sha256: scriptManifestHash }] });
+      expect(result.luaScriptManifest).toMatchObject({ kind: "browser-lua-scripts", copiedCount: 1, sourceCounts: { "upstream-official": 1 }, files: [{ name: "c90000003.lua", source: "upstream-official", bytes: 91, sha256: scriptManifestHash }] });
       expect(result.cardPreload).toEqual({ loaded: ["7084129", "90000003"], missing: [] });
       expect(result.scriptPreload).toEqual({ loaded: ["c90000003.lua"], missing: ["c7084129.lua"] });
       expect(result.luaHost.messages).toContain("endpoint script 2400");
@@ -279,6 +281,8 @@ describe("PvP arena visible scripts", () => {
               selectedCodes: [],
               copiedCount: 0,
               missingCount: 0,
+              sourceCounts: {},
+              fallbackKindCounts: {},
               copied: [],
               missing: [],
               files: [],

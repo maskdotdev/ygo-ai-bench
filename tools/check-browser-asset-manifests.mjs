@@ -81,6 +81,10 @@ function checkCardScriptsManifest(dir) {
     !manifest.copied.every((name) => typeof name === "string") ||
     !Array.isArray(manifest.missing) ||
     !manifest.missing.every((name) => typeof name === "string") ||
+    !isRecord(manifest.sourceCounts) ||
+    !Object.values(manifest.sourceCounts).every((count) => Number.isInteger(count)) ||
+    !isRecord(manifest.fallbackKindCounts) ||
+    !Object.values(manifest.fallbackKindCounts).every((count) => Number.isInteger(count)) ||
     !Array.isArray(manifest.files) ||
     !manifest.files.every(isLuaScriptFileManifest)
   ) {
@@ -89,6 +93,8 @@ function checkCardScriptsManifest(dir) {
   if (manifest.copiedCount !== manifest.copied.length) fail(`Lua script manifest copiedCount ${manifest.copiedCount} does not match copied ${manifest.copied.length}`);
   if (manifest.missingCount !== manifest.missing.length) fail(`Lua script manifest missingCount ${manifest.missingCount} does not match missing ${manifest.missing.length}`);
   if (manifest.files.length !== manifest.copied.length) fail(`Lua script manifest files ${manifest.files.length} does not match copied ${manifest.copied.length}`);
+  if (sumCounts(manifest.sourceCounts) !== manifest.copied.length) fail("Lua script manifest sourceCounts does not match copied scripts");
+  if ((manifest.sourceCounts["local-fallback"] ?? 0) !== sumCounts(manifest.fallbackKindCounts)) fail("Lua script manifest fallbackKindCounts does not match local fallback scripts");
   for (const name of [...manifest.copied, ...manifest.missing, ...manifest.files.map((file) => file.name)]) scriptCodeFromName(name);
   if (manifest.selectedCodes.length) {
     const selected = normalizedUniqueStrings(manifest.selectedCodes);
@@ -102,6 +108,13 @@ function checkCardScriptsManifest(dir) {
   const copied = new Set(manifest.copied);
   for (const file of manifest.files) {
     if (!copied.has(file.name)) fail(`Lua script manifest file ${file.name} is not listed in copied scripts`);
+    if (!manifest.sourceCounts[file.source]) fail(`Lua script manifest file ${file.name} has source ${file.source} not represented in sourceCounts`);
+    if (file.source === "local-fallback") {
+      if (!file.fallbackKind) fail(`Lua script manifest local fallback ${file.name} is missing fallbackKind`);
+      if (!manifest.fallbackKindCounts[file.fallbackKind]) fail(`Lua script manifest local fallback ${file.name} has fallbackKind ${file.fallbackKind} not represented in fallbackKindCounts`);
+    } else if (file.fallbackKind !== undefined) {
+      fail(`Lua script manifest non-fallback ${file.name} must not include fallbackKind`);
+    }
     const scriptPath = path.join(dir, file.name);
     const text = readText(scriptPath, `Lua script ${file.name}`);
     const bytes = Buffer.byteLength(text);
@@ -172,7 +185,30 @@ function parseJson(text, label) {
 }
 
 function isLuaScriptFileManifest(value) {
-  return isRecord(value) && typeof value.name === "string" && Number.isInteger(value.bytes) && isSha256(value.sha256);
+  return isRecord(value) &&
+    typeof value.name === "string" &&
+    isLuaScriptSource(value.source) &&
+    (value.fallbackKind === undefined || isLuaScriptFallbackKind(value.fallbackKind)) &&
+    Number.isInteger(value.bytes) &&
+    isSha256(value.sha256);
+}
+
+function isLuaScriptSource(value) {
+  return [
+    "local-override",
+    "upstream-official",
+    "upstream-root",
+    "upstream-pre-release",
+    "local-fallback",
+  ].includes(value);
+}
+
+function isLuaScriptFallbackKind(value) {
+  return ["alias", "provisional", "other"].includes(value);
+}
+
+function sumCounts(counts) {
+  return Object.values(counts).reduce((sum, count) => sum + count, 0);
 }
 
 function isSha256(value) {

@@ -98,9 +98,11 @@ describe("browser PvP Lua script cache", () => {
               selectedCodes: ["90000015"],
               copiedCount: 1,
               missingCount: 0,
+              sourceCounts: { "upstream-official": 1 },
+              fallbackKindCounts: {},
               copied: ["c90000015.lua"],
               missing: [],
-              files: [{ name: "c90000015.lua", bytes: 16, sha256: manifestHash }],
+              files: [{ name: "c90000015.lua", source: "upstream-official", bytes: 16, sha256: manifestHash }],
             };
           },
         };
@@ -113,9 +115,11 @@ describe("browser PvP Lua script cache", () => {
       selectedCodes: ["90000015"],
       copiedCount: 1,
       missingCount: 0,
+      sourceCounts: { "upstream-official": 1 },
+      fallbackKindCounts: {},
       copied: ["c90000015.lua"],
       missing: [],
-      files: [{ name: "c90000015.lua", bytes: 16, sha256: manifestHash }],
+      files: [{ name: "c90000015.lua", source: "upstream-official", bytes: 16, sha256: manifestHash }],
     });
     expect(requestedUrls).toEqual(["/card-scripts/manifest.json"]);
   });
@@ -133,9 +137,11 @@ describe("browser PvP Lua script cache", () => {
             selectedCodes: [],
             copiedCount: 2,
             missingCount: 0,
+            sourceCounts: { "upstream-official": 1 },
+            fallbackKindCounts: {},
             copied: ["c90000016.lua"],
             missing: [],
-            files: [{ name: "c90000016.lua", bytes: 16, sha256: manifestHash }],
+            files: [{ name: "c90000016.lua", source: "upstream-official", bytes: 16, sha256: manifestHash }],
           };
         },
       }),

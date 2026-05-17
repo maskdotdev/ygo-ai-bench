@@ -160,6 +160,7 @@ describe("browser asset manifest checker", () => {
 });
 
 function makeTempRoot(): string {
+  fs.mkdirSync(os.tmpdir(), { recursive: true });
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "browser-asset-manifest-check-"));
   tempRoots.push(root);
   return root;
@@ -190,10 +191,13 @@ function writeScriptExport(dir: string, scripts: Record<string, string>): void {
     selectedCodes: names.map((name) => name.slice(1, -4)),
     copiedCount: names.length,
     missingCount: 0,
+    sourceCounts: { "upstream-official": names.length },
+    fallbackKindCounts: {},
     copied: names,
     missing: [],
     files: names.map((name) => ({
       name,
+      source: "upstream-official",
       bytes: Buffer.byteLength(scripts[name]!),
       sha256: sha256(scripts[name]!),
     })),

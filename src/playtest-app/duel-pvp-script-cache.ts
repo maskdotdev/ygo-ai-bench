@@ -36,6 +36,8 @@ export interface BrowserLuaScriptManifest {
   selectedCodes: string[];
   copiedCount: number;
   missingCount: number;
+  sourceCounts: Record<string, number>;
+  fallbackKindCounts: Record<string, number>;
   copied: string[];
   missing: string[];
   files: BrowserLuaScriptManifestFile[];
@@ -43,9 +45,13 @@ export interface BrowserLuaScriptManifest {
 
 export interface BrowserLuaScriptManifestFile {
   name: string;
+  source: BrowserLuaScriptSourceKind;
+  fallbackKind?: "alias" | "provisional" | "other";
   bytes: number;
   sha256: string;
 }
+
+type BrowserLuaScriptSourceKind = "local-override" | "upstream-official" | "upstream-root" | "upstream-pre-release" | "local-fallback";
 
 export interface BrowserLuaScriptPreloadResult {
   loaded: string[];
@@ -138,11 +144,17 @@ function parseBrowserLuaScriptManifest(value: unknown): BrowserLuaScriptManifest
     !value.copied.every((name) => typeof name === "string") ||
     !Array.isArray(value.missing) ||
     !value.missing.every((name) => typeof name === "string") ||
+    !isRecord(value.sourceCounts) ||
+    !Object.values(value.sourceCounts).every((count) => Number.isInteger(count)) ||
+    !isRecord(value.fallbackKindCounts) ||
+    !Object.values(value.fallbackKindCounts).every((count) => Number.isInteger(count)) ||
     !Array.isArray(value.files) ||
     !value.files.every(isBrowserLuaScriptManifestFile) ||
     value.copiedCount !== value.copied.length ||
     value.missingCount !== value.missing.length ||
-    value.files.length !== value.copied.length
+    value.files.length !== value.copied.length ||
+    sumCounts(value.sourceCounts) !== value.copied.length ||
+    ((value.sourceCounts["local-fallback"] as number | undefined) ?? 0) !== sumCounts(value.fallbackKindCounts)
   ) {
     throw new Error("Lua script manifest must describe browser-lua-scripts payload metadata");
   }
@@ -152,6 +164,8 @@ function parseBrowserLuaScriptManifest(value: unknown): BrowserLuaScriptManifest
     selectedCodes: [...value.selectedCodes],
     copiedCount: value.copiedCount,
     missingCount: value.missingCount,
+    sourceCounts: { ...value.sourceCounts } as Record<string, number>,
+    fallbackKindCounts: { ...value.fallbackKindCounts } as Record<string, number>,
     copied: [...value.copied],
     missing: [...value.missing],
     files: value.files.map((file) => ({ ...file })),
@@ -159,7 +173,30 @@ function parseBrowserLuaScriptManifest(value: unknown): BrowserLuaScriptManifest
 }
 
 function isBrowserLuaScriptManifestFile(value: unknown): value is BrowserLuaScriptManifestFile {
-  return isRecord(value) && typeof value.name === "string" && typeof value.bytes === "number" && Number.isInteger(value.bytes) && typeof value.sha256 === "string" && isSha256(value.sha256);
+  return isRecord(value) &&
+    typeof value.name === "string" &&
+    isBrowserLuaScriptSourceKind(value.source) &&
+    (value.fallbackKind === undefined || isBrowserLuaScriptFallbackKind(value.fallbackKind)) &&
+    typeof value.bytes === "number" &&
+    Number.isInteger(value.bytes) &&
+    typeof value.sha256 === "string" &&
+    isSha256(value.sha256);
+}
+
+function isBrowserLuaScriptSourceKind(value: unknown): value is BrowserLuaScriptSourceKind {
+  return value === "local-override" ||
+    value === "upstream-official" ||
+    value === "upstream-root" ||
+    value === "upstream-pre-release" ||
+    value === "local-fallback";
+}
+
+function isBrowserLuaScriptFallbackKind(value: unknown): value is "alias" | "provisional" | "other" {
+  return value === "alias" || value === "provisional" || value === "other";
+}
+
+function sumCounts(counts: Record<string, unknown>): number {
+  return Object.values(counts).reduce<number>((sum, count) => sum + (typeof count === "number" ? count : 0), 0);
 }
 
 function isSha256(value: string): boolean {
