@@ -81,6 +81,7 @@ const forceMonsterZoneSummonLockKindCounts = {
   controlReason: 1,
   extraLocationRange: 1,
   linkedZoneSummonSetLock: 1,
+  temporarySelectedZone: 1,
 } satisfies Record<ForceMonsterZoneSummonLockKind, number>;
 
 type SummonUnionProcedureKind =
@@ -102,7 +103,11 @@ type LinkedZoneSpecialSummonKind =
   | "opponentFieldLinkedZoneSummon"
   | "releaseCostDeckSummon"
   | "toBeLinkedZoneRevive";
-type ForceMonsterZoneSummonLockKind = "controlReason" | "extraLocationRange" | "linkedZoneSummonSetLock";
+type ForceMonsterZoneSummonLockKind =
+  | "controlReason"
+  | "extraLocationRange"
+  | "linkedZoneSummonSetLock"
+  | "temporarySelectedZone";
 type RealScriptSummonKeywordFamily =
   | "fusion"
   | "link"
@@ -617,6 +622,18 @@ function realScriptForceMonsterZoneSummonLockFixtureSnippets(): Array<{
         "origin force mzone generic material 1",
       ],
     },
+    {
+      file: "test/lua-real-script-dai-dance-force-mzone-selected-zone.test.ts",
+      kind: "temporarySelectedZone",
+      required: [
+        "SelectDisableField",
+        "targetRange: [0, 1]",
+        "value: 97",
+        "dai dance force mzone count 1",
+        "dai dance force mzone check true/false",
+        "dai dance force mzone candidate true",
+      ],
+    },
   ];
 }
 
@@ -630,6 +647,7 @@ function countForceMonsterZoneSummonLockKinds(files: Array<{ kind: ForceMonsterZ
       controlReason: 0,
       extraLocationRange: 0,
       linkedZoneSummonSetLock: 0,
+      temporarySelectedZone: 0,
     },
   );
 }

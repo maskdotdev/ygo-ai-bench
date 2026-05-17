@@ -39,7 +39,10 @@ const luaEffectOldUnionStatus = 348;
 const luaEffectClockLizard = 51476410;
 const luaEffectIndestructibleEffect = 41;
 const luaEffectIndestructibleBattle = 42;
+const luaEffectForceMonsterZone = 265;
 const luaEffectFlagClientHint = 0x4000000;
+const luaEffectFlagPlayerTarget = 0x800;
+const luaEventAdjust = 1040;
 const luaUnionStateEffectCodes = new Set([luaEffectEquipLimit, luaEffectUnionStatus, luaEffectOldUnionStatus]);
 const luaStaticSingleCardRestrictionCodes = new Set([43, 44, 85]);
 const luaIndestructibleValueDescriptors = new Set(["indestructible:opponent", "indestructible:self"]);
@@ -58,6 +61,7 @@ const luaGreatLongNoseCode = "2356994";
 const luaDarkMagicExpandedCode = "111280";
 const luaTimeTearingMorganiteCode = "19403423";
 const luaMegalithUnformedCode = "69003792";
+const luaDaiDanceCode = "50696588";
 const luaSetMegalith = 0x138;
 const luaCategorySpecialSummon = 0x200;
 const luaLocationDeck = 0x1;
@@ -551,6 +555,8 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownMulcharmyEndPhaseShuffleEffect(effect) ||
         isKnownDarkMagicExpandedChainingLimitEffect(effect) ||
         isKnownTimeTearingMorganiteSummonLimitEffect(effect) ||
+        isKnownDaiDanceForceMonsterZoneEffect(effect) ||
+        isKnownDaiDanceAdjustEffect(effect) ||
         isKnownRemainFieldEffect(effect) ||
         isKnownCannotActivateSpecialSummonedMonsterEffect(effect) ||
         isKnownCannotActivateNonSpiritMonsterEffect(effect) ||
@@ -762,6 +768,51 @@ function timeTearingMorganiteSummonLimitOperation(effect: SerializedDuelEffect):
   };
 }
 
+function isKnownDaiDanceForceMonsterZoneEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaDaiDanceCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === luaEffectForceMonsterZone &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
+    effect.property === luaEffectFlagPlayerTarget &&
+    effect.targetRange?.[0] === 0 &&
+    effect.targetRange?.[1] === 1 &&
+    effect.value !== undefined &&
+    (effect.value & 0x60) === 0x60 &&
+    [1, 2, 4, 8, 16].includes(effect.value & 0x1f) &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
+function isKnownDaiDanceAdjustEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaDaiDanceCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === luaEventAdjust &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
+    effect.label !== undefined &&
+    effect.label >= 0 &&
+    effect.label <= 4 &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
+function daiDanceAdjustOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    if (effect.label === undefined || effect.controller === undefined || effect.sourceUid === undefined) return;
+    const targetPlayer = effect.controller === 0 ? 1 : 0;
+    const occupied = ctx.duel.cards.some((card) => card.controller === targetPlayer && card.location === "monsterZone" && card.sequence === effect.label);
+    if (!occupied) return;
+    const selectedZoneValue = (1 << effect.label) | 0x60;
+    ctx.duel.effects = ctx.duel.effects.filter((candidate) => {
+      if (candidate.id === effect.id) return false;
+      return !(candidate.sourceUid === effect.sourceUid && candidate.code === luaEffectForceMonsterZone && candidate.value === selectedZoneValue && candidate.targetRange?.[0] === 0 && candidate.targetRange?.[1] === 1);
+    });
+  };
+}
+
 function isKnownGreatLongNoseSkipBattlePhaseEffect(effect: SerializedDuelEffect): boolean {
   return (
     Boolean(effect.registryKey?.startsWith(`lua:${luaGreatLongNoseCode}:`)) &&
@@ -868,6 +919,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownMulcharmyEndPhaseShuffleEffect(effect)) return mulcharmyEndPhaseShuffleOperation(effect);
   if (isKnownDarkMagicExpandedChainingLimitEffect(effect)) return darkMagicExpandedChainingLimitOperation(effect);
   if (isKnownTimeTearingMorganiteSummonLimitEffect(effect)) return timeTearingMorganiteSummonLimitOperation(effect);
+  if (isKnownDaiDanceAdjustEffect(effect)) return daiDanceAdjustOperation(effect);
   if (effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor) {
     const returnPlayer = effect.value === 0 || effect.value === 1 ? effect.value : undefined;
     return luaTemporaryControlReturnOperation(returnPlayer);
