@@ -53,6 +53,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ku
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.battleWindow?.kind).toBe("beforeDamageCalculation");
+    expect(restored.session.state.eventHistory).toContainEqual(expect.objectContaining({
+      eventName: "beforeDamageCalculation",
+      eventCode: 1134,
+    }));
     expect(restored.session.state.effects.find((effect) => effect.sourceUid === kuriboh!.uid)).toMatchObject({
       event: "quick",
       triggerEvent: "beforeDamageCalculation",
