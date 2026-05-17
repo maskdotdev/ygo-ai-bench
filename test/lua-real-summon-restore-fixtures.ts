@@ -4,7 +4,7 @@ import path from "node:path";
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-export const realScriptSummonFixtureCount = 170;
+export const realScriptSummonFixtureCount = 171;
 export const summonProcedureFixtureCount = 21;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -14,7 +14,7 @@ export const materialLockFixtureCount = 4;
 export const flipSummonSuccessTrapFixtureCount = 4;
 export const linkedZoneSpecialSummonFixtureCount = 5;
 export const realScriptSummonKeywordFamilyCounts = {
-  fusion: 22,
+  fusion: 23,
   link: 17,
   pendulum: 19,
   ritual: 21,
