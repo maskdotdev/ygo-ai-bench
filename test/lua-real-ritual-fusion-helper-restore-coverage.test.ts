@@ -6,7 +6,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = {
   fusion: 15,
-  ritual: 16,
+  ritual: 17,
 };
 const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind, number> = {
   contactFusionBanish: 1,
@@ -26,6 +26,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   fusionStage2Oath: 1,
   fusionStage2Protection: 1,
   ritualDeckExtraop: 1,
+  ritualDeckTargetLocation: 1,
   ritualEqualLevel: 1,
   ritualExtraDeckMaterial: 1,
   ritualExtraMaterialNormalDeck: 1,
@@ -43,7 +44,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(31);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(32);
   });
 
   it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
@@ -100,6 +101,7 @@ type RitualFusionHelperKind =
   | "fusionStage2Oath"
   | "fusionStage2Protection"
   | "ritualDeckExtraop"
+  | "ritualDeckTargetLocation"
   | "ritualEqualLevel"
   | "ritualExtraDeckMaterial"
   | "ritualExtraMaterialNormalDeck"
@@ -135,6 +137,22 @@ function countFixtureKinds(fixtures: Array<{ kind: RitualFusionHelperKind }>): R
 
 function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind: RitualFusionHelperKind; families: RitualFusionHelperFamily[]; required: string[] }> {
   return ([
+    {
+      file: "test/lua-real-script-turning-world-deck-ritual-target.test.ts",
+      kind: "ritualDeckTargetLocation",
+      families: ["ritual"],
+      required: [
+        "Ritual.CreateProc hand-or-Deck target locations",
+        "parameter: 0x3",
+        'location: "deck"',
+        'summonType: "ritual"',
+        "summonMaterialUids: [handRitualMaterial!.uid]",
+        "reason: duelReason.material | duelReason.ritual",
+        'eventName === "specialSummoned"',
+        'eventName === "sentToGraveyard"',
+        'expect(restored.host.messages).not.toContain("turning responder resolved")',
+      ],
+    },
     {
       file: "test/lua-real-script-machine-angel-absolute-grave-ritual.test.ts",
       kind: "ritualGraveExtraMaterial",

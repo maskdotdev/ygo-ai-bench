@@ -6,7 +6,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-const realScriptSummonFixtureCount = 168;
+const realScriptSummonFixtureCount = 169;
 const summonProcedureFixtureCount = 21;
 const typedSummonProcedureFixtureCount = 6;
 const pendulumGrantFixtureCount = 4;
@@ -19,7 +19,7 @@ const realScriptSummonKeywordFamilyCounts = {
   fusion: 22,
   link: 17,
   pendulum: 19,
-  ritual: 20,
+  ritual: 21,
   summon: 60,
   synchro: 16,
   xyz: 14,
