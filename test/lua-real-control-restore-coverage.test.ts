@@ -5,6 +5,22 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const controlFixtureCount = 7;
+const controlKindCounts = {
+  cannotChangeControl: 1,
+  equipControl: 1,
+  releaseCostControl: 1,
+  restrictedTemporaryControl: 2,
+  swapControlLock: 1,
+  temporaryControl: 1,
+} satisfies Record<ControlKind, number>;
+
+type ControlKind =
+  | "cannotChangeControl"
+  | "equipControl"
+  | "releaseCostControl"
+  | "restrictedTemporaryControl"
+  | "swapControlLock"
+  | "temporaryControl";
 
 describe("Lua real control restore coverage", () => {
   it("requires representative control-change fixtures to prove clean Lua restore and replayed legal actions", () => {
@@ -32,12 +48,21 @@ describe("Lua real control restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps control fixture kinds explicit", () => {
+    expect(countControlKinds(realScriptControlFixtureFiles())).toEqual(controlKindCounts);
+  });
 });
 
-function realScriptControlFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function realScriptControlFixtureFiles(): Array<{
+  file: string;
+  kind: ControlKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "lua-real-script-change-of-heart-control-return.test.ts",
+      kind: "temporaryControl",
       required: [
         'luaValueDescriptor: "temporary-control-return"',
         'registryKey: `lua:${targetCode}:temporary-control-return:${target!.uid}`',
@@ -46,6 +71,7 @@ function realScriptControlFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-brain-control-cost-return.test.ts",
+      kind: "restrictedTemporaryControl",
       required: [
         "lifePointCostPaid",
         "players[0].lifePoints).toBe(7200)",
@@ -54,6 +80,7 @@ function realScriptControlFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-enemy-controller-control-cost.test.ts",
+      kind: "releaseCostControl",
       required: [
         "effectLabel: 2",
         "duelReason.release",
@@ -63,6 +90,7 @@ function realScriptControlFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-mind-control-restrictions.test.ts",
+      kind: "restrictedTemporaryControl",
       required: [
         "restrictionCodes(restoredResponseWindow.session, target!.uid)).toEqual([43, 44, 85])",
         "mind release probe true/false/0",
@@ -71,6 +99,7 @@ function realScriptControlFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-creature-swap-control-lock.test.ts",
+      kind: "swapControlLock",
       required: [
         "targetUids ?? []).toEqual([])",
         "positionLockCodes(restoredResponseWindow.session, ownMonster!.uid)).toEqual([14])",
@@ -79,6 +108,7 @@ function realScriptControlFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-mataza-control-extra-attack.test.ts",
+      kind: "cannotChangeControl",
       required: [
         "code: 5",
         "mataza control predicate false",
@@ -88,6 +118,7 @@ function realScriptControlFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "lua-real-script-snatch-steal-equip-control.test.ts",
+      kind: "equipControl",
       required: [
         "equippedToUid: target!.uid",
         "previousEquippedToUid: target!.uid",
@@ -95,5 +126,26 @@ function realScriptControlFixtureFiles(): Array<{ file: string; required: string
         "snatch probe 1/nil/nil",
       ],
     },
-  ].map(({ file, required }) => ({ file: path.join("test", file), required }));
+  ] satisfies Array<{
+    file: string;
+    kind: ControlKind;
+    required: string[];
+  }>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
+}
+
+function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<ControlKind, number> {
+  return fixtures.reduce<Record<ControlKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      cannotChangeControl: 0,
+      equipControl: 0,
+      releaseCostControl: 0,
+      restrictedTemporaryControl: 0,
+      swapControlLock: 0,
+      temporaryControl: 0,
+    },
+  );
 }
