@@ -5,8 +5,24 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const spiritFixtureCount = 19;
+const spiritKindCounts = {
+  columnSendPendulum: 3,
+  delayedShuffleDraw: 1,
+  effectExtraNormalSummon: 2,
+  graveToDeckTrigger: 1,
+  normalSummonSearch: 2,
+  procedureReturn: 2,
+  returnToHandTrigger: 4,
+  ritualSelfSummonSearch: 2,
+  ritualShuffleSummon: 1,
+  trapDisable: 1,
+} satisfies Record<SpiritKind, number>;
 
 describe("Lua real Spirit restore coverage", () => {
+  it("keeps representative Spirit fixture kinds explicit", () => {
+    expect(countSpiritKinds(realScriptSpiritFixtureFiles())).toEqual(spiritKindCounts);
+  });
+
   it("requires representative Spirit fixtures to prove clean Lua restore and replayed legal actions", () => {
     const files = realScriptSpiritFixtureFiles();
     expect(files).toHaveLength(spiritFixtureCount);
@@ -31,10 +47,41 @@ describe("Lua real Spirit restore coverage", () => {
   });
 });
 
-function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+type SpiritKind =
+  | "columnSendPendulum"
+  | "delayedShuffleDraw"
+  | "effectExtraNormalSummon"
+  | "graveToDeckTrigger"
+  | "normalSummonSearch"
+  | "procedureReturn"
+  | "returnToHandTrigger"
+  | "ritualSelfSummonSearch"
+  | "ritualShuffleSummon"
+  | "trapDisable";
+
+function countSpiritKinds(fixtures: Array<{ kind: SpiritKind }>): Record<SpiritKind, number> {
+  return fixtures.reduce<Record<SpiritKind, number>>(
+    (counts, { kind }) => ({ ...counts, [kind]: counts[kind] + 1 }),
+    {
+      columnSendPendulum: 0,
+      delayedShuffleDraw: 0,
+      effectExtraNormalSummon: 0,
+      graveToDeckTrigger: 0,
+      normalSummonSearch: 0,
+      procedureReturn: 0,
+      returnToHandTrigger: 0,
+      ritualSelfSummonSearch: 0,
+      ritualShuffleSummon: 0,
+      trapDisable: 0,
+    },
+  );
+}
+
+function realScriptSpiritFixtureFiles(): Array<{ file: string; kind: SpiritKind; required: string[] }> {
+  return ([
     {
       file: "lua-real-script-sakitama-spirit-effect-summon.test.ts",
+      kind: "effectExtraNormalSummon",
       required: [
         "restoredOpenWindow.missingRegistryKeys).toEqual([])",
         "restoredOpenWindow.missingChainLimitRegistryKeys).toEqual([])",
@@ -54,6 +101,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-konohanasakuya-spirit-special-return.test.ts",
+      kind: "procedureReturn",
       required: [
         'action.type === "specialSummonProcedure"',
         'eventName: "phaseEnd"',
@@ -63,6 +111,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-izanagi-spirit-maynot-return.test.ts",
+      kind: "procedureReturn",
       required: [
         'action.type === "specialSummonProcedure"',
         'action.type === "declineTrigger"',
@@ -73,6 +122,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-nikitama-extra-spirit-summon.test.ts",
+      kind: "effectExtraNormalSummon",
       required: [
         "normalSummonAvailable).toBe(false)",
         'action.type === "normalSummon"',
@@ -81,6 +131,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-aratama-spirit-search.test.ts",
+      kind: "normalSummonSearch",
       required: [
         'action.type === "activateTrigger"',
         'eventName: "normalSummoned"',
@@ -90,6 +141,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-ichiki-sayori-hime-effect-summon-search.test.ts",
+      kind: "normalSummonSearch",
       required: [
         'action.type === "activateEffect"',
         'action.type === "activateTrigger"',
@@ -106,6 +158,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-shinobaroness-shade-peacock-search-self-summon.test.ts",
+      kind: "ritualSelfSummonSearch",
       required: [
         'ritualSummonDuelCard(session.state, 0, shade!.uid',
         'summonType: "ritual"',
@@ -123,6 +176,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-shinobaroness-peacock-shuffle-summon.test.ts",
+      kind: "ritualShuffleSummon",
       required: [
         "ritualSummonDuelCard(session.state, 0, peacock.uid",
         'action.type === "activateTrigger"',
@@ -142,6 +196,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-shinobaron-shade-peacock-tribute-search-self-summon.test.ts",
+      kind: "ritualSelfSummonSearch",
       required: [
         'ritualSummonDuelCard(session.state, 0, shade!.uid',
         'action.type === "activateEffect"',
@@ -161,6 +216,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-shinobird-pigeon-spirit-return.test.ts",
+      kind: "returnToHandTrigger",
       required: [
         'action.type === "normalSummon"',
         'action.type === "activateEffect"',
@@ -172,6 +228,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-kuro-obi-karate-spirit-column-send.test.ts",
+      kind: "columnSendPendulum",
       required: [
         'action.type === "tributeSummon"',
         'action.type === "activateTrigger"',
@@ -187,6 +244,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-kai-den-kendo-spirit-column-send.test.ts",
+      kind: "columnSendPendulum",
       required: [
         'action.type === "tributeSummon"',
         'action.type === "activateTrigger"',
@@ -202,6 +260,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-yoko-zuna-sumo-spirit-column-send.test.ts",
+      kind: "columnSendPendulum",
       required: [
         'action.type === "tributeSummon"',
         'action.type === "activateTrigger"',
@@ -218,6 +277,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-tsumuha-kutsunagi-delayed-shuffle.test.ts",
+      kind: "delayedShuffleDraw",
       required: [
         'action.type === "tributeSummon"',
         'action.type === "activateTrigger"',
@@ -237,6 +297,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-gishki-natalia-spirit-to-deck.test.ts",
+      kind: "graveToDeckTrigger",
       required: [
         'action.type === "normalSummon"',
         'action.type === "activateTrigger"',
@@ -252,6 +313,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-gishki-emilia-trap-disable.test.ts",
+      kind: "trapDisable",
       required: [
         'action.type === "normalSummon"',
         'action.type === "activateTrigger"',
@@ -266,6 +328,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-han-shi-kyudo-spirit-column-return.test.ts",
+      kind: "returnToHandTrigger",
       required: [
         'action.type === "tributeSummon"',
         'action.type === "activateTrigger"',
@@ -281,6 +344,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-yaksha-spirit-backrow-return.test.ts",
+      kind: "returnToHandTrigger",
       required: [
         'action.type === "normalSummon"',
         'action.type === "activateTrigger"',
@@ -293,6 +357,7 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
     },
     {
       file: "lua-real-script-sacred-spirit-ice-barrier-return.test.ts",
+      kind: "returnToHandTrigger",
       required: [
         'action.type === "normalSummon"',
         'action.type === "activateTrigger"',
@@ -308,5 +373,6 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; required: string[
         'host.messages).not.toContain("sacred spirit responder resolved")',
       ],
     },
-  ].map(({ file, required }) => ({ file: path.join("test", file), required }));
+  ] satisfies Array<{ file: string; kind: SpiritKind; required: string[] }>)
+    .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
 }
