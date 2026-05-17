@@ -75,4 +75,26 @@ describe("package scripts", () => {
     expect(ignore).toContain("public/card-data/");
     expect(ignore).toContain("public/card-scripts/");
   });
+
+  it("keeps browser Lua fallback export budgets ratcheted to the local fallback inventory", () => {
+    const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")) as { scripts?: Record<string, string> };
+    const exportScript = pkg.scripts?.["export:browser-scripts"] ?? "";
+    const fallbackScripts = fs
+      .readdirSync("local-card-scripts/fallbacks/official")
+      .filter((file) => file.endsWith(".lua"))
+      .map((file) => fs.readFileSync(`local-card-scripts/fallbacks/official/${file}`, "utf8"));
+    const aliasFallbacks = fallbackScripts.filter((source) => /Duel\.LoadCardScriptAlias\(\d+\)/.test(source));
+    const provisionalFallbacks = fallbackScripts.filter((source) => source.includes("local-fallback-provisional"));
+    const otherFallbacks = fallbackScripts.length - aliasFallbacks.length - provisionalFallbacks.length;
+
+    expect(readBudget(exportScript, "--max-local-fallbacks")).toBe(fallbackScripts.length);
+    expect(readBudget(exportScript, "--max-local-alias-fallbacks")).toBe(aliasFallbacks.length);
+    expect(readBudget(exportScript, "--max-local-provisional-fallbacks")).toBe(provisionalFallbacks.length);
+    expect(readBudget(exportScript, "--max-local-other-fallbacks")).toBe(otherFallbacks);
+  });
 });
+
+function readBudget(command: string, flag: string): number {
+  const match = command.match(new RegExp(`${flag} (\\d+)`));
+  return Number(match?.[1] ?? -1);
+}
