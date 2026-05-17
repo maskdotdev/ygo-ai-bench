@@ -10,8 +10,18 @@ const piercingKindCounts = {
   fieldPierce: 1,
   raceTargetedFieldPierce: 1,
 } satisfies Record<PiercingKind, number>;
+const piercingSemanticVariantCounts = {
+  ancientGearGolemFieldPierce: 1,
+  enragedBattleOxRaceTargetedPierce: 1,
+  fairyMeteorCrushEquipPierce: 1,
+} satisfies Record<PiercingSemanticVariant, number>;
 
 type PiercingKind = "equipPierce" | "fieldPierce" | "raceTargetedFieldPierce";
+
+type PiercingSemanticVariant =
+  | "ancientGearGolemFieldPierce"
+  | "enragedBattleOxRaceTargetedPierce"
+  | "fairyMeteorCrushEquipPierce";
 
 describe("Lua real piercing damage restore coverage", () => {
   it("requires piercing damage fixtures to assert clean Lua registry restore and restored damage semantics", () => {
@@ -43,6 +53,19 @@ describe("Lua real piercing damage restore coverage", () => {
 
   it("keeps piercing fixture kinds explicit", () => {
     expect(countPiercingKinds(piercingFixtureFiles())).toEqual(piercingKindCounts);
+  });
+
+  it("keeps named piercing semantic variants explicit", () => {
+    expect(countPiercingSemanticVariants(piercingSemanticVariants())).toEqual(piercingSemanticVariantCounts);
+
+    const weak = piercingSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -104,6 +127,69 @@ function countPiercingKinds(fixtures: Array<{ kind: PiercingKind }>): Record<Pie
       equipPierce: 0,
       fieldPierce: 0,
       raceTargetedFieldPierce: 0,
+    },
+  );
+}
+
+function piercingSemanticVariants(): Array<{
+  file: string;
+  kind: PiercingSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-ancient-gear-golem-pierce-battle-damage.test.ts",
+      kind: "ancientGearGolemFieldPierce",
+      required: [
+        'const golemCode = "83104731"',
+        "restores Ancient Gear Golem and applies piercing battle damage",
+        'registryKey: "lua:83104731:lua-2-203"',
+        "battleDamage).toEqual({ 0: 0, 1: 1500 })",
+        "players[1].lifePoints).toBe(6500)",
+        "eventReason: duelReason.battle",
+      ],
+    },
+    {
+      file: "test/lua-real-script-enraged-battle-ox-pierce.test.ts",
+      kind: "enragedBattleOxRaceTargetedPierce",
+      required: [
+        'const oxCode = "76909279"',
+        "restores Enraged Battle Ox's field piercing effect and applies it only to matching attackers",
+        'registryKey: "lua:76909279:lua-1-203"',
+        "targetRange: [4, 0]",
+        "battleDamage[1]).toBe(700)",
+        "battleDamage[1]).toBe(0)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
+      kind: "fairyMeteorCrushEquipPierce",
+      required: [
+        'const equipCode = "97687912"',
+        "restores equip-sourced piercing damage only for the equipped monster",
+        "operationInfos: [{ category: 0x40000",
+        "equippedToUid: equippedAttacker!.uid",
+        "eventName === \"battleDamageDealt\" && event.eventPlayer === 1)).toEqual([])",
+        "battleDamage).toEqual({ 0: 0, 1: 800 })",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: PiercingSemanticVariant;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countPiercingSemanticVariants(fixtures: Array<{ kind: PiercingSemanticVariant }>): Record<PiercingSemanticVariant, number> {
+  return fixtures.reduce<Record<PiercingSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      ancientGearGolemFieldPierce: 0,
+      enragedBattleOxRaceTargetedPierce: 0,
+      fairyMeteorCrushEquipPierce: 0,
     },
   );
 }
