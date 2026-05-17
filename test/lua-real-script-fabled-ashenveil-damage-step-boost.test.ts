@@ -108,6 +108,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
       },
     ]);
     expect(restoredDamageStep.session.state.chain).toHaveLength(1);
+    expect(restoredDamageStep.session.state.chain[0]?.operationInfos ?? []).toEqual([]);
     expect(getLuaRestoreLegalActions(restoredDamageStep, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredDamageStep.session), source, reader);

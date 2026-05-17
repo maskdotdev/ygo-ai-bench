@@ -102,6 +102,15 @@ describe("Lua real response restore coverage", () => {
     expect(files).toEqual(responseWithoutOperationInfoFixtureFiles);
   });
 
+  it("requires chained response fixtures without operation-info assertions to prove empty operation info", () => {
+    const operationInfoFiles = new Set(realScriptResponseOperationInfoFixtureFiles());
+    const files = realScriptChainedResponseFixtureFiles()
+      .filter((file) => !operationInfoFiles.has(file));
+    const missing = files.filter((file) => !coverageText(fs.readFileSync(path.join(root, file), "utf8")).includes("operationInfos ?? []).toEqual([])"));
+
+    expect(missing).toEqual([]);
+  });
+
   it("requires operation-info assertions for chained response fixtures that announce categories", () => {
     const files = realScriptResponseOperationInfoFixtureFiles();
     expect(files).toHaveLength(responseOperationInfoFixtureCount);

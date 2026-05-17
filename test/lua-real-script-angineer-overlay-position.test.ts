@@ -63,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Me
     expect(activate).toBeDefined();
     const activated = applyAndAssert(session, activate!);
     expect(activated.state.chain).toHaveLength(1);
+    expect(session.state.chain[0]?.operationInfos ?? []).toEqual([]);
     expect(session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "monsterZone",
