@@ -487,10 +487,13 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
       families: ["ritual"],
       required: [
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }]',
+        "expect(restored.session.state.chain[0]?.operationInfos).toEqual([",
         'summonType: "ritual"',
         "summonMaterialUids: [lightMaterialA!.uid, lightMaterialB!.uid]",
         "expect(restored.session.state.cards.find((card) => card.uid === darkMaterial!.uid)).toMatchObject({ location: \"hand\" })",
         "reason: duelReason.material | duelReason.ritual",
+        'eventName === "sentToGraveyard"',
+        "event.eventCardUid === lightMaterialB!.uid",
         'expect(restored.host.messages).not.toContain("voiceless responder resolved")',
       ],
     },

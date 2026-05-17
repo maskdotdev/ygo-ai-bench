@@ -97,6 +97,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restored.session.state.chain[0]?.operationInfos).toEqual([
+      { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 },
+    ]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 
@@ -144,7 +147,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
         },
       ]
     `);
-    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard" && event.eventCardUid === lightMaterialA!.uid)).toMatchInlineSnapshot(`
+    const materialGraveEvents = restored.session.state.eventHistory.filter((event) =>
+      event.eventName === "sentToGraveyard"
+      && (event.eventCardUid === lightMaterialA!.uid || event.eventCardUid === lightMaterialB!.uid)
+    );
+    expect(materialGraveEvents.map((event) => event.eventCardUid).sort()).toEqual([lightMaterialA!.uid, lightMaterialB!.uid].sort());
+    expect(materialGraveEvents).toMatchInlineSnapshot(`
       [
         {
           "eventCardUid": "p0-deck-5243-2",
@@ -163,6 +171,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
             "location": "hand",
             "position": "faceDown",
             "sequence": 2,
+          },
+          "eventReason": 1048584,
+          "eventReasonCardUid": "p0-deck-52472775-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-5245-4",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 4,
           },
           "eventReason": 1048584,
           "eventReasonCardUid": "p0-deck-52472775-0",
