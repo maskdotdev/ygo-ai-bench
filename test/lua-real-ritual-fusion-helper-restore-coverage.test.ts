@@ -437,6 +437,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         "event.eventCardUid === normalMaterial!.uid",
         "ownerType: \"card\", ownerId: ritualTarget!.uid",
         "reason: duelReason.effect",
+        'expect(restored.host.messages).not.toContain("high ritual art responder resolved")',
       ],
     },
     {
