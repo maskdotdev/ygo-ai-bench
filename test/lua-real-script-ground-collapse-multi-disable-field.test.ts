@@ -6,6 +6,7 @@ import { createDuel, getGroupedDuelLegalActions, loadDecks, serializeDuel, start
 import type { DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
+import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
@@ -93,7 +94,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     const resolved = applyLuaRestoreResponse(restored, pass!);
     expect(resolved.ok, resolved.error).toBe(true);
     expect(restored.session.state.cards.find((card) => card.uid === groundCollapse.uid)).toMatchObject({ location: "spellTrapZone", controller: 0, faceUp: true });
-    expect(restored.session.state.effects.filter((effect) => effect.sourceUid === groundCollapse.uid && effect.code === 260)).toHaveLength(1);
+    const disableFieldEffects = restored.session.state.effects.filter((effect) => effect.sourceUid === groundCollapse.uid && effect.code === 260);
+    expect(disableFieldEffects).toHaveLength(1);
+    expect(disableFieldEffects.map((effect) => effect.value)).toEqual([3]);
+    expect(availableMonsterZoneCount(restored.session, 0, [])).toBe(3);
     expect(restored.host.messages).not.toContain("ground collapse responder resolved");
   });
 });
