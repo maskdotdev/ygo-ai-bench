@@ -161,6 +161,46 @@ describe("PvP arena visible scripts", () => {
     expect(result.luaHost.messages).toContain("browser bootstrap 2300");
   });
 
+  it("preloads browser Lua scripts for CDB aliases before registering deck cards", async () => {
+    const aliasedYdk = `#created by test
+#main
+90000021
+#extra
+!side`;
+    const cardBatches: string[][] = [];
+    const scriptBatches: string[][] = [];
+    const cardDataCache = createBrowserDuelCardDataCache(async (codes) => {
+      cardBatches.push([...codes]);
+      return [
+        { code: "90000021", alias: "90000020", name: "Browser Alias Duelist", kind: "monster", attack: 1900 },
+      ];
+    });
+    const luaScriptCache = createBrowserLuaScriptCache(async (names) => {
+      scriptBatches.push([...names]);
+      return {
+        "c90000020.lua": `
+          c90000020={}
+          function c90000020.initial_effect(c)
+            Debug.Message("browser alias script " .. c:GetCode())
+          end
+        `,
+      };
+    });
+
+    const result = await bootstrapPvpDuelWithBrowserData(aliasedYdk, pvpVisibleBattleFixtureYdk, "pvp-browser-alias-script", 1, {
+      cardDataCache,
+      luaScriptCache,
+    });
+
+    expect(cardBatches).toEqual([["90000021"]]);
+    expect(scriptBatches).toEqual([["c7084129.lua", "c90000020.lua", "c90000021.lua"]]);
+    expect(result.cardPreload).toEqual({ loaded: ["7084129", "90000021"], missing: [] });
+    expect(result.scriptPreload).toEqual({ loaded: ["c90000020.lua"], missing: ["c7084129.lua", "c90000021.lua"] });
+    expect(result.scriptLoads).toContainEqual({ ok: true, name: "c90000021.lua" });
+    expect(result.scriptRegistrations).toContainEqual(expect.objectContaining({ code: "90000021", ok: true }));
+    expect(result.luaHost.messages).toContain("browser alias script 90000021");
+  });
+
   it("bootstraps browser assets against exported endpoint paths with manifests", async () => {
     const originalFetch = globalThis.fetch;
     const requestedUrls: string[] = [];

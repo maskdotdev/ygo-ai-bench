@@ -157,7 +157,7 @@ export async function bootstrapPvpDuelWithLuaScripts(
   options: BootstrapPvpDuelWithLuaScriptsOptions,
 ): Promise<BootstrapPvpDuelWithLuaScriptsResult> {
   const codes = pvpDeckCodes(p0Text, p1Text);
-  const scriptPreload = await options.luaScriptCache.preloadCardScripts(codes);
+  const scriptPreload = await options.luaScriptCache.preloadCardScripts(pvpScriptCodes(codes, options.cardReader));
   const session = bootstrapPvpDuel(p0Text, p1Text, seed, handSize, options);
   const { createLuaScriptHost } = await import("#lua/host.js");
   const luaHost = createLuaScriptHost(session, options.luaScriptCache);
@@ -175,12 +175,11 @@ export async function bootstrapPvpDuelWithBrowserData(
   options: BootstrapPvpDuelWithBrowserDataOptions,
 ): Promise<BootstrapPvpDuelWithBrowserDataResult> {
   const codes = pvpDeckCodes(p0Text, p1Text);
-  const [cardPreload, scriptPreload] = await Promise.all([
-    options.cardDataCache.preload(codes),
-    options.luaScriptCache.preloadCardScripts(codes),
-  ]);
+  const cardPreload = await options.cardDataCache.preload(codes);
+  const cardReader = options.cardReader ?? options.cardDataCache.reader;
+  const scriptPreload = await options.luaScriptCache.preloadCardScripts(pvpScriptCodes(codes, cardReader));
   const session = bootstrapPvpDuel(p0Text, p1Text, seed, handSize, {
-    cardReader: options.cardReader ?? options.cardDataCache.reader,
+    cardReader,
   });
   const { createLuaScriptHost } = await import("#lua/host.js");
   const luaHost = createLuaScriptHost(session, options.luaScriptCache);
@@ -209,6 +208,17 @@ function pvpDeckCodes(p0Text: string, p1Text: string): string[] {
   const p0 = parseYdk(p0Text);
   const p1 = parseYdk(p1Text);
   return [...new Set([...p0.main, ...p0.extra, ...p1.main, ...p1.extra].map(String).filter(Boolean))].sort();
+}
+
+function pvpScriptCodes(codes: readonly string[], cardReader: DuelCardReader | undefined): string[] {
+  const scriptCodes = new Set(codes.map(String).filter(Boolean));
+  if (cardReader) {
+    for (const code of codes) {
+      const alias = cardReader(String(code))?.alias;
+      if (alias && alias !== String(code)) scriptCodes.add(String(alias));
+    }
+  }
+  return [...scriptCodes].sort();
 }
 
 export function runPvpArenaVisibleScript(
