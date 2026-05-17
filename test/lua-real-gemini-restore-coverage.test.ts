@@ -4,12 +4,28 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const geminiFixtureCount = 16;
+const geminiFixtureCount = 17;
 const geminiStatusFixtureCount = 14;
 const geminiOperationFixtureCount = 10;
 const geminiStateFixtureCount = 4;
+const geminiKindCounts = {
+  attackAllStatus: 1,
+  battleTriggeredOperation: 3,
+  delayedGeminiStatus: 2,
+  discardRevive: 1,
+  destructionOperation: 3,
+  equipStatusOperation: 1,
+  handSpecialSummon: 1,
+  levelOrTypeStatus: 2,
+  statusGrantRevive: 2,
+  summonSuccessTriggerRevive: 1,
+} satisfies Record<GeminiKind, number>;
 
 describe("Lua real Gemini restore coverage", () => {
+  it("keeps representative Gemini fixture kinds explicit", () => {
+    expect(countGeminiKinds(geminiFixtures())).toEqual(geminiKindCounts);
+  });
+
   it("requires representative Gemini fixtures to assert clean Lua registry restore", () => {
     const files = geminiFixtureFiles();
     expect(files).toHaveLength(geminiFixtureCount);
@@ -89,27 +105,62 @@ describe("Lua real Gemini restore coverage", () => {
   });
 });
 
+type GeminiKind =
+  | "attackAllStatus"
+  | "battleTriggeredOperation"
+  | "delayedGeminiStatus"
+  | "discardRevive"
+  | "destructionOperation"
+  | "equipStatusOperation"
+  | "handSpecialSummon"
+  | "levelOrTypeStatus"
+  | "statusGrantRevive"
+  | "summonSuccessTriggerRevive";
+
+function countGeminiKinds(fixtures: Array<{ kind: GeminiKind }>): Record<GeminiKind, number> {
+  return fixtures.reduce<Record<GeminiKind, number>>(
+    (counts, { kind }) => ({ ...counts, [kind]: counts[kind] + 1 }),
+    {
+      attackAllStatus: 0,
+      battleTriggeredOperation: 0,
+      delayedGeminiStatus: 0,
+      discardRevive: 0,
+      destructionOperation: 0,
+      equipStatusOperation: 0,
+      handSpecialSummon: 0,
+      levelOrTypeStatus: 0,
+      statusGrantRevive: 0,
+      summonSuccessTriggerRevive: 0,
+    },
+  );
+}
+
 function geminiFixtureFiles(): string[] {
-  return [
-    "lua-real-script-blazewing-butterfly-gemini-revive-status.test.ts",
-    "lua-real-script-chemicritter-hydron-hawk-discard-revive.test.ts",
-    "lua-real-script-chemicritter-oxy-ox-gemini-level-change.test.ts",
-    "lua-real-script-dark-valkyria-gemini-counter-destroy.test.ts",
-    "lua-real-script-future-samurai-gemini-banish-destroy.test.ts",
-    "lua-real-script-gem-knight-sardonyx-battle-search.test.ts",
-    "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
-    "lua-real-script-gemini-soldier-battled-deck-summon.test.ts",
-    "lua-real-script-gemini-spark-release-destroy-draw.test.ts",
-    "lua-real-script-grasschopper-gemini-attack-all.test.ts",
-    "lua-real-script-herculean-power-gemini-hand-summon.test.ts",
-    "lua-real-script-magical-reflect-slime-gemini-battle-damage.test.ts",
-    "lua-real-script-super-double-summon-gemini-return.test.ts",
-    "lua-real-script-supervise-gemini-equip-revive.test.ts",
-    "lua-real-script-tuned-magician-gemini-tuner-type.test.ts",
-    "lua-real-script-unleash-your-power-gemini-delayed-set.test.ts",
-  ]
-    .map((file) => path.join("test", file))
-    .sort();
+  return geminiFixtures().map(({ file }) => file);
+}
+
+function geminiFixtures(): Array<{ file: string; kind: GeminiKind }> {
+  return ([
+    { file: "lua-real-script-blazewing-butterfly-gemini-revive-status.test.ts", kind: "statusGrantRevive" },
+    { file: "lua-real-script-chemicritter-hydron-hawk-discard-revive.test.ts", kind: "discardRevive" },
+    { file: "lua-real-script-chemicritter-oxy-ox-gemini-level-change.test.ts", kind: "levelOrTypeStatus" },
+    { file: "lua-real-script-dark-valkyria-gemini-counter-destroy.test.ts", kind: "destructionOperation" },
+    { file: "lua-real-script-evocator-eveque-gemini-trigger.test.ts", kind: "summonSuccessTriggerRevive" },
+    { file: "lua-real-script-future-samurai-gemini-banish-destroy.test.ts", kind: "destructionOperation" },
+    { file: "lua-real-script-gem-knight-sardonyx-battle-search.test.ts", kind: "battleTriggeredOperation" },
+    { file: "lua-real-script-gemini-booster-equip-destroy-status.test.ts", kind: "equipStatusOperation" },
+    { file: "lua-real-script-gemini-soldier-battled-deck-summon.test.ts", kind: "battleTriggeredOperation" },
+    { file: "lua-real-script-gemini-spark-release-destroy-draw.test.ts", kind: "destructionOperation" },
+    { file: "lua-real-script-grasschopper-gemini-attack-all.test.ts", kind: "attackAllStatus" },
+    { file: "lua-real-script-herculean-power-gemini-hand-summon.test.ts", kind: "handSpecialSummon" },
+    { file: "lua-real-script-magical-reflect-slime-gemini-battle-damage.test.ts", kind: "battleTriggeredOperation" },
+    { file: "lua-real-script-super-double-summon-gemini-return.test.ts", kind: "delayedGeminiStatus" },
+    { file: "lua-real-script-supervise-gemini-equip-revive.test.ts", kind: "statusGrantRevive" },
+    { file: "lua-real-script-tuned-magician-gemini-tuner-type.test.ts", kind: "levelOrTypeStatus" },
+    { file: "lua-real-script-unleash-your-power-gemini-delayed-set.test.ts", kind: "delayedGeminiStatus" },
+  ] satisfies Array<{ file: string; kind: GeminiKind }>)
+    .map(({ file, kind }) => ({ file: path.join("test", file), kind }))
+    .sort((a, b) => a.file.localeCompare(b.file));
 }
 
 function geminiStatusFixtureFiles(): string[] {
