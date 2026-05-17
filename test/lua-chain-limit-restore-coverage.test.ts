@@ -10,6 +10,13 @@ const upstreamOfficialScriptRoot = path.join(root, ".upstream/ignis/script/offic
 const noActiveRestoreWindowGroups = new Set(["SetChainLimit:aux.FALSE"]);
 const realScriptChainLimitFixtureCount = 17;
 const realScriptOwnedScannerGroupCount = 15;
+const realScriptChainLimitKindCounts = {
+  activationDenyAll: 2,
+  activeTypeBlock: 5,
+  effectTypeBlock: 3,
+  handlerExclusion: 4,
+  responseMatchesChainPlayer: 3,
+} satisfies Record<RealScriptChainLimitKind, number>;
 
 const officialPatternRestoreCoverage: Record<string, string[]> = {
   "SetChainLimit:aux.FALSE": ["test/lua-real-script-anti-magic-arrows-chain-limit.test.ts"],
@@ -89,6 +96,10 @@ describe("Lua chain-limit restore coverage", () => {
     expect(missing).toEqual([]);
   });
 
+  it("keeps real-script chain-limit fixture kinds explicit", () => {
+    expect(countRealScriptChainLimitKinds(realScriptChainLimitFixtureFiles())).toEqual(realScriptChainLimitKindCounts);
+  });
+
   it("keeps most official chain-limit scanner groups owned by real-script fixtures", () => {
     const realScriptOwnedGroups = Object.values(officialPatternRestoreCoverage)
       .filter((files) => files.some((file) => file.includes("/lua-real-script-")))
@@ -97,6 +108,13 @@ describe("Lua chain-limit restore coverage", () => {
     expect(realScriptOwnedGroups).toBe(realScriptOwnedScannerGroupCount);
   });
 });
+
+type RealScriptChainLimitKind =
+  | "activationDenyAll"
+  | "activeTypeBlock"
+  | "effectTypeBlock"
+  | "handlerExclusion"
+  | "responseMatchesChainPlayer";
 
 function assertRestoreCoverageFile(group: string, file: string): void {
   const text = fs.readFileSync(path.join(root, file), "utf8");
@@ -157,4 +175,62 @@ function realScriptChainLimitFixtureFiles(): string[] {
     .filter((file) => /^lua-real-script-.*chain-limit.*\.test\.ts$/.test(file))
     .map((file) => path.join("test", file))
     .sort();
+}
+
+function countRealScriptChainLimitKinds(files: string[]): Record<RealScriptChainLimitKind, number> {
+  return files.reduce<Record<RealScriptChainLimitKind, number>>(
+    (counts, file) => {
+      counts[classifyRealScriptChainLimitKind(file)] += 1;
+      return counts;
+    },
+    {
+      activationDenyAll: 0,
+      activeTypeBlock: 0,
+      effectTypeBlock: 0,
+      handlerExclusion: 0,
+      responseMatchesChainPlayer: 0,
+    },
+  );
+}
+
+function classifyRealScriptChainLimitKind(file: string): RealScriptChainLimitKind {
+  const basename = path.basename(file);
+  if (
+    basename === "lua-real-script-anti-magic-arrows-chain-limit.test.ts" ||
+    basename === "lua-real-script-obelisk-chain-limit.test.ts"
+  ) {
+    return "activationDenyAll";
+  }
+  if (
+    basename === "lua-real-script-forbidden-crown-chain-limit.test.ts" ||
+    basename === "lua-real-script-fancy-ball-chain-limit.test.ts" ||
+    basename === "lua-real-script-giant-starfall-chain-limit.test.ts" ||
+    basename === "lua-real-script-morganite-chain-limit.test.ts" ||
+    basename === "lua-real-script-ultimate-slayer-chain-limit.test.ts"
+  ) {
+    return "activeTypeBlock";
+  }
+  if (
+    basename === "lua-real-script-forbidden-droplet-chain-limit.test.ts" ||
+    basename === "lua-real-script-galaxy-destroyer-chain-limit.test.ts" ||
+    basename === "lua-real-script-goblin-pothole-chain-limit.test.ts"
+  ) {
+    return "effectTypeBlock";
+  }
+  if (
+    basename === "lua-real-script-night-beam-chain-limit.test.ts" ||
+    basename === "lua-real-script-ra-chain-limit.test.ts" ||
+    basename === "lua-real-script-titanic-galaxy-chain-limit.test.ts" ||
+    basename === "lua-real-script-tyrant-ogre-chain-limit.test.ts"
+  ) {
+    return "handlerExclusion";
+  }
+  if (
+    basename === "lua-real-script-borrelend-chain-limit.test.ts" ||
+    basename === "lua-real-script-bucephalus-chain-limit.test.ts" ||
+    basename === "lua-real-script-dark-magic-expanded-chain-limit.test.ts"
+  ) {
+    return "responseMatchesChainPlayer";
+  }
+  throw new Error(`Unclassified real-script chain-limit fixture: ${file}`);
 }
