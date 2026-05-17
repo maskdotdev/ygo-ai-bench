@@ -11,8 +11,19 @@ const positionKindCounts = {
   summonTriggerAttackPosition: 1,
   summonTriggerSet: 1,
 } satisfies Record<PositionKind, number>;
+const positionSemanticVariantCounts = {
+  angineerDetachOverlayProtectedPositionChange: 1,
+  gagagaEscapeBanishCostGroupPositionChange: 1,
+  otohimeSummonTriggerAttackPosition: 1,
+  tsukuyomiSpiritSummonFaceDownSet: 1,
+} satisfies Record<PositionSemanticVariant, number>;
 
 type PositionKind = "banishCostGroupChange" | "overlayTargetChange" | "summonTriggerAttackPosition" | "summonTriggerSet";
+type PositionSemanticVariant =
+  | "angineerDetachOverlayProtectedPositionChange"
+  | "gagagaEscapeBanishCostGroupPositionChange"
+  | "otohimeSummonTriggerAttackPosition"
+  | "tsukuyomiSpiritSummonFaceDownSet";
 
 describe("Lua real position restore coverage", () => {
   it("requires position-changing summon triggers to assert clean Lua registry restore and restored outcomes", () => {
@@ -44,6 +55,19 @@ describe("Lua real position restore coverage", () => {
 
   it("keeps position fixture kinds explicit", () => {
     expect(countPositionKinds(positionFixtureFiles())).toEqual(positionKindCounts);
+  });
+
+  it("keeps named position semantic variants explicit", () => {
+    expect(countPositionSemanticVariants(positionSemanticVariants())).toEqual(positionSemanticVariantCounts);
+
+    const weak = positionSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -109,6 +133,72 @@ function countPositionKinds(fixtures: Array<{ kind: PositionKind }>): Record<Pos
       overlayTargetChange: 0,
       summonTriggerAttackPosition: 0,
       summonTriggerSet: 0,
+    },
+  );
+}
+
+function positionSemanticVariants(): Array<{
+  file: string;
+  kind: PositionSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-angineer-overlay-position.test.ts",
+      kind: "angineerDetachOverlayProtectedPositionChange",
+      required: [
+        'const angineerCode = "15914410"',
+        "restores Angineer after detaching Xyz material and resolves its protected position change",
+        'eventName: "detachedMaterial"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-gagaga-escape-position-lockout.test.ts",
+      kind: "gagagaEscapeBanishCostGroupPositionChange",
+      required: [
+        'const escapeCode = "9591819"',
+        "restores Gagaga Escape and keeps IsCanChangePosition-locked Gagaga monsters unchanged",
+        'eventName: "banished"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-otohime-position-overload.test.ts",
+      kind: "otohimeSummonTriggerAttackPosition",
+      required: [
+        'const otohimeCode = "39751093"',
+        "restores its summon trigger and changes a face-up Defense target to Attack",
+        'position: "faceUpAttack", faceUp: true',
+      ],
+    },
+    {
+      file: "test/lua-real-script-tsukuyomi-position-trigger.test.ts",
+      kind: "tsukuyomiSpiritSummonFaceDownSet",
+      required: [
+        'const tsukuyomiCode = "34853266"',
+        "restores its Spirit summon trigger and turns a target monster face-down",
+        'position: "faceDownDefense", faceUp: false',
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: PositionSemanticVariant;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countPositionSemanticVariants(
+  fixtures: Array<{ kind: PositionSemanticVariant }>,
+): Record<PositionSemanticVariant, number> {
+  return fixtures.reduce<Record<PositionSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      angineerDetachOverlayProtectedPositionChange: 0,
+      gagagaEscapeBanishCostGroupPositionChange: 0,
+      otohimeSummonTriggerAttackPosition: 0,
+      tsukuyomiSpiritSummonFaceDownSet: 0,
     },
   );
 }
