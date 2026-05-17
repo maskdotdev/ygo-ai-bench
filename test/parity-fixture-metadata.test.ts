@@ -28,11 +28,11 @@ describe("parity fixture metadata", () => {
     expect(missingExpectationSources()).toEqual([]);
   });
 
-  it("requires expectation evidence sources to be EDOPro observations or parity backlog", () => {
+  it("requires expectation evidence sources to be EDOPro observations or temporary parity backlog", () => {
     expect(invalidExpectationSources()).toEqual([]);
   });
 
-  it("requires backlog expectations in parity fixtures to explain the EDOPro behavior they track", () => {
+  it("requires temporary backlog expectations in parity fixtures to explain the EDOPro behavior they track", () => {
     expect(missingBacklogNotes()).toEqual([]);
   });
 
@@ -44,7 +44,7 @@ describe("parity fixture metadata", () => {
     expect(edoproNotesWithoutEdopro()).toEqual([]);
   });
 
-  it("requires backlog expectation notes to reference EDOPro behavior", () => {
+  it("requires temporary backlog expectation notes to reference EDOPro behavior", () => {
     expect(backlogNotesWithoutEdopro()).toEqual([]);
   });
 
