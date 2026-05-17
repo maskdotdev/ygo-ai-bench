@@ -204,12 +204,18 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
       kind: "fusionDeckMaterialOath",
       families: ["fusion"],
       required: [
+        "expect(chainLink.operationInfos).toEqual([",
+        "expect(restoredChainLink.operationInfos).toEqual([",
         "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }",
         "{ category: 0x20, targetUids: [], count: 0, player: 0, parameter: 0x7 }",
         'summonType: "fusion"',
         "summonMaterialUids: [albaz!.uid, material!.uid]",
         "reason: duelReason.effect | duelReason.material | duelReason.fusion",
+        'eventName === "specialSummoned"',
+        'eventName === "sentToGraveyard"',
+        "event.eventCardUid === material!.uid",
         "special-summon-limit:non-fusion-extra",
+        'expect(restored.host.messages).not.toContain("branded fusion responder resolved")',
       ],
     },
     {
