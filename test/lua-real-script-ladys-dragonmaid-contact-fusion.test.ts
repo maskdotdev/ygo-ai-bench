@@ -85,6 +85,111 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script La
       faceUp: true,
       reason: duelReason.cost | duelReason.material,
     });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned")).toEqual([
+      {
+        eventName: "specialSummoned",
+        eventCode: 1102,
+        eventCardUid: ladysDragonmaid!.uid,
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "extraDeck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
+    const materialBanishEvents = restored.session.state.eventHistory.filter((event) =>
+      event.eventName === "banished"
+      && (event.eventCardUid === fieldMaterial!.uid || event.eventCardUid === graveMaterial!.uid)
+    );
+    expect(materialBanishEvents.map((event) => event.eventCardUid).sort()).toEqual([fieldMaterial!.uid, fieldMaterial!.uid, graveMaterial!.uid].sort());
+    expect(materialBanishEvents).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-48658296-0",
+          "eventCode": 1011,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "banished",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "banished",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 136,
+          "eventReasonCardUid": "p0-extraDeck-48658295-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-48658297-1",
+          "eventCode": 1011,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "banished",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "banished",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 136,
+          "eventReasonCardUid": "p0-extraDeck-48658295-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-48658296-0",
+          "eventCode": 1011,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "banished",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "banished",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 136,
+          "eventReasonCardUid": "p0-extraDeck-48658295-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
+          "eventUids": [
+            "p0-deck-48658296-0",
+            "p0-deck-48658297-1",
+          ],
+        },
+      ]
+    `);
     expect(getLegalActions(restored.session, 0).some((action) => action.type === "specialSummonProcedure" && action.uid === ladysDragonmaid!.uid)).toBe(false);
   });
 });
