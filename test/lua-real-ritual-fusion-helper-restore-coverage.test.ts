@@ -527,6 +527,8 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         'eventName: "specialSummoned"',
         'eventName === "sentToGraveyard"',
         "event.eventCardUid === fiendMaterial!.uid",
+        "expect(materialGraveEvents.map((event) => event.eventCardUid).sort()).toEqual([equippedMaterial!.uid, equippedMaterial!.uid, fiendMaterial!.uid].sort())",
+        "expect(getLegalActions(restored.session, 0).some((action) => action.type === \"specialSummonProcedure\" && action.uid === necroquip!.uid)).toBe(false)",
         "restores a Contact Fusion procedure that sends selected materials as cost",
       ],
     },
