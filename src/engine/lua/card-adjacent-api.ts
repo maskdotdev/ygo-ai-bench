@@ -1,4 +1,5 @@
 import fengari from "fengari";
+import { isFieldZoneDisabled } from "#duel/disabled-field-zones.js";
 import { readCardUid } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
@@ -59,12 +60,13 @@ function hasAdjacentMonsterZone(state: DuelState, card: DuelCardInstance): boole
     (sequence) =>
       sequence >= 0 &&
       sequence <= 4 &&
+      !isFieldZoneDisabled(state, card.controller, "monsterZone", sequence) &&
       !state.cards.some((candidate) => candidate.controller === card.controller && candidate.location === "monsterZone" && candidate.sequence === sequence),
   );
 }
 
 function isMonsterSequenceOpen(state: DuelState, player: PlayerId, sequence: number): boolean {
-  return !state.cards.some((card) => card.controller === player && card.location === "monsterZone" && card.sequence === sequence);
+  return !isFieldZoneDisabled(state, player, "monsterZone", sequence) && !state.cards.some((card) => card.controller === player && card.location === "monsterZone" && card.sequence === sequence);
 }
 
 function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefined {

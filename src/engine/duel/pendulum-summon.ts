@@ -1,5 +1,6 @@
-import { findCard, getCards, pushDuelLog } from "#duel/card-state.js";
+import { findCard, pushDuelLog } from "#duel/card-state.js";
 import { cardTypeFlags, currentCardHasEffect, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
+import { availableFieldZoneCount } from "#duel/disabled-field-zones.js";
 import { pendulumAnyLevelScaleEffectCode, pendulumLevelBypassEffectCode } from "#duel/pendulum-effect-codes.js";
 import { canConsumePendulumSummon, consumePendulumSummon, hasPendulumSummonAvailable, pendulumSummonCandidatesForAvailability, pendulumSummonCandidatesForGrant, pendulumSummonExtraGrants } from "#duel/pendulum-availability.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
@@ -15,7 +16,7 @@ interface PendulumScaleInfo {
 
 export function pendulumSummonActions(state: DuelState, player: PlayerId, canSummon: (uid: string) => boolean): PendulumSummonAction[] {
   if (!hasPendulumSummonAvailable(state, player)) return [];
-  const zoneCount = maxSimultaneousSpecialSummonCount(state, player, 5 - getCards(state, player, "monsterZone").length);
+  const zoneCount = maxSimultaneousSpecialSummonCount(state, player, availableFieldZoneCount(state, player, "monsterZone"));
   if (zoneCount <= 0) return [];
   const actions: PendulumSummonAction[] = [];
   const seenCandidateSets = new Set<string>();

@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { canMoveDuelCardToLocation } from "#duel/core.js";
+import { availableFieldZoneCount } from "#duel/disabled-field-zones.js";
 import { tributeUnitCount } from "#duel/double-tribute.js";
 import { duelReason } from "#duel/reasons.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
@@ -407,17 +408,7 @@ function tributeUnitTotal(session: DuelSession, uids: string[]): number {
 }
 
 function hasAvailableTributeSummonZone(session: DuelSession, player: PlayerId, selectedUids: string[], zoneMask: number | undefined): boolean {
-  const selected = new Set(selectedUids);
-  const occupied = new Set(
-    session.state.cards
-      .filter((card) => card.controller === player && card.location === "monsterZone" && !selected.has(card.uid))
-      .map((card) => card.sequence),
-  );
-  if (zoneMask === undefined || zoneMask === 0) return occupied.size < monsterZoneCapacity(session, player);
-  for (let sequence = 0; sequence < monsterZoneCapacity(session, player); sequence += 1) {
-    if ((zoneMask & (1 << sequence)) !== 0 && !occupied.has(sequence)) return true;
-  }
-  return false;
+  return availableFieldZoneCount(session.state, player, "monsterZone", selectedUids, zoneMask ?? 0) > 0;
 }
 
 function selectedReleasableMonsterUids(session: DuelSession, player: PlayerId, excluded: string[], selectedUids: string[], includeHand = false): string[] {
@@ -435,14 +426,6 @@ function readCardOrGroupUids(L: unknown, index: number): string[] {
 
 function uniqueUids(uids: string[]): string[] {
   return [...new Set(uids)];
-}
-
-function monsterZoneCount(session: DuelSession, player: PlayerId): number {
-  return session.state.cards.filter((card) => card.controller === player && card.location === "monsterZone").length;
-}
-
-function monsterZoneCapacity(_session: DuelSession, _player: PlayerId): number {
-  return 5;
 }
 
 function normalSummonTributeCount(card: DuelCardInstance): number {

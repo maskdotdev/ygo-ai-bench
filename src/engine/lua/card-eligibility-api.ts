@@ -1,6 +1,7 @@
 import { hasZoneSpace } from "#duel/card-state.js";
 import { canMoveDuelCardToLocation, canPlayerSpecialSummon, canSpecialSummonDuelCard } from "#duel/core.js";
 import { isMaterialUsePrevented, type MaterialUseKind } from "#duel/continuous-effects.js";
+import { firstOpenFieldZoneSequence } from "#duel/disabled-field-zones.js";
 import { duelReason } from "#duel/reasons.js";
 import { isSummonTypeMaskMatch, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
 import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
@@ -50,11 +51,7 @@ function canBeMaterialFromLocation(location: DuelLocation, kind: MaterialUseKind
 
 function hasAvailableMonsterZone(session: DuelSession, player: PlayerId, zoneMask: number | undefined): boolean {
   if (zoneMask === undefined || zoneMask === 0) return hasZoneSpace(session.state, player, "monsterZone");
-  const occupied = new Set(session.state.cards.filter((card) => card.controller === player && card.location === "monsterZone").map((card) => card.sequence));
-  for (let sequence = 0; sequence < 5; sequence += 1) {
-    if ((zoneMask & (1 << sequence)) !== 0 && !occupied.has(sequence)) return true;
-  }
-  return false;
+  return firstOpenFieldZoneSequence(session.state, player, "monsterZone", [], zoneMask) !== undefined;
 }
 
 function targetAllowsMaterial(state: DuelState, target: DuelCardInstance | undefined, card: DuelCardInstance, kind: MaterialUseKind): boolean {

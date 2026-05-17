@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { cardTypeFlags, currentLinkMarkers } from "#duel/card-stats.js";
+import { availableFieldZoneCount, isFieldZoneDisabled } from "#duel/disabled-field-zones.js";
 import { locationsFromMask, positionFromMask, readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import type { CardPosition, DuelCardInstance, DuelSession, DuelState, PlayerId } from "#duel/types.js";
@@ -89,8 +90,7 @@ export function installDuelLocationApi(L: unknown, session: DuelSession, hostSta
 }
 
 export function availableMonsterZoneCount(session: DuelSession, player: PlayerId, excludedUids: string[]): number {
-  const occupied = session.state.cards.filter((card) => card.controller === player && card.location === "monsterZone" && !excludedUids.includes(card.uid)).length;
-  return Math.max(0, 5 - occupied);
+  return availableFieldZoneCount(session.state, player, "monsterZone", excludedUids);
 }
 
 function availableLocationCount(session: DuelSession, player: PlayerId, locationMask: number, zoneMask: number): number {
@@ -102,27 +102,11 @@ function availableLocationCount(session: DuelSession, player: PlayerId, location
 }
 
 function availableMonsterZoneCountInMask(session: DuelSession, player: PlayerId, excludedUids: string[], zoneMask: number): number {
-  if (zoneMask === 0) return availableMonsterZoneCount(session, player, excludedUids);
-  const occupied = new Set(
-    session.state.cards
-      .filter((card) => card.controller === player && card.location === "monsterZone" && !excludedUids.includes(card.uid))
-      .map((card) => card.sequence),
-  );
-  let count = 0;
-  for (let sequence = 0; sequence < 5; sequence += 1) {
-    if ((zoneMask & (1 << sequence)) !== 0 && !occupied.has(sequence)) count += 1;
-  }
-  return count;
+  return availableFieldZoneCount(session.state, player, "monsterZone", excludedUids, zoneMask);
 }
 
 function availableSpellTrapZoneCountInMask(session: DuelSession, player: PlayerId, zoneMask: number): number {
-  if (zoneMask === 0) return Math.max(0, 5 - matchingCardUids(session, player, 0x08).length);
-  const occupied = new Set(session.state.cards.filter((card) => card.controller === player && card.location === "spellTrapZone").map((card) => card.sequence));
-  let count = 0;
-  for (let sequence = 0; sequence < 5; sequence += 1) {
-    if ((zoneMask & (1 << sequence)) !== 0 && !occupied.has(sequence)) count += 1;
-  }
-  return count;
+  return availableFieldZoneCount(session.state, player, "spellTrapZone", [], zoneMask);
 }
 
 function isLocationSequenceOpen(session: DuelSession, player: PlayerId, locationMask: number, sequence: number): boolean {
@@ -130,6 +114,7 @@ function isLocationSequenceOpen(session: DuelSession, player: PlayerId, location
   const location = (locationMask & 0x04) !== 0 ? "monsterZone" : (locationMask & 0x08) !== 0 ? "spellTrapZone" : undefined;
   if (!location) return true;
   if (sequence < 0 || sequence >= 5) return false;
+  if (isFieldZoneDisabled(session.state, player, location, sequence)) return false;
   return !session.state.cards.some((card) => card.controller === player && card.location === location && card.sequence === sequence);
 }
 
@@ -145,6 +130,7 @@ function availablePendulumZoneCount(session: DuelSession, player: PlayerId): num
 
 function isPendulumZoneOpen(session: DuelSession, player: PlayerId, sequence: number): boolean {
   if (sequence < 0 || sequence > 1) return false;
+  if (isFieldZoneDisabled(session.state, player, "spellTrapZone", sequence)) return false;
   return !session.state.cards.some((card) => card.controller === player && card.location === "spellTrapZone" && card.sequence === sequence);
 }
 
@@ -208,7 +194,7 @@ function openZoneBits(session: DuelSession, player: PlayerId, location: "monster
   const zones: number[] = [];
   for (let sequence = 0; sequence < 5; sequence += 1) {
     const bit = 1 << (baseShift + sequence);
-    if (!occupied.has(sequence) && (filter & bit) === 0) zones.push(bit);
+    if (!occupied.has(sequence) && !isFieldZoneDisabled(session.state, player, location, sequence) && (filter & bit) === 0) zones.push(bit);
   }
   return zones;
 }

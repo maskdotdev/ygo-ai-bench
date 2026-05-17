@@ -12,11 +12,51 @@ import {
   sendDuelCardToGraveyard,
   startDuel,
 } from "#duel/core.js";
+import { hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
 import { duelReason } from "#duel/reasons.js";
 import { createCardReader } from "#engine/data-loaders.js";
 import { cards } from "./full-duel-engine-fixtures.js";
 
 describe("duel card movement", () => {
+  it("treats disabled field zones as unavailable for placement", () => {
+    const session = createDuel({ seed: 260, startingHandSize: 2, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300"] },
+      1: { main: ["400", "400"] },
+    });
+    startDuel(session);
+
+    const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const target = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    expect(source).toBeDefined();
+    expect(target).toBeDefined();
+    registerEffect(session, {
+      id: "disable-first-two-monster-zones",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 260,
+      value: 0b00011,
+      range: ["hand"],
+      operation() {},
+    });
+
+    expect(hasZoneSpace(session.state, 0, "monsterZone")).toBe(true);
+    expect(moveDuelCard(session.state, target!.uid, "monsterZone", 0).sequence).toBe(2);
+
+    registerEffect(session, {
+      id: "disable-remaining-monster-zones",
+      sourceUid: source!.uid,
+      controller: 0,
+      event: "continuous",
+      code: 260,
+      value: 0b11100,
+      range: ["hand"],
+      operation() {},
+    });
+    expect(hasZoneSpace(session.state, 0, "monsterZone")).toBe(false);
+  });
+
   it("collects trigger effects after a card is sent to the graveyard", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {

@@ -1,6 +1,7 @@
 import fengari from "fengari";
 import { recordSpecialSummonActivity } from "#duel/activity.js";
 import { getCards, hasZoneSpace, pushDuelLog, resequence } from "#duel/card-state.js";
+import { firstOpenFieldZoneSequence } from "#duel/disabled-field-zones.js";
 import { eventCardReasonPayload, type DuelEventPayload } from "#duel/event-history.js";
 import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import {
@@ -492,15 +493,7 @@ function applyFieldZoneSequence(
 
 function firstFieldZoneMaskSequence(session: DuelSession, player: PlayerId, destination: "monsterZone" | "spellTrapZone", zoneMask: number | undefined, movingUid: string): number | undefined {
   if (zoneMask === undefined || zoneMask === 0) return undefined;
-  const occupied = new Set(
-    session.state.cards
-      .filter((card) => card.controller === player && card.location === destination && card.uid !== movingUid)
-      .map((card) => card.sequence),
-  );
-  for (let sequence = 0; sequence < 5; sequence += 1) {
-    if ((zoneMask & (1 << sequence)) !== 0 && !occupied.has(sequence)) return sequence;
-  }
-  return undefined;
+  return firstOpenFieldZoneSequence(session.state, player, destination, [movingUid], zoneMask);
 }
 
 function pushActivateFieldSpell(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {

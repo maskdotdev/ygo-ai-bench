@@ -6,6 +6,7 @@ import { createDuel, getGroupedDuelLegalActions, loadDecks, serializeDuel, start
 import type { DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
+import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
@@ -122,6 +123,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     expect(resolved.ok, resolved.error).toBe(true);
     const disabledFieldEffects = restored.session.state.effects.filter((effect) => effect.code === 260 && [1 << 16, 2 << 16].includes(effect.value as number));
     expect(disabledFieldEffects.map((effect) => effect.value)).toEqual([1 << 16, 2 << 16]);
+    expect(availableMonsterZoneCount(restored.session, 1, [])).toBe(3);
     expect(restored.host.messages).not.toContain("springans blast responder resolved");
   });
 });
