@@ -48,7 +48,7 @@ import { findLuaLinkMaterialUidSet } from "#lua/link-summonable.js";
 import { findLuaSynchroMaterialUidSet } from "#lua/synchro-summonable.js";
 import { findLuaXyzMaterialUidSet } from "#lua/xyz-summonable.js";
 import { pushGroupTable } from "#lua/group-api.js";
-import { applyMonsterZoneMask, hasOpenMonsterZone } from "#lua/monster-zone-mask.js";
+import { applyMonsterZoneMask, hasOpenMonsterZone, monsterZoneSequenceSnapshot, restoreMonsterZoneSequenceSnapshot } from "#lua/monster-zone-mask.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -751,8 +751,10 @@ function pushSpecialSummonStep(L: unknown, session: DuelSession, hostState: LuaD
     markLuaOperationTimingBoundary(session, hostState);
     const reasonPlayer = hostState.activeContext?.player ?? targetPlayer;
     const payload = luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer);
+    const existingMonsterSequences = zoneMask === undefined ? [] : monsterZoneSequenceSnapshot(session, targetPlayer, uid);
     const summoned = specialSummonStepCard(session, target, targetPlayer, summonType, reasonPlayer, payload);
     if (!summoned) throw new Error(`${target.name} cannot be Special Summoned`);
+    restoreMonsterZoneSequenceSnapshot(session, existingMonsterSequences);
     if (requestedPosition) applySummonPosition(summoned, requestedPosition);
     applyMonsterZoneMask(session, summoned, targetPlayer, zoneMask);
     if (hostState.activeContext) hostState.activeOperationMoved = true;

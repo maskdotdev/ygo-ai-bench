@@ -30,7 +30,7 @@ import { pushDestroyHelper } from "#lua/duel-api/move-destroy.js";
 import { shuffleLuaMoveCards } from "#lua/duel-api/move-shuffle.js";
 import { readCardOrGroupUids, readFieldDestination, readMoveReason, readOptionalPlayer, readSingleDestination } from "#lua/duel-api/move-readers.js";
 import { installDuelOverlayApi, removeOverlayReference } from "#lua/duel-api/overlay.js";
-import { applyMonsterZoneMask, hasOpenMonsterZone } from "#lua/monster-zone-mask.js";
+import { applyMonsterZoneMask, hasOpenMonsterZone, monsterZoneSequenceSnapshot, restoreMonsterZoneSequenceSnapshot } from "#lua/monster-zone-mask.js";
 import type { CardPosition, DuelCardInstance, DuelEffectContext, DuelEventName, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 const { lua, to_luastring } = fengari;
 type LuaCardMover = (state: DuelState, uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId, payload?: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId">) => DuelCardInstance;
@@ -234,7 +234,9 @@ function pushSpecialSummon(L: unknown, session: DuelSession, hostState: LuaDuelM
       const reasonPlayer = hostState.activeContext?.player ?? player;
       const payload = luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon, reasonPlayer);
       const presetMaterialUids = summonType !== 0 ? [...(card.summonMaterialUids ?? [])] : [];
+      const existingMonsterSequences = zoneMask === undefined ? [] : monsterZoneSequenceSnapshot(session, player, uid);
       const summoned = specialSummonDuelCard(session.state, uid, player, reasonPlayer, payload, summonType, false, ignoreSummonCondition, requestedPosition);
+      restoreMonsterZoneSequenceSnapshot(session, existingMonsterSequences);
       if (presetMaterialUids.length > 0) summoned.summonMaterialUids = presetMaterialUids;
       if (requestedPosition) applyLuaMovePosition(summoned, requestedPosition);
       applyMonsterZoneMask(session, summoned, player, zoneMask);
@@ -948,7 +950,9 @@ function specialSummonExplicitExtraDeckCard(
   if (card.location !== "extraDeck" || summonType === 0 || !hasOpenMonsterZone(session, player, zoneMask) || !canPlayerSpecialSummon(session.state, player, card, summonType, hostState.activeLuaEffectId, requestedPosition)) return undefined;
   try {
     collectDuelTriggerEffects(session.state, "specialSummoning", card, payload);
+    const existingMonsterSequences = zoneMask === undefined ? [] : monsterZoneSequenceSnapshot(session, player, card.uid);
     moveDuelCard(session.state, card.uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon, reasonPlayer);
+    restoreMonsterZoneSequenceSnapshot(session, existingMonsterSequences);
     if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
     if (payload.eventReasonEffectId !== undefined) card.reasonEffectId = payload.eventReasonEffectId;
     applyLuaMovePosition(card, requestedPosition ?? "faceUpAttack");

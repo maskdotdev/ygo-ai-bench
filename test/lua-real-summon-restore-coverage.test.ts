@@ -6,7 +6,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-const realScriptSummonFixtureCount = 163;
+const realScriptSummonFixtureCount = 164;
 const summonProcedureFixtureCount = 20;
 const typedSummonProcedureFixtureCount = 6;
 const pendulumGrantFixtureCount = 4;
@@ -14,10 +14,10 @@ const pendulumHelperFixtureCount = 13;
 const unionProcedureFixtureCount = 4;
 const materialLockFixtureCount = 4;
 const flipSummonSuccessTrapFixtureCount = 4;
-const linkedZoneSpecialSummonFixtureCount = 4;
+const linkedZoneSpecialSummonFixtureCount = 5;
 const realScriptSummonKeywordFamilyCounts = {
   fusion: 22,
-  link: 15,
+  link: 16,
   pendulum: 17,
   ritual: 20,
   summon: 59,
@@ -72,6 +72,7 @@ const flipSummonSuccessTrapKindCounts = {
 } satisfies Record<FlipSummonSuccessTrapKind, number>;
 const linkedZoneSpecialSummonKindCounts = {
   handTriggerLinkSummon: 1,
+  linkedCountZoneSummon: 1,
   opponentFieldLinkedZoneSummon: 1,
   releaseCostDeckSummon: 1,
   toBeLinkedZoneRevive: 1,
@@ -92,6 +93,7 @@ type SummonMaterialLockKind =
 type FlipSummonSuccessTrapKind = "flipBanishTrap" | "flipDestroyTrap" | "flipStatTrap";
 type LinkedZoneSpecialSummonKind =
   | "handTriggerLinkSummon"
+  | "linkedCountZoneSummon"
   | "opponentFieldLinkedZoneSummon"
   | "releaseCostDeckSummon"
   | "toBeLinkedZoneRevive";
@@ -468,6 +470,18 @@ function realScriptLinkedZoneSpecialSummonFixtureSnippets(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-guardragon-elpy-linked-count-zone-summon.test.ts",
+      kind: "linkedCountZoneSummon",
+      required: [
+        "Duel.GetZoneWithLinkedCount(2,tp)",
+        "shared linked zone",
+        'type === "activateEffect"',
+        'location: "monsterZone"',
+        "sequence: 1",
+        '"specialSummoned"',
+      ],
+    },
+    {
       file: "test/lua-real-script-knightmare-iblee-to-be-linked-zone-summon.test.ts",
       kind: "toBeLinkedZoneRevive",
       required: [
@@ -518,6 +532,7 @@ function countLinkedZoneSpecialSummonKinds(files: Array<{ kind: LinkedZoneSpecia
     },
     {
       handTriggerLinkSummon: 0,
+      linkedCountZoneSummon: 0,
       opponentFieldLinkedZoneSummon: 0,
       releaseCostDeckSummon: 0,
       toBeLinkedZoneRevive: 0,
