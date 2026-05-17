@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 18;
+const battleTimingFixtureCount = 19;
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
-  afterDamageCalculation: 7,
+  afterDamageCalculation: 8,
   beforeDamageCalculation: 3,
   duringDamageCalculation: 2,
   endDamageStep: 4,
@@ -259,6 +259,18 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'eventName: "damageDealt"',
         "eventValue: 1200",
         "pendingBattle).toBeUndefined()",
+      ],
+    },
+    {
+      file: "test/lua-real-script-wall-of-illusion-battled.test.ts",
+      kind: "afterDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "afterDamageCalculation"',
+        'triggerBucket: "opponentMandatory"',
+        'eventName: "sentToHand"',
+        'location: "hand"',
+        "eventReasonEffectId: 1",
       ],
     },
   ] satisfies Array<{ file: string; kind: BattleTimingKind; required: string[] }>).sort((a, b) => a.file.localeCompare(b.file));
