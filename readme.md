@@ -166,11 +166,11 @@ const restored = restoreDuel(snapshot, cardReader, registry);
 
 ## Parity fixture metadata
 
-Scripted duel fixtures should label expectation blocks with `source` when they are meant to prove parity or track backlog:
+Scripted duel fixtures should label committed expectation blocks with `source: 'edopro'` when they are meant to prove parity:
 
 ```ts
 after: {
-  source: 'parity-backlog',
+  source: 'edopro',
   note: 'EDOPro keeps optional if triggers available after mandatory when triggers enter the chain',
   legalActionCounts: { 0: 1, 1: 0 },
   legalActionGroupCounts: { 0: 1, 1: 0 },
@@ -194,7 +194,7 @@ after: {
 }
 ```
 
-Use `source: 'edopro'` only for expectations backed by observed EDOPro behavior. Use `source: 'parity-backlog'` for known gaps. Every sourced expectation block should include a `note` that names the EDOPro behavior being preserved or tracked so the fixture stays attached to implementation work. For UI-facing timing behavior, assert raw `legalActions`, aggregate `legalActionCounts`, grouped `legalActionGroups`, and aggregate `legalActionGroupCounts`; use `absentLegalActions` and `absentLegalActionGroups` when an illegal response must not be exposed.
+Use `source: 'edopro'` only for expectations backed by observed EDOPro behavior. `source: 'parity-backlog'` is reserved for scanner diagnostics or temporary local investigation; committed parity fixtures are currently gated to zero backlog blocks. Every sourced expectation block should include a `note` that names the EDOPro behavior being preserved so the fixture stays attached to implementation work. For UI-facing timing behavior, assert raw `legalActions`, aggregate `legalActionCounts`, grouped `legalActionGroups`, and aggregate `legalActionGroupCounts`; use `absentLegalActions` and `absentLegalActionGroups` when an illegal response must not be exposed.
 
 ## Included decks
 
