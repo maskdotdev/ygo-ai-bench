@@ -5,6 +5,22 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const chainResponseFixtureCount = 11;
+const chainResponseKindCounts = {
+  destroyOnlyChainedResponse: 2,
+  flipSummonTrapResponse: 3,
+  genericChainResponse: 1,
+  summonEffectNegateResponse: 1,
+  summonSuccessTrapResponse: 3,
+  trapNegateToDeckResponse: 1,
+} satisfies Record<ChainResponseKind, number>;
+
+type ChainResponseKind =
+  | "destroyOnlyChainedResponse"
+  | "flipSummonTrapResponse"
+  | "genericChainResponse"
+  | "summonEffectNegateResponse"
+  | "summonSuccessTrapResponse"
+  | "trapNegateToDeckResponse";
 
 describe("Lua real chain response restore coverage", () => {
   it("requires chain response fixtures to assert clean restore and restored response outcomes", () => {
@@ -30,12 +46,21 @@ describe("Lua real chain response restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps chain-response fixture kinds explicit", () => {
+    expect(countChainResponseKinds(chainResponseFixtureFiles())).toEqual(chainResponseKindCounts);
+  });
 });
 
-function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function chainResponseFixtureFiles(): Array<{
+  file: string;
+  kind: ChainResponseKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-adhesion-trap-hole-flip-summon.test.ts",
+      kind: "flipSummonTrapResponse",
       required: [
         'action.type === "activateEffect" && action.uid === trap.uid',
         'windowKind).toBe("chainResponse")',
@@ -47,6 +72,7 @@ function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }
     },
     {
       file: "test/lua-real-script-chain-response.test.ts",
+      kind: "genericChainResponse",
       required: [
         'action.type === "activateEffect" && action.uid === ghostBelle!.uid',
         'action.type === "passChain"',
@@ -57,6 +83,7 @@ function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }
     },
     {
       file: "test/lua-real-script-bottomless-trap-hole-summon-success.test.ts",
+      kind: "summonSuccessTrapResponse",
       required: [
         'action.type === "activateEffect" && action.uid === bottomless!.uid',
         'action.type === "passChain"',
@@ -68,6 +95,7 @@ function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }
     },
     {
       file: "test/lua-real-script-house-adhesive-tape-flip-summon.test.ts",
+      kind: "flipSummonTrapResponse",
       required: [
         'action.type === "activateEffect" && action.uid === trap.uid',
         'windowKind).toBe("chainResponse")',
@@ -79,6 +107,7 @@ function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }
     },
     {
       file: "test/lua-real-script-wiretap-trap-negate-to-deck.test.ts",
+      kind: "trapNegateToDeckResponse",
       required: [
         'action.type === "activateEffect" && action.uid === wiretap!.uid',
         'action.type === "passChain"',
@@ -89,6 +118,7 @@ function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }
     },
     {
       file: "test/lua-real-script-raigeki-break-discard-cost.test.ts",
+      kind: "destroyOnlyChainedResponse",
       required: [
         'action.type === "activateEffect" && action.uid === raigekiBreak!.uid',
         'action.type === "passChain"',
@@ -102,6 +132,7 @@ function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }
     },
     {
       file: "test/lua-real-script-mystical-space-typhoon-free-chain.test.ts",
+      kind: "destroyOnlyChainedResponse",
       required: [
         'action.type === "activateEffect" && action.uid === mst!.uid',
         'action.type === "passChain"',
@@ -115,6 +146,7 @@ function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }
     },
     {
       file: "test/lua-real-script-torrential-tribute-summon-success.test.ts",
+      kind: "summonSuccessTrapResponse",
       required: [
         'action.type === "activateEffect" && action.uid === torrential!.uid',
         'action.type === "passChain"',
@@ -125,6 +157,7 @@ function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }
     },
     {
       file: "test/lua-real-script-trap-hole-summon-success.test.ts",
+      kind: "summonSuccessTrapResponse",
       required: [
         'action.type === "activateEffect" && action.uid === trapHole!.uid',
         'action.type === "passChain"',
@@ -135,6 +168,7 @@ function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }
     },
     {
       file: "test/lua-real-script-trap-hole-flip-summon.test.ts",
+      kind: "flipSummonTrapResponse",
       required: [
         'action.type === "activateEffect" && action.uid === trap.uid',
         'windowKind).toBe("chainResponse")',
@@ -146,6 +180,7 @@ function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }
     },
     {
       file: "test/lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
+      kind: "summonEffectNegateResponse",
       required: [
         'action.type === "activateEffect" && action.uid === warning!.uid',
         'action.type === "passChain"',
@@ -155,5 +190,26 @@ function chainResponseFixtureFiles(): Array<{ file: string; required: string[] }
         'location: "graveyard"',
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: ChainResponseKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countChainResponseKinds(fixtures: Array<{ kind: ChainResponseKind }>): Record<ChainResponseKind, number> {
+  return fixtures.reduce<Record<ChainResponseKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      destroyOnlyChainedResponse: 0,
+      flipSummonTrapResponse: 0,
+      genericChainResponse: 0,
+      summonEffectNegateResponse: 0,
+      summonSuccessTrapResponse: 0,
+      trapNegateToDeckResponse: 0,
+    },
+  );
 }
