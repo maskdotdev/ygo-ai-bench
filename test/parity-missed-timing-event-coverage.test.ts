@@ -251,7 +251,11 @@ function classifyMissedTimingEventFamily(file: string): MissedTimingEventFamily 
   if (/(summon|summoned|summoning|monster-set|spell-trap-set|used-as-material|pre-used-as-material|detached-material)/.test(eventName)) return "summonMaterialSet";
   if (/(coin|dice|custom|pre-draw|break-effect|adjust|confirmed|sent-to-hand-confirmed)/.test(eventName)) return "customRandomConfirm";
   if (/(damage-dealt|recovered-life-points|life-point-cost-paid|cards-drawn|level-changed|counter|control-changed|position-changed|became-target|equipped)/.test(eventName)) return "stateChange";
-  return "movementActivation";
+  if (/^(activated|banished|destroyed|destroying|discarded|left-field|left-graveyard|moved|released|returned-to-graveyard|sent-to-deck|sent-to-graveyard|sent-to-hand)$/.test(eventName)) {
+    return "movementActivation";
+  }
+
+  throw new Error(`Unclassified missed-timing fixture event: ${file}`);
 }
 
 function hasDeclineOpenFastRestoreProof(file: string): boolean {
