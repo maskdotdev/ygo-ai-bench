@@ -29,6 +29,14 @@ const typedSummonProcedureKindCounts = {
   synchroProcedure: 1,
   xyzProcedure: 1,
 } satisfies Record<TypedSummonProcedureKind, number>;
+const pendulumHelperKindCounts = {
+  extraDeckGrant: 3,
+  extraSummonCountGrant: 2,
+  filteredSetcodeGrant: 3,
+  handGrant: 1,
+  pendulumSummonLock: 3,
+  procedureAction: 1,
+} satisfies Record<PendulumHelperKind, number>;
 const unionProcedureKindCounts = {
   battleTriggerSummonBack: 1,
   deckEquipBanish: 1,
@@ -73,6 +81,13 @@ type TypedSummonProcedureKind =
   | "ritualProcedure"
   | "synchroProcedure"
   | "xyzProcedure";
+type PendulumHelperKind =
+  | "extraDeckGrant"
+  | "extraSummonCountGrant"
+  | "filteredSetcodeGrant"
+  | "handGrant"
+  | "pendulumSummonLock"
+  | "procedureAction";
 
 describe("Lua real summon restore coverage", () => {
   it("requires real-script summon and procedure fixtures to assert Lua-aware complete restore with diagnostics", () => {
@@ -181,6 +196,10 @@ describe("Lua real summon restore coverage", () => {
       .map(({ file }) => file);
 
     expect(weak).toEqual([]);
+  });
+
+  it("keeps Pendulum helper fixture kinds explicit", () => {
+    expect(countPendulumHelperKinds(realScriptPendulumHelperFixtureSnippets())).toEqual(pendulumHelperKindCounts);
   });
 
   it("requires representative Union procedure fixtures to pin restored equip and summon-back actions", () => {
@@ -422,10 +441,11 @@ function realScriptPendulumGrantFixtureFiles(): string[] {
   ].map((file) => path.join("test", file));
 }
 
-function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; required: string[] }> {
-  return [
+function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; kind: PendulumHelperKind; required: string[] }> {
+  return ([
     {
       file: "lua-real-script-abyss-actor-twinkle-pendulum-setcode-lock.test.ts",
+      kind: "pendulumSummonLock",
       required: [
         `luaTargetDescriptor: \`target:pendulum-summon-not-setcode:\${setAbyssActor}\``,
         "twinkle abyss actor pendulum special 1",
@@ -436,6 +456,7 @@ function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; requir
     },
     {
       file: "lua-real-script-couplet-pendulum-light-lock.test.ts",
+      kind: "pendulumSummonLock",
       required: [
         `luaTargetDescriptor: \`target:pendulum-summon-not-attribute:\${attributeLight}\``,
         "couplet light pendulum special 1",
@@ -446,6 +467,7 @@ function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; requir
     },
     {
       file: "lua-real-script-odd-eyes-phantasma-pendulum-summon-lock.test.ts",
+      kind: "pendulumSummonLock",
       required: [
         `luaTargetDescriptor: \`target:special-summon-type-is:\${luaSummonTypePendulum}\``,
         "phantasma pendulum special 0",
@@ -455,6 +477,7 @@ function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; requir
     },
     {
       file: "lua-real-script-pendulum-procedure-actions.test.ts",
+      kind: "procedureAction",
       required: [
         "findPendulumActivation",
         "const restoredPendulumWindow = restoreDuelWithLuaScripts",
@@ -465,6 +488,7 @@ function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; requir
     },
     {
       file: "lua-real-script-soul-pendulum-extra-summon.test.ts",
+      kind: "extraSummonCountGrant",
       required: [
         "session.state.players[0].pendulumSummonAvailable = false",
         "expect(findPendulumSummon(restored.session, getLuaRestoreLegalActions(restored, 0), candidate!.uid)).toBeUndefined()",
@@ -475,6 +499,7 @@ function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; requir
     },
     {
       file: "lua-real-script-extra-pendulum-location-grant.test.ts",
+      kind: "extraDeckGrant",
       required: [
         "expect(findPendulumSummon(getLuaRestoreLegalActions(restored, 0), extraCandidate!.uid)).toBeUndefined()",
         "expect(restoredAfterGrant.session.state.flagEffects).toEqual(expect.arrayContaining([expect.objectContaining({ ownerType: \"player\", ownerId: \"0\", code: Number(extraPendulumCode) })]))",
@@ -485,6 +510,7 @@ function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; requir
     },
     {
       file: "lua-real-script-extra-pendulum-opponent-scale-grant.test.ts",
+      kind: "extraDeckGrant",
       required: [
         "expect(restoredAfterGrant.session.state.players[0].extraPendulumSummonGrants).toEqual([",
         "expect.objectContaining({ locationMask: 0x40, scaleAlternatives: [expect.objectContaining({ locationMask: 0x40, scalePlayer: 1 })] })",
@@ -494,6 +520,7 @@ function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; requir
     },
     {
       file: "lua-real-script-harmonic-oscillation-pendulum-grant.test.ts",
+      kind: "extraDeckGrant",
       required: [
         "expect(restoredAfterGrant.session.state.players[0].extraPendulumSummonGrants).toEqual([expect.objectContaining({ locationMask: 0x40, scalePlayer: 1 })])",
         "expect(pendulumSummon!.summonUids).toContain(extraCandidate!.uid)",
@@ -503,6 +530,7 @@ function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; requir
     },
     {
       file: "lua-real-script-zefraath-special-summon-pendulum-grant.test.ts",
+      kind: "filteredSetcodeGrant",
       required: [
         "expect(session.state.players[0].extraPendulumSummonGrants).toEqual([expect.objectContaining({ setcode: setZefra })])",
         "expect(restored.session.state.flagEffects).toEqual(expect.arrayContaining([expect.objectContaining({ ownerType: \"player\", ownerId: \"0\", code: Number(zefraathCode) })]))",
@@ -512,6 +540,7 @@ function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; requir
     },
     {
       file: "lua-real-script-moissa-knight-hand-pendulum-grant.test.ts",
+      kind: "handGrant",
       required: [
         "expect(pendulumSummon!.summonUids).toContain(handCandidate!.uid)",
         "expect(pendulumSummon!.summonUids).not.toContain(extraCandidate!.uid)",
@@ -521,6 +550,7 @@ function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; requir
     },
     {
       file: "lua-real-script-ddd-zeus-ragnarok-filtered-pendulum-grant.test.ts",
+      kind: "filteredSetcodeGrant",
       required: [
         "expect(restoredAfterGrant.session.state.flagEffects).toEqual(expect.arrayContaining([expect.objectContaining({ ownerType: \"player\", ownerId: \"0\", code: Number(zeusCode) })]))",
         "expect(restoredAfterGrant.session.state.players[0].extraPendulumSummonGrants).toEqual([expect.objectContaining({ setcode: setDD })])",
@@ -530,6 +560,7 @@ function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; requir
     },
     {
       file: "lua-real-script-solfachord-happiness-filtered-pendulum-grant.test.ts",
+      kind: "filteredSetcodeGrant",
       required: [
         "expect(findPendulumSummon(getLuaRestoreLegalActions(restored, 0), allowedCandidate!.uid)).toBeUndefined()",
         "expect(restoredAfterGrant.session.state.players[0].extraPendulumSummonGrants).toEqual([expect.objectContaining({ setcode: setSolfachord })])",
@@ -539,6 +570,7 @@ function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; requir
     },
     {
       file: "lua-real-script-blue-eyes-spirit-pendulum-count-limit.test.ts",
+      kind: "extraSummonCountGrant",
       required: [
         "expect.objectContaining({ maxSummons: 4, summonUids: [first.uid, second.uid] })",
         "expect.objectContaining({ maxSummons: 1, summonUids: [first.uid, second.uid] })",
@@ -547,7 +579,30 @@ function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; requir
         'Debug.Message("spirit pendulum summoned " .. Duel.PendulumSummon(0))',
       ],
     },
-  ].map(({ file, required }) => ({ file: path.join("test", file), required }));
+  ] satisfies Array<{
+    file: string;
+    kind: PendulumHelperKind;
+    required: string[];
+  }>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
+}
+
+function countPendulumHelperKinds(
+  fixtures: Array<{ kind: PendulumHelperKind }>,
+): Record<PendulumHelperKind, number> {
+  return fixtures.reduce<Record<PendulumHelperKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      extraDeckGrant: 0,
+      extraSummonCountGrant: 0,
+      filteredSetcodeGrant: 0,
+      handGrant: 0,
+      pendulumSummonLock: 0,
+      procedureAction: 0,
+    },
+  );
 }
 
 function realScriptUnionProcedureFixtureSnippets(): Array<{
