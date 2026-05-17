@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { createDuel, fusionSummonDuelCard, getGroupedDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { createDuel, fusionSummonDuelCard, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import type { DuelCardData } from "#duel/types.js";
 import { luaSummonTypeFusion, luaSummonTypeLink, luaSummonTypeSynchro, luaSummonTypeXyz } from "#duel/summon-type-codes.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
@@ -123,12 +123,19 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
     const materialLock = session.state.effects.find((effect) => effect.code === 248 && effect.sourceUid === concours!.uid);
     expect(materialLock).toBeDefined();
 
-    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    const snapshot = serializeDuel(session);
+    const restored = restoreDuelWithLuaScripts(snapshot, workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
+    const actions = getLegalActions(restored.session, 0);
+    expect(actions.some((action) => action.type === "fusionSummon" && action.uid === blockedFusion!.uid)).toBe(false);
+    expect(actions.find((action) => action.type === "fusionSummon" && action.uid === allowedFusion!.uid)).toMatchObject({
+      type: "fusionSummon",
+      materialUids: [nouvelles!.uid, patissciel!.uid],
+    });
     expect(restored.session.state.effects.find((effect) => effect.code === 248 && effect.sourceUid === concours!.uid)).toMatchInlineSnapshot(`
       {
         "code": 248,
@@ -162,7 +169,27 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
       }
     `);
     expect(() => fusionSummonDuelCard(restored.session.state, 0, blockedFusion!.uid, [blocked!.uid, helper!.uid])).toThrow("cannot be used as fusion material");
-    expect(() => fusionSummonDuelCard(restored.session.state, 1, opponentFusion!.uid, [opponentBlocked!.uid, opponentHelper!.uid])).not.toThrow();
-    expect(() => fusionSummonDuelCard(restored.session.state, 0, allowedFusion!.uid, [nouvelles!.uid, patissciel!.uid])).not.toThrow();
+
+    const opponentRestored = restoreDuelWithLuaScripts(snapshot, workspace, reader);
+    fusionSummonDuelCard(opponentRestored.session.state, 1, opponentFusion!.uid, [opponentBlocked!.uid, opponentHelper!.uid]);
+    expect(opponentRestored.session.state.cards.find((card) => card.uid === opponentFusion!.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 1,
+      faceUp: true,
+      summonType: "fusion",
+    });
+    expect(opponentRestored.session.state.cards.find((card) => card.uid === opponentBlocked!.uid)).toMatchObject({ location: "graveyard" });
+    expect(opponentRestored.session.state.cards.find((card) => card.uid === opponentHelper!.uid)).toMatchObject({ location: "graveyard" });
+
+    const allowedRestored = restoreDuelWithLuaScripts(snapshot, workspace, reader);
+    fusionSummonDuelCard(allowedRestored.session.state, 0, allowedFusion!.uid, [nouvelles!.uid, patissciel!.uid]);
+    expect(allowedRestored.session.state.cards.find((card) => card.uid === allowedFusion!.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 0,
+      faceUp: true,
+      summonType: "fusion",
+    });
+    expect(allowedRestored.session.state.cards.find((card) => card.uid === nouvelles!.uid)).toMatchObject({ location: "graveyard" });
+    expect(allowedRestored.session.state.cards.find((card) => card.uid === patissciel!.uid)).toMatchObject({ location: "graveyard" });
   });
 });
