@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 122;
-const chainedResponseFixtureCount = 121;
-const responseOperationInfoFixtureCount = 113;
+const responseFixtureCount = 123;
+const chainedResponseFixtureCount = 122;
+const responseOperationInfoFixtureCount = 114;
 const responseWithoutOperationInfoFixtureFiles = [
   "test/lua-real-script-angineer-overlay-position.test.ts",
   "test/lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
@@ -18,7 +18,7 @@ const responseWithoutOperationInfoFixtureFiles = [
   "test/lua-real-script-waboku-temporary-battle-protection.test.ts",
 ];
 const responseFixtureKindCounts = {
-  chainedResponseWithOperationInfo: 113,
+  chainedResponseWithOperationInfo: 114,
   chainedResponseWithoutOperationInfo: 8,
   lingeringSameCodeNegation: 1,
 } satisfies Record<ResponseFixtureKind, number>;
@@ -28,7 +28,7 @@ const responseSemanticVariantCounts = {
   fabledAshenveilDamageStepBoostEmptyOperationInfo: 1,
   heboSpiritGrantReturnEmptyOperationInfo: 1,
   negateAttackBattleWindowEmptyOperationInfo: 1,
-  operationInfoAnnouncedResponse: 113,
+  operationInfoAnnouncedResponse: 114,
   scrapIronScarecrowBattleWindowEmptyOperationInfo: 1,
   shinobirdCrowDamageStepStatEmptyOperationInfo: 1,
   threateningRoarAttackLockEmptyOperationInfo: 1,
@@ -269,6 +269,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-prayers-ritual-matfilter.test.ts",
     "lua-real-script-prime-material-dragon-reverse-damage.test.ts",
     "lua-real-script-primite-fusion-extra-check.test.ts",
+    "lua-real-script-radiant-spirit-battle-destroyed-group-destroy.test.ts",
     "lua-real-script-raigeki-group-destroy.test.ts",
     "lua-real-script-raigeki-break-discard-cost.test.ts",
     "lua-real-script-rasetsu-spirit-cost-return.test.ts",

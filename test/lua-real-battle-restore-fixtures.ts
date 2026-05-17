@@ -4,14 +4,14 @@ import path from "node:path";
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const battleKeywords = ["battle", "attack", "damage"];
-export const realScriptBattleFixtureCount = 155;
+export const realScriptBattleFixtureCount = 156;
 export const battleLegalActionFixtureCount = 4;
 export const attackDeclarationTrapFixtureCount = 6;
 export const battleRoutingFixtureCount = 6;
 export const battleContinuousSemanticFixtureCount = 1;
 export const damageStepRestoreFixtureCount = 4;
 export const battleDamageSemanticFixtureCount = 8;
-export const battleTriggerSemanticFixtureCount = 15;
+export const battleTriggerSemanticFixtureCount = 16;
 export const attackDeclarationTrapKindCounts = {
   attackBanish: 1,
   attackDestroy: 1,
@@ -51,6 +51,7 @@ export const battleTriggerSemanticKindCounts = {
   battleConfirmDestroy: 1,
   battleDestroyingDecktopConfirm: 1,
   battleDestroyedDestroy: 1,
+  battleDestroyedGroupDestroy: 1,
   battleDestroyingSelectEffect: 1,
   battleSearch: 2,
   battledBounce: 1,
@@ -93,6 +94,7 @@ export const battleSemanticVariantCounts = {
   nightmareMagicianEndDamageControl: 1,
   numberC96AlsoBattleDamage: 1,
   predaplantSarraceniantBattledDestroy: 1,
+  radiantSpiritBattleDestroyedGroupDestroy: 1,
   reflectBounderBattleConfirmDestroy: 1,
   ringOfMagnetismOnlyAttackEquipped: 1,
   sakuretsuArmorAttackDestroy: 1,
@@ -143,6 +145,7 @@ export type BattleTriggerSemanticKind =
   | "battleConfirmDestroy"
   | "battleDestroyingDecktopConfirm"
   | "battleDestroyedDestroy"
+  | "battleDestroyedGroupDestroy"
   | "battleDestroyingSelectEffect"
   | "battleSearch"
   | "battledBounce"
@@ -184,6 +187,7 @@ export type BattleSemanticVariant =
   | "nightmareMagicianEndDamageControl"
   | "numberC96AlsoBattleDamage"
   | "predaplantSarraceniantBattledDestroy"
+  | "radiantSpiritBattleDestroyedGroupDestroy"
   | "reflectBounderBattleConfirmDestroy"
   | "ringOfMagnetismOnlyAttackEquipped"
   | "sakuretsuArmorAttackDestroy"
@@ -552,6 +556,11 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<{
       required: ['eventName: "battleDestroyed"', "eventCode: 1140", "reasonCardUid: attacker!.uid", 'eventName: "destroyed"', 'location: "graveyard"'],
     },
     {
+      file: "lua-real-script-radiant-spirit-battle-destroyed-group-destroy.test.ts",
+      kind: "battleDestroyedGroupDestroy",
+      required: ['eventName: "battleDestroyed"', "eventCode: 1140", "targetUids: [darkTarget.uid, attacker.uid, facedownTarget.uid]", 'eventName: "destroyed"', 'location: "graveyard"'],
+    },
+    {
       file: "lua-real-script-giant-rat-mutual-battle-destroyed-segoc.test.ts",
       kind: "mutualBattleDestroyedSegoc",
       required: ['triggerBucket: "turnOptional"', 'triggerBucket: "opponentOptional"', "pendingTriggerBuckets", 'event.eventName === "specialSummoned"', 'position: "faceUpAttack"'],
@@ -775,6 +784,11 @@ export function realScriptBattleSemanticVariants(): Array<{
       required: ["restores its EVENT_BATTLED trigger and destroys the monster it battled", "eventCode: 1138", "reasonEffectId: 2"],
     },
     {
+      file: "lua-real-script-radiant-spirit-battle-destroyed-group-destroy.test.ts",
+      kind: "radiantSpiritBattleDestroyedGroupDestroy",
+      required: ["restores mandatory battle-destroyed GetMatchingGroup destruction from a real script", "eventCode: 1140", "targetUids: [darkTarget.uid, attacker.uid, facedownTarget.uid]"],
+    },
+    {
       file: "lua-real-script-reflect-bounder-battle-confirm-destroy.test.ts",
       kind: "reflectBounderBattleConfirmDestroy",
       required: ["restores battle-confirm damage into a later battled self-destruction trigger", "eventName: \"battleConfirmed\"", "eventValue: 1700"],
@@ -870,6 +884,7 @@ export function countBattleSemanticVariants(fixtures: Array<{ kind: BattleSemant
       nightmareMagicianEndDamageControl: 0,
       numberC96AlsoBattleDamage: 0,
       predaplantSarraceniantBattledDestroy: 0,
+      radiantSpiritBattleDestroyedGroupDestroy: 0,
       reflectBounderBattleConfirmDestroy: 0,
       ringOfMagnetismOnlyAttackEquipped: 0,
       sakuretsuArmorAttackDestroy: 0,
@@ -984,6 +999,7 @@ export function countBattleTriggerSemanticKinds(
       battleConfirmDestroy: 0,
       battleDestroyingDecktopConfirm: 0,
       battleDestroyedDestroy: 0,
+      battleDestroyedGroupDestroy: 0,
       battleDestroyingSelectEffect: 0,
       battleSearch: 0,
       battledBounce: 0,

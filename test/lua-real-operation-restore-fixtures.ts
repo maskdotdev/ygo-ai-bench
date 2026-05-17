@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 61;
+export const operationFixtureCount = 62;
 export const operationKindCounts = {
   costBanishDraw: 2,
   crossPlayerGraveToDeckTrap: 1,
@@ -21,7 +21,7 @@ export const operationKindCounts = {
   directRecover: 1,
   drawThenDiscard: 1,
   fusionDeckMaterials: 1,
-  groupDestroy: 9,
+  groupDestroy: 10,
   groupToHand: 1,
   graveToDeckBottomDraw: 1,
   handDiscardDraw: 1,
@@ -291,6 +291,18 @@ export function operationFixtureFiles(): Array<{
       required: [
         "category: 0x1",
         "sortedUids([ownMonster!.uid, opponentAttack!.uid, opponentDefense!.uid])",
+        'eventName: "destroyed"',
+        'location: "graveyard"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-radiant-spirit-battle-destroyed-group-destroy.test.ts",
+      kind: "groupDestroy",
+      required: [
+        "category: 0x1",
+        "targetUids: [darkTarget.uid, attacker.uid, facedownTarget.uid]",
+        'eventName: "battleDestroyed"',
         'eventName: "destroyed"',
         'location: "graveyard"',
         "host.messages).not.toContain",
