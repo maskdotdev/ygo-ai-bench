@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 25;
+const operationFixtureCount = 26;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -19,6 +19,7 @@ const operationKindCounts = {
   targetDestroyRemove: 1,
   targetDestroyRecover: 1,
   targetDestroySkipDraw: 1,
+  targetToHandDiscardCost: 1,
   tossCoin: 1,
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
@@ -44,6 +45,7 @@ type OperationKind =
   | "targetDestroyRemove"
   | "targetDestroyRecover"
   | "targetDestroySkipDraw"
+  | "targetToHandDiscardCost"
   | "tossCoin"
   | "tossDiceHandDiscard";
 
@@ -272,6 +274,17 @@ function operationFixtureFiles(): Array<{
         'eventName: "destroyed"',
         'eventName: "banished"',
         'location: "banished"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-monster-reincarnation-discard-to-hand.test.ts",
+      kind: "targetToHandDiscardCost",
+      required: [
+        "category: 0x8",
+        'eventName: "discarded"',
+        'eventName: "sentToHand"',
+        'location: "hand"',
         "host.messages).not.toContain",
       ],
     },
@@ -616,6 +629,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       targetDestroyRemove: 0,
       targetDestroyRecover: 0,
       targetDestroySkipDraw: 0,
+      targetToHandDiscardCost: 0,
       tossCoin: 0,
       tossDiceHandDiscard: 0,
     },
