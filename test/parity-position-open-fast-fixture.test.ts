@@ -143,6 +143,7 @@ describe("EDOPro parity position change open fast-effect fixture", () => {
         waitingFor: 0,
         pendingTriggers: [],
         chain: [],
+        chainPasses: [],
         positionsChanged: ["p0-deck-100-0"],
         cards: [{ uid: "p0-deck-100-0", code: "100", location: "monsterZone", position: "faceUpDefense", faceUp: true }],
         legalActionCounts: { 0: 3, 1: 0 },

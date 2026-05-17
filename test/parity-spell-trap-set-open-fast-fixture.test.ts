@@ -127,6 +127,7 @@ describe("EDOPro parity Spell/Trap Set open fast-effect fixture", () => {
         waitingFor: 0,
         pendingTriggers: [],
         chain: [],
+        chainPasses: [],
         cards: [{ uid: "p0-deck-100-0", code: "100", location: "spellTrapZone", position: "faceDown", faceUp: false }],
         legalActionCounts: { 0: 3, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },

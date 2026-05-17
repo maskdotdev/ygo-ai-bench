@@ -172,6 +172,7 @@ describe("EDOPro parity damage-step-only quick-effect timing fixtures", () => {
         currentAttack: false,
         windowId: 14,
         windowKind: "open",
+        chainPasses: [],
         battleWindow: null,
         lifePoints: { 1: 6200 },
         battleDamage: { 1: 1800 },

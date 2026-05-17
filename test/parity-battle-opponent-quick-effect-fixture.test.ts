@@ -177,6 +177,7 @@ describe("EDOPro parity opponent battle quick-effect fixtures", () => {
         currentAttack: false,
         windowId: 15,
         windowKind: "open",
+        chainPasses: [],
         battleWindow: null,
         lifePoints: { 1: 6200 },
         battleDamage: { 1: 1800 },

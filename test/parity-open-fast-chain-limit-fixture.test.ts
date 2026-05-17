@@ -186,6 +186,7 @@ describe("EDOPro parity open fast-effect chain-limit fixtures", () => {
         windowKind: "open",
         waitingFor: 0,
         chain: [],
+        chainPasses: [],
         chainLimits: [],
         legalActionCounts: { 0: 8, 1: 0 },
         legalActionGroupCounts: { 0: 2, 1: 0 },
