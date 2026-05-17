@@ -4,8 +4,17 @@ import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
 const summonNegationFixtureCount = 3;
+const summonNegationKindCounts: Record<SummonNegationKind, number> = {
+  flip: 1,
+  normal: 1,
+  special: 1,
+};
 
 describe("EDOPro parity summon-negation coverage", () => {
+  it("keeps summon-negation fixture kinds explicit", () => {
+    expect(countSummonNegationKinds(summonNegationFixtures())).toEqual(summonNegationKindCounts);
+  });
+
   it("pins Normal, Flip, and inherent Special Summon negation fixtures", () => {
     const fixtures = summonNegationFixtures();
     expect(fixtures).toHaveLength(summonNegationFixtureCount);
@@ -29,8 +38,11 @@ describe("EDOPro parity summon-negation coverage", () => {
   });
 });
 
+type SummonNegationKind = "flip" | "normal" | "special";
+
 function summonNegationFixtures(): Array<{
   file: string;
+  kind: SummonNegationKind;
   attemptEvent: string;
   successEvent: string;
   negatedEvent: string;
@@ -38,9 +50,10 @@ function summonNegationFixtures(): Array<{
   negatedWatcherEffectId: string;
   removedSuccessWatcherEffectId: string;
 }> {
-  return [
+  return ([
     {
       file: "parity-summon-negation-fixture.test.ts",
+      kind: "normal",
       attemptEvent: 'eventName: "normalSummoning"',
       successEvent: 'eventName: "normalSummoned"',
       negatedEvent: 'eventName: "normalSummonNegated"',
@@ -50,6 +63,7 @@ function summonNegationFixtures(): Array<{
     },
     {
       file: "parity-flip-summon-negation-fixture.test.ts",
+      kind: "flip",
       attemptEvent: 'eventName: "flipSummoning"',
       successEvent: 'eventName: "flipSummoned"',
       negatedEvent: 'eventName: "flipSummonNegated"',
@@ -59,6 +73,7 @@ function summonNegationFixtures(): Array<{
     },
     {
       file: "parity-special-summon-negation-fixture.test.ts",
+      kind: "special",
       attemptEvent: 'eventName: "specialSummoning"',
       successEvent: 'eventName: "specialSummoned"',
       negatedEvent: 'eventName: "specialSummonNegated"',
@@ -66,7 +81,26 @@ function summonNegationFixtures(): Array<{
       negatedWatcherEffectId: "fixture-special-negated-watcher",
       removedSuccessWatcherEffectId: "fixture-special-success-watcher",
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: SummonNegationKind;
+    attemptEvent: string;
+    successEvent: string;
+    negatedEvent: string;
+    negatorEffectId: string;
+    negatedWatcherEffectId: string;
+    removedSuccessWatcherEffectId: string;
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countSummonNegationKinds(fixtures: Array<{ kind: SummonNegationKind }>): Record<SummonNegationKind, number> {
+  return fixtures.reduce(
+    (counts, { kind }) => {
+      counts[kind] += 1;
+      return counts;
+    },
+    { flip: 0, normal: 0, special: 0 },
+  );
 }
 
 function hasRemovedSuccessWatcherProof(text: string, effectId: string): boolean {
