@@ -11,8 +11,19 @@ const statefulGateKindCounts = {
   mustAttackZoneTarget: 1,
   summonCountThreshold: 1,
 } satisfies Record<StatefulGateKind, number>;
+const statefulGateSemanticVariantCounts = {
+  berserkGorillaMustAttackBattleProgressionLock: 1,
+  earthshatteringEventDeckToGraveTemporaryLock: 1,
+  elfnotesRhapsodiaCenterZoneMustAttackFilter: 1,
+  nibiruOpponentSummonCountThreshold: 1,
+} satisfies Record<StatefulGateSemanticVariant, number>;
 
 type StatefulGateKind = "deckGraveLock" | "mustAttackAnyTarget" | "mustAttackZoneTarget" | "summonCountThreshold";
+type StatefulGateSemanticVariant =
+  | "berserkGorillaMustAttackBattleProgressionLock"
+  | "earthshatteringEventDeckToGraveTemporaryLock"
+  | "elfnotesRhapsodiaCenterZoneMustAttackFilter"
+  | "nibiruOpponentSummonCountThreshold";
 
 describe("Lua real stateful gate restore coverage", () => {
   it("requires stateful gate fixtures to assert clean restore and restored legal outcomes", () => {
@@ -40,6 +51,19 @@ describe("Lua real stateful gate restore coverage", () => {
 
   it("keeps stateful gate fixture kinds explicit", () => {
     expect(countStatefulGateKinds(statefulGateFixtureFiles())).toEqual(statefulGateKindCounts);
+  });
+
+  it("keeps named stateful gate semantic variants explicit", () => {
+    expect(countStatefulGateSemanticVariants(statefulGateSemanticVariants())).toEqual(statefulGateSemanticVariantCounts);
+
+    const weak = statefulGateSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -115,6 +139,72 @@ function countStatefulGateKinds(fixtures: Array<{ kind: StatefulGateKind }>): Re
       mustAttackAnyTarget: 0,
       mustAttackZoneTarget: 0,
       summonCountThreshold: 0,
+    },
+  );
+}
+
+function statefulGateSemanticVariants(): Array<{
+  file: string;
+  kind: StatefulGateSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-berserk-gorilla-must-attack.test.ts",
+      kind: "berserkGorillaMustAttackBattleProgressionLock",
+      required: [
+        'const gorillaCode = "39168895"',
+        "restores official EFFECT_MUST_ATTACK and locks battle progression while an attack is legal",
+        "hasAttack(actions, gorilla!.uid, target!.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-earthshattering-event-deck-grave-lock.test.ts",
+      kind: "earthshatteringEventDeckToGraveTemporaryLock",
+      required: [
+        'const earthshatteringCode = "54407825"',
+        "restores its deck-to-GY trigger and temporary EFFECT_CANNOT_TO_GRAVE lock",
+        "earthshattering self able grave locked false",
+      ],
+    },
+    {
+      file: "test/lua-real-script-elfnotes-rhapsodia-must-attack-center.test.ts",
+      kind: "elfnotesRhapsodiaCenterZoneMustAttackFilter",
+      required: [
+        'const rhapsodiaCode = "24092792"',
+        "restores its center-zone must-attack-monster target filter",
+        "hasAttack(actions, attacker.uid, centerTarget.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-nibiru-flag-count.test.ts",
+      kind: "nibiruOpponentSummonCountThreshold",
+      required: [
+        'const nibiruCode = "27204311"',
+        "stacks summon-count flags so Nibiru becomes legal after five opponent summons",
+        "nibiruRestoreActions(restoredAtThreshold",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: StatefulGateSemanticVariant;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countStatefulGateSemanticVariants(
+  fixtures: Array<{ kind: StatefulGateSemanticVariant }>,
+): Record<StatefulGateSemanticVariant, number> {
+  return fixtures.reduce<Record<StatefulGateSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      berserkGorillaMustAttackBattleProgressionLock: 0,
+      earthshatteringEventDeckToGraveTemporaryLock: 0,
+      elfnotesRhapsodiaCenterZoneMustAttackFilter: 0,
+      nibiruOpponentSummonCountThreshold: 0,
     },
   );
 }
