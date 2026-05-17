@@ -54,6 +54,18 @@ const operationKindCounts = {
   tossCoin: 1,
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
+const groupDestroyOperationVariantCounts = {
+  darkHoleAllMonsters: 1,
+  fissureMinAttack: 1,
+  harpiesFeatherDusterBackrow: 1,
+  hammerShotMaxAttack: 1,
+  heavyStormAllBackrow: 1,
+  lightningStormAttackPosition: 1,
+  lightningStormSpellTrap: 1,
+  lightningVortexFaceUpOpponents: 1,
+  raigekiOpponentMonsters: 1,
+  smashingGroundMaxDefense: 1,
+} satisfies Record<GroupDestroyOperationVariant, number>;
 
 type OperationKind =
   | "costBanishDraw"
@@ -103,6 +115,17 @@ type OperationKind =
   | "trapDrawSkipDraw"
   | "tossCoin"
   | "tossDiceHandDiscard";
+type GroupDestroyOperationVariant =
+  | "darkHoleAllMonsters"
+  | "fissureMinAttack"
+  | "harpiesFeatherDusterBackrow"
+  | "hammerShotMaxAttack"
+  | "heavyStormAllBackrow"
+  | "lightningStormAttackPosition"
+  | "lightningStormSpellTrap"
+  | "lightningVortexFaceUpOpponents"
+  | "raigekiOpponentMonsters"
+  | "smashingGroundMaxDefense";
 
 describe("Lua real operation restore coverage", () => {
   it("requires representative simple spell operations to assert clean Lua registry restore and restored operation metadata", () => {
@@ -133,6 +156,19 @@ describe("Lua real operation restore coverage", () => {
 
   it("keeps simple operation fixture kinds explicit", () => {
     expect(countOperationKinds(operationFixtureFiles())).toEqual(operationKindCounts);
+  });
+
+  it("keeps group-destroy operation semantic variants explicit", () => {
+    expect(countGroupDestroyOperationVariants(groupDestroyOperationVariants())).toEqual(groupDestroyOperationVariantCounts);
+
+    const weak = groupDestroyOperationVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -909,6 +945,122 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       trapDrawSkipDraw: 0,
       tossCoin: 0,
       tossDiceHandDiscard: 0,
+    },
+  );
+}
+
+function groupDestroyOperationVariants(): Array<{ file: string; kind: GroupDestroyOperationVariant; required: string[] }> {
+  return ([
+    {
+      file: "test/lua-real-script-dark-hole-group-destroy.test.ts",
+      kind: "darkHoleAllMonsters",
+      required: [
+        "restores Dark Hole's non-targeting all-monster group destroy",
+        "sortedUids([ownMonster!.uid, opponentAttack!.uid, opponentDefense!.uid])",
+        'eventName: "destroyed"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-fissure-min-attack-destroy.test.ts",
+      kind: "fissureMinAttack",
+      required: [
+        "restores Fissure's minimum-ATK opponent monster destroy operation",
+        "opponentLowAttack!.uid",
+        "Fissure Low Attack Target",
+      ],
+    },
+    {
+      file: "test/lua-real-script-harpies-feather-duster-group-destroy.test.ts",
+      kind: "harpiesFeatherDusterBackrow",
+      required: [
+        "restores Harpie's Feather Duster opponent Spell/Trap group destroy",
+        "sortedUids([opponentTrap!.uid, opponentSpell!.uid])",
+        'location: "spellTrapZone"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-hammer-shot-max-attack-destroy.test.ts",
+      kind: "hammerShotMaxAttack",
+      required: [
+        "restores Hammer Shot's maximum-ATK all-field attack-position destroy operation",
+        "ownHighAttack!.uid",
+        "Hammer Shot Own High Attack Target",
+      ],
+    },
+    {
+      file: "test/lua-real-script-heavy-storm-group-destroy.test.ts",
+      kind: "heavyStormAllBackrow",
+      required: [
+        "restores Heavy Storm's non-targeting all-field Spell/Trap group destroy",
+        "sortedUids([ownBackrow!.uid, opponentTrap!.uid, opponentSpell!.uid])",
+        'eventName: "destroyed"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-lightning-storm-select-effect.test.ts",
+      kind: "lightningStormAttackPosition",
+      required: [
+        "restores Lightning Storm's selected attack-position monster destroy mode",
+        "effectLabel: 1",
+        "sortedUids([opponentAttacker!.uid, opponentSecondAttacker!.uid])",
+      ],
+    },
+    {
+      file: "test/lua-real-script-lightning-storm-select-effect.test.ts",
+      kind: "lightningStormSpellTrap",
+      required: [
+        "restores Lightning Storm's selected Spell/Trap destroy mode",
+        "effectLabel: 2",
+        "sortedUids([opponentTrap!.uid, opponentSpell!.uid])",
+      ],
+    },
+    {
+      file: "test/lua-real-script-lightning-vortex-discard-group-destroy.test.ts",
+      kind: "lightningVortexFaceUpOpponents",
+      required: [
+        "restores Lightning Vortex's discard cost and face-up opponent monster group destroy",
+        "sortedUids([opponentFaceupAttack!.uid, opponentFaceupDefense!.uid])",
+        'eventName: "discarded"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-raigeki-group-destroy.test.ts",
+      kind: "raigekiOpponentMonsters",
+      required: [
+        "restores Raigeki's non-targeting opponent monster group destroy",
+        "sortedUids([opponentAttack!.uid, opponentDefense!.uid])",
+        'eventName: "destroyed"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-smashing-ground-max-defense-destroy.test.ts",
+      kind: "smashingGroundMaxDefense",
+      required: [
+        "restores Smashing Ground's maximum-DEF opponent monster destroy operation",
+        "opponentHighDefense!.uid",
+        "Smashing Ground High Defense Target",
+      ],
+    },
+  ] satisfies Array<{ file: string; kind: GroupDestroyOperationVariant; required: string[] }>).sort((a, b) => a.kind.localeCompare(b.kind));
+}
+
+function countGroupDestroyOperationVariants(fixtures: Array<{ kind: GroupDestroyOperationVariant }>): Record<GroupDestroyOperationVariant, number> {
+  return fixtures.reduce<Record<GroupDestroyOperationVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      darkHoleAllMonsters: 0,
+      fissureMinAttack: 0,
+      harpiesFeatherDusterBackrow: 0,
+      hammerShotMaxAttack: 0,
+      heavyStormAllBackrow: 0,
+      lightningStormAttackPosition: 0,
+      lightningStormSpellTrap: 0,
+      lightningVortexFaceUpOpponents: 0,
+      raigekiOpponentMonsters: 0,
+      smashingGroundMaxDefense: 0,
     },
   );
 }
