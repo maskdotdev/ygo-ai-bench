@@ -22,6 +22,28 @@ const responseFixtureKindCounts = {
   chainedResponseWithoutOperationInfo: 8,
   lingeringSameCodeNegation: 1,
 } satisfies Record<ResponseFixtureKind, number>;
+const responseSemanticVariantCounts = {
+  angineerOverlayPositionEmptyOperationInfo: 1,
+  calledByTheGraveLingeringSameCodeNegation: 1,
+  fabledAshenveilDamageStepBoostEmptyOperationInfo: 1,
+  heboSpiritGrantReturnEmptyOperationInfo: 1,
+  negateAttackBattleWindowEmptyOperationInfo: 1,
+  operationInfoAnnouncedResponse: 112,
+  scrapIronScarecrowBattleWindowEmptyOperationInfo: 1,
+  shinobirdCrowDamageStepStatEmptyOperationInfo: 1,
+  threateningRoarAttackLockEmptyOperationInfo: 1,
+  wabokuBattleProtectionEmptyOperationInfo: 1,
+} satisfies Record<ResponseSemanticVariant, number>;
+const emptyOperationInfoResponseSemanticVariants: Record<string, ResponseSemanticVariant> = {
+  "test/lua-real-script-angineer-overlay-position.test.ts": "angineerOverlayPositionEmptyOperationInfo",
+  "test/lua-real-script-fabled-ashenveil-damage-step-boost.test.ts": "fabledAshenveilDamageStepBoostEmptyOperationInfo",
+  "test/lua-real-script-hebo-spirit-grant-return.test.ts": "heboSpiritGrantReturnEmptyOperationInfo",
+  "test/lua-real-script-negate-attack-battle-window.test.ts": "negateAttackBattleWindowEmptyOperationInfo",
+  "test/lua-real-script-scrap-iron-scarecrow-battle-window.test.ts": "scrapIronScarecrowBattleWindowEmptyOperationInfo",
+  "test/lua-real-script-shinobird-crow-damage-step-stat.test.ts": "shinobirdCrowDamageStepStatEmptyOperationInfo",
+  "test/lua-real-script-threatening-roar-temporary-attack-lock.test.ts": "threateningRoarAttackLockEmptyOperationInfo",
+  "test/lua-real-script-waboku-temporary-battle-protection.test.ts": "wabokuBattleProtectionEmptyOperationInfo",
+};
 
 describe("Lua real response restore coverage", () => {
   it("keeps response fixture kinds explicit", () => {
@@ -127,9 +149,33 @@ describe("Lua real response restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps named response semantic variants explicit", () => {
+    expect(countResponseSemanticVariants(realScriptResponseFixtureFiles())).toEqual(responseSemanticVariantCounts);
+
+    const weak = responseSemanticVariantEvidence()
+      .filter(({ file, requiredSnippets }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return requiredSnippets.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
+  });
 });
 
 type ResponseFixtureKind = "chainedResponseWithOperationInfo" | "chainedResponseWithoutOperationInfo" | "lingeringSameCodeNegation";
+type ResponseSemanticVariant =
+  | "angineerOverlayPositionEmptyOperationInfo"
+  | "calledByTheGraveLingeringSameCodeNegation"
+  | "fabledAshenveilDamageStepBoostEmptyOperationInfo"
+  | "heboSpiritGrantReturnEmptyOperationInfo"
+  | "negateAttackBattleWindowEmptyOperationInfo"
+  | "operationInfoAnnouncedResponse"
+  | "scrapIronScarecrowBattleWindowEmptyOperationInfo"
+  | "shinobirdCrowDamageStepStatEmptyOperationInfo"
+  | "threateningRoarAttackLockEmptyOperationInfo"
+  | "wabokuBattleProtectionEmptyOperationInfo";
 
 function realScriptResponseFixtureFiles(): string[] {
   return [
@@ -290,4 +336,137 @@ function classifyResponseFixture(file: string, operationInfoFiles: Set<string>):
     return "lingeringSameCodeNegation";
   }
   return operationInfoFiles.has(file) ? "chainedResponseWithOperationInfo" : "chainedResponseWithoutOperationInfo";
+}
+
+function countResponseSemanticVariants(files: string[]): Record<ResponseSemanticVariant, number> {
+  const operationInfoFiles = new Set(realScriptResponseOperationInfoFixtureFiles());
+  return files.reduce<Record<ResponseSemanticVariant, number>>(
+    (counts, file) => {
+      counts[classifyResponseSemanticVariant(file, operationInfoFiles)] += 1;
+      return counts;
+    },
+    {
+      angineerOverlayPositionEmptyOperationInfo: 0,
+      calledByTheGraveLingeringSameCodeNegation: 0,
+      fabledAshenveilDamageStepBoostEmptyOperationInfo: 0,
+      heboSpiritGrantReturnEmptyOperationInfo: 0,
+      negateAttackBattleWindowEmptyOperationInfo: 0,
+      operationInfoAnnouncedResponse: 0,
+      scrapIronScarecrowBattleWindowEmptyOperationInfo: 0,
+      shinobirdCrowDamageStepStatEmptyOperationInfo: 0,
+      threateningRoarAttackLockEmptyOperationInfo: 0,
+      wabokuBattleProtectionEmptyOperationInfo: 0,
+    },
+  );
+}
+
+function classifyResponseSemanticVariant(
+  file: string,
+  operationInfoFiles: Set<string>,
+): ResponseSemanticVariant {
+  if (file.endsWith("lua-real-script-called-by-the-grave.test.ts")) {
+    return "calledByTheGraveLingeringSameCodeNegation";
+  }
+
+  const emptyOperationInfoVariant = emptyOperationInfoResponseSemanticVariants[file];
+  if (emptyOperationInfoVariant !== undefined) {
+    return emptyOperationInfoVariant;
+  }
+
+  if (operationInfoFiles.has(file)) {
+    return "operationInfoAnnouncedResponse";
+  }
+
+  throw new Error(`Unclassified response semantic variant for ${file}`);
+}
+
+function responseSemanticVariantEvidence(): Array<{
+  file: string;
+  kind: ResponseSemanticVariant;
+  requiredSnippets: string[];
+}> {
+  return [
+    {
+      file: "test/lua-real-script-angineer-overlay-position.test.ts",
+      kind: "angineerOverlayPositionEmptyOperationInfo",
+      requiredSnippets: [
+        "restores Angineer after detaching Xyz material and resolves its protected position change",
+        "operationInfos ?? []).toEqual([])",
+        'host.messages).not.toContain("angineer responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-called-by-the-grave.test.ts",
+      kind: "calledByTheGraveLingeringSameCodeNegation",
+      requiredSnippets: [
+        "banishes a GY monster and negates same-code monster effects while solving",
+        "sourceUid: \"p0-deck-24224830-0\"",
+        'eventName: "chainDisabled"',
+        'host.messages).not.toContain("same-code monster resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
+      kind: "fabledAshenveilDamageStepBoostEmptyOperationInfo",
+      requiredSnippets: [
+        "restores its hand cost and pre-damage calculation ATK boost",
+        "operationInfos ?? []).toEqual([])",
+        'host.messages).not.toContain("ashenveil responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-hebo-spirit-grant-return.test.ts",
+      kind: "heboSpiritGrantReturnEmptyOperationInfo",
+      requiredSnippets: [
+        "restores target-granted Spirit type and the target-owned End Phase return",
+        "operationInfos ?? []).toEqual([])",
+        'host.messages).not.toContain("hebo responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-negate-attack-battle-window.test.ts",
+      kind: "negateAttackBattleWindowEmptyOperationInfo",
+      requiredSnippets: [
+        "restores and resolves Negate Attack from the Project Ignis attack-declaration script",
+        "operationInfos ?? []).toEqual([])",
+        'host.messages).not.toContain("negate attack responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-scrap-iron-scarecrow-battle-window.test.ts",
+      kind: "scrapIronScarecrowBattleWindowEmptyOperationInfo",
+      requiredSnippets: [
+        "restores Scrap-Iron Scarecrow and keeps it set after negating the attack",
+        "operationInfos ?? []).toEqual([])",
+        'host.messages).not.toContain("scrap-iron responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-shinobird-crow-damage-step-stat.test.ts",
+      kind: "shinobirdCrowDamageStepStatEmptyOperationInfo",
+      requiredSnippets: [
+        "restores its Damage Step discard label object and applies the ATK/DEF boost",
+        "operationInfos ?? []).toEqual([])",
+        'host.messages).not.toContain("shinobird crow responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-threatening-roar-temporary-attack-lock.test.ts",
+      kind: "threateningRoarAttackLockEmptyOperationInfo",
+      requiredSnippets: [
+        "restores a Trap-registered player-target attack-announcement lock until the End Phase",
+        "operationInfos ?? []).toEqual([])",
+        'host.messages).not.toContain("threatening roar responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-waboku-temporary-battle-protection.test.ts",
+      kind: "wabokuBattleProtectionEmptyOperationInfo",
+      requiredSnippets: [
+        "restores Trap-registered battle damage prevention and battle indestructibility until the End Phase",
+        "operationInfos ?? []).toEqual([])",
+        'host.messages).not.toContain("waboku responder resolved")',
+      ],
+    },
+  ];
 }
