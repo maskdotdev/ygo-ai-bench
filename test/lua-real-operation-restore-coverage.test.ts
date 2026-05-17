@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 24;
+const operationFixtureCount = 25;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -15,6 +15,7 @@ const operationKindCounts = {
   releaseDamage: 1,
   searchOrExcavate: 3,
   targetBanishDiscardCost: 1,
+  targetDestroyDiscardCost: 1,
   targetDestroyRemove: 1,
   targetDestroyRecover: 1,
   targetDestroySkipDraw: 1,
@@ -39,6 +40,7 @@ type OperationKind =
   | "releaseDamage"
   | "searchOrExcavate"
   | "targetBanishDiscardCost"
+  | "targetDestroyDiscardCost"
   | "targetDestroyRemove"
   | "targetDestroyRecover"
   | "targetDestroySkipDraw"
@@ -392,6 +394,17 @@ function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-tribute-doomed-discard-destroy.test.ts",
+      kind: "targetDestroyDiscardCost",
+      required: [
+        "category: 0x1",
+        'eventName: "discarded"',
+        'eventName: "destroyed"',
+        'location: "graveyard"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
       kind: "searchOrExcavate",
       required: [
@@ -599,6 +612,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       releaseDamage: 0,
       searchOrExcavate: 0,
       targetBanishDiscardCost: 0,
+      targetDestroyDiscardCost: 0,
       targetDestroyRemove: 0,
       targetDestroyRecover: 0,
       targetDestroySkipDraw: 0,
