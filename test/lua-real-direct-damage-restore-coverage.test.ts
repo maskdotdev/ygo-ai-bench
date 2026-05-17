@@ -136,7 +136,7 @@ function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKin
 }
 
 function directDamageSemanticVariants(): Array<{ file: string; kind: DirectDamageSemanticVariant; required: string[] }> {
-  return [
+  const variants: Array<{ file: string; kind: DirectDamageSemanticVariant; required: string[] }> = [
     {
       file: "test/lua-real-script-hinotama-direct-damage.test.ts",
       kind: "hinotamaTargetParamDamage",
@@ -177,7 +177,9 @@ function directDamageSemanticVariants(): Array<{ file: string; kind: DirectDamag
         "ookazi responder resolved",
       ],
     },
-  ].map(({ file, kind, required }) => ({
+  ];
+
+  return variants.map(({ file, kind, required }) => ({
     file,
     kind,
     required: [
