@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 40;
+const operationFixtureCount = 41;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
+  crossPlayerGraveToDeckTrap: 1,
   deckToGrave: 1,
   deckSplit: 1,
   discardCostGraveToDeckTop: 1,
@@ -48,6 +49,7 @@ const summonTriggerOperationKindCounts = {
 
 type OperationKind =
   | "costBanishDraw"
+  | "crossPlayerGraveToDeckTrap"
   | "deckToGrave"
   | "deckSplit"
   | "discardCostGraveToDeckTop"
@@ -607,6 +609,17 @@ function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-transmigration-prophecy-grave-shuffle.test.ts",
+      kind: "crossPlayerGraveToDeckTrap",
+      required: [
+        "category: 0x10",
+        'eventName: "sentToDeck"',
+        "eventUids: [ownGrave!.uid, opponentGrave!.uid]",
+        "controller: 1, location: \"deck\"",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-tribute-doomed-discard-destroy.test.ts",
       kind: "targetDestroyDiscardCost",
       required: [
@@ -818,6 +831,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
     },
     {
       costBanishDraw: 0,
+      crossPlayerGraveToDeckTrap: 0,
       deckToGrave: 0,
       deckSplit: 0,
       discardCostGraveToDeckTop: 0,
