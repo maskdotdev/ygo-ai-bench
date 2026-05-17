@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 59;
+export const operationFixtureCount = 60;
 export const operationKindCounts = {
   costBanishDraw: 2,
   crossPlayerGraveToDeckTrap: 1,
@@ -33,6 +33,7 @@ export const operationKindCounts = {
   opponentHandToDeck: 1,
   overlayAttach: 1,
   positionSet: 1,
+  pzoneDestroySearch: 1,
   releaseDamage: 1,
   ritualDeckMaterials: 1,
   searchOrExcavate: 3,
@@ -83,6 +84,7 @@ export type OperationKind =
   | "opponentHandToDeck"
   | "overlayAttach"
   | "positionSet"
+  | "pzoneDestroySearch"
   | "releaseDamage"
   | "ritualDeckMaterials"
   | "searchOrExcavate"
@@ -767,6 +769,19 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-igknight-paladin-pzone-search.test.ts",
+      kind: "pzoneDestroySearch",
+      required: [
+        "destroys both Pendulum Zone cards to the Extra Deck before searching a FIRE Warrior",
+        "category: 0x1",
+        "category: 0x8",
+        'location: "extraDeck"',
+        'eventName: "destroyed"',
+        'eventName: "sentToHandConfirmed"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-smashing-ground-max-defense-destroy.test.ts",
       kind: "groupDestroy",
       required: [
@@ -868,6 +883,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       opponentHandToDeck: 0,
       overlayAttach: 0,
       positionSet: 0,
+      pzoneDestroySearch: 0,
       releaseDamage: 0,
       ritualDeckMaterials: 0,
       searchOrExcavate: 0,

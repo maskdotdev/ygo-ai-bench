@@ -54,6 +54,8 @@ export function sendCoreDuelCardToGraveyard(
   if (shouldRedirectToGraveyardMove(state, uid, createContext)) return banishCoreDuelCard(state, uid, controller, reason | duelReason.redirect, reasonPlayer, handlers);
   const redirectLocation = leaveFieldRedirectLocation(state, uid, "graveyard", createContext);
   if (redirectLocation && redirectLocation.location !== "graveyard") return moveCoreDuelCardToRedirectedLocation(state, uid, redirectLocation, controller, reason, reasonPlayer, handlers);
+  const pendulumRedirect = fieldPendulumExtraDeckRedirect(state, uid);
+  if (pendulumRedirect) return sendCoreDuelCardToExtraDeckByPendulumRule(state, uid, controller, reason, reasonPlayer, handlers, payload);
   requireCoreDuelMoveAllowed(state, uid, "graveyard", reason, handlers);
   const { card, lostTargetEquipUids, controlReturnTargetUids } = moveDuelCardWithLostTargetCapture(state, uid, "graveyard", controller, reason, reasonPlayer, createContext);
   if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
@@ -129,6 +131,18 @@ export function destroyCoreDuelCard(
     handlers.collectTrigger(state, "destroyed", callbackRedirect);
     return callbackRedirect;
   }
+  if (fieldPendulumExtraDeckRedirect(state, uid)) {
+    const { card, lostTargetEquipUids, controlReturnTargetUids } = moveDuelCardWithLostTargetCapture(state, uid, "extraDeck", controller, reason, reasonPlayer, createContext);
+    assignReasonPayload(card, payload);
+    pushDuelLog(state, "destroy", card.controller, card.name, "Destroyed and moved to extraDeck");
+    collectLeaveFieldTriggers(state, card, handlers);
+    collectLeaveGraveyardTriggers(state, card, handlers);
+    handlers.collectTrigger(state, "moved", card);
+    handlers.collectTrigger(state, "destroyed", card);
+    collectDestroyedDestinationTriggers(state, card, handlers);
+    applyPostMoveSideEffects(state, lostTargetEquipUids, controlReturnTargetUids, handlers);
+    return card;
+  }
   requireCoreDuelMoveAllowed(state, uid, "graveyard", reason, handlers);
   const { card, lostTargetEquipUids, controlReturnTargetUids } = moveDuelCardWithLostTargetCapture(state, uid, "graveyard", controller, reason, reasonPlayer, createContext);
   assignReasonPayload(card, payload);
@@ -138,6 +152,29 @@ export function destroyCoreDuelCard(
   handlers.collectTrigger(state, "moved", card);
   handlers.collectTrigger(state, "destroyed", card);
   handlers.collectTrigger(state, "sentToGraveyard", card);
+  applyPostMoveSideEffects(state, lostTargetEquipUids, controlReturnTargetUids, handlers);
+  return card;
+}
+
+function sendCoreDuelCardToExtraDeckByPendulumRule(
+  state: DuelState,
+  uid: string,
+  controller: PlayerId | undefined,
+  reason: number,
+  reasonPlayer: PlayerId | undefined,
+  handlers: CoreMovementHandlers,
+  payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId">,
+): DuelCardInstance {
+  const createContext = handlers.createContinuousContext(state);
+  const { card, lostTargetEquipUids, controlReturnTargetUids } = moveDuelCardWithLostTargetCapture(state, uid, "extraDeck", controller, reason, reasonPlayer, createContext);
+  if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
+  if (payload.eventReasonEffectId !== undefined) card.reasonEffectId = payload.eventReasonEffectId;
+  pushDuelLog(state, "sendToGraveyard", card.controller, card.name, "Sent to the Extra Deck");
+  collectLeaveFieldTriggers(state, card, handlers);
+  collectLeaveGraveyardTriggers(state, card, handlers);
+  collectReasonTriggers(state, card, reason, handlers);
+  handlers.collectTrigger(state, "moved", card);
+  handlers.collectTrigger(state, "sentToDeck", card);
   applyPostMoveSideEffects(state, lostTargetEquipUids, controlReturnTargetUids, handlers);
   return card;
 }
@@ -412,4 +449,13 @@ function collectDestroyedDestinationTriggers(state: DuelState, card: DuelCardIns
   if (card.location === "graveyard") handlers.collectTrigger(state, "sentToGraveyard", card);
   else if (card.location === "banished") handlers.collectTrigger(state, "banished", card);
   else collectDestinationTriggers(state, card, handlers);
+}
+
+function fieldPendulumExtraDeckRedirect(state: DuelState, uid: string): boolean {
+  const card = findCard(state, uid);
+  return Boolean(card && isFieldLocation(card.location) && ((card.data.typeFlags ?? 0) & 0x1000000) !== 0);
+}
+
+function isFieldLocation(location: DuelLocation): boolean {
+  return location === "monsterZone" || location === "spellTrapZone";
 }

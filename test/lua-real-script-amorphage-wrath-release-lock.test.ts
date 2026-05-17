@@ -101,7 +101,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
     expect(restored.host.messages).toContain("amorphage releasable true/false/false");
     expect(restored.host.messages).toContain("amorphage release locked 0");
     expect(restored.host.messages).toContain("amorphage release allowed 1");
-    expect(restored.session.state.cards.find((card) => card.uid === amorphage!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restored.session.state.cards.find((card) => card.uid === amorphage!.uid)).toMatchObject({ location: "extraDeck", faceUp: true });
     expect(restored.session.state.cards.find((card) => card.uid === nonAmorphage!.uid)).toMatchObject({ location: "monsterZone" });
     expect(restored.session.state.cards.find((card) => card.uid === opponentNonAmorphage!.uid)).toMatchObject({ location: "monsterZone" });
   });

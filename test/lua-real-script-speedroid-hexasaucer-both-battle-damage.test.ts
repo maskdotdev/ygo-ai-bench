@@ -186,7 +186,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
       },
     ]);
     expect(restored.session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "monsterZone" });
-    expect(restored.session.state.cards.find((card) => card.uid === hexasaucer!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restored.session.state.cards.find((card) => card.uid === hexasaucer!.uid)).toMatchObject({ location: "extraDeck", faceUp: true });
   });
 });
 
