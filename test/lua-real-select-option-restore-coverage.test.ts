@@ -5,6 +5,13 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const upstreamOfficialRoot = path.join(root, ".upstream/ignis/script/official");
+const selectOptionKindCounts = {
+  leadingBooleanLiteralOptions: 1,
+  leadingBooleanTableUnpack: 1,
+  tableUnpackedOptions: 1,
+} satisfies Record<SelectOptionKind, number>;
+
+type SelectOptionKind = "leadingBooleanLiteralOptions" | "leadingBooleanTableUnpack" | "tableUnpackedOptions";
 
 describe("Lua real SelectOption restore coverage", () => {
   it("tracks official scripts that use the leading-boolean SelectOption shape", () => {
@@ -57,6 +64,13 @@ describe("Lua real SelectOption restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps SelectOption fixture kinds explicit", () => {
+    expect(countSelectOptionKinds([
+      ...leadingBooleanSelectOptionFixtures(),
+      ...tableUnpackedSelectOptionFixtures(),
+    ])).toEqual(selectOptionKindCounts);
+  });
 });
 
 function officialScriptsWithLeadingBooleanSelectOption(): string[] {
@@ -74,10 +88,15 @@ function officialLeadingBooleanSelectOptionShapes(): Array<{ file: string; shape
   });
 }
 
-function leadingBooleanSelectOptionFixtures(): Array<{ file: string; required: string[] }> {
-  return [
+function leadingBooleanSelectOptionFixtures(): Array<{
+  file: string;
+  kind: SelectOptionKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-inferno-ashened-field-zone-option.test.ts",
+      kind: "leadingBooleanLiteralOptions",
       required: [
         "restores a leading-false SelectOption branch that places Obsidim in the opponent Field Zone",
         'controller: 1',
@@ -87,6 +106,7 @@ function leadingBooleanSelectOptionFixtures(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-magikey-duo-defense-ritual.test.ts",
+      kind: "leadingBooleanTableUnpack",
       required: [
         "restores a target-returning Ritual.Operation branch with sumpos face-up Defense",
         'position: "faceUpDefense"',
@@ -94,13 +114,22 @@ function leadingBooleanSelectOptionFixtures(): Array<{ file: string; required: s
         'expect(restored.host.messages).not.toContain("magikey duo responder resolved")',
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: SelectOptionKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
 }
 
-function tableUnpackedSelectOptionFixtures(): Array<{ file: string; required: string[] }> {
+function tableUnpackedSelectOptionFixtures(): Array<{
+  file: string;
+  kind: SelectOptionKind;
+  required: string[];
+}> {
   return [
     {
       file: "test/lua-real-script-pyro-clock-select-option-table-unpack.test.ts",
+      kind: "tableUnpackedOptions",
       required: [
         "restores table-unpacked SelectOption into the selected turn-count effect operation",
         'api: "SelectOption"',
@@ -111,4 +140,18 @@ function tableUnpackedSelectOptionFixtures(): Array<{ file: string; required: st
       ],
     },
   ];
+}
+
+function countSelectOptionKinds(fixtures: Array<{ kind: SelectOptionKind }>): Record<SelectOptionKind, number> {
+  return fixtures.reduce<Record<SelectOptionKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      leadingBooleanLiteralOptions: 0,
+      leadingBooleanTableUnpack: 0,
+      tableUnpackedOptions: 0,
+    },
+  );
 }
