@@ -117,7 +117,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     expect(restoredTriggerWindow.session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "monsterZone",
-        "activationSequence": 1,
+        "activationSequence": 0,
         "chainIndex": 1,
         "effectId": "lua-7-1100",
         "eventCardUid": "p0-deck-89111398-0",
@@ -127,7 +127,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
           "faceUp": true,
           "location": "monsterZone",
           "position": "faceUpAttack",
-          "sequence": 1,
+          "sequence": 0,
         },
         "eventName": "normalSummoned",
         "eventPreviousState": {

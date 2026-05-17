@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 20;
+const spiritFixtureCount = 21;
 const spiritKindCounts = {
   columnSendPendulum: 3,
   delayedShuffleDraw: 1,
   effectExtraNormalSummon: 2,
   graveToDeckTrigger: 1,
+  groupMonsterDestroy: 1,
   normalSummonSearch: 2,
   procedureReturn: 2,
   returnToHandTrigger: 4,
@@ -53,6 +54,7 @@ type SpiritKind =
   | "delayedShuffleDraw"
   | "effectExtraNormalSummon"
   | "graveToDeckTrigger"
+  | "groupMonsterDestroy"
   | "normalSummonSearch"
   | "procedureReturn"
   | "returnToHandTrigger"
@@ -69,6 +71,7 @@ function countSpiritKinds(fixtures: Array<{ kind: SpiritKind }>): Record<SpiritK
       delayedShuffleDraw: 0,
       effectExtraNormalSummon: 0,
       graveToDeckTrigger: 0,
+      groupMonsterDestroy: 0,
       normalSummonSearch: 0,
       procedureReturn: 0,
       returnToHandTrigger: 0,
@@ -372,6 +375,23 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; kind: SpiritKind;
         'location: "graveyard"',
         'location: "spellTrapZone"',
         'host.messages).not.toContain("fenghuang responder resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-dark-dust-spirit-destroy.test.ts",
+      kind: "groupMonsterDestroy",
+      required: [
+        'action.type === "tributeSummon"',
+        'action.type === "activateTrigger"',
+        'action.type === "passChain"',
+        'eventName: "normalSummoned"',
+        'eventName === "destroyed"',
+        "assertDestroyOperationInfo",
+        "category: 1",
+        "targetUids",
+        'location: "graveyard"',
+        'position: "faceDownDefense"',
+        'host.messages).not.toContain("dark dust responder resolved")',
       ],
     },
     {
