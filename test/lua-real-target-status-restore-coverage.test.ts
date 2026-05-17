@@ -5,6 +5,14 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const targetStatusFixtureCount = 4;
+const targetStatusKindCounts = {
+  notCodeStatus: 1,
+  notStatus: 1,
+  status: 1,
+  summonLocationStatus: 1,
+} satisfies Record<TargetStatusKind, number>;
+
+type TargetStatusKind = "notCodeStatus" | "notStatus" | "status" | "summonLocationStatus";
 
 describe("Lua real target-status restore coverage", () => {
   it("requires target-status descriptor fixtures to assert clean Lua registry restore and restored predicate truth tables", () => {
@@ -32,12 +40,21 @@ describe("Lua real target-status restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps target-status fixture kinds explicit", () => {
+    expect(countTargetStatusKinds(targetStatusFixtureFiles())).toEqual(targetStatusKindCounts);
+  });
 });
 
-function targetStatusFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function targetStatusFixtureFiles(): Array<{
+  file: string;
+  kind: TargetStatusKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-target-status-not.test.ts",
+      kind: "notStatus",
       required: [
         "target:not-status:",
         "summonType = \"link\"",
@@ -46,6 +63,7 @@ function targetStatusFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-target-status-summon-location.test.ts",
+      kind: "summonLocationStatus",
       required: [
         "target:status-summon-location:",
         "previousLocation = \"extraDeck\"",
@@ -54,6 +72,7 @@ function targetStatusFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-target-status.test.ts",
+      kind: "status",
       required: [
         "target:status:",
         "summonType = \"link\"",
@@ -62,11 +81,31 @@ function targetStatusFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-true-sun-god-special-summon-attack-lock.test.ts",
+      kind: "notCodeStatus",
       required: [
         "target:not-code-status:10000010:1073741824",
         "hasAttack(actions, specialAttacker.uid, target.uid)).toBe(false)",
         "customStatusMask = 0x40000000",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: TargetStatusKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countTargetStatusKinds(fixtures: Array<{ kind: TargetStatusKind }>): Record<TargetStatusKind, number> {
+  return fixtures.reduce<Record<TargetStatusKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      notCodeStatus: 0,
+      notStatus: 0,
+      status: 0,
+      summonLocationStatus: 0,
+    },
+  );
 }
