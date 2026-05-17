@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 27;
+const spiritFixtureCount = 28;
 const spiritKindCounts = {
   columnSendPendulum: 3,
   costReturnBounce: 1,
   delayedShuffleDraw: 1,
   effectExtraNormalSummon: 2,
+  graveyardDiscardReturn: 1,
   grantedTypeReturn: 1,
   graveToDeckTrigger: 1,
   groupMonsterDestroy: 1,
@@ -60,6 +61,7 @@ type SpiritKind =
   | "costReturnBounce"
   | "delayedShuffleDraw"
   | "effectExtraNormalSummon"
+  | "graveyardDiscardReturn"
   | "grantedTypeReturn"
   | "graveToDeckTrigger"
   | "groupMonsterDestroy"
@@ -83,6 +85,7 @@ function countSpiritKinds(fixtures: Array<{ kind: SpiritKind }>): Record<SpiritK
       costReturnBounce: 0,
       delayedShuffleDraw: 0,
       effectExtraNormalSummon: 0,
+      graveyardDiscardReturn: 0,
       grantedTypeReturn: 0,
       graveToDeckTrigger: 0,
       groupMonsterDestroy: 0,
@@ -507,6 +510,22 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; kind: SpiritKind;
         "eventReasonCardUid: target!.uid",
         'location: "hand"',
         'host.messages).not.toContain("hebo responder resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-izanami-spirit-grave-return.test.ts",
+      kind: "graveyardDiscardReturn",
+      required: [
+        'action.type === "normalSummon"',
+        'action.type === "activateTrigger"',
+        'action.type === "passChain"',
+        'eventName: "discarded"',
+        'eventName: "sentToHand"',
+        'eventName: "confirmed"',
+        'eventName: "sentToHandConfirmed"',
+        "confirmed 1:",
+        "category: 8",
+        'host.messages).not.toContain("izanami responder resolved")',
       ],
     },
     {
