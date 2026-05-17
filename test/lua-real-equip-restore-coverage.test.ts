@@ -10,11 +10,39 @@ const equipProbeFixtureCount = 8;
 const equipOperationInfoFixtureCount = 9;
 const equipCleanupFixtureCount = 7;
 const equipInventoryFixtureCount = 15;
+const equipKindCounts = {
+  equipControl: 1,
+  equipCost: 1,
+  equipDamageLock: 1,
+  equipGeminiStatus: 2,
+  equipPierce: 2,
+  equipProcedure: 2,
+  equipReturn: 3,
+  equipReviveDestroy: 1,
+  equipSelfDestroy: 1,
+  equipStatLock: 1,
+} satisfies Record<EquipKind, number>;
+
+type EquipKind =
+  | "equipControl"
+  | "equipCost"
+  | "equipDamageLock"
+  | "equipGeminiStatus"
+  | "equipPierce"
+  | "equipProcedure"
+  | "equipReturn"
+  | "equipReviveDestroy"
+  | "equipSelfDestroy"
+  | "equipStatLock";
 
 describe("Lua real equip restore coverage", () => {
   it("keeps the combined equip restore fixture inventory explicit", () => {
     expect(combinedRealScriptEquipFixtureFiles()).toHaveLength(equipInventoryFixtureCount);
     expect(combinedRealScriptEquipFixtureFiles()).toEqual(realScriptEquipInventoryFiles());
+  });
+
+  it("keeps equip fixture kinds explicit", () => {
+    expect(countEquipKinds(realScriptEquipInventoryFixtures())).toEqual(equipKindCounts);
   });
 
   it("requires representative equip fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -140,25 +168,7 @@ function combinedRealScriptEquipFixtureFiles(): string[] {
 }
 
 function realScriptEquipInventoryFiles(): string[] {
-  return [
-    "lua-real-script-equip-procedure-actions-part2.test.ts",
-    "lua-real-script-equip-procedure-actions.test.ts",
-    "lua-real-script-equip-return-actions-part2.test.ts",
-    "lua-real-script-equip-return-actions.test.ts",
-    "lua-real-script-equip-stat-lock-actions.test.ts",
-    "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
-    "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
-    "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
-    "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
-    "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
-    "lua-real-script-premature-burial-revive-destroy.test.ts",
-    "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
-    "lua-real-script-snatch-steal-equip-control.test.ts",
-    "lua-real-script-supervise-gemini-equip-revive.test.ts",
-    "lua-real-script-train-connection-equip-cost.test.ts",
-  ]
-    .map((file) => path.join("test", file))
-    .sort();
+  return realScriptEquipInventoryFixtures().map(({ file }) => file);
 }
 
 function realScriptEquipFixtureFiles(): string[] {
@@ -247,4 +257,92 @@ function realScriptEquipContinuationFixtureFiles(): string[] {
   ]
     .map((file) => path.join("test", file))
     .sort();
+}
+
+function realScriptEquipInventoryFixtures(): Array<{ file: string; kind: EquipKind }> {
+  return ([
+    {
+      file: "lua-real-script-equip-procedure-actions-part2.test.ts",
+      kind: "equipProcedure",
+    },
+    {
+      file: "lua-real-script-equip-procedure-actions.test.ts",
+      kind: "equipProcedure",
+    },
+    {
+      file: "lua-real-script-equip-return-actions-part2.test.ts",
+      kind: "equipReturn",
+    },
+    {
+      file: "lua-real-script-equip-return-actions.test.ts",
+      kind: "equipReturn",
+    },
+    {
+      file: "lua-real-script-equip-stat-lock-actions.test.ts",
+      kind: "equipStatLock",
+    },
+    {
+      file: "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
+      kind: "equipPierce",
+    },
+    {
+      file: "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
+      kind: "equipGeminiStatus",
+    },
+    {
+      file: "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
+      kind: "equipSelfDestroy",
+    },
+    {
+      file: "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
+      kind: "equipDamageLock",
+    },
+    {
+      file: "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
+      kind: "equipReturn",
+    },
+    {
+      file: "lua-real-script-premature-burial-revive-destroy.test.ts",
+      kind: "equipReviveDestroy",
+    },
+    {
+      file: "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
+      kind: "equipPierce",
+    },
+    {
+      file: "lua-real-script-snatch-steal-equip-control.test.ts",
+      kind: "equipControl",
+    },
+    {
+      file: "lua-real-script-supervise-gemini-equip-revive.test.ts",
+      kind: "equipGeminiStatus",
+    },
+    {
+      file: "lua-real-script-train-connection-equip-cost.test.ts",
+      kind: "equipCost",
+    },
+  ] satisfies Array<{ file: string; kind: EquipKind }>)
+    .map(({ file, kind }) => ({ file: path.join("test", file), kind }))
+    .sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countEquipKinds(fixtures: Array<{ kind: EquipKind }>): Record<EquipKind, number> {
+  return fixtures.reduce<Record<EquipKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      equipControl: 0,
+      equipCost: 0,
+      equipDamageLock: 0,
+      equipGeminiStatus: 0,
+      equipPierce: 0,
+      equipProcedure: 0,
+      equipReturn: 0,
+      equipReviveDestroy: 0,
+      equipSelfDestroy: 0,
+      equipStatLock: 0,
+    },
+  );
 }
