@@ -75,6 +75,7 @@ const promptHelperKindCounts: Record<PromptHelperKind, number> = {
   selectEffectModeChoice: 4,
   selectEffectYesNoReplacement: 1,
   selectFieldZoneLoop: 1,
+  selectFieldZoneMirrorSummon: 1,
   selectFieldZoneTarget: 1,
   selectOptionFieldZone: 1,
   selectOptionRitualBranch: 2,
@@ -114,7 +115,7 @@ describe("Lua real prompt helper restore coverage", () => {
   });
 
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(21);
+    expect(representativePromptHelperFixtures()).toHaveLength(22);
   });
 
   it("keeps every officially-used prompt API represented by restore fixtures", () => {
@@ -181,6 +182,7 @@ type PromptHelperKind =
   | "selectEffectModeChoice"
   | "selectEffectYesNoReplacement"
   | "selectFieldZoneLoop"
+  | "selectFieldZoneMirrorSummon"
   | "selectFieldZoneTarget"
   | "selectOptionFieldZone"
   | "selectOptionRitualBranch"
@@ -400,6 +402,20 @@ function representativePromptHelperFixtures(): Array<{ file: string; kind: Promp
         "options: [2 << 16, 4 << 16, 8 << 16, 16 << 16]",
         "effectLabels: [",
         "disabledFieldEffects.map((effect) => effect.value)).toEqual([1 << 16, 2 << 16])",
+      ],
+    },
+    {
+      file: "test/lua-real-script-small-scuffle-mirrored-zone-summon.test.ts",
+      kind: "selectFieldZoneMirrorSummon",
+      apis: ["SelectFieldZone", "SelectYesNo"],
+      required: [
+        "restores SelectFieldZone target param into mirrored Special Summon zones",
+        'api: "SelectFieldZone"',
+        'api: "SelectYesNo"',
+        "options: [1, 2, 4, 8, 16]",
+        '"targetParam": 1',
+        "sequence: 0, position: \"faceUpAttack\"",
+        "sequence: 4, position: \"faceUpAttack\"",
       ],
     },
     {
