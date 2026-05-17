@@ -394,9 +394,13 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
       families: ["ritual"],
       required: [
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x1 }]',
+        "expect(restored.session.state.chain[0]?.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x1 }])",
         'summonType: "ritual"',
         "summonMaterialUids: [normalMaterial!.uid]",
         "reason: duelReason.material | duelReason.ritual",
+        'eventName === "specialSummoned"',
+        'eventName === "sentToGraveyard"',
+        "event.eventCardUid === normalMaterial!.uid",
         "ownerType: \"card\", ownerId: ritualTarget!.uid",
         "reason: duelReason.effect",
       ],
