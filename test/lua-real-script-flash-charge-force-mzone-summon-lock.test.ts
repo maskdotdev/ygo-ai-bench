@@ -94,6 +94,82 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fl
     expect(probe.ok, probe.error).toBe(true);
     expect(restored.host.messages).toContain("flash charge force mzone 8/0");
   });
+
+  it("restores EFFECT_FORCE_MZONE after Link materials leave the field", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const flashCode = "95372220";
+    const linkCode = "95372225";
+    const materialCode = "95372226";
+    const blockerCodes = ["95372227", "95372228", "95372229"];
+    const flashCard = workspace.readDatabaseCards("cards.cdb").find((card) => card.code === flashCode);
+    expect(flashCard).toBeDefined();
+    const cards: DuelCardData[] = [
+      { ...flashCard!, linkMarkers: 0x20 },
+      { code: linkCode, name: "Flash Charge Link Probe", kind: "extra", typeFlags: typeMonster | typeEffect | typeLink, level: 1, attack: 1000, defense: 0, linkMaterials: [materialCode] },
+      { code: materialCode, name: "Flash Charge Link Material", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1000, defense: 1000 },
+      ...blockerCodes.map((code, index) => ({
+        code,
+        name: `Flash Charge Link Blocker ${index + 1}`,
+        kind: "monster" as const,
+        typeFlags: typeMonster | typeEffect,
+        race: raceDragon,
+        level: 4,
+        attack: 1000,
+        defense: 1000,
+      })),
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 9538, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [materialCode, ...blockerCodes], extra: [flashCode, linkCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const flash = requireCard(session, flashCode);
+    const link = requireCard(session, linkCode);
+    const material = requireCard(session, materialCode);
+    const blockers = blockerCodes.map((code) => requireCard(session, code));
+    moveDuelCard(session.state, flash.uid, "monsterZone", 0);
+    flash.sequence = 2;
+    flash.faceUp = true;
+    flash.position = "faceUpAttack";
+    moveDuelCard(session.state, material.uid, "monsterZone", 0);
+    material.sequence = 3;
+    material.faceUp = true;
+    material.position = "faceUpAttack";
+    for (const [index, blocker] of blockers.entries()) {
+      moveDuelCard(session.state, blocker.uid, "monsterZone", 0);
+      blocker.sequence = [0, 1, 4][index]!;
+      blocker.faceUp = true;
+      blocker.position = "faceUpAttack";
+    }
+    session.state.phase = "main1";
+    session.state.turnPlayer = 0;
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(flashCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const forceZoneEffect = session.state.effects.find((effect) => effect.code === 265 && effect.sourceUid === flash.uid);
+    expect(forceZoneEffect).toMatchObject({ code: 265, sourceUid: flash.uid });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restored, 0);
+
+    const restoredActions = getLuaRestoreLegalActions(restored, 0);
+    expect(restoredActions.some((action) => action.type === "linkSummon" && action.uid === link.uid)).toBe(false);
+
+    const probe = restored.host.loadScript(
+      `
+      local g=Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode,${materialCode}),0,LOCATION_MZONE,0,nil)
+      Debug.Message("flash charge force mzone link material " .. tostring(Duel.GetMZoneCount(0,g)))
+      `,
+      "flash-charge-force-mzone-link-material-probe.lua",
+    );
+    expect(probe.ok, probe.error).toBe(true);
+    expect(restored.host.messages).toContain("flash charge force mzone link material 0");
+  });
 });
 
 function requireCard(session: DuelSession, code: string) {

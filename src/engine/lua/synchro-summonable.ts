@@ -1,7 +1,9 @@
-import { hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
+import { moveDuelCard } from "#duel/card-state.js";
 import { isMaterialUsePrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
+import { availableForcedMonsterZoneCount } from "#duel/forced-monster-zones.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 type SynchroMaterialCodes = { tuner: string; nonTuners: string[] };
@@ -19,14 +21,14 @@ export function findLuaSynchroMaterialUidSet(session: DuelSession, card: DuelCar
   for (let count = Math.max(2, supplied.size); count <= materialPool.length; count += 1) {
     for (const materials of cardCombinations(materialPool, count)) {
       if ([...supplied].some((uid) => !materials.some((material) => material.uid === uid))) continue;
-      if ((explicitMaterials ? synchroMaterialRolesMatch(session, materials, explicitMaterials) : canGenericSynchroMaterialsMatch(session, card, materials)) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return materials.map((material) => material.uid);
+      if ((explicitMaterials ? synchroMaterialRolesMatch(session, materials, explicitMaterials) : canGenericSynchroMaterialsMatch(session, card, materials)) && hasSummonZoneAfterMaterials(session, card.controller, materials, card)) return materials.map((material) => material.uid);
     }
   }
   return undefined;
 }
 
-function hasSummonZoneAfterMaterials(session: DuelSession, player: PlayerId, materials: DuelCardInstance[]): boolean {
-  return hasZoneSpace(session.state, player, "monsterZone") || materials.some((material) => material.controller === player && material.location === "monsterZone");
+function hasSummonZoneAfterMaterials(session: DuelSession, player: PlayerId, materials: DuelCardInstance[], card: DuelCardInstance): boolean {
+  return availableForcedMonsterZoneCount(session.state, player, materials.map((material) => material.uid), 0, duelReason.summon | duelReason.specialSummon | duelReason.synchro, card) > 0;
 }
 
 function canBeSynchroMaterial(session: DuelSession, card: DuelCardInstance, target: DuelCardInstance): boolean {

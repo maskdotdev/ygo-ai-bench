@@ -1,7 +1,9 @@
-import { hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
+import { moveDuelCard } from "#duel/card-state.js";
 import { isMaterialUsePrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttribute, currentLevel, currentRace, currentRank } from "#duel/card-stats.js";
+import { availableForcedMonsterZoneCount } from "#duel/forced-monster-zones.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 export function canLuaXyzSummonCard(session: DuelSession, card: DuelCardInstance, suppliedUids: string[]): boolean {
@@ -18,7 +20,7 @@ export function findLuaXyzMaterialUidSet(session: DuelSession, card: DuelCardIns
     if (supplied.size > count) return undefined;
     for (const materials of cardCombinations(materialPool, count)) {
       if ([...supplied].some((uid) => !materials.some((material) => material.uid === uid))) continue;
-      if (materialCodesMatch(session, materials, card.data.xyzMaterials) && hasSummonZoneAfterMaterials(session, player, materials)) return materials.map((material) => material.uid);
+      if (materialCodesMatch(session, materials, card.data.xyzMaterials) && hasSummonZoneAfterMaterials(session, player, materials, card)) return materials.map((material) => material.uid);
     }
     return undefined;
   }
@@ -27,14 +29,14 @@ export function findLuaXyzMaterialUidSet(session: DuelSession, card: DuelCardIns
   for (let count = Math.max(xyzMaterialCount(card), supplied.size); count <= maxCount; count += 1) {
     for (const materials of cardCombinations(materialPool, count)) {
       if ([...supplied].some((uid) => !materials.some((material) => material.uid === uid))) continue;
-      if (canGenericXyzMaterialsMatch(session, card, materials) && hasSummonZoneAfterMaterials(session, player, materials)) return materials.map((material) => material.uid);
+      if (canGenericXyzMaterialsMatch(session, card, materials) && hasSummonZoneAfterMaterials(session, player, materials, card)) return materials.map((material) => material.uid);
     }
   }
   return undefined;
 }
 
-function hasSummonZoneAfterMaterials(session: DuelSession, player: PlayerId, materials: DuelCardInstance[]): boolean {
-  return hasZoneSpace(session.state, player, "monsterZone") || materials.some((material) => material.controller === player && material.location === "monsterZone");
+function hasSummonZoneAfterMaterials(session: DuelSession, player: PlayerId, materials: DuelCardInstance[], card: DuelCardInstance): boolean {
+  return availableForcedMonsterZoneCount(session.state, player, materials.map((material) => material.uid), 0, duelReason.summon | duelReason.specialSummon | duelReason.xyz, card) > 0;
 }
 
 function canBeXyzMaterial(session: DuelSession, card: DuelCardInstance, target: DuelCardInstance): boolean {

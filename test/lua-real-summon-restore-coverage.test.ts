@@ -583,8 +583,11 @@ function realScriptForceMonsterZoneSummonLockFixtureSnippets(): Array<{
         "code: 265",
         'action.type === "normalSummon"',
         'action.type === "setMonster"',
+        'action.type === "linkSummon"',
         "Duel.GetLocationCount(0,LOCATION_MZONE)",
+        "Duel.GetMZoneCount(0,g)",
         "flash charge force mzone 8/0",
+        "flash charge force mzone link material 0",
       ],
     },
   ];

@@ -1,8 +1,10 @@
 import fengari from "fengari";
-import { hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
+import { moveDuelCard } from "#duel/card-state.js";
 import { isMaterialUsePrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { currentLinkMaterialCodes, currentLinkMaterialMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttribute, currentLevel, currentLink, currentRace } from "#duel/card-stats.js";
+import { availableForcedMonsterZoneCount } from "#duel/forced-monster-zones.js";
+import { duelReason } from "#duel/reasons.js";
 import { isSummonTypeMaskMatch, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
 import { readCardUid, readGroupUids } from "#lua/api-utils.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
@@ -32,14 +34,14 @@ export function findLuaLinkMaterialUidSet(session: DuelSession, card: DuelCardIn
   for (let count = minCount; count <= maxCount; count += 1) {
     for (const materials of cardCombinations(materialPool, count)) {
       if ([...required].some((uid) => !materials.some((material) => material.uid === uid))) continue;
-      if (linkMaterialCodesMatch(session, materials, card.data.linkMaterials) && canLinkMaterialsMatchRating(session, materials, targetRating) && hasSummonZoneAfterMaterials(session, card.controller, materials)) return materials.map((material) => material.uid);
+      if (linkMaterialCodesMatch(session, materials, card.data.linkMaterials) && canLinkMaterialsMatchRating(session, materials, targetRating) && hasSummonZoneAfterMaterials(session, card.controller, materials, card)) return materials.map((material) => material.uid);
     }
   }
   return undefined;
 }
 
-function hasSummonZoneAfterMaterials(session: DuelSession, player: PlayerId, materials: DuelCardInstance[]): boolean {
-  return hasZoneSpace(session.state, player, "monsterZone") || materials.some((material) => material.controller === player && material.location === "monsterZone");
+function hasSummonZoneAfterMaterials(session: DuelSession, player: PlayerId, materials: DuelCardInstance[], card: DuelCardInstance): boolean {
+  return availableForcedMonsterZoneCount(session.state, player, materials.map((material) => material.uid), 0, duelReason.summon | duelReason.specialSummon | duelReason.link, card) > 0;
 }
 
 export function readLinkMaterialArguments(L: unknown): { requiredUids: string[]; materialGroupUids: string[]; min?: number; max?: number } {
