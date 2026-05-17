@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
@@ -36,6 +37,27 @@ describe("Lua deck probe CLI", () => {
       expect(result.status, args.join(" ")).toBe(1);
       expect(result.stderr).toContain("Usage: bun run probe:lua-deck");
     }
+  });
+
+  it("fails strict metadata probes when Project Ignis cards.cdb is unavailable", () => {
+    fs.mkdirSync(os.tmpdir(), { recursive: true });
+    const upstream = fs.mkdtempSync(path.join(os.tmpdir(), "lua-deck-probe-no-cdb-"));
+    const result = spawnSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "dark-magical-blast-master-duel-day1.ydk",
+        "--upstream",
+        upstream,
+        "--require-card-database",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("Metadata source: placeholder");
+    expect(result.stderr).toContain("Project Ignis card database is required but cards.cdb was not loaded");
   });
 });
 

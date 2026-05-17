@@ -11,6 +11,7 @@ interface ProbeArgs {
   ydkPath: string;
   upstreamRoot: string;
   failOnErrors: boolean;
+  requireCardDatabase: boolean;
   minUpstreamScripts: number | undefined;
   minActions: number | undefined;
   minActivateEffects: number | undefined;
@@ -67,6 +68,7 @@ printReport({
   registeredEffectCount: session.state.effects.length,
   actions,
   failOnErrors: args.failOnErrors,
+  requireCardDatabase: args.requireCardDatabase,
   minUpstreamScripts: args.minUpstreamScripts,
   minActions: args.minActions,
   minActivateEffects: args.minActivateEffects,
@@ -86,6 +88,7 @@ function readArgs(argv: string[]): ProbeArgs {
   const knownFlags = new Set([
     "--upstream",
     "--fail-on-errors",
+    "--require-card-database",
     "--min-upstream-scripts",
     "--min-actions",
     "--min-activate-effects",
@@ -130,6 +133,7 @@ function readArgs(argv: string[]): ProbeArgs {
   const rawExpectedMissingScriptCodes = readRepeatedValues(argv, "--expected-missing-script-code");
   const expectedMissingScriptCodes = readCodeValues(rawExpectedMissingScriptCodes);
   const failOnErrors = argv.includes("--fail-on-errors");
+  const requireCardDatabase = argv.includes("--require-card-database");
   const positional = argv.filter((value, index) => {
     if (upstreamFlag >= 0 && (index === upstreamFlag || index === upstreamFlag + 1)) return false;
     if (minUpstreamScriptsFlag >= 0 && (index === minUpstreamScriptsFlag || index === minUpstreamScriptsFlag + 1)) return false;
@@ -152,10 +156,10 @@ function readArgs(argv: string[]): ProbeArgs {
   const invalidExpectedLocalFallbackCode = malformedCodeValues(rawExpectedLocalFallbackScriptCodes, expectedLocalFallbackScriptCodes);
   const invalidExpectedMissingCode = malformedCodeValues(rawExpectedMissingScriptCodes, expectedMissingScriptCodes);
   if (unknownFlag || !ydkPath || !upstreamRoot || invalidMinimum || invalidExpectedLocalFallbackCode || invalidExpectedMissingCode) {
-    console.error("Usage: bun run probe:lua-deck -- <deck.ydk> [--upstream .upstream/ignis] [--fail-on-errors] [--min-upstream-scripts <count>] [--min-actions <count>] [--min-activate-effects <count>] [--min-initial-effects <count>] [--min-registered-effects <count>] [--max-local-overrides <count>] [--max-local-fallbacks <count>] [--max-local-alias-fallbacks <count>] [--max-local-provisional-fallbacks <count>] [--max-local-other-fallbacks <count>] [--expected-local-fallback-script-code <code>] [--max-expected-missing-scripts <count>] [--expected-missing-script-code <code>]");
+    console.error("Usage: bun run probe:lua-deck -- <deck.ydk> [--upstream .upstream/ignis] [--fail-on-errors] [--require-card-database] [--min-upstream-scripts <count>] [--min-actions <count>] [--min-activate-effects <count>] [--min-initial-effects <count>] [--min-registered-effects <count>] [--max-local-overrides <count>] [--max-local-fallbacks <count>] [--max-local-alias-fallbacks <count>] [--max-local-provisional-fallbacks <count>] [--max-local-other-fallbacks <count>] [--expected-local-fallback-script-code <code>] [--max-expected-missing-scripts <count>] [--expected-missing-script-code <code>]");
     process.exit(1);
   }
-  return { ydkPath: path.resolve(ydkPath), upstreamRoot: path.resolve(upstreamRoot), failOnErrors, minUpstreamScripts, minActions, minActivateEffects, minInitialEffects, minRegisteredEffects, maxLocalOverrides, maxLocalFallbacks, maxLocalAliasFallbacks, maxLocalProvisionalFallbacks, maxLocalOtherFallbacks, maxExpectedMissingScripts, expectedLocalFallbackScriptCodes, expectedMissingScriptCodes };
+  return { ydkPath: path.resolve(ydkPath), upstreamRoot: path.resolve(upstreamRoot), failOnErrors, requireCardDatabase, minUpstreamScripts, minActions, minActivateEffects, minInitialEffects, minRegisteredEffects, maxLocalOverrides, maxLocalFallbacks, maxLocalAliasFallbacks, maxLocalProvisionalFallbacks, maxLocalOtherFallbacks, maxExpectedMissingScripts, expectedLocalFallbackScriptCodes, expectedMissingScriptCodes };
 }
 
 function readRepeatedValues(argv: string[], option: string): string[] {
@@ -250,6 +254,7 @@ function printReport(report: {
   registeredEffectCount: number;
   actions: DuelAction[];
   failOnErrors: boolean;
+  requireCardDatabase: boolean;
   minUpstreamScripts: number | undefined;
   minActions: number | undefined;
   minActivateEffects: number | undefined;
@@ -336,6 +341,9 @@ function printReport(report: {
   for (const action of report.actions) console.log(`  ${action.type}: ${action.label}`);
 
   const failures: string[] = [];
+  if (report.requireCardDatabase && report.metadataSource !== "cards.cdb") {
+    failures.push("Project Ignis card database is required but cards.cdb was not loaded");
+  }
   if (report.failOnErrors) {
     if (missing.length) failures.push(`${missing.length} scripts missing`);
     if (localFallbackStubs.length) failures.push(`${localFallbackStubs.length} local fallback stubs`);

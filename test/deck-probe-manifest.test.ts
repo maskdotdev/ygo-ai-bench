@@ -28,6 +28,7 @@ describe("Lua deck probe manifest", () => {
     const looseProbeCommands = packageProbeCommands.filter(
       (command) =>
         !command.includes("--fail-on-errors") ||
+        !command.includes("--require-card-database") ||
         !command.includes("--max-local-overrides 0") ||
         !/--max-local-fallbacks \d+/.test(command) ||
         !/--max-expected-missing-scripts \d+/.test(command),
