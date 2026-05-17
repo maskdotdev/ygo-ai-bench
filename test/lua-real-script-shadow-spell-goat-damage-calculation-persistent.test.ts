@@ -91,6 +91,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script GO
     const restoredDamageCalculation = restoreDuelWithLuaScripts(serializeDuel(restoredSetup.session), source, reader);
     expectCleanRestore(restoredDamageCalculation);
     expect(restoredDamageCalculation.session.state.battleWindow?.kind).toBe("duringDamageCalculation");
+    expect(restoredDamageCalculation.session.state.eventHistory).toContainEqual(expect.objectContaining({
+      eventName: "damageCalculating",
+      eventCode: 1135,
+    }));
     expect(getLuaRestoreLegalActionGroups(restoredDamageCalculation, 0)).toEqual(getGroupedDuelLegalActions(restoredDamageCalculation.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredDamageCalculation, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restoredDamageCalculation, 0),

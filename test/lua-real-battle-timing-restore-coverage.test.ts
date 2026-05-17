@@ -5,10 +5,8 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const battleTimingFixtureCount = 21;
-const battleTimingEventCodeFixtureCount = 20;
-const battleTimingEventCodeExceptions = [
-  "test/lua-real-script-shadow-spell-goat-damage-calculation-persistent.test.ts",
-];
+const battleTimingEventCodeFixtureCount = 21;
+const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 10,
   beforeDamageCalculation: 3,
