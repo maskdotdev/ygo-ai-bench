@@ -107,6 +107,88 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dy
       reason: duelReason.effect | duelReason.material | duelReason.fusion,
     });
     expect(restored.session.state.cards.find((card) => card.uid === decoyMaterial!.uid)).toMatchObject({ location: "hand", controller: 0 });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === fusion!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-extraDeck-39396766-0",
+          "eventCode": 1102,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "specialSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "extraDeck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 264208,
+          "eventReasonCardUid": "p0-deck-39396763-2",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
+    const materialGraveEvents = restored.session.state.eventHistory.filter((event) =>
+      event.eventName === "sentToGraveyard"
+      && (event.eventCardUid === dynaBase!.uid || event.eventCardUid === material!.uid)
+    );
+    expect(materialGraveEvents.map((event) => event.eventCardUid).sort()).toEqual([dynaBase!.uid, material!.uid].sort());
+    expect(materialGraveEvents).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-39396763-2",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 262216,
+          "eventReasonCardUid": "p0-deck-39396763-2",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-39396764-0",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 262216,
+          "eventReasonCardUid": "p0-deck-39396763-2",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     expect(restored.host.messages).not.toContain("dyna responder resolved");
   });
 
