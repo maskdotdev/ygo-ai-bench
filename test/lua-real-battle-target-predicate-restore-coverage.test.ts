@@ -13,6 +13,14 @@ const battleTargetPredicateKindCounts = {
   statProtectedAllyLock: 1,
   syntheticPredicateDescriptors: 1,
 } satisfies Record<BattleTargetPredicateKind, number>;
+const battleTargetPredicateSemanticVariantCounts = {
+  battleTargetSyntheticDescriptorPredicates: 1,
+  commandKnightAuxImval1TargetLock: 1,
+  decoyroidNonMatchingTargetSelectionLock: 1,
+  hunterOwlWindAllyTargetStatLock: 1,
+  machinaAndBoneTowerAuxImval2Protection: 1,
+  solarFlarePyroEndDamageTargetLock: 1,
+} satisfies Record<BattleTargetPredicateSemanticVariant, number>;
 
 type BattleTargetPredicateKind =
   | "auxImval1Lock"
@@ -21,6 +29,13 @@ type BattleTargetPredicateKind =
   | "nonMatchingSelectionLock"
   | "statProtectedAllyLock"
   | "syntheticPredicateDescriptors";
+type BattleTargetPredicateSemanticVariant =
+  | "battleTargetSyntheticDescriptorPredicates"
+  | "commandKnightAuxImval1TargetLock"
+  | "decoyroidNonMatchingTargetSelectionLock"
+  | "hunterOwlWindAllyTargetStatLock"
+  | "machinaAndBoneTowerAuxImval2Protection"
+  | "solarFlarePyroEndDamageTargetLock";
 
 describe("Lua real battle target predicate restore coverage", () => {
   it("requires battle-target predicate fixtures to assert clean Lua registry restore and restored predicates", () => {
@@ -48,6 +63,19 @@ describe("Lua real battle target predicate restore coverage", () => {
 
   it("keeps battle-target predicate fixture kinds explicit", () => {
     expect(countBattleTargetPredicateKinds(battleTargetPredicateFixtureFiles())).toEqual(battleTargetPredicateKindCounts);
+  });
+
+  it("keeps named battle-target predicate semantic variants explicit", () => {
+    expect(countBattleTargetPredicateSemanticVariants(battleTargetPredicateSemanticVariants())).toEqual(battleTargetPredicateSemanticVariantCounts);
+
+    const weak = battleTargetPredicateSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -144,6 +172,98 @@ function countBattleTargetPredicateKinds(
       nonMatchingSelectionLock: 0,
       statProtectedAllyLock: 0,
       syntheticPredicateDescriptors: 0,
+    },
+  );
+}
+
+function battleTargetPredicateSemanticVariants(): Array<{
+  file: string;
+  kind: BattleTargetPredicateSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-battle-target-predicates.test.ts",
+      kind: "battleTargetSyntheticDescriptorPredicates",
+      required: [
+        "restores battle-target type predicates",
+        "restores handler and battle-target field predicates",
+        "target:source-battle-target-type:64",
+        "target:source-or-battle-target",
+      ],
+    },
+    {
+      file: "test/lua-real-script-battle-protection.test.ts",
+      kind: "machinaAndBoneTowerAuxImval2Protection",
+      required: [
+        "restores Machina Sniper and removes other Machina monsters from battle targets",
+        "restores Soul-Absorbing Bone Tower and keeps aux.imval2 battle targeting scoped to the attacker",
+        "expectAttackTarget(restored.session, attacker!.uid, boneTower!.uid, false)",
+        "expectAttackTarget(restored.session, attacker!.uid, zombie!.uid, true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-command-knight-battle-target-lock.test.ts",
+      kind: "commandKnightAuxImval1TargetLock",
+      required: [
+        'const commandKnightCode = "10375182"',
+        "restores its aux.imval1 battle target lock while another controller monster is present",
+        "code === 70",
+        "hasAttack(actions, attacker.uid, commandKnight.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-decoyroid-battle-target-selection-lock.test.ts",
+      kind: "decoyroidNonMatchingTargetSelectionLock",
+      required: [
+        'const decoyroidCode = "25034083"',
+        "restores its non-Decoyroid battle target selection lock",
+        "code === 332",
+        "hasAttack(actions, attacker.uid, protectedTarget.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-hunter-owl-wind-target-stat.test.ts",
+      kind: "hunterOwlWindAllyTargetStatLock",
+      required: [
+        'const hunterOwlCode = "51962254"',
+        "restores its WIND ally battle-target lock and dynamic ATK update",
+        "hunter owl target/stat protected",
+        "hasAttack(actions, attacker.uid, hunterOwl.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-solar-flare-end-damage-target-lock.test.ts",
+      kind: "solarFlarePyroEndDamageTargetLock",
+      required: [
+        'const solarFlareCode = "45985838"',
+        "restores its Pyro ally battle-target lock and End Phase damage trigger",
+        "hasAttack(battleActions, attacker.uid, solarFlare.uid)).toBe(false)",
+        'eventName: "damageDealt"',
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: BattleTargetPredicateSemanticVariant;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countBattleTargetPredicateSemanticVariants(
+  fixtures: Array<{ kind: BattleTargetPredicateSemanticVariant }>,
+): Record<BattleTargetPredicateSemanticVariant, number> {
+  return fixtures.reduce<Record<BattleTargetPredicateSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      battleTargetSyntheticDescriptorPredicates: 0,
+      commandKnightAuxImval1TargetLock: 0,
+      decoyroidNonMatchingTargetSelectionLock: 0,
+      hunterOwlWindAllyTargetStatLock: 0,
+      machinaAndBoneTowerAuxImval2Protection: 0,
+      solarFlarePyroEndDamageTargetLock: 0,
     },
   );
 }
