@@ -612,8 +612,11 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         'summonType: "ritual"',
         "summonMaterialUids: [material!.uid]",
         "reason: duelReason.material | duelReason.ritual",
+        'eventName === "specialSummoned"',
         'eventName === "sentToGraveyard"',
+        'eventName === "destroyed"',
         "reason: duelReason.destroy | duelReason.effect",
+        'expect(restored.host.messages).not.toContain("rebirth of nephthys responder resolved")',
       ],
     },
     {
