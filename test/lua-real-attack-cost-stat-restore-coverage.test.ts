@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const attackCostAndStatFixtureCount = 7;
+const attackCostAndStatFixtureCount = 8;
 const legalActionFixtureCount = 4;
 const attackCostAndStatKindCounts = {
   attackCostLp: 1,
@@ -12,6 +12,7 @@ const attackCostAndStatKindCounts = {
   baseAttackExtraDeckLock: 1,
   currentAttackExtraDeckLock: 1,
   dynamicFieldStat: 1,
+  dynamicLinkedGroupStat: 1,
   fieldSetAttack: 1,
   targetAttackPredicate: 1,
 } satisfies Record<AttackCostAndStatKind, number>;
@@ -22,6 +23,7 @@ type AttackCostAndStatKind =
   | "baseAttackExtraDeckLock"
   | "currentAttackExtraDeckLock"
   | "dynamicFieldStat"
+  | "dynamicLinkedGroupStat"
   | "fieldSetAttack"
   | "targetAttackPredicate";
 
@@ -80,6 +82,16 @@ function attackCostAndStatFixtureFiles(): Array<{
         "getLuaRestoreLegalActionGroups(restoredChain, 1)",
         "expect(restoredStat.session.state.battleDamage[0]).toBe(800)",
         "players[0].lifePoints).toBe(7200)",
+      ],
+    },
+    {
+      file: "lua-real-script-elphase-linked-group-stat.test.ts",
+      kind: "dynamicLinkedGroupStat",
+      required: [
+        "restores GetLinkedGroupCount dynamic ATK from the monster it points to",
+        "currentAttack(elphase, session.state)).toBe((elphase.data.attack ?? 0) + 300)",
+        "currentAttack(restoredElphase, restored.session.state)).toBe((elphase.data.attack ?? 0) + 300)",
+        "elphase linked group stat 1/",
       ],
     },
     {
@@ -176,6 +188,7 @@ function countAttackCostAndStatKinds(
       baseAttackExtraDeckLock: 0,
       currentAttackExtraDeckLock: 0,
       dynamicFieldStat: 0,
+      dynamicLinkedGroupStat: 0,
       fieldSetAttack: 0,
       targetAttackPredicate: 0,
     },
