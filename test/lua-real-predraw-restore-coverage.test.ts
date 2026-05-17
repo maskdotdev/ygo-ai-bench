@@ -9,8 +9,14 @@ const predrawKindCounts = {
   battleDamagePredrawDiscard: 1,
   spiritPredrawConfirm: 1,
 } satisfies Record<PredrawKind, number>;
+const predrawSemanticVariantCounts = {
+  hinoKaguTsuchiBattleDamagePredrawDiscard: 1,
+  maharaghiSpiritPredrawConfirm: 1,
+} satisfies Record<PredrawSemanticVariant, number>;
 
 type PredrawKind = "battleDamagePredrawDiscard" | "spiritPredrawConfirm";
+
+type PredrawSemanticVariant = "hinoKaguTsuchiBattleDamagePredrawDiscard" | "maharaghiSpiritPredrawConfirm";
 
 describe("Lua real predraw restore coverage", () => {
   it("requires representative predraw delayed-effect fixtures to assert clean Lua restore", () => {
@@ -36,6 +42,19 @@ describe("Lua real predraw restore coverage", () => {
 
   it("keeps predraw fixture kinds explicit", () => {
     expect(countPredrawKinds(realScriptPredrawFixtureFiles())).toEqual(predrawKindCounts);
+  });
+
+  it("keeps named predraw semantic variants explicit", () => {
+    expect(countPredrawSemanticVariants(predrawSemanticVariants())).toEqual(predrawSemanticVariantCounts);
+
+    const weak = predrawSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -81,6 +100,56 @@ function countPredrawKinds(fixtures: Array<{ kind: PredrawKind }>): Record<Predr
     {
       battleDamagePredrawDiscard: 0,
       spiritPredrawConfirm: 0,
+    },
+  );
+}
+
+function predrawSemanticVariants(): Array<{
+  file: string;
+  kind: PredrawSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-hino-kagu-tsuchi-predraw-discard.test.ts",
+      kind: "hinoKaguTsuchiBattleDamagePredrawDiscard",
+      required: [
+        'const hinoCode = "75745607"',
+        "restores its battle-damage trigger into the opponent's next Draw Phase hand discard",
+        "eventName: \"battleDamageDealt\"",
+        "eventValue: 1800",
+        "triggerEvent: \"preDraw\"",
+        "eventName: \"discarded\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-maharaghi-predraw.test.ts",
+      kind: "maharaghiSpiritPredrawConfirm",
+      required: [
+        'const maharaghiCode = "40695128"',
+        "restores its delayed Draw Phase top-deck confirmation before the turn draw",
+        "registryKey: \"lua:40695128:lua-9-1113\"",
+        "triggerEvent: \"preDraw\"",
+        "eventName: \"confirmed\"",
+        "eventUids: [firstDraw!.uid]",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: PredrawSemanticVariant;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countPredrawSemanticVariants(fixtures: Array<{ kind: PredrawSemanticVariant }>): Record<PredrawSemanticVariant, number> {
+  return fixtures.reduce<Record<PredrawSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      hinoKaguTsuchiBattleDamagePredrawDiscard: 0,
+      maharaghiSpiritPredrawConfirm: 0,
     },
   );
 }
