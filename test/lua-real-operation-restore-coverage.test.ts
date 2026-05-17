@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 41;
+const operationFixtureCount = 42;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -20,6 +20,7 @@ const operationKindCounts = {
   graveToDeckBottomDraw: 1,
   handDiscardDraw: 1,
   handToDeckDraw: 1,
+  fiveGraveToDeckShuffleDraw: 1,
   lpCostHandDiscard: 1,
   lpCostRandomHandDiscard: 1,
   mutualHandDiscardDraw: 1,
@@ -61,6 +62,7 @@ type OperationKind =
   | "graveToDeckBottomDraw"
   | "handDiscardDraw"
   | "handToDeckDraw"
+  | "fiveGraveToDeckShuffleDraw"
   | "lpCostHandDiscard"
   | "lpCostRandomHandDiscard"
   | "mutualHandDiscardDraw"
@@ -465,6 +467,20 @@ function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-pot-avarice-five-grave-shuffle-draw.test.ts",
+      kind: "fiveGraveToDeckShuffleDraw",
+      required: [
+        "category: 0x10",
+        "category: 0x10000",
+        "count: 5",
+        "parameter: 2",
+        'eventName: "sentToDeck"',
+        'eventName: "cardsDrawn"',
+        "eventUids: graveCards.map((card) => card!.uid)",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-pot-of-desires-deck-cost.test.ts",
       kind: "costBanishDraw",
       required: [
@@ -843,6 +859,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       graveToDeckBottomDraw: 0,
       handDiscardDraw: 0,
       handToDeckDraw: 0,
+      fiveGraveToDeckShuffleDraw: 0,
       lpCostHandDiscard: 0,
       lpCostRandomHandDiscard: 0,
       mutualHandDiscardDraw: 0,
