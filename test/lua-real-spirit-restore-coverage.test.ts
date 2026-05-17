@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 19;
+const spiritFixtureCount = 20;
 const spiritKindCounts = {
   columnSendPendulum: 3,
   delayedShuffleDraw: 1,
@@ -15,6 +15,7 @@ const spiritKindCounts = {
   returnToHandTrigger: 4,
   ritualSelfSummonSearch: 2,
   ritualShuffleSummon: 1,
+  setBackrowDestroy: 1,
   trapDisable: 1,
 } satisfies Record<SpiritKind, number>;
 
@@ -57,6 +58,7 @@ type SpiritKind =
   | "returnToHandTrigger"
   | "ritualSelfSummonSearch"
   | "ritualShuffleSummon"
+  | "setBackrowDestroy"
   | "trapDisable";
 
 function countSpiritKinds(fixtures: Array<{ kind: SpiritKind }>): Record<SpiritKind, number> {
@@ -72,6 +74,7 @@ function countSpiritKinds(fixtures: Array<{ kind: SpiritKind }>): Record<SpiritK
       returnToHandTrigger: 0,
       ritualSelfSummonSearch: 0,
       ritualShuffleSummon: 0,
+      setBackrowDestroy: 0,
       trapDisable: 0,
     },
   );
@@ -353,6 +356,22 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; kind: SpiritKind;
         "category: 8",
         'location: "hand", controller: 1',
         'host.messages).not.toContain("yaksha responder resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-fenghuang-set-backrow-destroy.test.ts",
+      kind: "setBackrowDestroy",
+      required: [
+        'action.type === "tributeSummon"',
+        'action.type === "activateTrigger"',
+        'action.type === "passChain"',
+        'eventName: "normalSummoned"',
+        'eventName: "destroyed"',
+        "category: 1",
+        "targetUids",
+        'location: "graveyard"',
+        'location: "spellTrapZone"',
+        'host.messages).not.toContain("fenghuang responder resolved")',
       ],
     },
     {
