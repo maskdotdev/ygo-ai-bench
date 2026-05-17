@@ -6,14 +6,14 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const battleKeywords = ["battle", "attack", "damage"];
-const realScriptBattleFixtureCount = 145;
+const realScriptBattleFixtureCount = 146;
 const battleLegalActionFixtureCount = 4;
 const attackDeclarationTrapFixtureCount = 6;
 const battleRoutingFixtureCount = 6;
 const battleContinuousSemanticFixtureCount = 1;
 const damageStepRestoreFixtureCount = 4;
 const battleDamageSemanticFixtureCount = 8;
-const battleTriggerSemanticFixtureCount = 12;
+const battleTriggerSemanticFixtureCount = 13;
 const attackDeclarationTrapKindCounts = {
   attackBanish: 1,
   attackDestroy: 1,
@@ -50,6 +50,7 @@ const battleDamageSemanticKindCounts = {
 } satisfies Record<BattleDamageSemanticKind, number>;
 const battleTriggerSemanticKindCounts = {
   battleConfirmDestroy: 1,
+  battleDestroyingDecktopConfirm: 1,
   battleDestroyedDestroy: 1,
   battleDestroyingSelectEffect: 1,
   battleSearch: 1,
@@ -98,6 +99,7 @@ type BattleDamageSemanticKind =
 
 type BattleTriggerSemanticKind =
   | "battleConfirmDestroy"
+  | "battleDestroyingDecktopConfirm"
   | "battleDestroyedDestroy"
   | "battleDestroyingSelectEffect"
   | "battleSearch"
@@ -683,6 +685,17 @@ function realScriptBattleTriggerSemanticFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-blizzard-warrior-battle-destroying-decktop.test.ts",
+      kind: "battleDestroyingDecktopConfirm",
+      required: [
+        'eventName: "battleDestroyed"',
+        "eventCode: 1140",
+        "api: \"SelectOption\"",
+        "confirmed 0:",
+        'eventName: "confirmed"',
+      ],
+    },
+    {
       file: "lua-real-script-yomi-ship-battle-destroyed.test.ts",
       kind: "battleDestroyedDestroy",
       required: [
@@ -852,6 +865,7 @@ function countBattleTriggerSemanticKinds(
     },
     {
       battleConfirmDestroy: 0,
+      battleDestroyingDecktopConfirm: 0,
       battleDestroyedDestroy: 0,
       battleDestroyingSelectEffect: 0,
       battleSearch: 0,
