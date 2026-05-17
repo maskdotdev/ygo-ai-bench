@@ -38,22 +38,26 @@ describe("parity progress report", () => {
       };
     };
 
-    expect(report.luaParity.usedApis).toBeGreaterThanOrEqual(898);
-    expect(report.luaParity.implementedApis).toBeGreaterThanOrEqual(1219);
+    expect(report.luaParity.usedApis).toBe(898);
+    expect(report.luaParity.implementedApis).toBe(1219);
     expect(report.luaParity.missingApiUsages).toBe(0);
-    expect(report.luaParity.upstreamConstants).toBeGreaterThanOrEqual(1775);
-    expect(report.luaParity.localConstants).toBeGreaterThanOrEqual(1816);
+    expect(report.luaParity.upstreamConstants).toBe(1775);
+    expect(report.luaParity.localConstants).toBe(1816);
     expect(report.luaParity.missingConstants).toBe(0);
 
     expect(report.cleanRestore.restoredFixtures).toBe(report.cleanRestore.totalFixtures);
+    expect(report.cleanRestore.totalFixtures).toBe(651);
     expect(report.cleanRestore.restorePercent).toBe(100);
     expect(report.cleanRestore.legalActionFixtures).toBe(report.cleanRestore.legalActionTotalFixtures);
+    expect(report.cleanRestore.legalActionTotalFixtures).toBe(651);
+    expect(report.provenance.files).toBe(945);
+    expect(report.provenance.expectationBlocks).toBe(4939);
     expect(report.provenance.edoproBlocks).toBe(report.provenance.expectationBlocks);
     expect(report.provenance.backlogBlocks).toBe(0);
 
-    expect(report.directScriptFixtureEstimate.realScriptFixtures).toBeGreaterThanOrEqual(651);
-    expect(report.directScriptFixtureEstimate.officialScripts).toBeGreaterThan(report.directScriptFixtureEstimate.realScriptFixtures);
-    expect(report.directScriptFixtureEstimate.allScripts).toBeGreaterThan(report.directScriptFixtureEstimate.officialScripts);
+    expect(report.directScriptFixtureEstimate.realScriptFixtures).toBe(651);
+    expect(report.directScriptFixtureEstimate.officialScripts).toBe(13299);
+    expect(report.directScriptFixtureEstimate.allScripts).toBe(22326);
     expect(report.directScriptFixtureEstimate.remainingOfficialOnePerScript).toBe(
       report.directScriptFixtureEstimate.officialScripts - report.directScriptFixtureEstimate.realScriptFixtures,
     );
