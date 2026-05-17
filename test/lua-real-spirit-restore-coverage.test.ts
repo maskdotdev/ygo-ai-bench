@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 29;
+const spiritFixtureCount = 30;
 const spiritKindCounts = {
   columnSendPendulum: 3,
   costReturnBounce: 1,
@@ -17,6 +17,7 @@ const spiritKindCounts = {
   groupMonsterDestroy: 1,
   nonSpiritActivationLock: 1,
   normalSummonSearch: 2,
+  persistentTrapBounce: 1,
   positionTriggerSet: 1,
   predrawConfirm: 1,
   procedureReturn: 2,
@@ -69,6 +70,7 @@ type SpiritKind =
   | "groupMonsterDestroy"
   | "nonSpiritActivationLock"
   | "normalSummonSearch"
+  | "persistentTrapBounce"
   | "positionTriggerSet"
   | "predrawConfirm"
   | "procedureReturn"
@@ -94,6 +96,7 @@ function countSpiritKinds(fixtures: Array<{ kind: SpiritKind }>): Record<SpiritK
       groupMonsterDestroy: 0,
       nonSpiritActivationLock: 0,
       normalSummonSearch: 0,
+      persistentTrapBounce: 0,
       positionTriggerSet: 0,
       predrawConfirm: 0,
       procedureReturn: 0,
@@ -547,6 +550,23 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; kind: SpiritKind;
         'eventName: "sentToHand"',
         'eventName: "sentToGraveyard"',
         'host.messages).not.toContain("orb responder resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-spirits-invitation-return-bounce.test.ts",
+      kind: "persistentTrapBounce",
+      required: [
+        'action.type === "activateEffect"',
+        'action.type === "normalSummon"',
+        'action.type === "activateTrigger"',
+        'action.type === "passChain"',
+        'eventName": "phaseEnd"',
+        '"triggerBucket": "turnMandatory"',
+        'eventName: "sentToHand"',
+        'eventName": "lifePointCostPaid"',
+        'eventName": "destroyed"',
+        'reason: duelReason.destroy | duelReason.cost',
+        'host.messages).not.toContain("invitation responder resolved")',
       ],
     },
     {
