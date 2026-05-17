@@ -10,8 +10,18 @@ const selectOptionKindCounts = {
   leadingBooleanTableUnpack: 1,
   tableUnpackedOptions: 1,
 } satisfies Record<SelectOptionKind, number>;
+const selectOptionSemanticVariantCounts = {
+  infernoAshenedOpponentFieldZoneOption: 1,
+  magikeyDuoDefenseRitualOption: 1,
+  pyroClockTableUnpackTurnEffectOption: 1,
+} satisfies Record<SelectOptionSemanticVariant, number>;
 
 type SelectOptionKind = "leadingBooleanLiteralOptions" | "leadingBooleanTableUnpack" | "tableUnpackedOptions";
+
+type SelectOptionSemanticVariant =
+  | "infernoAshenedOpponentFieldZoneOption"
+  | "magikeyDuoDefenseRitualOption"
+  | "pyroClockTableUnpackTurnEffectOption";
 
 describe("Lua real SelectOption restore coverage", () => {
   it("tracks official scripts that use the leading-boolean SelectOption shape", () => {
@@ -70,6 +80,19 @@ describe("Lua real SelectOption restore coverage", () => {
       ...leadingBooleanSelectOptionFixtures(),
       ...tableUnpackedSelectOptionFixtures(),
     ])).toEqual(selectOptionKindCounts);
+  });
+
+  it("keeps named SelectOption semantic variants explicit", () => {
+    expect(countSelectOptionSemanticVariants(selectOptionSemanticVariants())).toEqual(selectOptionSemanticVariantCounts);
+
+    const weak = selectOptionSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -152,6 +175,69 @@ function countSelectOptionKinds(fixtures: Array<{ kind: SelectOptionKind }>): Re
       leadingBooleanLiteralOptions: 0,
       leadingBooleanTableUnpack: 0,
       tableUnpackedOptions: 0,
+    },
+  );
+}
+
+function selectOptionSemanticVariants(): Array<{
+  file: string;
+  kind: SelectOptionSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-inferno-ashened-field-zone-option.test.ts",
+      kind: "infernoAshenedOpponentFieldZoneOption",
+      required: [
+        'const infernoCode = "62767644"',
+        "restores a leading-false SelectOption branch that places Obsidim in the opponent Field Zone",
+        "descriptions: [fieldZoneOptionDescription, opponentFieldZoneOptionDescription]",
+        "returned: 1",
+        "controller: 1",
+        "inferno ashened responder resolved",
+      ],
+    },
+    {
+      file: "test/lua-real-script-magikey-duo-defense-ritual.test.ts",
+      kind: "magikeyDuoDefenseRitualOption",
+      required: [
+        'const magikeyDuoCode = "51510279"',
+        "restores a target-returning Ritual.Operation branch with sumpos face-up Defense",
+        "descriptions: [returnOptionDescription, ritualOptionDescription]",
+        "returned: 1",
+        "summonType: \"ritual\"",
+        "eventName: \"specialSummoned\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-pyro-clock-select-option-table-unpack.test.ts",
+      kind: "pyroClockTableUnpackTurnEffectOption",
+      required: [
+        'const pyroClockCode = "1082946"',
+        "restores table-unpacked SelectOption into the selected turn-count effect operation",
+        "options: [0, 1]",
+        "descriptions: [801, 802]",
+        "returned: 0",
+        "pyro clock selected first turn effect",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: SelectOptionSemanticVariant;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countSelectOptionSemanticVariants(fixtures: Array<{ kind: SelectOptionSemanticVariant }>): Record<SelectOptionSemanticVariant, number> {
+  return fixtures.reduce<Record<SelectOptionSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      infernoAshenedOpponentFieldZoneOption: 0,
+      magikeyDuoDefenseRitualOption: 0,
+      pyroClockTableUnpackTurnEffectOption: 0,
     },
   );
 }
