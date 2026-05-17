@@ -163,7 +163,7 @@ function validateNormalTributes(
   if (tributeRange.max <= 0) throw new Error(`${card.name} does not require tributes`);
   const uniqueTributes = [...new Set(tributeUids)];
   if (uniqueTributes.length !== tributeUids.length) throw new Error("Tributes must be unique");
-  const tributeUnits = uniqueTributes.reduce((sum, tributeUid) => sum + tributeUnitCount(state, requireControlledCard(state, player, tributeUid, "monsterZone")), 0);
+  const tributeUnits = uniqueTributes.reduce((sum, tributeUid) => sum + tributeUnitCount(state, requireControlledCard(state, player, tributeUid, "monsterZone"), card), 0);
   if (tributeUnits < tributeRange.min || tributeUnits > tributeRange.max) throw new Error(`${card.name} requires ${formatTributeRange(tributeRange)} tribute(s)`);
   for (const tributeUid of uniqueTributes) {
     const tribute = requireControlledCard(state, player, tributeUid, "monsterZone");
@@ -462,9 +462,9 @@ function tributeNormalActions(state: DuelState, player: PlayerId, hand: DuelCard
     if (!hasNormalSummonCountAvailable(state, player, card)) continue;
     const tributeRange = tributeRangeForNormalSummon(card);
     const availableTributes = getCards(state, player, "monsterZone").filter((material) => isMonsterLike(state, material) && canReleaseMaterial(material.uid, card.uid));
-    if (tributeRange.max <= 0 || availableTributes.reduce((sum, material) => sum + tributeUnitCount(state, material), 0) < tributeRange.min) continue;
+    if (tributeRange.max <= 0 || availableTributes.reduce((sum, material) => sum + tributeUnitCount(state, material, card), 0) < tributeRange.min) continue;
     for (let tributeCount = Math.max(1, tributeRange.min); tributeCount <= tributeRange.max; tributeCount += 1) {
-      for (const tributeUids of tributeCombinations(state, availableTributes, tributeCount)) {
+      for (const tributeUids of tributeCombinations(state, availableTributes, tributeCount, card)) {
         const reason = type === "tributeSummon" ? duelReason.summon : duelReason.rule;
         if (availableForcedMonsterZoneCount(state, player, tributeUids, 0, reason, card) <= 0) continue;
         const tributeNames = tributeUids.map((tributeUid) => findCard(state, tributeUid)?.name ?? tributeUid).join(", ");
@@ -596,16 +596,16 @@ function baseNormalTributeCount(card: DuelCardInstance): number {
   return 0;
 }
 
-function tributeCombinations(state: DuelState, cards: DuelCardInstance[], count: number): string[][] {
+function tributeCombinations(state: DuelState, cards: DuelCardInstance[], count: number, tributeTarget?: DuelCardInstance): string[][] {
   if (count === 0) return [[]];
-  if (cards.reduce((sum, card) => sum + tributeUnitCount(state, card), 0) < count) return [];
+  if (cards.reduce((sum, card) => sum + tributeUnitCount(state, card, tributeTarget), 0) < count) return [];
   const results: string[][] = [];
   for (let index = 0; index < cards.length; index += 1) {
     const head = cards[index];
     if (!head) continue;
-    const remaining = count - tributeUnitCount(state, head);
+    const remaining = count - tributeUnitCount(state, head, tributeTarget);
     if (remaining < 0) continue;
-    for (const tail of tributeCombinations(state, cards.slice(index + 1), remaining)) {
+    for (const tail of tributeCombinations(state, cards.slice(index + 1), remaining, tributeTarget)) {
       results.push([head.uid, ...tail]);
     }
   }
