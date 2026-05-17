@@ -27,7 +27,7 @@ const missedTimingChainLifecycleOriginFixtureCount = 12;
 const missedTimingBattleDamageCauseFixtureCount = 4;
 const missedTimingPhaseBoundaryFixtureCount = 22;
 const missedTimingPhaseEndBoundaryCauseFixtureCount = 4;
-const missedTimingPostDeclineOpenFastResolutionFixtureCount = 25;
+const missedTimingPostDeclineOpenFastResolutionFixtureCount = 28;
 const missedTimingEventFamilyCounts = {
   battle: 28,
   chain: 14,
@@ -222,11 +222,12 @@ describe("EDOPro parity missed-timing event coverage", () => {
   });
 
   it("pins post-decline open fast-effect resolution coverage after missed-timing filtering", () => {
-    const postDeclineOpenFastResolutionFiles = fs.readdirSync(testRoot)
+    const candidateFiles = fs.readdirSync(testRoot)
       .filter((file) => file.startsWith("parity-missed-timing-") && file.endsWith("-decline-fixture.test.ts"))
-      .filter((file) => readTestFile(file).includes("post-decline open fast-effect window restorable"))
+      .filter((file) => hasPostDeclineOpenFastResolutionMarker(file))
       .sort();
-    const weak = postDeclineOpenFastResolutionFiles.filter((file) => !hasPostDeclineOpenFastResolutionProof(file));
+    const postDeclineOpenFastResolutionFiles = candidateFiles.filter((file) => hasPostDeclineOpenFastResolutionProof(file));
+    const weak = candidateFiles.filter((file) => !hasPostDeclineOpenFastResolutionProof(file));
 
     expect(postDeclineOpenFastResolutionFiles).toHaveLength(missedTimingPostDeclineOpenFastResolutionFixtureCount);
     expect(weak).toEqual([]);
@@ -452,18 +453,24 @@ function hasPhaseEndBoundaryCauseMetadata(file: string): boolean {
 
 function hasPostDeclineOpenFastResolutionProof(file: string): boolean {
   const text = readTestFile(file);
+  if (file !== sharedDeclineFixtureHelper && text.includes("expectMissedTimingDeclineFixture(")) return hasPostDeclineOpenFastResolutionProof(sharedDeclineFixtureHelper);
   return (
     /source:\s*["']edopro["']/.test(text) &&
     /snapshotRestore:\s*["']both["']/.test(text) &&
-    /makeResponseSelector\(\s*["']activateEffect["'],\s*0,\s*\{\s*effectId:\s*["'][^"']*-decline-open-fast["']/.test(text) &&
+    /makeResponseSelector\(\s*["']activateEffect["'],\s*0,\s*\{\s*effectId:\s*(?:["'][^"']*-decline-open-fast["']|`[^`]*-decline-open-fast`)/.test(text) &&
     /post-decline open fast-effect window restorable/.test(text) &&
     /resolves the restored post-decline open fast effect without resurrecting missed optional when triggers/.test(text) &&
     /pendingTriggers:\s*\[\]/.test(text) &&
     /pendingTriggerBuckets:\s*\[\]/.test(text) &&
     /legalActions:\s*\[[\s\S]*type:\s*["']activateEffect["'][\s\S]*windowKind:\s*["']open["']/.test(text) &&
-    /absentLegalActions:\s*\[[\s\S]*effectId:\s*["'][^"']*optional-when["']/.test(text) &&
+    /absentLegalActions:\s*\[[\s\S]*effectId:\s*(?:["'][^"']*optional-when["']|`[^`]*optional-when`)/.test(text) &&
     /absentLegalActionGroups:\s*\[[\s\S]*optional-when/.test(text)
   );
+}
+
+function hasPostDeclineOpenFastResolutionMarker(file: string): boolean {
+  const text = readTestFile(file);
+  return text.includes("post-decline open fast-effect window restorable") || text.includes("expectMissedTimingDeclineFixture(");
 }
 
 function readTestFile(file: string): string {
