@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const chainResponseFixtureCount = 11;
+const chainResponseFixtureCount = 12;
 const chainResponseKindCounts = {
   destroyOnlyChainedResponse: 2,
   flipSummonTrapResponse: 3,
@@ -12,6 +12,7 @@ const chainResponseKindCounts = {
   summonEffectNegateResponse: 1,
   summonSuccessTrapResponse: 3,
   trapNegateToDeckResponse: 1,
+  tributeGateTrapNegateResponse: 1,
 } satisfies Record<ChainResponseKind, number>;
 const chainResponseSemanticVariantCounts = {
   adhesionTrapHoleFlipSummonAtkEffect: 1,
@@ -19,6 +20,7 @@ const chainResponseSemanticVariantCounts = {
   ghostBelleWantedChainNegationAndRecycle: 1,
   houseAdhesiveTapeFlipSummonDestroy: 1,
   mysticalSpaceTyphoonFreeChainDestroy: 1,
+  overwhelmTributeGateTrapNegateDestroy: 1,
   raigekiBreakDiscardCostDestroy: 1,
   solemnWarningSpecialSummonEffectNegate: 1,
   torrentialTributeSummonSuccessDestroyAll: 1,
@@ -33,13 +35,15 @@ type ChainResponseKind =
   | "genericChainResponse"
   | "summonEffectNegateResponse"
   | "summonSuccessTrapResponse"
-  | "trapNegateToDeckResponse";
+  | "trapNegateToDeckResponse"
+  | "tributeGateTrapNegateResponse";
 type ChainResponseSemanticVariant =
   | "adhesionTrapHoleFlipSummonAtkEffect"
   | "bottomlessTrapHoleSummonSuccessBanish"
   | "ghostBelleWantedChainNegationAndRecycle"
   | "houseAdhesiveTapeFlipSummonDestroy"
   | "mysticalSpaceTyphoonFreeChainDestroy"
+  | "overwhelmTributeGateTrapNegateDestroy"
   | "raigekiBreakDiscardCostDestroy"
   | "solemnWarningSpecialSummonEffectNegate"
   | "torrentialTributeSummonSuccessDestroyAll"
@@ -155,6 +159,18 @@ function chainResponseFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-overwhelm-tribute-chain-negate.test.ts",
+      kind: "tributeGateTrapNegateResponse",
+      required: [
+        'action.type === "activateEffect" && action.uid === overwhelm.uid',
+        'action.type === "passChain"',
+        "restoredPendingResolution.session.state.chain).toHaveLength(0)",
+        'eventName: "chainNegated"',
+        'location: "graveyard"',
+        'summonType: "tribute"',
+      ],
+    },
+    {
       file: "test/lua-real-script-raigeki-break-discard-cost.test.ts",
       kind: "destroyOnlyChainedResponse",
       required: [
@@ -248,6 +264,7 @@ function countChainResponseKinds(fixtures: Array<{ kind: ChainResponseKind }>): 
       summonEffectNegateResponse: 0,
       summonSuccessTrapResponse: 0,
       trapNegateToDeckResponse: 0,
+      tributeGateTrapNegateResponse: 0,
     },
   );
 }
@@ -306,6 +323,16 @@ function chainResponseSemanticVariants(): Array<{
         "restores Mystical Space Typhoon's backrow target and destroys it",
         "pass?.windowKind).toBe(\"chainResponse\")",
         "[\"chainNegated\", \"chainDisabled\"].includes(event.eventName))).toEqual([])",
+      ],
+    },
+    {
+      file: "test/lua-real-script-overwhelm-tribute-chain-negate.test.ts",
+      kind: "overwhelmTributeGateTrapNegateDestroy",
+      required: [
+        'const overwhelmCode = "20140382"',
+        "restores Overwhelm's Tribute Summoned Level 7+ gate, activation negation, source destruction, and suppressed Trap operation",
+        "restoredOpenChain.session.state.chain).toHaveLength(2)",
+        'eventName: "chainNegated"',
       ],
     },
     {
@@ -389,6 +416,7 @@ function countChainResponseSemanticVariants(
       ghostBelleWantedChainNegationAndRecycle: 0,
       houseAdhesiveTapeFlipSummonDestroy: 0,
       mysticalSpaceTyphoonFreeChainDestroy: 0,
+      overwhelmTributeGateTrapNegateDestroy: 0,
       raigekiBreakDiscardCostDestroy: 0,
       solemnWarningSpecialSummonEffectNegate: 0,
       torrentialTributeSummonSuccessDestroyAll: 0,

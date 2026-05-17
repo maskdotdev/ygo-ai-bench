@@ -4,15 +4,15 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 10;
-const chainResponseNegationFixtureCount = 9;
+const negationFixtureCount = 11;
+const chainResponseNegationFixtureCount = 10;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 14;
+const negationInventoryFixtureCount = 15;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 3,
+  chainNegateToGrave: 4,
   handTrapChainNegate: 1,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -28,6 +28,7 @@ const negationSemanticVariantCounts = {
   ghostOgreDestroyOnlyNoNegation: 1,
   magicJammerDiscardSpellNegateDestroy: 1,
   mysticalSpaceTyphoonDestroyOnlyNoNegation: 1,
+  overwhelmTributeGateTrapNegateDestroy: 1,
   raigekiBreakDiscardDestroyOnlyNoNegation: 1,
   sevenToolsLpCostTrapNegateDestroy: 1,
   solemnJudgmentActivationNegateCostDestroy: 1,
@@ -54,6 +55,7 @@ type NegationSemanticVariant =
   | "ghostOgreDestroyOnlyNoNegation"
   | "magicJammerDiscardSpellNegateDestroy"
   | "mysticalSpaceTyphoonDestroyOnlyNoNegation"
+  | "overwhelmTributeGateTrapNegateDestroy"
   | "raigekiBreakDiscardDestroyOnlyNoNegation"
   | "sevenToolsLpCostTrapNegateDestroy"
   | "solemnJudgmentActivationNegateCostDestroy"
@@ -184,6 +186,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-ghost-ogre-chain-destroy.test.ts",
     "lua-real-script-magic-jammer-chain-negate.test.ts",
     "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
+    "lua-real-script-overwhelm-tribute-chain-negate.test.ts",
     "lua-real-script-raigeki-break-discard-cost.test.ts",
     "lua-real-script-seven-tools-trap-negate.test.ts",
     "lua-real-script-solemn-judgment-summon-negate-part2.test.ts",
@@ -229,6 +232,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     },
     {
       file: "lua-real-script-magic-jammer-chain-negate.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-overwhelm-tribute-chain-negate.test.ts",
       kind: "chainNegateToGrave",
     },
     {
@@ -336,6 +343,16 @@ function negationSemanticVariants(): Array<{
       required: [
         'const magicJammerCode = "77414722"',
         "restores a Counter Trap response that discards, negates, destroys, and suppresses the Spell operation",
+        'eventName: "chainNegated"',
+      ],
+    },
+    {
+      file: "lua-real-script-overwhelm-tribute-chain-negate.test.ts",
+      kind: "overwhelmTributeGateTrapNegateDestroy",
+      required: [
+        'const overwhelmCode = "20140382"',
+        "restores Overwhelm's Tribute Summoned Level 7+ gate, activation negation, source destruction, and suppressed Trap operation",
+        'summonType = "tribute"',
         'eventName: "chainNegated"',
       ],
     },
@@ -468,6 +485,7 @@ function countNegationSemanticVariants(
       ghostOgreDestroyOnlyNoNegation: 0,
       magicJammerDiscardSpellNegateDestroy: 0,
       mysticalSpaceTyphoonDestroyOnlyNoNegation: 0,
+      overwhelmTributeGateTrapNegateDestroy: 0,
       raigekiBreakDiscardDestroyOnlyNoNegation: 0,
       sevenToolsLpCostTrapNegateDestroy: 0,
       solemnJudgmentActivationNegateCostDestroy: 0,
