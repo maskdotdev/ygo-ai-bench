@@ -11,8 +11,19 @@ const statKindCounts = {
   setBaseAttack: 1,
   staticAttackAndExtraAttack: 1,
 } satisfies Record<StatKind, number>;
+const statSemanticVariantCounts = {
+  dForcePlasmaGraveyardCountAtkExtraAttack: 1,
+  fortuneLadyPastCallbackSetAtkDef: 1,
+  mirageKnightBattleTargetAtkEndPhaseBanish: 1,
+  shrinkTargetBaseAtkHalving: 1,
+} satisfies Record<StatSemanticVariant, number>;
 
 type StatKind = "battleTargetAttackBoost" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack";
+type StatSemanticVariant =
+  | "dForcePlasmaGraveyardCountAtkExtraAttack"
+  | "fortuneLadyPastCallbackSetAtkDef"
+  | "mirageKnightBattleTargetAtkEndPhaseBanish"
+  | "shrinkTargetBaseAtkHalving";
 
 describe("Lua real stat restore coverage", () => {
   it("requires stat-changing fixtures to assert clean Lua registry restore and restored battle outcomes", () => {
@@ -41,6 +52,19 @@ describe("Lua real stat restore coverage", () => {
 
   it("keeps stat fixture kinds explicit", () => {
     expect(countStatKinds(statFixtureFiles())).toEqual(statKindCounts);
+  });
+
+  it("keeps named stat semantic variants explicit", () => {
+    expect(countStatSemanticVariants(statSemanticVariants())).toEqual(statSemanticVariantCounts);
+
+    const weak = statSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -115,6 +139,70 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       setAttack: 0,
       setBaseAttack: 0,
       staticAttackAndExtraAttack: 0,
+    },
+  );
+}
+
+function statSemanticVariants(): Array<{
+  file: string;
+  kind: StatSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-d-force-plasma-stat-extra-attack.test.ts",
+      kind: "dForcePlasmaGraveyardCountAtkExtraAttack",
+      required: [
+        'const dForceCode = "6186304"',
+        "restores official graveyard-count ATK update and extra attack grant for Plasma",
+        "d force plasma attack 2200",
+      ],
+    },
+    {
+      file: "test/lua-real-script-fortune-lady-past-set-attack.test.ts",
+      kind: "fortuneLadyPastCallbackSetAtkDef",
+      required: [
+        'const pastCode = "57869175"',
+        "restores callback-valued set ATK/DEF effects and uses them for battle calculation",
+        "lifePoints).toBe(7700)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-mirage-knight-battle-target-atk.test.ts",
+      kind: "mirageKnightBattleTargetAtkEndPhaseBanish",
+      required: [
+        'const mirageCode = "49217579"',
+        "restores GetBattleTarget damage-calculation ATK and End Phase self-banish after battle",
+        'eventName: "battleDamageDealt"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-shrink-set-base-attack.test.ts",
+      kind: "shrinkTargetBaseAtkHalving",
+      required: [
+        'const shrinkCode = "55713623"',
+        "restores Shrink's target and applies base ATK halving to battle calculation",
+        "value: 1000",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: StatSemanticVariant;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }>): Record<StatSemanticVariant, number> {
+  return fixtures.reduce<Record<StatSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      dForcePlasmaGraveyardCountAtkExtraAttack: 0,
+      fortuneLadyPastCallbackSetAtkDef: 0,
+      mirageKnightBattleTargetAtkEndPhaseBanish: 0,
+      shrinkTargetBaseAtkHalving: 0,
     },
   );
 }
