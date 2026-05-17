@@ -83,6 +83,58 @@ const promptHelperKindCounts: Record<PromptHelperKind, number> = {
   selectOptionTurnEffect: 1,
   selectYesNoActivationLock: 1,
 };
+const promptHelperSemanticVariantCounts: Record<PromptHelperSemanticVariant, number> = {
+  gagagaMagicianAnnounceLevelChange: 1,
+  gachiGachiSelectEffectYesNoReplacement: 1,
+  gishkiPsycheloneTraitHandShuffle: 1,
+  groundCollapseMultiDisableField: 1,
+  gunkanSushipSelectCodesSearch: 1,
+  infernoAshenedFieldZoneOption: 1,
+  lavalBlasterAnnounceNumberCost: 1,
+  lightningStormDualModeSelectEffect: 1,
+  magiaMagicSpecialSummonSelectEffect: 1,
+  magikeyDuoDefenseRitualBranch: 1,
+  magikeyMafteaDeckRitualBranch: 1,
+  mirrorMageAnnounceNumberRangeToken: 1,
+  naturiaBlessingSpecialSummonSelectEffect: 1,
+  parallelPanzerLinkedZoneMove: 1,
+  primathmechLaplacianDynamicSelectEffect: 1,
+  primiteLordlyLodeAnnounceCardSummonLock: 1,
+  pyroClockTurnEffectSelectOption: 1,
+  smallScuffleMirroredZoneSummon: 1,
+  springMultiDisableZoneLoop: 1,
+  springansBlastFieldZoneLoop: 1,
+  springansShipFieldZoneTarget: 1,
+  sprindColumnMove: 1,
+  vernusylphAttributeActivationLock: 1,
+  wattkineticOpponentZoneMove: 1,
+};
+const promptHelperSemanticVariantByFile: Record<string, PromptHelperSemanticVariant> = {
+  "test/lua-real-script-gagaga-magician-announce-level.test.ts": "gagagaMagicianAnnounceLevelChange",
+  "test/lua-real-script-gachi-gachi-select-effect-yes-no.test.ts": "gachiGachiSelectEffectYesNoReplacement",
+  "test/lua-real-script-gishki-psychelone-announce-traits.test.ts": "gishkiPsycheloneTraitHandShuffle",
+  "test/lua-real-script-ground-collapse-multi-disable-field.test.ts": "groundCollapseMultiDisableField",
+  "test/lua-real-script-gunkan-suship-catch-select-codes.test.ts": "gunkanSushipSelectCodesSearch",
+  "test/lua-real-script-inferno-ashened-field-zone-option.test.ts": "infernoAshenedFieldZoneOption",
+  "test/lua-real-script-laval-blaster-announce-number.test.ts": "lavalBlasterAnnounceNumberCost",
+  "test/lua-real-script-lightning-storm-select-effect.test.ts": "lightningStormDualModeSelectEffect",
+  "test/lua-real-script-magia-magic-select-effect.test.ts": "magiaMagicSpecialSummonSelectEffect",
+  "test/lua-real-script-magikey-duo-defense-ritual.test.ts": "magikeyDuoDefenseRitualBranch",
+  "test/lua-real-script-magikey-maftea-deck-ritual.test.ts": "magikeyMafteaDeckRitualBranch",
+  "test/lua-real-script-mirror-mage-announce-number-range.test.ts": "mirrorMageAnnounceNumberRangeToken",
+  "test/lua-real-script-naturia-blessing-select-effect.test.ts": "naturiaBlessingSpecialSummonSelectEffect",
+  "test/lua-real-script-parallel-panzer-zone-move.test.ts": "parallelPanzerLinkedZoneMove",
+  "test/lua-real-script-primathmech-laplacian-dynamic-select-effect.test.ts": "primathmechLaplacianDynamicSelectEffect",
+  "test/lua-real-script-primite-lordly-lode.test.ts": "primiteLordlyLodeAnnounceCardSummonLock",
+  "test/lua-real-script-pyro-clock-select-option-table-unpack.test.ts": "pyroClockTurnEffectSelectOption",
+  "test/lua-real-script-small-scuffle-mirrored-zone-summon.test.ts": "smallScuffleMirroredZoneSummon",
+  "test/lua-real-script-spring-multi-disable-zone.test.ts": "springMultiDisableZoneLoop",
+  "test/lua-real-script-springans-blast-field-zone-loop.test.ts": "springansBlastFieldZoneLoop",
+  "test/lua-real-script-springans-ship-select-field-zone.test.ts": "springansShipFieldZoneTarget",
+  "test/lua-real-script-sprind-select-disable-field.test.ts": "sprindColumnMove",
+  "test/lua-real-script-vernusylph-attribute-activation-lock.test.ts": "vernusylphAttributeActivationLock",
+  "test/lua-real-script-wattkinetic-puppeteer-opponent-zone-move.test.ts": "wattkineticOpponentZoneMove",
+};
 
 const officialSelectFieldZoneScriptFixtures: Record<string, string> = {
   "10584050": "test/lua-real-script-springans-blast-field-zone-loop.test.ts",
@@ -187,6 +239,19 @@ describe("Lua real prompt helper restore coverage", () => {
 
     expect(weak).toEqual([]);
   });
+
+  it("keeps named prompt helper semantic variants explicit", () => {
+    expect(countPromptHelperSemanticVariants(promptHelperSemanticVariants())).toEqual(promptHelperSemanticVariantCounts);
+
+    const weak = promptHelperSemanticVariants()
+      .filter(({ file, requiredSnippets }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return requiredSnippets.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
+  });
 });
 
 type OfficialPromptApi = keyof typeof officialPromptApiCounts;
@@ -209,6 +274,31 @@ type PromptHelperKind =
   | "selectOptionRitualBranch"
   | "selectOptionTurnEffect"
   | "selectYesNoActivationLock";
+type PromptHelperSemanticVariant =
+  | "gagagaMagicianAnnounceLevelChange"
+  | "gachiGachiSelectEffectYesNoReplacement"
+  | "gishkiPsycheloneTraitHandShuffle"
+  | "groundCollapseMultiDisableField"
+  | "gunkanSushipSelectCodesSearch"
+  | "infernoAshenedFieldZoneOption"
+  | "lavalBlasterAnnounceNumberCost"
+  | "lightningStormDualModeSelectEffect"
+  | "magiaMagicSpecialSummonSelectEffect"
+  | "magikeyDuoDefenseRitualBranch"
+  | "magikeyMafteaDeckRitualBranch"
+  | "mirrorMageAnnounceNumberRangeToken"
+  | "naturiaBlessingSpecialSummonSelectEffect"
+  | "parallelPanzerLinkedZoneMove"
+  | "primathmechLaplacianDynamicSelectEffect"
+  | "primiteLordlyLodeAnnounceCardSummonLock"
+  | "pyroClockTurnEffectSelectOption"
+  | "smallScuffleMirroredZoneSummon"
+  | "springMultiDisableZoneLoop"
+  | "springansBlastFieldZoneLoop"
+  | "springansShipFieldZoneTarget"
+  | "sprindColumnMove"
+  | "vernusylphAttributeActivationLock"
+  | "wattkineticOpponentZoneMove";
 
 function representativePromptHelperFixtures(): Array<{ file: string; kind: PromptHelperKind; apis: OfficialPromptApi[]; required: string[] }> {
   return ([
@@ -525,5 +615,36 @@ function countPromptHelperKinds(fixtures: Array<{ kind: PromptHelperKind }>): Re
       return counts;
     },
     Object.fromEntries(Object.keys(promptHelperKindCounts).map((kind) => [kind, 0])) as Record<PromptHelperKind, number>,
+  );
+}
+
+function promptHelperSemanticVariants(): Array<{
+  file: string;
+  kind: PromptHelperSemanticVariant;
+  requiredSnippets: string[];
+}> {
+  return representativePromptHelperFixtures().map(({ file, required }) => {
+    const kind = promptHelperSemanticVariantByFile[file];
+    if (kind === undefined) {
+      throw new Error(`Missing prompt helper semantic variant for ${file}`);
+    }
+
+    return {
+      file,
+      kind,
+      requiredSnippets: required,
+    };
+  });
+}
+
+function countPromptHelperSemanticVariants(
+  fixtures: Array<{ kind: PromptHelperSemanticVariant }>,
+): Record<PromptHelperSemanticVariant, number> {
+  return fixtures.reduce(
+    (counts, { kind }) => {
+      counts[kind] += 1;
+      return counts;
+    },
+    Object.fromEntries(Object.keys(promptHelperSemanticVariantCounts).map((kind) => [kind, 0])) as Record<PromptHelperSemanticVariant, number>,
   );
 }
