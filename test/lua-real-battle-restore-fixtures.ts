@@ -4,14 +4,14 @@ import path from "node:path";
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const battleKeywords = ["battle", "attack", "damage"];
-export const realScriptBattleFixtureCount = 152;
+export const realScriptBattleFixtureCount = 153;
 export const battleLegalActionFixtureCount = 4;
 export const attackDeclarationTrapFixtureCount = 6;
 export const battleRoutingFixtureCount = 6;
 export const battleContinuousSemanticFixtureCount = 1;
 export const damageStepRestoreFixtureCount = 4;
 export const battleDamageSemanticFixtureCount = 8;
-export const battleTriggerSemanticFixtureCount = 13;
+export const battleTriggerSemanticFixtureCount = 14;
 export const attackDeclarationTrapKindCounts = {
   attackBanish: 1,
   attackDestroy: 1,
@@ -47,6 +47,7 @@ export const battleDamageSemanticKindCounts = {
   temporaryDamageCalcBoost: 1,
 } satisfies Record<BattleDamageSemanticKind, number>;
 export const battleTriggerSemanticKindCounts = {
+  battleStartDestroy: 1,
   battleConfirmDestroy: 1,
   battleDestroyingDecktopConfirm: 1,
   battleDestroyedDestroy: 1,
@@ -94,6 +95,7 @@ export const battleSemanticVariantCounts = {
   reflectBounderBattleConfirmDestroy: 1,
   ringOfMagnetismOnlyAttackEquipped: 1,
   sakuretsuArmorAttackDestroy: 1,
+  sasukeSamuraiBattleStartDestroy: 1,
   scrapIronScarecrowSetAgainNegate: 1,
   shadowSpellGoatDamageCalculationStat: 1,
   susaSoldierHalfDamage: 1,
@@ -136,6 +138,7 @@ export type BattleDamageSemanticKind =
   | "temporaryDamageCalcBoost";
 
 export type BattleTriggerSemanticKind =
+  | "battleStartDestroy"
   | "battleConfirmDestroy"
   | "battleDestroyingDecktopConfirm"
   | "battleDestroyedDestroy"
@@ -182,6 +185,7 @@ export type BattleSemanticVariant =
   | "reflectBounderBattleConfirmDestroy"
   | "ringOfMagnetismOnlyAttackEquipped"
   | "sakuretsuArmorAttackDestroy"
+  | "sasukeSamuraiBattleStartDestroy"
   | "scrapIronScarecrowSetAgainNegate"
   | "shadowSpellGoatDamageCalculationStat"
   | "susaSoldierHalfDamage"
@@ -553,6 +557,18 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-sasuke-samurai-battle-start-destroy.test.ts",
+      kind: "battleStartDestroy",
+      required: [
+        'eventName: "battleStarted"',
+        "eventCode: 1132",
+        'triggerBucket: "turnMandatory"',
+        'eventName: "destroyed"',
+        'location: "graveyard"',
+        "eventReasonEffectId: 1",
+      ],
+    },
+    {
       file: "lua-real-script-blizzard-warrior-battle-destroying-decktop.test.ts",
       kind: "battleDestroyingDecktopConfirm",
       required: [
@@ -803,6 +819,11 @@ export function realScriptBattleSemanticVariants(): Array<{
       required: ["restores Sakuretsu Armor's attack-declaration target and destroys the active attacker", "location: \"graveyard\"", "players[1].lifePoints).toBe(8000)"],
     },
     {
+      file: "lua-real-script-sasuke-samurai-battle-start-destroy.test.ts",
+      kind: "sasukeSamuraiBattleStartDestroy",
+      required: ["restores its EVENT_BATTLE_START mandatory trigger and destroys the face-down Defense target", "eventCode: 1132", "eventReasonEffectId: 1"],
+    },
+    {
       file: "lua-real-script-scrap-iron-scarecrow-battle-window.test.ts",
       kind: "scrapIronScarecrowSetAgainNegate",
       required: ["restores Scrap-Iron Scarecrow and keeps it set after negating the attack", "attackCanceledUids).toEqual([attacker!.uid])", "position: \"faceDown\", faceUp: false"],
@@ -880,6 +901,7 @@ export function countBattleSemanticVariants(fixtures: Array<{ kind: BattleSemant
       reflectBounderBattleConfirmDestroy: 0,
       ringOfMagnetismOnlyAttackEquipped: 0,
       sakuretsuArmorAttackDestroy: 0,
+      sasukeSamuraiBattleStartDestroy: 0,
       scrapIronScarecrowSetAgainNegate: 0,
       shadowSpellGoatDamageCalculationStat: 0,
       susaSoldierHalfDamage: 0,
@@ -986,6 +1008,7 @@ export function countBattleTriggerSemanticKinds(
       return counts;
     },
     {
+      battleStartDestroy: 0,
       battleConfirmDestroy: 0,
       battleDestroyingDecktopConfirm: 0,
       battleDestroyedDestroy: 0,

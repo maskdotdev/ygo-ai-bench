@@ -4,15 +4,15 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 21;
-const battleTimingEventCodeFixtureCount = 21;
+const battleTimingFixtureCount = 22;
+const battleTimingEventCodeFixtureCount = 22;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 10,
   beforeDamageCalculation: 3,
   duringDamageCalculation: 2,
   endDamageStep: 4,
-  startDamageStep: 2,
+  startDamageStep: 3,
 };
 const battleTimingSemanticVariantCounts = {
   allyOfJusticeNullfierAfterDamageDisable: 1,
@@ -32,6 +32,7 @@ const battleTimingSemanticVariantCounts = {
   nightmareMagicianEndDamageControl: 1,
   predaplantSarraceniantAfterDamageDestroy: 1,
   reflectBounderStartAndAfterDamageDestroy: 1,
+  sasukeSamuraiStartDamageDestroy: 1,
   shadowSpellDuringDamagePersistentStat: 1,
   shinobirdCrowStartDamageStatBoost: 1,
   topologicBomberAfterDamageBurn: 1,
@@ -114,6 +115,7 @@ type BattleTimingSemanticVariant =
   | "nightmareMagicianEndDamageControl"
   | "predaplantSarraceniantAfterDamageDestroy"
   | "reflectBounderStartAndAfterDamageDestroy"
+  | "sasukeSamuraiStartDamageDestroy"
   | "shadowSpellDuringDamagePersistentStat"
   | "shinobirdCrowStartDamageStatBoost"
   | "topologicBomberAfterDamageBurn"
@@ -211,6 +213,11 @@ function battleTimingSemanticVariants(): Array<{
       required: ["restores battle-confirm damage into a later battled self-destruction trigger", "eventName: \"battleConfirmed\"", "eventName: \"afterDamageCalculation\""],
     },
     {
+      file: "test/lua-real-script-sasuke-samurai-battle-start-destroy.test.ts",
+      kind: "sasukeSamuraiStartDamageDestroy",
+      required: ["restores its EVENT_BATTLE_START mandatory trigger and destroys the face-down Defense target", "battleWindow?.kind).toBe(\"startDamageStep\")", "eventName: \"destroyed\""],
+    },
+    {
       file: "test/lua-real-script-shadow-spell-goat-damage-calculation-persistent.test.ts",
       kind: "shadowSpellDuringDamagePersistentStat",
       required: ["restores a damage-calculation persistent target into ATK loss before battle damage", "battleWindow?.kind).toBe(\"duringDamageCalculation\")", "shadow spell persistent true/true/1/1500"],
@@ -263,6 +270,7 @@ function countBattleTimingSemanticVariants(
       nightmareMagicianEndDamageControl: 0,
       predaplantSarraceniantAfterDamageDestroy: 0,
       reflectBounderStartAndAfterDamageDestroy: 0,
+      sasukeSamuraiStartDamageDestroy: 0,
       shadowSpellDuringDamagePersistentStat: 0,
       shinobirdCrowStartDamageStatBoost: 0,
       topologicBomberAfterDamageBurn: 0,
@@ -382,6 +390,20 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'eventName: "battleStarted"',
         'eventName: "sentToHand"',
         "pendingBattle).toBeUndefined()",
+      ],
+    },
+    {
+      file: "test/lua-real-script-sasuke-samurai-battle-start-destroy.test.ts",
+      kind: "startDamageStep",
+      required: [
+        "restoredSetup.missingRegistryKeys).toEqual([])",
+        "restoredSetup.missingChainLimitRegistryKeys).toEqual([])",
+        "restoredTrigger.missingRegistryKeys).toEqual([])",
+        "restoredTrigger.missingChainLimitRegistryKeys).toEqual([])",
+        'battleWindow?.kind).toBe("startDamageStep")',
+        'eventName: "battleStarted"',
+        'eventName: "destroyed"',
+        "eventReasonEffectId: 1",
       ],
     },
     {
