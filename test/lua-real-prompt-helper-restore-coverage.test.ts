@@ -70,6 +70,7 @@ const promptHelperKindCounts: Record<PromptHelperKind, number> = {
   announceNumberRangeToken: 1,
   announceTraitHandShuffle: 1,
   selectCardsFromCodesSearch: 1,
+  selectDisableFieldCount: 1,
   selectDisableFieldLoop: 1,
   selectDisableFieldMovement: 2,
   selectEffectModeChoice: 4,
@@ -121,7 +122,7 @@ describe("Lua real prompt helper restore coverage", () => {
   });
 
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(22);
+    expect(representativePromptHelperFixtures()).toHaveLength(23);
   });
 
   it("keeps every officially-used prompt API represented by restore fixtures", () => {
@@ -196,6 +197,7 @@ type PromptHelperKind =
   | "announceNumberRangeToken"
   | "announceTraitHandShuffle"
   | "selectCardsFromCodesSearch"
+  | "selectDisableFieldCount"
   | "selectDisableFieldLoop"
   | "selectDisableFieldMovement"
   | "selectEffectModeChoice"
@@ -435,6 +437,19 @@ function representativePromptHelperFixtures(): Array<{ file: string; kind: Promp
         '"targetParam": 1',
         "sequence: 0, position: \"faceUpAttack\"",
         "sequence: 4, position: \"faceUpAttack\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ground-collapse-multi-disable-field.test.ts",
+      kind: "selectDisableFieldCount",
+      apis: ["SelectDisableField"],
+      required: [
+        "restores a two-zone SelectDisableField prompt into the activation label",
+        'api: "SelectDisableField"',
+        "options: expect.arrayContaining([3, 5, (1 << 16) | (2 << 16)])",
+        "returned: 3",
+        '"effectLabel": 3',
+        "effect.sourceUid === groundCollapse.uid && effect.code === 260",
       ],
     },
     {
