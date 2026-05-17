@@ -1,4 +1,6 @@
 import fengari from "fengari";
+import { isFieldZoneDisabled } from "#duel/disabled-field-zones.js";
+import { forcedMonsterZoneAllowedMask } from "#duel/forced-monster-zones.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { linkedGroupUidsForCard, linkedZoneMask } from "#lua/duel-api/location.js";
 import { pushGroupTable } from "#lua/group-api.js";
@@ -15,6 +17,13 @@ export function installCardLinkedApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetLinkedZone"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    const targetPlayer = card ? lua.lua_isnumber(state, 2) ? normalizePlayer(lua.lua_tointeger(state, 2)) : card.controller : undefined;
+    lua.lua_pushinteger(state, card && targetPlayer !== undefined ? freeLinkedZoneMask(session, card, targetPlayer) : 0);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetFreeLinkedZone"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     pushGroupTable(state, card ? linkedGroupUidsForCard(session, card) : []);
@@ -54,6 +63,21 @@ function monsterZoneCards(state: DuelState): DuelCardInstance[] {
 
 function linkPointsTo(state: DuelState, source: DuelCardInstance, target: DuelCardInstance): boolean {
   return source.controller === target.controller && (linkedZoneMask(source, state) & (1 << target.sequence)) !== 0;
+}
+
+function freeLinkedZoneMask(session: DuelSession, card: DuelCardInstance, player: PlayerId): number {
+  const linkedMask = linkedZoneMask(card, session.state, player);
+  const allowedMask = forcedMonsterZoneAllowedMask(session.state, player);
+  let mask = 0;
+  for (let sequence = 0; sequence < 5; sequence += 1) {
+    const bit = 1 << sequence;
+    if ((linkedMask & bit) === 0) continue;
+    if ((allowedMask & bit) === 0) continue;
+    if (isFieldZoneDisabled(session.state, player, "monsterZone", sequence)) continue;
+    if (session.state.cards.some((candidate) => candidate.controller === player && candidate.location === "monsterZone" && candidate.sequence === sequence)) continue;
+    mask |= bit;
+  }
+  return mask;
 }
 
 function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefined {

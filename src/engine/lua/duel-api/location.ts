@@ -259,10 +259,20 @@ function linkedGroupUidsForField(session: DuelSession, player: PlayerId, locatio
 
 function linkedSequences(sequence: number, markers: number): number[] {
   const sequences: number[] = [];
+  if (sequence === 5) {
+    if ((markers & 0x1) !== 0) sequences.push(0);
+    if ((markers & 0x2) !== 0) sequences.push(1);
+    if ((markers & 0x4) !== 0) sequences.push(2);
+  } else if (sequence === 6) {
+    if ((markers & 0x1) !== 0) sequences.push(2);
+    if ((markers & 0x2) !== 0) sequences.push(3);
+    if ((markers & 0x4) !== 0) sequences.push(4);
+  } else if ((markers & 0x1) !== 0 || (markers & 0x2) !== 0 || (markers & 0x4) !== 0) {
+    sequences.push(sequence);
+  }
   if ((markers & 0x8) !== 0) sequences.push(sequence - 1);
   if ((markers & 0x20) !== 0) sequences.push(sequence + 1);
-  if ((markers & 0x1) !== 0 || (markers & 0x2) !== 0 || (markers & 0x4) !== 0) sequences.push(sequence);
-  return sequences.filter((target) => target >= 0 && target <= 6);
+  return [...new Set(sequences)].filter((target) => target >= 0 && target <= 6);
 }
 
 function readCardOrGroupUids(L: unknown, index: number): string[] {

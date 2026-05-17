@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 123;
-const chainedResponseFixtureCount = 122;
-const responseOperationInfoFixtureCount = 114;
+const responseFixtureCount = 124;
+const chainedResponseFixtureCount = 123;
+const responseOperationInfoFixtureCount = 115;
 const responseWithoutOperationInfoFixtureFiles = [
   "test/lua-real-script-angineer-overlay-position.test.ts",
   "test/lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
@@ -18,7 +18,7 @@ const responseWithoutOperationInfoFixtureFiles = [
   "test/lua-real-script-waboku-temporary-battle-protection.test.ts",
 ];
 const responseFixtureKindCounts = {
-  chainedResponseWithOperationInfo: 114,
+  chainedResponseWithOperationInfo: 115,
   chainedResponseWithoutOperationInfo: 8,
   lingeringSameCodeNegation: 1,
 } satisfies Record<ResponseFixtureKind, number>;
@@ -28,7 +28,7 @@ const responseSemanticVariantCounts = {
   fabledAshenveilDamageStepBoostEmptyOperationInfo: 1,
   heboSpiritGrantReturnEmptyOperationInfo: 1,
   negateAttackBattleWindowEmptyOperationInfo: 1,
-  operationInfoAnnouncedResponse: 114,
+  operationInfoAnnouncedResponse: 115,
   scrapIronScarecrowBattleWindowEmptyOperationInfo: 1,
   shinobirdCrowDamageStepStatEmptyOperationInfo: 1,
   threateningRoarAttackLockEmptyOperationInfo: 1,
@@ -301,6 +301,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-upstart-goblin-draw-recover.test.ts",
     "lua-real-script-waboku-temporary-battle-protection.test.ts",
     "lua-real-script-wiretap-trap-negate-to-deck.test.ts",
+    "lua-real-script-wynn-link-charmer-summon-search.test.ts",
     "lua-real-script-yamato-no-kami-battle-destroy-backrow.test.ts",
   ]
     .map((file) => path.join("test", file))

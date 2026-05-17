@@ -377,6 +377,7 @@ export const cardFieldNames = [
   "IsLinked",
   "IsCoLinked",
   "GetLinkedZone",
+  "GetFreeLinkedZone",
   "GetLinkedGroup",
   "GetLinkedGroupCount",
   "IsDrone",
