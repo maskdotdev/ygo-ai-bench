@@ -8,6 +8,24 @@ const activationLockFixtureCount = 6;
 const activationLockAllowListFixtureCount = 5;
 const activationLockVariantFixtureCount = 14;
 const activationLockInventoryFixtureCount = 17;
+const activationLockVariantKindCounts = {
+  attributeMonsterActivationLock: 6,
+  cardActivationLock: 2,
+  nonSpiritMonsterActivationLock: 1,
+  opponentEffectActivationLock: 2,
+  spellCardActivationLock: 1,
+  spellTrapEffectActivationLock: 1,
+  trapCardActivationLock: 1,
+} satisfies Record<ActivationLockVariantKind, number>;
+
+type ActivationLockVariantKind =
+  | "attributeMonsterActivationLock"
+  | "cardActivationLock"
+  | "nonSpiritMonsterActivationLock"
+  | "opponentEffectActivationLock"
+  | "spellCardActivationLock"
+  | "spellTrapEffectActivationLock"
+  | "trapCardActivationLock";
 
 describe("Lua real activation-lock restore coverage", () => {
   it("keeps the combined activation-lock restore fixture inventory explicit", () => {
@@ -81,6 +99,10 @@ describe("Lua real activation-lock restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps activation-lock variant fixture kinds explicit", () => {
+    expect(countActivationLockVariantKinds(realScriptActivationLockVariantFixtures())).toEqual(activationLockVariantKindCounts);
+  });
 });
 
 function combinedActivationLockFixtureFiles(): string[] {
@@ -133,10 +155,15 @@ function realScriptActivationLockAllowListFixtureFiles(): string[] {
     .filter((file) => !file.endsWith("lua-real-script-wattgiraffe-battle-activation-lock.test.ts"));
 }
 
-function realScriptActivationLockVariantFixtures(): Array<{ file: string; requiredSnippets: string[] }> {
-  return [
+function realScriptActivationLockVariantFixtures(): Array<{
+  file: string;
+  kind: ActivationLockVariantKind;
+  requiredSnippets: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-lunalight-kaleido-chick-remove-activation-lock.test.ts",
+      kind: "opponentEffectActivationLock",
       requiredSnippets: [
         "restoredTrigger.missingRegistryKeys).toEqual([])",
         "restoredTrigger.missingChainLimitRegistryKeys).toEqual([])",
@@ -150,6 +177,7 @@ function realScriptActivationLockVariantFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-ultimate-falcon-activation-lock.test.ts",
+      kind: "opponentEffectActivationLock",
       requiredSnippets: [
         "restored.missingRegistryKeys).toEqual([])",
         "restored.missingChainLimitRegistryKeys).toEqual([])",
@@ -164,6 +192,7 @@ function realScriptActivationLockVariantFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-amano-iwato-activation-lock.test.ts",
+      kind: "nonSpiritMonsterActivationLock",
       requiredSnippets: [
         'luaValueDescriptor: "cannot-activate:non-spirit-monster-effect"',
         'action.uid === blockedMonster!.uid)).toBe(false)',
@@ -174,6 +203,7 @@ function realScriptActivationLockVariantFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-aussa-channeler-attribute-activation-lock.test.ts",
+      kind: "attributeMonsterActivationLock",
       requiredSnippets: [
         'luaValueDescriptor: "cannot-activate:monster-attribute-except:1"',
         'action.uid === fireResponder.uid)).toBe(false)',
@@ -182,6 +212,7 @@ function realScriptActivationLockVariantFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-inzektor-axe-damage-phase-activation-lock.test.ts",
+      kind: "cardActivationLock",
       requiredSnippets: [
         'luaValueDescriptor: "cannot-activate:card-activation"',
         'reset: { flags: 0x40000020 }',
@@ -191,6 +222,7 @@ function realScriptActivationLockVariantFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-vernusylph-attribute-activation-lock.test.ts",
+      kind: "attributeMonsterActivationLock",
       requiredSnippets: [
         'luaValueDescriptor: "cannot-activate:monster-attribute-except:1"',
         'action.uid === fireResponder.uid)).toBe(false)',
@@ -199,6 +231,7 @@ function realScriptActivationLockVariantFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-eria-channeler-attribute-activation-lock.test.ts",
+      kind: "attributeMonsterActivationLock",
       requiredSnippets: [
         'luaValueDescriptor: "cannot-activate:monster-attribute-except:2"',
         'action.uid === fireResponder.uid)).toBe(false)',
@@ -207,6 +240,7 @@ function realScriptActivationLockVariantFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-hiita-channeler-attribute-activation-lock.test.ts",
+      kind: "attributeMonsterActivationLock",
       requiredSnippets: [
         'luaValueDescriptor: "cannot-activate:monster-attribute-except:4"',
         'action.uid === windResponder.uid)).toBe(false)',
@@ -215,6 +249,7 @@ function realScriptActivationLockVariantFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-wynn-channeler-attribute-activation-lock.test.ts",
+      kind: "attributeMonsterActivationLock",
       requiredSnippets: [
         'luaValueDescriptor: "cannot-activate:monster-attribute-except:8"',
         'action.uid === fireResponder.uid)).toBe(false)',
@@ -223,6 +258,7 @@ function realScriptActivationLockVariantFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-ancient-gear-beast-card-activation-lock.test.ts",
+      kind: "cardActivationLock",
       requiredSnippets: [
         'luaValueDescriptor: "cannot-activate:card-activation"',
         'targetRange: [0, 1]',
@@ -232,6 +268,7 @@ function realScriptActivationLockVariantFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-shopina-light-activation-lock.test.ts",
+      kind: "attributeMonsterActivationLock",
       requiredSnippets: [
         'luaValueDescriptor: "cannot-activate:monster-attribute-except:16"',
         'action.uid === fireResponder.uid)).toBe(false)',
@@ -242,6 +279,7 @@ function realScriptActivationLockVariantFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-sasuke-samurai-spelltrap-activation-lock.test.ts",
+      kind: "spellTrapEffectActivationLock",
       requiredSnippets: [
         'luaValueDescriptor: "cannot-activate:spell-trap-effect"',
         'action.uid === opponentSpell.uid)).toBe(false)',
@@ -252,6 +290,7 @@ function realScriptActivationLockVariantFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-sonic-jammer-spell-activation-lock.test.ts",
+      kind: "spellCardActivationLock",
       requiredSnippets: [
         'luaValueDescriptor: "cannot-activate:spell-card-activation"',
         'action.uid === spell.uid)).toBe(false)',
@@ -260,11 +299,36 @@ function realScriptActivationLockVariantFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-timegazer-trap-activation-lock.test.ts",
+      kind: "trapCardActivationLock",
       requiredSnippets: [
         'luaValueDescriptor: "cannot-activate:trap-card-activation"',
         'action.uid === spell.uid)).toBe(true)',
         'action.uid === trap.uid)).toBe(false)',
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: ActivationLockVariantKind;
+    requiredSnippets: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countActivationLockVariantKinds(
+  fixtures: Array<{ kind: ActivationLockVariantKind }>,
+): Record<ActivationLockVariantKind, number> {
+  return fixtures.reduce<Record<ActivationLockVariantKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      attributeMonsterActivationLock: 0,
+      cardActivationLock: 0,
+      nonSpiritMonsterActivationLock: 0,
+      opponentEffectActivationLock: 0,
+      spellCardActivationLock: 0,
+      spellTrapEffectActivationLock: 0,
+      trapCardActivationLock: 0,
+    },
+  );
 }
