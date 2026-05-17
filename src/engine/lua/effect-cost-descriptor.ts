@@ -6,6 +6,7 @@ const { lua, to_jsstring, to_luastring } = fengari;
 const numericOrIdentifierPattern = String.raw`(?:0x[0-9A-Fa-f]+|\d+|[A-Za-z_]\w*)`;
 
 export function knownLuaEffectCostDescriptor(L: unknown, index: number, hostState: LuaHostState): string | undefined {
+  if (isGlobalFunction(L, index, "Cost", "SelfTribute") || isGlobalFunction(L, index, "Cost", "SelfRelease")) return "cost:self-tribute";
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
   const summonTypeParam = luaFunctionParams(snippet)?.[3];
@@ -62,4 +63,17 @@ function luaNumberUpvalueValue(L: unknown, index: number, token: string): number
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function isGlobalFunction(L: unknown, index: number, tableName: string, fieldName: string): boolean {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  lua.lua_getglobal(L, to_luastring(tableName));
+  if (!lua.lua_istable(L, -1)) {
+    lua.lua_pop(L, 1);
+    return false;
+  }
+  lua.lua_getfield(L, -1, to_luastring(fieldName));
+  const matches = lua.lua_isfunction(L, -1) && Boolean(lua.lua_rawequal(L, absoluteIndex, -1));
+  lua.lua_pop(L, 2);
+  return matches;
 }

@@ -34,9 +34,11 @@ export function canMoveCardToDeckOrExtraAsCost(state: DuelState, card: DuelCardI
   return canMoveDuelCardToLocation(state, uid, destination, duelReason.cost);
 }
 
-export function canSpecialSummonFromLua(session: DuelSession, card: DuelCardInstance, player: PlayerId, summonType: number, zoneMask?: number, allowUnconditionalSpecialSummonCondition = false, summonPosition?: CardPosition): boolean {
-  if (!hasAvailableMonsterZone(session, player, zoneMask)) return false;
+export function canSpecialSummonFromLua(session: DuelSession, card: DuelCardInstance, player: PlayerId, summonType: number, zoneMask?: number, allowUnconditionalSpecialSummonCondition = false, summonPosition?: CardPosition, options: { allowNoOpenMonsterZone?: boolean } = {}): boolean {
+  const hasOpenZone = hasAvailableMonsterZone(session, player, zoneMask);
+  if (!hasOpenZone && !options.allowNoOpenMonsterZone) return false;
   if (canSpecialSummonDuelCard(session.state, card.uid, player, summonType, undefined, allowUnconditionalSpecialSummonCondition, summonPosition)) return true;
+  if (!hasOpenZone && options.allowNoOpenMonsterZone) return canSpecialSummonIgnoringCurrentZone(session, card, player, summonType, allowUnconditionalSpecialSummonCondition, summonPosition);
   return card.location === "extraDeck" && summonType !== 0 && hasZoneSpace(session.state, player, "monsterZone") && canPlayerSpecialSummon(session.state, player, card, summonType, undefined, summonPosition);
 }
 
@@ -52,6 +54,13 @@ function canBeMaterialFromLocation(location: DuelLocation, kind: MaterialUseKind
 function hasAvailableMonsterZone(session: DuelSession, player: PlayerId, zoneMask: number | undefined): boolean {
   if (zoneMask === undefined || zoneMask === 0) return hasZoneSpace(session.state, player, "monsterZone");
   return firstOpenFieldZoneSequence(session.state, player, "monsterZone", [], zoneMask) !== undefined;
+}
+
+function canSpecialSummonIgnoringCurrentZone(session: DuelSession, card: DuelCardInstance, player: PlayerId, summonType: number, allowUnconditionalSpecialSummonCondition: boolean, summonPosition: CardPosition | undefined): boolean {
+  if (!isMonsterLike(card, session.state)) return false;
+  if (card.location === "extraDeck") return false;
+  if (!canPlayerSpecialSummon(session.state, player, card, summonType, undefined, summonPosition)) return false;
+  return allowUnconditionalSpecialSummonCondition || canMoveDuelCardToLocation(session.state, card.uid, "monsterZone", duelReason.summon | duelReason.specialSummon);
 }
 
 function targetAllowsMaterial(state: DuelState, target: DuelCardInstance | undefined, card: DuelCardInstance, kind: MaterialUseKind): boolean {

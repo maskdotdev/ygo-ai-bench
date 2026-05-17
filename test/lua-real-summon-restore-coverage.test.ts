@@ -9,6 +9,7 @@ import {
   countPendulumGrantKinds,
   countPendulumHelperKinds,
   countRealScriptSummonKeywordFamilies,
+  countSelfTributeZoneSpecialSummonKinds,
   countSummonMaterialLockKinds,
   countSummonProcedureFamilies,
   countSummonSemanticVariants,
@@ -32,12 +33,15 @@ import {
   realScriptMaterialLockFixtureSnippets,
   realScriptPendulumGrantFixtureFiles,
   realScriptPendulumHelperFixtureSnippets,
+  realScriptSelfTributeZoneSpecialSummonFixtureSnippets,
   realScriptSummonFixtureCount,
   realScriptSummonFixtureFiles,
   realScriptSummonKeywordFamilyCounts,
   realScriptSummonProcedureFixtureFiles,
   realScriptTypedSummonProcedureFixtureFiles,
   realScriptUnionProcedureFixtureSnippets,
+  selfTributeZoneSpecialSummonFixtureCount,
+  selfTributeZoneSpecialSummonKindCounts,
   summonProcedureFamilyCounts,
   summonProcedureFixtureCount,
   summonSemanticVariantCounts,
@@ -270,6 +274,34 @@ describe("Lua real summon restore coverage", () => {
 
   it("keeps linked-zone Special Summon fixture kinds explicit", () => {
     expect(countLinkedZoneSpecialSummonKinds(realScriptLinkedZoneSpecialSummonFixtureSnippets())).toEqual(linkedZoneSpecialSummonKindCounts);
+  });
+
+  it("requires representative self-tribute Special Summon fixtures to pin zone freeing", () => {
+    const files = realScriptSelfTributeZoneSpecialSummonFixtureSnippets();
+    expect(files).toHaveLength(selfTributeZoneSpecialSummonFixtureCount);
+
+    const weak = files
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
+          || !text.includes("applyLuaRestoreResponse")
+          || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(weak).toEqual([]);
+  });
+
+  it("keeps self-tribute Special Summon fixture kinds explicit", () => {
+    expect(countSelfTributeZoneSpecialSummonKinds(realScriptSelfTributeZoneSpecialSummonFixtureSnippets())).toEqual(selfTributeZoneSpecialSummonKindCounts);
   });
 
   it("requires representative force-Monster-Zone summon locks to pin restored zone counts", () => {

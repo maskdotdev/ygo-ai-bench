@@ -12,6 +12,7 @@ export interface LuaCardApiEffectRecord {
   copyId?: number;
   value?: number;
   valueDescriptor?: string;
+  costDescriptor?: string;
   valueRef?: number;
   targetRef?: number;
   labelObjectId?: number;

@@ -76,6 +76,6 @@ function installStateHelpers<EffectRecord extends LuaCardApiEffectRecord>(L: unk
   installCardMoveAbilityApi(L, session);
   installCardRelationApi(L, session, hostState);
   installCardEffectQueryApi(L, session, hostState);
-  installCardSummonPredicateApi(L, session);
+  installCardSummonPredicateApi(L, session, hostState);
   installCardMaterialApi(L, session);
 }

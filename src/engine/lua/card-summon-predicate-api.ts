@@ -10,10 +10,11 @@ import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { isNoTributePlayerAffected } from "#lua/no-tribute-api.js";
 import { readMinTributeRequirement, withLuaMinTributeOverride } from "#lua/tribute-metadata-api.js";
 import type { DuelAction, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
+import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
 
 const { lua, to_luastring } = fengari;
 
-export function installCardSummonPredicateApi(L: unknown, session: DuelSession): void {
+export function installCardSummonPredicateApi<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): void {
   pushSummonPredicate(L, "IsSummonable", session, "normalSummon");
   pushSummonPredicate(L, "IsSummonableCard", session, "normalSummon");
   pushSummonPredicate(L, "CanSummonOrSet", session, "summonOrSet");
@@ -23,12 +24,12 @@ export function installCardSummonPredicateApi(L: unknown, session: DuelSession):
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsSpecialSummonable"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushCanBeSpecialSummoned(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCanBeSpecialSummoned(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsCanBeSpecialSummoned"));
   pushSummonPredicate(L, "IsMSetable", session, "setMonster");
 }
 
-function pushCanBeSpecialSummoned(L: unknown, session: DuelSession): number {
+function pushCanBeSpecialSummoned<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardApiState<EffectRecord>): number {
   const card = readCard(L, session);
   const summonType = luaSpecialSummonTypeCode(lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0);
   const player = readSpecialSummonTargetPlayer(L, card);
@@ -36,8 +37,26 @@ function pushCanBeSpecialSummoned(L: unknown, session: DuelSession): number {
   const positionMask = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : 0x1;
   const position = positionFromMask(positionMask);
   const zoneMask = lua.lua_isnumber(L, 9) ? lua.lua_tointeger(L, 9) : undefined;
-  lua.lua_pushboolean(L, Boolean(position && card && player !== undefined && canSpecialSummonFromLua(session, card, player, summonType, zoneMask, ignoreSummonCondition, position)));
+  lua.lua_pushboolean(
+    L,
+    Boolean(
+      position &&
+        card &&
+        player !== undefined &&
+        canSpecialSummonFromLua(session, card, player, summonType, zoneMask, ignoreSummonCondition, position, {
+          allowNoOpenMonsterZone: activeSelfTributeCostCanFreeMonsterZone(session, hostState, player),
+        }),
+    ),
+  );
   return 1;
+}
+
+function activeSelfTributeCostCanFreeMonsterZone<EffectRecord extends LuaCardApiEffectRecord>(session: DuelSession, hostState: LuaCardApiState<EffectRecord>, player: PlayerId): boolean {
+  if (!hostState.activeContext?.checkOnly || hostState.activeLuaEffectId === undefined) return false;
+  const effect = hostState.effects.get(hostState.activeLuaEffectId);
+  if (effect?.costDescriptor !== "cost:self-tribute" || !effect.sourceUid) return false;
+  const source = session.state.cards.find((card) => card.uid === effect.sourceUid);
+  return Boolean(source && source.controller === player && source.location === "monsterZone" && source.sequence < 5);
 }
 
 function pushSummonPredicate(L: unknown, fieldName: string, session: DuelSession, kind: "normalSummon" | "setMonster" | "summonOrSet"): void {

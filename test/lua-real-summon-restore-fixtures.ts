@@ -4,7 +4,7 @@ import path from "node:path";
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-export const realScriptSummonFixtureCount = 179;
+export const realScriptSummonFixtureCount = 180;
 export const summonProcedureFixtureCount = 24;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -13,6 +13,7 @@ export const unionProcedureFixtureCount = 4;
 export const materialLockFixtureCount = 4;
 export const flipSummonSuccessTrapFixtureCount = 4;
 export const linkedZoneSpecialSummonFixtureCount = 5;
+export const selfTributeZoneSpecialSummonFixtureCount = 1;
 export const tributeMaterialFixtureCount = 1;
 export const unsummonableSummonSetLockFixtureCount = 1;
 export const realScriptSummonKeywordFamilyCounts = {
@@ -20,7 +21,7 @@ export const realScriptSummonKeywordFamilyCounts = {
   link: 18,
   pendulum: 20,
   ritual: 21,
-  summon: 66,
+  summon: 67,
   synchro: 16,
   xyz: 15,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
@@ -79,6 +80,7 @@ export const linkedZoneSpecialSummonKindCounts = {
   releaseCostDeckSummon: 1,
   toBeLinkedZoneRevive: 1,
 } satisfies Record<LinkedZoneSpecialSummonKind, number>;
+export const selfTributeZoneSpecialSummonKindCounts = { selfTributeFreesMonsterZone: 1 } satisfies Record<SelfTributeZoneSpecialSummonKind, number>;
 export const forceMonsterZoneSummonLockKindCounts = {
   controlReason: 1,
   extraLocationRange: 1,
@@ -95,6 +97,7 @@ export const summonSemanticVariantCounts = {
   summonMaterialLockSuppression: materialLockFixtureCount,
   flipSummonSuccessTrapResponses: flipSummonSuccessTrapFixtureCount,
   linkedZoneSpecialSummons: linkedZoneSpecialSummonFixtureCount,
+  selfTributeZoneSpecialSummons: selfTributeZoneSpecialSummonFixtureCount,
   tributeMaterialValuePredicates: tributeMaterialFixtureCount,
   unsummonableSummonSetLocks: unsummonableSummonSetLockFixtureCount,
   forceMonsterZoneSummonLocks: 4,
@@ -119,6 +122,7 @@ export type LinkedZoneSpecialSummonKind =
   | "opponentFieldLinkedZoneSummon"
   | "releaseCostDeckSummon"
   | "toBeLinkedZoneRevive";
+export type SelfTributeZoneSpecialSummonKind = "selfTributeFreesMonsterZone";
 export type ForceMonsterZoneSummonLockKind =
   | "controlReason"
   | "extraLocationRange"
@@ -134,6 +138,7 @@ export type SummonSemanticVariant =
   | "summonMaterialLockSuppression"
   | "flipSummonSuccessTrapResponses"
   | "linkedZoneSpecialSummons"
+  | "selfTributeZoneSpecialSummons"
   | "tributeMaterialValuePredicates"
   | "unsummonableSummonSetLocks"
   | "forceMonsterZoneSummonLocks";
@@ -357,6 +362,31 @@ export function countLinkedZoneSpecialSummonKinds(files: Array<{ kind: LinkedZon
       toBeLinkedZoneRevive: 0,
     },
   );
+}
+
+export function realScriptSelfTributeZoneSpecialSummonFixtureSnippets(): Array<{ file: string; kind: SelfTributeZoneSpecialSummonKind; required: string[] }> {
+  return [{
+    file: "test/lua-real-script-chrysalis-larva-self-tribute-neospace-summon.test.ts",
+    kind: "selfTributeFreesMonsterZone",
+    required: [
+      "Neo Space gated self-tribute cost",
+      "sequence: 4",
+      "duelReason.release | duelReason.cost",
+      'eventName: "released"',
+      'eventName: "specialSummoned"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+      "parameter: 0x3",
+    ],
+  }];
+}
+
+export function countSelfTributeZoneSpecialSummonKinds(
+  files: Array<{ kind: SelfTributeZoneSpecialSummonKind }>,
+): Record<SelfTributeZoneSpecialSummonKind, number> {
+  return files.reduce<Record<SelfTributeZoneSpecialSummonKind, number>>((counts, { kind }) => {
+    counts[kind] += 1;
+    return counts;
+  }, { selfTributeFreesMonsterZone: 0 });
 }
 
 export function realScriptForceMonsterZoneSummonLockFixtureSnippets(): Array<{
@@ -941,6 +971,7 @@ export function summonSemanticVariants(): Array<{ file: string; kind: SummonSema
     ...realScriptMaterialLockFixtureSnippets().map(({ file }) => ({ file, kind: "summonMaterialLockSuppression" as const })),
     ...realScriptFlipSummonSuccessTrapFixtureSnippets().map(({ file }) => ({ file, kind: "flipSummonSuccessTrapResponses" as const })),
     ...realScriptLinkedZoneSpecialSummonFixtureSnippets().map(({ file }) => ({ file, kind: "linkedZoneSpecialSummons" as const })),
+    ...realScriptSelfTributeZoneSpecialSummonFixtureSnippets().map(({ file }) => ({ file, kind: "selfTributeZoneSpecialSummons" as const })),
     { file: "test/lua-real-script-kaiser-sea-horse-double-tribute-summon.test.ts", kind: "tributeMaterialValuePredicates" as const },
     { file: "test/lua-real-script-rare-metal-dragon-unsummonable.test.ts", kind: "unsummonableSummonSetLocks" as const },
     ...realScriptForceMonsterZoneSummonLockFixtureSnippets().map(({ file }) => ({ file, kind: "forceMonsterZoneSummonLocks" as const })),
@@ -965,6 +996,7 @@ export function countSummonSemanticVariants(
       summonMaterialLockSuppression: 0,
       flipSummonSuccessTrapResponses: 0,
       linkedZoneSpecialSummons: 0,
+      selfTributeZoneSpecialSummons: 0,
       tributeMaterialValuePredicates: 0,
       unsummonableSummonSetLocks: 0,
       forceMonsterZoneSummonLocks: 0,
@@ -990,6 +1022,7 @@ export function groupSummonSemanticVariantFiles(
       summonMaterialLockSuppression: [],
       flipSummonSuccessTrapResponses: [],
       linkedZoneSpecialSummons: [],
+      selfTributeZoneSpecialSummons: [],
       tributeMaterialValuePredicates: [],
       unsummonableSummonSetLocks: [],
       forceMonsterZoneSummonLocks: [],
