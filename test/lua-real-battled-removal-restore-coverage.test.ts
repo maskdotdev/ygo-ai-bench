@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battledRemovalFixtureCount = 5;
+const battledRemovalFixtureCount = 6;
 const battledRemovalKindCounts = {
   afterDamageBanish: 2,
   battleDestroyRedirect: 1,
   battleDestroyedBackrowDestroy: 1,
-  battleDestroyedMonsterDestroy: 1,
+  battleDestroyedMonsterDestroy: 2,
 } satisfies Record<BattledRemovalKind, number>;
 
 type BattledRemovalKind =
@@ -88,6 +88,18 @@ function battledRemovalFixtureFiles(): Array<{
         'eventName: "destroyed"',
         'location: "graveyard"',
         "reasonCardUid: attacker!.uid",
+      ],
+    },
+    {
+      file: "test/lua-real-script-yomi-ship-battle-destroyed.test.ts",
+      kind: "battleDestroyedMonsterDestroy",
+      required: [
+        'eventName: "battleDestroyed"',
+        'type === "activateTrigger"',
+        'eventName: "destroyed"',
+        'location: "graveyard"',
+        "reasonCardUid: attacker!.uid",
+        "eventReasonEffectId: 1",
       ],
     },
     {
