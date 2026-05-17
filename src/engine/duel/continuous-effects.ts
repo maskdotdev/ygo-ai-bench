@@ -325,7 +325,9 @@ function isSummonOrSetPrevented(state: DuelState, player: PlayerId, card: DuelCa
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     const ctx = createContext(effect, source, card);
-    if (!continuousEffectTargetsPlayer(effect, source, player) && !continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
+    if (((effect.luaTypeFlags ?? 0) & 0x1) !== 0) {
+      if (source.uid !== card.uid && !continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
+    } else if (!continuousEffectTargetsPlayer(effect, source, player) && !continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (effect.targetCardPredicate && !effect.targetCardPredicate(ctx, card)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
