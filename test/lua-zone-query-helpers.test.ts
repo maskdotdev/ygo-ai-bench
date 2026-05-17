@@ -97,6 +97,7 @@ describe("Lua zone query helpers", () => {
       Debug.Message("co-linked checks " .. tostring(link:IsCoLinked()) .. "/" .. tostring(link:IsCoLinked(2)) .. "/" .. tostring(linked:IsCoLinked()) .. "/" .. tostring(unlinked:IsCoLinked()))
       Debug.Message("linked zone counts " .. Duel.GetZoneWithLinkedCount(1,0) .. "/" .. Duel.GetZoneWithLinkedCount(2,0))
       Debug.Message("linked zones " .. link:GetLinkedZone(0) .. "/" .. Duel.GetLinkedZone(0) .. "/" .. link_group:GetLinkedZone(0) .. "/" .. Duel.GetLinkedZone(1))
+      Debug.Message("combined linked zones " .. link:GetLinkedZone() .. "/" .. link_group:GetLinkedZone())
       Debug.Message("mmz pointed " .. aux.GetMMZonesPointedTo(0) .. "/" .. aux.GetMMZonesPointedTo(0,Card.IsCode,LOCATION_MZONE,0,nil,100) .. "/" .. aux.GetMMZonesPointedTo(0,Card.IsCode,LOCATION_MZONE,0,nil,400))
       local eg=Group.FromCards(linked,unlinked)
       local zpt=aux.zptgroup(eg,Card.IsFaceup,link,0)
@@ -114,7 +115,8 @@ describe("Lua zone query helpers", () => {
     expect(host.messages).toContain("linked checks true/true/false");
     expect(host.messages).toContain("co-linked checks true/false/true/false");
     expect(host.messages).toContain("linked zone counts 3/2");
-    expect(host.messages).toContain("linked zones 131074/196611/196611/0");
+    expect(host.messages).toContain("linked zones 2/3/3/0");
+    expect(host.messages).toContain("combined linked zones 131074/196611");
     expect(host.messages).toContain("mmz pointed 3/2/2");
     expect(host.messages).toContain("group to be linked zone 9/1");
     expect(host.messages).toContain("zpt helpers 1/true/false/true/true");

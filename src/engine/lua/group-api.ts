@@ -8,7 +8,7 @@ import { installGroupCompatibilityApi } from "#lua/group-compatibility-api.js";
 import { groupFieldNames } from "#lua/group-field-names.js";
 import { findSubGroupSelection, findSumGreaterSelection, findSumSelection, selectedWeightedEntries } from "#lua/group-selection-utils.js";
 import { sameUidSet, selectGroupUids, uniqueUids } from "#lua/group-uid-utils.js";
-import type { DuelSession } from "#duel/types.js";
+import type { DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -249,7 +249,8 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
   });
   lua.lua_setfield(L, -2, to_luastring("RandomSelect"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, session ? linkedZoneMaskForUids(session, readGroupUids(state, 1)) : 0);
+    const targetPlayer = lua.lua_isnumber(state, 2) ? normalizePlayer(lua.lua_tointeger(state, 2)) : undefined;
+    lua.lua_pushinteger(state, session ? linkedZoneMaskForUids(session, readGroupUids(state, 1), targetPlayer) : 0);
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetLinkedZone"));
@@ -647,6 +648,10 @@ function selectRandomGroupUids(session: DuelSession | undefined, uids: string[],
     [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex]!, shuffled[index]!];
   }
   return shuffled.slice(0, boundedCount);
+}
+
+function normalizePlayer(value: number): PlayerId {
+  return value === 1 ? 1 : 0;
 }
 
 function groupPredicateMatches(L: unknown, uids: string[], filterRef: number, args: LuaFilterArgs): boolean {

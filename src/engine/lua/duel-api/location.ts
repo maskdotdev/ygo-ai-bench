@@ -202,19 +202,19 @@ function openZoneBits(session: DuelSession, player: PlayerId, location: "monster
 function linkedZoneMaskWithCount(session: DuelSession, player: PlayerId, count: number): number {
   let mask = 0;
   for (const zone of [0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40]) {
-    const linkedCount = session.state.cards.filter((card) => card.controller === player && card.location === "monsterZone" && card.faceUp && linkedZoneMask(card, session.state) & zone).length;
+    const linkedCount = session.state.cards.filter((card) => card.controller === player && card.location === "monsterZone" && card.faceUp && linkedZoneMask(card, session.state, player) & zone).length;
     if (linkedCount >= count) mask |= zone;
   }
   return mask;
 }
 
 export function linkedZoneMaskForPlayer(session: DuelSession, player: PlayerId): number {
-  return session.state.cards.filter((card) => card.controller === player).reduce((mask, card) => mask | linkedZoneMask(card, session.state), 0);
+  return session.state.cards.filter((card) => card.controller === player).reduce((mask, card) => mask | linkedZoneMask(card, session.state, player), 0);
 }
 
-export function linkedZoneMaskForUids(session: DuelSession, uids: readonly string[]): number {
+export function linkedZoneMaskForUids(session: DuelSession, uids: readonly string[], targetPlayer?: PlayerId): number {
   const uidSet = new Set(uids);
-  return session.state.cards.filter((card) => uidSet.has(card.uid)).reduce((mask, card) => mask | linkedZoneMask(card, session.state), 0);
+  return session.state.cards.filter((card) => uidSet.has(card.uid)).reduce((mask, card) => mask | linkedZoneMask(card, session.state, targetPlayer), 0);
 }
 
 export function linkedGroupUidsForCard(session: DuelSession, card: DuelCardInstance): string[] {
@@ -225,10 +225,11 @@ export function linkedGroupUidsForCard(session: DuelSession, card: DuelCardInsta
     .map((candidate) => candidate.uid);
 }
 
-export function linkedZoneMask(card: DuelCardInstance, state?: DuelState): number {
+export function linkedZoneMask(card: DuelCardInstance, state?: DuelState, targetPlayer?: PlayerId): number {
   if (card.location !== "monsterZone" || !card.faceUp || (cardTypeFlags(card, state) & 0x4000001) !== 0x4000001) return 0;
   return linkedSequences(card.sequence, currentLinkMarkers(card, state)).reduce((mask, sequence) => {
     const ownZone = 1 << sequence;
+    if (targetPlayer !== undefined) return mask | ownZone;
     const opponentZone = sequence < 5 ? 1 << (16 + sequence) : 0;
     return mask | ownZone | opponentZone;
   }, 0);
