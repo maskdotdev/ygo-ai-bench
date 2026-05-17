@@ -911,6 +911,7 @@ function fixtureDrawEventPayload(draw: ScriptedFixtureDraw) {
     ...(draw.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: draw.eventReasonPlayer }),
     ...(draw.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: draw.eventReasonCardUid }),
     ...(draw.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: draw.eventReasonEffectId }),
+    ...(draw.relatedEffectId === undefined ? {} : { relatedEffectId: draw.relatedEffectId }),
   };
 }
 

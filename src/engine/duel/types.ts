@@ -901,6 +901,7 @@ export interface ScriptedFixtureDraw {
   eventReasonPlayer?: PlayerId;
   eventReasonCardUid?: string;
   eventReasonEffectId?: number;
+  relatedEffectId?: number;
 }
 
 export interface ScriptedFixtureCardSelector {

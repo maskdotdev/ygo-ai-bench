@@ -14,7 +14,7 @@ const EFFECT_KEYS = [
 const CARD_SELECTOR_KEYS = ["player", "code", "location", "occurrence"];
 const EVENT_KEYS = ["collectEvent", "eventCard", "eventCode", "eventIsLast", "eventPlayer", "eventValue", "eventReason", "eventReasonPlayer", "eventReasonCardUid", "eventReasonEffectId", "relatedEffectId", "eventChainDepth", "eventChainLinkId", "eventUids", "eventPreviousState", "eventCurrentState"];
 const EVENT_CARD_STATE_KEYS = new Set(["controller", "location", "sequence", "position", "faceUp"]);
-const DRAW_KEYS = ["player", "count", "detail", "eventIsLast", "eventReason", "eventReasonPlayer", "eventReasonCardUid", "eventReasonEffectId"];
+const DRAW_KEYS = ["player", "count", "detail", "eventIsLast", "eventReason", "eventReasonPlayer", "eventReasonCardUid", "eventReasonEffectId", "relatedEffectId"];
 const MOVE_KEYS = ["player", "code", "from", "to", "controller", "position", "occurrence", "moveReason", "moveReasonPlayer", "collectEvent", ...EVENT_KEYS.slice(2)];
 const CHAIN_LIMIT_KEYS = ["untilChainEnd", "allowPlayer"];
 
@@ -184,6 +184,7 @@ function assertDraw(description: string, draw: Partial<ScriptedFixtureDraw>, fai
   if (draw.eventReasonPlayer !== undefined && !isSafePlayerId(draw.eventReasonPlayer)) failures.push(`${description}.eventReasonPlayer has malformed player ${String(draw.eventReasonPlayer)}`);
   if (draw.eventReasonCardUid !== undefined && !isSafeString(draw.eventReasonCardUid)) failures.push(`${description}.eventReasonCardUid has malformed value ${String(draw.eventReasonCardUid)}`);
   if (draw.eventReasonEffectId !== undefined && !Number.isSafeInteger(draw.eventReasonEffectId)) failures.push(`${description}.eventReasonEffectId has malformed value ${String(draw.eventReasonEffectId)}`);
+  if (draw.relatedEffectId !== undefined && !Number.isSafeInteger(draw.relatedEffectId)) failures.push(`${description}.relatedEffectId has malformed value ${String(draw.relatedEffectId)}`);
   for (const key of Object.keys(draw)) if (!DRAW_KEYS.includes(key)) failures.push(`${description} has malformed key ${key}`);
 }
 
