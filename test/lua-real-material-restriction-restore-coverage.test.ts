@@ -5,6 +5,18 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const MATERIAL_RESTRICTION_FIXTURE_COUNT = 4;
+const materialRestrictionKindCounts = {
+  fusionMaterialSetcodeLock: 1,
+  rankUpMagicXyzTargetLock: 1,
+  specialSummonTunerLock: 1,
+  synchroMaterialSetcodeLock: 1,
+} satisfies Record<MaterialRestrictionKind, number>;
+
+type MaterialRestrictionKind =
+  | "fusionMaterialSetcodeLock"
+  | "rankUpMagicXyzTargetLock"
+  | "specialSummonTunerLock"
+  | "synchroMaterialSetcodeLock";
 
 describe("Lua real material restriction restore coverage", () => {
   it("requires material and special-summon restriction fixtures to assert clean restore and restored gates", () => {
@@ -29,12 +41,21 @@ describe("Lua real material restriction restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps material restriction fixture kinds explicit", () => {
+    expect(countMaterialRestrictionKinds(restrictionFixtureFiles())).toEqual(materialRestrictionKindCounts);
+  });
 });
 
-function restrictionFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function restrictionFixtureFiles(): Array<{
+  file: string;
+  kind: MaterialRestrictionKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-necro-vulture-rank-up-magic-xyz-lock.test.ts",
+      kind: "rankUpMagicXyzTargetLock",
       required: [
         "target:xyz-summon-not-related-setcode:149",
         "luaSummonTypeXyz",
@@ -47,6 +68,7 @@ function restrictionFixtureFiles(): Array<{ file: string; required: string[] }> 
     },
     {
       file: "test/lua-real-script-concours-material-lock.test.ts",
+      kind: "fusionMaterialSetcodeLock",
       required: [
         "code: 248",
         "target:not-setcode-any:",
@@ -61,6 +83,7 @@ function restrictionFixtureFiles(): Array<{ file: string; required: string[] }> 
     },
     {
       file: "test/lua-real-script-kewl-tune-synchro-tuner-lock.test.ts",
+      kind: "specialSummonTunerLock",
       required: [
         "Duel.IsPlayerCanSpecialSummon",
         "Duel.SpecialSummon(non_tuner",
@@ -72,6 +95,7 @@ function restrictionFixtureFiles(): Array<{ file: string; required: string[] }> 
     },
     {
       file: "test/lua-real-script-r-genex-oracle-synchro-material-lock.test.ts",
+      kind: "synchroMaterialSetcodeLock",
       required: [
         "code: 236",
         "cannot-material:target-not-setcode:2",
@@ -80,5 +104,26 @@ function restrictionFixtureFiles(): Array<{ file: string; required: string[] }> 
         "cannot be used as synchro material",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: MaterialRestrictionKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countMaterialRestrictionKinds(
+  fixtures: Array<{ kind: MaterialRestrictionKind }>,
+): Record<MaterialRestrictionKind, number> {
+  return fixtures.reduce<Record<MaterialRestrictionKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      fusionMaterialSetcodeLock: 0,
+      rankUpMagicXyzTargetLock: 0,
+      specialSummonTunerLock: 0,
+      synchroMaterialSetcodeLock: 0,
+    },
+  );
 }
