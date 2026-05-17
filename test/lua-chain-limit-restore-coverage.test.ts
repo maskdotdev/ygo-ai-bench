@@ -37,7 +37,7 @@ const officialPatternRestoreCoverage: Record<string, string[]> = {
 };
 
 const officialPatternCounts: Record<string, number> = {
-  "SetChainLimit:aux.FALSE": 19,
+  "SetChainLimit:aux.FALSE": 20,
   "SetChainLimit:factory:handler-exclusion": 4,
   "SetChainLimit:factory:response-chain-player": 1,
   "SetChainLimit:inline:active-type": 4,
@@ -55,8 +55,8 @@ const officialPatternCounts: Record<string, number> = {
 };
 
 const officialScannerSummary = {
-  filesWithCalls: 123,
-  calls: 140,
+  filesWithCalls: 124,
+  calls: 141,
   unclassifiedCalls: 0,
 };
 

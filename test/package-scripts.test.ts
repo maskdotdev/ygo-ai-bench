@@ -5,7 +5,7 @@ describe("package scripts", () => {
   it("runs the Lua parity scanner in the default check gate", () => {
     const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")) as { scripts?: Record<string, string> };
 
-    expect(pkg.scripts?.["scan:lua-parity"]).toContain("--fail-on-missing --min-used-apis 898 --min-implemented-apis 1214 --min-upstream-constants 1774 --min-local-constants 1815");
+    expect(pkg.scripts?.["scan:lua-parity"]).toContain("--fail-on-missing --min-used-apis 898 --min-implemented-apis 1214 --min-upstream-constants 1775 --min-local-constants 1816");
     expect(pkg.scripts?.["scan:lua-local-parity"]).toBe("node tools/scan-lua-api-usage.mjs --scripts local-card-scripts --fail-on-missing --min-used-apis 37 --min-implemented-apis 1214");
     expect(pkg.scripts?.["scan:lua-chain-limits"]).toContain("tools/scan-lua-chain-limit-patterns.mjs");
     expect(pkg.scripts?.["scan:lua-prompts"]).toContain("tools/scan-lua-prompt-patterns.mjs");
@@ -48,7 +48,7 @@ describe("package scripts", () => {
       "bun run check:loc",
       "bun run scan:lua-parity",
       "bun run scan:lua-local-parity",
-      "bun run scan:lua-chain-limits -- --min-files-with-calls 123 --min-calls 140 --fail-on-unclassified",
+      "bun run scan:lua-chain-limits -- --min-files-with-calls 124 --min-calls 141 --fail-on-unclassified",
       "bun run scan:lua-prompts -- --min-files-with-calls 1957 --min-calls 2458 --min-select-option-calls 437 --min-select-yes-no-calls 1172 --min-select-effect-calls 352 --min-select-effect-yes-no-calls 250 --min-announcement-calls 247 --min-api-count AnnounceNumber 58 --min-api-count AnnounceNumberRange 24 --min-api-count AnnounceCard 33 --min-api-count AnnounceRace 24 --min-api-count AnnounceAttribute 33 --min-api-count AnnounceLevel 29 --min-api-count SelectCardsFromCodes 1 --min-api-count SelectDisableField 41 --min-api-count SelectFieldZone 4 --min-pattern-count SelectOption:leading-boolean-literals 1 --min-pattern-count SelectOption:leading-boolean-table-unpack 1 --min-pattern-count SelectOption:table-unpack 19 --min-pattern-count SelectEffect:dynamic-options 3 --min-pattern-count AnnounceNumber:table-unpack 39 --min-pattern-count AnnounceCard:table-unpack 18 --fail-on-unclassified",
       "bun run scan:lua-clean-restore -- --min-percent 100 --min-fixtures 627 --min-coverage-files 68 --fail-on-missing --fail-on-missing-diagnostics --fail-on-missing-legal-actions --fail-on-unreferenced",
       "bun run scan:lua-event-assertions -- --min-fixtures 627 --fail-on-broad-event-matchers --fail-on-partial-event-match-objects",
