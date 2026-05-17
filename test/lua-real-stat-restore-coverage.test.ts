@@ -5,6 +5,14 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const statFixtureCount = 4;
+const statKindCounts = {
+  battleTargetAttackBoost: 1,
+  setAttack: 1,
+  setBaseAttack: 1,
+  staticAttackAndExtraAttack: 1,
+} satisfies Record<StatKind, number>;
+
+type StatKind = "battleTargetAttackBoost" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack";
 
 describe("Lua real stat restore coverage", () => {
   it("requires stat-changing fixtures to assert clean Lua registry restore and restored battle outcomes", () => {
@@ -30,12 +38,21 @@ describe("Lua real stat restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps stat fixture kinds explicit", () => {
+    expect(countStatKinds(statFixtureFiles())).toEqual(statKindCounts);
+  });
 });
 
-function statFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function statFixtureFiles(): Array<{
+  file: string;
+  kind: StatKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-d-force-plasma-stat-extra-attack.test.ts",
+      kind: "staticAttackAndExtraAttack",
       required: [
         "code ?? -1",
         "d force plasma attack 2200",
@@ -46,6 +63,7 @@ function statFixtureFiles(): Array<{ file: string; required: string[] }> {
     },
     {
       file: "test/lua-real-script-fortune-lady-past-set-attack.test.ts",
+      kind: "setAttack",
       required: [
         "code: 101",
         "code: 105",
@@ -55,6 +73,7 @@ function statFixtureFiles(): Array<{ file: string; required: string[] }> {
     },
     {
       file: "test/lua-real-script-mirage-knight-battle-target-atk.test.ts",
+      kind: "battleTargetAttackBoost",
       required: [
         'battleWindow?.kind).toBe("duringDamageCalculation")',
         "currentAttack(restoredDamageCalc.session.state.cards.find((card) => card.uid === mirage!.uid)!, restoredDamageCalc.session.state)).toBe(4700)",
@@ -65,6 +84,7 @@ function statFixtureFiles(): Array<{ file: string; required: string[] }> {
     },
     {
       file: "test/lua-real-script-shrink-set-base-attack.test.ts",
+      kind: "setBaseAttack",
       required: [
         "restoredChain.missingRegistryKeys).toEqual([])",
         "restoredChain.missingChainLimitRegistryKeys).toEqual([])",
@@ -77,5 +97,24 @@ function statFixtureFiles(): Array<{ file: string; required: string[] }> {
         "host.messages).not.toContain",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: StatKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, number> {
+  return fixtures.reduce<Record<StatKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      battleTargetAttackBoost: 0,
+      setAttack: 0,
+      setBaseAttack: 0,
+      staticAttackAndExtraAttack: 0,
+    },
+  );
 }
