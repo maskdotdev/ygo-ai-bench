@@ -576,6 +576,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         'eventName === "specialSummoned"',
         'eventName === "sentToGraveyard"',
         "event.eventCardUid === materialB!.uid",
+        'expect(restored.host.messages).not.toContain("pandemonium responder resolved")',
         'luaTargetDescriptor: "target:not-setcode:288"',
         "actions.some((action) => action.type === \"normalSummon\" && action.uid === nonPrankNormal!.uid)).toBe(false)",
         "actions.some((action) => action.type === \"specialSummonProcedure\" && action.uid === nonPrankSpecial!.uid)).toBe(false)",
