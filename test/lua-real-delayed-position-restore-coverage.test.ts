@@ -11,8 +11,19 @@ const delayedPositionKindCounts = {
   endPhaseFlipDraw: 1,
   endPhaseSetGroup: 1,
 } satisfies Record<DelayedPositionKind, number>;
+const delayedPositionSemanticVariantCounts = {
+  bigShieldGardnaEndDamageStepPositionSwap: 1,
+  bookOfEclipseEndPhaseFlipDrawWatcher: 1,
+  giantOrcBattlePhaseDefenseCleanup: 1,
+  unleashYourPowerEndPhaseGeminiSetGroup: 1,
+} satisfies Record<DelayedPositionSemanticVariant, number>;
 
 type DelayedPositionKind = "battlePhaseCleanup" | "damageStepPositionChange" | "endPhaseFlipDraw" | "endPhaseSetGroup";
+type DelayedPositionSemanticVariant =
+  | "bigShieldGardnaEndDamageStepPositionSwap"
+  | "bookOfEclipseEndPhaseFlipDrawWatcher"
+  | "giantOrcBattlePhaseDefenseCleanup"
+  | "unleashYourPowerEndPhaseGeminiSetGroup";
 
 describe("Lua real delayed position restore coverage", () => {
   it("requires delayed position fixtures to assert clean restore and restored delayed outcomes", () => {
@@ -40,6 +51,19 @@ describe("Lua real delayed position restore coverage", () => {
 
   it("keeps delayed position fixture kinds explicit", () => {
     expect(countDelayedPositionKinds(delayedPositionFixtureFiles())).toEqual(delayedPositionKindCounts);
+  });
+
+  it("keeps named delayed-position semantic variants explicit", () => {
+    expect(countDelayedPositionSemanticVariants(delayedPositionSemanticVariants())).toEqual(delayedPositionSemanticVariantCounts);
+
+    const weak = delayedPositionSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -132,6 +156,76 @@ function countDelayedPositionKinds(
       damageStepPositionChange: 0,
       endPhaseFlipDraw: 0,
       endPhaseSetGroup: 0,
+    },
+  );
+}
+
+function delayedPositionSemanticVariants(): Array<{
+  file: string;
+  kind: DelayedPositionSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-big-shield-gardna-damage-step-position.test.ts",
+      kind: "bigShieldGardnaEndDamageStepPositionSwap",
+      required: [
+        'const gardnaCode = "65240384"',
+        "restores its end Damage Step position change after being attacked in Defense Position",
+        'battleWindow?.kind).toBe("endDamageStep")',
+        'eventName: "damageStepEnded"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-book-eclipse-delayed-flip-draw.test.ts",
+      kind: "bookOfEclipseEndPhaseFlipDrawWatcher",
+      required: [
+        'const bookCode = "35480699"',
+        "restores grouped turn-set resolution and the End Phase opponent flip/draw watcher",
+        "operationInfos: [",
+        'location: "hand", controller: 1',
+      ],
+    },
+    {
+      file: "test/lua-real-script-giant-orc-battle-phase-position.test.ts",
+      kind: "giantOrcBattlePhaseDefenseCleanup",
+      required: [
+        'const giantOrcCode = "73698349"',
+        "restores the Battle Phase event after an attack and changes itself to Defense Position",
+        'action.type === "changePhase" && action.phase === "main2"',
+        'eventName: "phaseBattle"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-unleash-your-power-gemini-delayed-set.test.ts",
+      kind: "unleashYourPowerEndPhaseGeminiSetGroup",
+      required: [
+        'const unleashCode = "73567374"',
+        "restores group-wide Gemini status and delayed End Phase position change",
+        "position: \"faceDownDefense\"",
+        "host.messages).not.toContain",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: DelayedPositionSemanticVariant;
+    required: string[];
+  }>);
+}
+
+function countDelayedPositionSemanticVariants(
+  fixtures: Array<{ kind: DelayedPositionSemanticVariant }>,
+): Record<DelayedPositionSemanticVariant, number> {
+  return fixtures.reduce<Record<DelayedPositionSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      bigShieldGardnaEndDamageStepPositionSwap: 0,
+      bookOfEclipseEndPhaseFlipDrawWatcher: 0,
+      giantOrcBattlePhaseDefenseCleanup: 0,
+      unleashYourPowerEndPhaseGeminiSetGroup: 0,
     },
   );
 }
