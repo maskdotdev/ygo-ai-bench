@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 56;
+const operationFixtureCount = 57;
 const operationKindCounts = {
   costBanishDraw: 2,
   crossPlayerGraveToDeckTrap: 1,
@@ -16,6 +16,7 @@ const operationKindCounts = {
   banishedToSpecialSummon: 1,
   chainNegateDiscardDestroy: 1,
   chainNegateDestroyDraw: 1,
+  chainNegateColumnDestroy: 1,
   deckToGrave: 1,
   deckSplit: 1,
   discardCostGraveToDeckTop: 1,
@@ -64,6 +65,7 @@ type OperationKind =
   | "banishedToSpecialSummon"
   | "chainNegateDiscardDestroy"
   | "chainNegateDestroyDraw"
+  | "chainNegateColumnDestroy"
   | "deckToGrave"
   | "deckSplit"
   | "discardCostGraveToDeckTop"
@@ -138,6 +140,21 @@ function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-broken-line-column-negate.test.ts",
+      kind: "chainNegateColumnDestroy",
+      required: [
+        "bit.extract column check",
+        "category: 0x10000000",
+        "category: 0x1",
+        'eventName: "chainNegated"',
+        'eventName: "chainDisabled"',
+        'eventName: "destroyed"',
+        "cardsDrawn",
+        "recoveredLifePoints",
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-burial-different-dimension-banish-return.test.ts",
       kind: "banishedToGraveReturn",
@@ -841,6 +858,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       banishedToSpecialSummon: 0,
       chainNegateDiscardDestroy: 0,
       chainNegateDestroyDraw: 0,
+      chainNegateColumnDestroy: 0,
       deckToGrave: 0,
       deckSplit: 0,
       discardCostGraveToDeckTop: 0,

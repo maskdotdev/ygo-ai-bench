@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
+import type { DuelCardInstance, DuelSession } from "#duel/types.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { pushGroupTable } from "#lua/group-api.js";
 
@@ -25,8 +25,7 @@ function pushGetColumnZone(L: unknown, session: DuelSession): number {
   const locationMask = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   const left = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0);
   const right = Math.max(0, lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 0);
-  const player = normalizePlayer(lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : card?.controller ?? session.state.turnPlayer);
-  lua.lua_pushinteger(L, card && isFieldCard(card) ? columnZoneMask(card, locationMask, left, right, player) : 0);
+  lua.lua_pushinteger(L, card && isFieldCard(card) ? columnZoneMask(card, locationMask, left, right) : 0);
   return 1;
 }
 
@@ -42,12 +41,12 @@ function pushGetColumnGroup(L: unknown, session: DuelSession): number {
   return 1;
 }
 
-function columnZoneMask(card: DuelCardInstance, locationMask: number, left: number, right: number, player: PlayerId): number {
+function columnZoneMask(card: DuelCardInstance, locationMask: number, left: number, right: number): number {
   let mask = 0;
   for (let sequence = card.sequence - left; sequence <= card.sequence + right; sequence += 1) {
     if (sequence < 0 || sequence > 4) continue;
-    if ((locationMask & 0x04) !== 0) mask |= 1 << (card.controller === player ? sequence : 16 + sequence);
-    if ((locationMask & 0x08) !== 0) mask |= 1 << (card.controller === player ? 8 + sequence : 24 + sequence);
+    if ((locationMask & 0x04) !== 0) mask |= (1 << sequence) | (1 << (16 + sequence));
+    if ((locationMask & 0x08) !== 0) mask |= (1 << (8 + sequence)) | (1 << (24 + sequence));
   }
   return mask;
 }
@@ -59,8 +58,4 @@ function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefine
 
 function isFieldCard(card: DuelCardInstance): boolean {
   return card.location === "monsterZone" || card.location === "spellTrapZone";
-}
-
-function normalizePlayer(value: number): PlayerId {
-  return value === 1 ? 1 : 0;
 }

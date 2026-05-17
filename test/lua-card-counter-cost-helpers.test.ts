@@ -195,7 +195,7 @@ describe("Lua card counter and cost helpers", () => {
     expect(host.messages).toContain("maximum previous checks false/false/false");
     expect(host.messages).toContain("column checks true/false");
     expect(host.messages).toContain("column group 1/true/false/3/true/true");
-    expect(host.messages).toContain("column zones 1/256/3/65536");
+    expect(host.messages).toContain("column zones 65537/16777472/196611/65537");
     expect(host.messages).toContain("used summon legality false/false/false");
     expect(host.messages).toContain("previous state 4/0/0/1");
     expect(host.messages).toContain("previous checks true/true/true/false/true/true/true/false/true/false/true/true/false/true/true/true/true/false/true/true/false");
