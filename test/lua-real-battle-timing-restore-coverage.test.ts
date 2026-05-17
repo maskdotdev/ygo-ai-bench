@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 9;
+const battleTimingFixtureCount = 10;
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
-  afterDamageCalculation: 3,
+  afterDamageCalculation: 4,
   beforeDamageCalculation: 2,
   duringDamageCalculation: 1,
   endDamageStep: 2,
@@ -130,6 +130,17 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'battleWindow?.kind).toBe("duringDamageCalculation")',
         'eventName: "battleDamageDealt"',
         'eventName: "banished"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-predaplant-sarraceniant-battled-destroy.test.ts",
+      kind: "afterDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "afterDamageCalculation"',
+        "eventCode: 1138",
+        'eventName: "destroyed"',
+        "reasonEffectId: 2",
       ],
     },
     {

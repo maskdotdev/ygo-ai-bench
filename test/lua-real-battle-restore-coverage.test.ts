@@ -6,13 +6,13 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const battleKeywords = ["battle", "attack", "damage"];
-const realScriptBattleFixtureCount = 139;
+const realScriptBattleFixtureCount = 140;
 const battleLegalActionFixtureCount = 4;
 const attackDeclarationTrapFixtureCount = 6;
 const battleRoutingFixtureCount = 6;
 const damageStepRestoreFixtureCount = 4;
 const battleDamageSemanticFixtureCount = 8;
-const battleTriggerSemanticFixtureCount = 10;
+const battleTriggerSemanticFixtureCount = 11;
 const attackDeclarationTrapKindCounts = {
   attackBanish: 1,
   attackDestroy: 1,
@@ -50,6 +50,7 @@ const battleTriggerSemanticKindCounts = {
   battleSearch: 1,
   battledBounce: 1,
   battledDeckSend: 1,
+  battledDestroy: 1,
   battledDamage: 1,
   battledDisable: 1,
   endDamageControl: 1,
@@ -94,6 +95,7 @@ type BattleTriggerSemanticKind =
   | "battleSearch"
   | "battledBounce"
   | "battledDeckSend"
+  | "battledDestroy"
   | "battledDamage"
   | "battledDisable"
   | "endDamageControl"
@@ -584,6 +586,18 @@ function realScriptBattleTriggerSemanticFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-predaplant-sarraceniant-battled-destroy.test.ts",
+      kind: "battledDestroy",
+      required: [
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "afterDamageCalculation"',
+        "eventCode: 1138",
+        'eventName: "destroyed"',
+        'location: "graveyard"',
+        "reasonEffectId: 2",
+      ],
+    },
+    {
       file: "lua-real-script-topologic-bomber-battled-damage.test.ts",
       kind: "battledDamage",
       required: [
@@ -757,6 +771,7 @@ function countBattleTriggerSemanticKinds(
       battleSearch: 0,
       battledBounce: 0,
       battledDeckSend: 0,
+      battledDestroy: 0,
       battledDamage: 0,
       battledDisable: 0,
       endDamageControl: 0,
