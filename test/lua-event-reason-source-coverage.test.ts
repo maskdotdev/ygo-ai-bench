@@ -225,6 +225,7 @@ type ChainEventMetadataKind = "activation" | "negation" | "resolution";
 function discoveredReasonSourceFixtureFiles(): string[] {
   return fs.readdirSync(path.join(root, "test"))
     .filter((file) => /^lua-.*(?:event|event-reason).*\.test\.ts$/.test(file))
+    .filter((file) => !file.endsWith("-coverage.test.ts"))
     .map((file) => path.join("test", file))
     .filter((file) => file !== "test/lua-event-reason-source-coverage.test.ts")
     .filter((file) => {
