@@ -4,7 +4,7 @@ import path from "node:path";
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const battleKeywords = ["battle", "attack", "damage"];
-export const realScriptBattleFixtureCount = 148;
+export const realScriptBattleFixtureCount = 149;
 export const battleLegalActionFixtureCount = 4;
 export const attackDeclarationTrapFixtureCount = 6;
 export const battleRoutingFixtureCount = 6;

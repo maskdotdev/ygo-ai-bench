@@ -4,22 +4,24 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const directDamageFixtureCount = 3;
+const directDamageFixtureCount = 4;
 const directDamageKindCounts = {
-  targetParamDamage: 2,
+  targetParamDamage: 3,
   lpConditionTargetParamDamage: 1,
 } satisfies Record<DirectDamageKind, number>;
 const directDamageSemanticVariantCounts = {
   hinotamaTargetParamDamage: 1,
   meteorOfDestructionOpponentLpCondition: 1,
   ookaziTargetParamDamage: 1,
+  sparksTargetParamDamage: 1,
 } satisfies Record<DirectDamageSemanticVariant, number>;
 
 type DirectDamageKind = "lpConditionTargetParamDamage" | "targetParamDamage";
 type DirectDamageSemanticVariant =
   | "hinotamaTargetParamDamage"
   | "meteorOfDestructionOpponentLpCondition"
-  | "ookaziTargetParamDamage";
+  | "ookaziTargetParamDamage"
+  | "sparksTargetParamDamage";
 
 describe("Lua real direct damage restore coverage", () => {
   it("requires direct damage fixtures to assert clean Lua registry restore and restored legal actions", () => {
@@ -109,6 +111,17 @@ function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKin
       ],
     },
     {
+      file: "test/lua-real-script-sparks-direct-damage.test.ts",
+      kind: "targetParamDamage",
+      required: [
+        'const sparksCode = "76103675"',
+        "restores Sparks' target-param damage operation",
+        "targetParam: 200",
+        "targetPlayer: 1",
+        "players[1].lifePoints).toBe(7800)",
+      ],
+    },
+    {
       file: "test/lua-real-script-ookazi-direct-damage.test.ts",
       kind: "targetParamDamage",
       required: [
@@ -142,6 +155,16 @@ function directDamageSemanticVariants(): Array<{ file: string; kind: DirectDamag
         "eventValue: 1000",
         "eventReasonCardUid: meteor!.uid",
         "meteor responder resolved",
+      ],
+    },
+    {
+      file: "test/lua-real-script-sparks-direct-damage.test.ts",
+      kind: "sparksTargetParamDamage",
+      required: [
+        "Sparks Chain Responder",
+        "eventValue: 200",
+        "eventReasonCardUid: sparks!.uid",
+        "sparks responder resolved",
       ],
     },
     {
@@ -187,6 +210,7 @@ function countDirectDamageSemanticVariants(fixtures: Array<{ kind: DirectDamageS
       hinotamaTargetParamDamage: 0,
       meteorOfDestructionOpponentLpCondition: 0,
       ookaziTargetParamDamage: 0,
+      sparksTargetParamDamage: 0,
     },
   );
 }
