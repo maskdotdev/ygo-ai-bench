@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 30;
+const spiritFixtureCount = 31;
 const spiritKindCounts = {
   columnSendPendulum: 3,
   costReturnBounce: 1,
@@ -26,6 +26,7 @@ const spiritKindCounts = {
   ritualSelfSummonSearch: 2,
   ritualShuffleSummon: 1,
   setBackrowDestroy: 1,
+  spiritSummonDraw: 1,
   trapDisable: 1,
 } satisfies Record<SpiritKind, number>;
 
@@ -79,6 +80,7 @@ type SpiritKind =
   | "ritualSelfSummonSearch"
   | "ritualShuffleSummon"
   | "setBackrowDestroy"
+  | "spiritSummonDraw"
   | "trapDisable";
 
 function countSpiritKinds(fixtures: Array<{ kind: SpiritKind }>): Record<SpiritKind, number> {
@@ -105,6 +107,7 @@ function countSpiritKinds(fixtures: Array<{ kind: SpiritKind }>): Record<SpiritK
       ritualSelfSummonSearch: 0,
       ritualShuffleSummon: 0,
       setBackrowDestroy: 0,
+      spiritSummonDraw: 0,
       trapDisable: 0,
     },
   );
@@ -567,6 +570,22 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; kind: SpiritKind;
         'eventName": "destroyed"',
         'reason: duelReason.destroy | duelReason.cost',
         'host.messages).not.toContain("invitation responder resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-shinobird-crane-spirit-summon-draw.test.ts",
+      kind: "spiritSummonDraw",
+      required: [
+        'action.type === "normalSummon"',
+        'action.type === "activateTrigger"',
+        'action.type === "passChain"',
+        'eventName: "normalSummoned"',
+        'eventName: "cardsDrawn"',
+        "targetPlayer: 0",
+        "targetParam: 1",
+        "category: 0x10000",
+        'location: "hand", controller: 0',
+        'host.messages).not.toContain("shinobird crane responder resolved")',
       ],
     },
     {
