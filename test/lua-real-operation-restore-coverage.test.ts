@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 43;
+const operationFixtureCount = 44;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
   crossPlayerGraveToDeckTrap: 1,
   banishedToGraveReturn: 1,
+  banishedToHand: 1,
   deckToGrave: 1,
   deckSplit: 1,
   discardCostGraveToDeckTop: 1,
@@ -53,6 +54,7 @@ type OperationKind =
   | "costBanishDraw"
   | "crossPlayerGraveToDeckTrap"
   | "banishedToGraveReturn"
+  | "banishedToHand"
   | "deckToGrave"
   | "deckSplit"
   | "discardCostGraveToDeckTop"
@@ -168,6 +170,19 @@ function operationFixtureFiles(): Array<{
         'eventName: "sentToGraveyard"',
         "eventUids: [ownBanishedA!.uid, ownBanishedB!.uid, opponentBanished!.uid]",
         'location: "banished"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-nemeses-corridor-banished-to-hand.test.ts",
+      kind: "banishedToHand",
+      required: [
+        "category: 0x8",
+        "parameter: 0x20",
+        'eventName: "sentToHand"',
+        'location: "banished"',
+        'location: "hand"',
+        "eventReasonEffectId: 2",
         "host.messages).not.toContain",
       ],
     },
@@ -863,6 +878,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       costBanishDraw: 0,
       crossPlayerGraveToDeckTrap: 0,
       banishedToGraveReturn: 0,
+      banishedToHand: 0,
       deckToGrave: 0,
       deckSplit: 0,
       discardCostGraveToDeckTop: 0,
