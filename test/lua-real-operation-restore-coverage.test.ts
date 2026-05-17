@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 26;
+const operationFixtureCount = 27;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -12,6 +12,7 @@ const operationKindCounts = {
   directDamage: 1,
   directRecover: 1,
   groupDestroy: 9,
+  groupToHand: 1,
   releaseDamage: 1,
   searchOrExcavate: 3,
   targetBanishDiscardCost: 1,
@@ -38,6 +39,7 @@ type OperationKind =
   | "directDamage"
   | "directRecover"
   | "groupDestroy"
+  | "groupToHand"
   | "releaseDamage"
   | "searchOrExcavate"
   | "targetBanishDiscardCost"
@@ -202,6 +204,17 @@ function operationFixtureFiles(): Array<{
         "Fissure Low Attack Target",
         'eventName: "destroyed"',
         'location: "graveyard"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-giant-trunade-group-to-hand.test.ts",
+      kind: "groupToHand",
+      required: [
+        "category: 0x8",
+        "sortedUids([",
+        'eventName: "sentToHand"',
+        'location: "hand"',
         "host.messages).not.toContain",
       ],
     },
@@ -622,6 +635,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       directDamage: 0,
       directRecover: 0,
       groupDestroy: 0,
+      groupToHand: 0,
       releaseDamage: 0,
       searchOrExcavate: 0,
       targetBanishDiscardCost: 0,
