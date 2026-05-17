@@ -5,6 +5,18 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const summonNegationFixtureCount = 6;
+const summonNegationKindCounts = {
+  allSummonTypesCostNegate: 2,
+  inherentSpecialSummonNegate: 2,
+  specialSummonNegatePhaseSkip: 1,
+  specialSummonNegateReleaseCost: 1,
+} satisfies Record<SummonNegationKind, number>;
+
+type SummonNegationKind =
+  | "allSummonTypesCostNegate"
+  | "inherentSpecialSummonNegate"
+  | "specialSummonNegatePhaseSkip"
+  | "specialSummonNegateReleaseCost";
 
 describe("Lua real summon-negation restore coverage", () => {
   it("requires representative summon-negation fixtures to assert grouped legal actions and clean Lua restore", () => {
@@ -84,12 +96,21 @@ describe("Lua real summon-negation restore coverage", () => {
 
     expect(weak).toEqual([]);
   });
+
+  it("keeps summon-negation fixture kinds explicit", () => {
+    expect(countSummonNegationKinds(realScriptSummonNegationFixtures())).toEqual(summonNegationKindCounts);
+  });
 });
 
-function realScriptSummonNegationFixtures(): Array<{ file: string; requiredSnippets: string[] }> {
-  return [
+function realScriptSummonNegationFixtures(): Array<{
+  file: string;
+  kind: SummonNegationKind;
+  requiredSnippets: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-solemn-judgment-summon-negate.test.ts",
+      kind: "allSummonTypesCostNegate",
       requiredSnippets: [
         'eventName: "normalSummoning"',
         'eventName: "flipSummoning"',
@@ -106,6 +127,7 @@ function realScriptSummonNegationFixtures(): Array<{ file: string; requiredSnipp
     },
     {
       file: "test/lua-real-script-solemn-warning-special-summon-effect-negate.test.ts",
+      kind: "allSummonTypesCostNegate",
       requiredSnippets: [
         'eventName: "normalSummoning"',
         'eventName: "flipSummoning"',
@@ -122,6 +144,7 @@ function realScriptSummonNegationFixtures(): Array<{ file: string; requiredSnipp
     },
     {
       file: "test/lua-real-script-solemn-strike-special-summon-negate.test.ts",
+      kind: "inherentSpecialSummonNegate",
       requiredSnippets: [
         'eventName: "specialSummoning"',
         'eventName: "specialSummonNegated"',
@@ -132,6 +155,7 @@ function realScriptSummonNegationFixtures(): Array<{ file: string; requiredSnipp
     },
     {
       file: "test/lua-real-script-black-horn-special-summon-negate.test.ts",
+      kind: "inherentSpecialSummonNegate",
       requiredSnippets: [
         'eventName: "specialSummoning"',
         'eventName: "specialSummonNegated"',
@@ -142,6 +166,7 @@ function realScriptSummonNegationFixtures(): Array<{ file: string; requiredSnipp
     },
     {
       file: "test/lua-real-script-grand-horn-special-summon-negate.test.ts",
+      kind: "specialSummonNegatePhaseSkip",
       requiredSnippets: [
         'eventName: "specialSummoning"',
         'eventName: "specialSummonNegated"',
@@ -153,6 +178,7 @@ function realScriptSummonNegationFixtures(): Array<{ file: string; requiredSnipp
     },
     {
       file: "test/lua-real-script-horn-of-heaven-release-cost-negate.test.ts",
+      kind: "specialSummonNegateReleaseCost",
       requiredSnippets: [
         'eventName: "specialSummoning"',
         'eventName: "specialSummonNegated"',
@@ -163,7 +189,11 @@ function realScriptSummonNegationFixtures(): Array<{ file: string; requiredSnipp
         "previousLocation: \"monsterZone\"",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: SummonNegationKind;
+    requiredSnippets: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
 }
 
 function realScriptSummonNegationContinuationFixtures(): string[] {
@@ -171,4 +201,21 @@ function realScriptSummonNegationContinuationFixtures(): string[] {
     "test/lua-real-script-solemn-judgment-summon-negate-part2.test.ts",
     "test/lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
   ].sort();
+}
+
+function countSummonNegationKinds(
+  fixtures: Array<{ kind: SummonNegationKind }>,
+): Record<SummonNegationKind, number> {
+  return fixtures.reduce<Record<SummonNegationKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      allSummonTypesCostNegate: 0,
+      inherentSpecialSummonNegate: 0,
+      specialSummonNegatePhaseSkip: 0,
+      specialSummonNegateReleaseCost: 0,
+    },
+  );
 }
