@@ -21,6 +21,16 @@ const missedTimingChainLifecycleOriginFixtureCount = 12;
 const missedTimingBattleDamageCauseFixtureCount = 4;
 const missedTimingPhaseBoundaryFixtureCount = 22;
 const missedTimingPhaseEndBoundaryCauseFixtureCount = 4;
+const missedTimingEventFamilyCounts = {
+  battle: 28,
+  chain: 14,
+  customRandomConfirm: 20,
+  genericTimingFixture: 1,
+  movementActivation: 26,
+  phaseTurn: 32,
+  stateChange: 22,
+  summonMaterialSet: 28,
+} satisfies Record<MissedTimingEventFamily, number>;
 const missedTimingSourceEffectCauseExceptions = [
   "parity-missed-timing-battle-damage-decline-fixture.test.ts",
   "parity-missed-timing-battle-damage-fixture.test.ts",
@@ -79,6 +89,10 @@ describe("EDOPro parity missed-timing event coverage", () => {
     });
 
     expect(missing).toEqual([]);
+  });
+
+  it("keeps missed-timing fixture event families explicit", () => {
+    expect(countMissedTimingEventFamilies(missedTimingFixtureFiles())).toEqual(missedTimingEventFamilyCounts);
   });
 
   it("requires decline fixtures to prove restored open fast priority with stale trigger suppression", () => {
@@ -185,8 +199,59 @@ describe("EDOPro parity missed-timing event coverage", () => {
   });
 });
 
+type MissedTimingEventFamily =
+  | "battle"
+  | "chain"
+  | "customRandomConfirm"
+  | "genericTimingFixture"
+  | "movementActivation"
+  | "phaseTurn"
+  | "stateChange"
+  | "summonMaterialSet";
+
 function camelToKebab(value: string): string {
   return value.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+}
+
+function missedTimingFixtureFiles(): string[] {
+  return fs.readdirSync(testRoot)
+    .filter((file) => file.startsWith("parity-missed-timing-") && file.endsWith("-fixture.test.ts"))
+    .sort();
+}
+
+function countMissedTimingEventFamilies(files: string[]): Record<MissedTimingEventFamily, number> {
+  return files.reduce<Record<MissedTimingEventFamily, number>>(
+    (counts, file) => {
+      counts[classifyMissedTimingEventFamily(file)] += 1;
+      return counts;
+    },
+    {
+      battle: 0,
+      chain: 0,
+      customRandomConfirm: 0,
+      genericTimingFixture: 0,
+      movementActivation: 0,
+      phaseTurn: 0,
+      stateChange: 0,
+      summonMaterialSet: 0,
+    },
+  );
+}
+
+function classifyMissedTimingEventFamily(file: string): MissedTimingEventFamily {
+  if (file === "parity-missed-timing-fixture.test.ts") return "genericTimingFixture";
+  const eventName = file
+    .replace(/^parity-missed-timing-/, "")
+    .replace(/-decline-fixture\.test\.ts$/, "")
+    .replace(/-fixture\.test\.ts$/, "");
+
+  if (/^(chain-activating|chaining|chain-solving|chain-solved|chain-negated|chain-disabled|chain-ended)$/.test(eventName)) return "chain";
+  if (/^(phase|phase-start|startup|turn-started|turn-ended|phase-changed|phase-start-end|phase-end)/.test(eventName)) return "phaseTurn";
+  if (/^(attack|battle|before-damage-calculation|damage-calculating|after-damage-calculation|before-battle-damage|damage-step-ended)/.test(eventName)) return "battle";
+  if (/(summon|summoned|summoning|monster-set|spell-trap-set|used-as-material|pre-used-as-material|detached-material)/.test(eventName)) return "summonMaterialSet";
+  if (/(coin|dice|custom|pre-draw|break-effect|adjust|confirmed|sent-to-hand-confirmed)/.test(eventName)) return "customRandomConfirm";
+  if (/(damage-dealt|recovered-life-points|life-point-cost-paid|cards-drawn|level-changed|counter|control-changed|position-changed|became-target|equipped)/.test(eventName)) return "stateChange";
+  return "movementActivation";
 }
 
 function hasDeclineOpenFastRestoreProof(file: string): boolean {
