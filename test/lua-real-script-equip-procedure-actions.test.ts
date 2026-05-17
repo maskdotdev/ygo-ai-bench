@@ -123,6 +123,108 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       expectLuaEquipProbe(restoredEquipState, targetCode, axeCode, "equip probe 40619825/2000");
     });
 
+    it("restores Dragon Treasure race-filtered equip target and attack/defense boosts", () => {
+      const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+      const dragonTreasureCode = "1435851";
+      const dragonCode = "601050";
+      const zombieCode = "601051";
+      const responderCode = "601052";
+      const cards = [
+        ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === dragonTreasureCode),
+        { code: dragonCode, name: "Dragon Treasure Dragon Target", kind: "monster" as const, typeFlags: 0x1, race: 0x2000, level: 4, attack: 1200, defense: 900 },
+        { code: zombieCode, name: "Dragon Treasure Zombie Decoy", kind: "monster" as const, typeFlags: 0x1, race: 0x10, level: 4, attack: 1300, defense: 1100 },
+        { code: responderCode, name: "Dragon Treasure Chain Responder", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      ];
+      const reader = createCardReader(cards);
+      const session = createDuel({ seed: 310, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+      loadDecks(session, { 0: { main: [dragonTreasureCode, dragonCode, zombieCode] }, 1: { main: [responderCode] } });
+      startDuel(session);
+
+      const dragonTreasure = session.state.cards.find((card) => card.code === dragonTreasureCode);
+      const dragon = session.state.cards.find((card) => card.code === dragonCode);
+      const zombie = session.state.cards.find((card) => card.code === zombieCode);
+      const responder = session.state.cards.find((card) => card.code === responderCode);
+      expect(dragonTreasure).toBeDefined();
+      expect(dragon).toBeDefined();
+      expect(zombie).toBeDefined();
+      expect(responder).toBeDefined();
+      moveDuelCard(session.state, dragonTreasure!.uid, "hand", 0);
+      moveDuelCard(session.state, dragon!.uid, "monsterZone", 0).position = "faceUpAttack";
+      moveDuelCard(session.state, zombie!.uid, "monsterZone", 0).position = "faceUpAttack";
+      moveDuelCard(session.state, responder!.uid, "hand", 1);
+      session.state.phase = "main1";
+      session.state.waitingFor = 0;
+
+      const source = {
+        readScript(name: string) {
+          if (name === `c${responderCode}.lua`) return chainResponderScript();
+          return workspace.readScript(name);
+        },
+      };
+      const host = createLuaScriptHost(session, workspace);
+      expect(host.loadCardScript(Number(dragonTreasureCode), source).ok).toBe(true);
+      expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+      expect(host.registerInitialEffects()).toBe(2);
+
+      const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+      expectCleanRestore(restoredEquipWindow);
+      expectRestoredLegalActions(restoredEquipWindow, restoredEquipWindow.session.state.waitingFor ?? restoredEquipWindow.session.state.turnPlayer);
+      const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === dragonTreasure!.uid);
+      expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
+      applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
+
+      expect(restoredEquipWindow.session.state.chain).toHaveLength(1);
+      expect(restoredEquipWindow.session.state.chain[0]).toEqual({
+        activationLocation: "hand",
+        activationSequence: 0,
+        chainIndex: 1,
+        effectId: "lua-1-1002",
+        id: "chain-2",
+        operationInfos: [
+          {
+            category: 0x40000,
+            count: 1,
+            parameter: 0,
+            player: 0,
+            targetUids: [dragonTreasure!.uid],
+          },
+        ],
+        player: 0,
+        sourceUid: dragonTreasure!.uid,
+        targetUids: [dragon!.uid],
+      });
+      expect(restoredEquipWindow.session.state.chain[0]?.targetUids).not.toContain(zombie!.uid);
+
+      const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
+      expectCleanRestore(restoredChain);
+      expectRestoredLegalActions(restoredChain, restoredChain.session.state.waitingFor ?? restoredChain.session.state.turnPlayer);
+      expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+      resolveRestoredChain(restoredChain);
+
+      expect(restoredChain.host.messages).not.toContain("equip responder resolved");
+      expect(restoredChain.session.state.cards.find((card) => card.uid === dragonTreasure!.uid)).toMatchObject({
+        location: "spellTrapZone",
+        equippedToUid: dragon!.uid,
+        faceUp: true,
+      });
+      const restoredZombie = restoredChain.session.state.cards.find((card) => card.uid === zombie!.uid);
+      expect(restoredZombie).toMatchObject({ location: "monsterZone" });
+      expect(restoredZombie?.equippedToUid).toBeUndefined();
+
+      const restoredEquipState = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
+      expectCleanRestore(restoredEquipState);
+      expectRestoredLegalActions(restoredEquipState, restoredEquipState.session.state.waitingFor ?? restoredEquipState.session.state.turnPlayer);
+      const restoredAttackBoost = restoredEquipState.session.state.effects.find((effect) => effect.sourceUid === dragonTreasure!.uid && effect.code === 100);
+      const restoredDefenseBoost = restoredEquipState.session.state.effects.find((effect) => effect.sourceUid === dragonTreasure!.uid && effect.code === 104);
+      expect(restoredAttackBoost?.event).toBe("continuous");
+      expect(restoredAttackBoost?.range).toEqual(["spellTrapZone"]);
+      expect(restoredAttackBoost?.value).toBe(300);
+      expect(restoredDefenseBoost?.event).toBe("continuous");
+      expect(restoredDefenseBoost?.range).toEqual(["spellTrapZone"]);
+      expect(restoredDefenseBoost?.value).toBe(300);
+      expectLuaEquipStatProbe(restoredEquipState, dragonCode, dragonTreasureCode, "equip stat probe 1435851/1500/1200");
+    });
+
     it("restores Black Pendant equip stat and sent-from-field damage trigger", () => {
       const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
       const pendantCode = "65169794";

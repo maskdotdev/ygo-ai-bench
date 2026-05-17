@@ -30,6 +30,7 @@ const equipSemanticVariantCounts = {
   blastWithChainDestroyed: 1,
   butterflyDaggerReturn: 1,
   cestusBattleRecovery: 1,
+  dragonTreasureRaceStat: 1,
   fairyMeteorCrushPierce: 1,
   geminiBoosterStatus: 1,
   gravityAxePositionLock: 1,
@@ -75,6 +76,7 @@ type EquipSemanticVariant =
   | "blastWithChainDestroyed"
   | "butterflyDaggerReturn"
   | "cestusBattleRecovery"
+  | "dragonTreasureRaceStat"
   | "fairyMeteorCrushPierce"
   | "geminiBoosterStatus"
   | "gravityAxePositionLock"
@@ -470,6 +472,15 @@ function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSem
       ],
     },
     {
+      file: "lua-real-script-equip-procedure-actions.test.ts",
+      kind: "dragonTreasureRaceStat",
+      required: [
+        "restores Dragon Treasure race-filtered equip target and attack/defense boosts",
+        "const dragonTreasureCode = \"1435851\"",
+        "Dragon Treasure Dragon Target",
+      ],
+    },
+    {
       file: "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
       kind: "fairyMeteorCrushPierce",
       required: [
@@ -725,6 +736,7 @@ function countEquipSemanticVariants(fixtures: Array<{ kind: EquipSemanticVariant
       blastWithChainDestroyed: 0,
       butterflyDaggerReturn: 0,
       cestusBattleRecovery: 0,
+      dragonTreasureRaceStat: 0,
       fairyMeteorCrushPierce: 0,
       geminiBoosterStatus: 0,
       gravityAxePositionLock: 0,
