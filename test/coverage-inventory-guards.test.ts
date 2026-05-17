@@ -6,6 +6,26 @@ const root = process.cwd();
 const testRoot = path.join(root, "test");
 
 describe("coverage inventory guards", () => {
+  it("requires fixture classifiers in coverage tests to fail closed unless explicitly exempted", () => {
+    const exemptClassifiers = new Set(["lua-real-response-restore-coverage.test.ts:classifyResponseFixture"]);
+    const softClassifiers = fs.readdirSync(testRoot)
+      .filter((file) => /coverage\.test\.ts$/.test(file))
+      .filter((file) => file !== "coverage-inventory-guards.test.ts")
+      .flatMap((file) => {
+        const text = fs.readFileSync(path.join(testRoot, file), "utf8");
+        return [...text.matchAll(/function (classify\w+)\b/g)]
+          .filter((match) => {
+            const classifierName = match[1]!;
+            if (exemptClassifiers.has(`${file}:${classifierName}`)) return false;
+            const classifierText = text.slice(match.index ?? 0, functionBodyEnd(text, match.index ?? 0));
+            return !classifierText.includes("throw new Error(`Unclassified");
+          })
+          .map((match) => `${file}:${lineNumber(text, match.index ?? 0)}:${match[1]!}`);
+      });
+
+    expect(softClassifiers).toEqual([]);
+  });
+
   it("requires filesystem-scanned coverage tests to pin their fixture inventory", () => {
     const weak = fs.readdirSync(testRoot)
       .filter((file) => /coverage\.test\.ts$/.test(file))
