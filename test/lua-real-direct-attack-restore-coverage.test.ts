@@ -5,6 +5,20 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const DIRECT_ATTACK_FIXTURE_COUNT = 5;
+const directAttackKindCounts = {
+  cannotDirectAttack: 1,
+  directAttackConversion: 1,
+  directAttackOnly: 1,
+  directAttackPermission: 1,
+  directTargetLock: 1,
+} satisfies Record<DirectAttackKind, number>;
+
+type DirectAttackKind =
+  | "cannotDirectAttack"
+  | "directAttackConversion"
+  | "directAttackOnly"
+  | "directAttackPermission"
+  | "directTargetLock";
 
 describe("Lua real direct-attack restore coverage", () => {
   it("requires representative direct-attack fixtures to assert clean Lua restore and replayed legal actions", () => {
@@ -26,12 +40,21 @@ describe("Lua real direct-attack restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps direct-attack fixture kinds explicit", () => {
+    expect(countDirectAttackKinds(realScriptDirectAttackFixtureFiles())).toEqual(directAttackKindCounts);
+  });
 });
 
-function realScriptDirectAttackFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function realScriptDirectAttackFixtureFiles(): Array<{
+  file: string;
+  kind: DirectAttackKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-dragonic-halberd-cannot-direct.test.ts",
+      kind: "cannotDirectAttack",
       required: [
         "code: 73",
         "hasDirectAttack(actions, halberd.uid)).toBe(false)",
@@ -40,6 +63,7 @@ function realScriptDirectAttackFixtureFiles(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-inaba-white-rabbit-direct-only.test.ts",
+      kind: "directAttackOnly",
       required: [
         "directAttack: true",
         "targetUid: defender!.uid",
@@ -48,6 +72,7 @@ function realScriptDirectAttackFixtureFiles(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-jinzo-seven-direct-attack.test.ts",
+      kind: "directAttackPermission",
       required: [
         "hasAttack(actions, jinzo.uid, defender.uid)).toBe(true)",
         "hasDirectAttack(actions, jinzo.uid)).toBe(true)",
@@ -55,6 +80,7 @@ function realScriptDirectAttackFixtureFiles(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-reverse-buster-direct-target-lock.test.ts",
+      kind: "directTargetLock",
       required: [
         "code === 332",
         'luaValueDescriptor: "value-card:not-facedown"',
@@ -65,11 +91,32 @@ function realScriptDirectAttackFixtureFiles(): Array<{ file: string; required: s
     },
     {
       file: "test/lua-real-script-toon-defense-change-attack-target.test.ts",
+      kind: "directAttackConversion",
       required: [
         'eventName: "attackDeclared"',
         "currentAttack?.targetUid).toBeUndefined()",
         "battleDamage).toMatchObject({ 1: 1800 })",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: DirectAttackKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countDirectAttackKinds(fixtures: Array<{ kind: DirectAttackKind }>): Record<DirectAttackKind, number> {
+  return fixtures.reduce<Record<DirectAttackKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      cannotDirectAttack: 0,
+      directAttackConversion: 0,
+      directAttackOnly: 0,
+      directAttackPermission: 0,
+      directTargetLock: 0,
+    },
+  );
 }
