@@ -5,6 +5,13 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const SUMMON_SUCCESS_TRAP_FIXTURE_COUNT = 3;
+const summonSuccessTrapKindCounts = {
+  banishSummonTrap: 1,
+  massDestroySummonTrap: 1,
+  singleDestroySummonTrap: 1,
+} satisfies Record<SummonSuccessTrapKind, number>;
+
+type SummonSuccessTrapKind = "banishSummonTrap" | "massDestroySummonTrap" | "singleDestroySummonTrap";
 
 describe("Lua real summon-success trap restore coverage", () => {
   it("requires summon-success trap fixtures to assert clean Lua registry restore and restored chain outcomes", () => {
@@ -34,12 +41,21 @@ describe("Lua real summon-success trap restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps summon-success trap fixture kinds explicit", () => {
+    expect(countSummonSuccessTrapKinds(summonSuccessTrapFixtureFiles())).toEqual(summonSuccessTrapKindCounts);
+  });
 });
 
-function summonSuccessTrapFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function summonSuccessTrapFixtureFiles(): Array<{
+  file: string;
+  kind: SummonSuccessTrapKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-bottomless-trap-hole-summon-success.test.ts",
+      kind: "banishSummonTrap",
       required: [
         'eventName: "normalSummoned"',
         'eventName: "specialSummoned"',
@@ -56,6 +72,7 @@ function summonSuccessTrapFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "test/lua-real-script-torrential-tribute-summon-success.test.ts",
+      kind: "massDestroySummonTrap",
       required: [
         'eventName: "normalSummoned"',
         "assertDestroyOperationInfo",
@@ -66,6 +83,7 @@ function summonSuccessTrapFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "test/lua-real-script-trap-hole-summon-success.test.ts",
+      kind: "singleDestroySummonTrap",
       required: [
         'eventName: "normalSummoned"',
         "category: 0x1",
@@ -74,5 +92,25 @@ function summonSuccessTrapFixtureFiles(): Array<{ file: string; required: string
         "destroyedEvents",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: SummonSuccessTrapKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countSummonSuccessTrapKinds(
+  fixtures: Array<{ kind: SummonSuccessTrapKind }>,
+): Record<SummonSuccessTrapKind, number> {
+  return fixtures.reduce<Record<SummonSuccessTrapKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      banishSummonTrap: 0,
+      massDestroySummonTrap: 0,
+      singleDestroySummonTrap: 0,
+    },
+  );
 }
