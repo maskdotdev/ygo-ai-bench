@@ -363,6 +363,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         'eventName: "specialSummoned"',
         'eventName === "sentToGraveyard"',
         "event.eventCardUid === opponentMaterial!.uid",
+        "expect(restored.session.state.cards.find((card) => card.uid === opponentMaterial!.uid)).toMatchObject({",
         "expect(materialGraveEvents.map((event) => event.eventCardUid).sort()).toEqual([ownMaterialA!.uid, ownMaterialA!.uid, ownMaterialB!.uid, opponentMaterial!.uid].sort())",
         "expect(getLegalActions(restored.session, 0).some((action) => action.type === \"specialSummonProcedure\" && action.uid === chaosRuler!.uid)).toBe(false)",
         "restores a Contact Fusion procedure that sends an opponent field material to its Graveyard",
