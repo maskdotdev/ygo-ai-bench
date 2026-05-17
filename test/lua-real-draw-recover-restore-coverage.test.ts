@@ -12,8 +12,28 @@ const drawRecoverKindCounts = {
   negateThenDraw: 1,
   releaseDestroyDraw: 1,
 } satisfies Record<DrawRecoverKind, number>;
+const drawRecoverSemanticVariantCounts = {
+  badReactionDrawThenDamage: 1,
+  darkBribeNegateDestroyDraw: 1,
+  geminiSparkReleaseDestroyDraw: 1,
+  naturiaRagweedOpponentDrawTrigger: 1,
+  potDesiresFaceDownDeckCostDraw: 1,
+  potExtravaganceRandomExtraCostDrawLock: 1,
+  shinobirdCraneSpiritSummonDraw: 1,
+  upstartGoblinDrawRecover: 1,
+} satisfies Record<DrawRecoverSemanticVariant, number>;
 
 type DrawRecoverKind = "costBanishDraw" | "drawRecoverOrDamage" | "drawTrigger" | "negateThenDraw" | "releaseDestroyDraw";
+
+type DrawRecoverSemanticVariant =
+  | "badReactionDrawThenDamage"
+  | "darkBribeNegateDestroyDraw"
+  | "geminiSparkReleaseDestroyDraw"
+  | "naturiaRagweedOpponentDrawTrigger"
+  | "potDesiresFaceDownDeckCostDraw"
+  | "potExtravaganceRandomExtraCostDrawLock"
+  | "shinobirdCraneSpiritSummonDraw"
+  | "upstartGoblinDrawRecover";
 
 describe("Lua real draw and recover restore coverage", () => {
   it("requires draw/recover fixtures to assert clean Lua registry restore and restored event outcomes", () => {
@@ -45,6 +65,19 @@ describe("Lua real draw and recover restore coverage", () => {
 
   it("keeps draw/recover fixture kinds explicit", () => {
     expect(countDrawRecoverKinds(drawRecoverFixtureFiles())).toEqual(drawRecoverKindCounts);
+  });
+
+  it("keeps named draw/recover semantic variants explicit", () => {
+    expect(countDrawRecoverSemanticVariants(drawRecoverSemanticVariants())).toEqual(drawRecoverSemanticVariantCounts);
+
+    const weak = drawRecoverSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -172,6 +205,134 @@ function countDrawRecoverKinds(fixtures: Array<{ kind: DrawRecoverKind }>): Reco
       drawTrigger: 0,
       negateThenDraw: 0,
       releaseDestroyDraw: 0,
+    },
+  );
+}
+
+function drawRecoverSemanticVariants(): Array<{
+  file: string;
+  kind: DrawRecoverSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-bad-reaction-reverse-recover.test.ts",
+      kind: "badReactionDrawThenDamage",
+      required: [
+        'const badReactionCode = "40633297"',
+        "restores Bad Reaction to Simochi and converts Upstart Goblin recovery into damage",
+        "targetRange: [0, 1]",
+        "eventName: \"cardsDrawn\"",
+        "eventName: \"damageDealt\"",
+        "players[1].lifePoints).toBe(7000)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dark-bribe-negate-draw.test.ts",
+      kind: "darkBribeNegateDestroyDraw",
+      required: [
+        'const darkBribeCode = "77538567"',
+        "restores activation negation that destroys the source, draws for the opponent, and suppresses the negated Spell",
+        "category: 0x10000000",
+        "eventName: \"chainNegated\"",
+        "eventName: \"chainDisabled\"",
+        "eventName === \"recoveredLifePoints\")).toEqual([])",
+      ],
+    },
+    {
+      file: "test/lua-real-script-gemini-spark-release-destroy-draw.test.ts",
+      kind: "geminiSparkReleaseDestroyDraw",
+      required: [
+        'const sparkCode = "33846209"',
+        "restores its Gemini release cost, target destruction, and draw",
+        "eventName: \"released\"",
+        "eventName: \"destroyed\"",
+        "eventName: \"cardsDrawn\"",
+        "gemini spark responder resolved",
+      ],
+    },
+    {
+      file: "test/lua-real-script-naturia-ragweed-event-draw-trigger.test.ts",
+      kind: "naturiaRagweedOpponentDrawTrigger",
+      required: [
+        'const ragweedCode = "87649699"',
+        "restores Naturia Ragweed's opponent-draw trigger, self cost, and CHAININFO draw count",
+        "eventUids: [opponentDrawn!.uid, opponentDrawnSecond!.uid]",
+        "targetParam: 2",
+        "targetPlayer: 1",
+        "eventReasonCardUid: giftOfGreed!.uid",
+      ],
+    },
+    {
+      file: "test/lua-real-script-pot-of-desires-deck-cost.test.ts",
+      kind: "potDesiresFaceDownDeckCostDraw",
+      required: [
+        'const potCode = "35261759"',
+        "restores Pot of Desires' face-down banished deck cost and draw operation",
+        "costUids).toHaveLength(10)",
+        "position: \"faceDownDefense\"",
+        "eventReason: duelReason.cost",
+        "eventUids: drawUids",
+      ],
+    },
+    {
+      file: "test/lua-real-script-pot-of-extravagance-extra-cost.test.ts",
+      kind: "potExtravaganceRandomExtraCostDrawLock",
+      required: [
+        'const potCode = "49238328"',
+        "restores Pot of Extravagance's random Extra Deck cost and draw lock",
+        "randomCounter).toBe(1)",
+        "eventUids.every((uid) => originalExtraUids.includes(uid))",
+        "code === 25",
+        "drawDuelCards(restored.session.state, 0, 1, \"Blocked effect draw\")).toBe(0)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-shinobird-crane-spirit-summon-draw.test.ts",
+      kind: "shinobirdCraneSpiritSummonDraw",
+      required: [
+        'const craneCode = "66815913"',
+        "restores its field trigger when another Spirit monster is Summoned and draws 1 card",
+        'eventName": "normalSummoned"',
+        "targetParam: 1",
+        "eventReasonCardUid: crane!.uid",
+        "shinobird crane responder resolved",
+      ],
+    },
+    {
+      file: "test/lua-real-script-upstart-goblin-draw-recover.test.ts",
+      kind: "upstartGoblinDrawRecover",
+      required: [
+        'const upstartCode = "70368879"',
+        "restores Upstart Goblin's draw/recover operation info and resolves both effects",
+        "category: 1048576",
+        "eventName: \"recoveredLifePoints\"",
+        "players[1].lifePoints).toBe(9000)",
+        "upstart goblin responder resolved",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: DrawRecoverSemanticVariant;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countDrawRecoverSemanticVariants(fixtures: Array<{ kind: DrawRecoverSemanticVariant }>): Record<DrawRecoverSemanticVariant, number> {
+  return fixtures.reduce<Record<DrawRecoverSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      badReactionDrawThenDamage: 0,
+      darkBribeNegateDestroyDraw: 0,
+      geminiSparkReleaseDestroyDraw: 0,
+      naturiaRagweedOpponentDrawTrigger: 0,
+      potDesiresFaceDownDeckCostDraw: 0,
+      potExtravaganceRandomExtraCostDrawLock: 0,
+      shinobirdCraneSpiritSummonDraw: 0,
+      upstartGoblinDrawRecover: 0,
     },
   );
 }
