@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 19;
+const battleTimingFixtureCount = 20;
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
-  afterDamageCalculation: 8,
+  afterDamageCalculation: 9,
   beforeDamageCalculation: 3,
   duringDamageCalculation: 2,
   endDamageStep: 4,
@@ -169,6 +169,18 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "operationInfos",
         'eventName: "specialSummoned"',
         'eventName: "battleDamageDealt"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-hayate-battled-send.test.ts",
+      kind: "afterDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "afterDamageCalculation"',
+        'triggerBucket: "turnOptional"',
+        'eventName: "sentToGraveyard"',
+        'location: "graveyard"',
+        "eventReasonEffectId: 3",
       ],
     },
     {
