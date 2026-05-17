@@ -566,10 +566,15 @@ describe("Lua field operation helpers", () => {
       Debug.Message("move spelltrap " .. Duel.MoveSequence(trap_b, 0))
       Debug.Message("spell order " .. spell_a:GetSequence() .. "/" .. trap_b:GetSequence())
       Debug.Message("monster order after spell " .. monster_a:GetSequence() .. "/" .. monster_b:GetSequence() .. "/" .. monster_c:GetSequence())
-      Debug.Message("field mzone codes " .. Duel.GetFieldCard(0, LOCATION_MZONE, 0):GetCode() .. "/" .. Duel.GetFieldCard(0, LOCATION_MZONE, 1):GetCode() .. "/" .. Duel.GetFieldCard(0, LOCATION_MZONE, 2):GetCode())
+      local m0 = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      local m1 = Duel.GetFieldCard(0, LOCATION_MZONE, 1)
+      local m2 = Duel.GetFieldCard(0, LOCATION_MZONE, 2)
+      local m3 = Duel.GetFieldCard(0, LOCATION_MZONE, 3)
+      local m4 = Duel.GetFieldCard(0, LOCATION_MZONE, 4)
+      Debug.Message("field mzone codes " .. tostring(m0 and m0:GetCode() or "nil") .. "/" .. tostring(m1 and m1:GetCode() or "nil") .. "/" .. tostring(m2 and m2:GetCode() or "nil") .. "/" .. tostring(m3 and m3:GetCode() or "nil") .. "/" .. tostring(m4 and m4:GetCode() or "nil"))
       Debug.Message("field szone codes " .. Duel.GetFieldCard(0, LOCATION_SZONE, 0):GetCode() .. "/" .. Duel.GetFieldCard(0, LOCATION_SZONE, 1):GetCode())
       Debug.Message("field opponent code " .. Duel.GetFieldCard(1, LOCATION_MZONE, 0):GetCode())
-      Debug.Message("field empty cards " .. tostring(Duel.GetFieldCard(0, LOCATION_MZONE, 3) == nil) .. "/" .. tostring(Duel.GetFieldCard(0, LOCATION_SZONE, 2) == nil))
+      Debug.Message("field empty cards " .. tostring(Duel.GetFieldCard(0, LOCATION_MZONE, 0) == nil) .. "/" .. tostring(Duel.GetFieldCard(0, LOCATION_MZONE, 3) == nil) .. "/" .. tostring(Duel.GetFieldCard(0, LOCATION_SZONE, 2) == nil))
       `,
       "move-sequence.lua",
     );
@@ -580,18 +585,18 @@ describe("Lua field operation helpers", () => {
     expect(host.messages).toContain("monster order 1/2/0");
     expect(host.messages).toContain("move noop 0");
     expect(host.messages).toContain("move noop operated 0");
-    expect(host.messages).toContain("move range 0");
-    expect(host.messages).toContain("move range operated 0");
+    expect(host.messages).toContain("move range 1");
+    expect(host.messages).toContain("move range operated 1");
     expect(host.messages).toContain("move spelltrap 1");
     expect(host.messages).toContain("spell order 1/0");
-    expect(host.messages).toContain("monster order after spell 1/2/0");
-    expect(host.messages).toContain("field mzone codes 300/100/200");
+    expect(host.messages).toContain("monster order after spell 1/2/4");
+    expect(host.messages).toContain("field mzone codes nil/100/200/nil/300");
     expect(host.messages).toContain("field szone codes 500/400");
     expect(host.messages).toContain("field opponent code 600");
-    expect(host.messages).toContain("field empty cards true/true");
+    expect(host.messages).toContain("field empty cards true/true/true");
     expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ sequence: 1 });
     expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ sequence: 2 });
-    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ sequence: 0 });
+    expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ sequence: 4 });
     expect(session.state.cards.find((card) => card.code === "400")).toMatchObject({ sequence: 1 });
     expect(session.state.cards.find((card) => card.code === "500")).toMatchObject({ sequence: 0 });
   });

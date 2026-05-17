@@ -782,15 +782,15 @@ function pushMoveSequence(L: unknown, session: DuelSession, hostState: LuaDuelMo
     return 1;
   }
   const cards = getCards(session.state, card.controller, location);
-  if (sequence >= cards.length) {
-    setOperatedUids(hostState, []);
-    lua.lua_pushinteger(L, 0);
-    return 1;
-  }
   if (!cards.some((candidate) => candidate.uid !== card.uid && candidate.sequence === sequence)) {
     card.sequence = sequence;
     setOperatedUids(hostState, [card.uid]);
     lua.lua_pushinteger(L, 1);
+    return 1;
+  }
+  if (sequence >= cards.length) {
+    setOperatedUids(hostState, []);
+    lua.lua_pushinteger(L, 0);
     return 1;
   }
   const ordered = cards.filter((candidate) => candidate.uid !== card.uid);
