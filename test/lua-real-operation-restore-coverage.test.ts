@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 21;
+const operationFixtureCount = 22;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -12,6 +12,7 @@ const operationKindCounts = {
   groupDestroy: 9,
   releaseDamage: 1,
   searchOrExcavate: 3,
+  targetBanishDiscardCost: 1,
   targetDestroyRemove: 1,
   targetDestroyRecover: 1,
   targetDestroySkipDraw: 1,
@@ -33,6 +34,7 @@ type OperationKind =
   | "groupDestroy"
   | "releaseDamage"
   | "searchOrExcavate"
+  | "targetBanishDiscardCost"
   | "targetDestroyRemove"
   | "targetDestroyRecover"
   | "targetDestroySkipDraw"
@@ -147,6 +149,17 @@ function operationFixtureFiles(): Array<{
         "lastDiceResults).toEqual([])",
         'eventName: "diceTossed"',
         'location: "graveyard"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dark-core-discard-banish.test.ts",
+      kind: "targetBanishDiscardCost",
+      required: [
+        "category: 0x4",
+        'eventName: "discarded"',
+        'eventName: "banished"',
+        'location: "banished"',
         "host.messages).not.toContain",
       ],
     },
@@ -555,6 +568,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       groupDestroy: 0,
       releaseDamage: 0,
       searchOrExcavate: 0,
+      targetBanishDiscardCost: 0,
       targetDestroyRemove: 0,
       targetDestroyRecover: 0,
       targetDestroySkipDraw: 0,
