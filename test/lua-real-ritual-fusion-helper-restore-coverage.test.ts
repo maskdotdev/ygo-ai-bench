@@ -250,7 +250,10 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         "summonMaterialUids: [exactMaterial!.uid]",
         "summonMaterialUids: [darkMagician!.uid]",
         "summonMaterialUids: [validMaterial!.uid]",
+        'eventName: "specialSummoned"',
         'eventName === "sentToGraveyard"',
+        "expect(materialGraveEvents.map((event) => event.eventCardUid).sort()).toEqual([materialA!.uid, materialC!.uid].sort())",
+        'expect(restored.host.messages).not.toContain("earth chant responder resolved")',
       ],
     },
     {
