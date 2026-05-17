@@ -115,6 +115,13 @@ const chainEndedOpenFastFiles = [
   "test/parity-chain-ended-open-fast-pass-handoff-until-chain-end-limit-fixture.test.ts",
 ] as const;
 
+const chainEndedUntilChainEndContinuedResponseFiles = [
+  "test/parity-chain-ended-open-fast-chain-response-turn-response-until-chain-end-limit-followup-pass-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-chain-response-until-chain-end-limit-followup-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-opponent-response-until-chain-end-limit-followup-pass-resolution-fixture.test.ts",
+  "test/parity-chain-ended-open-fast-pass-handoff-opponent-response-turn-response-opponent-response-until-chain-end-limit-followup-resolution-fixture.test.ts",
+] as const;
+
 describe("EDOPro open fast-effect fixture coverage", () => {
   it("keeps the open-fast parity fixture inventory ratcheted", () => {
     expect(allRequiredParityOpenFastFiles()).toHaveLength(333);
@@ -139,6 +146,16 @@ describe("EDOPro open fast-effect fixture coverage", () => {
       .sort();
 
     expect(scannedFiles).toEqual([...chainEndedOpenFastFiles].sort());
+  });
+
+  it("requires chain-ended until-chain-end limits to prove continued allowed-player response windows", () => {
+    expect(chainEndedUntilChainEndContinuedResponseFiles).toHaveLength(4);
+
+    const missing = chainEndedUntilChainEndContinuedResponseFiles.filter((file) => !fs.existsSync(path.join(root, file)));
+    const weak = chainEndedUntilChainEndContinuedResponseFiles.filter((file) => !hasUntilChainEndContinuedAllowedResponseProof(file));
+
+    expect(missing).toEqual([]);
+    expect(weak).toEqual([]);
   });
 
   it("keeps triggerless action families pinned to base, chain-response, and restored pass-handoff fixtures", () => {
@@ -584,6 +601,17 @@ function hasWaitingForProof(file: string): boolean {
   return (
     /source:\s*["']edopro["']/.test(text) &&
     /waitingFor:\s*[01]/.test(text)
+  );
+}
+
+function hasUntilChainEndContinuedAllowedResponseProof(file: string): boolean {
+  const text = fs.readFileSync(path.join(root, file), "utf8");
+  return (
+    /source:\s*["']edopro["']/.test(text) &&
+    /SetChainLimitTillChainEnd/.test(text) &&
+    /chainLimits:\s*\[\{\s*untilChainEnd:\s*true\s*\}\]/.test(text) &&
+    /waitingFor:\s*0/.test(text) &&
+    /legalActions:\s*\[[\s\S]*type:\s*["']activateEffect["'],\s*player:\s*0[\s\S]*type:\s*["']passChain["'],\s*player:\s*0/.test(text)
   );
 }
 
