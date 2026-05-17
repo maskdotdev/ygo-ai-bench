@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 31;
+const operationFixtureCount = 32;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -17,6 +17,7 @@ const operationKindCounts = {
   handToDeckDraw: 1,
   releaseDamage: 1,
   searchOrExcavate: 3,
+  spellDraw: 1,
   trapDraw: 1,
   targetBanishDiscardCost: 1,
   targetDestroyDiscardCost: 1,
@@ -48,6 +49,7 @@ type OperationKind =
   | "handToDeckDraw"
   | "releaseDamage"
   | "searchOrExcavate"
+  | "spellDraw"
   | "trapDraw"
   | "targetBanishDiscardCost"
   | "targetDestroyDiscardCost"
@@ -364,6 +366,18 @@ function operationFixtureFiles(): Array<{
         'eventName: "cardsDrawn"',
         "faceUp: false",
         "reason: 0x80",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-pot-greed-spell-draw.test.ts",
+      kind: "spellDraw",
+      required: [
+        "category: 0x10000",
+        "targetParam: 2",
+        "targetPlayer: 0",
+        'eventName: "cardsDrawn"',
+        "eventValue: 2",
         "host.messages).not.toContain",
       ],
     },
@@ -695,6 +709,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       handToDeckDraw: 0,
       releaseDamage: 0,
       searchOrExcavate: 0,
+      spellDraw: 0,
       trapDraw: 0,
       targetBanishDiscardCost: 0,
       targetDestroyDiscardCost: 0,
