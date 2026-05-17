@@ -77,24 +77,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     applyAndAssert(session, activate!);
     expect(session.state.chain).toHaveLength(1);
     const chainLink = session.state.chain[0]!;
-    expect(chainLink.operationInfos).toEqual(
-      expect.arrayContaining([
-        { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 },
-        { category: 0x10, targetUids: [], count: 1, player: 0, parameter: 0x3c },
-      ]),
-    );
+    expect(chainLink.operationInfos).toEqual([
+      { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 },
+      { category: 0x10, targetUids: [], count: 1, player: 0, parameter: 0x3c },
+    ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     const restoredChainLink = restored.session.state.chain[0]!;
-    expect(restoredChainLink.operationInfos).toEqual(
-      expect.arrayContaining([
-        { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 },
-        { category: 0x10, targetUids: [], count: 1, player: 0, parameter: 0x3c },
-      ]),
-    );
+    expect(restoredChainLink.operationInfos).toEqual([
+      { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 },
+      { category: 0x10, targetUids: [], count: 1, player: 0, parameter: 0x3c },
+    ]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 

@@ -489,6 +489,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
       kind: "fusionFcheck",
       families: ["fusion"],
       required: [
+        "expect(restoredChainLink.operationInfos).toEqual([",
         "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }",
         "{ category: 0x10, targetUids: [], count: 1, player: 0, parameter: 0x3c }",
         'summonType: "fusion"',
