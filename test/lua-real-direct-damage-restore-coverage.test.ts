@@ -4,8 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const directDamageFixtureCount = 5;
+const directDamageFixtureCount = 6;
 const directDamageKindCounts = {
+  allPlayerDelayedDamage: 1,
   targetParamDamage: 4,
   lpConditionTargetParamDamage: 1,
 } satisfies Record<DirectDamageKind, number>;
@@ -15,15 +16,17 @@ const directDamageSemanticVariantCounts = {
   meteorOfDestructionOpponentLpCondition: 1,
   ookaziTargetParamDamage: 1,
   sparksTargetParamDamage: 1,
+  tremendousFireAllPlayerDelayedDamage: 1,
 } satisfies Record<DirectDamageSemanticVariant, number>;
 
-type DirectDamageKind = "lpConditionTargetParamDamage" | "targetParamDamage";
+type DirectDamageKind = "allPlayerDelayedDamage" | "lpConditionTargetParamDamage" | "targetParamDamage";
 type DirectDamageSemanticVariant =
   | "finalFlameTargetParamDamage"
   | "hinotamaTargetParamDamage"
   | "meteorOfDestructionOpponentLpCondition"
   | "ookaziTargetParamDamage"
-  | "sparksTargetParamDamage";
+  | "sparksTargetParamDamage"
+  | "tremendousFireAllPlayerDelayedDamage";
 
 describe("Lua real direct damage restore coverage", () => {
   it("requires direct damage fixtures to assert clean Lua registry restore and restored legal actions", () => {
@@ -145,6 +148,18 @@ function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKin
         "players[1].lifePoints).toBe(7200)",
       ],
     },
+    {
+      file: "test/lua-real-script-tremendous-fire-delayed-damage.test.ts",
+      kind: "allPlayerDelayedDamage",
+      required: [
+        'const tremendousFireCode = "46918794"',
+        "restores Tremendous Fire's all-player delayed damage operation",
+        "parameter: 500",
+        "player: 0",
+        "players[0].lifePoints).toBe(7500)",
+        "players[1].lifePoints).toBe(7000)",
+      ],
+    },
   ];
 }
 
@@ -200,6 +215,17 @@ function directDamageSemanticVariants(): Array<{ file: string; kind: DirectDamag
         "ookazi responder resolved",
       ],
     },
+    {
+      file: "test/lua-real-script-tremendous-fire-delayed-damage.test.ts",
+      kind: "tremendousFireAllPlayerDelayedDamage",
+      required: [
+        "Tremendous Fire Chain Responder",
+        "eventValue: 1000",
+        "eventValue: 500",
+        "eventReasonCardUid: tremendousFire!.uid",
+        "tremendous fire responder resolved",
+      ],
+    },
   ];
 
   return variants.map(({ file, kind, required }) => ({
@@ -219,6 +245,7 @@ function countDirectDamageKinds(fixtures: Array<{ kind: DirectDamageKind }>): Re
       return counts;
     },
     {
+      allPlayerDelayedDamage: 0,
       targetParamDamage: 0,
       lpConditionTargetParamDamage: 0,
     },
@@ -237,6 +264,7 @@ function countDirectDamageSemanticVariants(fixtures: Array<{ kind: DirectDamageS
       meteorOfDestructionOpponentLpCondition: 0,
       ookaziTargetParamDamage: 0,
       sparksTargetParamDamage: 0,
+      tremendousFireAllPlayerDelayedDamage: 0,
     },
   );
 }
