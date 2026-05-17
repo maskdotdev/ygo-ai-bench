@@ -276,12 +276,15 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
       kind: "fusionShuffleMaterial",
       families: ["fusion"],
       required: [
+        "expect(chainLink.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }])",
         "restoredChainLink.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }])",
         'summonType: "fusion"',
         "summonMaterialUids: [materialA!.uid, materialB!.uid]",
         "location: \"deck\"",
         'eventName: "moved"',
+        "eventUids: [materialA!.uid, materialB!.uid]",
         'eventName: "specialSummoned"',
+        'expect(restored.host.messages).not.toContain("mutiny responder resolved")',
       ],
     },
     {
