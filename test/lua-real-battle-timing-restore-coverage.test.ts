@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 16;
+const battleTimingFixtureCount = 17;
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
-  afterDamageCalculation: 5,
+  afterDamageCalculation: 6,
   beforeDamageCalculation: 3,
   duringDamageCalculation: 2,
   endDamageStep: 4,
@@ -75,6 +75,18 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "triggerBucket: \"opponentMandatory\"",
         'location: "hand", controller: 0',
         'location: "banished", controller: 1',
+      ],
+    },
+    {
+      file: "test/lua-real-script-dd-assailant-battled-remove.test.ts",
+      kind: "afterDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "afterDamageCalculation"',
+        'triggerBucket: "opponentMandatory"',
+        'eventName: "banished"',
+        'location: "banished"',
+        'eventName === "battleDestroyed"',
       ],
     },
     {
