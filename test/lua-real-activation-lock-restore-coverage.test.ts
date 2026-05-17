@@ -17,6 +17,25 @@ const activationLockVariantKindCounts = {
   spellTrapEffectActivationLock: 1,
   trapCardActivationLock: 1,
 } satisfies Record<ActivationLockVariantKind, number>;
+const activationLockSemanticVariantCounts = {
+  amanoIwatoNonSpiritMonsterLock: 1,
+  ancientGearBeastAttackCardActivationLock: 1,
+  aussaEarthChannelerAttributeLock: 1,
+  coldWaveSpellTrapPredicateLock: 1,
+  eriaWaterChannelerAttributeLock: 1,
+  hiitaFireChannelerAttributeLock: 1,
+  inzektorAxeDamagePhaseCardActivationLock: 1,
+  lunalightKaleidoChickBattlePhaseOpponentLock: 1,
+  sanganSameCodeSearchLock: 1,
+  sasukeSamuraiSpellTrapNamedPredicateLock: 1,
+  shopinaLightCostRegisteredAttributeLock: 1,
+  sonicJammerSpellCardActivationLock: 1,
+  timegazerTrapCardActivationLock: 1,
+  ultimateFalconDetachAtkLossOpponentLock: 1,
+  vernusylphSharedEarthAttributeLock: 1,
+  wattgiraffeBattleDamageOpponentLock: 1,
+  wynnWindChannelerAttributeLock: 1,
+} satisfies Record<ActivationLockSemanticVariant, number>;
 
 type ActivationLockVariantKind =
   | "attributeMonsterActivationLock"
@@ -26,6 +45,24 @@ type ActivationLockVariantKind =
   | "spellCardActivationLock"
   | "spellTrapEffectActivationLock"
   | "trapCardActivationLock";
+type ActivationLockSemanticVariant =
+  | "amanoIwatoNonSpiritMonsterLock"
+  | "ancientGearBeastAttackCardActivationLock"
+  | "aussaEarthChannelerAttributeLock"
+  | "coldWaveSpellTrapPredicateLock"
+  | "eriaWaterChannelerAttributeLock"
+  | "hiitaFireChannelerAttributeLock"
+  | "inzektorAxeDamagePhaseCardActivationLock"
+  | "lunalightKaleidoChickBattlePhaseOpponentLock"
+  | "sanganSameCodeSearchLock"
+  | "sasukeSamuraiSpellTrapNamedPredicateLock"
+  | "shopinaLightCostRegisteredAttributeLock"
+  | "sonicJammerSpellCardActivationLock"
+  | "timegazerTrapCardActivationLock"
+  | "ultimateFalconDetachAtkLossOpponentLock"
+  | "vernusylphSharedEarthAttributeLock"
+  | "wattgiraffeBattleDamageOpponentLock"
+  | "wynnWindChannelerAttributeLock";
 
 describe("Lua real activation-lock restore coverage", () => {
   it("keeps the combined activation-lock restore fixture inventory explicit", () => {
@@ -102,6 +139,19 @@ describe("Lua real activation-lock restore coverage", () => {
 
   it("keeps activation-lock variant fixture kinds explicit", () => {
     expect(countActivationLockVariantKinds(realScriptActivationLockVariantFixtures())).toEqual(activationLockVariantKindCounts);
+  });
+
+  it("keeps named activation-lock semantic variants explicit", () => {
+    expect(countActivationLockSemanticVariants(realScriptActivationLockSemanticVariants())).toEqual(activationLockSemanticVariantCounts);
+
+    const weak = realScriptActivationLockSemanticVariants()
+      .filter(({ file, requiredSnippets }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return requiredSnippets.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -311,6 +361,236 @@ function realScriptActivationLockVariantFixtures(): Array<{
     kind: ActivationLockVariantKind;
     requiredSnippets: string[];
   }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function realScriptActivationLockSemanticVariants(): Array<{
+  file: string;
+  kind: ActivationLockSemanticVariant;
+  requiredSnippets: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-amano-iwato-activation-lock.test.ts",
+      kind: "amanoIwatoNonSpiritMonsterLock",
+      requiredSnippets: [
+        'const amanoCode = "32181268"',
+        "restores its field lock that blocks non-Spirit monster effects but allows Spirit effects",
+        'luaValueDescriptor: "cannot-activate:non-spirit-monster-effect"',
+        'action.uid === blockedMonster!.uid)).toBe(false)',
+        'host.messages).toContain("allowed Spirit resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-ancient-gear-beast-card-activation-lock.test.ts",
+      kind: "ancientGearBeastAttackCardActivationLock",
+      requiredSnippets: [
+        'const beastCode = "10509340"',
+        "restores its attack-time card-activation lock while allowing monster effects",
+        'luaValueDescriptor: "cannot-activate:card-activation"',
+        "targetRange: [0, 1]",
+        "action.uid === opponentSpell.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-aussa-channeler-attribute-activation-lock.test.ts",
+      kind: "aussaEarthChannelerAttributeLock",
+      requiredSnippets: [
+        'const aussaCode = "62803464"',
+        "restores its non-EARTH monster effect activation lock after the race-gated hand search",
+        'luaValueDescriptor: "cannot-activate:monster-attribute-except:1"',
+        "action.uid === fireResponder.uid)).toBe(false)",
+        "action.uid === earthResponder.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-cold-wave-spelltrap-activation-lock.test.ts",
+      kind: "coldWaveSpellTrapPredicateLock",
+      requiredSnippets: [
+        'const coldWaveCode = "60682203"',
+        "restores its predicate-valued lock that blocks Spell/Trap effects",
+        'luaValueDescriptor: "cannot-activate:spell-trap-effect"',
+        "targetRange: [1, 1]",
+        "cold wave responder resolved",
+      ],
+    },
+    {
+      file: "test/lua-real-script-eria-channeler-attribute-activation-lock.test.ts",
+      kind: "eriaWaterChannelerAttributeLock",
+      requiredSnippets: [
+        'const eriaCode = "15746348"',
+        "restores its non-WATER monster effect activation lock after the hand search",
+        'luaValueDescriptor: "cannot-activate:monster-attribute-except:2"',
+        "action.uid === fireResponder.uid)).toBe(false)",
+        "action.uid === waterResponder.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-hiita-channeler-attribute-activation-lock.test.ts",
+      kind: "hiitaFireChannelerAttributeLock",
+      requiredSnippets: [
+        'const hiitaCode = "76615300"',
+        "restores its non-FIRE monster effect activation lock after the hand search",
+        'luaValueDescriptor: "cannot-activate:monster-attribute-except:4"',
+        "action.uid === windResponder.uid)).toBe(false)",
+        "action.uid === fireResponder.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-inzektor-axe-damage-phase-activation-lock.test.ts",
+      kind: "inzektorAxeDamagePhaseCardActivationLock",
+      requiredSnippets: [
+        'const axeCode = "87973893"',
+        "restores its attack-announcement card activation lock until the Damage Step",
+        'luaValueDescriptor: "cannot-activate:card-activation"',
+        "reset: { flags: 0x40000020 }",
+        "action.uid === spell.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-lunalight-kaleido-chick-remove-activation-lock.test.ts",
+      kind: "lunalightKaleidoChickBattlePhaseOpponentLock",
+      requiredSnippets: [
+        'const kaleidoCode = "35618217"',
+        "restores its banish trigger and battle-phase static cannot-activate lock",
+        "kaleido banish 1",
+        "targetRange: [0, 1]",
+        "action.uid === opponentSpell.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-sangan-same-code-activation-lock.test.ts",
+      kind: "sanganSameCodeSearchLock",
+      requiredSnippets: [
+        'const sanganCode = "26202165"',
+        "restores its searched-card same-code activation lock",
+        'luaValueDescriptor: "cannot-activate:same-code"',
+        "targetRange: [1, 0]",
+        "action.uid === searched.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-sasuke-samurai-spelltrap-activation-lock.test.ts",
+      kind: "sasukeSamuraiSpellTrapNamedPredicateLock",
+      requiredSnippets: [
+        'const sasukeCode = "11760174"',
+        "restores its LP-cost Spell/Trap activation lock from a named predicate",
+        'luaValueDescriptor: "cannot-activate:spell-trap-effect"',
+        "action.uid === opponentSpell.uid)).toBe(false)",
+        "action.uid === responder.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-shopina-light-activation-lock.test.ts",
+      kind: "shopinaLightCostRegisteredAttributeLock",
+      requiredSnippets: [
+        'const shopinaCode = "5908650"',
+        "restores its cost-registered non-LIGHT monster effect activation lock",
+        'luaValueDescriptor: "cannot-activate:monster-attribute-except:16"',
+        "action.uid === fireResponder.uid)).toBe(false)",
+        "action.uid === lightResponder.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-sonic-jammer-spell-activation-lock.test.ts",
+      kind: "sonicJammerSpellCardActivationLock",
+      requiredSnippets: [
+        'const jammerCode = "84550200"',
+        "restores its Spell Card activation lock while allowing Trap activations",
+        'luaValueDescriptor: "cannot-activate:spell-card-activation"',
+        "action.uid === spell.uid)).toBe(false)",
+        "action.uid === trap.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-timegazer-trap-activation-lock.test.ts",
+      kind: "timegazerTrapCardActivationLock",
+      requiredSnippets: [
+        'const timegazerCode = "20409757"',
+        "restores its Trap Card activation lock while allowing Spell activations",
+        'luaValueDescriptor: "cannot-activate:trap-card-activation"',
+        "action.uid === spell.uid)).toBe(true)",
+        "action.uid === trap.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ultimate-falcon-activation-lock.test.ts",
+      kind: "ultimateFalconDetachAtkLossOpponentLock",
+      requiredSnippets: [
+        'const falconCode = "86221741"',
+        "restores its detach cost, opponent ATK loss, and cannot-activate lock",
+        "currentAttack(",
+        "targetRange: [0, 1]",
+        "action.uid === responder.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-vernusylph-attribute-activation-lock.test.ts",
+      kind: "vernusylphSharedEarthAttributeLock",
+      requiredSnippets: [
+        'const hillsCode = "9350312"',
+        "restores the shared helper's non-EARTH monster effect activation lock",
+        'luaValueDescriptor: "cannot-activate:monster-attribute-except:1"',
+        "action.uid === fireResponder.uid)).toBe(false)",
+        "action.uid === earthResponder.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-wattgiraffe-battle-activation-lock.test.ts",
+      kind: "wattgiraffeBattleDamageOpponentLock",
+      requiredSnippets: [
+        'const wattgiraffeCode = "402568"',
+        "restores its direct-battle-damage static cannot-activate lock",
+        "targetRange: [0, 1]",
+        "action.uid === opponentSpell.uid)).toBe(false)",
+        "action.uid === responder.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-wynn-channeler-attribute-activation-lock.test.ts",
+      kind: "wynnWindChannelerAttributeLock",
+      requiredSnippets: [
+        'const wynnCode = "86395581"',
+        "restores its non-WIND monster effect activation lock after the hand search",
+        'luaValueDescriptor: "cannot-activate:monster-attribute-except:8"',
+        "action.uid === fireResponder.uid)).toBe(false)",
+        "action.uid === windResponder.uid)).toBe(true)",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: ActivationLockSemanticVariant;
+    requiredSnippets: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countActivationLockSemanticVariants(
+  fixtures: Array<{ kind: ActivationLockSemanticVariant }>,
+): Record<ActivationLockSemanticVariant, number> {
+  return fixtures.reduce<Record<ActivationLockSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      amanoIwatoNonSpiritMonsterLock: 0,
+      ancientGearBeastAttackCardActivationLock: 0,
+      aussaEarthChannelerAttributeLock: 0,
+      coldWaveSpellTrapPredicateLock: 0,
+      eriaWaterChannelerAttributeLock: 0,
+      hiitaFireChannelerAttributeLock: 0,
+      inzektorAxeDamagePhaseCardActivationLock: 0,
+      lunalightKaleidoChickBattlePhaseOpponentLock: 0,
+      sanganSameCodeSearchLock: 0,
+      sasukeSamuraiSpellTrapNamedPredicateLock: 0,
+      shopinaLightCostRegisteredAttributeLock: 0,
+      sonicJammerSpellCardActivationLock: 0,
+      timegazerTrapCardActivationLock: 0,
+      ultimateFalconDetachAtkLossOpponentLock: 0,
+      vernusylphSharedEarthAttributeLock: 0,
+      wattgiraffeBattleDamageOpponentLock: 0,
+      wynnWindChannelerAttributeLock: 0,
+    },
+  );
 }
 
 function countActivationLockVariantKinds(
