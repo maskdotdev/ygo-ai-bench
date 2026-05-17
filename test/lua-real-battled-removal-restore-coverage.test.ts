@@ -5,6 +5,18 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const battledRemovalFixtureCount = 5;
+const battledRemovalKindCounts = {
+  afterDamageBanish: 2,
+  battleDestroyRedirect: 1,
+  battleDestroyedBackrowDestroy: 1,
+  battleDestroyedMonsterDestroy: 1,
+} satisfies Record<BattledRemovalKind, number>;
+
+type BattledRemovalKind =
+  | "afterDamageBanish"
+  | "battleDestroyRedirect"
+  | "battleDestroyedBackrowDestroy"
+  | "battleDestroyedMonsterDestroy";
 
 describe("Lua real battled-removal restore coverage", () => {
   it("requires battled removal fixtures to assert clean Lua registry restore and restored trigger outcomes", () => {
@@ -31,12 +43,21 @@ describe("Lua real battled-removal restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps battled-removal fixture kinds explicit", () => {
+    expect(countBattledRemovalKinds(battledRemovalFixtureFiles())).toEqual(battledRemovalKindCounts);
+  });
 });
 
-function battledRemovalFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function battledRemovalFixtureFiles(): Array<{
+  file: string;
+  kind: BattledRemovalKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-dd-assailant-battled-remove.test.ts",
+      kind: "afterDamageBanish",
       required: [
         'eventName: "afterDamageCalculation"',
         'type === "activateTrigger"',
@@ -48,6 +69,7 @@ function battledRemovalFixtureFiles(): Array<{ file: string; required: string[] 
     },
     {
       file: "test/lua-real-script-divine-knight-ishzark-battled-remove.test.ts",
+      kind: "afterDamageBanish",
       required: [
         'eventName: "afterDamageCalculation"',
         'type === "activateTrigger"',
@@ -59,6 +81,7 @@ function battledRemovalFixtureFiles(): Array<{ file: string; required: string[] 
     },
     {
       file: "test/lua-real-script-newdoria-battle-destroyed-target.test.ts",
+      kind: "battleDestroyedMonsterDestroy",
       required: [
         'eventName: "battleDestroyed"',
         'type === "activateTrigger"',
@@ -69,6 +92,7 @@ function battledRemovalFixtureFiles(): Array<{ file: string; required: string[] 
     },
     {
       file: "test/lua-real-script-lesser-fiend-battle-destroy-redirect.test.ts",
+      kind: "battleDestroyRedirect",
       required: [
         'eventName: "battleDestroyed"',
         "pendingTriggers).toEqual([])",
@@ -80,6 +104,7 @@ function battledRemovalFixtureFiles(): Array<{ file: string; required: string[] 
     },
     {
       file: "test/lua-real-script-yamato-no-kami-battle-destroy-backrow.test.ts",
+      kind: "battleDestroyedBackrowDestroy",
       required: [
         'eventName: "battleDestroyed"',
         'type === "activateTrigger"',
@@ -90,5 +115,24 @@ function battledRemovalFixtureFiles(): Array<{ file: string; required: string[] 
         "specialSummonProcedure",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: BattledRemovalKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countBattledRemovalKinds(fixtures: Array<{ kind: BattledRemovalKind }>): Record<BattledRemovalKind, number> {
+  return fixtures.reduce<Record<BattledRemovalKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      afterDamageBanish: 0,
+      battleDestroyRedirect: 0,
+      battleDestroyedBackrowDestroy: 0,
+      battleDestroyedMonsterDestroy: 0,
+    },
+  );
 }
