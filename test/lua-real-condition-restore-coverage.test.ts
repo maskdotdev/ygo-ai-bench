@@ -15,6 +15,15 @@ const conditionKindCounts = {
   turnPlayerMainPhaseCondition: 1,
   turnPlayerPhaseCondition: 1,
 } satisfies Record<ConditionKind, number>;
+const conditionSemanticVariantCounts = {
+  genericBattleAndExactPhaseCondition: 1,
+  mainOrBattlePhaseCondition: 1,
+  namedMainMain2StandbyPhaseCondition: 1,
+  turnPlayerBattlePhaseCondition: 1,
+  turnPlayerMainPhaseCondition: 1,
+  turnPlayerOnlyCondition: 1,
+  turnPlayerStandbyPhaseCondition: 1,
+} satisfies Record<ConditionSemanticVariant, number>;
 
 type ConditionKind =
   | "genericPhaseCondition"
@@ -24,6 +33,14 @@ type ConditionKind =
   | "turnPlayerCondition"
   | "turnPlayerMainPhaseCondition"
   | "turnPlayerPhaseCondition";
+type ConditionSemanticVariant =
+  | "genericBattleAndExactPhaseCondition"
+  | "mainOrBattlePhaseCondition"
+  | "namedMainMain2StandbyPhaseCondition"
+  | "turnPlayerBattlePhaseCondition"
+  | "turnPlayerMainPhaseCondition"
+  | "turnPlayerOnlyCondition"
+  | "turnPlayerStandbyPhaseCondition";
 
 describe("Lua real condition restore coverage", () => {
   it("requires representative phase and turn-player condition fixtures to assert clean Lua registry restore", () => {
@@ -101,6 +118,19 @@ describe("Lua real condition restore coverage", () => {
   it("keeps phase and turn-player condition fixture kinds explicit", () => {
     expect(countConditionKinds(realScriptConditionFixtures())).toEqual(conditionKindCounts);
   });
+
+  it("keeps named phase and turn-player condition semantic variants explicit", () => {
+    expect(countConditionSemanticVariants(conditionSemanticVariants())).toEqual(conditionSemanticVariantCounts);
+
+    const weak = conditionSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
+  });
 });
 
 function realScriptConditionFixtures(): Array<{ file: string; kind: ConditionKind }> {
@@ -115,6 +145,89 @@ function realScriptConditionFixtures(): Array<{ file: string; kind: ConditionKin
   ] satisfies Array<{ file: string; kind: ConditionKind }>)
     .map(({ file, kind }) => ({ file: path.join("test", file), kind }))
     .sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function conditionSemanticVariants(): Array<{
+  file: string;
+  kind: ConditionSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-main-or-battle-phase-condition.test.ts",
+      kind: "mainOrBattlePhaseCondition",
+      required: [
+        "restores standalone main phase or battle phase checks",
+        "condition:main-or-battle-phase",
+        'restored.session.state.phase = "main1"',
+        'restored.session.state.phase = "standby"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-named-phase-condition.test.ts",
+      kind: "namedMainMain2StandbyPhaseCondition",
+      required: [
+        "restores standalone named main, main2, and standby phase checks",
+        "condition:main-phase",
+        "condition:phase:256",
+        "condition:phase:2",
+      ],
+    },
+    {
+      file: "test/lua-real-script-phase-condition.test.ts",
+      kind: "genericBattleAndExactPhaseCondition",
+      required: [
+        "restores standalone battle phase and exact phase checks",
+        "condition:battle-phase",
+        "condition:phase:512",
+        'restored.session.state.phase = "end"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-turn-player-battle-phase-condition.test.ts",
+      kind: "turnPlayerBattlePhaseCondition",
+      required: [
+        "restores self and opponent turn-player battle phase checks",
+        "condition:turn-player:self-battle-phase",
+        "condition:turn-player:opponent-battle-phase",
+        'restored.session.state.phase = "battle"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-turn-player-condition.test.ts",
+      kind: "turnPlayerOnlyCondition",
+      required: [
+        "restores standalone self and opponent turn-player checks",
+        "condition:turn-player:self",
+        "condition:turn-player:opponent",
+        "restored.session.state.turnPlayer = 1",
+      ],
+    },
+    {
+      file: "test/lua-real-script-turn-player-main-phase-condition.test.ts",
+      kind: "turnPlayerMainPhaseCondition",
+      required: [
+        "restores self and opponent turn-player main phase checks",
+        "condition:turn-player:self-main-phase",
+        "condition:turn-player:opponent-main-phase",
+        'restored.session.state.phase = "battle"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-turn-player-phase-condition.test.ts",
+      kind: "turnPlayerStandbyPhaseCondition",
+      required: [
+        "restores exact phase checks paired with self and opponent turn-player checks",
+        "condition:turn-player-phase:opponent:2",
+        "condition:turn-player-phase:self:2",
+        'restored.session.state.phase = "standby"',
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: ConditionSemanticVariant;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
 }
 
 function realScriptSourceConditionFixtureFiles(): Array<{ file: string; requiredSnippets: string[] }> {
@@ -695,6 +808,26 @@ function countConditionKinds(fixtures: Array<{ kind: ConditionKind }>): Record<C
       turnPlayerCondition: 0,
       turnPlayerMainPhaseCondition: 0,
       turnPlayerPhaseCondition: 0,
+    },
+  );
+}
+
+function countConditionSemanticVariants(
+  fixtures: Array<{ kind: ConditionSemanticVariant }>,
+): Record<ConditionSemanticVariant, number> {
+  return fixtures.reduce<Record<ConditionSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      genericBattleAndExactPhaseCondition: 0,
+      mainOrBattlePhaseCondition: 0,
+      namedMainMain2StandbyPhaseCondition: 0,
+      turnPlayerBattlePhaseCondition: 0,
+      turnPlayerMainPhaseCondition: 0,
+      turnPlayerOnlyCondition: 0,
+      turnPlayerStandbyPhaseCondition: 0,
     },
   );
 }
