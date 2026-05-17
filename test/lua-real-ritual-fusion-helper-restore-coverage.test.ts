@@ -224,11 +224,13 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
       required: [
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }]',
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x12 }]',
+        "expect(restored.session.state.chain[0]?.operationInfos).toEqual([",
         'summonType: "ritual"',
         "summonMaterialUids: [materialA!.uid, materialC!.uid]",
         "summonMaterialUids: [exactMaterial!.uid]",
         "summonMaterialUids: [darkMagician!.uid]",
         "summonMaterialUids: [validMaterial!.uid]",
+        'eventName === "sentToGraveyard"',
       ],
     },
     {
