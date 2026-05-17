@@ -82,6 +82,111 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ne
       controller: 0,
       reason: duelReason.cost | duelReason.material,
     });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned")).toEqual([
+      {
+        eventName: "specialSummoned",
+        eventCode: 1102,
+        eventCardUid: necroquip!.uid,
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "extraDeck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
+    const materialGraveEvents = restored.session.state.eventHistory.filter((event) =>
+      event.eventName === "sentToGraveyard"
+      && (event.eventCardUid === equippedMaterial!.uid || event.eventCardUid === fiendMaterial!.uid)
+    );
+    expect(materialGraveEvents.map((event) => event.eventCardUid).sort()).toEqual([equippedMaterial!.uid, equippedMaterial!.uid, fiendMaterial!.uid].sort());
+    expect(materialGraveEvents).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-93860228-0",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 136,
+          "eventReasonCardUid": "p0-extraDeck-93860227-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-93860229-1",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 136,
+          "eventReasonCardUid": "p0-extraDeck-93860227-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-93860228-0",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 136,
+          "eventReasonCardUid": "p0-extraDeck-93860227-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
+          "eventUids": [
+            "p0-deck-93860228-0",
+            "p0-deck-93860229-1",
+          ],
+        },
+      ]
+    `);
     expect(getLegalActions(restored.session, 0).some((action) => action.type === "specialSummonProcedure" && action.uid === necroquip!.uid)).toBe(false);
   });
 });
