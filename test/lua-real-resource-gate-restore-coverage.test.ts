@@ -5,6 +5,15 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const resourceGateFixtureCount = 5;
+const resourceGateKindCounts = {
+  drawPhaseLock: 1,
+  effectReleaseLock: 1,
+  extraReleaseCost: 1,
+  nonDrawPhaseLock: 1,
+  unreleasableMonster: 1,
+} satisfies Record<ResourceGateKind, number>;
+
+type ResourceGateKind = "drawPhaseLock" | "effectReleaseLock" | "extraReleaseCost" | "nonDrawPhaseLock" | "unreleasableMonster";
 
 describe("Lua real resource gate restore coverage", () => {
   it("requires resource gate fixtures to assert clean restore and restored blocked/allowed outcomes", () => {
@@ -29,12 +38,21 @@ describe("Lua real resource gate restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps resource gate fixture kinds explicit", () => {
+    expect(countResourceGateKinds(resourceGateFixtureFiles())).toEqual(resourceGateKindCounts);
+  });
 });
 
-function resourceGateFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function resourceGateFixtureFiles(): Array<{
+  file: string;
+  kind: ResourceGateKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-d-force-plasma-cannot-draw.test.ts",
+      kind: "drawPhaseLock",
       required: [
         "code === 25",
         "d force can draw with plasma draw phase false",
@@ -45,6 +63,7 @@ function resourceGateFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-diabolos-effect-release-lock.test.ts",
+      kind: "effectReleaseLock",
       required: [
         "costRestored.missingRegistryKeys).toEqual([])",
         "costRestored.missingChainLimitRegistryKeys).toEqual([])",
@@ -56,6 +75,7 @@ function resourceGateFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-protector-sanctuary-cannot-draw.test.ts",
+      kind: "nonDrawPhaseLock",
       required: [
         "code: 25",
         "protector can draw main1 false",
@@ -66,6 +86,7 @@ function resourceGateFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-red-duston-unreleasable.test.ts",
+      kind: "unreleasableMonster",
       required: [
         "code === 43",
         "code === 44",
@@ -76,6 +97,7 @@ function resourceGateFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-rikka-konkon-extra-release-cost.test.ts",
+      kind: "extraReleaseCost",
       required: [
         "code: 158",
         "code: Number(konkonCode)",
@@ -84,5 +106,25 @@ function resourceGateFixtureFiles(): Array<{ file: string; required: string[] }>
         'position: "faceUpDefense"',
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: ResourceGateKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countResourceGateKinds(fixtures: Array<{ kind: ResourceGateKind }>): Record<ResourceGateKind, number> {
+  return fixtures.reduce<Record<ResourceGateKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      drawPhaseLock: 0,
+      effectReleaseLock: 0,
+      extraReleaseCost: 0,
+      nonDrawPhaseLock: 0,
+      unreleasableMonster: 0,
+    },
+  );
 }
