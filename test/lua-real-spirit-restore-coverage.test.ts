@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 22;
+const spiritFixtureCount = 23;
 const spiritKindCounts = {
   columnSendPendulum: 3,
+  costReturnBounce: 1,
   delayedShuffleDraw: 1,
   effectExtraNormalSummon: 2,
   graveToDeckTrigger: 1,
@@ -52,6 +53,7 @@ describe("Lua real Spirit restore coverage", () => {
 
 type SpiritKind =
   | "columnSendPendulum"
+  | "costReturnBounce"
   | "delayedShuffleDraw"
   | "effectExtraNormalSummon"
   | "graveToDeckTrigger"
@@ -70,6 +72,7 @@ function countSpiritKinds(fixtures: Array<{ kind: SpiritKind }>): Record<SpiritK
     (counts, { kind }) => ({ ...counts, [kind]: counts[kind] + 1 }),
     {
       columnSendPendulum: 0,
+      costReturnBounce: 0,
       delayedShuffleDraw: 0,
       effectExtraNormalSummon: 0,
       graveToDeckTrigger: 0,
@@ -411,6 +414,23 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; kind: SpiritKind;
         "targetUids",
         'position: "faceDownDefense"',
         'host.messages).not.toContain("tsukuyomi responder resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-rasetsu-spirit-cost-return.test.ts",
+      kind: "costReturnBounce",
+      required: [
+        'action.type === "normalSummon"',
+        'action.type === "activateTrigger"',
+        'action.type === "passChain"',
+        "confirmed 1:",
+        "rasetsu can special false",
+        'eventName: "confirmed"',
+        'eventName: "sentToHand"',
+        "category: 8",
+        "targetUids",
+        'location: "hand"',
+        'host.messages).not.toContain("rasetsu responder resolved")',
       ],
     },
     {
