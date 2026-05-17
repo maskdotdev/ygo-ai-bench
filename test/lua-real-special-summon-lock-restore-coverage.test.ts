@@ -6,8 +6,24 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const SPECIAL_SUMMON_LOCK_FIXTURE_COUNT = 70;
 const SAME_CODE_EXTRA_DECK_ONCE_LOCK_FIXTURE_COUNT = 2;
+const specialSummonLockKindCounts = {
+  broadLocationLock: 4,
+  extraDeckTraitLock: 34,
+  globalLock: 3,
+  mainDeckTraitLock: 11,
+  pendulumSpecificLock: 5,
+  summonTypeOrProcedureLock: 13,
+} satisfies Record<SpecialSummonLockKind, number>;
+const sameCodeExtraDeckOnceLockKindCounts = {
+  linkOnceLock: 1,
+  synchroOnceLock: 1,
+} satisfies Record<SameCodeExtraDeckOnceLockKind, number>;
 
 describe("Lua real special-summon lock restore coverage", () => {
+  it("keeps representative special-summon lock fixture kinds explicit", () => {
+    expect(countSpecialSummonLockKinds(representativeSpecialSummonLockFixtures())).toEqual(specialSummonLockKindCounts);
+  });
+
   it("requires representative special-summon lock fixtures to assert clean Lua restore", () => {
     const fixtures = representativeSpecialSummonLockFixtures();
     expect(fixtures).toHaveLength(SPECIAL_SUMMON_LOCK_FIXTURE_COUNT);
@@ -43,6 +59,10 @@ describe("Lua real special-summon lock restore coverage", () => {
     expect(weak).toEqual([]);
   });
 
+  it("keeps same-code Extra Deck once-lock fixture kinds explicit", () => {
+    expect(countSameCodeExtraDeckOnceLockKinds(representativeSameCodeExtraDeckOnceLockFixtures())).toEqual(sameCodeExtraDeckOnceLockKindCounts);
+  });
+
   it("requires same-code Extra Deck once-lock fixtures to assert clean Lua restore and allowed alternatives", () => {
     const fixtures = representativeSameCodeExtraDeckOnceLockFixtures();
     expect(fixtures).toHaveLength(SAME_CODE_EXTRA_DECK_ONCE_LOCK_FIXTURE_COUNT);
@@ -66,10 +86,20 @@ describe("Lua real special-summon lock restore coverage", () => {
   });
 });
 
-function representativeSpecialSummonLockFixtures(): Array<{ file: string; requiredSnippets: string[] }> {
-  return [
+type SpecialSummonLockKind =
+  | "broadLocationLock"
+  | "extraDeckTraitLock"
+  | "globalLock"
+  | "mainDeckTraitLock"
+  | "pendulumSpecificLock"
+  | "summonTypeOrProcedureLock";
+type SameCodeExtraDeckOnceLockKind = "linkOnceLock" | "synchroOnceLock";
+
+function representativeSpecialSummonLockFixtures(): Array<{ file: string; kind: SpecialSummonLockKind; requiredSnippets: string[] }> {
+  return ([
     {
       file: "test/lua-real-script-satellarknight-zefrathuban-pendulum-setcode-lock.test.ts",
+      kind: "pendulumSpecificLock",
       requiredSnippets: [
         "target:pendulum-summon-not-setcode:",
         "zefrathuban tellarknight pendulum special 1",
@@ -80,6 +110,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-numen-erat-testudo-attack-summon-lock.test.ts",
+      kind: "globalLock",
       requiredSnippets: [
         "target:attack-below:1800",
         "property: 0x800",
@@ -91,6 +122,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-fallen-angel-fusion-alternate-once-lock.test.ts",
+      kind: "summonTypeOrProcedureLock",
       requiredSnippets: [
         "target:summon-type-code-any:current:",
         "fallen fusion special 0",
@@ -100,6 +132,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-fire-prison-field-max-link-lock.test.ts",
+      kind: "summonTypeOrProcedureLock",
       requiredSnippets: [
         "target:link-summon-below-field-max-link",
         "fire prison link2 link special 0",
@@ -110,6 +143,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-necro-vulture-rank-up-magic-xyz-lock.test.ts",
+      kind: "summonTypeOrProcedureLock",
       requiredSnippets: [
         "target:xyz-summon-not-related-setcode:149",
         "property: 0x4000800",
@@ -119,6 +153,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-repair-genex-controller-procedure-extra-lock.test.ts",
+      kind: "summonTypeOrProcedureLock",
       requiredSnippets: [
         "target:extra-summon-type-not-or-no-procedure:",
         "property: 0x4000800",
@@ -131,6 +166,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-rokket-barrage-extra-dark-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "special-summon-limit:not-attribute-extra:32",
         "rokket barrage fire extra special 0",
@@ -140,6 +176,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-stellarnova-bonds-extra-xyz-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "special-summon-limit:not-type-extra:8388608",
         "stellarnova fusion special 0",
@@ -150,6 +187,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-welcome-labrynth-fiend-deck-extra-lock.test.ts",
+      kind: "broadLocationLock",
       requiredSnippets: [
         "special-summon-limit:not-race-deck-or-extra:8",
         "property: 0x4000800",
@@ -163,6 +201,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-eldlixir-zombie-special-lock.test.ts",
+      kind: "mainDeckTraitLock",
       requiredSnippets: [
         "Duel.IsPlayerCanSpecialSummon",
         "eldlixir can special locked true/false",
@@ -172,6 +211,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-drytron-nu2-ritual-machine-lock.test.ts",
+      kind: "summonTypeOrProcedureLock",
       requiredSnippets: [
         'luaTargetDescriptor: `target:ritual-summon-not-race:${raceMachine}`',
         "drytron machine ritual special 1",
@@ -181,6 +221,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-lunalight-wolf-pendulum-monster-lock.test.ts",
+      kind: "pendulumSpecificLock",
       requiredSnippets: [
         "target:pendulum-summon-not-setcode-monster:",
         "wolf lunalight pendulum special 1",
@@ -190,6 +231,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-couplet-pendulum-light-lock.test.ts",
+      kind: "pendulumSpecificLock",
       requiredSnippets: [
         "target:pendulum-summon-not-attribute:",
         "couplet light pendulum special 1",
@@ -199,6 +241,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-jam-breeding-machine-slime-token-lock.test.ts",
+      kind: "mainDeckTraitLock",
       requiredSnippets: [
         "target:not-code:",
         "Duel.CreateToken",
@@ -210,6 +253,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-cyanos-extra-machine-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "cyanos warrior extra special 0",
         "cyanos machine extra special 1",
@@ -218,6 +262,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-karakuri-bonze-extra-earth-machine-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "special-summon-limit:not-attribute-race-extra:1:32",
         "karakuri dark machine special 0",
@@ -228,6 +273,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-chimera-doll-extra-machine-xyz-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "special-summon-limit:not-type-race-extra:8388608:32",
         "chimera warrior xyz special 0",
@@ -238,6 +284,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-smiger-extra-machine-synchro-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "smiger warrior synchro special 0",
         "smiger machine fusion special 0",
@@ -247,6 +294,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-wildwind-extra-synchro-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "wildwind fusion special 0",
         "wildwind hand special 1",
@@ -255,6 +303,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-world-legacy-cliffhanger-link-summon-lock.test.ts",
+      kind: "summonTypeOrProcedureLock",
       requiredSnippets: [
         'luaTargetDescriptor: `target:special-summon-type-is:${luaSummonTypeLink}`',
         "property: 0x4000800",
@@ -266,6 +315,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-vata-extra-dark-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "vata extra light special 0",
         "vata hand light special 1",
@@ -274,6 +324,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-white-sardine-extra-water-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "white sardine dark extra special 0",
         "white sardine water extra special 1",
@@ -282,6 +333,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-wish-dragon-extra-level5-dragon-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "wish level4 dragon special 0",
         "wish level5 warrior special 0",
@@ -291,6 +343,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-windwitch-ice-bell-extra-level5-wind-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "ice bell level4 wind special 0",
         "ice bell level5 earth special 0",
@@ -300,6 +353,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-vengeful-witch-extra-synchro-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "vengeful witch fusion special 0",
         "vengeful witch xyz special 0",
@@ -309,6 +363,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-stone-sweeper-extra-fusion-synchro-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "stone sweeper xyz special 0",
         "stone sweeper fusion special 1",
@@ -318,6 +373,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-garden-rose-flora-extra-synchro-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "garden rose flora fusion special 0",
         "garden rose flora xyz special 0",
@@ -329,6 +385,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-mirror-mage-extra-water-synchro-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "mirror mage dark synchro special 0",
         "mirror mage water fusion special 0",
@@ -338,6 +395,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-bone-archfiend-extra-dark-dragon-synchro-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "bone light dragon synchro special 0",
         "bone dark fiend synchro special 0",
@@ -347,6 +405,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-crimson-resonator-extra-dark-dragon-synchro-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "crimson light dragon synchro special 0",
         "crimson dark fiend synchro special 0",
@@ -356,6 +415,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-core-of-chaos-extra-light-dark-synchro-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "core earth synchro special 0",
         "core light fusion special 0",
@@ -365,6 +425,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-power-vice-extra-dark-synchro-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "power vice light synchro special 0",
         "power vice dark fusion special 0",
@@ -374,6 +435,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-qq-enneagon-extra-rank9-xyz-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "qq rank8 xyz special 0",
         "qq rank10 fusion special 0",
@@ -383,6 +445,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-palm-ryzeal-extra-rank4-xyz-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "palm ryzeal rank5 xyz special 0",
         "palm ryzeal fusion special 0",
@@ -392,6 +455,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-schwarzschild-extra-dragon-xyz-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "schwarzschild machine xyz special 0",
         "schwarzschild dragon synchro special 0",
@@ -401,6 +465,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-astral-kuriboh-extra-number-xyz-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "SetLabelObject(number_xyz)",
         "special-summon-limit:not-setcode-type-extra:72:8388608",
@@ -413,6 +478,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-gimmick-puppet-rouge-doll-extra-setcode-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "rouge off-set xyz special 0",
         "rouge off-set fusion special 0",
@@ -422,6 +488,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-fallen-white-dragon-extra-level8-fusion-synchro-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "fallen white level7 fusion special 0",
         "fallen white level8 xyz special 0",
@@ -431,6 +498,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-heraldic-beast-gryphon-extra-xyz-only-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "target:extra-summon-type-not:",
         "property: 0x4000800",
@@ -442,6 +510,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-fusion-draft-extra-fusion-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "fusion draft synchro special 0",
         "fusion draft xyz special 0",
@@ -451,6 +520,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-virtual-world-lulu-level-rank3-summon-lock.test.ts",
+      kind: "mainDeckTraitLock",
       requiredSnippets: [
         "target:not-level-or-rank-above:3",
         "property: 0x800",
@@ -463,6 +533,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-odd-eyes-revolution-pendulum-dragon-lock.test.ts",
+      kind: "pendulumSpecificLock",
       requiredSnippets: [
         "revolution dragon pendulum special 1",
         "revolution warrior pendulum special 0",
@@ -471,6 +542,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-nebula-dragon-light-dark-dragon-lock.test.ts",
+      kind: "mainDeckTraitLock",
       requiredSnippets: [
         "target:not-race-attribute:8192:48",
         "property: 0x800",
@@ -483,6 +555,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-jokers-straight-extra-light-warrior-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "jokers dark warrior special 0",
         "jokers light dragon special 0",
@@ -492,6 +565,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-linkbelt-wall-dragon-counter-link-lock.test.ts",
+      kind: "summonTypeOrProcedureLock",
       requiredSnippets: [
         "linkbelt link2 link special 1",
         "linkbelt link3 link special 0",
@@ -501,6 +575,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-quadborrel-extra-link2-or-lower-lock.test.ts",
+      kind: "summonTypeOrProcedureLock",
       requiredSnippets: [
         "quadborrel link1 special 0",
         "quadborrel link2 special 0",
@@ -510,6 +585,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-link-turret-extra-dark-link-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "special-summon-limit:not-type-attribute-extra:67108864:32",
         "property: 0x800",
@@ -522,6 +598,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-link-devotee-link3-lock.test.ts",
+      kind: "summonTypeOrProcedureLock",
       requiredSnippets: [
         "target:link-summon-link-above:3",
         "property: 0x4000800",
@@ -535,6 +612,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-radiant-typhoon-wind-special-lock.test.ts",
+      kind: "mainDeckTraitLock",
       requiredSnippets: [
         "Duel.IsPlayerCanSpecialSummon",
         "radiant typhoon can special true/false",
@@ -544,6 +622,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-tatsunecro-zombie-special-lock.test.ts",
+      kind: "mainDeckTraitLock",
       requiredSnippets: [
         "Duel.IsPlayerCanSpecialSummon",
         "tatsunecro can special true/false",
@@ -553,6 +632,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-thunder-sea-horse-special-lock.test.ts",
+      kind: "globalLock",
       requiredSnippets: [
         "getLuaRestoreLegalActionGroups(restored, 1)",
         "thunder sea horse responder resolved",
@@ -562,6 +642,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-pendulum-area-summon-type-lock.test.ts",
+      kind: "summonTypeOrProcedureLock",
       requiredSnippets: [
         'luaTargetDescriptor: `target:special-summon-type-not:${luaSummonTypePendulum}`',
         "property: 0x4000800",
@@ -572,6 +653,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-fiendish-portrait-deck-extra-summon-lock.test.ts",
+      kind: "broadLocationLock",
       requiredSnippets: [
         'luaTargetDescriptor: "special-summon-limit:deck-or-extra"',
         "property: 0x4000800",
@@ -587,6 +669,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-edea-extra-deck-summon-lock.test.ts",
+      kind: "broadLocationLock",
       requiredSnippets: [
         'luaTargetDescriptor: "special-summon-limit:extra"',
         "property: 0x4000800",
@@ -597,6 +680,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-isolde-zombie-special-summon-lock.test.ts",
+      kind: "mainDeckTraitLock",
       requiredSnippets: [
         'luaTargetDescriptor: "target:not-race:16"',
         "property: 0x800",
@@ -607,6 +691,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-orcust-cymbal-dark-summon-lock.test.ts",
+      kind: "mainDeckTraitLock",
       requiredSnippets: [
         'luaTargetDescriptor: "target:not-attribute:32"',
         "property: 0x4000800",
@@ -617,6 +702,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-token-collector-token-summon-lock.test.ts",
+      kind: "mainDeckTraitLock",
       requiredSnippets: [
         'luaTargetDescriptor: "target:type:16384"',
         "property: 0x800",
@@ -627,6 +713,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-crimson-blader-level5-summon-lock.test.ts",
+      kind: "mainDeckTraitLock",
       requiredSnippets: [
         'luaTargetDescriptor: "target:level-above:5"',
         "property: 0x800",
@@ -637,6 +724,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-ancient-gear-wyvern-facedown-summon-lock.test.ts",
+      kind: "mainDeckTraitLock",
       requiredSnippets: [
         'luaTargetDescriptor: "target:special-summon-position-facedown"',
         "property: 0x800",
@@ -647,6 +735,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-world-legacy-survivor-extra-link-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         'luaTargetDescriptor: "special-summon-limit:not-type-extra:67108864"',
         "property: 0x4000800",
@@ -659,6 +748,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-cation-extra-light-xyz-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         'luaTargetDescriptor: "special-summon-limit:not-type-attribute-extra:8388608:16"',
         "cation dark xyz special 0",
@@ -669,6 +759,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-dogmatikalamity-extra-ritual-lock.test.ts",
+      kind: "broadLocationLock",
       requiredSnippets: [
         'luaTargetDescriptor: "special-summon-limit:extra"',
         "canSpecialSummonDuelCard(restored.session.state, pendulumExtra!.uid, 0)).toBe(false)",
@@ -677,6 +768,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-sunvine-shrine-extra-plant-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         'luaTargetDescriptor: "special-summon-limit:not-race-extra:1024"',
         "property: 0x4000800",
@@ -688,6 +780,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-grisaille-prison-synchro-xyz-summon-lock.test.ts",
+      kind: "summonTypeOrProcedureLock",
       requiredSnippets: [
         "target:special-summon-type-is-any",
         "property: 0x4000800",
@@ -700,6 +793,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-gagaga-head-xyz-only-summon-lock.test.ts",
+      kind: "summonTypeOrProcedureLock",
       requiredSnippets: [
         "target:special-summon-type-not",
         "luaSummonTypeXyz",
@@ -713,6 +807,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-abyss-actor-twinkle-pendulum-setcode-lock.test.ts",
+      kind: "pendulumSpecificLock",
       requiredSnippets: [
         "target:pendulum-summon-not-setcode",
         "twinkle abyss actor pendulum special 1",
@@ -722,6 +817,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-ashened-extra-pyro-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         "ashened extra machine special 0",
         "ashened hand machine special 1",
@@ -730,6 +826,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-augmented-heraldry-psychic-xyz-heraldic-lock.test.ts",
+      kind: "extraDeckTraitLock",
       requiredSnippets: [
         'luaTargetDescriptor: "target:not-race-type-or-setcode:1048576:8388608:118"',
         "property: 0x80800",
@@ -741,6 +838,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-odd-eyes-phantasma-pendulum-summon-lock.test.ts",
+      kind: "summonTypeOrProcedureLock",
       requiredSnippets: [
         "target:special-summon-type-is",
         "luaSummonTypePendulum",
@@ -752,6 +850,7 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
     },
     {
       file: "test/lua-real-script-vanitys-fiend-special-summon-lock.test.ts",
+      kind: "globalLock",
       requiredSnippets: [
         "code: 22",
         "targetRange: [1, 1]",
@@ -760,13 +859,14 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; requir
         "vanity special result 0/0",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{ file: string; kind: SpecialSummonLockKind; requiredSnippets: string[] }>).sort((a, b) => a.file.localeCompare(b.file));
 }
 
-function representativeSameCodeExtraDeckOnceLockFixtures(): Array<{ file: string; requiredSnippets: string[] }> {
-  return [
+function representativeSameCodeExtraDeckOnceLockFixtures(): Array<{ file: string; kind: SameCodeExtraDeckOnceLockKind; requiredSnippets: string[] }> {
+  return ([
     {
       file: "test/lua-real-script-accel-synchron-synchro-once-lock.test.ts",
+      kind: "synchroOnceLock",
       requiredSnippets: [
         'luaTargetDescriptor: `target:summon-type-code:${luaSummonTypeSynchro}:${accelCode}`',
         "accel synchro special 0",
@@ -777,6 +877,7 @@ function representativeSameCodeExtraDeckOnceLockFixtures(): Array<{ file: string
     },
     {
       file: "test/lua-real-script-prank-kids-meow-link-once-lock.test.ts",
+      kind: "linkOnceLock",
       requiredSnippets: [
         'luaTargetDescriptor: `target:link-summon-code:${meowCode}`',
         "meow link special 0",
@@ -785,5 +886,28 @@ function representativeSameCodeExtraDeckOnceLockFixtures(): Array<{ file: string
         "fusion link special 1",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{ file: string; kind: SameCodeExtraDeckOnceLockKind; requiredSnippets: string[] }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countSpecialSummonLockKinds(fixtures: Array<{ kind: SpecialSummonLockKind }>): Record<SpecialSummonLockKind, number> {
+  return fixtures.reduce<Record<SpecialSummonLockKind, number>>(
+    (counts, { kind }) => ({ ...counts, [kind]: counts[kind] + 1 }),
+    {
+      broadLocationLock: 0,
+      extraDeckTraitLock: 0,
+      globalLock: 0,
+      mainDeckTraitLock: 0,
+      pendulumSpecificLock: 0,
+      summonTypeOrProcedureLock: 0,
+    },
+  );
+}
+
+function countSameCodeExtraDeckOnceLockKinds(
+  fixtures: Array<{ kind: SameCodeExtraDeckOnceLockKind }>,
+): Record<SameCodeExtraDeckOnceLockKind, number> {
+  return fixtures.reduce<Record<SameCodeExtraDeckOnceLockKind, number>>(
+    (counts, { kind }) => ({ ...counts, [kind]: counts[kind] + 1 }),
+    { linkOnceLock: 0, synchroOnceLock: 0 },
+  );
 }
