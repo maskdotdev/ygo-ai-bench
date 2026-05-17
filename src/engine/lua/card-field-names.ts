@@ -523,6 +523,7 @@ export const cardFieldNames = [
   "IsDoubleTribute",
   "AddNoTributeCheck",
   "SetUniqueOnField",
+  "CheckUniqueOnField",
   "RegisterFlagEffect",
   "GetFlagEffect",
   "HasFlagEffect",

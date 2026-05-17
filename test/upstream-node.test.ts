@@ -24,7 +24,8 @@ describe("Node upstream workspace loader", () => {
     fs.writeFileSync(path.join(root, "script", "c100.lua"), "loaded_name = 'fixture script'\nDebug.Message(loaded_name)\n", "utf8");
     fs.writeFileSync(path.join(root, "lflist.conf"), "100 1\n200 0\n", "utf8");
 
-    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    fs.mkdirSync(path.join(root, "local-card-scripts"), { recursive: true });
+    const workspace = createUpstreamNodeWorkspace({ ...createUpstreamSourceConfig(root), localScriptPath: path.join(root, "local-card-scripts") });
     expect(workspace.readCardScript(100)).toContain("fixture script");
     expect(workspace.readBanlist("lflist.conf")).toEqual([
       { code: "100", limit: 1 },
@@ -108,7 +109,8 @@ describe("Node upstream workspace loader", () => {
     expect(() => fs.rmSync(databasePath, { force: true })).not.toThrow();
     execFileSync("sqlite3", [databasePath, sqlite]);
 
-    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(root));
+    fs.mkdirSync(path.join(root, "local-card-scripts"), { recursive: true });
+    const workspace = createUpstreamNodeWorkspace({ ...createUpstreamSourceConfig(root), localScriptPath: path.join(root, "local-card-scripts") });
 
     expect(workspace.readDatabaseCards("cards.cdb")).toEqual([
       expect.objectContaining({
@@ -123,6 +125,32 @@ describe("Node upstream workspace loader", () => {
         attribute: 32,
         setcodes: [4660],
       }),
+    ]);
+  });
+
+  it("merges supplemental local card metadata after CDB rows", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
+    tempRoots.push(root);
+    fs.mkdirSync(path.join(root, "cdb"), { recursive: true });
+    fs.mkdirSync(path.join(root, "local-card-scripts"), { recursive: true });
+    const databasePath = path.join(root, "cdb", "cards.cdb");
+    const sqlite = [
+      "create table datas(id integer, alias integer, setcode integer, type integer, atk integer, def integer, level integer, race integer, attribute integer);",
+      "create table texts(id integer, name text);",
+      "insert into datas values(100,0,0,2,0,0,0,0,0);",
+      "insert into texts values(100,'Primary Spell');",
+    ].join("");
+    execFileSync("sqlite3", [databasePath, sqlite]);
+    fs.writeFileSync(path.join(root, "local-card-scripts", "card-data.json"), `${JSON.stringify({
+      datas: [{ id: 400, alias: 0, setcode: 207, type: 161, atk: 2800, def: 2600, level: 8, race: 2, attribute: 32 }],
+      texts: [{ id: 400, name: "Supplemental Ritual" }],
+    }, null, 2)}\n`, "utf8");
+
+    const workspace = createUpstreamNodeWorkspace({ ...createUpstreamSourceConfig(root), localScriptPath: path.join(root, "local-card-scripts") });
+
+    expect(workspace.readDatabaseCards("cards.cdb")).toEqual([
+      expect.objectContaining({ code: "100", name: "Primary Spell", kind: "spell" }),
+      expect.objectContaining({ code: "400", name: "Supplemental Ritual", kind: "monster", typeFlags: 161, setcodes: [207] }),
     ]);
   });
 

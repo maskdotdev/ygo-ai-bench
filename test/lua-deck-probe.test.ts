@@ -254,8 +254,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
     expect(result.stderr).toContain("Expected missing script codes were not missing: c12345678.lua");
   }, deckProbeTimeoutMs);
 
-  it("fails strict probes when local fallback script count grows above the allowed maximum", () => {
-    const result = spawnSync(
+  it("resolves Ritual pre-release script aliases without local fallbacks", () => {
+    const output = execFileSync(
       "node",
       [
         "--experimental-transform-types",
@@ -264,16 +264,22 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
         "--upstream",
         ".upstream/ignis",
         "--fail-on-errors",
+        "--min-upstream-scripts",
+        "33",
+        "--min-actions",
+        "7",
         "--max-local-fallbacks",
-        "9",
+        "0",
+        "--max-expected-missing-scripts",
+        "0",
       ],
       { encoding: "utf8" },
     );
 
-    expect(result.status).toBe(1);
-    expect(result.stdout).toContain("Local fallback scripts: 10");
-    expect(result.stderr).toContain("Lua deck probe failed:");
-    expect(result.stderr).toContain("Local fallback scripts 10 is above allowed 9");
+    expect(output).toContain("Local fallback scripts: 0");
+    expect(output).toContain("OK c98684220.lua -> script/pre-release/c101305001.lua");
+    expect(output).toContain("OK c33599853.lua -> script/pre-release/c101305044.lua");
+    expect(output).toContain("OK c24749710.lua -> script/pre-release/c101305065.lua");
   }, deckProbeTimeoutMs);
 
   it("fails strict probes when local fallback script identities change", () => {
@@ -287,7 +293,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
         ".upstream/ignis",
         "--fail-on-errors",
         "--max-local-fallbacks",
-        "10",
+        "0",
         "--expected-local-fallback-script-code",
         "12345678",
       ],
@@ -295,54 +301,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
     );
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("Local fallback scripts: 10");
+    expect(result.stdout).toContain("Local fallback scripts: 0");
     expect(result.stdout).toContain("Expected local fallback codes: 12345678");
     expect(result.stderr).toContain("Lua deck probe failed:");
-    expect(result.stderr).toContain("Unexpected local fallback scripts:");
     expect(result.stderr).toContain("Expected local fallback script codes were not used: c12345678.lua");
-  }, deckProbeTimeoutMs);
-
-  it("fails strict probes when local fallback kind budgets are exceeded", () => {
-    const provisionalResult = spawnSync(
-      "node",
-      [
-        "--experimental-transform-types",
-        "tools/probe-lua-deck.ts",
-        "ritual-of-light-and-darkness-apr-2026.ydk",
-        "--upstream",
-        ".upstream/ignis",
-        "--fail-on-errors",
-        "--max-local-fallbacks",
-        "10",
-        "--max-local-provisional-fallbacks",
-        "9",
-        "--expected-local-fallback-script-code",
-        "98684220",
-        "--expected-local-fallback-script-code",
-        "24088928",
-        "--expected-local-fallback-script-code",
-        "50073633",
-        "--expected-local-fallback-script-code",
-        "97462632",
-        "--expected-local-fallback-script-code",
-        "70405001",
-        "--expected-local-fallback-script-code",
-        "44001993",
-        "--expected-local-fallback-script-code",
-        "24461358",
-        "--expected-local-fallback-script-code",
-        "2372506",
-        "--expected-local-fallback-script-code",
-        "33599853",
-        "--expected-local-fallback-script-code",
-        "24749710",
-      ],
-      { encoding: "utf8" },
-    );
-
-    expect(provisionalResult.status).toBe(1);
-    expect(provisionalResult.stdout).toContain("Local provisional fallback scripts: 10");
-    expect(provisionalResult.stderr).toContain("Local provisional fallback scripts 10 is above allowed 9");
   }, deckProbeTimeoutMs);
 
   it("accepts strict probes when scripts load and legal actions are present", () => {
@@ -475,10 +437,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Ritual of Light an
     );
 
     expect(output).toContain("Metadata source: cards.cdb");
-    expect(output).toContain("Local fallback scripts: 10");
+    expect(output).toContain("Local fallback scripts: 0");
     expect(output).toContain("Local alias fallback scripts: 0");
-    expect(output).toContain("Local provisional fallback scripts: 10");
+    expect(output).toContain("Local provisional fallback scripts: 0");
     expect(output).toContain("Local other fallback scripts: 0");
+    expect(output).toContain("OK c98684220.lua -> script/pre-release/c101305001.lua");
+    expect(output).toContain("OK c33599853.lua -> script/pre-release/c101305044.lua");
     expect(output).toContain("Local fallback stubs: 0");
     expect(output).toContain("Scripts missing: 0");
     expect(output).toContain("Scriptless Normal Monsters: 1");

@@ -62,13 +62,31 @@ export function createUpstreamNodeWorkspace(config: UpstreamSourceConfig): Upstr
       if (!fs.existsSync(databasePath)) return [];
       const datas = readSqliteJson<RawCdbDataRow>(databasePath, "select id, alias, setcode, type, atk, def, level, race, attribute from datas");
       const texts = readSqliteJson<RawCdbTextRow>(databasePath, "select id, name from texts");
-      return normalizeCdbRows(datas, texts);
+      return mergeCardData(normalizeCdbRows(datas, texts), readSupplementalCards(config));
     },
     readBanlist(filename) {
       const text = readTextIfExists(resolveWorkspacePath(upstreamBanlistPath(config, filename)));
       return text === undefined ? [] : parseBanlistConf(text);
     },
   };
+}
+
+function readSupplementalCards(config: UpstreamSourceConfig): DuelCardData[] {
+  const rowsPath = resolveWorkspacePath(config.localScriptPath ?? "local-card-scripts", "card-data.json");
+  const text = readTextIfExists(rowsPath);
+  if (text === undefined) return [];
+  const parsed = JSON.parse(text) as { datas?: unknown; texts?: unknown };
+  if (!Array.isArray(parsed.datas) || !Array.isArray(parsed.texts)) {
+    throw new Error(`Supplemental card data ${rowsPath} must contain datas and texts arrays`);
+  }
+  return normalizeCdbRows(parsed.datas as RawCdbDataRow[], parsed.texts as RawCdbTextRow[]);
+}
+
+function mergeCardData(primary: DuelCardData[], supplemental: DuelCardData[]): DuelCardData[] {
+  if (!supplemental.length) return primary;
+  const byCode = new Map(primary.map((card) => [card.code, card]));
+  for (const card of supplemental) byCode.set(card.code, card);
+  return [...byCode.values()];
 }
 
 function readLocalScriptAliases(config: UpstreamSourceConfig): ReadonlyMap<string, string> {

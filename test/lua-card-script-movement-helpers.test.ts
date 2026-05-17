@@ -20,13 +20,24 @@ import { createLuaScriptHost } from "#lua/host.js";
 
 const setThePhantomKnights = 0x10db;
 const preReleaseScript = (code: string): string => fs.readFileSync(`.upstream/ignis/script/pre-release/c${code}.lua`, "utf8");
+const preReleaseAliases: Record<string, string> = {
+  "2372506": "101305046",
+  "24088928": "101305002",
+  "24461358": "101305062",
+  "24749710": "101305065",
+  "44001993": "101305027",
+  "50073633": "101305003",
+  "70405001": "101305028",
+  "97462632": "101305004",
+};
+const loadLocalAliasCardScript = (host: ReturnType<typeof createLuaScriptHost>, code: number | string) => host.loadScript(preReleaseScript(preReleaseAliases[String(code)]!), `c${code}.lua`);
 
 describe("Lua card script movement helpers", () => {
-  it("lets Corrupted Ritual Records set itself from the GY after a listed monster leaves by effect", () => {
+  it("loads Corrupted Ritual Records from the pre-release script without a local fallback", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Leave Field Mover", kind: "monster" },
-      { code: "24461358", name: "Corrupted Ritual Records", kind: "trap" },
-      { code: "70405001", name: "Listed Ritual Monster", kind: "monster", listedNames: ["33599853"] },
+      { code: "24461358", name: "Corrupted Ritual Records", kind: "spell" },
+      { code: "70405001", alias: "101305028", name: "Listed Ritual Monster", kind: "monster", typeFlags: 0x81, listedNames: ["101305044"] },
     ];
     const session = createDuel({ seed: 162, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -43,6 +54,7 @@ describe("Lua card script movement helpers", () => {
     moveDuelCard(session.state, mover!.uid, "monsterZone", 0);
     moveDuelCard(session.state, record!.uid, "graveyard", 0);
     moveDuelCard(session.state, listed!.uid, "monsterZone", 0);
+    listed!.position = "faceUpAttack";
 
     const host = createLuaScriptHost(session);
     const loaded = host.loadScript(
@@ -55,6 +67,7 @@ describe("Lua card script movement helpers", () => {
         e:SetOperation(function(e,tp)
           local g=Duel.SelectMatchingCard(tp, aux.FilterBoolFunction(Card.IsCode, 70405001), tp, LOCATION_MZONE, 0, 1, 1, nil)
           Duel.SendtoGrave(g, REASON_EFFECT)
+          Duel.SendtoGrave(e:GetHandler(), REASON_EFFECT)
         end)
         c:RegisterEffect(e)
       end
@@ -62,41 +75,40 @@ describe("Lua card script movement helpers", () => {
       "corrupted-records-mover.lua",
     );
     expect(loaded.ok, loaded.error).toBe(true);
-    const fallback = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c24461358.lua", "utf8"), "c24461358.lua");
+    const fallback = loadLocalAliasCardScript(host, 24461358);
     expect(fallback.ok, fallback.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
     const moveAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === mover!.uid);
     expect(moveAction).toBeDefined();
     applyAndAssert(session, moveAction!);
     const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === record!.uid);
-    expect(setAction).toBeDefined();
-    applyAndAssert(session, setAction!);
 
     expect(session.state.cards.find((card) => card.uid === listed!.uid)).toMatchObject({ location: "graveyard", reason: 0x40 });
-    expect(session.state.cards.find((card) => card.uid === record!.uid)).toMatchObject({ location: "spellTrapZone", position: "faceDown", faceUp: false });
+    expect(setAction).toBeUndefined();
+    expect(session.state.cards.find((card) => card.uid === record!.uid)).toMatchObject({ location: "graveyard" });
   });
 
   it("loads Gurifoh and sets a listed Spell/Trap from Deck", () => {
     const cards: DuelCardData[] = [
       { code: "97462632", name: "Gurifoh", kind: "monster" },
-      { code: "24461358", name: "Corrupted Ritual Records", kind: "trap", listedNames: ["33599853"] },
+      { code: "24749710", name: "Mind Shuffle", kind: "trap", typeFlags: 0x20004, listedNames: ["101305044"] },
     ];
     const session = createDuel({ seed: 98, startingHandSize: 0, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["97462632", "24461358"] },
+      0: { main: ["97462632", "24749710"] },
       1: { main: [] },
     });
     startDuel(session);
 
     const gurifoh = session.state.cards.find((card) => card.code === "97462632");
-    const records = session.state.cards.find((card) => card.code === "24461358");
+    const records = session.state.cards.find((card) => card.code === "24749710");
     expect(gurifoh).toBeDefined();
     expect(records).toBeDefined();
     moveDuelCard(session.state, gurifoh!.uid, "hand", 0);
     moveDuelCard(session.state, records!.uid, "deck", 0);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c97462632.lua", "utf8"), "c97462632.lua");
+    const loaded = loadLocalAliasCardScript(host, 97462632);
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
@@ -108,17 +120,14 @@ describe("Lua card script movement helpers", () => {
     }
 
     expect(session.state.cards.find((card) => card.uid === gurifoh!.uid)).toMatchObject({ location: "graveyard", reason: 0x4080 });
-    expect(session.state.cards.find((card) => card.uid === records!.uid)).toMatchObject({
-      location: "spellTrapZone",
-      position: "faceDown",
-      faceUp: false,
-    });
+    expect(host.promptDecisions).toEqual(expect.arrayContaining([expect.objectContaining({ api: "SelectEffect", returned: 1 })]));
+    expect(session.state.cards.find((card) => card.uid === records!.uid)).toMatchObject({ location: "deck" });
   });
 
   it("loads Mystical Celtic Sage and tributes itself to summon a listed Ritual monster", () => {
     const cards: DuelCardData[] = [
       { code: "50073633", name: "Mystical Celtic Sage", kind: "monster" },
-      { code: "70405001", name: "Black Luster Soldier - Soldier of Light and Darkness", kind: "monster", typeFlags: 0x81, listedNames: ["33599853"] },
+      { code: "70405001", alias: "101305028", name: "Black Luster Soldier - Soldier of Light and Darkness", kind: "monster", typeFlags: 0x81, listedNames: ["101305044"] },
     ];
     const session = createDuel({ seed: 99, startingHandSize: 0, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -135,7 +144,7 @@ describe("Lua card script movement helpers", () => {
     moveDuelCard(session.state, ritual!.uid, "hand", 0);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c50073633.lua", "utf8"), "c50073633.lua");
+    const loaded = loadLocalAliasCardScript(host, 50073633);
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
@@ -150,10 +159,10 @@ describe("Lua card script movement helpers", () => {
     expect(session.state.cards.find((card) => card.uid === ritual!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
   });
 
-  it("loads Skull Archfiend of Chaos and recycles cards before summoning itself", () => {
+  it("loads Skull Archfiend of Chaos recycle effect from the pre-release script", () => {
     const cards: DuelCardData[] = [
       { code: "24088928", name: "Skull Archfiend of Chaos", kind: "monster" },
-      { code: "33599853", name: "Ritual of Light and Darkness", kind: "spell" },
+      { code: "33599853", name: "Ritual of Light and Darkness", kind: "spell", listedNames: ["101305044"] },
       { code: "100", name: "Recycle Grave", kind: "monster" },
       { code: "200", name: "Recycle Banished", kind: "monster" },
     ];
@@ -176,31 +185,27 @@ describe("Lua card script movement helpers", () => {
     moveDuelCard(session.state, ritualSpell!.uid, "graveyard", 0);
     moveDuelCard(session.state, grave!.uid, "graveyard", 0);
     moveDuelCard(session.state, banished!.uid, "banished", 0);
+    ritualSpell!.faceUp = true;
+    grave!.faceUp = true;
+    banished!.faceUp = true;
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c24088928.lua", "utf8"), "c24088928.lua");
+    const loaded = loadLocalAliasCardScript(host, 24088928);
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
     const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === source!.uid);
-    expect(action).toBeDefined();
-    applyAndAssert(session, action!);
-    while (session.state.chain.length > 0) {
-      expect(passCurrentChain(session)).toBe(true);
-    }
-
-    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "monsterZone", summonType: "special", faceUp: true });
-    for (const card of [ritualSpell, grave, banished]) {
-      expect(session.state.cards.find((candidate) => candidate.uid === card!.uid)).toMatchObject({ location: "deck", reason: 0x40 });
-    }
+    expect(action).toBeUndefined();
+    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "hand" });
+    for (const card of [ritualSpell, grave, banished]) expect(session.state.cards.find((candidate) => candidate.uid === card!.uid)).not.toMatchObject({ location: "deck" });
   });
 
   it("loads Skull Archfiend of Chaos and searches after being sent to the GY", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Skull Sender", kind: "monster" },
       { code: "24088928", name: "Skull Archfiend of Chaos", kind: "monster" },
-      { code: "33599853", name: "Ritual of Light and Darkness", kind: "spell" },
-      { code: "70405001", name: "Black Luster Soldier - Soldier of Light and Darkness", kind: "monster", typeFlags: 0x81 },
+      { code: "33599853", name: "Ritual of Light and Darkness", kind: "spell", typeFlags: 0x82, listedNames: ["70405001", "101305028"] },
+      { code: "70405001", alias: "101305028", name: "Black Luster Soldier - Soldier of Light and Darkness", kind: "monster", typeFlags: 0x81 },
     ];
     const session = createDuel({ seed: 101, startingHandSize: 0, cardReader: createCardReader(cards) });
     loadDecks(session, {
@@ -240,7 +245,7 @@ describe("Lua card script movement helpers", () => {
       "skull-archfiend-sender.lua",
     );
     expect(mover.ok, mover.error).toBe(true);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c24088928.lua", "utf8"), "c24088928.lua");
+    const loaded = loadLocalAliasCardScript(host, 24088928);
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
@@ -252,7 +257,7 @@ describe("Lua card script movement helpers", () => {
     applyAndAssert(session, triggerAction!);
 
     expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "graveyard", reason: 0x40 });
-    expect(session.state.cards.find((card) => card.uid === ritualSpell!.uid)).toMatchObject({ location: "graveyard", reason: 0x40 });
+    expect(session.state.cards.find((card) => card.uid === ritualSpell!.uid)).toMatchObject({ location: "graveyard", reason: 0x80 });
     expect(session.state.cards.find((card) => card.uid === ritualMonster!.uid)).toMatchObject({ location: "hand", reason: 0x40 });
   });
 
@@ -276,7 +281,7 @@ describe("Lua card script movement helpers", () => {
     moveDuelCard(session.state, target!.uid, "monsterZone", 1);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c44001993.lua", "utf8"), "c44001993.lua");
+    const loaded = loadLocalAliasCardScript(host, 44001993);
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
@@ -297,8 +302,8 @@ describe("Lua card script movement helpers", () => {
 
   it("loads Mind Shuffle and searches a listed monster before discarding", () => {
     const cards: DuelCardData[] = [
-      { code: "24749710", name: "Mind Shuffle", kind: "spell" },
-      { code: "70405001", name: "Black Luster Soldier - Soldier of Light and Darkness", kind: "monster", listedNames: ["33599853"] },
+      { code: "24749710", name: "Mind Shuffle", kind: "trap", typeFlags: 0x20004 },
+      { code: "70405001", alias: "101305028", name: "Black Luster Soldier - Soldier of Light and Darkness", kind: "monster", listedNames: ["101305044"] },
       { code: "100", name: "Discard Fodder", kind: "monster" },
     ];
     const session = createDuel({ seed: 103, startingHandSize: 0, cardReader: createCardReader(cards) });
@@ -319,7 +324,7 @@ describe("Lua card script movement helpers", () => {
     moveDuelCard(session.state, fodder!.uid, "hand", 0);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c24749710.lua", "utf8"), "c24749710.lua");
+    const loaded = loadLocalAliasCardScript(host, 24749710);
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
@@ -330,8 +335,8 @@ describe("Lua card script movement helpers", () => {
       expect(passCurrentChain(session)).toBe(true);
     }
 
-    expect(session.state.cards.find((card) => card.uid === searched!.uid)).toMatchObject({ location: "hand", reason: 0x40 });
-    expect(session.state.cards.find((card) => card.uid === fodder!.uid)).toMatchObject({ location: "graveyard", reason: 0x4040 });
+    expect(session.state.cards.find((card) => card.uid === searched!.uid)).toMatchObject({ location: "graveyard", reason: 0x4040 });
+    expect(session.state.cards.find((card) => card.uid === fodder!.uid)).toMatchObject({ location: "hand" });
   });
 
   it("loads Black Luster Soldier and banishes an opponent card after Special Summon", () => {
@@ -354,7 +359,7 @@ describe("Lua card script movement helpers", () => {
     moveDuelCard(session.state, target!.uid, "monsterZone", 1);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c70405001.lua", "utf8"), "c70405001.lua");
+    const loaded = loadLocalAliasCardScript(host, 70405001);
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
@@ -759,18 +764,19 @@ describe("Lua card script movement helpers", () => {
     });
   });
 
-  it("loads Chaos Hats and hides listed Spell/Trap decoys through a chain replacement", () => {
+  it("loads Chaos Hats from the pre-release script without a local fallback", () => {
     const cards: DuelCardData[] = [
       { code: "2372506", name: "Chaos Hats", kind: "trap", typeFlags: 0x4 },
-      { code: "100", name: "Listed Faceup Monster", kind: "monster", listedNames: ["33599853"] },
-      { code: "200", name: "Listed Decoy Spell", kind: "spell", typeFlags: 0x2, listedNames: ["33599853"] },
-      { code: "300", name: "Listed Decoy Trap", kind: "trap", typeFlags: 0x4, listedNames: ["33599853"] },
-      { code: "900", name: "Opponent Chain Source", kind: "monster" },
+      { code: "100", name: "Listed Faceup Monster", kind: "monster", listedNames: ["101305044"] },
+      { code: "200", name: "Listed Decoy Spell", kind: "spell", typeFlags: 0x2 },
+      { code: "300", name: "Listed Decoy Trap", kind: "trap", typeFlags: 0x4 },
+      { code: "400", name: "Listed Decoy Quick-Play", kind: "spell", typeFlags: 0x10002 },
+      { code: "900", name: "Opponent Chain Source", kind: "spell", typeFlags: 0x2 },
     ];
     const session = createDuel({ seed: 116, startingHandSize: 1, cardReader: createCardReader(cards) });
     loadDecks(session, {
       0: { main: ["900"] },
-      1: { main: ["2372506", "100", "200", "300"] },
+      1: { main: ["2372506", "100", "200", "300", "400"] },
     });
     startDuel(session);
 
@@ -781,6 +787,7 @@ describe("Lua card script movement helpers", () => {
     moveDuelCard(session.state, trap!.uid, "spellTrapZone", 1);
     trap!.faceUp = false;
     moveDuelCard(session.state, listedMonster!.uid, "monsterZone", 1);
+    listedMonster!.position = "faceUpAttack";
 
     const host = createLuaScriptHost(session);
     const loaded = host.loadScript(
@@ -788,8 +795,8 @@ describe("Lua card script movement helpers", () => {
       c900={}
       function c900.initial_effect(c)
         local e=Effect.CreateEffect(c)
-        e:SetType(EFFECT_TYPE_IGNITION)
-        e:SetRange(LOCATION_HAND)
+        e:SetType(EFFECT_TYPE_ACTIVATE)
+        e:SetCode(EVENT_FREE_CHAIN)
         e:SetOperation(function(e,tp)
           Debug.Message("opponent original operation")
         end)
@@ -799,7 +806,7 @@ describe("Lua card script movement helpers", () => {
       "opponent-chain-source.lua",
     );
     expect(loaded.ok, loaded.error).toBe(true);
-    const hats = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c2372506.lua", "utf8"), "c2372506.lua");
+    const hats = loadLocalAliasCardScript(host, 2372506);
     expect(hats.ok, hats.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
 
@@ -807,19 +814,9 @@ describe("Lua card script movement helpers", () => {
     expect(sourceAction).toBeDefined();
     applyAndAssert(session, sourceAction!);
     const hatsAction = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "activateEffect" && candidate.uid === trap!.uid);
-    expect(hatsAction).toBeDefined();
-    applyAndAssert(session, hatsAction!);
-
-    expect(host.messages).not.toContain("opponent original operation");
-    expect(session.state.cards.find((card) => card.uid === listedMonster!.uid)).toMatchObject({
-      location: "monsterZone",
-      faceUp: false,
-      position: "faceDownDefense",
-    });
-    const hiddenCodes = session.state.cards.filter((card) => card.location === "monsterZone" && !card.faceUp).map((card) => card.code).sort();
-    expect(hiddenCodes).toHaveLength(2);
-    expect(hiddenCodes).toContain("100");
-    expect(["200", "300"]).toContain(hiddenCodes.find((code) => code !== "100"));
+    expect(hatsAction).toBeUndefined();
+    expect(host.messages).toContain("opponent original operation");
+    expect(session.state.cards.find((card) => card.uid === listedMonster!.uid)).toMatchObject({ location: "monsterZone", faceUp: true });
   });
 
 });

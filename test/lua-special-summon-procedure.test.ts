@@ -7,6 +7,8 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
+const preReleaseScript = (code: string): string => fs.readFileSync(`.upstream/ignis/script/pre-release/c${code}.lua`, "utf8");
+
 describe("Lua special summon procedures", () => {
   it("registers Lua Malefic summon procedures", () => {
     const cards: DuelCardData[] = [
@@ -178,7 +180,7 @@ describe("Lua special summon procedures", () => {
     moveDuelCard(session.state, cost!.uid, "graveyard", 0);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c98684220.lua", "utf8"), "c98684220.lua");
+    const loaded = host.loadScript(preReleaseScript("101305001"), "c98684220.lua");
     expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
     const source = session.state.cards.find((card) => card.code === "98684220");
@@ -194,8 +196,8 @@ describe("Lua special summon procedures", () => {
 
   it("loads Ultimate Magical Swordsman field effects for placing Mind Shuffle and banishing two cards", () => {
     const cards: DuelCardData[] = [
-      { code: "98684220", name: "Black Chaos the Ultimate Magical Swordsman", kind: "monster", attack: 3000 },
-      { code: "24749710", name: "Mind Shuffle", kind: "spell", typeFlags: 0x2 },
+      { code: "98684220", name: "Black Chaos the Ultimate Magical Swordsman", kind: "monster", typeFlags: 33554465, attack: 3000, defense: 2500, level: 8, race: 2, attribute: 32 },
+      { code: "24749710", name: "Mind Shuffle", kind: "trap", typeFlags: 0x20004, listedNames: ["101305044"] },
       { code: "100", name: "Opponent Card A", kind: "monster" },
       { code: "200", name: "Opponent Card B", kind: "spell", typeFlags: 0x2 },
     ];
@@ -220,7 +222,7 @@ describe("Lua special summon procedures", () => {
     moveDuelCard(session.state, opponentB!.uid, "spellTrapZone", 1);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c98684220.lua", "utf8"), "c98684220.lua");
+    const loaded = host.loadScript(preReleaseScript("101305001"), "c98684220.lua");
     expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
 

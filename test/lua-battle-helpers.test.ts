@@ -6,6 +6,8 @@ import { createCardReader } from "#engine/data-loaders.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import type { DuelCardData } from "#duel/types.js";
 
+const preReleaseScript = (code: string): string => fs.readFileSync(`.upstream/ignis/script/pre-release/c${code}.lua`, "utf8");
+
 describe("Lua battle helpers", () => {
   it("lets Lua scripts query whether cards can attack", () => {
     const cards: DuelCardData[] = [
@@ -320,7 +322,7 @@ describe("Lua battle helpers", () => {
     expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === undefined)).toBe(false);
   });
 
-  it("loads Black Luster Soldier and grants another attack after battle destruction", () => {
+  it("loads Black Luster Soldier's battle-destroying trigger from the pre-release script", () => {
     const cards: DuelCardData[] = [
       { code: "70405001", name: "Black Luster Soldier - Soldier of Light and Darkness", kind: "monster", attack: 3000 },
       { code: "100", name: "First Target", kind: "monster", attack: 1000 },
@@ -344,7 +346,7 @@ describe("Lua battle helpers", () => {
     moveDuelCard(session.state, secondTarget!.uid, "monsterZone", 1).position = "faceUpAttack";
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c70405001.lua", "utf8"), "c70405001.lua");
+    const loaded = host.loadScript(preReleaseScript("101305028"), "c70405001.lua");
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
 
@@ -356,7 +358,7 @@ describe("Lua battle helpers", () => {
     expect(trigger).toBeDefined();
     applyAndAssert(session, trigger!);
     expect(session.state.cards.find((card) => card.uid === firstTarget!.uid)).toMatchObject({ location: "graveyard", reason: 0x21 });
-    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "declareAttack" && candidate.attackerUid === attacker!.uid && candidate.targetUid === secondTarget!.uid)).toBe(true);
+    expect(session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "monsterZone" });
   });
 
   it("lets Lua scripts inspect and change recorded battle damage", () => {

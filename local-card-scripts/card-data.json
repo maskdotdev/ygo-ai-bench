@@ -1,0 +1,26 @@
+{
+  "datas": [
+    { "id": 101305001, "alias": 0, "setcode": 207, "type": 33554465, "atk": 3000, "def": 2500, "level": 8, "race": 2, "attribute": 32 },
+    { "id": 101305002, "alias": 0, "setcode": 69, "type": 33, "atk": 2500, "def": 1200, "level": 6, "race": 8, "attribute": 32 },
+    { "id": 101305003, "alias": 0, "setcode": 0, "type": 33, "atk": 1400, "def": 2000, "level": 4, "race": 1, "attribute": 16 },
+    { "id": 101305004, "alias": 0, "setcode": 0, "type": 33, "atk": 300, "def": 200, "level": 1, "race": 8, "attribute": 32 },
+    { "id": 101305027, "alias": 0, "setcode": 207, "type": 161, "atk": 2800, "def": 2600, "level": 8, "race": 2, "attribute": 32 },
+    { "id": 101305028, "alias": 0, "setcode": 4303, "type": 161, "atk": 3000, "def": 2500, "level": 8, "race": 1, "attribute": 1 },
+    { "id": 101305044, "alias": 0, "setcode": 0, "type": 130, "atk": 0, "def": 0, "level": 0, "race": 0, "attribute": 0 },
+    { "id": 101305046, "alias": 0, "setcode": 207, "type": 65538, "atk": 0, "def": 0, "level": 0, "race": 0, "attribute": 0 },
+    { "id": 101305062, "alias": 0, "setcode": 0, "type": 2, "atk": 0, "def": 0, "level": 0, "race": 0, "attribute": 0 },
+    { "id": 101305065, "alias": 0, "setcode": 0, "type": 131076, "atk": 0, "def": 0, "level": 0, "race": 0, "attribute": 0 }
+  ],
+  "texts": [
+    { "id": 101305001, "name": "Black Chaos the Ultimate Magical Swordsman" },
+    { "id": 101305002, "name": "Skull Archfiend of Chaos" },
+    { "id": 101305003, "name": "Mystical Celtic Sage" },
+    { "id": 101305004, "name": "Gurifoh" },
+    { "id": 101305027, "name": "Black Chaos the Dark Chaos Magician" },
+    { "id": 101305028, "name": "Black Luster Soldier - Soldier of Light and Darkness" },
+    { "id": 101305044, "name": "Ritual of Light and Darkness" },
+    { "id": 101305046, "name": "Chaos Hats" },
+    { "id": 101305062, "name": "Corrupted Ritual Records" },
+    { "id": 101305065, "name": "Mind Shuffle" }
+  ]
+}

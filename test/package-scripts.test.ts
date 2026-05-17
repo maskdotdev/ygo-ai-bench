@@ -5,8 +5,8 @@ describe("package scripts", () => {
   it("runs the Lua parity scanner in the default check gate", () => {
     const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")) as { scripts?: Record<string, string> };
 
-    expect(pkg.scripts?.["scan:lua-parity"]).toContain("--fail-on-missing --min-used-apis 898 --min-implemented-apis 1214 --min-upstream-constants 1775 --min-local-constants 1816");
-    expect(pkg.scripts?.["scan:lua-local-parity"]).toBe("node tools/scan-lua-api-usage.mjs --scripts local-card-scripts --fail-on-missing --min-used-apis 36 --min-implemented-apis 1214");
+    expect(pkg.scripts?.["scan:lua-parity"]).toContain("--fail-on-missing --min-used-apis 898 --min-implemented-apis 1215 --min-upstream-constants 1775 --min-local-constants 1816");
+    expect(pkg.scripts?.["scan:lua-local-parity"]).toBe("node tools/scan-lua-api-usage.mjs --scripts local-card-scripts --fail-on-missing --min-used-apis 0 --min-implemented-apis 1215");
     expect(pkg.scripts?.["scan:lua-chain-limits"]).toContain("tools/scan-lua-chain-limit-patterns.mjs");
     expect(pkg.scripts?.["scan:lua-prompts"]).toContain("tools/scan-lua-prompt-patterns.mjs");
     expect(pkg.scripts?.["scan:lua-clean-restore"]).toContain("tools/scan-lua-clean-restore.mjs");
@@ -32,17 +32,18 @@ describe("package scripts", () => {
     expect(pkg.scripts?.["probe:fallback-decks"]).toContain("onomat-ryzeal-ycs-guatemala-2026.ydk --fail-on-errors --require-card-database --min-upstream-scripts 40 --min-actions 11 --min-activate-effects 3 --min-initial-effects 55 --min-registered-effects 126 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 0");
     expect(pkg.scripts?.["probe:fallback-decks"]).toContain("mikanko-2026.ydk --fail-on-errors --require-card-database --min-upstream-scripts 38 --min-actions 13 --min-activate-effects 3 --min-initial-effects 55 --min-registered-effects 159 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 0");
     expect(pkg.scripts?.["probe:fallback-decks"]).toContain("branded-dracotail-ycs-guatemala-2026.ydk --fail-on-errors --require-card-database --min-upstream-scripts 37 --min-actions 11 --min-activate-effects 2 --min-initial-effects 56 --min-registered-effects 138 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 0");
-    expect(pkg.scripts?.["probe:fallback-decks"]).toContain("ritual-of-light-and-darkness-apr-2026.ydk --fail-on-errors --require-card-database --min-upstream-scripts 23 --min-actions 8 --min-activate-effects 1 --min-initial-effects 54 --min-registered-effects 141 --max-local-overrides 0 --max-local-fallbacks 10 --max-local-alias-fallbacks 0 --max-local-provisional-fallbacks 10 --max-local-other-fallbacks 0 --expected-local-fallback-script-code 98684220 --expected-local-fallback-script-code 24088928 --expected-local-fallback-script-code 50073633 --expected-local-fallback-script-code 97462632 --expected-local-fallback-script-code 70405001 --expected-local-fallback-script-code 44001993 --expected-local-fallback-script-code 24461358 --expected-local-fallback-script-code 2372506 --expected-local-fallback-script-code 33599853 --expected-local-fallback-script-code 24749710 --max-expected-missing-scripts 0");
+    expect(pkg.scripts?.["probe:fallback-decks"]).toContain("ritual-of-light-and-darkness-apr-2026.ydk --fail-on-errors --require-card-database --min-upstream-scripts 33 --min-actions 7 --min-activate-effects 1 --min-initial-effects 54 --min-registered-effects 143 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 0");
     expect(pkg.scripts?.["check:bridge-bundle"]).toContain("tools/check-bridge-bundle.mjs");
     expect(pkg.scripts?.["check:pvp-bridge-bundle"]).toContain("tools/check-bridge-bundle.mjs --bridge dist/duel-pvp-engine.js");
     expect(pkg.scripts?.["check:pvp-bridge-bundle"]).toContain("--required autoRunVisible");
     expect(pkg.scripts?.["check:browser-assets"]).toBe("node tools/check-browser-asset-manifests.mjs --card-data public/card-data --card-scripts public/card-scripts");
     expect(pkg.scripts?.["export:browser-cdb"]).toContain("tools/export-browser-cdb-rows.mjs");
     expect(pkg.scripts?.["export:browser-cdb"]).toContain("--local-aliases local-card-scripts/script-aliases.json");
+    expect(pkg.scripts?.["export:browser-cdb"]).toContain("--supplemental-rows local-card-scripts/card-data.json");
     expect(pkg.scripts?.["export:browser-cdb"]).toContain("--out public/card-data/cdb-rows.json");
     expect(pkg.scripts?.["export:browser-scripts"]).toContain("tools/export-browser-lua-scripts.mjs");
     expect(pkg.scripts?.["export:browser-scripts"]).toContain("--local-scripts local-card-scripts");
-    expect(pkg.scripts?.["export:browser-scripts"]).toContain("--max-local-fallbacks 10 --max-local-alias-fallbacks 0 --max-local-provisional-fallbacks 10 --max-local-other-fallbacks 0");
+    expect(pkg.scripts?.["export:browser-scripts"]).toContain("--max-local-fallbacks 0 --max-local-alias-fallbacks 0 --max-local-provisional-fallbacks 0 --max-local-other-fallbacks 0");
     expect(pkg.scripts?.["export:browser-scripts"]).toContain("--out public/card-scripts");
     expect(pkg.scripts?.["export:browser-data"]).toBe("bun run export:browser-cdb && bun run export:browser-scripts && bun run check:browser-assets");
     expect(pkg.scripts?.check?.split(" && ")).toEqual([

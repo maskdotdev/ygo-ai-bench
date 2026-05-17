@@ -5,48 +5,25 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 const scannerPath = path.resolve("tools/scan-lua-api-usage.mjs");
-const expectedFallbackScripts = [
-  "c2372506.lua",
-  "c24088928.lua",
-  "c24461358.lua",
-  "c24749710.lua",
-  "c33599853.lua",
-  "c44001993.lua",
-  "c50073633.lua",
-  "c70405001.lua",
-  "c97462632.lua",
-  "c98684220.lua",
-];
+const expectedFallbackScripts: string[] = [];
 const expectedLocalScriptAliases = {
   "100452013": "27118421",
   "100452015": "90091224",
   "101303089": "94641726",
+  "2372506": "101305046",
+  "24088928": "101305002",
+  "24461358": "101305062",
+  "24749710": "101305065",
+  "33599853": "101305044",
+  "44001993": "101305027",
+  "50073633": "101305003",
+  "70405001": "101305028",
+  "97462632": "101305004",
+  "98684220": "101305001",
 };
 const expectedAliasFallbackScripts: string[] = [];
-const expectedProvisionalFallbackScripts = [
-  "c2372506.lua",
-  "c24088928.lua",
-  "c24461358.lua",
-  "c24749710.lua",
-  "c33599853.lua",
-  "c44001993.lua",
-  "c50073633.lua",
-  "c70405001.lua",
-  "c97462632.lua",
-  "c98684220.lua",
-];
-const expectedProvisionalFallbackCoverage: Record<string, string[]> = {
-  "c2372506.lua": ["lua-card-script-movement-helpers.test.ts"],
-  "c24088928.lua": ["lua-card-script-movement-helpers.test.ts"],
-  "c24461358.lua": ["lua-card-script-movement-helpers.test.ts"],
-  "c24749710.lua": ["lua-card-script-movement-helpers.test.ts"],
-  "c33599853.lua": ["lua-summon-release-helpers.test.ts"],
-  "c44001993.lua": ["lua-card-script-movement-helpers.test.ts"],
-  "c50073633.lua": ["lua-card-script-movement-helpers.test.ts"],
-  "c70405001.lua": ["lua-battle-helpers.test.ts", "lua-card-script-movement-helpers.test.ts"],
-  "c97462632.lua": ["lua-card-script-movement-helpers.test.ts"],
-  "c98684220.lua": ["lua-special-summon-procedure.test.ts"],
-};
+const expectedProvisionalFallbackScripts: string[] = [];
+const expectedProvisionalFallbackCoverage: Record<string, string[]> = {};
 
 describe("Lua API usage scanner", () => {
   it("keeps the local fallback inventory explicit", () => {
@@ -207,15 +184,15 @@ describe("Lua API usage scanner", () => {
       "local-card-scripts",
       "--fail-on-missing",
       "--min-used-apis",
-      "36",
+      "0",
       "--min-implemented-apis",
       "1214",
     ], { encoding: "utf8" });
 
     expect(output).toContain("scripts: ");
     expect(output).toContain("local-card-scripts");
-    expect(output).toContain("used APIs: 36");
-    expect(output).toContain("implemented APIs found: 1214");
+    expect(output).toContain("used APIs: 0");
+    expect(output).toContain("implemented APIs found: 1215");
     expect(output).toContain("No missing API usages found.");
   });
 

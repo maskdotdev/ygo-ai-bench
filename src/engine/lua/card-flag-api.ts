@@ -97,6 +97,13 @@ export function installCardFlagApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("SetUniqueOnField"));
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const uid = readCardUid(state, 1);
+    const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+    lua.lua_pushboolean(state, Boolean(card && checkUniqueOnField(session, card)));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("CheckUniqueOnField"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
     if (session.state.status === "ended") return 0;
     const uid = readCardUid(state, 1);
     const card = uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
@@ -118,6 +125,12 @@ function clearDeckMaster(session: DuelSession, player: PlayerId): void {
 
 function isDeckMaster(session: DuelSession, card: DuelCardInstance): boolean {
   return getDuelFlagEffectCount(session.state, { ownerType: "card", ownerId: card.uid }, flagDeckMaster) > 0;
+}
+
+function checkUniqueOnField(session: DuelSession, card: DuelCardInstance): boolean {
+  if (!card.uniqueOnField) return true;
+  const code = String(card.uniqueOnField.code || card.code);
+  return !session.state.cards.some((candidate) => candidate.uid !== card.uid && candidate.location !== "deck" && candidate.location !== "extraDeck" && candidate.location !== "hand" && candidate.code === code);
 }
 
 function readBooleanFlag(L: unknown, index: number): boolean {

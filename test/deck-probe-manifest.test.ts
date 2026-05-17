@@ -169,9 +169,7 @@ describe("Lua deck probe manifest", () => {
     expect(localFallbackBudgetMismatches).toEqual([]);
     expect(localFallbackSplitBudgetOmissions).toEqual([]);
     expect(localFallbackSplitBudgetMismatches).toEqual([]);
-    expect(localFallbackBudgetDecks).toEqual([
-      "ritual-of-light-and-darkness-apr-2026.ydk",
-    ]);
+    expect(localFallbackBudgetDecks).toEqual([]);
     expect(localFallbackBudgets).toEqual({
       "ancient-gear-legend-anthology-2026.ydk": 0,
       "branded-dracotail-ycs-guatemala-2026.ydk": 0,
@@ -189,19 +187,15 @@ describe("Lua deck probe manifest", () => {
       "onomat-ryzeal-ycs-guatemala-2026.ydk": 0,
       "phantom-knights-mar-2026-v4.ydk": 0,
       "rikka-sunavalon-2026.ydk": 0,
-      "ritual-of-light-and-darkness-apr-2026.ydk": 10,
+      "ritual-of-light-and-darkness-apr-2026.ydk": 0,
       "rokket-2026.ydk": 0,
       "solfachord-2026.ydk": 0,
       "top_tier_dark_magician_primite_azamina.ydk": 0,
       "voiceless-voice-2026.ydk": 0,
     });
-    expect(localFallbackKindBudgets).toEqual({
-      "ritual-of-light-and-darkness-apr-2026.ydk": { alias: 0, provisional: 10, other: 0 },
-    });
+    expect(localFallbackKindBudgets).toEqual({});
     expect(expectedMissingScriptCodesByDeck).toEqual({});
-    expect(expectedLocalFallbackScriptCodesByDeck).toEqual({
-      "ritual-of-light-and-darkness-apr-2026.ydk": ["2372506", "24088928", "24461358", "24749710", "33599853", "44001993", "50073633", "70405001", "97462632", "98684220"],
-    });
+    expect(expectedLocalFallbackScriptCodesByDeck).toEqual({});
     expect(expectedLocalFallbackScriptCodes).toEqual(fallbackScriptCodes);
     expect(uncovered).toEqual([]);
   });

@@ -122,4 +122,41 @@ describe("browser CDB row exporter", () => {
     });
     expect(checked).toContain("Browser asset manifest check passed");
   });
+
+  it("adds local aliases from supplemental canonical rows", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "browser-cdb-export-"));
+    tempRoots.push(root);
+    const databasePath = path.join(root, "cards.cdb");
+    const aliasesPath = path.join(root, "script-aliases.json");
+    const supplementalPath = path.join(root, "card-data.json");
+    const outPath = path.join(root, "public", "card-data", "cdb-rows.json");
+    writeFixtureDatabase(databasePath);
+    fs.writeFileSync(aliasesPath, `${JSON.stringify({ "999": "400" }, null, 2)}\n`, "utf8");
+    fs.writeFileSync(supplementalPath, `${JSON.stringify({
+      datas: [{ id: 400, alias: 0, setcode: 17185, type: 161, atk: 2800, def: 2600, level: 8, race: 2, attribute: 32 }],
+      texts: [{ id: 400, name: "Supplemental Ritual" }],
+    }, null, 2)}\n`, "utf8");
+
+    execFileSync("node", [exporterPath, "--database", databasePath, "--supplemental-rows", supplementalPath, "--local-aliases", aliasesPath, "--out", outPath, "--codes", "999"]);
+    const checked = execFileSync("node", [checkerPath, "--card-data", path.dirname(outPath)], { encoding: "utf8" });
+
+    const payload = fs.readFileSync(outPath, "utf8");
+    expect(JSON.parse(payload)).toEqual({
+      datas: [
+        { id: 999, alias: 400, setcode: 17185, type: 161, atk: 2800, def: 2600, level: 8, race: 2, attribute: 32 },
+      ],
+      texts: [
+        { id: 999, name: "Supplemental Ritual" },
+      ],
+    });
+    expect(JSON.parse(fs.readFileSync(path.join(root, "public", "card-data", "manifest.json"), "utf8"))).toMatchObject({
+      selectedCodes: ["999"],
+      datasRows: 1,
+      textsRows: 1,
+      supplementalRows: ["400"],
+      supplementalAliasRows: ["999"],
+      sha256: crypto.createHash("sha256").update(payload).digest("hex"),
+    });
+    expect(checked).toContain("Browser asset manifest check passed");
+  });
 });

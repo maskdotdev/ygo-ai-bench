@@ -22,15 +22,28 @@ const texts = readSqliteJson(
 );
 const localAliases = options.localAliases ? readLocalAliases(options.localAliases) : {};
 const selectedCodes = new Set(options.codes);
+const supplementalRows = options.supplementalRows ? readSupplementalRows(options.supplementalRows) : { datas: [], texts: [] };
+for (const row of supplementalRows.datas) {
+  const code = String(row.id);
+  if (selectedCodes.size && !selectedCodes.has(code)) continue;
+  if (datas.some((candidate) => String(candidate.id) === code)) continue;
+  datas.push(row);
+}
+for (const row of supplementalRows.texts) {
+  const code = String(row.id);
+  if (selectedCodes.size && !selectedCodes.has(code)) continue;
+  if (texts.some((candidate) => String(candidate.id) === code)) continue;
+  texts.push(row);
+}
 const supplementalAliasRows = [];
 for (const [code, alias] of Object.entries(localAliases)) {
   if (selectedCodes.size && !selectedCodes.has(code)) continue;
   if (datas.some((row) => String(row.id) === code)) continue;
-  const aliasData = readSingleSqliteJson(
+  const aliasData = datas.find((row) => String(row.id) === alias) ?? supplementalRows.datas.find((row) => String(row.id) === alias) ?? readSingleSqliteJson(
     options.database,
     `select id, alias, setcode, type, atk, def, level, race, attribute from datas where id = ${alias} limit 1`,
   );
-  const aliasText = readSingleSqliteJson(
+  const aliasText = texts.find((row) => String(row.id) === alias) ?? supplementalRows.texts.find((row) => String(row.id) === alias) ?? readSingleSqliteJson(
     options.database,
     `select id, name from texts where id = ${alias} limit 1`,
   );
@@ -53,6 +66,7 @@ if (options.out) {
     selectedCodes: options.codes,
     datasRows: datas.length,
     textsRows: texts.length,
+    ...(options.supplementalRows ? { supplementalRows: supplementalRows.datas.map((row) => String(row.id)).sort((left, right) => Number(left) - Number(right)) } : {}),
     ...(supplementalAliasRows.length ? { supplementalAliasRows } : {}),
     sha256: sha256(payload),
   }, null, 2)}\n`, "utf8");
@@ -61,13 +75,14 @@ if (options.out) {
 }
 
 function parseArgs(argv) {
-  const parsed = { database: undefined, out: undefined, codes: [], localAliases: undefined, help: false };
+  const parsed = { database: undefined, out: undefined, codes: [], localAliases: undefined, supplementalRows: undefined, help: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--help" || arg === "-h") parsed.help = true;
     else if (arg === "--database") parsed.database = requireValue(argv, ++index, arg);
     else if (arg === "--out") parsed.out = requireValue(argv, ++index, arg);
     else if (arg === "--local-aliases") parsed.localAliases = requireValue(argv, ++index, arg);
+    else if (arg === "--supplemental-rows") parsed.supplementalRows = requireValue(argv, ++index, arg);
     else if (arg === "--codes") parsed.codes.push(...parseCodes(requireValue(argv, ++index, arg)));
     else if (arg === "--code") parsed.codes.push(...parseCodes(requireValue(argv, ++index, arg)));
     else fail(`Unknown argument ${arg}`);
@@ -117,6 +132,14 @@ function readLocalAliases(filePath) {
   return aliases;
 }
 
+function readSupplementalRows(filePath) {
+  const value = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  if (!value || typeof value !== "object" || Array.isArray(value) || !Array.isArray(value.datas) || !Array.isArray(value.texts)) {
+    fail(`Supplemental rows file ${filePath} must contain datas and texts arrays`);
+  }
+  return { datas: value.datas, texts: value.texts };
+}
+
 function sha256(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
@@ -134,6 +157,8 @@ Options:
   --out <path>        Write JSON payload to a file. Defaults to stdout.
   --local-aliases <path>
                       JSON object of local alternate-art passcode aliases to add to the payload.
+  --supplemental-rows <path>
+                      JSON object with datas/texts arrays to merge before local aliases.
   --codes <list>      Comma-separated passcodes to export. Defaults to every row.
   --code <passcode>   Add one passcode to export. Can be repeated.
   --help              Show this help.

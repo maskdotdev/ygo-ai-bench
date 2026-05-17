@@ -6,6 +6,8 @@ import { createCardReader } from "#engine/data-loaders.js";
 import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
+const preReleaseScript = (code: string): string => fs.readFileSync(`.upstream/ignis/script/pre-release/c${code}.lua`, "utf8");
+
 describe("Lua summon and release helpers", () => {
   it("lets Lua scripts query whether summon selection can be cancelled", () => {
     const session = createDuel({ seed: 156, startingHandSize: 0 });
@@ -455,7 +457,7 @@ describe("Lua summon and release helpers", () => {
   it("lets Lua ritual scripts summon with selected materials when card metadata has no recipe", () => {
     const cards: DuelCardData[] = [
       { code: "33599853", name: "Ritual of Light and Darkness", kind: "spell", typeFlags: 0x82 },
-      { code: "70405001", name: "Black Luster Soldier - Soldier of Light and Darkness", kind: "monster", typeFlags: 0x81, level: 8 },
+      { code: "70405001", alias: "101305028", name: "Black Luster Soldier - Soldier of Light and Darkness", kind: "monster", typeFlags: 0x81, level: 8 },
       { code: "100", name: "Ritual Material A", kind: "monster", level: 4 },
       { code: "300", name: "Ritual Material B", kind: "monster", level: 4 },
     ];
@@ -467,7 +469,7 @@ describe("Lua summon and release helpers", () => {
     startDuel(session);
 
     const host = createLuaScriptHost(session);
-    const loaded = host.loadScript(fs.readFileSync("local-card-scripts/fallbacks/official/c33599853.lua", "utf8"), "c33599853.lua");
+    const loaded = host.loadScript(preReleaseScript("101305044"), "c33599853.lua");
     expect(loaded.ok, loaded.error).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
     const ritualSpell = session.state.cards.find((card) => card.code === "33599853");
