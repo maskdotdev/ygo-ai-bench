@@ -5,6 +5,14 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const POSITION_FIXTURE_COUNT = 4;
+const positionKindCounts = {
+  banishCostGroupChange: 1,
+  overlayTargetChange: 1,
+  summonTriggerAttackPosition: 1,
+  summonTriggerSet: 1,
+} satisfies Record<PositionKind, number>;
+
+type PositionKind = "banishCostGroupChange" | "overlayTargetChange" | "summonTriggerAttackPosition" | "summonTriggerSet";
 
 describe("Lua real position restore coverage", () => {
   it("requires position-changing summon triggers to assert clean Lua registry restore and restored outcomes", () => {
@@ -33,12 +41,21 @@ describe("Lua real position restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps position fixture kinds explicit", () => {
+    expect(countPositionKinds(positionFixtureFiles())).toEqual(positionKindCounts);
+  });
 });
 
-function positionFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function positionFixtureFiles(): Array<{
+  file: string;
+  kind: PositionKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-angineer-overlay-position.test.ts",
+      kind: "overlayTargetChange",
       required: [
         "targetUids: [target!.uid]",
         'eventName: "detachedMaterial"',
@@ -48,6 +65,7 @@ function positionFixtureFiles(): Array<{ file: string; required: string[] }> {
     },
     {
       file: "test/lua-real-script-gagaga-escape-position-lockout.test.ts",
+      kind: "banishCostGroupChange",
       required: [
         "category: 0x1000",
         "positionsChanged).toEqual([changed!.uid, eligible!.uid])",
@@ -57,6 +75,7 @@ function positionFixtureFiles(): Array<{ file: string; required: string[] }> {
     },
     {
       file: "test/lua-real-script-otohime-position-overload.test.ts",
+      kind: "summonTriggerAttackPosition",
       required: [
         "operationInfos: [{ category: 0x1000",
         "parameter: 0",
@@ -65,11 +84,31 @@ function positionFixtureFiles(): Array<{ file: string; required: string[] }> {
     },
     {
       file: "test/lua-real-script-tsukuyomi-position-trigger.test.ts",
+      kind: "summonTriggerSet",
       required: [
         "operationInfos: [{ category: 0x1000",
         "parameter: 0x8",
         'position: "faceDownDefense", faceUp: false',
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: PositionKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countPositionKinds(fixtures: Array<{ kind: PositionKind }>): Record<PositionKind, number> {
+  return fixtures.reduce<Record<PositionKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      banishCostGroupChange: 0,
+      overlayTargetChange: 0,
+      summonTriggerAttackPosition: 0,
+      summonTriggerSet: 0,
+    },
+  );
 }
