@@ -5,6 +5,14 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const statefulGateFixtureCount = 4;
+const statefulGateKindCounts = {
+  deckGraveLock: 1,
+  mustAttackAnyTarget: 1,
+  mustAttackZoneTarget: 1,
+  summonCountThreshold: 1,
+} satisfies Record<StatefulGateKind, number>;
+
+type StatefulGateKind = "deckGraveLock" | "mustAttackAnyTarget" | "mustAttackZoneTarget" | "summonCountThreshold";
 
 describe("Lua real stateful gate restore coverage", () => {
   it("requires stateful gate fixtures to assert clean restore and restored legal outcomes", () => {
@@ -29,12 +37,21 @@ describe("Lua real stateful gate restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps stateful gate fixture kinds explicit", () => {
+    expect(countStatefulGateKinds(statefulGateFixtureFiles())).toEqual(statefulGateKindCounts);
+  });
 });
 
-function statefulGateFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function statefulGateFixtureFiles(): Array<{
+  file: string;
+  kind: StatefulGateKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-berserk-gorilla-must-attack.test.ts",
+      kind: "mustAttackAnyTarget",
       required: [
         "code === 191",
         "hasAttack(actions, gorilla!.uid, target!.uid)).toBe(true)",
@@ -44,6 +61,7 @@ function statefulGateFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-earthshattering-event-deck-grave-lock.test.ts",
+      kind: "deckGraveLock",
       required: [
         "restoredTrigger.missingRegistryKeys).toEqual([])",
         "restoredTrigger.missingChainLimitRegistryKeys).toEqual([])",
@@ -57,6 +75,7 @@ function statefulGateFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-elfnotes-rhapsodia-must-attack-center.test.ts",
+      kind: "mustAttackZoneTarget",
       required: [
         "code: 344",
         "valueCardPredicate",
@@ -67,6 +86,7 @@ function statefulGateFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-nibiru-flag-count.test.ts",
+      kind: "summonCountThreshold",
       required: [
         "restoredBelowThreshold.missingRegistryKeys).toEqual([])",
         "restoredBelowThreshold.missingChainLimitRegistryKeys).toEqual([])",
@@ -77,5 +97,24 @@ function statefulGateFixtureFiles(): Array<{ file: string; required: string[] }>
         "nibiruRestoreActions(restoredAtThreshold",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: StatefulGateKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countStatefulGateKinds(fixtures: Array<{ kind: StatefulGateKind }>): Record<StatefulGateKind, number> {
+  return fixtures.reduce<Record<StatefulGateKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      deckGraveLock: 0,
+      mustAttackAnyTarget: 0,
+      mustAttackZoneTarget: 0,
+      summonCountThreshold: 0,
+    },
+  );
 }
