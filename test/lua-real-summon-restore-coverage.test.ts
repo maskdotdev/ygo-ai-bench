@@ -14,6 +14,15 @@ const pendulumHelperFixtureCount = 13;
 const unionProcedureFixtureCount = 4;
 const materialLockFixtureCount = 4;
 const flipSummonSuccessTrapFixtureCount = 4;
+const realScriptSummonKeywordFamilyCounts = {
+  fusion: 22,
+  link: 10,
+  pendulum: 17,
+  ritual: 20,
+  summon: 56,
+  synchro: 16,
+  xyz: 14,
+} satisfies Record<RealScriptSummonKeywordFamily, number>;
 const summonProcedureFamilyCounts = {
   fusionProcedure: 1,
   genericSpecialSummonProcedure: 10,
@@ -68,6 +77,14 @@ type SummonMaterialLockKind =
   | "xyzMaterialLock";
 
 type FlipSummonSuccessTrapKind = "flipBanishTrap" | "flipDestroyTrap" | "flipStatTrap";
+type RealScriptSummonKeywordFamily =
+  | "fusion"
+  | "link"
+  | "pendulum"
+  | "ritual"
+  | "summon"
+  | "synchro"
+  | "xyz";
 type SummonProcedureFamily =
   | "fusionProcedure"
   | "genericSpecialSummonProcedure"
@@ -103,6 +120,10 @@ describe("Lua real summon restore coverage", () => {
       });
 
     expect(missing).toEqual([]);
+  });
+
+  it("keeps real-script summon keyword families explicit", () => {
+    expect(countRealScriptSummonKeywordFamilies(realScriptSummonFixtureFiles())).toEqual(realScriptSummonKeywordFamilyCounts);
   });
 
   it("requires real-script summon procedure fixtures to assert restored grouped legal actions", () => {
@@ -282,6 +303,36 @@ function realScriptSummonFixtureFiles(): string[] {
     .filter((file) => summonKeywords.some((keyword) => file.includes(keyword)))
     .map((file) => path.join("test", file))
     .sort();
+}
+
+function countRealScriptSummonKeywordFamilies(files: string[]): Record<RealScriptSummonKeywordFamily, number> {
+  return files.reduce<Record<RealScriptSummonKeywordFamily, number>>(
+    (counts, file) => {
+      counts[classifyRealScriptSummonKeywordFamily(file)] += 1;
+      return counts;
+    },
+    {
+      fusion: 0,
+      link: 0,
+      pendulum: 0,
+      ritual: 0,
+      summon: 0,
+      synchro: 0,
+      xyz: 0,
+    },
+  );
+}
+
+function classifyRealScriptSummonKeywordFamily(file: string): RealScriptSummonKeywordFamily {
+  const basename = path.basename(file);
+  if (basename.includes("fusion")) return "fusion";
+  if (basename.includes("link")) return "link";
+  if (basename.includes("pendulum")) return "pendulum";
+  if (basename.includes("ritual")) return "ritual";
+  if (basename.includes("synchro")) return "synchro";
+  if (basename.includes("xyz")) return "xyz";
+  if (basename.includes("summon")) return "summon";
+  throw new Error(`Unclassified real-script summon fixture: ${file}`);
 }
 
 function realScriptFlipSummonSuccessTrapFixtureSnippets(): Array<{
