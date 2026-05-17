@@ -5,7 +5,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = {
-  fusion: 16,
+  fusion: 17,
   ritual: 17,
 };
 const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind, number> = {
@@ -15,6 +15,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   contactFusionSendCost: 1,
   customRitualOperation: 1,
   fusionAddProcMixMaterialMetadata: 1,
+  fusionAddProcMixNRepeatedCodeMetadata: 1,
   fusionDeckMaterialOath: 1,
   fusionForcedHandler: 1,
   fusionFcheck: 1,
@@ -44,6 +45,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
 };
 const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemanticVariant, number> = {
   blackSkullDragonAddProcMix: 1,
+  cyberEndDragonAddProcMixN: 1,
   doubleSubstituteSuppression: 1,
   dynaForcedHandler: 1,
   dynaForcedHandlerSuppression: 1,
@@ -66,7 +68,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(33);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(34);
   });
 
   it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
@@ -125,6 +127,7 @@ type RitualFusionHelperKind =
   | "contactFusionSendCost"
   | "customRitualOperation"
   | "fusionAddProcMixMaterialMetadata"
+  | "fusionAddProcMixNRepeatedCodeMetadata"
   | "fusionDeckMaterialOath"
   | "fusionForcedHandler"
   | "fusionFcheck"
@@ -153,6 +156,7 @@ type RitualFusionHelperKind =
   | "ritualStage2";
 type RitualFusionHelperSemanticVariant =
   | "blackSkullDragonAddProcMix"
+  | "cyberEndDragonAddProcMixN"
   | "doubleSubstituteSuppression"
   | "dynaForcedHandler"
   | "dynaForcedHandlerSuppression"
@@ -211,6 +215,16 @@ function ritualFusionHelperSemanticVariants(): Array<{ file: string; kind: Ritua
         "const blackSkullCode = \"11901678\"",
         "expect(blackSkull!.data.fusionMaterials).toEqual([summonedSkullCode, redEyesCode])",
         "summonMaterialUids: [summonedSkull!.uid, redEyes!.uid]",
+      ],
+    },
+    {
+      file: "test/lua-real-script-cyber-end-dragon-addprocmixn-fusion.test.ts",
+      kind: "cyberEndDragonAddProcMixN",
+      required: [
+        "restores exact repeated Fusion.AddProcMixN material metadata and lets Polymerization summon Cyber End Dragon",
+        "const cyberEndCode = \"1546123\"",
+        "expect(cyberEnd!.data.fusionMaterials).toEqual([cyberDragonCode, cyberDragonCode, cyberDragonCode])",
+        "summonMaterialUids: cyberDragons.map((card) => card.uid)",
       ],
     },
     {
@@ -808,6 +822,24 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         'eventName === "usedAsMaterial"',
         'eventName === "specialSummoned"',
         'expect(restored.host.messages).not.toContain("black skull dragon responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-cyber-end-dragon-addprocmixn-fusion.test.ts",
+      kind: "fusionAddProcMixNRepeatedCodeMetadata",
+      families: ["fusion"],
+      required: [
+        "Fusion.AddProcMixN metadata",
+        "expect(cyberEnd!.data.fusionMaterials).toEqual([cyberDragonCode, cyberDragonCode, cyberDragonCode])",
+        "expect(restored.session.state.cards.find((card) => card.uid === cyberEnd!.uid)?.data.fusionMaterials).toEqual([cyberDragonCode, cyberDragonCode, cyberDragonCode])",
+        "operationInfos).toEqual([",
+        "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }",
+        'summonType: "fusion"',
+        "summonMaterialUids: cyberDragons.map((card) => card.uid)",
+        "reason: duelReason.effect | duelReason.material | duelReason.fusion",
+        'eventName === "usedAsMaterial"',
+        'eventName === "specialSummoned"',
+        'expect(restored.host.messages).not.toContain("cyber end responder resolved")',
       ],
     },
     {

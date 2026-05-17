@@ -75,9 +75,24 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
 }
 
 function readFusionAddProcMixMaterials(L: unknown, card: DuelCardInstance, source: string | undefined): string[] {
-  if (!source || !/\bFusion\.AddProcMix\(/.test(source)) return [];
+  if (!source) return [];
+  if (/\bFusion\.AddProcMixN\(/.test(source)) return readFusionAddProcMixNMaterials(L, card);
+  if (!/\bFusion\.AddProcMix\(/.test(source)) return [];
   const values = readProcedureNumberListField(L, card, "fusion_materials", 3);
   return values.length >= 2 ? values.map(String) : [];
+}
+
+function readFusionAddProcMixNMaterials(L: unknown, card: DuelCardInstance): string[] {
+  const values = readProcedureNumberListField(L, card, "fusion_materials", 3);
+  if (values.length < 2 || values.length % 2 !== 0) return [];
+  const materials: string[] = [];
+  for (let index = 0; index < values.length; index += 2) {
+    const code = values[index]!;
+    const count = values[index + 1]!;
+    if (count <= 0) return [];
+    for (let copy = 0; copy < count; copy += 1) materials.push(String(code));
+  }
+  return materials.length >= 2 ? materials : [];
 }
 
 function readXyzProcedureRaceFilter(source: string | undefined): number | undefined {
