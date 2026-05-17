@@ -5,6 +5,13 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const battlePhaseEventFixtureCount = 4;
+const battlePhaseEventKindCounts = {
+  delayedReturn: 1,
+  destroyTrigger: 2,
+  positionChange: 1,
+} satisfies Record<BattlePhaseEventKind, number>;
+
+type BattlePhaseEventKind = "delayedReturn" | "destroyTrigger" | "positionChange";
 
 describe("Lua real Battle Phase event restore coverage", () => {
   it("requires representative Battle Phase event fixtures to assert clean Lua restore", () => {
@@ -42,12 +49,21 @@ describe("Lua real Battle Phase event restore coverage", () => {
 
     expect(weak).toEqual([]);
   });
+
+  it("keeps representative Battle Phase event fixture kinds explicit", () => {
+    expect(countBattlePhaseEventKinds(representativeBattlePhaseEventFixtures())).toEqual(battlePhaseEventKindCounts);
+  });
 });
 
-function representativeBattlePhaseEventFixtures(): Array<{ file: string; requiredSnippets: string[] }> {
-  return [
+function representativeBattlePhaseEventFixtures(): Array<{
+  file: string;
+  kind: BattlePhaseEventKind;
+  requiredSnippets: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-giant-orc-battle-phase-position.test.ts",
+      kind: "positionChange",
       requiredSnippets: [
         'event: "continuous", code: 0x1080',
         'eventName: "phaseBattle", eventCode: 0x1080',
@@ -57,6 +73,7 @@ function representativeBattlePhaseEventFixtures(): Array<{ file: string; require
     },
     {
       file: "test/lua-real-script-scrap-worm-battle-phase-destroy.test.ts",
+      kind: "destroyTrigger",
       requiredSnippets: [
         'event: "trigger", triggerEvent: "phaseBattle"',
         'eventName: "phaseBattle"',
@@ -68,6 +85,7 @@ function representativeBattlePhaseEventFixtures(): Array<{ file: string; require
     },
     {
       file: "test/lua-real-script-skull-conductor-battle-phase-destroy.test.ts",
+      kind: "destroyTrigger",
       requiredSnippets: [
         'event: "trigger"',
         'triggerEvent: "phaseBattle"',
@@ -79,6 +97,7 @@ function representativeBattlePhaseEventFixtures(): Array<{ file: string; require
     },
     {
       file: "test/lua-real-script-yellow-alert-delayed-return.test.ts",
+      kind: "delayedReturn",
       requiredSnippets: [
         'event: "continuous"',
         'triggerEvent": "phaseBattle"',
@@ -88,5 +107,25 @@ function representativeBattlePhaseEventFixtures(): Array<{ file: string; require
         "expectAttackTarget(restored.session, secondAttacker!.uid, originalTarget!.uid, false)",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: BattlePhaseEventKind;
+    requiredSnippets: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countBattlePhaseEventKinds(
+  fixtures: Array<{ kind: BattlePhaseEventKind }>,
+): Record<BattlePhaseEventKind, number> {
+  return fixtures.reduce<Record<BattlePhaseEventKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      delayedReturn: 0,
+      destroyTrigger: 0,
+      positionChange: 0,
+    },
+  );
 }
