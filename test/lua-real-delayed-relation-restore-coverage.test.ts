@@ -5,6 +5,14 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const delayedRelationFixtureCount = 4;
+const delayedRelationKindCounts = {
+  delayedBanishRelation: 1,
+  delayedReturnRelation: 1,
+  delayedSelfDestroy: 1,
+  reviveDestroyRelation: 1,
+} satisfies Record<DelayedRelationKind, number>;
+
+type DelayedRelationKind = "delayedBanishRelation" | "delayedReturnRelation" | "delayedSelfDestroy" | "reviveDestroyRelation";
 
 describe("Lua real delayed relation restore coverage", () => {
   it("requires delayed relation fixtures to assert clean Lua registry restore and restored delayed outcomes", () => {
@@ -30,12 +38,21 @@ describe("Lua real delayed relation restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps delayed relation fixture kinds explicit", () => {
+    expect(countDelayedRelationKinds(delayedRelationFixtureFiles())).toEqual(delayedRelationKindCounts);
+  });
 });
 
-function delayedRelationFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function delayedRelationFixtureFiles(): Array<{
+  file: string;
+  kind: DelayedRelationKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-kinka-byo-relation-banish.test.ts",
+      kind: "delayedBanishRelation",
       required: [
         "restoredSummonWindow.missingRegistryKeys).toEqual([])",
         "restoredSummonWindow.missingChainLimitRegistryKeys).toEqual([])",
@@ -53,6 +70,7 @@ function delayedRelationFixtureFiles(): Array<{ file: string; required: string[]
     },
     {
       file: "test/lua-real-script-call-of-the-haunted-revive-destroy.test.ts",
+      kind: "reviveDestroyRelation",
       required: [
         "cardTargetUids: [target!.uid]",
         "call probe 0/612701/1",
@@ -63,6 +81,7 @@ function delayedRelationFixtureFiles(): Array<{ file: string; required: string[]
     },
     {
       file: "test/lua-real-script-sunlit-sentinel-set-destroy-standby.test.ts",
+      kind: "delayedSelfDestroy",
       required: [
         'previousPosition: "faceDown"',
         'triggerEvent: "phaseStandby"',
@@ -73,6 +92,7 @@ function delayedRelationFixtureFiles(): Array<{ file: string; required: string[]
     },
     {
       file: "test/lua-real-script-yellow-alert-delayed-return.test.ts",
+      kind: "delayedReturnRelation",
       required: [
         "code: 0x1080",
         "code: 332",
@@ -82,5 +102,26 @@ function delayedRelationFixtureFiles(): Array<{ file: string; required: string[]
         "expectAttackTarget(restored.session",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: DelayedRelationKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countDelayedRelationKinds(
+  fixtures: Array<{ kind: DelayedRelationKind }>,
+): Record<DelayedRelationKind, number> {
+  return fixtures.reduce<Record<DelayedRelationKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      delayedBanishRelation: 0,
+      delayedReturnRelation: 0,
+      delayedSelfDestroy: 0,
+      reviveDestroyRelation: 0,
+    },
+  );
 }
