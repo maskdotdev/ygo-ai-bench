@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 8;
+const DRAW_RECOVER_FIXTURE_COUNT = 9;
 const drawRecoverKindCounts = {
   costBanishDraw: 2,
   drawRecoverOrDamage: 2,
   drawTrigger: 2,
   negateThenDraw: 1,
+  overlayDetachDraw: 1,
   releaseDestroyDraw: 1,
 } satisfies Record<DrawRecoverKind, number>;
 const drawRecoverSemanticVariantCounts = {
@@ -21,9 +22,10 @@ const drawRecoverSemanticVariantCounts = {
   potExtravaganceRandomExtraCostDrawLock: 1,
   shinobirdCraneSpiritSummonDraw: 1,
   upstartGoblinDrawRecover: 1,
+  xyzGiftOverlayDetachDraw: 1,
 } satisfies Record<DrawRecoverSemanticVariant, number>;
 
-type DrawRecoverKind = "costBanishDraw" | "drawRecoverOrDamage" | "drawTrigger" | "negateThenDraw" | "releaseDestroyDraw";
+type DrawRecoverKind = "costBanishDraw" | "drawRecoverOrDamage" | "drawTrigger" | "negateThenDraw" | "overlayDetachDraw" | "releaseDestroyDraw";
 
 type DrawRecoverSemanticVariant =
   | "badReactionDrawThenDamage"
@@ -33,7 +35,8 @@ type DrawRecoverSemanticVariant =
   | "potDesiresFaceDownDeckCostDraw"
   | "potExtravaganceRandomExtraCostDrawLock"
   | "shinobirdCraneSpiritSummonDraw"
-  | "upstartGoblinDrawRecover";
+  | "upstartGoblinDrawRecover"
+  | "xyzGiftOverlayDetachDraw";
 
 describe("Lua real draw and recover restore coverage", () => {
   it("requires draw/recover fixtures to assert clean Lua registry restore and restored event outcomes", () => {
@@ -186,6 +189,19 @@ function drawRecoverFixtureFiles(): Array<{
         'location: "graveyard"',
       ],
     },
+    {
+      file: "test/lua-real-script-xyz-gift-overlay-draw.test.ts",
+      kind: "overlayDetachDraw",
+      required: [
+        'eventName: "cardsDrawn"',
+        'eventName: "detachedMaterial"',
+        "category: 0x10000",
+        "parameter: 2",
+        "overlayUids: []",
+        'location: "graveyard"',
+        'location: "hand", controller: 0',
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: DrawRecoverKind;
@@ -204,6 +220,7 @@ function countDrawRecoverKinds(fixtures: Array<{ kind: DrawRecoverKind }>): Reco
       drawRecoverOrDamage: 0,
       drawTrigger: 0,
       negateThenDraw: 0,
+      overlayDetachDraw: 0,
       releaseDestroyDraw: 0,
     },
   );
@@ -311,6 +328,16 @@ function drawRecoverSemanticVariants(): Array<{
         "upstart goblin responder resolved",
       ],
     },
+    {
+      file: "test/lua-real-script-xyz-gift-overlay-draw.test.ts",
+      kind: "xyzGiftOverlayDetachDraw",
+      required: [
+        'const xyzGiftCode = "72355441"',
+        "restores Xyz Gift after detaching two Xyz materials and drawing two cards",
+        'eventName: "detachedMaterial"',
+        "eventUids: [secondDraw.uid, firstDraw.uid]",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: DrawRecoverSemanticVariant;
@@ -333,6 +360,7 @@ function countDrawRecoverSemanticVariants(fixtures: Array<{ kind: DrawRecoverSem
       potExtravaganceRandomExtraCostDrawLock: 0,
       shinobirdCraneSpiritSummonDraw: 0,
       upstartGoblinDrawRecover: 0,
+      xyzGiftOverlayDetachDraw: 0,
     },
   );
 }
