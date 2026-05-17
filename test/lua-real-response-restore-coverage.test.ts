@@ -7,8 +7,17 @@ const root = process.cwd();
 const responseFixtureCount = 121;
 const chainedResponseFixtureCount = 120;
 const responseOperationInfoFixtureCount = 112;
+const responseFixtureKindCounts = {
+  chainedResponseWithOperationInfo: 112,
+  chainedResponseWithoutOperationInfo: 8,
+  lingeringSameCodeNegation: 1,
+} satisfies Record<ResponseFixtureKind, number>;
 
 describe("Lua real response restore coverage", () => {
+  it("keeps response fixture kinds explicit", () => {
+    expect(countResponseFixtureKinds(realScriptResponseFixtureFiles())).toEqual(responseFixtureKindCounts);
+  });
+
   it("requires representative non-negating response fixtures to assert grouped legal actions and clean Lua registry restore", () => {
     const files = realScriptResponseFixtureFiles();
     expect(files).toHaveLength(responseFixtureCount);
@@ -92,6 +101,8 @@ describe("Lua real response restore coverage", () => {
     expect(missing).toEqual([]);
   });
 });
+
+type ResponseFixtureKind = "chainedResponseWithOperationInfo" | "chainedResponseWithoutOperationInfo" | "lingeringSameCodeNegation";
 
 function realScriptResponseFixtureFiles(): string[] {
   return [
@@ -238,4 +249,26 @@ function realScriptResponseOperationInfoFixtureFiles(): string[] {
       && !file.endsWith("lua-real-script-threatening-roar-temporary-attack-lock.test.ts")
       && !file.endsWith("lua-real-script-waboku-temporary-battle-protection.test.ts")
     );
+}
+
+function countResponseFixtureKinds(files: string[]): Record<ResponseFixtureKind, number> {
+  const operationInfoFiles = new Set(realScriptResponseOperationInfoFixtureFiles());
+  return files.reduce<Record<ResponseFixtureKind, number>>(
+    (counts, file) => {
+      counts[classifyResponseFixture(file, operationInfoFiles)] += 1;
+      return counts;
+    },
+    {
+      chainedResponseWithOperationInfo: 0,
+      chainedResponseWithoutOperationInfo: 0,
+      lingeringSameCodeNegation: 0,
+    },
+  );
+}
+
+function classifyResponseFixture(file: string, operationInfoFiles: Set<string>): ResponseFixtureKind {
+  if (file.endsWith("lua-real-script-called-by-the-grave.test.ts")) {
+    return "lingeringSameCodeNegation";
+  }
+  return operationInfoFiles.has(file) ? "chainedResponseWithOperationInfo" : "chainedResponseWithoutOperationInfo";
 }
