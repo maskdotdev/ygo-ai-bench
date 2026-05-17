@@ -81,11 +81,18 @@ describe("Lua card script movement helpers", () => {
     const moveAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === mover!.uid);
     expect(moveAction).toBeDefined();
     applyAndAssert(session, moveAction!);
+    while (session.state.chain.length > 0) {
+      expect(passCurrentChain(session)).toBe(true);
+    }
     const setAction = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === record!.uid);
 
     expect(session.state.cards.find((card) => card.uid === listed!.uid)).toMatchObject({ location: "graveyard", reason: 0x40 });
-    expect(setAction).toBeUndefined();
-    expect(session.state.cards.find((card) => card.uid === record!.uid)).toMatchObject({ location: "graveyard" });
+    expect(setAction).toBeDefined();
+    applyAndAssert(session, setAction!);
+    while (session.state.chain.length > 0) {
+      expect(passCurrentChain(session)).toBe(true);
+    }
+    expect(session.state.cards.find((card) => card.uid === record!.uid)).toMatchObject({ location: "hand", reason: 0x40 });
   });
 
   it("loads Gurifoh and sets a listed Spell/Trap from Deck", () => {

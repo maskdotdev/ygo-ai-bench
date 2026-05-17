@@ -605,6 +605,35 @@ function isNamedTableFunction(L: unknown, index: number, tableName: string, fiel
 
 function isLuaCardFaceup(L: unknown, readLuaError: (state: unknown) => string): boolean {
   if (!lua.lua_istable(L, 1)) return false;
+  if (!isLuaCardOnField(L, readLuaError)) return isLuaCardMarkedFaceup(L, readLuaError);
+  lua.lua_getfield(L, 1, to_luastring("GetPosition"));
+  if (lua.lua_isfunction(L, -1)) {
+    lua.lua_pushvalue(L, 1);
+    const status = lua.lua_pcall(L, 1, 1, 0);
+    if (status !== lua.LUA_OK) return Boolean(lauxlib.luaL_error(L, to_luastring(readLuaError(L))));
+    const position = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : 0;
+    lua.lua_pop(L, 1);
+    return (position & 0x5) !== 0;
+  }
+  lua.lua_pop(L, 1);
+  return isLuaCardMarkedFaceup(L, readLuaError);
+}
+
+function isLuaCardOnField(L: unknown, readLuaError: (state: unknown) => string): boolean {
+  lua.lua_getfield(L, 1, to_luastring("GetLocation"));
+  if (!lua.lua_isfunction(L, -1)) {
+    lua.lua_pop(L, 1);
+    return false;
+  }
+  lua.lua_pushvalue(L, 1);
+  const status = lua.lua_pcall(L, 1, 1, 0);
+  if (status !== lua.LUA_OK) return Boolean(lauxlib.luaL_error(L, to_luastring(readLuaError(L))));
+  const location = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : 0;
+  lua.lua_pop(L, 1);
+  return (location & 0x0c) !== 0;
+}
+
+function isLuaCardMarkedFaceup(L: unknown, readLuaError: (state: unknown) => string): boolean {
   lua.lua_getfield(L, 1, to_luastring("IsFaceup"));
   if (!lua.lua_isfunction(L, -1)) {
     lua.lua_pop(L, 1);

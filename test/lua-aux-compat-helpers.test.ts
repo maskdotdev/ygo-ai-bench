@@ -7,6 +7,30 @@ import type { DuelCardData } from "#duel/types.js";
 import { createLuaScriptHost } from "#lua/host.js";
 
 describe("Lua aux compatibility helpers", () => {
+  it("keeps aux.FaceupFilter from matching face-down field positions", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Faceup Filter Probe", kind: "monster", attack: 1000 }];
+    const session = createDuel({ seed: 21, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const card = session.state.cards.find((candidate) => candidate.code === "100");
+    expect(card).toBeDefined();
+    moveDuelCard(session.state, card!.uid, "monsterZone", 0);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      Debug.Message("faceup filter count " .. Duel.GetMatchingGroupCount(aux.FaceupFilter(Card.IsAttackAbove,900),0,LOCATION_MZONE,0,nil))
+      `,
+      "faceup-filter-position.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("faceup filter count 0");
+  });
+
   it("provides common aux compatibility helpers", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Aux A", kind: "monster", attack: 1000 },
