@@ -175,10 +175,13 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
       families: ["ritual"],
       required: [
         'operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x22 }]',
+        "expect(restored.session.state.chain[0]?.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x22 }])",
         'summonType: "ritual"',
         "summonMaterialUids).toEqual([nekrozExtraMaterialA!.uid, nekrozExtraMaterialB!.uid])",
         "reason: duelReason.material | duelReason.ritual",
         'location: "extraDeck"',
+        'eventName === "specialSummoned"',
+        'eventName === "sentToGraveyard"',
         'expect(restored.host.messages).not.toContain("nekroz divinemirror responder resolved")',
       ],
     },
