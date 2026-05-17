@@ -295,6 +295,20 @@ describe("coverage inventory guards", () => {
     expect(weak).toEqual([]);
   });
 
+  it("requires Lua real-script and parity fixtures to assert outcomes instead of bare throw checks", () => {
+    const files = fs.readdirSync(testRoot)
+      .filter((file) => /^(?:lua-real|parity).*\.test\.ts$/.test(file));
+    const weak = files
+      .flatMap((file) => {
+        const text = readTestFile(file);
+        return [...text.matchAll(/(?:\.not\.toThrow\(\)|\.toThrow\(\))/g)]
+          .map((match) => `${file}:${lineNumber(text, match.index ?? 0)}`);
+      });
+
+    expect(files).toHaveLength(1638);
+    expect(weak).toEqual([]);
+  });
+
   it("requires test proof floors to be exact", () => {
     const loose = fs.readdirSync(testRoot)
       .filter((file) => file.endsWith(".test.ts"))
