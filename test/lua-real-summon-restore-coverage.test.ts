@@ -6,7 +6,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-const realScriptSummonFixtureCount = 160;
+const realScriptSummonFixtureCount = 161;
 const summonProcedureFixtureCount = 20;
 const typedSummonProcedureFixtureCount = 6;
 const pendulumGrantFixtureCount = 4;
@@ -14,10 +14,10 @@ const pendulumHelperFixtureCount = 13;
 const unionProcedureFixtureCount = 4;
 const materialLockFixtureCount = 4;
 const flipSummonSuccessTrapFixtureCount = 4;
-const linkedZoneSpecialSummonFixtureCount = 1;
+const linkedZoneSpecialSummonFixtureCount = 2;
 const realScriptSummonKeywordFamilyCounts = {
   fusion: 22,
-  link: 12,
+  link: 13,
   pendulum: 17,
   ritual: 20,
   summon: 59,
@@ -71,6 +71,7 @@ const flipSummonSuccessTrapKindCounts = {
   flipStatTrap: 1,
 } satisfies Record<FlipSummonSuccessTrapKind, number>;
 const linkedZoneSpecialSummonKindCounts = {
+  handTriggerLinkSummon: 1,
   releaseCostDeckSummon: 1,
 } satisfies Record<LinkedZoneSpecialSummonKind, number>;
 
@@ -87,7 +88,7 @@ type SummonMaterialLockKind =
   | "xyzMaterialLock";
 
 type FlipSummonSuccessTrapKind = "flipBanishTrap" | "flipDestroyTrap" | "flipStatTrap";
-type LinkedZoneSpecialSummonKind = "releaseCostDeckSummon";
+type LinkedZoneSpecialSummonKind = "handTriggerLinkSummon" | "releaseCostDeckSummon";
 type RealScriptSummonKeywordFamily =
   | "fusion"
   | "link"
@@ -448,6 +449,19 @@ function realScriptLinkedZoneSpecialSummonFixtureSnippets(): Array<{
 }> {
   return [
     {
+      file: "test/lua-real-script-parallel-exceed-link-summon-linked-zone.test.ts",
+      kind: "handTriggerLinkSummon",
+      required: [
+        "Group.GetLinkedZone(tp)",
+        "Link Summon",
+        'type === "activateTrigger"',
+        'windowKind: "triggerBucket"',
+        'location: "monsterZone"',
+        "sequence: 1",
+        '"specialSummoned"',
+      ],
+    },
+    {
       file: "test/lua-real-script-altergeist-primebanshee-linked-zone-special-summon.test.ts",
       kind: "releaseCostDeckSummon",
       required: [
@@ -469,6 +483,7 @@ function countLinkedZoneSpecialSummonKinds(files: Array<{ kind: LinkedZoneSpecia
       return counts;
     },
     {
+      handTriggerLinkSummon: 0,
       releaseCostDeckSummon: 0,
     },
   );
