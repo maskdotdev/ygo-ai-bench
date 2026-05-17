@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 21;
+const spiritFixtureCount = 22;
 const spiritKindCounts = {
   columnSendPendulum: 3,
   delayedShuffleDraw: 1,
@@ -12,6 +12,7 @@ const spiritKindCounts = {
   graveToDeckTrigger: 1,
   groupMonsterDestroy: 1,
   normalSummonSearch: 2,
+  positionTriggerSet: 1,
   procedureReturn: 2,
   returnToHandTrigger: 4,
   ritualSelfSummonSearch: 2,
@@ -56,6 +57,7 @@ type SpiritKind =
   | "graveToDeckTrigger"
   | "groupMonsterDestroy"
   | "normalSummonSearch"
+  | "positionTriggerSet"
   | "procedureReturn"
   | "returnToHandTrigger"
   | "ritualSelfSummonSearch"
@@ -73,6 +75,7 @@ function countSpiritKinds(fixtures: Array<{ kind: SpiritKind }>): Record<SpiritK
       graveToDeckTrigger: 0,
       groupMonsterDestroy: 0,
       normalSummonSearch: 0,
+      positionTriggerSet: 0,
       procedureReturn: 0,
       returnToHandTrigger: 0,
       ritualSelfSummonSearch: 0,
@@ -392,6 +395,22 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; kind: SpiritKind;
         'location: "graveyard"',
         'position: "faceDownDefense"',
         'host.messages).not.toContain("dark dust responder resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-tsukuyomi-position-trigger.test.ts",
+      kind: "positionTriggerSet",
+      required: [
+        'action.type === "normalSummon"',
+        'action.type === "activateTrigger"',
+        'action.type === "passChain"',
+        'eventName: "normalSummoned"',
+        'eventName === "positionChanged"',
+        "category: 4096",
+        "parameter: 8",
+        "targetUids",
+        'position: "faceDownDefense"',
+        'host.messages).not.toContain("tsukuyomi responder resolved")',
       ],
     },
     {
