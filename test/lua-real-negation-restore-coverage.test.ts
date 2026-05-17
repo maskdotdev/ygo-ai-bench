@@ -8,6 +8,28 @@ const negationFixtureCount = 10;
 const chainResponseNegationFixtureCount = 9;
 const destroyOnlyResponseFixtureCount = 4;
 const negationInventoryFixtureCount = 14;
+const negationKindCounts = {
+  chainDisable: 1,
+  chainNegateDraw: 1,
+  chainNegateToDeck: 1,
+  chainNegateToGrave: 3,
+  handTrapChainNegate: 1,
+  summonNegateContinuation: 3,
+} satisfies Record<NegationKind, number>;
+const destroyOnlyResponseKindCounts = {
+  chainDestroyOnly: 3,
+  chainMultiDestroyOnly: 1,
+} satisfies Record<DestroyOnlyResponseKind, number>;
+
+type NegationKind =
+  | "chainDisable"
+  | "chainNegateDraw"
+  | "chainNegateToDeck"
+  | "chainNegateToGrave"
+  | "handTrapChainNegate"
+  | "summonNegateContinuation";
+
+type DestroyOnlyResponseKind = "chainDestroyOnly" | "chainMultiDestroyOnly";
 
 describe("Lua real negation restore coverage", () => {
   it("keeps the combined negation restore fixture inventory explicit", () => {
@@ -35,6 +57,10 @@ describe("Lua real negation restore coverage", () => {
       });
 
     expect(missing).toEqual([]);
+  });
+
+  it("keeps real-script negation fixture kinds explicit", () => {
+    expect(countNegationKinds(realScriptNegationFixtures())).toEqual(negationKindCounts);
   });
 
   it("requires representative real-script negation fixtures to prove restored chain suppression outcomes", () => {
@@ -91,6 +117,10 @@ describe("Lua real negation restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps destroy-only chain-response control kinds explicit", () => {
+    expect(countDestroyOnlyResponseKinds(realScriptDestroyOnlyResponseFixtures())).toEqual(destroyOnlyResponseKindCounts);
+  });
 });
 
 function combinedNegationFixtureFiles(): string[] {
@@ -123,20 +153,7 @@ function realScriptNegationInventoryFiles(): string[] {
 }
 
 function realScriptNegationFixtureFiles(): string[] {
-  return [
-    "lua-real-script-ash-blossom-chain-negate.test.ts",
-    "lua-real-script-dark-bribe-negate-draw.test.ts",
-    "lua-real-script-divine-wrath-monster-negate.test.ts",
-    "lua-real-script-effect-veiler-chain-disable.test.ts",
-    "lua-real-script-magic-jammer-chain-negate.test.ts",
-    "lua-real-script-seven-tools-trap-negate.test.ts",
-    "lua-real-script-solemn-judgment-summon-negate-part2.test.ts",
-    "lua-real-script-solemn-strike-special-summon-negate.test.ts",
-    "lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
-    "lua-real-script-wiretap-trap-negate-to-deck.test.ts",
-  ]
-    .map((file) => path.join("test", file))
-    .sort();
+  return realScriptNegationFixtures().map(({ file }) => file);
 }
 
 function realScriptChainResponseNegationFixtureFiles(): string[] {
@@ -145,12 +162,107 @@ function realScriptChainResponseNegationFixtureFiles(): string[] {
 }
 
 function realScriptDestroyOnlyResponseFixtureFiles(): string[] {
-  return [
-    "lua-real-script-ghost-ogre-chain-destroy.test.ts",
-    "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
-    "lua-real-script-raigeki-break-discard-cost.test.ts",
-    "lua-real-script-twin-twisters-discard-cost.test.ts",
-  ]
-    .map((file) => path.join("test", file))
-    .sort();
+  return realScriptDestroyOnlyResponseFixtures().map(({ file }) => file);
+}
+
+function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind }> {
+  return ([
+    {
+      file: "lua-real-script-ash-blossom-chain-negate.test.ts",
+      kind: "handTrapChainNegate",
+    },
+    {
+      file: "lua-real-script-dark-bribe-negate-draw.test.ts",
+      kind: "chainNegateDraw",
+    },
+    {
+      file: "lua-real-script-divine-wrath-monster-negate.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-effect-veiler-chain-disable.test.ts",
+      kind: "chainDisable",
+    },
+    {
+      file: "lua-real-script-magic-jammer-chain-negate.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-seven-tools-trap-negate.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-solemn-judgment-summon-negate-part2.test.ts",
+      kind: "summonNegateContinuation",
+    },
+    {
+      file: "lua-real-script-solemn-strike-special-summon-negate.test.ts",
+      kind: "summonNegateContinuation",
+    },
+    {
+      file: "lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
+      kind: "summonNegateContinuation",
+    },
+    {
+      file: "lua-real-script-wiretap-trap-negate-to-deck.test.ts",
+      kind: "chainNegateToDeck",
+    },
+  ] satisfies Array<{ file: string; kind: NegationKind }>)
+    .map(({ file, kind }) => ({ file: path.join("test", file), kind }))
+    .sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function realScriptDestroyOnlyResponseFixtures(): Array<{ file: string; kind: DestroyOnlyResponseKind }> {
+  return ([
+    {
+      file: "lua-real-script-ghost-ogre-chain-destroy.test.ts",
+      kind: "chainDestroyOnly",
+    },
+    {
+      file: "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
+      kind: "chainDestroyOnly",
+    },
+    {
+      file: "lua-real-script-raigeki-break-discard-cost.test.ts",
+      kind: "chainDestroyOnly",
+    },
+    {
+      file: "lua-real-script-twin-twisters-discard-cost.test.ts",
+      kind: "chainMultiDestroyOnly",
+    },
+  ] satisfies Array<{ file: string; kind: DestroyOnlyResponseKind }>)
+    .map(({ file, kind }) => ({ file: path.join("test", file), kind }))
+    .sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countNegationKinds(fixtures: Array<{ kind: NegationKind }>): Record<NegationKind, number> {
+  return fixtures.reduce<Record<NegationKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      chainDisable: 0,
+      chainNegateDraw: 0,
+      chainNegateToDeck: 0,
+      chainNegateToGrave: 0,
+      handTrapChainNegate: 0,
+      summonNegateContinuation: 0,
+    },
+  );
+}
+
+function countDestroyOnlyResponseKinds(
+  fixtures: Array<{ kind: DestroyOnlyResponseKind }>,
+): Record<DestroyOnlyResponseKind, number> {
+  return fixtures.reduce<Record<DestroyOnlyResponseKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      chainDestroyOnly: 0,
+      chainMultiDestroyOnly: 0,
+    },
+  );
 }
