@@ -89,11 +89,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     expect(activate).toBeDefined();
     applyAndAssert(session, activate!);
     expect(session.state.chain).toHaveLength(1);
+    expect(session.state.chain[0]!.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }]);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
     expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restoredChain.session.state.chain[0]!.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }]);
     const responsePlayer = restoredChain.session.state.waitingFor;
     expect(responsePlayer).toBeDefined();
     expectRestoredLegalActions(restoredChain, responsePlayer!);
@@ -118,6 +120,88 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
       location: "graveyard",
       reason: duelReason.effect | duelReason.material | duelReason.fusion,
     });
+    expect(restoredChain.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === fusion!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-extraDeck-9484-0",
+          "eventCode": 1102,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "specialSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "extraDeck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 264208,
+          "eventReasonCardUid": "p0-deck-94820406-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
+    const materialGraveEvents = restoredChain.session.state.eventHistory.filter((event) =>
+      event.eventName === "sentToGraveyard"
+      && (event.eventCardUid === materialA!.uid || event.eventCardUid === materialB!.uid)
+    );
+    expect(materialGraveEvents.map((event) => event.eventCardUid).sort()).toEqual([materialA!.uid, materialB!.uid].sort());
+    expect(materialGraveEvents).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-9482-1",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 262216,
+          "eventReasonCardUid": "p0-deck-94820406-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-9483-2",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 2,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 2,
+          },
+          "eventReason": 262216,
+          "eventReasonCardUid": "p0-deck-94820406-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     expect(restoredChain.session.state.effects.find((effect) => effect.sourceUid === fusion!.uid && effect.code === 71)).toMatchObject({
       event: "continuous",
       luaValueDescriptor: "cannot-be-effect-target:opponent",
