@@ -6,14 +6,14 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const battleKeywords = ["battle", "attack", "damage"];
-const realScriptBattleFixtureCount = 144;
+const realScriptBattleFixtureCount = 145;
 const battleLegalActionFixtureCount = 4;
 const attackDeclarationTrapFixtureCount = 6;
 const battleRoutingFixtureCount = 6;
 const battleContinuousSemanticFixtureCount = 1;
 const damageStepRestoreFixtureCount = 4;
 const battleDamageSemanticFixtureCount = 8;
-const battleTriggerSemanticFixtureCount = 11;
+const battleTriggerSemanticFixtureCount = 12;
 const attackDeclarationTrapKindCounts = {
   attackBanish: 1,
   attackDestroy: 1,
@@ -51,6 +51,7 @@ const battleDamageSemanticKindCounts = {
 const battleTriggerSemanticKindCounts = {
   battleConfirmDestroy: 1,
   battleDestroyedDestroy: 1,
+  battleDestroyingSelectEffect: 1,
   battleSearch: 1,
   battledBounce: 1,
   battledDeckSend: 1,
@@ -98,6 +99,7 @@ type BattleDamageSemanticKind =
 type BattleTriggerSemanticKind =
   | "battleConfirmDestroy"
   | "battleDestroyedDestroy"
+  | "battleDestroyingSelectEffect"
   | "battleSearch"
   | "battledBounce"
   | "battledDeckSend"
@@ -703,6 +705,17 @@ function realScriptBattleTriggerSemanticFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-bls-soldier-chaos-battle-destroying-select-effect.test.ts",
+      kind: "battleDestroyingSelectEffect",
+      required: [
+        'eventName: "battleDestroyed"',
+        "eventCode: 1140",
+        "api: \"SelectEffect\"",
+        "returned: 1",
+        "currentAttack(restoredBls, restored.session.state)).toBe((bls!.data.attack ?? 0) + 1500)",
+      ],
+    },
+    {
       file: "lua-real-script-gem-knight-sardonyx-battle-search.test.ts",
       kind: "battleSearch",
       required: [
@@ -840,6 +853,7 @@ function countBattleTriggerSemanticKinds(
     {
       battleConfirmDestroy: 0,
       battleDestroyedDestroy: 0,
+      battleDestroyingSelectEffect: 0,
       battleSearch: 0,
       battledBounce: 0,
       battledDeckSend: 0,
