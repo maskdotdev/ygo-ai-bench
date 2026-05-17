@@ -12,6 +12,7 @@ describe("package scripts", () => {
     expect(pkg.scripts?.["scan:lua-clean-restore"]).toContain("tools/scan-lua-clean-restore.mjs");
     expect(pkg.scripts?.["scan:legal-action-evidence"]).toContain("tools/scan-legal-action-evidence.mjs");
     expect(pkg.scripts?.["scan:parity-fixture-provenance"]).toContain("tools/scan-parity-fixture-provenance.mjs");
+    expect(pkg.scripts?.["report:parity-progress"]).toBe("node tools/report-parity-progress.mjs");
     expect(pkg.scripts?.["probe:top-tier-deck"]).toContain("--fail-on-errors --require-card-database --min-upstream-scripts 30 --min-actions 10 --min-activate-effects 2 --min-initial-effects 53 --min-registered-effects 136 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 0");
     expect(pkg.scripts?.["probe:competitive-decks"]).toContain("labrynth-2026.ydk --fail-on-errors --require-card-database --min-upstream-scripts 38 --min-actions 10 --min-activate-effects 2 --min-initial-effects 60 --min-registered-effects 143 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 0");
     expect(pkg.scripts?.["probe:competitive-decks"]).toContain("voiceless-voice-2026.ydk --fail-on-errors --require-card-database --min-upstream-scripts 36 --min-actions 9 --min-activate-effects 2 --min-initial-effects 56 --min-registered-effects 154 --max-local-overrides 0 --max-local-fallbacks 0 --max-expected-missing-scripts 0");

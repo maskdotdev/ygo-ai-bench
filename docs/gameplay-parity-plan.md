@@ -456,6 +456,7 @@ Lua work should follow fixture failures and deck probes. Avoid implementing APIs
 Deliverables:
 
 - Keep running the API usage scanner against Project Ignis scripts.
+- Use `bun run report:parity-progress` for status updates: it reports scanner-backed API/constant parity, clean restore, fixture provenance, and a separate one-fixture-per-script estimate so direct card-script counts are not mistaken for full EDOPro parity.
 - Add missing `Duel.*`, `Card.*`, `Effect.*`, `Group.*`, and `aux.*` APIs only with a failing script or fixture reference.
 - Deepen procedure helper families:
   - additional persistent trap variants beyond restored Spellbinding Circle target-lock, Nightmare Wheel phase-damage, Safe Zone protection, Fiendish Chain persistent-disable, Phantom Knights' Fog Blade battle-target lock, Phantom Knights' Sword persistent-replacement, Moon Dance Ritual persistent-overlay, Dragon's Bind persistent Special Summon lock, Gravity Bind's Level-based attack lock, Level Limit - Area B's position setting, Messenger of Peace's attack-announcement lock and maintenance cost, Mask of the Accursed's equip target attack lock plus Standby damage trigger, Rare Metalmorph chain-solving Spell-negation, Shattered Axe Standby flag ATK-loss, Miniaturize Damage Step stat-change, GOAT Shadow Spell damage-calculation stat-change, Dimension Sphinx Battle Step damage coverage, and Spirit's Invitation's official `EVENT_TO_HAND` Spirit previous-state bounce trigger plus Standby maintenance pay/destroy branches
