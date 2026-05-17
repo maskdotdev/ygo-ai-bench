@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 15;
+const battleTimingFixtureCount = 16;
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 5,
   beforeDamageCalculation: 3,
   duringDamageCalculation: 2,
   endDamageStep: 4,
-  startDamageStep: 1,
+  startDamageStep: 2,
 };
 
 describe("Lua real battle timing restore coverage", () => {
@@ -189,6 +189,18 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "shadow spell persistent true/true/1/1500",
         "battleDamage[0]).toBe(500)",
         'location: "spellTrapZone"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-shinobird-crow-damage-step-stat.test.ts",
+      kind: "startDamageStep",
+      required: [
+        'battleWindow?.kind).toBe("startDamageStep")',
+        'eventName: "discarded"',
+        'eventName: "sentToGraveyard"',
+        "effectLabelObjectUid",
+        "currentAttack(restoredCrow, restoredChain.session.state)).toBe(700)",
+        "battleDamage[1]).toBe(200)",
       ],
     },
     {
