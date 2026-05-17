@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 11;
+const battleTimingFixtureCount = 12;
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 4,
   beforeDamageCalculation: 2,
   duringDamageCalculation: 2,
-  endDamageStep: 2,
+  endDamageStep: 3,
   startDamageStep: 1,
 };
 
@@ -109,6 +109,18 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'eventName: "battleStarted"',
         'eventName: "sentToHand"',
         "pendingBattle).toBeUndefined()",
+      ],
+    },
+    {
+      file: "test/lua-real-script-getsu-fuhma-damage-step-end.test.ts",
+      kind: "endDamageStep",
+      required: [
+        'battleWindow?.kind).toBe("endDamageStep")',
+        'eventName: "damageStepEnded"',
+        "effectLabelObjectUid",
+        "battleDamage).toEqual({ 0: 300, 1: 0 })",
+        'eventName: "destroyed"',
+        "eventReasonEffectId: 1",
       ],
     },
     {
