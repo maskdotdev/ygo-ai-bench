@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const phaseSkipFixtureCount = 12;
+const phaseSkipFixtureCount = 13;
 const phaseSkipKindCounts = {
   battlePhaseSkip: 4,
-  drawPhaseSkip: 1,
+  drawPhaseSkip: 2,
   endTurnLock: 1,
   main1Skip: 3,
   main2Skip: 2,
@@ -68,6 +68,16 @@ function realScriptPhaseSkipFixtures(): Array<{
         'phase: "main1", waitingFor: 1, skippedPhases: []',
         'location: "deck", controller: 1',
         'eventName: "preDraw", eventPlayer: 1',
+      ],
+    },
+    {
+      file: "test/lua-real-script-offerings-skip-draw.test.ts",
+      kind: "drawPhaseSkip",
+      requiredSnippets: [
+        'skippedPhases).toEqual([{ player: 0, phase: "draw", remaining: 1 }])',
+        "restoredSkip.restoreComplete",
+        "getLuaRestoreLegalActionGroups(restoredSkip, 0)",
+        'eventName: "destroyed"',
       ],
     },
     {
