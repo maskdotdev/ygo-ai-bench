@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 45;
+const operationFixtureCount = 46;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
   crossPlayerGraveToDeckTrap: 1,
   banishedToGraveReturn: 1,
   banishedToHand: 1,
+  banishedToDeckSelfSummon: 1,
   banishedToSpecialSummon: 1,
   deckToGrave: 1,
   deckSplit: 1,
@@ -56,6 +57,7 @@ type OperationKind =
   | "crossPlayerGraveToDeckTrap"
   | "banishedToGraveReturn"
   | "banishedToHand"
+  | "banishedToDeckSelfSummon"
   | "banishedToSpecialSummon"
   | "deckToGrave"
   | "deckSplit"
@@ -198,6 +200,20 @@ function operationFixtureFiles(): Array<{
         'location: "banished"',
         'location: "hand"',
         "eventReasonEffectId: 2",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-nemeses-keystone-banished-to-deck-summon.test.ts",
+      kind: "banishedToDeckSelfSummon",
+      required: [
+        "category: 0x10",
+        "category: 0x200",
+        'eventName: "sentToDeck"',
+        'eventName: "specialSummoned"',
+        'location: "banished"',
+        'location: "deck"',
+        'summonType: "special"',
         "host.messages).not.toContain",
       ],
     },
@@ -894,6 +910,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       crossPlayerGraveToDeckTrap: 0,
       banishedToGraveReturn: 0,
       banishedToHand: 0,
+      banishedToDeckSelfSummon: 0,
       banishedToSpecialSummon: 0,
       deckToGrave: 0,
       deckSplit: 0,
