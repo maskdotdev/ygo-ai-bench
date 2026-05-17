@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 54;
+const operationFixtureCount = 55;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -37,6 +37,7 @@ const operationKindCounts = {
   overlayAttach: 1,
   positionSet: 1,
   releaseDamage: 1,
+  ritualDeckMaterials: 1,
   searchOrExcavate: 3,
   selfEquipFromHand: 1,
   spellDraw: 1,
@@ -91,6 +92,7 @@ type OperationKind =
   | "overlayAttach"
   | "positionSet"
   | "releaseDamage"
+  | "ritualDeckMaterials"
   | "searchOrExcavate"
   | "selfEquipFromHand"
   | "spellDraw"
@@ -438,6 +440,20 @@ function operationFixtureFiles(): Array<{
         'eventName: "sentToGraveyard"',
         'eventName: "specialSummoned"',
         "special-summon-limit:non-fusion-extra",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-advanced-ritual-art-extra-material.test.ts",
+      kind: "ritualDeckMaterials",
+      required: [
+        "category: 0x200",
+        "parameter: 0x2",
+        'summonType: "ritual"',
+        "summonMaterialUids).toEqual([normalMaterialB!.uid, normalMaterialA!.uid])",
+        'eventName: "sentToGraveyard"',
+        'eventName: "specialSummoned"',
+        "duelReason.effect | duelReason.material | duelReason.ritual",
         "host.messages).not.toContain",
       ],
     },
@@ -1053,6 +1069,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       overlayAttach: 0,
       positionSet: 0,
       releaseDamage: 0,
+      ritualDeckMaterials: 0,
       searchOrExcavate: 0,
       selfEquipFromHand: 0,
       spellDraw: 0,

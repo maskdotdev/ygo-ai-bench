@@ -89,6 +89,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ad
         "sourceUid": "p0-deck-46052429-0",
       }
     `);
+    expect(session.state.chain[0]?.operationInfos).toEqual([
+      { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 },
+    ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -96,6 +99,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ad
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
+    expect(restored.session.state.chain[0]?.operationInfos).toEqual([
+      { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 },
+    ]);
 
     const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
     expect(pass).toBeDefined();
@@ -140,6 +146,88 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ad
         },
       },
     ]);
+    const materialGraveEvents = restored.session.state.eventHistory.filter((event) =>
+      event.eventName === "sentToGraveyard"
+      && (event.eventCardUid === normalMaterialA!.uid || event.eventCardUid === normalMaterialB!.uid)
+    );
+    expect(materialGraveEvents.map((event) => event.eventCardUid).sort()).toEqual([normalMaterialA!.uid, normalMaterialB!.uid, normalMaterialB!.uid].sort());
+    expect(materialGraveEvents).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-4605-4",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 1048648,
+          "eventReasonCardUid": "p0-deck-46052429-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-4604-3",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 3,
+          },
+          "eventReason": 1048648,
+          "eventReasonCardUid": "p0-deck-46052429-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-4605-4",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 1048648,
+          "eventReasonCardUid": "p0-deck-46052429-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+          "eventUids": [
+            "p0-deck-4605-4",
+            "p0-deck-4604-3",
+          ],
+        },
+      ]
+    `);
     expect(restored.host.messages).not.toContain("advanced ritual art responder resolved");
   });
 });
