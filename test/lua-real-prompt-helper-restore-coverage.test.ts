@@ -70,7 +70,7 @@ const promptHelperKindCounts: Record<PromptHelperKind, number> = {
   announceNumberRangeToken: 1,
   announceTraitHandShuffle: 1,
   selectCardsFromCodesSearch: 1,
-  selectDisableFieldMovement: 1,
+  selectDisableFieldMovement: 2,
   selectEffectModeChoice: 4,
   selectEffectYesNoReplacement: 1,
   selectFieldZoneTarget: 1,
@@ -112,7 +112,7 @@ describe("Lua real prompt helper restore coverage", () => {
   });
 
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(18);
+    expect(representativePromptHelperFixtures()).toHaveLength(19);
   });
 
   it("keeps every officially-used prompt API represented by restore fixtures", () => {
@@ -394,6 +394,19 @@ function representativePromptHelperFixtures(): Array<{ file: string; kind: Promp
         "options: [1, 8, 16]",
         "sequence: 0",
         'expect(restored.host.messages).not.toContain("sprind responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-wattkinetic-puppeteer-opponent-zone-move.test.ts",
+      kind: "selectDisableFieldMovement",
+      apis: ["SelectDisableField"],
+      required: [
+        "restores opponent-zone SelectDisableField into the shifted MoveSequence operation",
+        'api: "SelectDisableField"',
+        "options: [1 << 16, 2 << 16, 8 << 16, 16 << 16]",
+        "returned: 1 << 16",
+        "sequence: 0",
+        'expect(restored.host.messages).not.toContain("wattkinetic responder resolved")',
       ],
     },
     {
