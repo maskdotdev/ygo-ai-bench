@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 31;
+const spiritFixtureCount = 32;
 const spiritKindCounts = {
   columnSendPendulum: 3,
   costReturnBounce: 1,
   delayedShuffleDraw: 1,
   equipRecoveryReturn: 1,
   effectExtraNormalSummon: 2,
+  fieldReturnLock: 1,
   graveyardDiscardReturn: 1,
   grantedTypeReturn: 1,
   graveToDeckTrigger: 1,
@@ -65,6 +66,7 @@ type SpiritKind =
   | "delayedShuffleDraw"
   | "equipRecoveryReturn"
   | "effectExtraNormalSummon"
+  | "fieldReturnLock"
   | "graveyardDiscardReturn"
   | "grantedTypeReturn"
   | "graveToDeckTrigger"
@@ -92,6 +94,7 @@ function countSpiritKinds(fixtures: Array<{ kind: SpiritKind }>): Record<SpiritK
       delayedShuffleDraw: 0,
       equipRecoveryReturn: 0,
       effectExtraNormalSummon: 0,
+      fieldReturnLock: 0,
       graveyardDiscardReturn: 0,
       grantedTypeReturn: 0,
       graveToDeckTrigger: 0,
@@ -586,6 +589,23 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; kind: SpiritKind;
         "category: 0x10000",
         'location: "hand", controller: 0',
         'host.messages).not.toContain("shinobird crane responder resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-spiritual-energy-settle-machine-return-lock.test.ts",
+      kind: "fieldReturnLock",
+      required: [
+        'action.type === "normalSummon"',
+        'action.type === "endTurn"',
+        "expect(ended.ok, ended.error).toBe(true)",
+        'action.type === "activateTrigger" && action.uid === yata.uid)).toBe(false)',
+        "settle leaves 1",
+        'eventName: "sentToHand"',
+        "eventCardUid: yata.uid",
+        "eventCardUid: opponentSpirit.uid",
+        'location: "hand", controller: 0',
+        'location: "hand", controller: 1',
+        'location: "monsterZone"',
       ],
     },
     {

@@ -8,7 +8,7 @@ import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -83,6 +83,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     expect(getLuaRestoreLegalActionGroups(restoredReturnLock, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredReturnLock, 0));
     expect(getLuaRestoreLegalActions(restoredReturnLock, 0).some((action) => action.type === "activateTrigger" && action.uid === yata.uid)).toBe(false);
     expect(restoredReturnLock.session.state.cards.find((card) => card.uid === yata.uid)).toMatchObject({ location: "monsterZone" });
+    const restoredEndTurn = getLuaRestoreLegalActions(restoredReturnLock, 0).find((action) => action.type === "endTurn");
+    expect(restoredEndTurn, JSON.stringify(getLuaRestoreLegalActions(restoredReturnLock, 0), null, 2)).toBeDefined();
+    const ended = applyLuaRestoreResponse(restoredReturnLock, restoredEndTurn!);
+    expect(ended.ok, ended.error).toBe(true);
+    expect(ended.legalActionGroups.flatMap((group) => group.actions)).toEqual(ended.legalActions);
 
     const leave = restoredReturnLock.host.loadScript(
       `
