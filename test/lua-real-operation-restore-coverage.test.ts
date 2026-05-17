@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 51;
+const operationFixtureCount = 52;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -15,6 +15,7 @@ const operationKindCounts = {
   banishedToHand: 1,
   banishedToDeckSelfSummon: 1,
   banishedToSpecialSummon: 1,
+  chainNegateDestroyDraw: 1,
   deckToGrave: 1,
   deckSplit: 1,
   discardCostGraveToDeckTop: 1,
@@ -66,6 +67,7 @@ type OperationKind =
   | "banishedToHand"
   | "banishedToDeckSelfSummon"
   | "banishedToSpecialSummon"
+  | "chainNegateDestroyDraw"
   | "deckToGrave"
   | "deckSplit"
   | "discardCostGraveToDeckTop"
@@ -220,6 +222,19 @@ function operationFixtureFiles(): Array<{
         'eventName: "positionChanged"',
         'position: "faceDownDefense"',
         "faceUp: false",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dark-bribe-negate-draw.test.ts",
+      kind: "chainNegateDestroyDraw",
+      required: [
+        "category: 0x10000000",
+        "category: 0x10000",
+        'eventName: "chainNegated"',
+        'eventName: "chainDisabled"',
+        'eventName: "cardsDrawn"',
+        "recoveredLifePoints",
         "host.messages).not.toContain",
       ],
     },
@@ -985,6 +1000,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       banishedToHand: 0,
       banishedToDeckSelfSummon: 0,
       banishedToSpecialSummon: 0,
+      chainNegateDestroyDraw: 0,
       deckToGrave: 0,
       deckSplit: 0,
       discardCostGraveToDeckTop: 0,
