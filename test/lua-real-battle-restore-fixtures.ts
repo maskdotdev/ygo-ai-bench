@@ -4,14 +4,14 @@ import path from "node:path";
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const battleKeywords = ["battle", "attack", "damage"];
-export const realScriptBattleFixtureCount = 153;
+export const realScriptBattleFixtureCount = 154;
 export const battleLegalActionFixtureCount = 4;
 export const attackDeclarationTrapFixtureCount = 6;
 export const battleRoutingFixtureCount = 6;
 export const battleContinuousSemanticFixtureCount = 1;
 export const damageStepRestoreFixtureCount = 4;
 export const battleDamageSemanticFixtureCount = 8;
-export const battleTriggerSemanticFixtureCount = 14;
+export const battleTriggerSemanticFixtureCount = 15;
 export const attackDeclarationTrapKindCounts = {
   attackBanish: 1,
   attackDestroy: 1,
@@ -52,7 +52,7 @@ export const battleTriggerSemanticKindCounts = {
   battleDestroyingDecktopConfirm: 1,
   battleDestroyedDestroy: 1,
   battleDestroyingSelectEffect: 1,
-  battleSearch: 1,
+  battleSearch: 2,
   battledBounce: 1,
   battledDeckSend: 1,
   battledDestroy: 1,
@@ -83,6 +83,7 @@ export const battleSemanticVariantCounts = {
   gravekeepersVassalBattleDamageToEffect: 1,
   hayateBattledDeckSend: 1,
   honestDamageStepBoost: 1,
+  keyMouseBattleDestroyedSearch: 1,
   magicCylinderDamageReflect: 1,
   magicalArmShieldBattleRetargetDamage: 1,
   miniaturizePersistentDamageStepStat: 1,
@@ -173,6 +174,7 @@ export type BattleSemanticVariant =
   | "gravekeepersVassalBattleDamageToEffect"
   | "hayateBattledDeckSend"
   | "honestDamageStepBoost"
+  | "keyMouseBattleDestroyedSearch"
   | "magicCylinderDamageReflect"
   | "magicalArmShieldBattleRetargetDamage"
   | "miniaturizePersistentDamageStepStat"
@@ -577,6 +579,17 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-key-mouse-battle-destroyed-search.test.ts",
+      kind: "battleSearch",
+      required: [
+        'eventName: "battleDestroyed"',
+        "eventCode: 1140",
+        "reasonCardUid: opponent!.uid",
+        'eventName: "sentToHand"',
+        'eventName: "sentToHandConfirmed"',
+      ],
+    },
+    {
       file: "lua-real-script-getsu-fuhma-damage-step-end.test.ts",
       kind: "endDamageDestroy",
       required: [
@@ -712,6 +725,11 @@ export function realScriptBattleSemanticVariants(): Array<{
       required: ["restores Honest's damage-step hand effect and battle ATK update", "chainResponderScript", "host.messages).not.toContain"],
     },
     {
+      file: "lua-real-script-key-mouse-battle-destroyed-search.test.ts",
+      kind: "keyMouseBattleDestroyedSearch",
+      required: ["restores EVENT_BATTLE_DESTROYED Deck search-to-hand and confirmation", "reasonCardUid: opponent!.uid", "eventName: \"sentToHandConfirmed\""],
+    },
+    {
       file: "lua-real-script-magic-cylinder-battle-window.test.ts",
       kind: "magicCylinderDamageReflect",
       required: ["restores Magic Cylinder's attack-declaration target and resolves effect damage", "targetUids: [attacker!.uid]", "lifePoints).toBe(6200)"],
@@ -842,6 +860,7 @@ export function countBattleSemanticVariants(fixtures: Array<{ kind: BattleSemant
       gravekeepersVassalBattleDamageToEffect: 0,
       hayateBattledDeckSend: 0,
       honestDamageStepBoost: 0,
+      keyMouseBattleDestroyedSearch: 0,
       magicCylinderDamageReflect: 0,
       magicalArmShieldBattleRetargetDamage: 0,
       miniaturizePersistentDamageStepStat: 0,
