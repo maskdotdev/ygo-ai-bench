@@ -7,6 +7,12 @@ const root = process.cwd();
 const UNION_FIXTURE_COUNT = 2;
 const UNION_PROCEDURE_FIXTURE_COUNT = 1;
 const EQUIPPED_UNION_LOCK_FIXTURE_COUNT = 1;
+const unionKindCounts = {
+  equippedUnionLock: 1,
+  unionEquipProcedure: 1,
+} satisfies Record<UnionKind, number>;
+
+type UnionKind = "equippedUnionLock" | "unionEquipProcedure";
 
 describe("Lua real Union restore coverage", () => {
   it("requires representative Union fixtures to assert clean Lua registry restore", () => {
@@ -78,14 +84,29 @@ describe("Lua real Union restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps Union fixture kinds explicit", () => {
+    expect(countUnionKinds(unionFixtures())).toEqual(unionKindCounts);
+  });
 });
 
+function unionFixtures(): Array<{ file: string; kind: UnionKind }> {
+  return ([
+    {
+      file: "lua-real-script-union-procedure-actions.test.ts",
+      kind: "unionEquipProcedure",
+    },
+    {
+      file: "lua-real-script-dragon-buster-equipped-lizard-lock.test.ts",
+      kind: "equippedUnionLock",
+    },
+  ] satisfies Array<{ file: string; kind: UnionKind }>)
+    .map(({ file, kind }) => ({ file: path.join("test", file), kind }))
+    .sort((a, b) => a.file.localeCompare(b.file));
+}
+
 function unionFixtureFiles(): string[] {
-  return [
-    ...unionProcedureFixtureFiles(),
-    ...equippedUnionLockFixtureFiles(),
-  ]
-    .sort();
+  return unionFixtures().map(({ file }) => file);
 }
 
 function unionProcedureFixtureFiles(): string[] {
@@ -102,4 +123,17 @@ function equippedUnionLockFixtureFiles(): string[] {
   ]
     .map((file) => path.join("test", file))
     .sort();
+}
+
+function countUnionKinds(fixtures: Array<{ kind: UnionKind }>): Record<UnionKind, number> {
+  return fixtures.reduce<Record<UnionKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      equippedUnionLock: 0,
+      unionEquipProcedure: 0,
+    },
+  );
 }
