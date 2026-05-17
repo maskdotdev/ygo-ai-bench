@@ -19,6 +19,7 @@ import { calledByTheGraveChainSolvingNegateOperation, gishkiEmiliaTrapNegateOper
 import { luaChainLimitRegistryKeys, luaDenyChainLimitRegistry, restoreKnownLuaChainLimits } from "#lua/snapshot-chain-limits.js";
 import { isKnownSunlitSentinelDelayedStandbyEffect, sunlitSentinelDelayedStandbyOperation } from "#lua/snapshot-sunlit-sentinel.js";
 import { isKnownDoubleSnareValidityEffect, isKnownTrapMonsterDisableEffect, isStaticPlayerPhaseLock } from "#lua/snapshot-static-effects.js";
+import { isKnownCannotActivateNonSpiritMonsterEffect, isKnownCannotActivateSpecialSummonedMonsterEffect, isKnownCannotBeMaterialEffect, isKnownCannotSelectBattleTargetNotHandlerEffect, isKnownGeminiEndPhaseReturnEffect, isKnownGeminiStatusEffect, isKnownGrantedSpiritEndPhaseReturnEffect, isKnownRemainFieldEffect, isKnownSetcodeOrCodeTypeBattleProtectionEffect, isKnownSpiritAddTypeEffect, isKnownTemporaryTunerAddTypeEffect } from "#lua/snapshot-restorable-effect-predicates.js";
 import { luaRegistryCardCodes } from "#lua/snapshot-registry-keys.js";
 import { restoredSpecialSummonConditionValueCallbacks } from "#lua/snapshot-special-summon-condition.js";
 import { isLuaOptionPromptDecision, isLuaYesNoPromptDecision } from "#lua/host-types.js";
@@ -567,132 +568,6 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isStaticPlayerPhaseLock(effect) ||
         (effect.code === 102 && effect.value !== undefined && effect.value !== 0 && effect.targetRange === undefined) ||
         ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 131 || effect.code === 132 || effect.code === 314) && effect.value !== undefined)))
-  );
-}
-
-function isKnownCannotBeMaterialEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && [235, 236, 238, 239, 248].includes(effect.code ?? -1) && (effect.luaValueDescriptor?.startsWith("cannot-material:") === true || effect.value !== undefined); }
-
-function isKnownGeminiStatusEffect(effect: SerializedDuelEffect): boolean {
-  return (
-    effect.event === "continuous" &&
-    effect.code === luaEffectGeminiStatus &&
-    effect.sourceUid !== undefined &&
-    effect.targetRange === undefined &&
-    effect.range.length === 1 &&
-    effect.range[0] === "monsterZone"
-  );
-}
-
-function isKnownRemainFieldEffect(effect: SerializedDuelEffect): boolean {
-  return effect.code === luaEffectRemainField && effect.sourceUid !== undefined && effect.reset?.flags === luaResetChain && effect.targetRange === undefined && effect.range.includes("spellTrapZone");
-}
-
-function isKnownGeminiEndPhaseReturnEffect(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[]): boolean {
-  return (
-    effect.event === "continuous" &&
-    effect.code === luaPhaseEndEventCode &&
-    effect.sourceUid !== undefined &&
-    effect.targetRange === undefined &&
-    effect.countLimit === 1 &&
-    effect.reset?.flags === luaResetsStandardPhaseEnd &&
-    effect.range.length === 1 &&
-    effect.range[0] === "monsterZone" &&
-    snapshotEffects.some((candidate) => candidate.sourceUid === effect.sourceUid && isKnownGeminiStatusEffect(candidate))
-  );
-}
-
-function isKnownSpiritAddTypeEffect(effect: SerializedDuelEffect): boolean {
-  return (
-    effect.event === "continuous" &&
-    effect.code === luaEffectAddType &&
-    effect.value === luaTypeSpirit &&
-    effect.sourceUid !== undefined &&
-    effect.targetRange === undefined &&
-    effect.reset?.flags === luaResetEventStandard &&
-    effect.range.length === 1 &&
-    effect.range[0] === "monsterZone"
-  );
-}
-
-function isKnownTemporaryTunerAddTypeEffect(effect: SerializedDuelEffect): boolean {
-  return (
-    effect.event === "continuous" &&
-    effect.code === luaEffectAddType &&
-    effect.value === luaTypeTuner &&
-    effect.sourceUid !== undefined &&
-    effect.targetRange === undefined &&
-    effect.reset?.flags === luaResetEventStandard &&
-    effect.range.length === 1 &&
-    effect.range[0] === "monsterZone"
-  );
-}
-
-function isKnownGrantedSpiritEndPhaseReturnEffect(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[]): boolean {
-  return (
-    effect.event === "continuous" &&
-    effect.code === luaPhaseEndEventCode &&
-    effect.sourceUid !== undefined &&
-    effect.targetRange === undefined &&
-    effect.countLimit === 1 &&
-    effect.reset?.flags === luaResetEventStandard &&
-    effect.range.length === 1 &&
-    effect.range[0] === "monsterZone" &&
-    snapshotEffects.some((candidate) => candidate.sourceUid === effect.sourceUid && isKnownSpiritAddTypeEffect(candidate))
-  );
-}
-
-function isKnownCannotActivateSpecialSummonedMonsterEffect(effect: SerializedDuelEffect): boolean {
-  return (
-    effect.event === "continuous" &&
-    effect.code === 6 &&
-    effect.luaValueDescriptor === luaCannotActivateSpecialSummonedMonsterDescriptor &&
-    effect.reset?.flags === luaPhaseEndResetFlags &&
-    effect.targetRange?.[0] === 1 &&
-    effect.targetRange?.[1] === 0 &&
-    hasDefaultLuaFieldRange(effect)
-  );
-}
-
-function isKnownCannotActivateNonSpiritMonsterEffect(effect: SerializedDuelEffect): boolean {
-  return (
-    effect.event === "continuous" &&
-    effect.code === 6 &&
-    effect.luaValueDescriptor === luaCannotActivateNonSpiritMonsterDescriptor &&
-    effect.targetRange?.[0] === 1 &&
-    effect.targetRange?.[1] === 1 &&
-    effect.range.length === 1 &&
-    effect.range[0] === "monsterZone"
-  );
-}
-
-function isKnownSetcodeOrCodeTypeBattleProtectionEffect(effect: SerializedDuelEffect): boolean {
-  return (
-    effect.event === "continuous" &&
-    (effect.code === 201 || effect.code === luaEffectIndestructibleBattle) &&
-    effect.value === 1 &&
-    setcodeOrCodeTypeTargetDescriptor(effect.luaTargetDescriptor) !== undefined &&
-    isPhaseEndOrOpponentPhaseEndReset(effect.reset?.flags) &&
-    effect.targetRange?.[0] === 4 &&
-    effect.targetRange?.[1] === 0 &&
-    hasDefaultLuaFieldRange(effect)
-  );
-}
-
-function isPhaseEndOrOpponentPhaseEndReset(flags: number | undefined): boolean {
-  return flags === luaPhaseEndResetFlags || flags === (luaPhaseEndResetFlags | luaResetOpponentTurn);
-}
-
-function isKnownCannotSelectBattleTargetNotHandlerEffect(effect: SerializedDuelEffect): boolean {
-  return (
-    effect.event === "continuous" &&
-    effect.code === 332 &&
-    effect.luaValueDescriptor === luaValueCardNotHandlerDescriptor &&
-    effect.luaConditionDescriptor === luaSourceControllerConditionDescriptor &&
-    effect.reset?.flags === luaResetEventStandard &&
-    effect.range.length === 1 &&
-    effect.range[0] === "monsterZone" &&
-    effect.targetRange?.[0] === 0 &&
-    effect.targetRange?.[1] === 0x04
   );
 }
 
