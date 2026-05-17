@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 23;
+const spiritFixtureCount = 24;
 const spiritKindCounts = {
   columnSendPendulum: 3,
   costReturnBounce: 1,
@@ -14,6 +14,7 @@ const spiritKindCounts = {
   groupMonsterDestroy: 1,
   normalSummonSearch: 2,
   positionTriggerSet: 1,
+  predrawConfirm: 1,
   procedureReturn: 2,
   returnToHandTrigger: 4,
   ritualSelfSummonSearch: 2,
@@ -60,6 +61,7 @@ type SpiritKind =
   | "groupMonsterDestroy"
   | "normalSummonSearch"
   | "positionTriggerSet"
+  | "predrawConfirm"
   | "procedureReturn"
   | "returnToHandTrigger"
   | "ritualSelfSummonSearch"
@@ -79,6 +81,7 @@ function countSpiritKinds(fixtures: Array<{ kind: SpiritKind }>): Record<SpiritK
       groupMonsterDestroy: 0,
       normalSummonSearch: 0,
       positionTriggerSet: 0,
+      predrawConfirm: 0,
       procedureReturn: 0,
       returnToHandTrigger: 0,
       ritualSelfSummonSearch: 0,
@@ -431,6 +434,21 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; kind: SpiritKind;
         "targetUids",
         'location: "hand"',
         'host.messages).not.toContain("rasetsu responder resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-maharaghi-predraw.test.ts",
+      kind: "predrawConfirm",
+      required: [
+        'action.type === "normalSummon"',
+        'action.type === "activateTrigger"',
+        "code: 1113",
+        'triggerEvent: "preDraw"',
+        'eventName === "confirmed"',
+        "eventCardUid === firstDraw!.uid",
+        'location: "hand", controller: 0',
+        'location: "deck", controller: 0',
+        "toBeUndefined()",
       ],
     },
     {
