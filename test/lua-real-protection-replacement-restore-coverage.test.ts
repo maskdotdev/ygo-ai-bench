@@ -19,6 +19,22 @@ const protectionReplacementKindCounts = {
   positionConditionProtection: 1,
   temporaryBattleProtection: 1,
 } satisfies Record<ProtectionReplacementKind, number>;
+const protectionReplacementSemanticVariantCounts = {
+  checksumDragonAttackPositionProtection: 1,
+  darkFusionOpponentTargetProtection: 1,
+  dForcePlasmaFieldTargetProtection: 1,
+  forbiddenLanceActivatedImmunityStatLoss: 1,
+  geminiSoldierBattleCountDeckSummon: 1,
+  heartClearWaterEquipBattleProtectionSelfDestroy: 1,
+  nightmareMagicianBattleTargetControlProtection: 1,
+  phantomKnightsSwordPersistentDestroyReplace: 1,
+  pilgrimContinuousBattleIndestructible: 1,
+  redGardnaHandGrantedIndestructible: 1,
+  riderStormWindsEquipDestroySubstitute: 1,
+  runickSlumberCountLimitedProtection: 1,
+  safeZoneLinkedTargetProtection: 1,
+  wabokuTemporaryBattleProtection: 1,
+} satisfies Record<ProtectionReplacementSemanticVariant, number>;
 
 describe("Lua real protection and replacement restore coverage", () => {
   it("keeps protection/replacement fixture kinds explicit", () => {
@@ -60,6 +76,21 @@ describe("Lua real protection and replacement restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps named protection/replacement semantic variants explicit", () => {
+    expect(countProtectionReplacementSemanticVariants(protectionReplacementSemanticVariants())).toEqual(
+      protectionReplacementSemanticVariantCounts,
+    );
+
+    const missing = protectionReplacementSemanticVariants()
+      .filter(({ file, requiredSnippets }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return requiredSnippets.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(missing).toEqual([]);
+  });
 });
 
 type ProtectionReplacementKind =
@@ -75,6 +106,21 @@ type ProtectionReplacementKind =
   | "persistentDestroyReplace"
   | "positionConditionProtection"
   | "temporaryBattleProtection";
+type ProtectionReplacementSemanticVariant =
+  | "checksumDragonAttackPositionProtection"
+  | "darkFusionOpponentTargetProtection"
+  | "dForcePlasmaFieldTargetProtection"
+  | "forbiddenLanceActivatedImmunityStatLoss"
+  | "geminiSoldierBattleCountDeckSummon"
+  | "heartClearWaterEquipBattleProtectionSelfDestroy"
+  | "nightmareMagicianBattleTargetControlProtection"
+  | "phantomKnightsSwordPersistentDestroyReplace"
+  | "pilgrimContinuousBattleIndestructible"
+  | "redGardnaHandGrantedIndestructible"
+  | "riderStormWindsEquipDestroySubstitute"
+  | "runickSlumberCountLimitedProtection"
+  | "safeZoneLinkedTargetProtection"
+  | "wabokuTemporaryBattleProtection";
 
 function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; kind: ProtectionReplacementKind; required: string[] }> {
   return ([
@@ -233,6 +279,145 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; ki
     .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
 }
 
+function protectionReplacementSemanticVariants(): Array<{
+  file: string;
+  kind: ProtectionReplacementSemanticVariant;
+  requiredSnippets: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-battle-protection.test.ts",
+      kind: "pilgrimContinuousBattleIndestructible",
+      requiredSnippets: [
+        'const pilgrimCode = "20700531"',
+        "restores Pilgrim of the Ice Barrier and keeps it from battle destruction by a high-ATK monster",
+        'eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 500',
+      ],
+    },
+    {
+      file: "test/lua-real-script-checksum-dragon-position-indestructible.test.ts",
+      kind: "checksumDragonAttackPositionProtection",
+      requiredSnippets: [
+        'const checksumDragonCode = "94136469"',
+        "restores its Attack Position-only battle indestructible effect",
+        'luaConditionDescriptor: "condition:source-attack-position"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-d-force-target-protection.test.ts",
+      kind: "dForcePlasmaFieldTargetProtection",
+      requiredSnippets: [
+        'const dForceCode = "6186304"',
+        "restores official field-wide cannot-be-effect-target protection while Plasma is face-up",
+        'luaValueDescriptor: "cannot-be-effect-target:opponent"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-dark-fusion-stage2-protection.test.ts",
+      kind: "darkFusionOpponentTargetProtection",
+      requiredSnippets: [
+        'const darkFusionCode = "94820406"',
+        "restores opponent targeting protection granted to the summoned Fusion monster",
+        'summonType: "fusion"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-forbidden-lance-stat-immunity.test.ts",
+      kind: "forbiddenLanceActivatedImmunityStatLoss",
+      requiredSnippets: [
+        'const lanceCode = "27243130"',
+        "restores Forbidden Lance's target and applies the ATK loss to battle calculation",
+        "expect(restored.session.state.battleDamage[0]).toBe(300)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-gemini-soldier-battled-deck-summon.test.ts",
+      kind: "geminiSoldierBattleCountDeckSummon",
+      requiredSnippets: [
+        'const soldierCode = "68366996"',
+        "restores battled trigger, Deck Special Summon, and battle indestructible count",
+        '"luaValueDescriptor": "value-predicate:reason-mask:32"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
+      kind: "heartClearWaterEquipBattleProtectionSelfDestroy",
+      requiredSnippets: [
+        'const heartCode = "64801562"',
+        "restores battle indestructible equip protection and self-destroys when the equipped monster reaches 1300 ATK",
+        "eventReason: duelReason.effect | duelReason.destroy",
+      ],
+    },
+    {
+      file: "test/lua-real-script-nightmare-magician-battle-control.test.ts",
+      kind: "nightmareMagicianBattleTargetControlProtection",
+      requiredSnippets: [
+        'const nightmareCode = "40221691"',
+        "restores battle-target indestructibility and controls the battled monster at Damage Step end",
+        'luaTargetDescriptor: "target:source-or-battle-target"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-phantom-knights-sword-persistent-replace.test.ts",
+      kind: "phantomKnightsSwordPersistentDestroyReplace",
+      requiredSnippets: [
+        'const swordCode = "61936647"',
+        "restores official persistent ATK boost and destruction replacement",
+        'action: "destroyReplace"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-red-gardna-indestructible-restore.test.ts",
+      kind: "redGardnaHandGrantedIndestructible",
+      requiredSnippets: [
+        'const redGardnaCode = "72318602"',
+        "restores Red Gardna's dynamic opponent-destruction protection",
+        'luaValueDescriptor: "indestructible:opponent"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-rider-storm-winds-equip-pierce.test.ts",
+      kind: "riderStormWindsEquipDestroySubstitute",
+      requiredSnippets: [
+        'const riderCode = "14235211"',
+        "restores its self-equip destroy substitute for the equipped monster",
+        'action: "destroySubstitute"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-runick-slumber-indestructible-count-restore.test.ts",
+      kind: "runickSlumberCountLimitedProtection",
+      requiredSnippets: [
+        'const slumberCode = "67835547"',
+        "restores Runick Slumber's temporary battle/effect destruction count",
+        'luaValueDescriptor: "value-predicate:reason-mask:96"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-safe-zone-persistent-protection.test.ts",
+      kind: "safeZoneLinkedTargetProtection",
+      requiredSnippets: [
+        'const safeZoneCode = "38296564"',
+        "restores official persistent protection, targetability, direct-attack lock, and handler-leaves cleanup",
+        "safe zone protection true/true/1/1/0/false/true/false/true",
+      ],
+    },
+    {
+      file: "test/lua-real-script-waboku-temporary-battle-protection.test.ts",
+      kind: "wabokuTemporaryBattleProtection",
+      requiredSnippets: [
+        'const wabokuCode = "12607053"',
+        "restores Trap-registered battle damage prevention and battle indestructibility until the End Phase",
+        "code: effectAvoidBattleDamage",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: ProtectionReplacementSemanticVariant;
+    requiredSnippets: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
 function countProtectionReplacementKinds(
   fixtures: Array<{ kind: ProtectionReplacementKind }>,
 ): Record<ProtectionReplacementKind, number> {
@@ -251,6 +436,30 @@ function countProtectionReplacementKinds(
       persistentDestroyReplace: 0,
       positionConditionProtection: 0,
       temporaryBattleProtection: 0,
+    },
+  );
+}
+
+function countProtectionReplacementSemanticVariants(
+  fixtures: Array<{ kind: ProtectionReplacementSemanticVariant }>,
+): Record<ProtectionReplacementSemanticVariant, number> {
+  return fixtures.reduce<Record<ProtectionReplacementSemanticVariant, number>>(
+    (counts, { kind }) => ({ ...counts, [kind]: counts[kind] + 1 }),
+    {
+      checksumDragonAttackPositionProtection: 0,
+      darkFusionOpponentTargetProtection: 0,
+      dForcePlasmaFieldTargetProtection: 0,
+      forbiddenLanceActivatedImmunityStatLoss: 0,
+      geminiSoldierBattleCountDeckSummon: 0,
+      heartClearWaterEquipBattleProtectionSelfDestroy: 0,
+      nightmareMagicianBattleTargetControlProtection: 0,
+      phantomKnightsSwordPersistentDestroyReplace: 0,
+      pilgrimContinuousBattleIndestructible: 0,
+      redGardnaHandGrantedIndestructible: 0,
+      riderStormWindsEquipDestroySubstitute: 0,
+      runickSlumberCountLimitedProtection: 0,
+      safeZoneLinkedTargetProtection: 0,
+      wabokuTemporaryBattleProtection: 0,
     },
   );
 }
