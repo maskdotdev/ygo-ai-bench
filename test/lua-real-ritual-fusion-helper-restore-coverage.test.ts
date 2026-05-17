@@ -515,7 +515,8 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
       kind: "fusionMaterialCheck",
       families: ["fusion"],
       required: [
-        "expect(session.state.chain[0]!.operationInfos).toEqual(",
+        "expect(session.state.chain[0]!.operationInfos).toEqual([",
+        "expect(restored.session.state.chain[0]!.operationInfos).toEqual([",
         'summonType: "fusion"',
         "summonMaterialUids: [darkMagician!.uid, material!.uid]",
         "reason: duelReason.effect | duelReason.material | duelReason.fusion",
