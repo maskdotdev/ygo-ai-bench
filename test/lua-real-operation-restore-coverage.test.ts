@@ -66,6 +66,13 @@ const groupDestroyOperationVariantCounts = {
   raigekiOpponentMonsters: 1,
   smashingGroundMaxDefense: 1,
 } satisfies Record<GroupDestroyOperationVariant, number>;
+const potAndSearchOperationVariantCounts = {
+  potDesiresFaceDownBanishDraw: 1,
+  potDualitySearchSummonLock: 1,
+  potExtravaganceRandomCostDrawLock: 1,
+  potProsperitySearchDrawLockDamage: 1,
+  reinforcementWarriorSearch: 1,
+} satisfies Record<PotAndSearchOperationVariant, number>;
 
 type OperationKind =
   | "costBanishDraw"
@@ -126,6 +133,12 @@ type GroupDestroyOperationVariant =
   | "lightningVortexFaceUpOpponents"
   | "raigekiOpponentMonsters"
   | "smashingGroundMaxDefense";
+type PotAndSearchOperationVariant =
+  | "potDesiresFaceDownBanishDraw"
+  | "potDualitySearchSummonLock"
+  | "potExtravaganceRandomCostDrawLock"
+  | "potProsperitySearchDrawLockDamage"
+  | "reinforcementWarriorSearch";
 
 describe("Lua real operation restore coverage", () => {
   it("requires representative simple spell operations to assert clean Lua registry restore and restored operation metadata", () => {
@@ -162,6 +175,19 @@ describe("Lua real operation restore coverage", () => {
     expect(countGroupDestroyOperationVariants(groupDestroyOperationVariants())).toEqual(groupDestroyOperationVariantCounts);
 
     const weak = groupDestroyOperationVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
+  });
+
+  it("keeps Pot and search operation semantic variants explicit", () => {
+    expect(countPotAndSearchOperationVariants(potAndSearchOperationVariants())).toEqual(potAndSearchOperationVariantCounts);
+
+    const weak = potAndSearchOperationVariants()
       .filter(({ file, required }) => {
         const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return required.some((snippet) => !hasCoverageSnippet(text, snippet));
@@ -1061,6 +1087,80 @@ function countGroupDestroyOperationVariants(fixtures: Array<{ kind: GroupDestroy
       lightningVortexFaceUpOpponents: 0,
       raigekiOpponentMonsters: 0,
       smashingGroundMaxDefense: 0,
+    },
+  );
+}
+
+function potAndSearchOperationVariants(): Array<{ file: string; kind: PotAndSearchOperationVariant; required: string[] }> {
+  return ([
+    {
+      file: "test/lua-real-script-pot-of-desires-deck-cost.test.ts",
+      kind: "potDesiresFaceDownBanishDraw",
+      required: [
+        "restores Pot of Desires' face-down banished deck cost and draw operation",
+        "const potCode = \"35261759\"",
+        'eventName: "banished"',
+        "faceUp: false",
+        'eventName: "cardsDrawn"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-pot-of-duality-excavate.test.ts",
+      kind: "potDualitySearchSummonLock",
+      required: [
+        "restores Pot of Duality's excavate search and Special Summon lock",
+        "const potCode = \"98645731\"",
+        "effect.sourceUid === pot!.uid && effect.code === 22",
+        "getLegalActions(restored.session, 0).some((action) => action.type === \"specialSummonProcedure\" && action.uid === procedure!.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-pot-of-extravagance-extra-cost.test.ts",
+      kind: "potExtravaganceRandomCostDrawLock",
+      required: [
+        "restores Pot of Extravagance's random Extra Deck cost and draw lock",
+        "const potCode = \"49238328\"",
+        "randomCounter).toBe(1)",
+        "drawDuelCards(restored.session.state, 0, 1, \"Blocked effect draw\")).toBe(0)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-pot-of-prosperity-excavate.test.ts",
+      kind: "potProsperitySearchDrawLockDamage",
+      required: [
+        "restores Pot of Prosperity's Extra Deck cost, deck-top selection, draw lock, and damage change",
+        "const potCode = \"84211599\"",
+        "drawDuelCards(restored.session.state, 0, 1, \"Blocked prosperity draw\")).toBe(0)",
+        "effect.sourceUid === pot!.uid && effect.code === 82",
+        "battleDamage[1]).toBe(500)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
+      kind: "reinforcementWarriorSearch",
+      required: [
+        "restores Reinforcement of the Army's deck-search operation info and adds the Warrior to hand",
+        "const reinforcementCode = \"32807846\"",
+        'eventName: "sentToHand"',
+        'eventName: "sentToHandConfirmed"',
+        "expect(restored.host.messages).toEqual([`confirmed 1: ${warriorCode}`])",
+      ],
+    },
+  ] satisfies Array<{ file: string; kind: PotAndSearchOperationVariant; required: string[] }>).sort((a, b) => a.kind.localeCompare(b.kind));
+}
+
+function countPotAndSearchOperationVariants(fixtures: Array<{ kind: PotAndSearchOperationVariant }>): Record<PotAndSearchOperationVariant, number> {
+  return fixtures.reduce<Record<PotAndSearchOperationVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      potDesiresFaceDownBanishDraw: 0,
+      potDualitySearchSummonLock: 0,
+      potExtravaganceRandomCostDrawLock: 0,
+      potProsperitySearchDrawLockDamage: 0,
+      reinforcementWarriorSearch: 0,
     },
   );
 }
