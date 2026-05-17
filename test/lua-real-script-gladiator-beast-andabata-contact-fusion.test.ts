@@ -89,6 +89,144 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gl
         reason: duelReason.cost | duelReason.material,
       });
     }
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned")).toEqual([
+      {
+        eventName: "specialSummoned",
+        eventCode: 1102,
+        eventCardUid: andabata!.uid,
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "extraDeck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
+    const materialDeckEvents = restored.session.state.eventHistory.filter((event) =>
+      event.eventName === "sentToDeck"
+      && (
+        event.eventCardUid === specificMaterial!.uid
+        || event.eventCardUid === gladiatorMaterialA!.uid
+        || event.eventCardUid === gladiatorMaterialB!.uid
+      )
+    );
+    expect(materialDeckEvents.map((event) => event.eventCardUid).sort()).toEqual([
+      specificMaterial!.uid,
+      specificMaterial!.uid,
+      gladiatorMaterialA!.uid,
+      gladiatorMaterialB!.uid,
+    ].sort());
+    expect(materialDeckEvents).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-7573135-0",
+          "eventCode": 1013,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToDeck",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 136,
+          "eventReasonCardUid": "p0-extraDeck-3779662-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-3779663-1",
+          "eventCode": 1013,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "sentToDeck",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 136,
+          "eventReasonCardUid": "p0-extraDeck-3779662-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-3779664-2",
+          "eventCode": 1013,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 2,
+          },
+          "eventName": "sentToDeck",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceDown",
+            "sequence": 2,
+          },
+          "eventReason": 136,
+          "eventReasonCardUid": "p0-extraDeck-3779662-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-7573135-0",
+          "eventCode": 1013,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "sentToDeck",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 136,
+          "eventReasonCardUid": "p0-extraDeck-3779662-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
+          "eventUids": [
+            "p0-deck-7573135-0",
+            "p0-deck-3779663-1",
+            "p0-deck-3779664-2",
+          ],
+        },
+      ]
+    `);
     expect(restored.session.state.pendingTriggers.some((trigger) => trigger.sourceUid === andabata!.uid && trigger.eventName === "specialSummoned")).toBe(true);
     expect(getLegalActions(restored.session, 0).some((action) => action.type === "activateTrigger" && action.uid === andabata!.uid)).toBe(true);
     expect(getLegalActions(restored.session, 0).some((action) => action.type === "specialSummonProcedure" && action.uid === andabata!.uid)).toBe(false);

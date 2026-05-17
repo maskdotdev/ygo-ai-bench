@@ -349,6 +349,9 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         "summonTypeCode: luaSummonTypeSpecial + 1",
         "summonMaterialUids: [specificMaterial!.uid, gladiatorMaterialA!.uid, gladiatorMaterialB!.uid]",
         "reason: duelReason.cost | duelReason.material",
+        'eventName: "specialSummoned"',
+        'eventName === "sentToDeck"',
+        "event.eventCardUid === gladiatorMaterialB!.uid",
       ],
     },
     {
