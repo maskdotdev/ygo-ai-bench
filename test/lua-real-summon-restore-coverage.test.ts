@@ -6,7 +6,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-const realScriptSummonFixtureCount = 164;
+const realScriptSummonFixtureCount = 166;
 const summonProcedureFixtureCount = 20;
 const typedSummonProcedureFixtureCount = 6;
 const pendulumGrantFixtureCount = 4;
@@ -17,10 +17,10 @@ const flipSummonSuccessTrapFixtureCount = 4;
 const linkedZoneSpecialSummonFixtureCount = 5;
 const realScriptSummonKeywordFamilyCounts = {
   fusion: 22,
-  link: 16,
+  link: 17,
   pendulum: 17,
   ritual: 20,
-  summon: 59,
+  summon: 60,
   synchro: 16,
   xyz: 14,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
@@ -77,6 +77,9 @@ const linkedZoneSpecialSummonKindCounts = {
   releaseCostDeckSummon: 1,
   toBeLinkedZoneRevive: 1,
 } satisfies Record<LinkedZoneSpecialSummonKind, number>;
+const forceMonsterZoneSummonLockKindCounts = {
+  linkedZoneSummonSetLock: 1,
+} satisfies Record<ForceMonsterZoneSummonLockKind, number>;
 
 type SummonUnionProcedureKind =
   | "battleTriggerSummonBack"
@@ -97,6 +100,7 @@ type LinkedZoneSpecialSummonKind =
   | "opponentFieldLinkedZoneSummon"
   | "releaseCostDeckSummon"
   | "toBeLinkedZoneRevive";
+type ForceMonsterZoneSummonLockKind = "linkedZoneSummonSetLock";
 type RealScriptSummonKeywordFamily =
   | "fusion"
   | "link"
@@ -352,6 +356,32 @@ describe("Lua real summon restore coverage", () => {
   it("keeps linked-zone Special Summon fixture kinds explicit", () => {
     expect(countLinkedZoneSpecialSummonKinds(realScriptLinkedZoneSpecialSummonFixtureSnippets())).toEqual(linkedZoneSpecialSummonKindCounts);
   });
+
+  it("requires representative force-Monster-Zone summon locks to pin restored zone counts", () => {
+    const files = realScriptForceMonsterZoneSummonLockFixtureSnippets();
+
+    const weak = files
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(weak).toEqual([]);
+  });
+
+  it("keeps force-Monster-Zone summon lock fixture kinds explicit", () => {
+    expect(countForceMonsterZoneSummonLockKinds(realScriptForceMonsterZoneSummonLockFixtureSnippets())).toEqual(forceMonsterZoneSummonLockKindCounts);
+  });
 });
 
 function realScriptSummonFixtureFiles(): string[] {
@@ -536,6 +566,38 @@ function countLinkedZoneSpecialSummonKinds(files: Array<{ kind: LinkedZoneSpecia
       opponentFieldLinkedZoneSummon: 0,
       releaseCostDeckSummon: 0,
       toBeLinkedZoneRevive: 0,
+    },
+  );
+}
+
+function realScriptForceMonsterZoneSummonLockFixtureSnippets(): Array<{
+  file: string;
+  kind: ForceMonsterZoneSummonLockKind;
+  required: string[];
+}> {
+  return [
+    {
+      file: "test/lua-real-script-flash-charge-force-mzone-summon-lock.test.ts",
+      kind: "linkedZoneSummonSetLock",
+      required: [
+        "code: 265",
+        'action.type === "normalSummon"',
+        'action.type === "setMonster"',
+        "Duel.GetLocationCount(0,LOCATION_MZONE)",
+        "flash charge force mzone 8/0",
+      ],
+    },
+  ];
+}
+
+function countForceMonsterZoneSummonLockKinds(files: Array<{ kind: ForceMonsterZoneSummonLockKind }>): Record<ForceMonsterZoneSummonLockKind, number> {
+  return files.reduce<Record<ForceMonsterZoneSummonLockKind, number>>(
+    (counts, { kind }) => {
+      counts[kind] += 1;
+      return counts;
+    },
+    {
+      linkedZoneSummonSetLock: 0,
     },
   );
 }

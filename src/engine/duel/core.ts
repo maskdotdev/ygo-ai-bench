@@ -14,6 +14,7 @@ import {
 import { duelReason } from "#duel/reasons.js";
 import { pendulumSummonActions, pendulumSummonDuelCards as pendulumSummonDuelCardsWithHooks } from "#duel/pendulum-summon.js";
 import { isNoTributeSummonAllowed } from "#duel/no-tribute.js";
+import { availableForcedMonsterZoneCount, firstOpenForcedMonsterZoneSequence } from "#duel/forced-monster-zones.js";
 import {
   flipSummonActions,
   flipSummonDuelCard as flipSummonDuelCardWithEvents,
@@ -441,11 +442,13 @@ export function specialSummonDuelCard(state: DuelState, uid: string, controller?
   const card = findCard(state, uid);
   if (!card) throw new Error(`Card ${uid} is not in the duel`);
   const summonController = controller ?? card.controller;
-  requireZoneSpace(state, summonController, "monsterZone");
+  const sequence = firstOpenForcedMonsterZoneSequence(state, summonController, [], 0, duelReason.summon | duelReason.specialSummon, card);
+  if (sequence === undefined) throw new Error(`monsterZone is full for player ${summonController}`);
   if (!canSpecialSummonDuelCard(state, uid, summonController, summonTypeCode, relatedEffectId ?? payload.eventReasonEffectId, allowUnconditionalSpecialSummonCondition, summonPosition)) throw new Error(`${card.name} cannot be Special Summoned`);
   applySpecialSummonCosts(state, summonController, createContinuousEffectContext(state), card, summonTypeCode);
   collectTriggerEffects(state, "specialSummoning", card);
   moveDuelCard(state, uid, "monsterZone", summonController, duelReason.summon | duelReason.specialSummon, reasonPlayer);
+  card.sequence = sequence;
   if (payload.eventReasonCardUid !== undefined) card.reasonCardUid = payload.eventReasonCardUid;
   if (payload.eventReasonEffectId !== undefined) card.reasonEffectId = payload.eventReasonEffectId;
   card.position = summonPosition ?? "faceUpAttack";
@@ -474,7 +477,7 @@ export function canSpecialSummonDuelCard(state: DuelState, uid: string, controll
   if (!card || !isDuelMonsterLike(card, state)) return false;
   const summonController = controller ?? card.controller;
   if (isSpecialSummonPrevented(state, summonController, createContinuousEffectContext(state), card, summonTypeCode, relatedEffectId, allowUnconditionalSpecialSummonCondition, summonPosition)) return false;
-  if (!hasZoneSpace(state, summonController, "monsterZone")) return false;
+  if (availableForcedMonsterZoneCount(state, summonController, [], 0, duelReason.summon | duelReason.specialSummon, card) <= 0) return false;
   if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card) && !isFaceDownExtraDeckSummonTypeCode(summonTypeCode)) return false;
   return canMoveDuelCardToLocation(state, uid, "monsterZone");
 }

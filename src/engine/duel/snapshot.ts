@@ -930,7 +930,7 @@ function serializeEffect(effect: DuelEffectDefinition): SerializedDuelEffect[] {
 }
 
 function copySerializedEffect(effect: DuelEffectDefinition): SerializedDuelEffect {
-  const { battleDamageValue: _battleDamageValue, canActivate: _canActivate, cost: _cost, labelObjectUid, labelObjectUids, lifePointValue: _lifePointValue, luaTypeFlags: _luaTypeFlags, operation: _operation, promptOperation: _promptOperation, statValue: _statValue, target: _target, targetCardPredicate: _targetCardPredicate, valueCardPredicate: _valueCardPredicate, valuePredicate: _valuePredicate, ...metadata } = effect;
+  const { battleDamageValue: _battleDamageValue, canActivate: _canActivate, cost: _cost, forceMonsterZoneValue: _forceMonsterZoneValue, labelObjectUid, labelObjectUids, lifePointValue: _lifePointValue, luaTypeFlags: _luaTypeFlags, operation: _operation, promptOperation: _promptOperation, statValue: _statValue, target: _target, targetCardPredicate: _targetCardPredicate, valueCardPredicate: _valueCardPredicate, valuePredicate: _valuePredicate, ...metadata } = effect;
   return {
     ...metadata,
     range: [...effect.range],
@@ -957,7 +957,7 @@ function withNoopOperation(effect: SerializedDuelEffect): DuelEffectDefinition {
 }
 
 function hasUnserializableEffectCallbacks(effect: DuelEffectDefinition): boolean {
-  return effect.battleDamageValue !== undefined || effect.lifePointValue !== undefined || effect.statValue !== undefined || effect.targetCardPredicate !== undefined || effect.valueCardPredicate !== undefined || effect.valuePredicate !== undefined;
+  return effect.battleDamageValue !== undefined || effect.forceMonsterZoneValue !== undefined || effect.lifePointValue !== undefined || effect.statValue !== undefined || effect.targetCardPredicate !== undefined || effect.valueCardPredicate !== undefined || effect.valuePredicate !== undefined;
 }
 
 function serializeChainLimit(limit: ChainLimit): SerializedChainLimit[] {

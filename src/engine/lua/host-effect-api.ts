@@ -5,7 +5,7 @@ import { duelLocations } from "#duel/location-kinds.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import { locationsFromMask, positionMaskFromPosition, readCardUid, readGroupUids, readTableNumberField } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
-import { callLuaEffectBattleDamageValue, callLuaEffectLifePointValue, callLuaEffectStatValue, callLuaEffectValueCardPredicate, callLuaEffectValuePredicate } from "#lua/effect-value-callbacks.js";
+import { callLuaEffectBattleDamageValue, callLuaEffectForceMonsterZoneValue, callLuaEffectLifePointValue, callLuaEffectStatValue, callLuaEffectValueCardPredicate, callLuaEffectValuePredicate } from "#lua/effect-value-callbacks.js";
 import { knownLuaEffectConditionDescriptor } from "#lua/effect-condition-descriptor.js";
 import { knownLuaEffectCostDescriptor } from "#lua/effect-cost-descriptor.js";
 import { knownLuaEffectTargetDescriptor } from "#lua/effect-target-descriptor.js";
@@ -548,6 +548,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.targetRange === undefined ? {} : { targetRange: luaEffect.targetRange }),
     ...(luaEffect.hintTiming === undefined ? {} : { hintTiming: luaEffect.hintTiming }),
     ...(luaEffect.valueRef === undefined ? {} : { battleDamageValue: (ctx, player, amount) => callLuaEffectBattleDamageValue(L, hostState, luaEffect, ctx, player, amount, readLuaError) }),
+    ...(luaEffect.valueRef === undefined || luaEffect.code !== 265 ? {} : { forceMonsterZoneValue: (ctx, forcePlayer, reason) => callLuaEffectForceMonsterZoneValue(L, hostState, luaEffect, ctx, forcePlayer, reason, readLuaError) }),
     ...(luaEffect.valueRef === undefined ? {} : { lifePointValue: (ctx, player, amount) => callLuaEffectLifePointValue(L, hostState, luaEffect, ctx, player, amount, readLuaError) }),
     ...(luaEffect.valueRef === undefined ? {} : { statValue: (ctx, targetCard) => callLuaEffectStatValue(L, hostState, luaEffect, ctx, targetCard, readLuaError) }),
     ...(luaEffect.valueRef === undefined ? {} : { valueCardPredicate: (ctx, targetCard) => callLuaEffectValueCardPredicate(L, hostState, luaEffect, ctx, targetCard, readLuaError) }),

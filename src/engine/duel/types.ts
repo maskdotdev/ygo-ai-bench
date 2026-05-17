@@ -329,6 +329,7 @@ export interface DuelEffectDefinition {
   targetRange?: [number, number?];
   hintTiming?: [number, number?];
   battleDamageValue?: (ctx: DuelEffectContext, player: PlayerId, amount: number) => number | undefined;
+  forceMonsterZoneValue?: (ctx: DuelEffectContext, forcePlayer: PlayerId, reason: number) => number | undefined;
   lifePointValue?: (ctx: DuelEffectContext, player: PlayerId, amount: number) => number | undefined;
   statValue?: (ctx: DuelEffectContext, card: DuelCardInstance) => number | undefined;
   valueCardPredicate?: (ctx: DuelEffectContext, card: DuelCardInstance) => boolean;
@@ -353,7 +354,7 @@ export interface ChainLimit {
 
 export type SerializedDuelEffect = Omit<
   DuelEffectDefinition,
-  "battleDamageValue" | "canActivate" | "cost" | "lifePointValue" | "luaTypeFlags" | "operation" | "promptOperation" | "statValue" | "target" | "targetCardPredicate" | "valueCardPredicate" | "valuePredicate"
+  "battleDamageValue" | "canActivate" | "cost" | "forceMonsterZoneValue" | "lifePointValue" | "luaTypeFlags" | "operation" | "promptOperation" | "statValue" | "target" | "targetCardPredicate" | "valueCardPredicate" | "valuePredicate"
 >;
 export type SerializedChainLimit = Omit<ChainLimit, "allows" | "release">;
 

@@ -2,6 +2,7 @@ import { findCard, getCards, hasZoneSpace, moveDuelCard, pushDuelLog, recordPrev
 import { duelActivity, recordFlipSummonActivity, recordNormalSetActivity, recordNormalSummonActivity, recordSpecialSummonActivity } from "#duel/activity.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import { duelReason } from "#duel/reasons.js";
+import { availableForcedMonsterZoneCount, firstOpenForcedMonsterZoneSequence } from "#duel/forced-monster-zones.js";
 import { tributeUnitCount } from "#duel/double-tribute.js";
 import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode, currentLinkMaterialCodes, currentLinkMaterialMatchesSetcode } from "#duel/card-code-state.js";
@@ -36,9 +37,10 @@ export function normalSummon(state: DuelState, player: PlayerId, uid: string, co
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
   if (tributeRangeForNormalSummon(card).min > 0 && !canSummonWithoutTribute(card)) throw new Error(`${card.name} requires a Tribute Summon`);
   if (!canUseNormalSummonCount(card)) throw new Error("Normal Summon is not available");
-  requireZoneSpace(state, player, "monsterZone");
+  const sequence = requireForcedMonsterZoneSequence(state, player, duelReason.summon, card);
   collectEvent("normalSummoning", card);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon);
+  card.sequence = sequence;
   card.position = "faceUpAttack";
   card.summonType = "normal";
   card.summonPlayer = player;
@@ -72,8 +74,9 @@ export function setMonster(state: DuelState, player: PlayerId, uid: string, coll
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
   if (tributeRangeForNormalSummon(card).min > 0) throw new Error(`${card.name} requires tributes to Set`);
   if (!canUseNormalSummonCount(card)) throw new Error("Normal Summon is not available");
-  requireZoneSpace(state, player, "monsterZone");
+  const sequence = requireForcedMonsterZoneSequence(state, player, duelReason.rule, card);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.rule);
+  card.sequence = sequence;
   card.position = "faceDownDefense";
   card.faceUp = false;
   state.players[player].normalSummonAvailable = false;
@@ -392,15 +395,21 @@ function collectSentToGraveyard(result: DuelMaterialMoveResult, collectEvent: Du
 }
 
 export function normalSummonActions(state: DuelState, player: PlayerId, hand: DuelCardInstance[], canSummonWithoutTribute: DuelNormalSummonPredicate = () => false): DuelAction[] {
-  if (!hasZoneSpace(state, player, "monsterZone")) return [];
   const actions: DuelAction[] = [];
   for (const card of hand.filter((candidate) => candidate.kind === "monster")) {
     if (!hasNormalSummonCountAvailable(state, player, card)) continue;
+    if (availableForcedMonsterZoneCount(state, player, [], 0, duelReason.summon, card) <= 0) continue;
     const tributeRange = tributeRangeForNormalSummon(card);
     if (tributeRange.min === 0 || canSummonWithoutTribute(card)) actions.push({ type: "normalSummon", player, uid: card.uid, label: `Normal Summon ${card.name}` });
-    if (tributeRange.min === 0) actions.push({ type: "setMonster", player, uid: card.uid, label: `Set ${card.name}` });
+    if (tributeRange.min === 0 && availableForcedMonsterZoneCount(state, player, [], 0, duelReason.rule, card) > 0) actions.push({ type: "setMonster", player, uid: card.uid, label: `Set ${card.name}` });
   }
   return actions;
+}
+
+function requireForcedMonsterZoneSequence(state: DuelState, player: PlayerId, reason: number, card: DuelCardInstance): number {
+  const sequence = firstOpenForcedMonsterZoneSequence(state, player, [], 0, reason, card);
+  if (sequence === undefined) throw new Error(`monsterZone is full for player ${player}`);
+  return sequence;
 }
 
 export function geminiNormalSummonActions(state: DuelState, player: PlayerId): Extract<DuelAction, { type: "normalSummon" }>[] {
