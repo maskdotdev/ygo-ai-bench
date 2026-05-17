@@ -27,7 +27,7 @@ const missedTimingChainLifecycleOriginFixtureCount = 12;
 const missedTimingBattleDamageCauseFixtureCount = 4;
 const missedTimingPhaseBoundaryFixtureCount = 22;
 const missedTimingPhaseEndBoundaryCauseFixtureCount = 4;
-const missedTimingPostDeclineOpenFastResolutionFixtureCount = 78;
+const missedTimingPostDeclineOpenFastResolutionFixtureCount = 79;
 const missedTimingEventFamilyCounts = {
   battle: 28,
   chain: 14,
