@@ -81,7 +81,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(restoredActivation.session.state.cards.find((card) => card.uid === drillbeam!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredActivation.host.messages).not.toContain("drillbeam target resolved");
     expect(restoredActivation.host.messages).not.toContain("drillbeam responder resolved");
-    moveDuelCard(restoredActivation.session.state, etherBeryl!.uid, "monsterZone", 0);
+    moveDuelCard(restoredActivation.session.state, etherBeryl!.uid, "monsterZone", 0).position = "faceUpAttack";
 
     const setFromGrave = getLegalActions(restoredActivation.session, 0).find((action) => action.type === "activateEffect" && action.uid === drillbeam!.uid);
     expect(setFromGrave).toBeDefined();

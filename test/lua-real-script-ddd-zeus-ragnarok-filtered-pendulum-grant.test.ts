@@ -59,8 +59,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D/
 
     moveDuelCard(session.state, lowScale!.uid, "spellTrapZone", 0);
     moveDuelCard(session.state, highScale!.uid, "spellTrapZone", 0);
-    moveDuelCard(session.state, destroyTarget!.uid, "monsterZone", 0);
-    moveDuelCard(session.state, zeus!.uid, "monsterZone", 0);
+    moveDuelCard(session.state, destroyTarget!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, zeus!.uid, "monsterZone", 0).position = "faceUpAttack";
     moveDuelCard(session.state, allowedCandidate!.uid, "hand", 0);
     moveDuelCard(session.state, rejectedCandidate!.uid, "hand", 0);
     session.state.players[0].pendulumSummonAvailable = false;
