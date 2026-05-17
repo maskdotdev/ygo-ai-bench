@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 9;
+const summonTriggerOperationFixtureCount = 10;
 const summonTriggerOperationKindCounts = {
   summonDraw: 1,
   summonMassDestroy: 1,
-  summonSearch: 3,
+  summonSearch: 4,
   summonSearchSelfSummon: 1,
   summonToDeck: 1,
   summonToHandBounce: 2,
@@ -16,6 +16,7 @@ const summonTriggerOperationKindCounts = {
 const summonTriggerOperationSemanticVariantCounts = {
   aratamaSpiritSearchOnSummon: 1,
   darkDustSpiritMassDestroyOnSummon: 1,
+  gemArmadilloNormalSummonSearch: 1,
   gishkiNataliaGraveToDeckTopOnSummon: 1,
   hanShiKyudoColumnReturnOnSummon: 1,
   ichikiSayoriHimeEffectSummonSearch: 1,
@@ -35,6 +36,7 @@ type SummonTriggerOperationKind =
 type SummonTriggerOperationSemanticVariant =
   | "aratamaSpiritSearchOnSummon"
   | "darkDustSpiritMassDestroyOnSummon"
+  | "gemArmadilloNormalSummonSearch"
   | "gishkiNataliaGraveToDeckTopOnSummon"
   | "hanShiKyudoColumnReturnOnSummon"
   | "ichikiSayoriHimeEffectSummonSearch"
@@ -158,6 +160,23 @@ function summonTriggerOperationFixtureFiles(): Array<{
         "restoredChainWindow.missingChainLimitRegistryKeys).toEqual([])",
         'eventName": "normalSummoned"',
         'eventName: "discarded"',
+        'eventName: "sentToHand"',
+        "category: 8",
+        "eventName: \"sentToHandConfirmed\"",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-gem-armadillo-summon-search.test.ts",
+      kind: "summonSearch",
+      required: [
+        "restoredSummonWindow.missingRegistryKeys).toEqual([])",
+        "restoredSummonWindow.missingChainLimitRegistryKeys).toEqual([])",
+        "restoredTriggerWindow.missingRegistryKeys).toEqual([])",
+        "restoredTriggerWindow.missingChainLimitRegistryKeys).toEqual([])",
+        "restoredSearchChain.missingRegistryKeys).toEqual([])",
+        "restoredSearchChain.missingChainLimitRegistryKeys).toEqual([])",
+        'eventName: "normalSummoned"',
         'eventName: "sentToHand"',
         "category: 8",
         "eventName: \"sentToHandConfirmed\"",
@@ -290,6 +309,16 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-gem-armadillo-summon-search.test.ts",
+      kind: "gemArmadilloNormalSummonSearch",
+      requiredSnippets: [
+        'const gemArmadilloCode = "27004302"',
+        "restores EVENT_SUMMON_SUCCESS Deck search-to-hand and confirmation",
+        'eventName: "normalSummoned"',
+        'eventName: "sentToHand"',
+      ],
+    },
+    {
       file: "test/lua-real-script-gishki-natalia-spirit-to-deck.test.ts",
       kind: "gishkiNataliaGraveToDeckTopOnSummon",
       requiredSnippets: [
@@ -392,6 +421,7 @@ function countSummonTriggerOperationSemanticVariants(
     {
       aratamaSpiritSearchOnSummon: 0,
       darkDustSpiritMassDestroyOnSummon: 0,
+      gemArmadilloNormalSummonSearch: 0,
       gishkiNataliaGraveToDeckTopOnSummon: 0,
       hanShiKyudoColumnReturnOnSummon: 0,
       ichikiSayoriHimeEffectSummonSearch: 0,

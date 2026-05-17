@@ -4,7 +4,7 @@ import path from "node:path";
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-export const realScriptSummonFixtureCount = 177;
+export const realScriptSummonFixtureCount = 178;
 export const summonProcedureFixtureCount = 24;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -20,7 +20,7 @@ export const realScriptSummonKeywordFamilyCounts = {
   link: 17,
   pendulum: 20,
   ritual: 21,
-  summon: 65,
+  summon: 66,
   synchro: 16,
   xyz: 15,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
