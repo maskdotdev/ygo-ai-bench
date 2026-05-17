@@ -74,6 +74,7 @@ const promptHelperKindCounts: Record<PromptHelperKind, number> = {
   selectDisableFieldMovement: 2,
   selectEffectModeChoice: 4,
   selectEffectYesNoReplacement: 1,
+  selectFieldZoneLoop: 1,
   selectFieldZoneTarget: 1,
   selectOptionFieldZone: 1,
   selectOptionRitualBranch: 2,
@@ -113,7 +114,7 @@ describe("Lua real prompt helper restore coverage", () => {
   });
 
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(20);
+    expect(representativePromptHelperFixtures()).toHaveLength(21);
   });
 
   it("keeps every officially-used prompt API represented by restore fixtures", () => {
@@ -179,6 +180,7 @@ type PromptHelperKind =
   | "selectDisableFieldMovement"
   | "selectEffectModeChoice"
   | "selectEffectYesNoReplacement"
+  | "selectFieldZoneLoop"
   | "selectFieldZoneTarget"
   | "selectOptionFieldZone"
   | "selectOptionRitualBranch"
@@ -384,6 +386,20 @@ function representativePromptHelperFixtures(): Array<{ file: string; kind: Promp
         'location: "graveyard"',
         "overlayUids: []",
         'expect(restored.host.messages).not.toContain("springans ship responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-springans-blast-field-zone-loop.test.ts",
+      kind: "selectFieldZoneLoop",
+      apis: ["SelectFieldZone", "SelectYesNo"],
+      required: [
+        "restores repeated SelectFieldZone prompts with the first selected zone filtered out",
+        'api: "SelectFieldZone"',
+        'api: "SelectYesNo"',
+        "options: [1 << 16, 2 << 16, 4 << 16, 8 << 16, 16 << 16]",
+        "options: [2 << 16, 4 << 16, 8 << 16, 16 << 16]",
+        "effectLabels: [",
+        "disabledFieldEffects.map((effect) => effect.value)).toEqual([1 << 16, 2 << 16])",
       ],
     },
     {

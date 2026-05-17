@@ -21,7 +21,7 @@ import { materializeSkipDrawPhaseEffect } from "#lua/phase-skip-effects.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaEffectRecord, LuaHostState, LuaPromptCoroutineResult } from "#lua/host-types.js";
 const { lua, lauxlib, to_luastring } = fengari;
-const luaEffectTypeSingle = 0x1, luaResetEvent = 0x1000, luaResetToField = 0x1000000;
+const luaEffectTypeSingle = 0x1, luaEffectTypeField = 0x2, luaResetEvent = 0x1000, luaResetToField = 0x1000000;
 const luaEffectSummonProc = 32, luaEffectLimitSummonProc = 33, luaEffectSpecialSummonProc = 34, luaEffectFusionSubstitute = 234;
 export function installEffectApi(L: unknown, hostState: LuaHostState, readLuaError: (state: unknown) => string): void {
   lua.lua_newtable(L);
@@ -374,6 +374,7 @@ export function registerLuaEffect(L: unknown, hostState: LuaHostState, id: numbe
   luaEffect.ownerPlayer = player;
   const effect = toDuelEffect(source, luaEffect, L, hostState);
   if (luaEffect.range === undefined) effect.range = [...duelLocations];
+  if ((luaEffect.typeFlags & luaEffectTypeField) !== 0 && effect.reset) effect.reset = { ...effect.reset, flags: (effect.reset.flags & ~luaResetEvent) >>> 0 };
   if (materializeSkipDrawPhaseEffect(hostState.session, source, effect)) return true;
   registerEffect(hostState.session, effect);
   return true;
