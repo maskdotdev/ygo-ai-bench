@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 58;
+export const operationFixtureCount = 59;
 export const operationKindCounts = {
   costBanishDraw: 2,
   crossPlayerGraveToDeckTrap: 1,
@@ -40,6 +40,7 @@ export const operationKindCounts = {
   spellDraw: 1,
   trapDraw: 1,
   targetBanishDiscardCost: 1,
+  targetDestroy: 1,
   targetDestroyDiscardCost: 1,
   targetDestroyDisableField: 1,
   targetDestroyRemove: 1,
@@ -89,6 +90,7 @@ export type OperationKind =
   | "spellDraw"
   | "trapDraw"
   | "targetBanishDiscardCost"
+  | "targetDestroy"
   | "targetDestroyDiscardCost"
   | "targetDestroyDisableField"
   | "targetDestroyRemove"
@@ -754,6 +756,17 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-shield-crush-target-destroy.test.ts",
+      kind: "targetDestroy",
+      required: [
+        "restores Shield Crush's selected defense target and destroys it on resolution",
+        "targetUids: [target!.uid]",
+        'eventName: "destroyed"',
+        'position: "faceDownDefense"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-smashing-ground-max-defense-destroy.test.ts",
       kind: "groupDestroy",
       required: [
@@ -862,6 +875,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       spellDraw: 0,
       trapDraw: 0,
       targetBanishDiscardCost: 0,
+      targetDestroy: 0,
       targetDestroyDiscardCost: 0,
       targetDestroyDisableField: 0,
       targetDestroyRemove: 0,
