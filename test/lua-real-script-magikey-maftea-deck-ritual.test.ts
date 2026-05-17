@@ -124,6 +124,119 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
       reason: duelReason.effect | duelReason.material | duelReason.ritual,
     });
     expect(restored.session.state.cards.find((card) => card.uid === maftea!.uid)).toMatchObject({ location: "graveyard", controller: 0 });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === ritualTarget!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-99426080-1",
+          "eventCode": 1102,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "specialSummoned",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 1050640,
+          "eventReasonCardUid": "p0-deck-99426088-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
+    const materialGraveEvents = restored.session.state.eventHistory.filter((event) =>
+      event.eventName === "sentToGraveyard"
+      && (
+        event.eventCardUid === handMaterial!.uid
+        || event.eventCardUid === faceupNormal!.uid
+        || event.eventCardUid === deckNormalMaterial!.uid
+      )
+    );
+    expect(materialGraveEvents.map((event) => event.eventCardUid).sort()).toEqual([
+      handMaterial!.uid,
+      faceupNormal!.uid,
+      deckNormalMaterial!.uid,
+    ].sort());
+    expect(materialGraveEvents).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-99426081-2",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 2,
+          },
+          "eventReason": 1048586,
+          "eventReasonCardUid": "p0-deck-99426088-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-99426083-4",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 1,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 1048586,
+          "eventReasonCardUid": "p0-deck-99426088-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-99426082-3",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 2,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 3,
+          },
+          "eventReason": 1048648,
+          "eventReasonCardUid": "p0-deck-99426088-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     expect(restored.host.messages).not.toContain("magikey maftea responder resolved");
   });
 });
