@@ -22,6 +22,39 @@ const equipKindCounts = {
   equipSelfDestroy: 1,
   equipStatLock: 1,
 } satisfies Record<EquipKind, number>;
+const equipSemanticVariantCounts = {
+  axeProcedureStat: 1,
+  battleArchfiendShieldSetcode: 1,
+  bigBangShotPierceBanish: 1,
+  blackPendantSentDamage: 1,
+  blastWithChainDestroyed: 1,
+  butterflyDaggerReturn: 1,
+  cestusBattleRecovery: 1,
+  fairyMeteorCrushPierce: 1,
+  geminiBoosterStatus: 1,
+  gravityAxePositionLock: 1,
+  guardianGrarlProcedure: 1,
+  heartClearWaterSelfDestroy: 1,
+  herculesBattleDraw: 1,
+  herculesBattleLocks: 1,
+  herculesGraveToDeck: 1,
+  hornUnicornTopDeck: 1,
+  magePowerDynamicStats: 1,
+  maskAccursedDamageLock: 1,
+  megamorphLpAttack: 1,
+  nuzzlerTopDeck: 1,
+  orbYasakaSpiritReturn: 1,
+  prematureBurialDestroy: 1,
+  riderPierce: 1,
+  riderSubstitute: 1,
+  shootingStarBowDirect: 1,
+  smokeGrenadeDiscard: 1,
+  snatchStealControl: 1,
+  superviseGeminiRevive: 1,
+  trainConnectionCost: 1,
+  tryceExtraAttack: 1,
+  unitedWeStandDynamicStats: 1,
+} satisfies Record<EquipSemanticVariant, number>;
 
 type EquipKind =
   | "equipControl"
@@ -34,6 +67,38 @@ type EquipKind =
   | "equipReviveDestroy"
   | "equipSelfDestroy"
   | "equipStatLock";
+type EquipSemanticVariant =
+  | "axeProcedureStat"
+  | "battleArchfiendShieldSetcode"
+  | "bigBangShotPierceBanish"
+  | "blackPendantSentDamage"
+  | "blastWithChainDestroyed"
+  | "butterflyDaggerReturn"
+  | "cestusBattleRecovery"
+  | "fairyMeteorCrushPierce"
+  | "geminiBoosterStatus"
+  | "gravityAxePositionLock"
+  | "guardianGrarlProcedure"
+  | "heartClearWaterSelfDestroy"
+  | "herculesBattleDraw"
+  | "herculesBattleLocks"
+  | "herculesGraveToDeck"
+  | "hornUnicornTopDeck"
+  | "magePowerDynamicStats"
+  | "maskAccursedDamageLock"
+  | "megamorphLpAttack"
+  | "nuzzlerTopDeck"
+  | "orbYasakaSpiritReturn"
+  | "prematureBurialDestroy"
+  | "riderPierce"
+  | "riderSubstitute"
+  | "shootingStarBowDirect"
+  | "smokeGrenadeDiscard"
+  | "snatchStealControl"
+  | "superviseGeminiRevive"
+  | "trainConnectionCost"
+  | "tryceExtraAttack"
+  | "unitedWeStandDynamicStats";
 
 describe("Lua real equip restore coverage", () => {
   it("keeps the combined equip restore fixture inventory explicit", () => {
@@ -43,6 +108,19 @@ describe("Lua real equip restore coverage", () => {
 
   it("keeps equip fixture kinds explicit", () => {
     expect(countEquipKinds(realScriptEquipInventoryFixtures())).toEqual(equipKindCounts);
+  });
+
+  it("keeps named Equip semantic variants explicit", () => {
+    expect(countEquipSemanticVariants(realScriptEquipSemanticVariants())).toEqual(equipSemanticVariantCounts);
+
+    const weak = realScriptEquipSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 
   it("requires representative equip fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -326,6 +404,292 @@ function realScriptEquipInventoryFixtures(): Array<{ file: string; kind: EquipKi
     .sort((a, b) => a.file.localeCompare(b.file));
 }
 
+function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSemanticVariant; required: string[] }> {
+  return ([
+    {
+      file: "lua-real-script-equip-procedure-actions.test.ts",
+      kind: "axeProcedureStat",
+      required: [
+        "restores Axe of Despair equip procedure target and stat effect",
+        "const axeCode = \"40619825\"",
+        "Equip Procedure Target",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-procedure-actions-part2.test.ts",
+      kind: "battleArchfiendShieldSetcode",
+      required: [
+        "restores Battle Archfiend Shield equip procedure setcode target filtering",
+        "const shieldCode = \"8730435\"",
+        "Shield Gladiator Target",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-stat-lock-actions.test.ts",
+      kind: "bigBangShotPierceBanish",
+      required: [
+        "restores Big Bang Shot equip stat, piercing, and leave-field banish cleanup",
+        "const bigBangCode = \"61127349\"",
+        "Big Bang Shot Defense Target",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-procedure-actions.test.ts",
+      kind: "blackPendantSentDamage",
+      required: [
+        "restores Black Pendant equip stat and sent-from-field damage trigger",
+        "const pendantCode = \"65169794\"",
+        "Black Pendant Chain Responder",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-return-actions-part2.test.ts",
+      kind: "blastWithChainDestroyed",
+      required: [
+        "restores Blast with Chain remain-field Trap equip and destroyed trigger",
+        "const blastCode = \"98239899\"",
+        "Blast with Chain Target",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-return-actions.test.ts",
+      kind: "butterflyDaggerReturn",
+      required: [
+        "restores Butterfly Dagger leave-field return trigger with previous equip target",
+        "const daggerCode = \"69243953\"",
+        "Butterfly Dagger Target",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-procedure-actions-part2.test.ts",
+      kind: "cestusBattleRecovery",
+      required: [
+        "restores Cestus of Dagla equip Fairy filtering, attack boost, and battle-damage recovery",
+        "const cestusCode = \"28106077\"",
+        "Cestus Fairy Target",
+      ],
+    },
+    {
+      file: "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
+      kind: "fairyMeteorCrushPierce",
+      required: [
+        "restores equip-sourced piercing damage only for the equipped monster",
+        "Fairy Meteor Crush",
+        "equip-sourced piercing",
+      ],
+    },
+    {
+      file: "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
+      kind: "geminiBoosterStatus",
+      required: [
+        "restores remain-field Trap equip, destruction, and Gemini-status trigger",
+        "Gemini Booster",
+        "Gemini-status trigger",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-stat-lock-actions.test.ts",
+      kind: "gravityAxePositionLock",
+      required: [
+        "restores Gravity Axe equip stat and opponent position-change lock",
+        "const gravityAxeCode = \"32022366\"",
+        "Gravity Axe Opponent Monster",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-stat-lock-actions.test.ts",
+      kind: "guardianGrarlProcedure",
+      required: [
+        "restores Guardian Grarl summon procedure gated by face-up Gravity Axe",
+        "const guardianCode = \"47150851\"",
+        "const gravityAxeCode = \"32022366\"",
+      ],
+    },
+    {
+      file: "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
+      kind: "heartClearWaterSelfDestroy",
+      required: [
+        "restores battle indestructible equip protection and self-destroys when the equipped monster reaches 1300 ATK",
+        "Heart of Clear Water",
+        "self-destroys",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-procedure-actions-part2.test.ts",
+      kind: "herculesBattleDraw",
+      required: [
+        "restores Hercules Base battle-destroying draw trigger",
+        "const baseCode = \"97616504\"",
+        "Hercules Base Draw Card",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-procedure-actions-part2.test.ts",
+      kind: "herculesBattleLocks",
+      required: [
+        "restores Hercules Base equip procedure condition and battle locks",
+        "const baseCode = \"97616504\"",
+        "Hercules Base Opponent Target",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-procedure-actions-part2.test.ts",
+      kind: "herculesGraveToDeck",
+      required: [
+        "restores Hercules Base graveyard trigger target and to-Deck operation",
+        "const baseCode = \"97616504\"",
+        "Hercules Base Sky Striker Target",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-return-actions.test.ts",
+      kind: "hornUnicornTopDeck",
+      required: [
+        "restores Horn of the Unicorn sent-from-field top-of-Deck trigger",
+        "const hornCode = \"64047146\"",
+        "Horn of the Unicorn Target",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-procedure-actions.test.ts",
+      kind: "magePowerDynamicStats",
+      required: [
+        "restores Mage Power dynamic Spell/Trap-count equip stat callbacks",
+        "const magePowerCode = \"83746708\"",
+        "Mage Power Extra Backrow",
+      ],
+    },
+    {
+      file: "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
+      kind: "maskAccursedDamageLock",
+      required: [
+        "restores equip target attack lock and Standby damage to the equipped monster controller",
+        "Mask of the Accursed",
+        "Standby damage",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-stat-lock-actions.test.ts",
+      kind: "megamorphLpAttack",
+      required: [
+        "restores Megamorph LP-conditional set-attack equip callbacks",
+        "const megamorphCode = \"22046459\"",
+        "Megamorph Target",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-return-actions.test.ts",
+      kind: "nuzzlerTopDeck",
+      required: [
+        "restores Malevolent Nuzzler equip stat and paid top-of-Deck trigger",
+        "const nuzzlerCode = \"99597615\"",
+        "Malevolent Nuzzler Chain Responder",
+      ],
+    },
+    {
+      file: "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
+      kind: "orbYasakaSpiritReturn",
+      required: [
+        "restores its Spirit-only equip recovery and lost-target return trigger",
+        "Orb of Yasaka",
+        "lost-target return trigger",
+      ],
+    },
+    {
+      file: "lua-real-script-premature-burial-revive-destroy.test.ts",
+      kind: "prematureBurialDestroy",
+      required: [
+        "restores Premature Burial's LP cost, equip target relation, and leave-field destroy",
+        "Premature Burial",
+        "leave-field destroy",
+      ],
+    },
+    {
+      file: "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
+      kind: "riderPierce",
+      required: [
+        "restores self-equip limit and equip-sourced piercing damage",
+        "Rider of the Storm Winds",
+        "equip-sourced piercing",
+      ],
+    },
+    {
+      file: "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
+      kind: "riderSubstitute",
+      required: [
+        "restores its self-equip destroy substitute for the equipped monster",
+        "Rider of the Storm Winds",
+        "destroy substitute",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-procedure-actions-part2.test.ts",
+      kind: "shootingStarBowDirect",
+      required: [
+        "restores Shooting Star Bow equip attack loss and direct attack permission",
+        "const bowCode = \"95638658\"",
+        "Shooting Star Bow Battle Target",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-return-actions-part2.test.ts",
+      kind: "smokeGrenadeDiscard",
+      required: [
+        "restores Smoke Grenade of the Thief destroyed equip hand discard trigger",
+        "const smokeCode = \"63789924\"",
+        "Smoke Grenade Discard A",
+      ],
+    },
+    {
+      file: "lua-real-script-snatch-steal-equip-control.test.ts",
+      kind: "snatchStealControl",
+      required: [
+        "restores Snatch Steal's equip control and returns control when the equip leaves",
+        "Snatch Steal",
+        "returns control",
+      ],
+    },
+    {
+      file: "lua-real-script-supervise-gemini-equip-revive.test.ts",
+      kind: "superviseGeminiRevive",
+      required: [
+        "restores Equip-granted Gemini status and its sent-to-Graveyard Special Summon trigger",
+        "Supervise",
+        "sent-to-Graveyard Special Summon trigger",
+      ],
+    },
+    {
+      file: "lua-real-script-train-connection-equip-cost.test.ts",
+      kind: "trainConnectionCost",
+      required: [
+        "restores AddEquipProcedure cost banish, target selection, and equip stat effect",
+        "Train Connection",
+        "cost banish",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-stat-lock-actions.test.ts",
+      kind: "tryceExtraAttack",
+      required: [
+        "restores Twin Swords discard-cost equip, attack loss, and extra attack",
+        "const tryceCode = \"21900719\"",
+        "Twin Swords Discard Cost",
+      ],
+    },
+    {
+      file: "lua-real-script-equip-procedure-actions.test.ts",
+      kind: "unitedWeStandDynamicStats",
+      required: [
+        "restores United We Stand dynamic equip stat callbacks",
+        "const unitedCode = \"56747793\"",
+        "United We Stand Face-up Ally",
+      ],
+    },
+  ] satisfies Array<{ file: string; kind: EquipSemanticVariant; required: string[] }>)
+    .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }))
+    .sort((a, b) => a.kind.localeCompare(b.kind));
+}
+
 function countEquipKinds(fixtures: Array<{ kind: EquipKind }>): Record<EquipKind, number> {
   return fixtures.reduce<Record<EquipKind, number>>(
     (counts, fixture) => {
@@ -343,6 +707,48 @@ function countEquipKinds(fixtures: Array<{ kind: EquipKind }>): Record<EquipKind
       equipReviveDestroy: 0,
       equipSelfDestroy: 0,
       equipStatLock: 0,
+    },
+  );
+}
+
+function countEquipSemanticVariants(fixtures: Array<{ kind: EquipSemanticVariant }>): Record<EquipSemanticVariant, number> {
+  return fixtures.reduce<Record<EquipSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      axeProcedureStat: 0,
+      battleArchfiendShieldSetcode: 0,
+      bigBangShotPierceBanish: 0,
+      blackPendantSentDamage: 0,
+      blastWithChainDestroyed: 0,
+      butterflyDaggerReturn: 0,
+      cestusBattleRecovery: 0,
+      fairyMeteorCrushPierce: 0,
+      geminiBoosterStatus: 0,
+      gravityAxePositionLock: 0,
+      guardianGrarlProcedure: 0,
+      heartClearWaterSelfDestroy: 0,
+      herculesBattleDraw: 0,
+      herculesBattleLocks: 0,
+      herculesGraveToDeck: 0,
+      hornUnicornTopDeck: 0,
+      magePowerDynamicStats: 0,
+      maskAccursedDamageLock: 0,
+      megamorphLpAttack: 0,
+      nuzzlerTopDeck: 0,
+      orbYasakaSpiritReturn: 0,
+      prematureBurialDestroy: 0,
+      riderPierce: 0,
+      riderSubstitute: 0,
+      shootingStarBowDirect: 0,
+      smokeGrenadeDiscard: 0,
+      snatchStealControl: 0,
+      superviseGeminiRevive: 0,
+      trainConnectionCost: 0,
+      tryceExtraAttack: 0,
+      unitedWeStandDynamicStats: 0,
     },
   );
 }
