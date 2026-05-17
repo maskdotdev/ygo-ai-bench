@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 12;
+const operationFixtureCount = 13;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
   deckToGrave: 1,
-  groupDestroy: 3,
+  groupDestroy: 4,
   releaseDamage: 1,
   searchOrExcavate: 3,
   tossCoin: 1,
@@ -118,6 +118,17 @@ function operationFixtureFiles(): Array<{
         "targetParam: 1700",
         'eventName: "released"',
         'eventName: "damageDealt"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dark-hole-group-destroy.test.ts",
+      kind: "groupDestroy",
+      required: [
+        "category: 0x1",
+        "sortedUids([ownMonster!.uid, opponentAttack!.uid, opponentDefense!.uid])",
+        'eventName: "destroyed"',
+        'location: "graveyard"',
         "host.messages).not.toContain",
       ],
     },

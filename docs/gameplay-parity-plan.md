@@ -80,7 +80,7 @@ The engine already has useful surfaces to build on:
 - Search/set-lock restore coverage now ratchets fixture kinds across search-created summon/set locks, multi-set locks, facedown Special Summon locks, searched-code activation locks, and continuous Monster/Spell-Trap Set locks.
 - Continuous-operation restore coverage now ratchets fixture kinds across End Phase control returns, continuous redirects, original-code summon locks, and summon-trigger backrow destruction.
 - Activity restore coverage now ratchets Mulcharmy chain/summon counter fixture ownership.
-- Operation restore coverage now ratchets fixture kinds across release damage, random toss, Deck-to-Grave, group destruction, cost-banish draw, search/excavate, and summon-trigger draw/destroy/search/bounce/to-Deck operations.
+- Operation restore coverage now ratchets fixture kinds across release damage, random toss, Deck-to-Grave, opponent-only and all-field group destruction, cost-banish draw, search/excavate, and summon-trigger draw/destroy/search/bounce/to-Deck operations.
 - Chain-response restore coverage now ratchets fixture kinds across flip-Summon Trap responses, Summon-success Trap responses, destroy-only chained responses, summon-effect negation, Trap negate-to-Deck, and generic chain-response fixtures.
 - Free-chain restore coverage now ratchets fixture kinds across position change, to-hand, banish removal, target negation, Graveyard revive, single/multi-target destruction, select/unselect targets, and discard-to-Deck effects.
 - Negation restore coverage now ratchets true negation fixture kinds across hand-trap chain negation, chain disable, draw-on-negate, negate-to-Grave, negate-to-Deck, and summon-negate continuations while keeping destroy-only chain-response controls separate.
