@@ -70,6 +70,7 @@ const promptHelperKindCounts: Record<PromptHelperKind, number> = {
   announceNumberRangeToken: 1,
   announceTraitHandShuffle: 1,
   selectCardsFromCodesSearch: 1,
+  selectDisableFieldLoop: 1,
   selectDisableFieldMovement: 2,
   selectEffectModeChoice: 4,
   selectEffectYesNoReplacement: 1,
@@ -112,7 +113,7 @@ describe("Lua real prompt helper restore coverage", () => {
   });
 
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(19);
+    expect(representativePromptHelperFixtures()).toHaveLength(20);
   });
 
   it("keeps every officially-used prompt API represented by restore fixtures", () => {
@@ -174,6 +175,7 @@ type PromptHelperKind =
   | "announceNumberRangeToken"
   | "announceTraitHandShuffle"
   | "selectCardsFromCodesSearch"
+  | "selectDisableFieldLoop"
   | "selectDisableFieldMovement"
   | "selectEffectModeChoice"
   | "selectEffectYesNoReplacement"
@@ -378,10 +380,24 @@ function representativePromptHelperFixtures(): Array<{ file: string; kind: Promp
       required: [
         "restores Exblowrer's selected opponent field zone chain label",
         'api: "SelectFieldZone"',
-        "returned: 1 << 16",
-        'location: "monsterZone"',
-        "overlayUids: [material.uid]",
+        "returned: 1 << 18",
+        'location: "graveyard"',
+        "overlayUids: []",
         'expect(restored.host.messages).not.toContain("springans ship responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-spring-multi-disable-zone.test.ts",
+      kind: "selectDisableFieldLoop",
+      apis: ["SelectDisableField", "SelectYesNo"],
+      required: [
+        "restores repeated SelectDisableField and SelectYesNo prompts into Season Counter placement",
+        'api: "SelectDisableField"',
+        'api: "SelectYesNo"',
+        "options: [2, 4, 8, 16]",
+        "options: [16]",
+        "getDuelCardCounter(restoredSpring, counterSeason)).toBe(5)",
+        'expect(restored.host.messages).not.toContain("spring responder resolved")',
       ],
     },
     {

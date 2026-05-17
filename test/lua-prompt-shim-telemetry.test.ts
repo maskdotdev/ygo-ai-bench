@@ -725,6 +725,29 @@ describe("Lua prompt shim telemetry", () => {
     expect(resumeLuaPromptCoroutineWithDuelResponse(second, selectedZone!)).toEqual({ status: "completed", values: [4, 262144] });
   });
 
+  it("excludes SelectDisableField filter-mask zones from repeated selections", () => {
+    const session = createDuel({ seed: 7031, startingHandSize: 0, cardReader: createCardReader([]) });
+    loadDecks(session, { 0: { main: [] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local first = Duel.SelectDisableField(0, 1, LOCATION_MZONE, 0, 0)
+      local second = Duel.SelectDisableField(0, 1, LOCATION_MZONE, 0, first)
+      Debug.Message("disable field sequence " .. first .. "/" .. second)
+      `,
+      "select-disable-field-filter-mask.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.promptDecisions).toEqual([
+      { id: "lua-prompt-1", api: "SelectDisableField", player: 0, options: [1, 2, 4, 8, 16], descriptions: [1, 2, 4, 8, 16], returned: 1 },
+      { id: "lua-prompt-2", api: "SelectDisableField", player: 0, options: [2, 4, 8, 16], descriptions: [2, 4, 8, 16], returned: 2 },
+    ]);
+    expect(host.messages).toContain("disable field sequence 1/2");
+  });
+
   it("can suspend and resume SelectField prompt calls through a coroutine", () => {
     const session = createDuel({ seed: 745, startingHandSize: 0, cardReader: createCardReader([]) });
     loadDecks(session, { 0: { main: [] }, 1: { main: [] } });

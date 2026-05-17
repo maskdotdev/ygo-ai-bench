@@ -208,7 +208,7 @@ function openZoneBits(session: DuelSession, player: PlayerId, location: "monster
   const zones: number[] = [];
   for (let sequence = 0; sequence < 5; sequence += 1) {
     const bit = 1 << (baseShift + sequence);
-    if (!occupied.has(sequence) && (filter === 0 || (filter & bit) !== 0)) zones.push(bit);
+    if (!occupied.has(sequence) && (filter & bit) === 0) zones.push(bit);
   }
   return zones;
 }
