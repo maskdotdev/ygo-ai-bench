@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 26;
+const spiritFixtureCount = 27;
 const spiritKindCounts = {
   columnSendPendulum: 3,
   costReturnBounce: 1,
   delayedShuffleDraw: 1,
   effectExtraNormalSummon: 2,
+  grantedTypeReturn: 1,
   graveToDeckTrigger: 1,
   groupMonsterDestroy: 1,
   nonSpiritActivationLock: 1,
@@ -59,6 +60,7 @@ type SpiritKind =
   | "costReturnBounce"
   | "delayedShuffleDraw"
   | "effectExtraNormalSummon"
+  | "grantedTypeReturn"
   | "graveToDeckTrigger"
   | "groupMonsterDestroy"
   | "nonSpiritActivationLock"
@@ -81,6 +83,7 @@ function countSpiritKinds(fixtures: Array<{ kind: SpiritKind }>): Record<SpiritK
       costReturnBounce: 0,
       delayedShuffleDraw: 0,
       effectExtraNormalSummon: 0,
+      grantedTypeReturn: 0,
       graveToDeckTrigger: 0,
       groupMonsterDestroy: 0,
       nonSpiritActivationLock: 0,
@@ -487,6 +490,23 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; kind: SpiritKind;
         "expect(blocked.ok).toBe(false)",
         "allowed Spirit resolved",
         'not.toContain("blocked monster resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-hebo-spirit-grant-return.test.ts",
+      kind: "grantedTypeReturn",
+      required: [
+        'action.type === "normalSummon"',
+        'action.type === "activateTrigger"',
+        'action.type === "passChain"',
+        "cardTypeFlags",
+        "effectAddType",
+        "phaseEndEvent",
+        'triggerEvent: "phaseEnd"',
+        'eventName: "sentToHand"',
+        "eventReasonCardUid: target!.uid",
+        'location: "hand"',
+        'host.messages).not.toContain("hebo responder resolved")',
       ],
     },
     {
