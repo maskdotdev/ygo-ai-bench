@@ -188,6 +188,7 @@ describe("parity fixture metadata", () => {
       missingTriggerEffectTimingsInText,
       missingTriggerGroupBucketCoverageInLines,
       missingTriggerOrderPromptCoverageInLines,
+      parityBacklogExpectationSourcesInLines,
       parityFixtureScenarioCountProblem,
       parityFixtureWithoutSnapshotRestoreInLines,
     });

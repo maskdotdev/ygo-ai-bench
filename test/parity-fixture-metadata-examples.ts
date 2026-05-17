@@ -34,6 +34,7 @@ export interface FixtureMetadataScannerExampleChecks {
   missingTriggerEffectTimingsInText: FixtureTextCheck;
   missingTriggerGroupBucketCoverageInLines: FixtureLinesCheck;
   missingTriggerOrderPromptCoverageInLines: FixtureLinesCheck;
+  parityBacklogExpectationSourcesInLines: FixtureLinesCheck;
   parityFixtureScenarioCountProblem: FixtureLinesCheck;
   parityFixtureWithoutSnapshotRestoreInLines: FixtureLinesCheck;
 }
@@ -70,6 +71,7 @@ export function assertFixtureMetadataScannerExamples(checks: FixtureMetadataScan
     missingTriggerEffectTimingsInText,
     missingTriggerGroupBucketCoverageInLines,
     missingTriggerOrderPromptCoverageInLines,
+    parityBacklogExpectationSourcesInLines,
     parityFixtureScenarioCountProblem,
     parityFixtureWithoutSnapshotRestoreInLines,
   } = checks;
@@ -96,6 +98,8 @@ export function assertFixtureMetadataScannerExamples(checks: FixtureMetadataScan
   expect(edoproNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 3), "  source: 'edopro',", ...lines.slice(3, 4), '  note: "EDOPro observed behavior"', ...lines.slice(4)])).toEqual([]);
   expect(backlogNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 7), '  note: "temporary local behavior",', ...lines.slice(7)])).toEqual(["fixture.ts:7"]);
   expect(backlogNotesWithoutEdoproInLines("fixture.ts", [...lines.slice(0, 6), "  source: 'parity-backlog',", '  note: "temporary local behavior",', ...lines.slice(8)])).toEqual(["fixture.ts:7"]);
+  expect(parityBacklogExpectationSourcesInLines("fixture.ts", lines)).toEqual(["fixture.ts:6"]);
+  expect(parityBacklogExpectationSourcesInLines("fixture.ts", [...lines.slice(0, 6), '  source: "edopro",', ...lines.slice(7)])).toEqual([]);
   expect(missingAnyLegalActionGroupsInLines("fixture.ts", lines)).toEqual(["fixture.ts:2"]);
   expect(
     missingDirectAttackRawCoverageInLines("fixture.ts", [
