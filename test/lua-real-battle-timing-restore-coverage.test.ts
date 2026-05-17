@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 17;
+const battleTimingFixtureCount = 18;
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
-  afterDamageCalculation: 6,
+  afterDamageCalculation: 7,
   beforeDamageCalculation: 3,
   duringDamageCalculation: 2,
   endDamageStep: 4,
@@ -107,6 +107,18 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'eventName: "damageStepEnded"',
         'eventName: "destroyed"',
         'location: "graveyard"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-divine-knight-ishzark-battled-remove.test.ts",
+      kind: "afterDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "afterDamageCalculation"',
+        'triggerBucket: "turnMandatory"',
+        'eventName: "banished"',
+        'location: "banished"',
+        'eventName === "battleDestroyed"',
       ],
     },
     {

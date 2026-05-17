@@ -96,6 +96,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restored.session.state.battleWindow?.kind).toBe("afterDamageCalculation");
     expect(restored.session.state.pendingBattle).toMatchObject({
       resultApplied: true,
       deferredBattleDestroyed: [{ uid: target!.uid, reasonPlayer: 0, reasonCardUid: ishzark!.uid }],
