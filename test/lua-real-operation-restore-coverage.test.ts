@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 53;
+const operationFixtureCount = 54;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -23,6 +23,7 @@ const operationKindCounts = {
   directDamage: 1,
   directRecover: 1,
   drawThenDiscard: 1,
+  fusionDeckMaterials: 1,
   groupDestroy: 9,
   groupToHand: 1,
   graveToDeckBottomDraw: 1,
@@ -76,6 +77,7 @@ type OperationKind =
   | "directDamage"
   | "directRecover"
   | "drawThenDiscard"
+  | "fusionDeckMaterials"
   | "groupDestroy"
   | "groupToHand"
   | "graveToDeckBottomDraw"
@@ -422,6 +424,20 @@ function operationFixtureFiles(): Array<{
         "category: 0x20",
         'eventName: "sentToGraveyard"',
         'location: "graveyard", controller: 0',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-branded-fusion-deck-material.test.ts",
+      kind: "fusionDeckMaterials",
+      required: [
+        "category: 0x200",
+        "category: 0x20",
+        'summonType: "fusion"',
+        "summonMaterialUids: [albaz!.uid, material!.uid]",
+        'eventName: "sentToGraveyard"',
+        'eventName: "specialSummoned"',
+        "special-summon-limit:non-fusion-extra",
         "host.messages).not.toContain",
       ],
     },
@@ -1023,6 +1039,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       directDamage: 0,
       directRecover: 0,
       drawThenDiscard: 0,
+      fusionDeckMaterials: 0,
       groupDestroy: 0,
       groupToHand: 0,
       graveToDeckBottomDraw: 0,

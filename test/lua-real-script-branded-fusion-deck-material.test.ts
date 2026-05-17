@@ -80,12 +80,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Br
     applyAndAssert(session, activate!);
     expect(session.state.chain).toHaveLength(1);
     const chainLink = session.state.chain[0]!;
-    expect(chainLink.operationInfos).toEqual(
-      expect.arrayContaining([
-        { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 },
-        { category: 0x20, targetUids: [], count: 0, player: 0, parameter: 0x7 },
-      ]),
-    );
+    expect(chainLink.operationInfos).toEqual([
+      { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 },
+      { category: 0x20, targetUids: [], count: 0, player: 0, parameter: 0x7 },
+    ]);
     expect(session.state.effects.find((effect) => effect.sourceUid === brandedFusion!.uid && effect.code === 22)).toMatchObject({
       event: "continuous",
       luaTargetDescriptor: "special-summon-limit:non-fusion-extra",
@@ -102,12 +100,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Br
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     const restoredChainLink = restored.session.state.chain[0]!;
-    expect(restoredChainLink.operationInfos).toEqual(
-      expect.arrayContaining([
-        { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 },
-        { category: 0x20, targetUids: [], count: 0, player: 0, parameter: 0x7 },
-      ]),
-    );
+    expect(restoredChainLink.operationInfos).toEqual([
+      { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 },
+      { category: 0x20, targetUids: [], count: 0, player: 0, parameter: 0x7 },
+    ]);
     expect(restored.session.state.effects.find((effect) => effect.sourceUid === brandedFusion!.uid && effect.code === 22)).toMatchObject({
       event: "continuous",
       luaTargetDescriptor: "special-summon-limit:non-fusion-extra",
