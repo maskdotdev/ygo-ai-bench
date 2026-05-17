@@ -57,7 +57,7 @@ describe("coverage inventory guards", () => {
       }, 0);
 
     expect(loose).toEqual([]);
-    expect(exactCount).toBe(737);
+    expect(exactCount).toBe(738);
   });
 
   it("requires Lua registration proof counts to be exact", () => {
@@ -79,7 +79,7 @@ describe("coverage inventory guards", () => {
       }, 0);
 
     expect(loose).toEqual([]);
-    expect(exactCount).toBe(1371);
+    expect(exactCount).toBe(1372);
   });
 
   it("requires non-coverage Lua restore tests to prove raw, grouped, and flattened restored actions", () => {
@@ -98,7 +98,7 @@ describe("coverage inventory guards", () => {
           || !hasFlattenedGroupedRestoreEvidence(text);
       });
 
-    expect(restoreFiles).toHaveLength(794);
+    expect(restoreFiles).toHaveLength(795);
     expect(missingRestoreEvidence).toEqual([]);
   });
 
@@ -305,7 +305,7 @@ describe("coverage inventory guards", () => {
           .map((match) => `${file}:${lineNumber(text, match.index ?? 0)}`);
       });
 
-    expect(files).toHaveLength(1656);
+    expect(files).toHaveLength(1657);
     expect(weak).toEqual([]);
   });
 

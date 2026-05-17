@@ -78,6 +78,7 @@ const linkedZoneSpecialSummonKindCounts = {
   toBeLinkedZoneRevive: 1,
 } satisfies Record<LinkedZoneSpecialSummonKind, number>;
 const forceMonsterZoneSummonLockKindCounts = {
+  controlReason: 1,
   linkedZoneSummonSetLock: 1,
 } satisfies Record<ForceMonsterZoneSummonLockKind, number>;
 
@@ -100,7 +101,7 @@ type LinkedZoneSpecialSummonKind =
   | "opponentFieldLinkedZoneSummon"
   | "releaseCostDeckSummon"
   | "toBeLinkedZoneRevive";
-type ForceMonsterZoneSummonLockKind = "linkedZoneSummonSetLock";
+type ForceMonsterZoneSummonLockKind = "controlReason" | "linkedZoneSummonSetLock";
 type RealScriptSummonKeywordFamily =
   | "fusion"
   | "link"
@@ -593,6 +594,18 @@ function realScriptForceMonsterZoneSummonLockFixtureSnippets(): Array<{
         "flash charge force mzone tribute material 0",
       ],
     },
+    {
+      file: "test/lua-real-script-gorgon-force-mzone-control-reason.test.ts",
+      kind: "controlReason",
+      required: [
+        "code: 265",
+        "LOCATION_REASON_CONTROL",
+        "gorgon force mzone summon/control 0/1",
+        "gorgon force mzone control predicate true",
+        "gorgon force mzone control take 1",
+        "gorgon force mzone control result 0/3",
+      ],
+    },
   ];
 }
 
@@ -603,6 +616,7 @@ function countForceMonsterZoneSummonLockKinds(files: Array<{ kind: ForceMonsterZ
       return counts;
     },
     {
+      controlReason: 0,
       linkedZoneSummonSetLock: 0,
     },
   );
