@@ -5,8 +5,19 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const battleTimingFixtureCount = 9;
+const battleTimingKindCounts: Record<BattleTimingKind, number> = {
+  afterDamageCalculation: 3,
+  beforeDamageCalculation: 2,
+  duringDamageCalculation: 1,
+  endDamageStep: 2,
+  startDamageStep: 1,
+};
 
 describe("Lua real battle timing restore coverage", () => {
+  it("keeps battle timing fixture kinds explicit", () => {
+    expect(countBattleTimingKinds(battleTimingFixtureFiles())).toEqual(battleTimingKindCounts);
+  });
+
   it("requires battle timing fixtures to assert clean Lua restore and restored trigger outcomes", () => {
     const files = battleTimingFixtureFiles();
     expect(files).toHaveLength(battleTimingFixtureCount);
@@ -33,10 +44,20 @@ describe("Lua real battle timing restore coverage", () => {
   });
 });
 
-function battleTimingFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+type BattleTimingKind = "afterDamageCalculation" | "beforeDamageCalculation" | "duringDamageCalculation" | "endDamageStep" | "startDamageStep";
+
+function countBattleTimingKinds(fixtures: Array<{ kind: BattleTimingKind }>): Record<BattleTimingKind, number> {
+  return fixtures.reduce<Record<BattleTimingKind, number>>(
+    (counts, { kind }) => ({ ...counts, [kind]: counts[kind] + 1 }),
+    { afterDamageCalculation: 0, beforeDamageCalculation: 0, duringDamageCalculation: 0, endDamageStep: 0, startDamageStep: 0 },
+  );
+}
+
+function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKind; required: string[] }> {
+  return ([
     {
       file: "test/lua-real-script-cipher-soldier-pre-damage-calculate.test.ts",
+      kind: "beforeDamageCalculation",
       required: [
         'battleWindow?.kind).toBe("beforeDamageCalculation")',
         'eventName: "beforeDamageCalculation"',
@@ -47,6 +68,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-dd-warrior-wall-battled-segoc.test.ts",
+      kind: "afterDamageCalculation",
       required: [
         'eventName: "afterDamageCalculation"',
         "triggerBucket: \"turnMandatory\"",
@@ -57,6 +79,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-des-kangaroo-damage-step-end.test.ts",
+      kind: "endDamageStep",
       required: [
         'battleWindow?.kind).toBe("endDamageStep")',
         'eventName: "damageStepEnded"',
@@ -66,6 +89,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-destruction-punch-damage-step-end.test.ts",
+      kind: "endDamageStep",
       required: [
         'battleWindow?.kind).toBe("endDamageStep")',
         'eventName: "damageStepEnded"',
@@ -75,6 +99,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-gundari-battle-start-synchro-bounce.test.ts",
+      kind: "startDamageStep",
       required: [
         "restoredSetup.missingRegistryKeys).toEqual([])",
         "restoredSetup.missingChainLimitRegistryKeys).toEqual([])",
@@ -88,6 +113,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-kuriboh-pre-damage-prevent.test.ts",
+      kind: "beforeDamageCalculation",
       required: [
         'battleWindow?.kind).toBe("beforeDamageCalculation")',
         'triggerEvent: "beforeDamageCalculation"',
@@ -99,6 +125,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-mirage-knight-battle-target-atk.test.ts",
+      kind: "duringDamageCalculation",
       required: [
         'battleWindow?.kind).toBe("duringDamageCalculation")',
         'eventName: "battleDamageDealt"',
@@ -107,6 +134,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-reflect-bounder-battle-confirm-destroy.test.ts",
+      kind: "afterDamageCalculation",
       required: [
         'battleWindow?.kind).toBe("startDamageStep")',
         'eventName: "battleConfirmed"',
@@ -118,6 +146,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "test/lua-real-script-topologic-bomber-battled-damage.test.ts",
+      kind: "afterDamageCalculation",
       required: [
         'battleWindow?.kind).toBe("afterDamageCalculation")',
         'eventName: "afterDamageCalculation"',
@@ -126,5 +155,5 @@ function battleTimingFixtureFiles(): Array<{ file: string; required: string[] }>
         "pendingBattle).toBeUndefined()",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{ file: string; kind: BattleTimingKind; required: string[] }>).sort((a, b) => a.file.localeCompare(b.file));
 }
