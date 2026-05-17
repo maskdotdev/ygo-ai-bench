@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 15;
+const operationFixtureCount = 16;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
   deckToGrave: 1,
-  groupDestroy: 6,
+  groupDestroy: 7,
   releaseDamage: 1,
   searchOrExcavate: 3,
   tossCoin: 1,
@@ -151,6 +151,18 @@ function operationFixtureFiles(): Array<{
         "category: 0x20",
         'eventName: "sentToGraveyard"',
         'location: "graveyard", controller: 0',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-fissure-min-attack-destroy.test.ts",
+      kind: "groupDestroy",
+      required: [
+        "category: 0x1",
+        "opponentLowAttack!.uid",
+        "Fissure Low Attack Target",
+        'eventName: "destroyed"',
+        'location: "graveyard"',
         "host.messages).not.toContain",
       ],
     },
