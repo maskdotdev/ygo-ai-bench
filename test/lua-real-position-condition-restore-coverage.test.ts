@@ -5,6 +5,11 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const POSITION_CONDITION_FIXTURE_COUNT = 1;
+const positionConditionKindCounts = {
+  attackDefensePositionCondition: 1,
+} satisfies Record<PositionConditionKind, number>;
+
+type PositionConditionKind = "attackDefensePositionCondition";
 
 describe("Lua real position condition restore coverage", () => {
   it("requires position predicate fixtures to assert clean Lua registry restore and restored predicates", () => {
@@ -29,12 +34,21 @@ describe("Lua real position condition restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps position condition fixture kinds explicit", () => {
+    expect(countPositionConditionKinds(positionConditionFixtureFiles())).toEqual(positionConditionKindCounts);
+  });
 });
 
-function positionConditionFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function positionConditionFixtureFiles(): Array<{
+  file: string;
+  kind: PositionConditionKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-checksum-dragon-position-indestructible.test.ts",
+      kind: "attackDefensePositionCondition",
       required: [
         "condition:source-attack-position",
         "condition:source-defense-position",
@@ -44,5 +58,23 @@ function positionConditionFixtureFiles(): Array<{ file: string; required: string
         "duelReason.battle | duelReason.destroy",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: PositionConditionKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countPositionConditionKinds(
+  fixtures: Array<{ kind: PositionConditionKind }>,
+): Record<PositionConditionKind, number> {
+  return fixtures.reduce<Record<PositionConditionKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      attackDefensePositionCondition: 0,
+    },
+  );
 }
