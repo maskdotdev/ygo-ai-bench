@@ -292,7 +292,7 @@ Completed baseline:
 Remaining deliverables:
 
 - Continue expanding battle timing coverage beyond the current restored Negate Attack and Alien Hunter real-script fixtures to more Project Ignis scripts that use battle helper APIs.
-- Deepen "during damage calculation" edge behavior for replacement effects and response priority where EDOPro distinguishes sub-steps beyond the current window kinds. Both-player plus half-damage modifier ordering now has always-on snapshot-backed fixture coverage.
+- Deepen "during damage calculation" edge behavior for replacement effects and response priority where EDOPro distinguishes sub-steps beyond the current window kinds. Both-player plus half-damage modifier ordering and restored damage-calculation persistent activation are now ratcheted by snapshot-backed fixture coverage.
 - Continue broadening `EVENT_BATTLED`/after-damage-calculation coverage beyond the restored Wall of Illusion, Ally of Justice Nullfier, Dark Ruler Ha Des, Topologic Bomber Dragon, Sky Striker Ace - Hayate, Predaplant Sarraceniant, Divine Knight Ishzark, D.D. Assailant, and D.D. Warrior plus Wall simultaneous-trigger branches.
 - Battle destruction replacement conflicts and redirected branches involving multiple competing field battle-destroy redirects now have snapshot-backed fixture coverage.
 - Keep compatibility helpers for existing `battleStep` users until UI and script consumers fully migrate to `battleWindow`.

@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 10;
+const battleTimingFixtureCount = 11;
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 4,
   beforeDamageCalculation: 2,
-  duringDamageCalculation: 1,
+  duringDamageCalculation: 2,
   endDamageStep: 2,
   startDamageStep: 1,
 };
@@ -130,6 +130,17 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'battleWindow?.kind).toBe("duringDamageCalculation")',
         'eventName: "battleDamageDealt"',
         'eventName: "banished"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-shadow-spell-goat-damage-calculation-persistent.test.ts",
+      kind: "duringDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("duringDamageCalculation")',
+        "getLuaRestoreLegalActionGroups(restoredDamageCalculation, 0)",
+        "shadow spell persistent true/true/1/1500",
+        "battleDamage[0]).toBe(500)",
+        'location: "spellTrapZone"',
       ],
     },
     {

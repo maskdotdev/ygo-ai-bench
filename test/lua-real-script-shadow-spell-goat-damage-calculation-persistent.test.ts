@@ -134,6 +134,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script GO
     expectRestoredLegalActions(restoredBattle, 0);
     passBattleResponses(restoredBattle);
     expect(restoredBattle.session.state.battleDamage[0]).toBe(500);
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p1-deck-613922-0",
+          "eventCode": 1143,
+          "eventCurrentState": {
+            "controller": 1,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "battleDamageDealt",
+          "eventPlayer": 0,
+          "eventPreviousState": {
+            "controller": 1,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventReason": 32,
+          "eventReasonPlayer": 1,
+          "eventValue": 500,
+        },
+      ]
+    `);
     expect(restoredBattle.session.state.players[0].lifePoints).toBe(7500);
     expect(restoredBattle.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredBattle.session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "monsterZone" });
