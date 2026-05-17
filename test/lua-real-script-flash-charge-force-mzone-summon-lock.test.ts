@@ -170,6 +170,84 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fl
     expect(probe.ok, probe.error).toBe(true);
     expect(restored.host.messages).toContain("flash charge force mzone link material 0");
   });
+
+  it("restores EFFECT_FORCE_MZONE after Tribute materials leave the field", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const flashCode = "95372220";
+    const tributeCandidateCode = "95372230";
+    const tributeCode = "95372231";
+    const blockerCodes = ["95372232", "95372233", "95372234"];
+    const flashCard = workspace.readDatabaseCards("cards.cdb").find((card) => card.code === flashCode);
+    expect(flashCard).toBeDefined();
+    const cards: DuelCardData[] = [
+      { ...flashCard!, linkMarkers: 0x20 },
+      { code: tributeCandidateCode, name: "Flash Charge Tribute Candidate", kind: "monster", typeFlags: typeMonster | typeEffect, level: 5, normalTributes: 1, attack: 1800, defense: 1000 },
+      { code: tributeCode, name: "Flash Charge Tribute", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1000, defense: 1000 },
+      ...blockerCodes.map((code, index) => ({
+        code,
+        name: `Flash Charge Tribute Blocker ${index + 1}`,
+        kind: "monster" as const,
+        typeFlags: typeMonster | typeEffect,
+        race: raceDragon,
+        level: 4,
+        attack: 1000,
+        defense: 1000,
+      })),
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 9539, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [tributeCandidateCode, tributeCode, ...blockerCodes], extra: [flashCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const flash = requireCard(session, flashCode);
+    const candidate = requireCard(session, tributeCandidateCode);
+    const tribute = requireCard(session, tributeCode);
+    const blockers = blockerCodes.map((code) => requireCard(session, code));
+    moveDuelCard(session.state, flash.uid, "monsterZone", 0);
+    flash.sequence = 2;
+    flash.faceUp = true;
+    flash.position = "faceUpAttack";
+    moveDuelCard(session.state, tribute.uid, "monsterZone", 0);
+    tribute.sequence = 3;
+    tribute.faceUp = true;
+    tribute.position = "faceUpAttack";
+    moveDuelCard(session.state, candidate.uid, "hand", 0);
+    for (const [index, blocker] of blockers.entries()) {
+      moveDuelCard(session.state, blocker.uid, "monsterZone", 0);
+      blocker.sequence = [0, 1, 4][index]!;
+      blocker.faceUp = true;
+      blocker.position = "faceUpAttack";
+    }
+    session.state.phase = "main1";
+    session.state.turnPlayer = 0;
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(flashCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    const forceZoneEffect = session.state.effects.find((effect) => effect.code === 265 && effect.sourceUid === flash.uid);
+    expect(forceZoneEffect).toMatchObject({ code: 265, sourceUid: flash.uid });
+
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restored, 0);
+
+    const restoredActions = getLuaRestoreLegalActions(restored, 0);
+    expect(restoredActions.some((action) => action.type === "tributeSummon" && action.uid === candidate.uid && action.tributeUids.length === 1 && action.tributeUids[0] === tribute.uid)).toBe(false);
+    expect(restoredActions.some((action) => action.type === "tributeSet" && action.uid === candidate.uid && action.tributeUids.length === 1 && action.tributeUids[0] === tribute.uid)).toBe(false);
+
+    const probe = restored.host.loadScript(
+      `
+      local g=Duel.GetMatchingGroup(aux.FilterBoolFunction(Card.IsCode,${tributeCode}),0,LOCATION_MZONE,0,nil)
+      Debug.Message("flash charge force mzone tribute material " .. tostring(Duel.GetMZoneCount(0,g)))
+      `,
+      "flash-charge-force-mzone-tribute-material-probe.lua",
+    );
+    expect(probe.ok, probe.error).toBe(true);
+    expect(restored.host.messages).toContain("flash charge force mzone tribute material 0");
+  });
 });
 
 function requireCard(session: DuelSession, code: string) {

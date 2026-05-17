@@ -100,7 +100,9 @@ export function tributeSetDuelCard(
   if (!canUseNormalSummonCount(card)) throw new Error("Normal Summon is not available");
   const { uniqueTributes, tributeUnits } = validateNormalTributes(state, player, card, tributeUids, canReleaseMaterial);
   releaseNormalTributes(state, player, card, uniqueTributes, moveMaterial, `Tributed to Set ${card.name}`, collectEvent);
+  const sequence = requireForcedMonsterZoneSequence(state, player, duelReason.rule, card);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.rule);
+  card.sequence = sequence;
   card.position = "faceDownDefense";
   card.faceUp = false;
   card.summonType = "tribute";
@@ -132,7 +134,9 @@ export function tributeSummonDuelCard(
   releaseNormalTributes(state, player, card, uniqueTributes, moveMaterial, `Tributed for ${card.name}`, collectEvent);
 
   collectEvent("normalSummoning", card);
+  const sequence = requireForcedMonsterZoneSequence(state, player, duelReason.summon, card);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon);
+  card.sequence = sequence;
   card.position = "faceUpAttack";
   card.faceUp = true;
   card.summonType = "tribute";
@@ -461,6 +465,8 @@ function tributeNormalActions(state: DuelState, player: PlayerId, hand: DuelCard
     if (tributeRange.max <= 0 || availableTributes.reduce((sum, material) => sum + tributeUnitCount(state, material), 0) < tributeRange.min) continue;
     for (let tributeCount = Math.max(1, tributeRange.min); tributeCount <= tributeRange.max; tributeCount += 1) {
       for (const tributeUids of tributeCombinations(state, availableTributes, tributeCount)) {
+        const reason = type === "tributeSummon" ? duelReason.summon : duelReason.rule;
+        if (availableForcedMonsterZoneCount(state, player, tributeUids, 0, reason, card) <= 0) continue;
         const tributeNames = tributeUids.map((tributeUid) => findCard(state, tributeUid)?.name ?? tributeUid).join(", ");
         actions.push({ type, player, uid: card.uid, tributeUids, label: `${labelVerb} ${card.name} using ${tributeNames}` });
       }
