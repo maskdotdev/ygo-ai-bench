@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 12;
+const battleTimingFixtureCount = 13;
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
-  afterDamageCalculation: 4,
+  afterDamageCalculation: 5,
   beforeDamageCalculation: 2,
   duringDamageCalculation: 2,
   endDamageStep: 3,
@@ -121,6 +121,18 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "battleDamage).toEqual({ 0: 300, 1: 0 })",
         'eventName: "destroyed"',
         "eventReasonEffectId: 1",
+      ],
+    },
+    {
+      file: "test/lua-real-script-gemini-soldier-battled-deck-summon.test.ts",
+      kind: "afterDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "afterDamageCalculation"',
+        'triggerBucket: "turnOptional"',
+        "operationInfos",
+        'eventName: "specialSummoned"',
+        'eventName: "battleDamageDealt"',
       ],
     },
     {

@@ -134,6 +134,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     expect(restoredBattleTrigger.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredBattleTrigger, 1);
     passBattleResponsesUntilTrigger(restoredBattleTrigger.session);
+    expect(restoredBattleTrigger.session.state.battleWindow?.kind).toBe("afterDamageCalculation");
     expect(restoredBattleTrigger.session.state.cards.find((card) => card.uid === soldier!.uid)).toMatchObject({ location: "monsterZone" });
     expect(restoredBattleTrigger.session.state.pendingTriggers).toMatchInlineSnapshot(`
       [
