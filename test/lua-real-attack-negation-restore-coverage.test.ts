@@ -5,6 +5,22 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const attackNegationFixtureCount = 7;
+const attackNegationKindCounts = {
+  counterTriggerNegate: 1,
+  damageReflectNegate: 1,
+  lpRecoverNegate: 1,
+  monsterTriggerNegate: 1,
+  phaseSkipNegate: 2,
+  setAgainNegate: 1,
+} satisfies Record<AttackNegationKind, number>;
+
+type AttackNegationKind =
+  | "counterTriggerNegate"
+  | "damageReflectNegate"
+  | "lpRecoverNegate"
+  | "monsterTriggerNegate"
+  | "phaseSkipNegate"
+  | "setAgainNegate";
 
 describe("Lua real attack negation restore coverage", () => {
   it("requires representative attack-negation fixtures to assert clean Lua restore and legal-action parity", () => {
@@ -47,12 +63,22 @@ describe("Lua real attack negation restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps attack-negation fixture kinds explicit", () => {
+    expect(countAttackNegationKinds(realScriptAttackNegationFixtureFiles())).toEqual(attackNegationKindCounts);
+  });
 });
 
-function realScriptAttackNegationFixtureFiles(): Array<{ file: string; required: string[]; outcome: string[] }> {
-  return [
+function realScriptAttackNegationFixtureFiles(): Array<{
+  file: string;
+  kind: AttackNegationKind;
+  required: string[];
+  outcome: string[];
+}> {
+  return ([
     {
       file: "lua-real-script-wind-up-knight-battle-target-negate.test.ts",
+      kind: "monsterTriggerNegate",
       required: [
         'action.type === "activateTrigger" && action.uid === knight!.uid',
         "pendingTriggers",
@@ -67,6 +93,7 @@ function realScriptAttackNegationFixtureFiles(): Array<{ file: string; required:
     },
     {
       file: "lua-real-script-negate-attack-battle-window.test.ts",
+      kind: "phaseSkipNegate",
       required: [
         'action.type === "activateEffect" && action.uid === negateAttack!.uid',
         'phase: "battle", waitingFor: 1, windowKind: "battle"',
@@ -79,6 +106,7 @@ function realScriptAttackNegationFixtureFiles(): Array<{ file: string; required:
     },
     {
       file: "lua-real-script-magic-cylinder-battle-window.test.ts",
+      kind: "damageReflectNegate",
       required: [
         'action.type === "activateEffect" && action.uid === magicCylinder!.uid',
         'eventName": "attackDeclared"',
@@ -91,6 +119,7 @@ function realScriptAttackNegationFixtureFiles(): Array<{ file: string; required:
     },
     {
       file: "lua-real-script-draining-shield-battle-window.test.ts",
+      kind: "lpRecoverNegate",
       required: [
         'action.type === "activateEffect" && action.uid === drainingShield!.uid',
         'eventName": "attackDeclared"',
@@ -103,6 +132,7 @@ function realScriptAttackNegationFixtureFiles(): Array<{ file: string; required:
     },
     {
       file: "lua-real-script-scrap-iron-scarecrow-battle-window.test.ts",
+      kind: "setAgainNegate",
       required: [
         "chainResponderScript",
         'action.type === "activateEffect" && action.uid === scarecrow!.uid',
@@ -115,6 +145,7 @@ function realScriptAttackNegationFixtureFiles(): Array<{ file: string; required:
     },
     {
       file: "lua-real-script-super-junior-confrontation-calculate-damage.test.ts",
+      kind: "phaseSkipNegate",
       required: [
         'action.type === "activateEffect" && action.uid === confrontation!.uid',
         'battleWindow?.kind).toBe("attackNegationResponse")',
@@ -128,6 +159,7 @@ function realScriptAttackNegationFixtureFiles(): Array<{ file: string; required:
     },
     {
       file: "lua-real-script-totem-pole-attack-negate-counter.test.ts",
+      kind: "counterTriggerNegate",
       required: [
         'action.type === "activateTrigger" && action.uid === totemPole!.uid',
         "pendingTriggers",
@@ -140,7 +172,31 @@ function realScriptAttackNegationFixtureFiles(): Array<{ file: string; required:
         'eventName: "counterAdded"',
       ],
     },
-  ]
-    .map(({ file, required, outcome }) => ({ file: path.join("test", file), required, outcome }))
+  ] satisfies Array<{
+    file: string;
+    kind: AttackNegationKind;
+    required: string[];
+    outcome: string[];
+  }>)
+    .map(({ file, kind, required, outcome }) => ({ file: path.join("test", file), kind, required, outcome }))
     .sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countAttackNegationKinds(
+  fixtures: Array<{ kind: AttackNegationKind }>,
+): Record<AttackNegationKind, number> {
+  return fixtures.reduce<Record<AttackNegationKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      counterTriggerNegate: 0,
+      damageReflectNegate: 0,
+      lpRecoverNegate: 0,
+      monsterTriggerNegate: 0,
+      phaseSkipNegate: 0,
+      setAgainNegate: 0,
+    },
+  );
 }
