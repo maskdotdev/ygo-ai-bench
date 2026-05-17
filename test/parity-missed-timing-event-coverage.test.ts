@@ -27,6 +27,7 @@ const missedTimingChainLifecycleOriginFixtureCount = 12;
 const missedTimingBattleDamageCauseFixtureCount = 4;
 const missedTimingPhaseBoundaryFixtureCount = 22;
 const missedTimingPhaseEndBoundaryCauseFixtureCount = 4;
+const missedTimingPostDeclineOpenFastResolutionFixtureCount = 25;
 const missedTimingEventFamilyCounts = {
   battle: 28,
   chain: 14,
@@ -218,6 +219,17 @@ describe("EDOPro parity missed-timing event coverage", () => {
       .sort();
 
     expect(guardedExceptionFiles).toEqual([...missedTimingSourceEffectCauseExceptions].sort());
+  });
+
+  it("pins post-decline open fast-effect resolution coverage after missed-timing filtering", () => {
+    const postDeclineOpenFastResolutionFiles = fs.readdirSync(testRoot)
+      .filter((file) => file.startsWith("parity-missed-timing-") && file.endsWith("-decline-fixture.test.ts"))
+      .filter((file) => readTestFile(file).includes("post-decline open fast-effect window restorable"))
+      .sort();
+    const weak = postDeclineOpenFastResolutionFiles.filter((file) => !hasPostDeclineOpenFastResolutionProof(file));
+
+    expect(postDeclineOpenFastResolutionFiles).toHaveLength(missedTimingPostDeclineOpenFastResolutionFixtureCount);
+    expect(weak).toEqual([]);
   });
 });
 
@@ -435,6 +447,22 @@ function hasPhaseEndBoundaryCauseMetadata(file: string): boolean {
     /eventCode:\s*(?:0x1200|0x2200)/.test(text) &&
     /eventName:\s*["'](?:phaseEnd|phaseStartEnd)["']/.test(text) &&
     hasSourceEffectCauseMetadata(file)
+  );
+}
+
+function hasPostDeclineOpenFastResolutionProof(file: string): boolean {
+  const text = readTestFile(file);
+  return (
+    /source:\s*["']edopro["']/.test(text) &&
+    /snapshotRestore:\s*["']both["']/.test(text) &&
+    /makeResponseSelector\(\s*["']activateEffect["'],\s*0,\s*\{\s*effectId:\s*["'][^"']*-decline-open-fast["']/.test(text) &&
+    /post-decline open fast-effect window restorable/.test(text) &&
+    /resolves the restored post-decline open fast effect without resurrecting missed optional when triggers/.test(text) &&
+    /pendingTriggers:\s*\[\]/.test(text) &&
+    /pendingTriggerBuckets:\s*\[\]/.test(text) &&
+    /legalActions:\s*\[[\s\S]*type:\s*["']activateEffect["'][\s\S]*windowKind:\s*["']open["']/.test(text) &&
+    /absentLegalActions:\s*\[[\s\S]*effectId:\s*["'][^"']*optional-when["']/.test(text) &&
+    /absentLegalActionGroups:\s*\[[\s\S]*optional-when/.test(text)
   );
 }
 
